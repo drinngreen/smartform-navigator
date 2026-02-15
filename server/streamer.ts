@@ -1,6 +1,6 @@
 import { readFileSync, appendFileSync, existsSync, mkdirSync } from 'fs'
 import axios from 'axios'
-import { buildMovimentiFromXml } from './rentriClient'
+import { buildMovimentiFromXml } from './rentriClient.ts'
 
 type StreamState = { registryId:string, filename:string, issuer:string, xmlPath:string, batch:number, running:boolean, submitted:number, accepted:number, duplicates:number, next:{ anno:number, progressivo:string, date:string } }
 const states:Record<string,StreamState>={}
