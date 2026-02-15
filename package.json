@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
+    "dev": "vite",
     "build": "tsc && vite build",
-    "start": "vite preview",
-    "start:server": "npm run build && tsx server/index.ts",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
     "db:push": "drizzle-kit push",
     "summary:watch": "tsx server/summaryWatcher.ts",
     "plan:compare": "tsx server/comparePlanWithRentri.ts",

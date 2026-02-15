@@ -10,10 +10,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   server: {
     host: '::',
-    port: 8080,
-    proxy: {
-      '/trpc': 'http://localhost:3001'
-    }
+    port: 8080
   },
   resolve: {
     alias: {
