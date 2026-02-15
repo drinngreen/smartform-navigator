@@ -4,6 +4,8 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express'
 import { appRouter } from './routers.ts'
 import { startBulkXml, getBulkStatus } from './bulkXml.ts'
 import { z } from 'zod'
+import path from 'path'
+import fs from 'fs'
 import { db, lastInsertId } from './db.ts'
 import { fir } from '../drizzle/schema.ts'
 import { parseFirXml } from './firParser.ts'
@@ -22,9 +24,6 @@ app.use('/', rentriRouter);
 app.use('/trpc', createExpressMiddleware({ router: appRouter }))
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'RENTRI Web' }))
-// Static raw logs early to avoid being shadowed by SPA catch-all
-import path from 'path'
-import fs from 'fs'
 app.use('/out', express.static(path.join(process.cwd(), 'out')))
 app.get('/out/log/tail/:lines?', (_req, res) => {
   try {
