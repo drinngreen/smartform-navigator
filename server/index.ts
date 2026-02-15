@@ -350,7 +350,10 @@ if (fs.existsSync(distPath)){
 }
 
 app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Dist path: ${distPath}, Exists: ${fs.existsSync(distPath)}`)
+  console.log('--------------------------------------------------');
+  console.log(`🚀 SERVER STARTED v2.0 (FRONTEND RESTORED) on port ${PORT}`);
+  console.log(`📂 Dist path: ${distPath}`);
+  console.log(`✅ Dist Exists: ${fs.existsSync(distPath)}`);
+  console.log('--------------------------------------------------');
 })
 
