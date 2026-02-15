@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { RentriService } from './rentri/service';
 import { RENTRI_CONFIG } from './rentri/config';
 

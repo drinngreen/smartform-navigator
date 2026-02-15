@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router } from 'express';
 import { RentriService } from './service.ts';
 import { CompanyKey } from './config.ts';

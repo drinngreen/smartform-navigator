@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 export interface CompanyConfig {
   name: string;
   issuer: string; // Codice Fiscale

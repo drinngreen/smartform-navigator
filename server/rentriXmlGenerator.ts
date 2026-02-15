@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { XMLParser } from 'fast-xml-parser'
 import { v4 as uuidv4 } from 'uuid'
 

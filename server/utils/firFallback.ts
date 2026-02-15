@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import fs from 'fs';

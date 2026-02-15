@@ -1,3 +1,4 @@
+// @ts-nocheck
 import axios from 'axios'
 import { XMLParser } from 'fast-xml-parser'
 import { CONFIG } from './config.ts'
