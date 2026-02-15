@@ -1,6 +1,5 @@
 import { Router, Switch, Route } from "wouter"
-import { QueryClientProvider } from "@tanstack/react-query"
-import { trpc, trpcClient, queryClient } from "./lib/trpc"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Toaster } from "./components/ui/sonner"
 import { Header } from "./components/Header"
 
@@ -12,6 +11,8 @@ import BridgeStatus from "./pages/BridgeStatus"
 import MassiveUpload from "./pages/MassiveUpload"
 import NotFound from "./pages/NotFound"
 import AutoSend from "./pages/AutoSend"
+
+const queryClient = new QueryClient()
 
 function AppContent() {
   return (
@@ -36,12 +37,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <AppContent />
-        </Router>
-      </QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AppContent />
+      </Router>
+    </QueryClientProvider>
   )
 }
