@@ -55,10 +55,10 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'RENTRI Web'
 // ...
 
 // 4. SPA CATCH-ALL (MUST BE LAST)
-// This ensures that any request NOT matched by API or Static files gets served index.html
-if (fs.existsSync(distPath)){
-  app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
-}
+// Moved to bottom to avoid shadowing API routes
+// if (fs.existsSync(distPath)){
+//   app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
+// }
 app.use('/out', express.static(path.join(process.cwd(), 'out')))
 app.get('/out/log/tail/:lines?', (_req, res) => {
   try {
@@ -331,7 +331,26 @@ app.get('/stream/stop/:target', (req, res) => {
 })
 
 const PORT = process.env.PORT || 10000;
+
+// FINAL CATCH-ALL FOR SPA
+// Must be after all API routes
+if (fs.existsSync(distPath)){
+  app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
+} else {
+  // Debug info if build is missing
+  app.get('/', (_req, res) => {
+    try {
+      const cwd = process.cwd()
+      const files = fs.readdirSync(cwd).join(', ')
+      res.send(`<h1>Frontend Build Missing</h1><p>Expected at: ${distPath}</p><p>Current Dir: ${cwd}</p><p>Files: ${files}</p>`)
+    } catch (e: any) {
+      res.status(500).send('Error checking filesystem: ' + e.message)
+    }
+  })
+}
+
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`Dist path: ${distPath}, Exists: ${fs.existsSync(distPath)}`)
 })
 
