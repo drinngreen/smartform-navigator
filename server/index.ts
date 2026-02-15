@@ -48,7 +48,7 @@ if (fs.existsSync(distPath)){
 }
 
 // 3. MOUNT SPECIFIC APIs
-app.use('/', rentriRouter); // Mounts /vidimate, /create, /firma-fir
+// app.use('/', rentriRouter); // REMOVED: This was catching all traffic!
 
 // ... other API endpoints ...
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'RENTRI Web' }))
