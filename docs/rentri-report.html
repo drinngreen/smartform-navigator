@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report tecnico completo – Integrazione RENTRI</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      margin: 24px;
+      line-height: 1.5;
+      max-width: 1100px;
+    }
+    h1,h2,h3 { margin: 0.6em 0 0.3em; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    pre {
+      background: rgba(127,127,127,0.12);
+      padding: 12px 14px;
+      border-radius: 8px;
+      overflow: auto;
+    }
+    .kbd { display:inline-block; border:1px solid #aaa; border-bottom-width:2px; padding:0 4px; border-radius:4px; background:#f7f7f7; }
+    .small { font-size: 0.95em; color: #666; }
+    .section { margin-top: 18px; }
+    .code-ref { color: #0a7; }
+    ul { margin: 0.4em 0 0.8em 1.2em; }
+    hr { border: none; border-top: 1px solid rgba(127,127,127,0.3); margin: 18px 0; }
+  </style>
+</head>
+<body>
+  <h1>Report tecnico completo – Integrazione RENTRI (GLOBAL RECO S.R.L. e MULTY PROGET S.R.L.)</h1>
+  <p class="small">Generato da Trae – percorso file: <code>docs/rentri-report.html</code>. Per esportare in PDF: apri questo file nel browser e premi <span class="kbd">Ctrl</span>+<span class="kbd">P</span> → “Salva come PDF”.</p>
+
+  <div class="section">
+    <h2>Contesto e risultato</h2>
+    <ul>
+      <li>Bridge e UI/API avviati: <code>http://localhost:8765</code> (health OK), <code>http://localhost:3001</code>.</li>
+      <li>Certificati: Global <code>certificato.p12</code> (<code>issuer=08934760961</code>), Multy <code>multyproget.p12</code> (<code>issuer=12347770013</code>).</li>
+      <li>Fix client: CER puntinato (<code>170407 → 17.04.07</code>), <code>stato_fisico</code> obbligatorio, UM normalizzata; <code>intermediario</code> solo per MULTY.</li>
+      <li>Esiti prove produzione: Global → 401 <code>invalidIssuer</code>; Multy → 404 su “registrazioni”, 403 su “movimenti”, 401 su liste con ID non coerenti.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Modifiche al codice</h2>
+    <ul>
+      <li>Bridge issuer mapping: Global <code>08934760961</code>, MULTY <code>12347770013</code> (<span class="code-ref">bridge-service/Program.cs:27-32</span>).</li>
+      <li>JWT AUTH/INTEGRITY con <code>IssuedAt</code>, <code>aud</code> dinamica (<span class="code-ref">bridge-service/Program.cs:131-159</span>).</li>
+      <li>Digest SHA-256 del body e <code>signed_headers</code> con <code>digest</code> e <code>content-type</code>.</li>
+      <li>Endpoint diagnostico <code>GET /whoami</code> per <code>dnQualifier</code> / <code>OID.2.5.4.97</code> (<span class="code-ref">bridge-service/Program.cs:808-845</span>).</li>
+      <li>Client: CER/UM/Data/Stato fisico, <code>intermediario</code> solo per MULTY (<span class="code-ref">server/rentriClient.ts</span>).</li>
+      <li>Script: <span class="code-ref">server/scripts/testOne.ts</span>, <span class="code-ref">server/scripts/runSubmit.ts</span> per prove “movimenti/registrazioni”.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Dettaglio Bridge</h2>
+    <pre><code>// Token AUTH (ID_AUTH_REST_02)
+var idDesc = new SecurityTokenDescriptor {
+  AdditionalHeaderClaims = new Dictionary&lt;string, object&gt; { { "x5c", x5cLeaf } },
+  Audience = aud,
+  Issuer = issuer,
+  Claims = new Dictionary&lt;string, object&gt; { { "jti", jti } },
+  Expires = now.AddMinutes(5),
+  NotBefore = now.AddMinutes(-1),
+  IssuedAt = now,
+  SigningCredentials = creds
+};
+
+// Token INTEGRITY (INTEGRITY_REST_01)
+var intDesc = new SecurityTokenDescriptor {
+  AdditionalHeaderClaims = new Dictionary&lt;string, object&gt; { { "x5c", x5cLeaf } },
+  Audience = aud,
+  Issuer = issuer,
+  Claims = new Dictionary&lt;string, object&gt; {
+    { "jti", jti },
+    { "signed_headers", new[] {
+        new Dictionary&lt;string, string&gt; { { "digest", digestHeader } },
+        new Dictionary&lt;string, string&gt; { { "content-type", contentTypeString } }
+    }}
+  },
+  Expires = now.AddMinutes(5),
+  NotBefore = now.AddMinutes(-1),
+  IssuedAt = now,
+  SigningCredentials = creds
+};</code></pre>
+    <p>Headers inviati: <code>Authorization: Bearer &lt;JWT&gt;</code>, <code>Digest: SHA-256=&lt;...&gt;</code>, <code>Agid-JWT-Signature: &lt;JWT&gt;</code>.</p>
+  </div>
+
+  <div class="section">
+    <h2>Payload di esempio</h2>
+    <h3>Global – movimenti</h3>
+    <pre><code>[
+  {
+    "data_movimento": "2025-12-18T12:00:00+01:00",
+    "tipo_movimento": "CA",
+    "causale": "RE",
+    "descrizione": "Prova movimento",
+    "rifiuto": {
+      "codice_eer": "17.04.07",
+      "quantita": 1.0,
+      "unita_misura": "KG",
+      "stato_fisico": 1,
+      "pericoloso": false
+    },
+    "provenienza": "U",
+    "note": "Prg: TEST"
+  }
+]</code></pre>
+    <h3>Multy – movimenti (intermediario)</h3>
+    <pre><code>[
+  {
+    "data_movimento": "2025-12-18T12:00:00+01:00",
+    "tipo_movimento": "CA",
+    "causale": "RE",
+    "descrizione": "Prova movimento",
+    "rifiuto": {
+      "codice_eer": "17.04.07",
+      "quantita": 1.0,
+      "unita_misura": "KG",
+      "stato_fisico": 1,
+      "pericoloso": false
+    },
+    "provenienza": "U",
+    "intermediario": { "denominazione": "MULTY PROGET S.R.L.", "codice_fiscale": "12347770013" },
+    "intermediari": [ { "denominazione": "MULTY PROGET S.R.L.", "codice_fiscale": "12347770013" } ],
+    "note": "Prg: TEST"
+  }
+]</code></pre>
+  </div>
+
+  <div class="section">
+    <h2>Tentativi e risposte</h2>
+    <ul>
+      <li>Global: <code>POST .../operatore/R6QSWHZ6HJV/movimenti</code> → 401 <code>agIDInterop.invalidIssuer</code></li>
+      <li>Global: <code>POST .../operatore/OP2501RMK022692/movimenti</code> → 401 <code>invalidIssuer</code></li>
+      <li>Multy: <code>POST .../operatore/RQCGT1GPTN0/registrazioni</code> → 404 Not Found</li>
+      <li>Multy: <code>POST .../operatore/RQCGT1GPTN0/movimenti</code> → 403 Forbidden</li>
+      <li>Multy: <code>POST .../operatore/RQEL39R7NS0/registrazioni</code> → 404 Not Found</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Analisi e richieste all’esperto RENTRI</h2>
+    <ul>
+      <li><strong>Issuer ↔ Operatore REST ↔ Registro REST</strong>: gli ID in path devono appartenere all’operatore del certificato (dal <code>dnQualifier</code>), altrimenti 401.</li>
+      <li>Chiediamo: ID REST dell’operatore per Global/MULTY e ID registro REST corretti, e conferma del flusso per “Trasporto Conto Proprio”.</li>
+      <li>Conferma formato <code>iss</code>: preferire <code>dnQualifier</code>; precisare se sono ammesse varianti (<code>CF:IT-...</code>, numerico).</li>
+      <li>403 su MULTY: chiarire ACL/ruoli/permessi richiesti per “movimenti” di quel registro.</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Piano di sblocco</h2>
+    <ol>
+      <li>Recupero ID REST operatore/registro corretti per ciascun certificato.</li>
+      <li>Aggiornamento URL → <code>operatore/&lt;ID_OPERATORE_REST&gt;/movimenti</code> o “registrazioni” coerente.</li>
+      <li>Firma JWT con <code>iss = dnQualifier</code> dell’operatore del path; headers e digest già conformi.</li>
+      <li>Invio singolo: attesa <code>202</code> e <code>transazione_id</code> via <code>/check-status</code>; conferma su <code>/list-registrazioni</code>.</li>
+      <li>Lockstep massivo dopo esito positivo.</li>
+    </ol>
+  </div>
+
+  <hr>
+  <p class="small">Nota: la versione Markdown equivalente è disponibile in <code>docs/rentri-report.md</code>.</p>
+</body>
+</html>

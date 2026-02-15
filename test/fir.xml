@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RegistroCronologico xmlns="http://www.rentri.gov.it/schema/registro/v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Intestazione>
+    <Operatore>
+      <CodiceFiscale>08934760961</CodiceFiscale>
+      <PartitaIVA>08934760961</PartitaIVA>
+      <Denominazione>Global Reco</Denominazione>
+    </Operatore>
+  </Intestazione>
+  <Registrazioni Anno="2025" ProgressivoDa="1" ProgressivoA="1" NumeroRegistrazioni="1" DataCreazione="2025-11-30T01:17:01Z">
+    <Registrazione>
+      <Anno>2025</Anno>
+      <Progressivo>1</Progressivo>
+      <DataRegistrazione>2025-09-30</DataRegistrazione>
+      <Movimento>
+        <TipoOperazione>Carico</TipoOperazione>
+        <Causale>RE</Causale>
+        <CodCER>17.04.07</CodCER>
+        <Quantita>1.000</Quantita>
+        <Descrizione>Invio prova da XML reale</Descrizione>
+        <UnitaMisura>KG</UnitaMisura>
+      </Movimento>
+    </Registrazione>
+  </Registrazioni>
+</RegistroCronologico>

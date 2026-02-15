@@ -1,0 +1,5 @@
+{
+  "url": "https://api.rentri.gov.it/dati-registri/v1.0/operatore/R1DDEWC3SHU/movimenti",
+  "payload": "{\"data_movimento\":\"2025-12-01T12:00:00+01:00\",\"tipo_movimento\":\"CA\",\"causale\":\"RE\",\"descrizione\":\"Invio di prova produzione\",\"rifiuto\":{\"codice_eer\":\"15.01.06\",\"quantita\":1.0,\"unita_misura\":\"kg\"},\"note\":\"Prg: TEST\"}",
+  "filename": "08934760961.p12"
+}

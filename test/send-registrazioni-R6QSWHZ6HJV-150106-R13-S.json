@@ -1,0 +1,6 @@
+{
+  "url": "https://api.rentri.gov.it/dati-registri/v1.0/operatore/R6QSWHZ6HJV/movimenti",
+  "payload": "[{\"riferimenti\":{\"numero_registrazione\":{\"anno\":2025,\"progressivo\":3},\"data_ora_registrazione\":\"2025-10-03T12:00:00Z\",\"causale_operazione\":\"RE\"},\"rifiuto\":{\"codice_eer\":\"15.01.06\",\"stato_fisico\":\"S\",\"provenienza\":\"S\",\"quantita\":{\"valore\":1.0,\"unita_misura\":\"kg\"},\"destinato_attivita\":\"R13\"},\"annotazioni\":\"Invio test R13 S\"}]",
+  "filename": "certificato.p12",
+  "issuer": "08934760961"
+}

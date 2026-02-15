@@ -1,0 +1,6 @@
+{
+  "url": "https://api.rentri.gov.it/dati-registri/v1.0/operatore/R6QSWHZ6HJV/movimenti",
+  "payload": "[{\"riferimenti\":{\"numero_registrazione\":{\"anno\":2025,\"progressivo\":6},\"data_ora_registrazione\":\"2025-10-06T12:00:00Z\",\"causale_operazione\":\"RE\"},\"materiali\":{\"materiale\":\"ACM\",\"descrizione_materiale\":\"Materiale ACM prova\",\"quantita\":{\"valore\":1.0,\"unita_misura\":\"kg\"}},\"annotazioni\":\"Invio materiali ACM R12\"}]",
+  "filename": "certificato.p12",
+  "issuer": "08934760961"
+}

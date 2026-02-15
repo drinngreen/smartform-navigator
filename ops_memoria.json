@@ -1,0 +1,46 @@
+{
+  "version": "1.5.0",
+  "updated_at": "2026-01-30T03:00:00Z",
+  "keywords": {
+    "attingi": "Leggi questo file per contesto, regole, percorsi e stato",
+    "aggiorna": "Aggiorna questo file con nuove regole/stato subito",
+    "parti": "Esegui immediatamente il compito indicato dopo 'e'",
+    "blocca": "Ferma processi di invio in corso"
+  },
+  "percorsi": {
+    "root": "C:/Users/Dell/Desktop/progetti trae/firsender",
+    "bridge_health": "http://127.0.0.1:8765/health",
+    "log_massivo": "out/invio_massivo.log",
+    "ocr_final_global": "out/ocr.payload.final.global.json",
+    "ocr_final_multy": "out/ocr.payload.final.multy.json",
+    "json_final": "fir dicembre 25/fine dicembre finale/movimenti finali dicembre.json"
+  },
+  "generazione_progressivi": {
+    "ocr_global_base": 6300000,
+    "ocr_multy_base": 7300000,
+    "json_global_base": 6400000,
+    "json_multy_base": 7400000,
+    "regole": [
+      "TASK: Inviare OCR (1084 items) e JSON Finali",
+      "Destinazione: ENTRAMBI I REGISTRI",
+      "OCR Global Base: 6.3M",
+      "OCR Multy Base: 7.3M",
+      "JSON Global Base: 6.4M",
+      "JSON Multy Base: 7.4M"
+    ]
+  },
+  "stato_corrente": {
+    "obiettivo": "Inviare Fine Dicembre Finale (OCR + JSON)",
+    "accepted_totali": 16000,
+    "strategia": "Parallel Streams",
+    "bridge": "ok",
+    "flows_active": true
+  },
+  "compiti_attivi": [
+    "Invio OCR -> Global (6.3M)",
+    "Invio OCR -> Multy (7.3M)",
+    "Invio JSON -> Global (6.4M)",
+    "Invio JSON -> Multy (7.4M)",
+    "Monitorare log"
+  ]
+}

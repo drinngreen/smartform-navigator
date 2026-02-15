@@ -1,0 +1,10 @@
+node_modules/
+dist/
+out/
+.env
+local.db
+*.log
+*.jsonl
+bridge-service/bin/
+bridge-service/obj/
+.DS_Store
