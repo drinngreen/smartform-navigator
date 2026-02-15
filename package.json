@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "start": "vite preview",
-    "start:server": "tsx server/index.ts",
+    "start:server": "npm run build && tsx server/index.ts",
     "db:push": "drizzle-kit push",
     "summary:watch": "tsx server/summaryWatcher.ts",
     "plan:compare": "tsx server/comparePlanWithRentri.ts",
