@@ -1,14 +1,14 @@
 import express from 'express'
 import cors from 'cors'
 import { createExpressMiddleware } from '@trpc/server/adapters/express'
-import { appRouter } from './routers'
-import { startBulkXml, getBulkStatus } from './bulkXml'
+import { appRouter } from './routers.ts'
+import { startBulkXml, getBulkStatus } from './bulkXml.ts'
 import { z } from 'zod'
-import { db, lastInsertId } from './db'
-import { fir } from '../drizzle/schema'
-import { parseFirXml } from './firParser'
-import { startStream, stopStream, getStatus } from './streamer'
-import { rentriRouter } from './rentri/router'
+import { db, lastInsertId } from './db.ts'
+import { fir } from '../drizzle/schema.ts'
+import { parseFirXml } from './firParser.ts'
+import { startStream, stopStream, getStatus } from './streamer.ts'
+import { rentriRouter } from './rentri/router.ts'
 
 const app = express()
 app.use(cors({
