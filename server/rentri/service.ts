@@ -1,5 +1,5 @@
-import { createClient } from './client';
-import { RENTRI_CONFIG, CompanyKey } from './config';
+import { createClient } from './client.ts';
+import { RENTRI_CONFIG, CompanyKey } from './config.ts';
 
 const SLEEP_MS = 2000;
 const MAX_RETRIES = 15; // 30 seconds max

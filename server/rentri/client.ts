@@ -1,6 +1,6 @@
 import axios from 'axios';
 import https from 'https';
-import { RENTRI_CONFIG, getP12, CompanyKey } from './config';
+import { RENTRI_CONFIG, getP12, CompanyKey } from './config.ts';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';

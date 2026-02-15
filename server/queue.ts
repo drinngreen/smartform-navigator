@@ -1,7 +1,7 @@
-import { db } from './db'
-import { fir_files as firFiles, transactions } from '../drizzle/schema'
+import { db } from './db.ts'
+import { fir_files as firFiles, transactions } from '../drizzle/schema.ts'
 import { eq } from 'drizzle-orm'
-import { submitFir } from './rentriClient'
+import { submitFir } from './rentriClient.ts'
 import axios from 'axios'
 
 class FirQueue {

@@ -1,8 +1,8 @@
 import axios from 'axios'
-import { db } from './db'
-import { fir_files as firFiles, transactions } from '../drizzle/schema'
+import { db } from './db.ts'
+import { fir_files as firFiles, transactions } from '../drizzle/schema.ts'
 import { eq } from 'drizzle-orm'
-import { submitFir } from './rentriClient'
+import { submitFir } from './rentriClient.ts'
 
 type Task = { firId:number, transazioneId:string, registryId:string, filename:string, issuer?:string }
 

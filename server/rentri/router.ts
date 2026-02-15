@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { RentriService } from './service';
-import { CompanyKey } from './config';
+import { RentriService } from './service.ts';
+import { CompanyKey } from './config.ts';
 
 export const rentriRouter = Router();
 

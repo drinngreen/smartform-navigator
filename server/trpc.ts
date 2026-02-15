@@ -1,9 +1,10 @@
 import { initTRPC } from '@trpc/server'
 import { z } from 'zod'
-import { db, lastInsertId } from './db'
-import { fir, transactions } from '../drizzle/schema'
+import { z } from 'zod'
+import { db, lastInsertId } from './db.ts'
+import { fir, transactions } from '../drizzle/schema.ts'
 import { eq, sql } from 'drizzle-orm'
-import { parseFirXml } from './firParser'
+import { parseFirXml } from './firParser.ts'
 
 const t = initTRPC.create()
 export const procedure = t.procedure
