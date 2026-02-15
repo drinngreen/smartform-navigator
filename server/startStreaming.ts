@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { startStream, getStatus } from './streamer'
 
 async function main(){

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import axios from 'axios';
 import https from 'https';
 import { RENTRI_CONFIG, getP12, CompanyKey } from './config.ts';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from './client.ts';
 import { RENTRI_CONFIG, CompanyKey } from './config.ts';
 

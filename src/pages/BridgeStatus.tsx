@@ -12,10 +12,10 @@ export default function BridgeStatus(){
       </h1>
       <Card>
         <CardHeader>
-          <CardTitle className="flex justify-between">
+          <CardTitle><div className="flex justify-between">
             Connessione
             {bridge?.online ? <Badge className="bg-green-600">ONLINE</Badge> : <Badge variant="destructive">OFFLINE</Badge>}
-          </CardTitle>
+          </div></CardTitle>
           <CardDescription>Stato del servizio locale di firma Windows</CardDescription>
         </CardHeader>
         <CardContent>
@@ -26,7 +26,7 @@ export default function BridgeStatus(){
               <div className="flex items-center gap-2 text-green-400 bg-green-950/20 p-4 rounded-lg border border-green-900">
                 <CheckCircle /> Il Bridge è attivo e pronto a firmare.
               </div>
-              <pre className="bg-black p-4 rounded text-xs text-slate-300 overflow-auto">{JSON.stringify(bridge.data, null, 2)}</pre>
+              <pre className="bg-black p-4 rounded text-xs text-slate-300 overflow-auto">{JSON.stringify(bridge, null, 2)}</pre>
             </div>
           ) : (
             <div className="space-y-4">

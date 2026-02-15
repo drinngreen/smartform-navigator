@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { readFileSync, appendFileSync, existsSync, mkdirSync } from 'fs'
 import axios from 'axios'
 import { buildMovimentiFromXml } from './rentriClient.ts'

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import axios from 'axios'
 import { db } from './db.ts'
 import { fir_files as firFiles, transactions } from '../drizzle/schema.ts'

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
-    port: 5173,
+    port: 8080,
     strictPort: true,
     proxy: {
       '/trpc': 'http://localhost:3001'

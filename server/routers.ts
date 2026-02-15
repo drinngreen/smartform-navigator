@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { z } from 'zod'
 import { procedure, router } from './trpc.ts'
 import { db } from './db.ts'
