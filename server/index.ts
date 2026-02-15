@@ -19,12 +19,46 @@ app.use(cors({
 }))
 app.use(express.json({ limit: '5mb' }))
 
-// Mount RENTRI Router
-app.use('/', rentriRouter);
-
+// 1. API ROUTES FIRST
+app.use('/api/rentri', rentriRouter); // Prefix RENTRI APIs
 app.use('/trpc', createExpressMiddleware({ router: appRouter }))
 
+// Keep old direct routes for backward compatibility if needed, 
+// BUT make sure they don't conflict with static files.
+// rentriRouter likely has paths like /vidimate, /create. 
+// If we mount it at root, it might be fine IF it doesn't catch ALL requests.
+// Let's inspect rentriRouter. It uses specific paths. 
+// However, to be safe, let's keep it mounted at root BUT ensure static files take precedence OR are handled explicitly.
+
+// Better approach: Static files first, then API fallback, then 404.
+// OR: API first, then Static fallback.
+
+// Current issue: `app.use('/', rentriRouter)` might be catching everything if configured loosely.
+// Let's look at `rentri/router.ts`. It has specific routes: /vidimate, /create, /firma-fir.
+// So `app.use('/', rentriRouter)` is probably okay for specific paths.
+
+// The REAL issue might be the order.
+// Let's put static serving BEFORE any catch-all routes.
+
+const distPath = path.join(process.cwd(), 'dist')
+
+// 2. SERVE STATIC ASSETS (JS, CSS, Images)
+if (fs.existsSync(distPath)){
+  app.use(express.static(distPath))
+}
+
+// 3. MOUNT SPECIFIC APIs
+app.use('/', rentriRouter); // Mounts /vidimate, /create, /firma-fir
+
+// ... other API endpoints ...
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'RENTRI Web' }))
+// ...
+
+// 4. SPA CATCH-ALL (MUST BE LAST)
+// This ensures that any request NOT matched by API or Static files gets served index.html
+if (fs.existsSync(distPath)){
+  app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
+}
 app.use('/out', express.static(path.join(process.cwd(), 'out')))
 app.get('/out/log/tail/:lines?', (_req, res) => {
   try {
@@ -300,10 +334,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 })
-// Serve frontend build when available
-const distPath = path.join(process.cwd(), 'dist')
-if (fs.existsSync(distPath)){
-  app.use(express.static(distPath))
-  app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')))
-}
 
