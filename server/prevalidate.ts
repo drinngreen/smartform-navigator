@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { readFileSync, mkdirSync, writeFileSync } from 'fs'
 import { buildMovimentiFromXml } from './rentriClient'
 

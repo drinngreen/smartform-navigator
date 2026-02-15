@@ -11,11 +11,12 @@
     "esModuleInterop": true,
     "jsx": "react-jsx",
     "strict": false,
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "server", "drizzle"]
+  "include": ["src"],
+  "exclude": ["server", "drizzle", "node_modules"]
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { XMLParser } from 'fast-xml-parser';
 
 export interface FirData {

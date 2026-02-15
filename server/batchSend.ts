@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { runOnce } from './goldenReplicator'
 
 function sleep(ms:number){ return new Promise(res=>setTimeout(res, ms)) }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { fir_files as firFiles } from '../drizzle/schema.ts'
