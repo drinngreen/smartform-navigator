@@ -1,15 +1,15 @@
 import { z } from 'zod'
-import { procedure, router } from './trpc'
-import { db } from './db'
-import { fir_files as firFiles, transactions } from '../drizzle/schema'
+import { procedure, router } from './trpc.ts'
+import { db } from './db.ts'
+import { fir_files as firFiles, transactions } from '../drizzle/schema.ts'
 import { eq, desc, sql } from 'drizzle-orm'
-import { firQueue } from './queue'
-import { submitFir } from './rentriClient'
-import { poller } from './poller'
+import { firQueue } from './queue.ts'
+import { submitFir } from './rentriClient.ts'
+import { poller } from './poller.ts'
 import axios from 'axios'
-import { startStream, stopStream, getStatus } from './streamer'
+import { startStream, stopStream, getStatus } from './streamer.ts'
 import fs from 'fs'
-import { buildMovimentiFromXml } from './rentriClient'
+import { buildMovimentiFromXml } from './rentriClient.ts'
 
 export const appRouter = router({
   fir: router({
