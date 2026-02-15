@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import axios from 'axios'
-import { buildMovimentiFromXml } from './rentriClient'
+import { buildMovimentiFromXml } from './rentriClient.ts'
 
 type Item = { registryId:string, filename:string, issuer:string, url:string, payload:string, transazioneId?:string, accepted?:number, duplicates?:number }
 type Job = { id:string, items:Item[], startedAt:number }
