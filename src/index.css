@@ -2,12 +2,153 @@
 @tailwind components;
 @tailwind utilities;
 
-:root{color-scheme:dark}
+/* ZOLI DRAGON - COMMAND CENTER
+   Futuristic HUD Interface Design System */
 
-.card{
-  @apply bg-slate-900/50 border border-slate-800 rounded-xl shadow-lg;
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 47 38% 58%;
+    --card: 222 47% 8%;
+    --card-foreground: 47 38% 58%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 47 38% 58%;
+    --primary: 47 38% 58%;
+    --primary-foreground: 222 47% 6%;
+    --neon-cyan: 187 92% 43%;
+    --neon-green: 160 84% 40%;
+    --neon-magenta: 330 86% 60%;
+    --neon-purple: 270 76% 60%;
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 47 45% 65%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 220 20% 50%;
+    --accent: 187 92% 43%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 84% 40%;
+    --success-foreground: 0 0% 100%;
+    --border: 222 30% 20%;
+    --input: 222 47% 12%;
+    --ring: 47 38% 58%;
+    --radius: 0.75rem;
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 220 30% 60%;
+    --sidebar-primary: 47 38% 58%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 47% 10%;
+    --sidebar-accent-foreground: 47 38% 58%;
+    --sidebar-border: 222 30% 15%;
+    --sidebar-ring: 47 38% 58%;
+    --glow-gold: 0 0 20px hsl(47 38% 58% / 0.5);
+    --glow-gold-strong: 0 0 40px hsl(47 38% 58% / 0.6);
+    --glow-gold-subtle: 0 0 10px hsl(47 38% 58% / 0.3);
+    --glow-cyan: 0 0 20px hsl(187 92% 43% / 0.5);
+    --glow-green: 0 0 20px hsl(160 84% 40% / 0.5);
+    --glow-magenta: 0 0 20px hsl(330 86% 60% / 0.5);
+    --glass-bg: rgba(10, 14, 26, 0.6);
+    --glass-border: rgba(192, 173, 103, 0.2);
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 47 38% 58%;
+    --card: 222 47% 8%;
+    --card-foreground: 47 38% 58%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 47 38% 58%;
+    --primary: 47 38% 58%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 222 47% 12%;
+    --secondary-foreground: 47 45% 65%;
+    --muted: 222 30% 18%;
+    --muted-foreground: 220 20% 50%;
+    --accent: 187 92% 43%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 30% 20%;
+    --input: 222 47% 12%;
+    --ring: 47 38% 58%;
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 220 30% 60%;
+    --sidebar-primary: 47 38% 58%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 47% 10%;
+    --sidebar-accent-foreground: 47 38% 58%;
+    --sidebar-border: 222 30% 15%;
+    --sidebar-ring: 47 38% 58%;
+  }
 }
 
-.zoli-title{
-  @apply bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent;
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    background:
+      linear-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.08) 1px, transparent 1px),
+      radial-gradient(ellipse at 20% 20%, hsl(var(--neon-cyan) / 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, hsl(var(--neon-magenta) / 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(var(--primary) / 0.02) 0%, transparent 70%),
+      hsl(var(--background));
+    background-size: 30px 30px, 30px 30px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    background-attachment: fixed;
+  }
+  h1, h2, h3, h4, h5, h6 { @apply font-display font-bold tracking-wider; }
+}
+
+@layer utilities {
+  .font-mono-display { font-family: 'JetBrains Mono', 'Orbitron', monospace; }
+  .glass-panel { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); }
+  .glass-card { background: linear-gradient(135deg, hsl(222 47% 10% / 0.8) 0%, hsl(222 47% 6% / 0.9) 100%); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid hsl(var(--primary) / 0.15); }
+  .glow-gold { box-shadow: var(--glow-gold); }
+  .glow-gold-strong { box-shadow: var(--glow-gold-strong); }
+  .glow-gold-subtle { box-shadow: var(--glow-gold-subtle); }
+  .glow-cyan { box-shadow: var(--glow-cyan); }
+  .glow-green { box-shadow: var(--glow-green); }
+  .glow-magenta { box-shadow: var(--glow-magenta); }
+  .text-glow { text-shadow: 0 0 10px hsl(45 93% 58% / 0.6), 0 0 30px hsl(45 93% 58% / 0.3); }
+  .text-glow-cyan { text-shadow: 0 0 10px hsl(187 92% 43% / 0.6), 0 0 30px hsl(187 92% 43% / 0.3); }
+  .text-glow-green { text-shadow: 0 0 10px hsl(160 84% 40% / 0.6), 0 0 30px hsl(160 84% 40% / 0.3); }
+  .text-glow-magenta { text-shadow: 0 0 10px hsl(330 86% 60% / 0.6), 0 0 30px hsl(330 86% 60% / 0.3); }
+  .border-glow { box-shadow: inset 0 0 0 1px hsl(45 93% 58% / 0.3), 0 0 15px hsl(45 93% 58% / 0.2), 0 0 30px hsl(45 93% 58% / 0.1); }
+  .border-glow-cyan { box-shadow: inset 0 0 0 1px hsl(187 92% 43% / 0.3), 0 0 15px hsl(187 92% 43% / 0.2); }
+  .gradient-gold { background: linear-gradient(135deg, hsl(45 93% 45%) 0%, hsl(45 100% 60%) 100%); }
+  .gradient-neon { background: linear-gradient(135deg, hsl(187 92% 43%) 0%, hsl(160 84% 40%) 100%); }
+  .gradient-holographic { background: linear-gradient(135deg, hsl(187 92% 43% / 0.1) 0%, hsl(330 86% 60% / 0.1) 50%, hsl(45 93% 58% / 0.1) 100%); }
+  .bg-grid { background-image: linear-gradient(hsl(var(--primary) / 0.03) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary) / 0.03) 1px, transparent 1px); background-size: 50px 50px; }
+  .bg-scanlines { background: repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary) / 0.02) 2px, hsl(var(--primary) / 0.02) 4px); }
+
+  .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+  @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 10px hsl(45 93% 58% / 0.3); } 50% { box-shadow: 0 0 25px hsl(45 93% 58% / 0.6), 0 0 40px hsl(45 93% 58% / 0.3); } }
+  .animate-pulse-cyan { animation: pulse-cyan 2s ease-in-out infinite; }
+  @keyframes pulse-cyan { 0%, 100% { box-shadow: 0 0 10px hsl(187 92% 43% / 0.3); } 50% { box-shadow: 0 0 25px hsl(187 92% 43% / 0.6), 0 0 40px hsl(187 92% 43% / 0.3); } }
+  .animate-pulse-green { animation: pulse-green 2.5s ease-in-out infinite; }
+  @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 10px hsl(160 84% 40% / 0.3); } 50% { box-shadow: 0 0 25px hsl(160 84% 40% / 0.6), 0 0 40px hsl(160 84% 40% / 0.3); } }
+  .animate-border-pulse { animation: border-pulse 3s ease-in-out infinite; }
+  @keyframes border-pulse { 0%, 100% { border-color: hsl(var(--primary) / 0.2); } 50% { border-color: hsl(var(--primary) / 0.5); } }
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+  .animate-gradient { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+  @keyframes gradient-shift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .animate-led-blink { animation: led-blink 1.5s ease-in-out infinite; }
+  @keyframes led-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .icon-led { filter: drop-shadow(0 0 3px currentColor); }
+  .icon-led-strong { filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 12px currentColor); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .holographic { position: relative; overflow: hidden; }
+  .holographic::before { content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent 30%, hsl(187 92% 43% / 0.05) 50%, transparent 70%); animation: holographic-sweep 3s ease-in-out infinite; }
+  @keyframes holographic-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .data-stream { background: linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.05) 50%, transparent 100%); animation: data-stream 2s linear infinite; }
+  @keyframes data-stream { 0% { background-position: 0 -100%; } 100% { background-position: 0 100%; } }
+  .nav-item-hover:hover .nav-icon { color: rgb(var(--item-color)) !important; filter: drop-shadow(0 0 6px rgb(var(--item-color))); }
+  .nav-item-hover:hover .nav-icon-img { filter: drop-shadow(0 0 12px rgb(var(--item-color))); transform: scale(2.5); z-index: 100; }
+  .nav-item-hover:hover .nav-label { color: rgb(var(--item-color)) !important; }
+  .nav-item-hover:hover { border-left-color: rgba(var(--item-color), 0.5) !important; }
+  @keyframes neon-green-pulse { 0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.25), 0 0 60px rgba(34, 197, 94, 0.1), inset 0 0 20px rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.7); } 50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), 0 0 60px rgba(34, 197, 94, 0.4), 0 0 90px rgba(34, 197, 94, 0.2), inset 0 0 30px rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.9); } }
+  .animate-pulse-subtle { animation: neon-green-pulse 2s ease-in-out infinite; }
 }
