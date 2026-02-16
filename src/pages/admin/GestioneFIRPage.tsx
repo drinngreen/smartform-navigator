@@ -5,10 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { richiediNuoviNumeri, inviaFirmaRentri, getRentriPdfUrl, checkRentriHealth } from "@/services/rentriApi";
-import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle, ChevronLeft, ChevronRight, Search, Filter } from "lucide-react";
+import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle, ChevronLeft, ChevronRight, Search, Filter, UserPlus, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
 type PoolFilter = "all" | "available" | "reserved" | "consumed";
+type ProfileInfo = { user_id: string; nome: string; cognome: string };
 
 export default function GestioneFIRPage() {
   const { user } = useAuth();
@@ -19,6 +20,10 @@ export default function GestioneFIRPage() {
   const [poolFilter, setPoolFilter] = useState<PoolFilter>("all");
   const [poolPage, setPoolPage] = useState(0);
   const [poolSearch, setPoolSearch] = useState("");
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignUserId, setAssignUserId] = useState<string | null>(null);
+  const [assignQty, setAssignQty] = useState(1);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
     message: string;
@@ -69,6 +74,72 @@ export default function GestioneFIRPage() {
     },
     refetchInterval: 15000,
   });
+
+  // ── Profiles for user name mapping ────────────────────
+  const { data: profiles } = useQuery({
+    queryKey: ["all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome")
+        .order("cognome");
+      if (error) throw error;
+      return data as ProfileInfo[];
+    },
+    staleTime: 60000,
+  });
+
+  const profileMap = (profiles ?? []).reduce((acc, p) => {
+    acc[p.user_id] = `${p.cognome} ${p.nome}`;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const filteredProfiles = (profiles ?? []).filter((p) => {
+    if (!assignSearch.trim()) return false;
+    const q = assignSearch.toLowerCase();
+    return p.cognome.toLowerCase().includes(q) || p.nome.toLowerCase().includes(q);
+  }).slice(0, 10);
+
+  // ── Assign FIR numbers to user ────────────────────────
+  const handleAssign = async () => {
+    if (!assignUserId || assignQty < 1) return;
+    setIsAssigning(true);
+    try {
+      // Get available unassigned FIR numbers (user_id = admin who imported them)
+      const { data: available, error: fetchErr } = await supabase
+        .from("fir_number_pool")
+        .select("id")
+        .eq("societa_id", "global")
+        .eq("status", "available")
+        .limit(assignQty);
+
+      if (fetchErr) throw fetchErr;
+      if (!available || available.length === 0) {
+        toast.error("Nessun numero disponibile da assegnare");
+        setIsAssigning(false);
+        return;
+      }
+
+      const ids = available.map((r) => r.id);
+      const { error: updateErr } = await supabase
+        .from("fir_number_pool")
+        .update({ user_id: assignUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() })
+        .in("id", ids);
+
+      if (updateErr) throw updateErr;
+
+      queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["fir-pool-list"] });
+      toast.success(`✅ ${ids.length} numeri assegnati a ${profileMap[assignUserId] || "utente"}`);
+      setAssignUserId(null);
+      setAssignSearch("");
+      setAssignQty(1);
+    } catch (err: any) {
+      toast.error(`Errore assegnazione: ${err.message}`);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   // ── Bulk import mutation ──────────────────────────────
   const importMutation = useMutation({
@@ -350,6 +421,66 @@ export default function GestioneFIRPage() {
           )}
         </div>
 
+        {/* ── Assign FIR to User ── */}
+        <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <UserPlus className="h-5 w-5" />
+            <h3 className="font-display text-lg tracking-wider uppercase">Assegna Numeri a Utente</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Cerca un utente per cognome/nome e assegna una quantità di numeri FIR disponibili dal serbatoio.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={assignSearch}
+                onChange={(e) => { setAssignSearch(e.target.value); setAssignUserId(null); }}
+                placeholder="Cerca utente per cognome o nome..."
+                className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              {filteredProfiles.length > 0 && !assignUserId && (
+                <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-card border border-border/30 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {filteredProfiles.map((p) => (
+                    <button
+                      key={p.user_id}
+                      onClick={() => { setAssignUserId(p.user_id); setAssignSearch(`${p.cognome} ${p.nome}`); }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 text-foreground transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    >
+                      <span className="font-medium">{p.cognome}</span> {p.nome}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <input
+              type="number"
+              min={1}
+              max={stats?.disponibili ?? 100}
+              value={assignQty}
+              onChange={(e) => setAssignQty(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-24 bg-background/80 border border-border/30 rounded-xl px-3 py-2 text-sm font-mono text-foreground text-center focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <button
+              onClick={handleAssign}
+              disabled={!assignUserId || isAssigning || assignQty < 1}
+              className="px-6 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+            >
+              {isAssigning ? (
+                <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
+              ASSEGNA
+            </button>
+          </div>
+          {assignUserId && (
+            <p className="text-xs font-mono text-muted-foreground">
+              Verranno assegnati <span className="text-primary font-bold">{assignQty}</span> numeri disponibili a <span className="text-primary font-bold">{profileMap[assignUserId]}</span>
+            </p>
+          )}
+        </div>
+
         {/* ── Pool Number List ── */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
           <div className="flex items-center gap-2 text-primary">
@@ -392,9 +523,9 @@ export default function GestioneFIRPage() {
                 <tr className="border-b border-border/30 text-muted-foreground font-mono text-xs uppercase">
                   <th className="text-left py-2 px-3">Numero FIR</th>
                   <th className="text-left py-2 px-3">Stato</th>
+                  <th className="text-left py-2 px-3">Assegnato a</th>
                   <th className="text-left py-2 px-3 hidden md:table-cell">Creato il</th>
                   <th className="text-left py-2 px-3 hidden lg:table-cell">Assegnato il</th>
-                  <th className="text-left py-2 px-3 hidden lg:table-cell">Sospeso</th>
                 </tr>
               </thead>
               <tbody>
@@ -415,14 +546,14 @@ export default function GestioneFIRPage() {
                           {row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : "Usato"}
                         </span>
                       </td>
+                      <td className="py-2 px-3 text-foreground text-xs">
+                        {profileMap[row.user_id] || <span className="text-muted-foreground italic">—</span>}
+                      </td>
                       <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">
                         {new Date(row.created_at).toLocaleDateString("it-IT")}
                       </td>
                       <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
                         {row.assigned_at ? new Date(row.assigned_at).toLocaleDateString("it-IT") : "—"}
-                      </td>
-                      <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
-                        {row.suspended ? "⚠️ Sì" : "—"}
                       </td>
                     </tr>
                   ))
