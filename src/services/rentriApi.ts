@@ -164,7 +164,7 @@ export async function richiediNuoviNumeri(
   const res = await fetch(`${RENTRI_BASE_URL}/vidimate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ societaId }),
+    body: JSON.stringify({ societaId, company: societaId }),
   });
 
   const data = await res.json();
