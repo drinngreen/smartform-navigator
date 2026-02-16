@@ -222,9 +222,13 @@ export default function GestioneFIRPage() {
     setIsRequesting(true);
     try {
       const result = await richiediNuoviNumeri("global");
-      if (result.numeri && result.numeri.length > 0) {
+      // Filter out any fake/placeholder numbers (FIR- prefix = not from real RENTRI)
+      const realNumbers = (result.numeri || []).filter(
+        (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
+      );
+      if (realNumbers.length > 0) {
         // Save to pool
-        const rows = result.numeri.map((n: string) => ({
+        const rows = realNumbers.map((n: string) => ({
           fir_number: n,
           user_id: user!.id,
           status: "available" as const,
@@ -236,9 +240,13 @@ export default function GestioneFIRPage() {
 
         queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
         queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
-        toast.success(`✅ ${result.numeri.length} nuovi numeri ricevuti da RENTRI`);
+        const skipped = (result.numeri || []).length - realNumbers.length;
+        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI${skipped > 0 ? ` (${skipped} fittizi scartati)` : ""}`);
       } else {
-        toast.info("Nessun nuovo numero disponibile da RENTRI");
+        const hadFake = (result.numeri || []).some((n: string) => n?.startsWith("FIR-"));
+        toast.info(hadFake 
+          ? "Il server ha restituito solo numeri fittizi (FIR-...) — controlla il backend Render" 
+          : "Nessun nuovo numero disponibile da RENTRI");
       }
     } catch (err: any) {
       toast.error(`Errore richiesta RENTRI: ${err.message}`);
