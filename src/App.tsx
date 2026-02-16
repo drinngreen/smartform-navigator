@@ -12,6 +12,7 @@ import BridgeStatus from "./pages/BridgeStatus"
 import MassiveUpload from "./pages/MassiveUpload"
 import NotFound from "./pages/NotFound"
 import AutoSend from "./pages/AutoSend"
+import Restore from "./pages/Restore"
 
 const queryClient = new QueryClient()
 
@@ -50,6 +51,7 @@ function AppContent() {
     return (
       <Switch>
         <Route path="/auth" component={Auth} />
+        <Route path="/restore" component={Restore} />
         <Route>
           <Redirect to="/auth" />
         </Route>
