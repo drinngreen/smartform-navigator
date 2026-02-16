@@ -167,7 +167,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
 function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) => void; onCancel: () => void }) {
   const [peso, setPeso] = useState("");
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Scale className="h-5 w-5" />
