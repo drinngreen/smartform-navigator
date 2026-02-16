@@ -1,7 +1,11 @@
 import { useState, useRef } from "react"
-import { supabase } from "@/integrations/supabase/client"
 
 const EXCLUDED = ["node_modules", ".git", "dist", ".next", ".cache", "build", ".DS_Store", "Thumbs.db"]
+
+async function getSupabase() {
+  const { supabase } = await import("@/integrations/supabase/client")
+  return supabase
+}
 
 function shouldExclude(path: string) {
   return EXCLUDED.some(ex => path.includes(`/${ex}/`) || path.startsWith(`${ex}/`) || path.endsWith(`/${ex}`) || path === ex)
@@ -38,12 +42,12 @@ export default function Restore() {
       const batch = files.slice(i, i + 3)
       const results = await Promise.allSettled(
         batch.map(async (file) => {
+          const sb = await getSupabase()
           const path = (file as any).webkitRelativePath || file.name
-          // Rimuovi il primo segmento (nome cartella root)
           const parts = path.split("/")
           const storagePath = parts.length > 1 ? parts.slice(1).join("/") : path
 
-          const { error } = await supabase.storage
+          const { error } = await sb.storage
             .from("code-backup")
             .upload(storagePath, file, { upsert: true })
 
