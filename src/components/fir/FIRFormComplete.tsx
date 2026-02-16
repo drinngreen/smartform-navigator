@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { generateFIRPdf } from "@/lib/firPdfExport";
+import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
 
 // ── Neon color map per section ──────────────────────────────
@@ -206,6 +207,8 @@ export function FIRFormComplete() {
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [showControlloStrada, setShowControlloStrada] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const u = store.updateField;
@@ -317,8 +320,9 @@ export function FIRFormComplete() {
         });
       }
 
-      // Save QR code data to pool if returned
+      // Save QR code data to pool and to local state if returned
       if (result.qr_code && d.selectedFirNumber) {
+        setQrCodeData(result.qr_code);
         await supabase
           .from("fir_number_pool")
           .update({ qr_code_data: result.qr_code } as any)
@@ -347,10 +351,35 @@ export function FIRFormComplete() {
   // ── CONTROLLO POLIZIA (QR CODE) → Generate PDF preview ──
   const handleControlloPolizia = async () => {
     try {
-      const blob = await generateFIRPdf(store.data);
+      // Try to load QR code from DB if not already in memory
+      let qr = qrCodeData;
+      if (!qr && d.selectedFirNumber) {
+        const { data: poolRow } = await supabase
+          .from("fir_number_pool")
+          .select("qr_code_data")
+          .eq("fir_number", d.selectedFirNumber)
+          .maybeSingle();
+        if (poolRow?.qr_code_data) {
+          qr = poolRow.qr_code_data;
+          setQrCodeData(qr);
+        }
+      }
+      setShowControlloStrada(true);
+    } catch (error: any) {
+      toast.error("Errore caricamento dati: " + error.message);
+    }
+  };
+
+  const handleDownloadSummaryPdf = async () => {
+    try {
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
       const url = URL.createObjectURL(blob);
-      setPdfBlobUrl(url);
-      toast.success("PDF generato - anteprima disponibile");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Riepilogo_FIR_${d.selectedFirNumber || "bozza"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF riepilogo scaricato!");
     } catch (error: any) {
       toast.error("Errore generazione PDF: " + error.message);
     }
@@ -500,25 +529,33 @@ export function FIRFormComplete() {
                 <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
                 {d.pesoRicevuto && <p className="text-xs text-white/60 mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
               </div>
-              {/* Download PDF & xFIR from Render */}
+              {/* Download PDF, xFIR & Summary from Render */}
               {d.selectedFirNumber && (
-                <div className="flex gap-2">
-                  <a
-                    href={getRentriPdfUrl(d.selectedFirNumber)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <a
+                      href={getRentriPdfUrl(d.selectedFirNumber)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4" /> PDF RENTRI
+                    </a>
+                    <a
+                      href={getRentriXfirUrl(d.selectedFirNumber)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4" /> xFIR XML
+                    </a>
+                  </div>
+                  <button
+                    onClick={handleDownloadSummaryPdf}
+                    className="w-full py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-display text-sm flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors"
                   >
-                    <Download className="h-4 w-4" /> PDF RENTRI
-                  </a>
-                  <a
-                    href={getRentriXfirUrl(d.selectedFirNumber)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
-                  >
-                    <Download className="h-4 w-4" /> xFIR XML
-                  </a>
+                    <FileText className="h-4 w-4" /> Scarica Riepilogo Viaggio
+                  </button>
                 </div>
               )}
               <button
@@ -530,12 +567,46 @@ export function FIRFormComplete() {
             </>
           )}
 
-          {/* PDF Preview (Controllo Polizia) */}
-          {pdfBlobUrl && store.workflowStatus === 'inviato' && (
-            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-3">
-              <p className="text-xs text-blue-400 font-mono mb-2 text-center">📄 ANTEPRIMA PDF - CONTROLLO POLIZIA</p>
-              <iframe src={pdfBlobUrl} className="w-full h-[400px] rounded-lg border border-border/30" />
-              <a href={pdfBlobUrl} target="_blank" rel="noopener noreferrer" className="block text-center mt-2 text-xs text-blue-400 underline">Apri in nuova scheda</a>
+          {/* Controllo Strada – QR Code + Riepilogo */}
+          {showControlloStrada && store.workflowStatus === 'inviato' && (
+            <div className="rounded-2xl border border-blue-500/30 overflow-hidden">
+              {/* White background panel for QR readability */}
+              <div className="bg-white p-6 flex flex-col items-center gap-4">
+                {qrCodeData ? (
+                  <img src={qrCodeData} alt="QR Code RENTRI" className="w-64 h-64 object-contain" />
+                ) : (
+                  <div className="w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl">
+                    <p className="text-gray-400 text-sm text-center font-mono">QR Code non disponibile</p>
+                  </div>
+                )}
+                <p className="text-black font-mono text-lg font-bold tracking-wider">{d.selectedFirNumber || "N/A"}</p>
+              </div>
+
+              {/* Summary data on dark bg */}
+              <div className="bg-card/80 p-4 space-y-2 text-xs font-mono">
+                <div className="flex justify-between"><span className="text-muted-foreground">Targa:</span><span className="text-white font-bold">{d.targaAutomezzo || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">EER:</span><span className="text-white font-bold">{d.codiceEER || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Quantità:</span><span className="text-white font-bold">{d.quantita} {d.unitaMisura}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Produttore:</span><span className="text-white font-bold truncate ml-2">{d.produttoreDenominazione || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Destinatario:</span><span className="text-white font-bold truncate ml-2">{d.destinatarioDenominazione || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Data Partenza:</span><span className="text-white font-bold">{d.oraDataInizioTrasporto || "—"}</span></div>
+              </div>
+
+              {/* Actions */}
+              <div className="bg-card/60 p-3 flex gap-2">
+                <button
+                  onClick={handleDownloadSummaryPdf}
+                  className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                >
+                  <Download className="h-4 w-4" /> Scarica Riepilogo Viaggio
+                </button>
+                <button
+                  onClick={() => setShowControlloStrada(false)}
+                  className="py-3 px-4 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground font-display text-sm hover:bg-muted/30 transition-colors"
+                >
+                  Chiudi
+                </button>
+              </div>
             </div>
           )}
         </div>
