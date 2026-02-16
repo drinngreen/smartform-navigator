@@ -22,6 +22,7 @@ import AIAssistantPage from "./pages/AIAssistantPage";
 import ComunicazioniPage from "./pages/ComunicazioniPage";
 import ZoliMessagesPage from "./pages/ZoliMessagesPage";
 import ProfiloPage from "./pages/ProfiloPage";
+import GuidaPage from "./pages/GuidaPage";
 import ProfileSetupPage from "./pages/ProfileSetupPage";
 
 // Admin Pages
@@ -95,6 +96,7 @@ const App = () => (
               <Route path="/app/ai" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
               <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
               <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
+              <Route path="/app/guida" element={<ProtectedRoute><GuidaPage /></ProtectedRoute>} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
