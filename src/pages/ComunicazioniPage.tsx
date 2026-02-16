@@ -1,6 +1,6 @@
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { useMessages } from "@/hooks/useMessages";
+import { useMessages, useAdminId } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { Send, MessageCircle, Camera, FileText } from "lucide-react";
@@ -10,7 +10,8 @@ import logoDragon from "@/assets/logo-dragon.png";
 
 export default function ComunicazioniPage() {
   const { user } = useAuth();
-  const { messages, loading: isLoading, sendMessage } = useMessages();
+  const adminId = useAdminId();
+  const { messages, loading: isLoading, sendMessage } = useMessages(adminId || undefined);
   const [newMessage, setNewMessage] = useState("");
 
   const handleSend = async () => {
