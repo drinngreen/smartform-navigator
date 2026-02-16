@@ -4,6 +4,7 @@ import { Eye, EyeOff, User, Lock, CreditCard, LockKeyhole } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { z } from "zod";
+import logoDragon from "@/assets/logo-dragon.png";
 
 const loginSchema = z.object({
   codiceFiscale: z.string().length(16, "Codice fiscale deve avere 16 caratteri"),
@@ -116,7 +117,7 @@ export default function AuthPage() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl">🐉</div>
+          <img src={logoDragon} alt="Zoli Dragon" className="w-20 h-20 mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 12px hsl(var(--primary) / 0.5))' }} />
           <h1 className="text-3xl font-display font-bold text-foreground tracking-wider">ZOLI DRAGON</h1>
           <p className="text-muted-foreground text-sm mt-1">Command Core</p>
         </div>
