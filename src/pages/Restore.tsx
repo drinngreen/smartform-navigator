@@ -1,14 +1,28 @@
 import { useState, useRef } from "react"
 
-const EXCLUDED = ["node_modules", ".git", "dist", ".next", ".cache", "build", ".DS_Store", "Thumbs.db"]
+const SUPABASE_URL = "https://zungtspcixpxjpjlcwzy.supabase.co"
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bmd0c3BjaXhweGpwamxjd3p5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Nzk0NDQsImV4cCI6MjA4NDM1NTQ0NH0.eNLT478rWBxK-G9sOhiHaWC3j-u_KzPWu07wEC4BQxA"
 
-async function getSupabase() {
-  const { supabase } = await import("@/integrations/supabase/client")
-  return supabase
-}
+const EXCLUDED = ["node_modules", ".git", "dist", ".next", ".cache", "build", ".DS_Store", "Thumbs.db"]
 
 function shouldExclude(path: string) {
   return EXCLUDED.some(ex => path.includes(`/${ex}/`) || path.startsWith(`${ex}/`) || path.endsWith(`/${ex}`) || path === ex)
+}
+
+async function uploadFile(storagePath: string, file: File) {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/code-backup/${encodeURIComponent(storagePath)}`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true",
+    },
+    body: file,
+  })
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`${storagePath}: ${err}`)
+  }
 }
 
 export default function Restore() {
@@ -37,21 +51,14 @@ export default function Restore() {
     let done = 0
     let errors = 0
 
-    // Upload in batch di 3 per evitare timeout
     for (let i = 0; i < files.length; i += 3) {
       const batch = files.slice(i, i + 3)
       const results = await Promise.allSettled(
         batch.map(async (file) => {
-          const sb = await getSupabase()
           const path = (file as any).webkitRelativePath || file.name
           const parts = path.split("/")
           const storagePath = parts.length > 1 ? parts.slice(1).join("/") : path
-
-          const { error } = await sb.storage
-            .from("code-backup")
-            .upload(storagePath, file, { upsert: true })
-
-          if (error) throw new Error(`${storagePath}: ${error.message}`)
+          await uploadFile(storagePath, file)
           return storagePath
         })
       )
@@ -86,7 +93,7 @@ export default function Restore() {
           <input
             ref={inputRef}
             type="file"
-            // @ts-ignore - webkitdirectory is non-standard
+            // @ts-ignore
             webkitdirectory=""
             multiple
             onChange={handleSelect}
