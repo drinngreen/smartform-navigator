@@ -252,7 +252,7 @@ export function FIRFormComplete() {
     }
   };
 
-  // ── Save Draft ─────────────────────────────────────
+  // ── Save Draft (parks the FIR — user can leave) ─────────────────────────────────────
   const handleSaveDraft = async () => {
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
@@ -261,18 +261,46 @@ export function FIRFormComplete() {
       } else {
         await createFIR.mutateAsync(dbFields);
       }
-      toast.success("Bozza salvata!");
+      toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
+      // Reset local state so user is free to leave
+      store.resetForm();
+      setIsStarted(false);
+      setPdfBlobUrl(null);
     } catch {
       toast.error("Errore nel salvataggio");
     }
   };
 
-  // ── New FIR (reset and start fresh) ─────────────────────────────────────
-  const handleNewFIR = () => {
+  // ── New FIR (reset, assign new number, and start fresh) ─────────────────────────────────────
+  const handleNewFIR = async () => {
+    // First save current if exists
+    if (store.editingFirId && store.workflowStatus !== 'chiuso') {
+      try {
+        const dbFields = mapStoreToDatabaseFields(store.data);
+        await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+      } catch { /* silent */ }
+    }
+    // Reset form
     store.resetForm();
     setIsStarted(false);
     setPdfBlobUrl(null);
-    toast.info("Pronto per un nuovo FIR");
+    // Auto-assign a new number and start
+    if (!availableNumbers || availableNumbers.length === 0) {
+      toast.error("Nessun numero FIR disponibile nel tuo pool");
+      return;
+    }
+    try {
+      const firNumber = availableNumbers[0];
+      const freshData = mapStoreToDatabaseFields(store.data);
+      const result = await createFIR.mutateAsync({ ...freshData, numero_fir: firNumber.fir_number, status: "bozza" });
+      store.updateField("selectedFirNumber", firNumber.fir_number);
+      store.updateField("numeroRegistro", firNumber.fir_number);
+      useFIRStore.setState({ editingFirId: result.id, workflowStatus: 'bozza' });
+      setIsStarted(true);
+      toast.success(`Nuovo FIR ${firNumber.fir_number} inizializzato!`);
+    } catch {
+      toast.error("Errore nell'inizializzazione del nuovo FIR");
+    }
   };
 
   // ── Validate departure fields ─────────────────────────
@@ -637,11 +665,11 @@ export function FIRFormComplete() {
       {/* ── Action Buttons (Nuovo + Salva) — only when active and NOT closed ── */}
       {(isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="flex gap-2">
-          <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
+          <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
             <Plus className="h-4 w-4" /> Nuovo FIR
           </button>
           <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
-            <Save className="h-4 w-4" /> Salva Bozza
+            <Save className="h-4 w-4" /> Metti in Bozza
           </button>
         </div>
       )}
