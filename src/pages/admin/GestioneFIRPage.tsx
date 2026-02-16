@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiediNuoviNumeri, inviaFirmaRentri, getRentriPdfUrl } from "@/services/rentriApi";
+import { richiediNuoviNumeri, inviaFirmaRentri, getRentriPdfUrl, checkRentriHealth } from "@/services/rentriApi";
 import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle } from "lucide-react";
 
 export default function GestioneFIRPage() {
@@ -207,6 +207,23 @@ export default function GestioneFIRPage() {
               setTestResult(null);
               const startTime = Date.now();
               try {
+                // Step 1: Health check
+                console.log("[RENTRI TEST] Running health check...");
+                const health = await checkRentriHealth();
+                console.log("[RENTRI TEST] Health:", JSON.stringify(health));
+                if (!health.ok) {
+                  setTestResult({
+                    success: false,
+                    message: `❌ Server non raggiungibile`,
+                    details: `URL: ${health.url}\nStatus: ${health.status}\nBody: ${health.body}`,
+                  });
+                  toast.error("Server RENTRI non raggiungibile");
+                  setIsTesting(false);
+                  return;
+                }
+
+                // Step 2: Actual test
+                console.log("[RENTRI TEST] Calling /firma-fir...");
                 const result = await inviaFirmaRentri({
                   societaId: "global_reco",
                   payloadFir: {

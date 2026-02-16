@@ -4,7 +4,21 @@
  * and pool replenishment (vidimate).
  */
 
-const RENTRI_BASE_URL = "https://dragonrifiutisender.onrender.com";
+const RENTRI_BASE_URL = "https://smartform-navigator.onrender.com";
+
+/**
+ * Health check – GET /health or /status to verify the server is reachable.
+ */
+export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
+  const url = `${RENTRI_BASE_URL}/health`;
+  try {
+    const res = await fetch(url, { method: "GET" });
+    const text = await res.text();
+    return { ok: res.ok, url, status: res.status, body: text.slice(0, 500) };
+  } catch (err: any) {
+    return { ok: false, url, status: 0, body: err.message || String(err) };
+  }
+}
 
 // ─── Tenant → societaId mapping ─────────────────────────────
 const TENANT_MAP: Record<string, string> = {
