@@ -236,12 +236,16 @@ export default function GestioneFIRPage() {
                   },
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                // Map backend field names (firNumber, rentriId) to expected names
+                const numeroFir = result.numero_fir || (result as any).firNumber || "";
+                const rentriId = (result as any).rentriId || "";
+                const qrCode = result.qr_code || (result as any).qrCode || "";
                 setTestResult({
                   success: true,
-                  message: `✅ TEST SUPERATO: Il sistema comunica correttamente con RENTRI! (${elapsed}s)`,
+                  message: `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}`,
                   details: JSON.stringify(result, null, 2),
-                  qrCode: result.qr_code,
-                  numeroFir: result.numero_fir,
+                  qrCode: qrCode,
+                  numeroFir: numeroFir,
                 });
                 toast.success("Test RENTRI superato!");
               } catch (err: any) {
