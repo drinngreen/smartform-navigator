@@ -142,12 +142,23 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
                 setSearch(d.nome);
                 setIsOpen(false);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-neon-green/10 transition-colors border-b border-border/10 last:border-0"
+              className="w-full text-left px-3 py-2 hover:bg-neon-green/10 transition-colors border-b border-border/10"
             >
               <span className="text-xs text-foreground font-medium block">{d.nome}</span>
               {d.indirizzo && <span className="text-[10px] text-muted-foreground block">{d.indirizzo}</span>}
             </button>
           ))}
+          {/* Opzione per inserimento manuale */}
+          <button
+            onClick={() => {
+              onSelect(search || "", "", "");
+              setIsOpen(false);
+            }}
+            className="w-full text-left px-3 py-2.5 hover:bg-primary/10 transition-colors border-t border-primary/20 bg-primary/5"
+          >
+            <span className="text-xs text-primary font-medium block">✏️ Inserisci manualmente</span>
+            <span className="text-[10px] text-muted-foreground block">Compila i campi sotto se non trovi il soggetto</span>
+          </button>
         </div>
       )}
     </div>
