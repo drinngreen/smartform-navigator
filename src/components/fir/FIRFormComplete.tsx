@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Lock, Search } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Lock, Search, Download } from "lucide-react";
 import { useFIRForms, mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useFIRStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { inviaFirmaRentri, resolveSocietaId } from "@/services/rentriApi";
+import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
 
@@ -297,7 +298,7 @@ export function FIRFormComplete() {
         payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber },
       });
 
-      // Persist numero_fir and qr_code
+      // Persist numero_fir, qr_code and status
       if (result.numero_fir) {
         store.updateField("selectedFirNumber", result.numero_fir);
         await silentSaveFIR.mutateAsync({
@@ -306,6 +307,14 @@ export function FIRFormComplete() {
           status: "inviato",
           submitted_at: new Date().toISOString(),
         });
+      }
+
+      // Save QR code data to pool if returned
+      if (result.qr_code && d.selectedFirNumber) {
+        await supabase
+          .from("fir_number_pool")
+          .update({ qr_code_data: result.qr_code } as any)
+          .eq("fir_number", d.selectedFirNumber);
       }
 
       // Set workflow to green
@@ -360,6 +369,20 @@ export function FIRFormComplete() {
         ...dbFields,
         form_data: { ...dbFields.form_data, peso_ricevuto: peso },
       });
+
+      // Send closure to Render backend
+      try {
+        const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+        await chiudiFirRentri({
+          societaId,
+          numero_fir: d.selectedFirNumber,
+          peso_accettato: parseFloat(peso),
+          data_arrivo: new Date().toISOString(),
+        });
+      } catch (renderErr: any) {
+        console.warn("[RENTRI] Chiusura server error (proceeding locally):", renderErr.message);
+      }
+
       await closeFIR.mutateAsync(store.editingFirId);
       useFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
@@ -462,13 +485,34 @@ export function FIRFormComplete() {
             </>
           )}
 
-          {/* CHIUSO state → FIR completato + NUOVO FIR button */}
+          {/* CHIUSO state → Download + NUOVO FIR */}
           {store.workflowStatus === 'chiuso' && (
             <>
               <div className="text-center py-4 rounded-2xl bg-destructive/10 border border-destructive/30">
                 <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
                 {d.pesoRicevuto && <p className="text-xs text-muted-foreground mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
               </div>
+              {/* Download PDF & xFIR from Render */}
+              {d.selectedFirNumber && (
+                <div className="flex gap-2">
+                  <a
+                    href={getRentriPdfUrl(d.selectedFirNumber)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+                  >
+                    <Download className="h-4 w-4" /> PDF RENTRI
+                  </a>
+                  <a
+                    href={getRentriXfirUrl(d.selectedFirNumber)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
+                  >
+                    <Download className="h-4 w-4" /> xFIR XML
+                  </a>
+                </div>
+              )}
               <button
                 onClick={handleNewFIR}
                 className="w-full py-4 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-base tracking-widest hover:bg-neon-green/10 transition-all flex items-center justify-center gap-3"

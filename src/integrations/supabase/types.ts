@@ -600,7 +600,9 @@ export type Database = {
           created_at: string
           fir_number: string
           id: string
+          qr_code_data: string | null
           reserved_by_fir_id: string | null
+          societa_id: string
           status: string
           suspended: boolean
           user_id: string
@@ -612,7 +614,9 @@ export type Database = {
           created_at?: string
           fir_number: string
           id?: string
+          qr_code_data?: string | null
           reserved_by_fir_id?: string | null
+          societa_id?: string
           status?: string
           suspended?: boolean
           user_id: string
@@ -624,7 +628,9 @@ export type Database = {
           created_at?: string
           fir_number?: string
           id?: string
+          qr_code_data?: string | null
           reserved_by_fir_id?: string | null
+          societa_id?: string
           status?: string
           suspended?: boolean
           user_id?: string
