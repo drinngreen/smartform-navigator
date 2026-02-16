@@ -224,14 +224,26 @@ export default function GestioneFIRPage() {
 
                 // Step 2: Actual test
                 console.log("[RENTRI TEST] Calling /firma-fir...");
+                // Fetch a real FIR number from the pool for the test
+                const { data: poolNum, error: poolErr } = await supabase
+                  .from("fir_number_pool")
+                  .select("fir_number")
+                  .eq("societa_id", "global")
+                  .eq("status", "available")
+                  .limit(1)
+                  .single();
+
+                const testFirNumber = poolNum?.fir_number || "SKKZR00000001";
+                if (poolErr) console.warn("[RENTRI TEST] Nessun numero disponibile nel pool, uso fallback:", poolErr.message);
+
                 const result = await inviaFirmaRentri({
                   societaId: "global",
                   payloadFir: {
-                    numero_fir: "SKKZR00000001",
+                    numero_fir: testFirNumber,
                     produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                     destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
                     trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
-                    rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone (TEST)", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
+                    rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
                   },
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
