@@ -4,7 +4,7 @@
  * and pool replenishment (vidimate).
  */
 
-const RENTRI_BASE_URL = "https://smartform-navigator.onrender.com";
+const RENTRI_BASE_URL = "https://dragonrifiutisender.onrender.com/api/rentri";
 
 /**
  * Health check – GET /health or /status to verify the server is reachable.
