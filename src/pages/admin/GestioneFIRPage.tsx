@@ -234,7 +234,7 @@ export default function GestioneFIRPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard icon={<Database className="h-5 w-5" />} label="Totale" value={stats?.total ?? 0} color="text-primary" loading={statsLoading} />
           <StatCard icon={<CheckCircle className="h-5 w-5" />} label="Disponibili" value={stats?.disponibili ?? 0} color="text-neon-green" loading={statsLoading} />
-          <StatCard icon={<Clock className="h-5 w-5" />} label="Assegnati" value={stats?.assegnati ?? 0} color="text-neon-cyan" loading={statsLoading} />
+          <StatCard icon={<Clock className="h-5 w-5" />} label="In Uso" value={stats?.assegnati ?? 0} color="text-neon-cyan" loading={statsLoading} />
           <StatCard icon={<Package className="h-5 w-5" />} label="Usati" value={stats?.usati ?? 0} color="text-orange-400" loading={statsLoading} />
         </div>
 
