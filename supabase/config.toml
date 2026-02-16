@@ -1,1 +1,7 @@
 project_id = "zungtspcixpxjpjlcwzy"
+
+[functions.update-presence]
+verify_jwt = false
+
+[functions.ai-agent]
+verify_jwt = false
