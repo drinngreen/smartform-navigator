@@ -14,12 +14,28 @@ export function RoleBasedRedirect() {
 
   if (!user) return <Navigate to="/auth" replace />;
 
-  // Check if profile is complete
+  // Admin bypass — admin users skip profile setup
+  if (isAdmin) {
+    // MultyNiyol admin goes to /mn/admin
+    const email = user.email?.toLowerCase() ?? "";
+    if (email === "multyniyol@zoli.live") {
+      return <Navigate to="/mn/admin" replace />;
+    }
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Regular users must complete profile
   if (!profile?.nome || !profile?.cognome) {
     return <Navigate to="/profile/setup" replace />;
   }
 
-  if (isAdmin) return <Navigate to="/admin" replace />;
+  // MultyNiyol transporter users go to their specific app
+  if (profile?.mn_context === "multyproget") {
+    return <Navigate to="/mn/app/multyproget" replace />;
+  }
+  if (profile?.mn_context === "niyol") {
+    return <Navigate to="/mn/app/niyol" replace />;
+  }
 
   return <Navigate to="/app" replace />;
 }
