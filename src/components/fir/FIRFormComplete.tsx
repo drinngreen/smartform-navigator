@@ -203,7 +203,7 @@ export function FIRFormComplete() {
   const { user, profile } = useAuth();
   const { availableNumbers } = useFIRNumberPool();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
-  const [isStarted, setIsStarted] = useState(!!store.editingFirId);
+  const isStarted = !!store.editingFirId;
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
@@ -245,7 +245,6 @@ export function FIRFormComplete() {
       store.updateField("selectedFirNumber", firNumber.fir_number);
       store.updateField("numeroRegistro", firNumber.fir_number);
       useFIRStore.setState({ editingFirId: result.id, workflowStatus: 'bozza' });
-      setIsStarted(true);
       toast.success(`FIR ${firNumber.fir_number} inizializzato!`);
     } catch {
       toast.error("Errore nell'inizializzazione del FIR");
@@ -262,10 +261,9 @@ export function FIRFormComplete() {
         await createFIR.mutateAsync(dbFields);
       }
       toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
-      // Reset local state so user is free to leave
-      store.resetForm();
-      setIsStarted(false);
+      // Reset local state so user is free to leave - delay to ensure save completes
       setPdfBlobUrl(null);
+      setTimeout(() => { store.resetForm(); }, 300);
     } catch {
       toast.error("Errore nel salvataggio");
     }
@@ -282,7 +280,6 @@ export function FIRFormComplete() {
     }
     // Reset form
     store.resetForm();
-    setIsStarted(false);
     setPdfBlobUrl(null);
     // Auto-assign a new number and start
     if (!availableNumbers || availableNumbers.length === 0) {
@@ -296,7 +293,6 @@ export function FIRFormComplete() {
       store.updateField("selectedFirNumber", firNumber.fir_number);
       store.updateField("numeroRegistro", firNumber.fir_number);
       useFIRStore.setState({ editingFirId: result.id, workflowStatus: 'bozza' });
-      setIsStarted(true);
       toast.success(`Nuovo FIR ${firNumber.fir_number} inizializzato!`);
     } catch {
       toast.error("Errore nell'inizializzazione del nuovo FIR");

@@ -166,6 +166,7 @@ export function useFIRForms() {
         .select()
         .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Aggiornamento FIR fallito: nessun record trovato o permessi insufficienti");
       try { await consumeNumber.mutateAsync(id); } catch { /* already consumed */ }
 
       // Auto-assign a new FIR number to the user

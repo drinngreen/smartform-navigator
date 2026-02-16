@@ -212,6 +212,42 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          fir_id: string | null
+          id: string
+          lat: number
+          lng: number
+          speed: number | null
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          fir_id?: string | null
+          id?: string
+          lat: number
+          lng: number
+          speed?: number | null
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          fir_id?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          speed?: number | null
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       fir: {
         Row: {
           caratteristiche_hp: string[] | null

@@ -35,6 +35,7 @@ import AdminMessagesPage from "./pages/admin/AdminMessagesPage";
 import ZoliDarkLemonPage from "./pages/admin/ZoliDarkLemonPage";
 import FormulariPage from "./pages/admin/FormulariPage";
 import GestioneFIRPage from "./pages/admin/GestioneFIRPage";
+import GPSFlottaPage from "./pages/admin/GPSFlottaPage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/admin/zoli-dark-lemon" element={<ProtectedRoute><ZoliDarkLemonPage /></ProtectedRoute>} />
               <Route path="/admin/formulari" element={<ProtectedRoute><FormulariPage /></ProtectedRoute>} />
               <Route path="/admin/gestione-fir" element={<ProtectedRoute><GestioneFIRPage /></ProtectedRoute>} />
+              <Route path="/admin/gps" element={<ProtectedRoute><GPSFlottaPage /></ProtectedRoute>} />
 
               {/* MultyNijol Admin Routes */}
               <Route path="/mn/admin" element={<MNDashboardPage />} />
