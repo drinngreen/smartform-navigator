@@ -244,7 +244,7 @@ export default function FormulariPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-primary hover:text-primary"
+                            className="h-8 w-8 !text-cyan-400 hover:!text-cyan-300 hover:bg-cyan-400/10"
                             title="Modifica Bozza"
                             onClick={() => openEdit(form)}
                           >
