@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     "direzioneglobalreco@zoli.live",
     "formulariglobalreco@zoli.live",
     "amministrazioneglobalreco@zoli.live",
+    "amministrazioneglobal@zoli.live",
     "segreteriaglobalreco@zoli.live",
     "multyniyol@zoli.live"
   ];
