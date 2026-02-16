@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Lock, Search, Download } from "lucide-react";
 import { useFIRForms, mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useFIRStore } from "@/stores/firStore";
