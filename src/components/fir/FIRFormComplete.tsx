@@ -8,14 +8,40 @@ import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId } from "@/services/rentriApi";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 
+// ── Neon color map per section ──────────────────────────────
+const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
+  "1. Produttore":        { border: "border-neon-cyan/40",    text: "text-neon-cyan",    glow: "shadow-[0_0_12px_hsl(187_92%_43%/0.3)]",  bg: "bg-neon-cyan/5" },
+  "Detentore":            { border: "border-blue-500/40",     text: "text-blue-400",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.3)]",   bg: "bg-blue-500/5" },
+  "Cantiere":             { border: "border-blue-500/40",     text: "text-blue-400",     glow: "shadow-[0_0_12px_rgba(59,130,246,0.3)]",   bg: "bg-blue-500/5" },
+  "3. Destinatario":      { border: "border-neon-green/40",   text: "text-neon-green",   glow: "shadow-[0_0_12px_hsl(160_84%_40%/0.3)]",   bg: "bg-neon-green/5" },
+  "4. Trasportatore":     { border: "border-pink-500/40",     text: "text-pink-400",     glow: "shadow-[0_0_12px_rgba(236,72,153,0.3)]",   bg: "bg-pink-500/5" },
+  "5. Intermediario":     { border: "border-orange-500/40",   text: "text-orange-400",   glow: "shadow-[0_0_12px_rgba(249,115,22,0.3)]",   bg: "bg-orange-500/5" },
+  "6. Caratteristiche":   { border: "border-primary/40",      text: "text-primary",      glow: "shadow-[0_0_12px_hsl(47_38%_58%/0.3)]",    bg: "bg-primary/5" },
+  "Analisi":              { border: "border-primary/40",      text: "text-primary",      glow: "shadow-[0_0_12px_hsl(47_38%_58%/0.3)]",    bg: "bg-primary/5" },
+  "7. Trasporto":         { border: "border-primary/40",      text: "text-primary",      glow: "shadow-[0_0_12px_hsl(47_38%_58%/0.3)]",    bg: "bg-primary/5" },
+  "8-9. Conducente":      { border: "border-neon-purple/40",  text: "text-neon-purple",  glow: "shadow-[0_0_12px_hsl(270_76%_60%/0.3)]",   bg: "bg-neon-purple/5" },
+  "12. Accettazione":     { border: "border-red-500/40",      text: "text-red-400",      glow: "shadow-[0_0_12px_rgba(239,68,68,0.3)]",    bg: "bg-red-500/5" },
+};
+
+function getSectionNeon(title: string) {
+  for (const key of Object.keys(SECTION_NEON)) {
+    if (title.startsWith(key)) return SECTION_NEON[key];
+  }
+  return { border: "border-primary/20", text: "text-primary", glow: "shadow-[0_0_8px_hsl(47_38%_58%/0.2)]", bg: "bg-primary/5" };
+}
+
 // ── Accordion Section ──────────────────────────────────────
 function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
+  const neon = getSectionNeon(title);
   return (
-    <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
+    <div className={`rounded-2xl glass-card ${neon.border} border ${neon.bg} overflow-hidden transition-shadow ${open ? neon.glow : ""}`}>
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left">
-        <span className="text-xs font-mono uppercase tracking-wider text-primary">{title}</span>
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+        <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
+          <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
+          {title}
+        </span>
+        {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
       </button>
       {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
     </div>
@@ -27,7 +53,7 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
   return (
     <div>
       <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all" />
     </div>
   );
 }
@@ -36,7 +62,7 @@ function TextArea({ label, value, onChange, placeholder, rows = 2 }: { label: st
   return (
     <div>
       <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" />
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all resize-none" />
     </div>
   );
 }
@@ -304,8 +330,8 @@ export function FIRFormComplete() {
           <span className="text-xs font-mono uppercase tracking-widest text-neon-green">Formulari Disponibili</span>
         </div>
         {!isStarted && !store.editingFirId ? (
-          <button onClick={handleStart} disabled={createFIR.isPending} className="w-full py-5 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-xl tracking-widest hover:bg-neon-green/10 transition-all disabled:opacity-50 flex items-center justify-center gap-3">
-            <FileText className="h-6 w-6" />
+          <button onClick={handleStart} disabled={createFIR.isPending} className="w-full py-5 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-xl tracking-widest hover:bg-neon-green/10 transition-all disabled:opacity-50 flex items-center justify-center gap-3 animate-pulse-subtle">
+            <FileText className="h-6 w-6 icon-led" />
             INIZIA
           </button>
         ) : (
@@ -327,12 +353,12 @@ export function FIRFormComplete() {
             <button
               onClick={handleInviaFirma}
               disabled={isSigning}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)] hover:shadow-[0_0_30px_rgba(234,179,8,0.5)]"
             >
               {isSigning ? (
                 <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-5 w-5 icon-led" />
               )}
               {isSigning ? "FIRMA IN CORSO..." : "INVIA E FIRMA PARTENZA"}
             </button>
@@ -341,17 +367,17 @@ export function FIRFormComplete() {
           {/* INVIATO state → CONTROLLO POLIZIA + ARRIVATO */}
           {store.workflowStatus === 'inviato' && (
             <>
-              <button
+               <button
                 onClick={handleControlloPolizia}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]"
               >
-                <Shield className="h-5 w-5" /> CONTROLLO POLIZIA (QR CODE)
+                <Shield className="h-5 w-5 icon-led" /> CONTROLLO POLIZIA (QR CODE)
               </button>
               <button
                 onClick={handleArrivato}
-                className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:shadow-[0_0_30px_rgba(239,68,68,0.5)]"
               >
-                <MapPin className="h-5 w-5" /> ARRIVATO
+                <MapPin className="h-5 w-5 icon-led" /> ARRIVATO
               </button>
             </>
           )}

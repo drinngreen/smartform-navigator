@@ -16,22 +16,25 @@ export function FIRTrafficLight() {
   const effectiveStatus = status || (hasActiveFir ? 'bozza' : null);
 
   return (
-    <div className="flex items-center gap-3 mt-3 mb-1">
+    <div className="flex items-center gap-4 mt-3 mb-1 py-2 px-3 rounded-xl glass-card border border-primary/15">
       {lights.map((light) => {
         const active = effectiveStatus === light.key;
         return (
           <div key={light.key} className="flex items-center gap-1.5">
             <div
-              className="w-3.5 h-3.5 rounded-full transition-all duration-300"
+              className={`w-4 h-4 rounded-full transition-all duration-500 ${active ? "animate-pulse scale-110" : ""}`}
               style={{
                 backgroundColor: active ? light.color : 'hsl(var(--muted))',
-                boxShadow: active ? `0 0 12px ${light.shadow}` : 'none',
-                opacity: active ? 1 : 0.3,
+                boxShadow: active ? `0 0 16px ${light.shadow}, 0 0 32px ${light.shadow}` : 'none',
+                opacity: active ? 1 : 0.2,
               }}
             />
             <span
-              className="text-[10px] font-mono font-bold tracking-wider transition-colors"
-              style={{ color: active ? light.color : 'hsl(var(--muted-foreground))' }}
+              className={`text-[10px] font-mono font-bold tracking-wider transition-all ${active ? "text-glow" : ""}`}
+              style={{ 
+                color: active ? light.color : 'hsl(var(--muted-foreground))',
+                textShadow: active ? `0 0 8px ${light.shadow}` : 'none',
+              }}
             >
               {light.label}
             </span>
