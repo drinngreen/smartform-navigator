@@ -19,6 +19,8 @@ export function useOnlineStatus() {
   const updateStatus = useCallback(async (status: PresenceStatus) => {
     if (!user) return;
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       const { error } = await supabase.functions.invoke("update-presence", { body: { status } });
       if (error) throw error;
       setMyStatus(status);
