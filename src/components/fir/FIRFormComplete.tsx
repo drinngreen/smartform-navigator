@@ -1,10 +1,12 @@
-import { useState } from "react";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale } from "lucide-react";
 import { useFIRForms, mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useFIRStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { inviaFirmaRentri, resolveSocietaId } from "@/services/rentriApi";
+import { generateFIRPdf } from "@/lib/firPdfExport";
 
 // ── Accordion Section ──────────────────────────────────────
 function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -52,17 +54,72 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-3">{children}</div>;
 }
 
+// ── Peso a Destino Popup ──────────────────────────────────
+function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) => void; onCancel: () => void }) {
+  const [peso, setPeso] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+        <div className="flex items-center gap-2 text-primary">
+          <Scale className="h-5 w-5" />
+          <h3 className="font-display text-lg tracking-wider">PESO A DESTINO</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
+        <input
+          type="number"
+          value={peso}
+          onChange={(e) => setPeso(e.target.value)}
+          placeholder="Peso in Kg"
+          className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-muted-foreground font-display text-sm">ANNULLA</button>
+          <button
+            onClick={() => { if (peso.trim()) onConfirm(peso); else toast.error("Inserisci il peso"); }}
+            className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider"
+          >
+            CHIUDI FIR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ──────────────────────────────────────
 export function FIRFormComplete() {
-  const { createFIR, submitFIR, silentSaveFIR } = useFIRForms();
+  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useFIRForms();
   const store = useFIRStore();
   const { user, profile } = useAuth();
   const { availableNumbers } = useFIRNumberPool();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const [isStarted, setIsStarted] = useState(!!store.editingFirId);
+  const [isSigning, setIsSigning] = useState(false);
+  const [showPesoPopup, setShowPesoPopup] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const u = store.updateField;
   const d = store.data;
+
+  // ── Autosave every 10 seconds ─────────────────────────
+  const doAutosave = useCallback(async () => {
+    if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
+    try {
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+    } catch {
+      // silent
+    }
+  }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR]);
+
+  useEffect(() => {
+    if (store.editingFirId && store.workflowStatus !== 'chiuso') {
+      autosaveRef.current = setInterval(doAutosave, 10000);
+    }
+    return () => { if (autosaveRef.current) clearInterval(autosaveRef.current); };
+  }, [store.editingFirId, store.workflowStatus, doAutosave]);
 
   // ── Start FIR ─────────────────────────────────────
   const handleStart = async () => {
@@ -103,30 +160,134 @@ export function FIRFormComplete() {
   const handleNewFIR = () => {
     store.resetForm();
     setIsStarted(false);
+    setPdfBlobUrl(null);
     toast.info("Nuovo FIR inizializzato");
   };
 
-  // ── Submit FIR ─────────────────────────────────────
-  const handleSubmit = async () => {
+  // ── Validate departure fields ─────────────────────────
+  const validateDeparture = (): string[] => {
+    const errors: string[] = [];
+    if (!d.targaAutomezzo.trim()) errors.push("Targa Automezzo");
+    if (!d.codiceEER.trim()) errors.push("Codice EER");
+    if (!d.quantita.trim()) errors.push("Quantità (Kg)");
+    if (!d.produttoreDenominazione.trim()) errors.push("Produttore");
+    if (!d.destinatarioDenominazione.trim()) errors.push("Destinatario");
+    return errors;
+  };
+
+  // ── INVIA E FIRMA PARTENZA → Render API ─────────────
+  const handleInviaFirma = async () => {
     if (!store.editingFirId) return;
+
+    const missing = validateDeparture();
+    if (missing.length > 0) {
+      toast.error(`Campi obbligatori mancanti: ${missing.join(", ")}`);
+      return;
+    }
+
+    setIsSigning(true);
     try {
+      // Save first
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
-      await submitFIR.mutateAsync(store.editingFirId);
+
+      // Call Render API
+      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const result = await inviaFirmaRentri({
+        societaId,
+        payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber },
+      });
+
+      // Persist numero_fir and qr_code
+      if (result.numero_fir) {
+        store.updateField("selectedFirNumber", result.numero_fir);
+        await silentSaveFIR.mutateAsync({
+          id: store.editingFirId,
+          numero_fir: result.numero_fir,
+          status: "inviato",
+          submitted_at: new Date().toISOString(),
+        });
+      }
+
+      // Set workflow to green
       useFIRStore.setState({ workflowStatus: 'inviato' });
-    } catch {
-      toast.error("Errore nell'invio");
+
+      // Register GPS
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          console.log("[FIR] GPS partenza:", pos.coords.latitude, pos.coords.longitude);
+        });
+      }
+
+      toast.success("✅ FIR firmato e inviato con successo!");
+    } catch (error: any) {
+      console.error("[RENTRI] Firma error:", error);
+      toast.error(`Errore firma RENTRI: ${error.message}`);
+    } finally {
+      setIsSigning(false);
+    }
+  };
+
+  // ── CONTROLLO POLIZIA (QR CODE) → Generate PDF preview ──
+  const handleControlloPolizia = async () => {
+    try {
+      const blob = await generateFIRPdf(store.data);
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      toast.success("PDF generato - anteprima disponibile");
+    } catch (error: any) {
+      toast.error("Errore generazione PDF: " + error.message);
+    }
+  };
+
+  // ── ARRIVATO → Show peso popup ─────────────────────────
+  const handleArrivato = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        console.log("[FIR] GPS arrivo:", pos.coords.latitude, pos.coords.longitude);
+      });
+    }
+    setShowPesoPopup(true);
+  };
+
+  // ── Confirm closure with peso ─────────────────────────
+  const handleConfirmClosure = async (peso: string) => {
+    if (!store.editingFirId) return;
+    try {
+      store.updateField("pesoRicevuto", peso);
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        ...dbFields,
+        form_data: { ...dbFields.form_data, peso_ricevuto: peso },
+      });
+      await closeFIR.mutateAsync(store.editingFirId);
+      useFIRStore.setState({ workflowStatus: 'chiuso' });
+      setShowPesoPopup(false);
+      toast.success("🏁 FIR chiuso definitivamente!");
+    } catch (error: any) {
+      toast.error("Errore chiusura: " + error.message);
     }
   };
 
   const tabs = [
-    { label: "Principale" },
-    { label: "Trasbordo" },
-    { label: "Intermodale" },
+    { label: "PRINCIPALE" },
+    { label: "TRASBORDO" },
+    { label: "INTERMODALE" },
   ];
 
   return (
     <div className="px-4 py-4 space-y-4">
+      {/* Peso Popup */}
+      {showPesoPopup && (
+        <PesoDestinoPopup onConfirm={handleConfirmClosure} onCancel={() => setShowPesoPopup(false)} />
+      )}
+
+      {/* ── Header ── */}
+      <div className="text-center">
+        <h2 className="text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
+      </div>
+
       {/* ── Tab Navigation ── */}
       <div className="flex gap-1 bg-secondary/30 rounded-xl p-1">
         {tabs.map((tab, i) => (
@@ -148,12 +309,83 @@ export function FIRFormComplete() {
             INIZIA
           </button>
         ) : (
-          <button onClick={() => {/* already started, scroll to form */}} className="w-full py-5 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-xl tracking-widest flex items-center justify-center gap-3">
-            <FileText className="h-6 w-6" />
-            RIPRENDI
-          </button>
+          <div className="w-full space-y-2">
+            {d.selectedFirNumber && (
+              <div className="text-center py-2 rounded-xl bg-neon-green/10 border border-neon-green/30">
+                <span className="text-xs font-mono text-neon-green tracking-wider">{d.selectedFirNumber}</span>
+              </div>
+            )}
+          </div>
         )}
       </div>
+
+      {/* ── Workflow Action Buttons (Semaforo-driven) ── */}
+      {(isStarted || store.editingFirId) && (
+        <div className="space-y-2">
+          {/* BOZZA state → INVIA E FIRMA PARTENZA */}
+          {store.workflowStatus === 'bozza' && (
+            <button
+              onClick={handleInviaFirma}
+              disabled={isSigning}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSigning ? (
+                <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" />
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+              {isSigning ? "FIRMA IN CORSO..." : "INVIA E FIRMA PARTENZA"}
+            </button>
+          )}
+
+          {/* INVIATO state → CONTROLLO POLIZIA + ARRIVATO */}
+          {store.workflowStatus === 'inviato' && (
+            <>
+              <button
+                onClick={handleControlloPolizia}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <Shield className="h-5 w-5" /> CONTROLLO POLIZIA (QR CODE)
+              </button>
+              <button
+                onClick={handleArrivato}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <MapPin className="h-5 w-5" /> ARRIVATO
+              </button>
+            </>
+          )}
+
+          {/* CHIUSO state → FIR completato */}
+          {store.workflowStatus === 'chiuso' && (
+            <div className="text-center py-4 rounded-2xl bg-destructive/10 border border-destructive/30">
+              <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
+              {d.pesoRicevuto && <p className="text-xs text-muted-foreground mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
+            </div>
+          )}
+
+          {/* PDF Preview (Controllo Polizia) */}
+          {pdfBlobUrl && store.workflowStatus === 'inviato' && (
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/5 p-3">
+              <p className="text-xs text-blue-400 font-mono mb-2 text-center">📄 ANTEPRIMA PDF - CONTROLLO POLIZIA</p>
+              <iframe src={pdfBlobUrl} className="w-full h-[400px] rounded-lg border border-border/30" />
+              <a href={pdfBlobUrl} target="_blank" rel="noopener noreferrer" className="block text-center mt-2 text-xs text-blue-400 underline">Apri in nuova scheda</a>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Action Buttons (Nuovo + Salva) ── */}
+      {(isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
+        <div className="flex gap-2">
+          <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
+            <Plus className="h-4 w-4" /> Nuovo FIR
+          </button>
+          <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
+            <Save className="h-4 w-4" /> Salva Bozza
+          </button>
+        </div>
+      )}
 
       {/* ── Data Emissione + Registro ── */}
       <div className="p-4 rounded-2xl bg-card/60 border border-border/30">
@@ -165,12 +397,8 @@ export function FIRFormComplete() {
           <div>
             <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Registro</label>
             <div className="flex gap-1 mb-2">
-              <button onClick={() => u("registroSi", true)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>
-                SÌ
-              </button>
-              <button onClick={() => u("registroSi", false)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${!d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>
-                NO
-              </button>
+              <button onClick={() => u("registroSi", true)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>SÌ</button>
+              <button onClick={() => u("registroSi", false)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${!d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>NO</button>
             </div>
             {d.registroSi && (
               <input type="text" value={d.selectedFirNumber || d.numeroRegistro} readOnly className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-1.5 text-foreground text-xs font-mono focus:outline-none" />
@@ -179,22 +407,9 @@ export function FIRFormComplete() {
         </div>
       </div>
 
-      {/* ── Action Buttons (only when form is active) ── */}
-      {(isStarted || store.editingFirId) && (
-        <div className="flex gap-2">
-          <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
-            <Plus className="h-4 w-4" /> Nuovo FIR
-          </button>
-          <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
-            <Save className="h-4 w-4" /> Salva Bozza
-          </button>
-        </div>
-      )}
-
       {/* ═══════ PAGINA 1 - FORMULARIO ═══════ */}
       {activeTab === 0 && (
         <div className="space-y-3">
-          {/* ── Sezione 1: Produttore ── */}
           <Section title={`1. Produttore${d.produttoreDenominazione ? ` (${d.produttoreDenominazione})` : ""}`} defaultOpen>
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
             <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Via, CAP, Comune" />
@@ -219,7 +434,6 @@ export function FIRFormComplete() {
             )}
           </Section>
 
-          {/* ── Cantiere ── */}
           <Section title="Cantiere (se applicabile)">
             <Field label="Indirizzo" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} />
             <Row>
@@ -229,7 +443,6 @@ export function FIRFormComplete() {
             <Field label="CAP" value={d.cantiereCAP} onChange={(v) => u("cantiereCAP", v)} />
           </Section>
 
-          {/* ── Sezione 3: Destinatario ── */}
           <Section title="3. Destinatario">
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
@@ -251,7 +464,6 @@ export function FIRFormComplete() {
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
 
-          {/* ── Sezione 4: Trasportatore ── */}
           <Section title="4. Trasportatore">
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
@@ -263,14 +475,12 @@ export function FIRFormComplete() {
             <Field label="Nome Autista" value={d.trasportatoreNomeAutista} onChange={(v) => u("trasportatoreNomeAutista", v)} />
           </Section>
 
-          {/* ── Sezione 5: Intermediario ── */}
           <Section title="5. Intermediario / Commerciante">
             <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
           </Section>
 
-          {/* ── Sezione 6: Caratteristiche Rifiuto ── */}
           <Section title="6. Caratteristiche del Rifiuto" defaultOpen>
             <Field label="Codice EER" value={d.codiceEER} onChange={(v) => u("codiceEER", v)} placeholder="es. 17 04 05" />
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
@@ -313,7 +523,6 @@ export function FIRFormComplete() {
             <Field label="Caratteristiche HP (separate da virgola)" value={d.caratteristicheHP.join(", ")} onChange={(v) => u("caratteristicheHP", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="HP4, HP5..." />
           </Section>
 
-          {/* ── Analisi / Classificazione ── */}
           <Section title="Analisi e Classificazione">
             <Check label="Analisi / Rapporti di prova" checked={d.analisiRapportiProva} onChange={(v) => u("analisiRapportiProva", v)} />
             {d.analisiRapportiProva && (
@@ -331,7 +540,6 @@ export function FIRFormComplete() {
             )}
           </Section>
 
-          {/* ── ADR ── */}
           <Section title="7. Trasporto ADR / Merci Pericolose">
             <Check label="Trasporto soggetto a normativa ADR" checked={d.trasportoADR} onChange={(v) => u("trasportoADR", v)} />
             {d.trasportoADR && (
@@ -345,7 +553,6 @@ export function FIRFormComplete() {
             )}
           </Section>
 
-          {/* ── Sezione 8: Conducente / Trasporto ── */}
           <Section title="8-9. Conducente e Trasporto">
             <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => u("conducenteNomeCognome", v)} />
             <Row>
@@ -359,20 +566,17 @@ export function FIRFormComplete() {
             <Field label="Percorso diverso dal più breve" value={d.percorsoDiverso} onChange={(v) => u("percorsoDiverso", v)} />
           </Section>
 
-          {/* ── Sezione 10: Allegati ── */}
           <Section title="10. Allegati">
             <Check label="Allegato microraccolta" checked={d.allegatoMicroraccolta} onChange={(v) => u("allegatoMicroraccolta", v)} />
             <Check label="Allegato intermodale" checked={d.allegatoIntermodale} onChange={(v) => u("allegatoIntermodale", v)} />
           </Section>
 
-          {/* ── Sezione 11: Registro ── */}
           <Section title="11. Registro">
             <Check label="Registro cronologico SI" checked={d.registroSi} onChange={(v) => u("registroSi", v)} />
             <Field label="N° Annotazione Registro" value={d.numeroRegistro} onChange={(v) => u("numeroRegistro", v)} />
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
           </Section>
 
-          {/* ── Sezione 12: Destinatario - Accettazione ── */}
           <Section title="12. Accettazione Destinatario">
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
@@ -403,7 +607,6 @@ export function FIRFormComplete() {
             <Check label="In attesa di verifica analitica" checked={d.inAttesaVerificaAnalitica} onChange={(v) => u("inAttesaVerificaAnalitica", v)} />
           </Section>
 
-          {/* ── Annotazioni ── */}
           <Section title="17. Annotazioni">
             <TextArea label="Annotazioni" value={d.annotazioni} onChange={(v) => u("annotazioni", v)} rows={3} />
           </Section>
@@ -413,7 +616,6 @@ export function FIRFormComplete() {
       {/* ═══════ PAGINA 2 - INTEGRAZIONE ═══════ */}
       {activeTab === 1 && (
         <div className="space-y-3">
-          {/* ── Trasbordo Parziale ── */}
           <Section title="13. Trasbordo Parziale">
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoParzDenominazione} onChange={(v) => u("trasbordoParzDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoParzCF} onChange={(v) => u("trasbordoParzCF", v)} />
@@ -425,7 +627,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
 
-          {/* ── Trasbordo Totale ── */}
           <Section title="Trasbordo Totale">
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoTotDenominazione} onChange={(v) => u("trasbordoTotDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoTotCF} onChange={(v) => u("trasbordoTotCF", v)} />
@@ -438,7 +639,6 @@ export function FIRFormComplete() {
             <Field label="Data/Ora Presa in Carico" value={d.trasbordoTotDataPresaCarico} onChange={(v) => u("trasbordoTotDataPresaCarico", v)} type="datetime-local" />
           </Section>
 
-          {/* ── Soste Tecniche ── */}
           <Section title="14. Soste Tecniche">
             <p className="text-xs text-muted-foreground mb-2">Sosta 1</p>
             <Field label="Luogo" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
@@ -460,7 +660,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
 
-          {/* ── 2° Destinatario ── */}
           <Section title="15. Secondo Destinatario">
             <Field label="Denominazione" value={d.dest2Denominazione} onChange={(v) => u("dest2Denominazione", v)} />
             <Field label="Unità Locale" value={d.dest2UnitaLocale} onChange={(v) => u("dest2UnitaLocale", v)} />
@@ -482,7 +681,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
 
-          {/* ── Annotazioni Continuazione ── */}
           <Section title="16-17. Annotazioni (continuazione)">
             <TextArea label="Annotazioni aggiuntive" value={d.annotazioniContinuazione} onChange={(v) => u("annotazioniContinuazione", v)} rows={4} />
           </Section>
@@ -492,7 +690,6 @@ export function FIRFormComplete() {
       {/* ═══════ PAGINA 3 - INTERMODALE ═══════ */}
       {activeTab === 2 && (
         <div className="space-y-3">
-          {/* ── Terrestre ── */}
           <Section title="Intermodale Terrestre" defaultOpen>
             <Field label="Denominazione" value={d.interTerrDenominazione} onChange={(v) => u("interTerrDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.interTerrCF} onChange={(v) => u("interTerrCF", v)} />
@@ -504,7 +701,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
 
-          {/* ── Ferroviario ── */}
           <Section title="Intermodale Ferroviario">
             <Field label="Denominazione" value={d.interFerroDenominazione} onChange={(v) => u("interFerroDenominazione", v)} />
             <Field label="ID Treno" value={d.interFerroIdTreno} onChange={(v) => u("interFerroIdTreno", v)} />
@@ -521,7 +717,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
 
-          {/* ── Marittimo ── */}
           <Section title="Intermodale Marittimo">
             <Field label="Denominazione" value={d.interMareDenominazione} onChange={(v) => u("interMareDenominazione", v)} />
             <Field label="ID Nave" value={d.interMareIdNave} onChange={(v) => u("interMareIdNave", v)} />
@@ -537,13 +732,6 @@ export function FIRFormComplete() {
             </Row>
           </Section>
         </div>
-      )}
-
-      {/* ── Submit Button ── */}
-      {store.editingFirId && store.workflowStatus === 'bozza' && (
-        <button onClick={handleSubmit} disabled={submitFIR.isPending} className="w-full py-4 rounded-2xl bg-gradient-to-r from-neon-green/80 to-neon-cyan/80 text-background font-display text-lg tracking-wider hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
-          <Send className="h-5 w-5" /> INVIA FIR
-        </button>
       )}
     </div>
   );

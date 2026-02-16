@@ -57,7 +57,7 @@ export interface RentriErrorResponse {
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
-  const res = await fetch(`${RENTRI_BASE_URL}/api/fir/firma`, {
+  const res = await fetch(`${RENTRI_BASE_URL}/firma-fir`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
