@@ -164,9 +164,9 @@ export function useFIRForms() {
         .update({ status: "completato", completed_at: new Date().toISOString() })
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
-      await consumeNumber.mutateAsync(id);
+      try { await consumeNumber.mutateAsync(id); } catch { /* already consumed */ }
 
       // Auto-assign a new FIR number to the user
       if (user?.id) {
@@ -212,7 +212,7 @@ export function useFIRForms() {
         .update(formData)
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
