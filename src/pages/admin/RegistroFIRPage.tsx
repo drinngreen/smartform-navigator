@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Send
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Send, Eye, Trash2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -234,18 +234,35 @@ export default function RegistroFIRPage() {
                       {new Date(form.updated_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td className="p-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {isDraft(form.status) && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 !text-cyan-400 hover:!text-cyan-300 hover:bg-cyan-400/10"
-                            title="Modifica Bozza"
-                            onClick={() => openEdit(form)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-medium border border-cyan-400 hover:bg-cyan-500 transition-colors"
+                          title="Visualizza / Modifica"
+                          onClick={() => openEdit(form)}
+                        >
+                          {isDraft(form.status) ? <Edit className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          {isDraft(form.status) ? "Modifica" : "Dettagli"}
+                        </button>
+                        <button
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium border border-red-400 hover:bg-red-500 transition-colors"
+                          title="Elimina"
+                          onClick={async () => {
+                            if (!confirm("Eliminare questo formulario?")) return;
+                            try {
+                              const { error } = await supabase.functions.invoke("admin-user-manage", {
+                                body: { action: "delete_fir_form", form_id: form.id },
+                              });
+                              if (error) throw error;
+                              toast.success("Formulario eliminato");
+                              fetchForms();
+                            } catch (e: any) {
+                              toast.error("Errore: " + e.message);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Elimina
+                        </button>
                       </div>
                     </td>
                   </tr>
