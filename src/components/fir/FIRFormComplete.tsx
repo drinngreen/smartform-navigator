@@ -54,8 +54,8 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
 function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <div>
-      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all" />
+      <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all" />
     </div>
   );
 }
@@ -63,8 +63,8 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
 function TextArea({ label, value, onChange, placeholder, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (
     <div>
-      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all resize-none" />
+      <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all resize-none" />
     </div>
   );
 }
@@ -73,7 +73,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
   return (
     <label className="flex items-center gap-2 cursor-pointer">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-primary" />
-      <span className="text-xs text-foreground">{label}</span>
+      <span className="text-xs text-white">{label}</span>
     </label>
   );
 }
@@ -86,11 +86,11 @@ function Row({ children }: { children: React.ReactNode }) {
 function LockedField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 flex items-center gap-1">
+      <label className="text-[10px] text-white/70 font-mono uppercase tracking-wider mb-1 flex items-center gap-1">
         <Lock className="h-3 w-3 text-primary/60" />
         {label}
       </label>
-      <div className="w-full bg-secondary/30 border border-primary/10 rounded-lg px-3 py-2 text-foreground/70 text-sm font-mono cursor-not-allowed select-none">
+      <div className="w-full bg-secondary/30 border border-primary/10 rounded-lg px-3 py-2 text-white/70 text-sm font-mono cursor-not-allowed select-none">
         {value || "—"}
       </div>
     </div>
@@ -117,22 +117,22 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
 
   return (
     <div ref={ref} className="relative">
-      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Seleziona Destinatario</label>
+      <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">🔍 Seleziona Destinatario / Impianto</label>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neon-green/60" />
         <input
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Cerca impianto / destinatario..."
-          className="w-full bg-background/80 border border-neon-green/20 rounded-lg pl-9 pr-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-neon-green focus:border-neon-green/40 transition-all"
+          placeholder="Cerca tra ~200 impianti..."
+          className="w-full bg-background/80 border-2 border-neon-green/30 rounded-lg pl-9 pr-3 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-neon-green/50 focus:border-neon-green/60 transition-all"
         />
       </div>
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border/50 rounded-xl shadow-xl backdrop-blur-sm">
+        <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.length === 0 && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">Nessun risultato</div>
+            <div className="px-3 py-3 text-xs text-white/50">Nessun risultato per "{search}"</div>
           )}
           {filtered.map((d, i) => (
             <button
@@ -142,10 +142,10 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
                 setSearch(d.nome);
                 setIsOpen(false);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-neon-green/10 transition-colors border-b border-border/10"
+              className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5"
             >
-              <span className="text-xs text-foreground font-medium block">{d.nome}</span>
-              {d.indirizzo && <span className="text-[10px] text-muted-foreground block">{d.indirizzo}</span>}
+              <span className="text-xs text-white font-medium block">{d.nome}</span>
+              {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
             </button>
           ))}
           {/* Opzione per inserimento manuale */}
@@ -560,17 +560,17 @@ export function FIRFormComplete() {
       <div className="p-4 rounded-2xl bg-card/60 border border-border/30">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Data Emissione</label>
-            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Data Emissione</label>
+            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Registro</label>
+            <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Registro</label>
             <div className="flex gap-1 mb-2">
               <button onClick={() => u("registroSi", true)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>SÌ</button>
               <button onClick={() => u("registroSi", false)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${!d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>NO</button>
             </div>
             {d.registroSi && (
-              <input type="text" value={d.selectedFirNumber || d.numeroRegistro} readOnly className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-1.5 text-foreground text-xs font-mono focus:outline-none" />
+              <input type="text" value={d.selectedFirNumber || d.numeroRegistro} readOnly className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-1.5 text-white text-xs font-mono focus:outline-none" />
             )}
           </div>
         </div>
@@ -625,8 +625,8 @@ export function FIRFormComplete() {
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
             <Row>
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Operazione</label>
-                <select value={d.destinatarioOperazione} onChange={(e) => u("destinatarioOperazione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Operazione</label>
+                <select value={d.destinatarioOperazione} onChange={(e) => u("destinatarioOperazione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="R">Recupero (R)</option>
                   <option value="D">Smaltimento (D)</option>
                 </select>
@@ -667,8 +667,8 @@ export function FIRFormComplete() {
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
             <Row>
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Stato Fisico</label>
-                <select value={d.statoFisico} onChange={(e) => u("statoFisico", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Stato Fisico</label>
+                <select value={d.statoFisico} onChange={(e) => u("statoFisico", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="">--</option>
                   <option value="1">1 - Solido pulverulento</option>
                   <option value="2">2 - Solido non pulverulento</option>
@@ -679,8 +679,8 @@ export function FIRFormComplete() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Provenienza</label>
-                <select value={d.provenienza} onChange={(e) => u("provenienza", e.target.value as "urbano" | "speciale")} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Provenienza</label>
+                <select value={d.provenienza} onChange={(e) => u("provenienza", e.target.value as "urbano" | "speciale")} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="speciale">Speciale</option>
                   <option value="urbano">Urbano</option>
                 </select>
@@ -692,8 +692,8 @@ export function FIRFormComplete() {
             </Row>
             <Row>
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Aspetto Esteriore</label>
-                <select value={d.aspettoEsteriore} onChange={(e) => u("aspettoEsteriore", e.target.value as "colli" | "rinfusa")} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Aspetto Esteriore</label>
+                <select value={d.aspettoEsteriore} onChange={(e) => u("aspettoEsteriore", e.target.value as "colli" | "rinfusa")} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="colli">Colli</option>
                   <option value="rinfusa">Rinfusa</option>
                 </select>
@@ -762,8 +762,8 @@ export function FIRFormComplete() {
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Accettazione</label>
-                <select value={d.accettazione} onChange={(e) => u("accettazione", e.target.value as any)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Accettazione</label>
+                <select value={d.accettazione} onChange={(e) => u("accettazione", e.target.value as any)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="">--</option>
                   <option value="intero">Accettato per intero</option>
                   <option value="parziale">Accettato parzialmente</option>
