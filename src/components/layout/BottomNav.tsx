@@ -31,7 +31,7 @@ export function BottomNav() {
                   "flex flex-col items-center gap-0.5 px-1.5 py-1 rounded-lg transition-all min-w-0",
                   active
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-white/50 hover:text-white"
                 )}
                 style={active ? { color: `rgb(${item.color})` } : undefined}
               >
