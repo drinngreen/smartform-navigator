@@ -72,6 +72,7 @@ export default {
           magenta: "hsl(var(--neon-magenta))",
           purple: "hsl(var(--neon-purple))",
         },
+        straw: "hsl(var(--straw))",
       },
       borderRadius: {
         lg: "var(--radius)",

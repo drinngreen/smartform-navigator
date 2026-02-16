@@ -84,7 +84,7 @@ export function AdminTopNav() {
                     )}
                   >
                     <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
-                    <span className="text-white font-semibold">{item.label}</span>
+                    <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
                   </NavLink>
                 );
               })}
