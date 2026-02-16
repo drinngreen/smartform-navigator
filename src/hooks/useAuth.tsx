@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const markPresence = async (userId: string, status: "online" | "offline") => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
       const { error } = await supabase
         .from("online_status")
         .upsert(
