@@ -1,27 +1,43 @@
 import { useFIRStore } from "@/stores/firStore";
 
+type WorkflowStatus = 'bozza' | 'inviato' | 'chiuso' | null;
+
+const lights = [
+  { key: 'bozza' as const, label: 'BOZZA', color: 'hsl(45, 93%, 47%)', shadow: 'rgba(234, 179, 8, 0.6)' },
+  { key: 'inviato' as const, label: 'IN VIAGGIO', color: 'hsl(142, 71%, 45%)', shadow: 'rgba(34, 197, 94, 0.6)' },
+  { key: 'chiuso' as const, label: 'ARRIVO', color: 'hsl(0, 84%, 60%)', shadow: 'rgba(239, 68, 68, 0.6)' },
+] as const;
+
 export function FIRTrafficLight() {
-  const data = useFIRStore((s) => s.data);
+  const status = useFIRStore((s) => s.workflowStatus);
+  const hasActiveFir = useFIRStore((s) => !!s.data.selectedFirNumber || !!s.editingFirId);
 
-  const checks = [
-    { label: "Produttore", ok: !!data.produttoreDenominazione },
-    { label: "CER", ok: !!data.codiceEER },
-    { label: "Quantità", ok: !!data.quantita && parseFloat(data.quantita) > 0 },
-    { label: "Destinatario", ok: !!data.destinatarioDenominazione },
-  ];
-
-  const completedCount = checks.filter((c) => c.ok).length;
-  const color = completedCount === 0 ? "bg-destructive" : completedCount === checks.length ? "bg-neon-green" : "bg-primary";
+  // If there's an active FIR but no explicit status, default to 'bozza'
+  const effectiveStatus = status || (hasActiveFir ? 'bozza' : null);
 
   return (
-    <div className="flex items-center gap-2 mt-3">
-      <div className={`w-3 h-3 rounded-full ${color} animate-pulse`} />
-      <span className="text-xs font-mono text-muted-foreground">{completedCount}/{checks.length} campi compilati</span>
-      <div className="flex gap-1 ml-auto">
-        {checks.map((c, i) => (
-          <div key={i} className={`w-2 h-2 rounded-full ${c.ok ? "bg-neon-green" : "bg-muted"}`} title={c.label} />
-        ))}
-      </div>
+    <div className="flex items-center gap-3 mt-3 mb-1">
+      {lights.map((light) => {
+        const active = effectiveStatus === light.key;
+        return (
+          <div key={light.key} className="flex items-center gap-1.5">
+            <div
+              className="w-3.5 h-3.5 rounded-full transition-all duration-300"
+              style={{
+                backgroundColor: active ? light.color : 'hsl(var(--muted))',
+                boxShadow: active ? `0 0 12px ${light.shadow}` : 'none',
+                opacity: active ? 1 : 0.3,
+              }}
+            />
+            <span
+              className="text-[10px] font-mono font-bold tracking-wider transition-colors"
+              style={{ color: active ? light.color : 'hsl(var(--muted-foreground))' }}
+            >
+              {light.label}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
