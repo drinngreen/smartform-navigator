@@ -381,7 +381,7 @@ export default function GestioneFIRPage() {
                 // Map backend field names (firNumber, rentriId) to expected names
                 const numeroFir = result.numero_fir || (result as any).firNumber || "";
                 const rentriId = (result as any).rentriId || "";
-                const qrCode = result.qr_code || (result as any).qrCode || "";
+                const qrCode = result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || "";
                 setTestResult({
                   success: true,
                   message: `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}`,
