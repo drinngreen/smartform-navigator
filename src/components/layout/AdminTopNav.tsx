@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { label: "Personale", iconImage: iconPersonale, href: "/admin/personale", color: "16, 185, 129" },
   { label: "Registro", iconImage: iconRegistroFir, href: "/admin/registro", color: "249, 115, 22" },
   { label: "Formulari", iconImage: iconRegistroFir, href: "/admin/formulari", color: "34, 197, 94" },
+  { label: "Gestione FIR", iconImage: iconRegistroFir, href: "/admin/gestione-fir", color: "59, 130, 246" },
   { label: "RENTRI", iconImage: iconRentri, href: "/admin/rentri", color: "236, 72, 153" },
   { label: "Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
   { label: "Messaggi", iconImage: iconZoliMessages, href: "/admin/messaggi", color: "244, 114, 182" },

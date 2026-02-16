@@ -1,9 +1,10 @@
 /**
- * RENTRI API Service – connects to the Render-hosted SmartForm Navigator server.
- * Handles FIR signature (vidimazione), QR code retrieval and PDF download.
+ * RENTRI API Service – connects to the Dragon Rifiuti Sender on Render.
+ * Handles FIR signature (vidimazione), QR code retrieval, PDF/xFIR download,
+ * and pool replenishment (vidimate).
  */
 
-const RENTRI_BASE_URL = "https://smartform-navigator.onrender.com";
+const RENTRI_BASE_URL = "https://dragonrifiutisender.onrender.com";
 
 // ─── Tenant → societaId mapping ─────────────────────────────
 const TENANT_MAP: Record<string, string> = {
@@ -13,7 +14,6 @@ const TENANT_MAP: Record<string, string> = {
 
 /**
  * Resolve the societaId from the user's profile / tenant.
- * Falls back to mn_context for multy_niyol sub-contexts.
  */
 export function resolveSocietaId(
   tenantId?: string | null,
@@ -21,13 +21,12 @@ export function resolveSocietaId(
 ): string {
   if (tenantId && TENANT_MAP[tenantId]) {
     const base = TENANT_MAP[tenantId];
-    // For multy_niyol, further differentiate by mn_context
     if (base === "multy_niyol" && mnContext) {
-      return mnContext; // "multyproget" | "niyol"
+      return mnContext;
     }
     return base;
   }
-  return "global_reco"; // default fallback
+  return "global_reco";
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -39,13 +38,26 @@ export interface RentriFirmaPayload {
 export interface RentriFirmaResponse {
   numero_fir: string;
   qr_code: string; // base64 data-uri or SVG string for QR
-  pdf_url?: string; // optional direct PDF link
+  pdf_url?: string;
   [key: string]: unknown;
 }
 
 export interface RentriErrorResponse {
   error: string;
   details?: string;
+}
+
+export interface RentriVidimateResponse {
+  numeri: string[];
+  [key: string]: unknown;
+}
+
+export interface RentriChiusuraPayload {
+  societaId: string;
+  numero_fir: string;
+  peso_accettato: number;
+  data_arrivo?: string;
+  [key: string]: unknown;
 }
 
 // ─── API Functions ───────────────────────────────────────────
@@ -77,11 +89,68 @@ export async function inviaFirmaRentri(
 }
 
 /**
+ * Request new vidimated FIR numbers from RENTRI.
+ * Called when the pool is empty and admin requests replenishment.
+ */
+export async function richiediNuoviNumeri(
+  societaId: string
+): Promise<RentriVidimateResponse> {
+  const res = await fetch(`${RENTRI_BASE_URL}/vidimate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ societaId }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const errMsg =
+      (data as RentriErrorResponse).error ||
+      (data as RentriErrorResponse).details ||
+      `Errore server (${res.status})`;
+    throw new Error(errMsg);
+  }
+
+  return data as RentriVidimateResponse;
+}
+
+/**
+ * Send closure data (peso accettato) to finalize FIR on RENTRI.
+ */
+export async function chiudiFirRentri(
+  payload: RentriChiusuraPayload
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${RENTRI_BASE_URL}/chiudi-fir`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const errMsg =
+      (data as RentriErrorResponse).error ||
+      (data as RentriErrorResponse).details ||
+      `Errore server (${res.status})`;
+    throw new Error(errMsg);
+  }
+
+  return data;
+}
+
+/**
  * Build the PDF download URL for a given FIR number.
- * Opens in a new tab.
  */
 export function getRentriPdfUrl(numeroFir: string): string {
   return `${RENTRI_BASE_URL}/pdf/${encodeURIComponent(numeroFir)}`;
+}
+
+/**
+ * Build the xFIR download URL for a given FIR number.
+ */
+export function getRentriXfirUrl(numeroFir: string): string {
+  return `${RENTRI_BASE_URL}/xfir/${encodeURIComponent(numeroFir)}`;
 }
 
 /**
