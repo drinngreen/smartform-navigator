@@ -320,12 +320,17 @@ export function FIRFormComplete() {
         });
       }
 
-      // Save QR code data to pool and to local state if returned
-      if (result.qr_code && d.selectedFirNumber) {
-        setQrCodeData(result.qr_code);
+      // Save official RENTRI QR code (extract from qr_code or qrCodeBytes)
+      const rawQr = result.qr_code || (result as any).qrCodeBytes || "";
+      if (rawQr && d.selectedFirNumber) {
+        // Ensure proper data-uri prefix for display
+        const qrDataUri = rawQr.startsWith("data:")
+          ? rawQr
+          : `data:image/png;base64,${rawQr}`;
+        setQrCodeData(qrDataUri);
         await supabase
           .from("fir_number_pool")
-          .update({ qr_code_data: result.qr_code } as any)
+          .update({ qr_code_data: qrDataUri } as any)
           .eq("fir_number", d.selectedFirNumber);
       }
 
@@ -570,13 +575,30 @@ export function FIRFormComplete() {
           {/* Controllo Strada – QR Code + Riepilogo */}
           {showControlloStrada && store.workflowStatus === 'inviato' && (
             <div className="rounded-2xl border border-blue-500/30 overflow-hidden">
-              {/* White background panel for QR readability */}
-              <div className="bg-white p-6 flex flex-col items-center gap-4">
+              {/* White background panel for QR readability — forced white for low-brightness screens */}
+              <div className="bg-white p-6 flex flex-col items-center gap-4" style={{ backgroundColor: '#FFFFFF' }}>
                 {qrCodeData ? (
-                  <img src={qrCodeData} alt="QR Code RENTRI" className="w-64 h-64 object-contain" />
+                  <>
+                    <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">QR Code Ufficiale RENTRI</p>
+                    <img
+                      src={qrCodeData}
+                      alt="QR Code Ufficiale RENTRI – cifrato per Forze dell'Ordine"
+                      className="w-72 h-72 object-contain"
+                      style={{ imageRendering: 'crisp-edges' }}
+                    />
+                    <p className="text-gray-400 text-[9px] font-mono text-center max-w-[280px]">
+                      Questo QR Code è cifrato e leggibile solo dall'app in dotazione alle Forze dell'Ordine
+                    </p>
+                  </>
                 ) : (
-                  <div className="w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl">
-                    <p className="text-gray-400 text-sm text-center font-mono">QR Code non disponibile</p>
+                  <div className="w-72 h-72 flex flex-col items-center justify-center border-2 border-dashed border-amber-400 rounded-xl bg-amber-50 gap-3">
+                    <Shield className="h-10 w-10 text-amber-500" />
+                    <p className="text-amber-700 text-sm text-center font-semibold px-4">
+                      In attesa di ricezione QR Code ufficiale dal RENTRI
+                    </p>
+                    <p className="text-amber-500 text-[10px] text-center font-mono px-4">
+                      Il QR verrà mostrato non appena il server RENTRI lo rilascerà
+                    </p>
                   </div>
                 )}
                 <p className="text-black font-mono text-lg font-bold tracking-wider">{d.selectedFirNumber || "N/A"}</p>

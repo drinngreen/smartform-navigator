@@ -57,7 +57,8 @@ export interface RentriFirmaPayload {
 
 export interface RentriFirmaResponse {
   numero_fir: string;
-  qr_code: string; // base64 data-uri or SVG string for QR
+  qr_code?: string;       // base64 string or data-uri for QR
+  qrCodeBytes?: string;   // alternative field name from some server versions
   pdf_url?: string;
   [key: string]: unknown;
 }
