@@ -135,19 +135,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialLoad = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        if (session?.user) {
-          await fetchUserData(session.user.id, session.user.email);
-        } else {
+        if (!session?.user) {
           setProfile(null);
           setRole(null);
+          setIsLoading(false);
+          return;
         }
 
-        setIsLoading(false);
+        // For initial load, getSession handles it below
+        if (!initialLoad) {
+          fetchUserData(session.user.id, session.user.email).then(() => {
+            setIsLoading(false);
+          });
+        }
       }
     );
 
@@ -159,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetchUserData(session.user.id, session.user.email);
       }
 
+      initialLoad = false;
       setIsLoading(false);
     });
 
