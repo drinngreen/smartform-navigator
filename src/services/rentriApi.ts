@@ -80,19 +80,65 @@ export interface RentriChiusuraPayload {
   [key: string]: unknown;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────
+
+/**
+ * Strip heavy / binary fields from the payload before sending to Render.
+ * The server loads certificates from its own /etc/secrets/ – we must NOT
+ * include any base64, p12 data, or oversized blobs in the request.
+ */
+function sanitizePayloadFir(raw: Record<string, unknown>): Record<string, unknown> {
+  // Fields that are relevant for RENTRI signature
+  const ALLOWED_KEYS = new Set([
+    "numero_fir",
+    "produttore_denominazione", "produttore_codice_fiscale", "produttore_indirizzo",
+    "produttore_comune", "produttore_provincia", "produttore_cap",
+    "destinatario_denominazione", "destinatario_codice_fiscale", "destinatario_indirizzo",
+    "destinatario_autorizzazione",
+    "trasportatore_denominazione", "trasportatore_codice_fiscale",
+    "trasportatore_iscrizione_albo", "trasportatore_targa_automezzo",
+    "trasportatore_targa_rimorchio", "trasportatore_conducente",
+    "intermediario_denominazione", "intermediario_codice_fiscale", "intermediario_iscrizione_albo",
+    "codice_eer", "descrizione_rifiuto", "stato_fisico",
+    "quantita", "unita_misura", "caratteristiche_hp",
+    "data_partenza", "data_arrivo", "note",
+    // Nested objects accepted by old callers
+    "produttore", "destinatario", "trasportatore", "intermediario", "rifiuto",
+  ]);
+
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!ALLOWED_KEYS.has(key)) continue;
+    // Extra safety: skip any string longer than 10 KB (base64 blobs, etc.)
+    if (typeof value === "string" && value.length > 10_000) continue;
+    clean[key] = value;
+  }
+  return clean;
+}
+
 // ─── API Functions ───────────────────────────────────────────
 
 /**
  * Send FIR data to RENTRI server for signature (vidimazione).
  * Called when clicking "INVIA E FIRMA PARTENZA".
+ *
+ * IMPORTANT: Only sends societaId + clean FIR fields.
+ * No certificates, no base64, no form_data blobs.
+ * The Render server loads the .p12 certificate from /etc/secrets/.
  */
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
+  const body = {
+    societaId: payload.societaId,
+    payloadFir: sanitizePayloadFir(payload.payloadFir),
+    isSandbox: false,
+  };
+
   const res = await fetch(`${RENTRI_BASE_URL}/firma-fir`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, isSandbox: false }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
