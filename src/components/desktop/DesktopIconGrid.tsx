@@ -120,14 +120,14 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
           >
             <div className="flex flex-col items-center gap-3 p-4 rounded-2xl transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">
               <div
-                className="w-24 h-24 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-125"
+                className="w-24 h-24 rounded-2xl flex items-center justify-center overflow-hidden"
                 style={{
                   background: `linear-gradient(135deg, rgba(${icon.color}, 0.25), rgba(${icon.color}, 0.1))`,
                   boxShadow: `0 0 30px rgba(${icon.color}, 0.5), 0 0 60px rgba(${icon.color}, 0.3), 0 0 90px rgba(${icon.color}, 0.15), inset 0 0 20px rgba(${icon.color}, 0.1)`,
                   border: `2px solid rgba(${icon.color}, 0.7)`,
                 }}
               >
-                <img src={icon.iconImage} alt={icon.label} className="h-12 w-12" />
+                <img src={icon.iconImage} alt={icon.label} className="h-12 w-12 transition-transform duration-300 group-hover:scale-125" />
               </div>
               <span className="text-sm text-center font-semibold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] group-hover:text-white transition-colors">
                 {icon.label}

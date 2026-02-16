@@ -8,13 +8,14 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { FileText, Clock, CheckCircle, Send, Edit, Download, Printer, Trash2 } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
+import { toast } from "sonner";
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
 export default function CronologiaFIRPage() {
   const navigate = useNavigate();
   const loadFromDatabase = useFIRStore((s) => s.loadFromDatabase);
-  const { myForms: firForms, isLoadingMyForms: isLoading } = useFIRForms();
+  const { myForms: firForms, isLoadingMyForms: isLoading, deleteFIR } = useFIRForms();
   const [filter, setFilter] = useState<FilterStatus>("all");
 
   const allForms = firForms || [];
@@ -34,6 +35,12 @@ export default function CronologiaFIRPage() {
   const handleEdit = (fir: any) => {
     loadFromDatabase(fir);
     navigate("/app");
+  };
+
+  const handleDelete = (fir: any) => {
+    if (window.confirm(`Sei sicuro di voler eliminare il FIR ${fir.numero_fir || "senza numero"}?`)) {
+      deleteFIR.mutate(fir.id);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -151,18 +158,15 @@ export default function CronologiaFIRPage() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 mt-2">
-                {fir.status === "bozza" && (
+                {(fir.status === "bozza" || fir.status === "inviato") && (
                   <button onClick={() => handleEdit(fir)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
-                    <Edit className="h-3.5 w-3.5" /> Modifica
+                    <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
                 <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors">
                   <Download className="h-3.5 w-3.5" /> PDF
                 </button>
-                <button className="p-2 rounded-xl bg-card border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
-                  <Printer className="h-3.5 w-3.5" />
-                </button>
-                <button className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors">
+                <button onClick={() => handleDelete(fir)} className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>

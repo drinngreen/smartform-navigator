@@ -1,17 +1,57 @@
+import { useEffect, useRef } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { FIRFormComplete } from "@/components/fir/FIRFormComplete";
 import { FIRTrafficLight } from "@/components/fir/FIRTrafficLight";
 import { useAuth } from "@/hooks/useAuth";
+import { useFIRStore } from "@/stores/firStore";
+import { supabase } from "@/lib/supabaseClient";
 import logoDragon from "@/assets/logo-dragon.png";
 
 export default function MobileAppPage() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const firstName = profile?.nome?.split(" ")[0] || "Utente";
+  const workflowStatus = useFIRStore((s) => s.workflowStatus);
+  const editingFirId = useFIRStore((s) => s.editingFirId);
+  const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleRefresh = () => {
     window.location.reload();
   };
+
+  // ── Auto GPS tracking when FIR is "inviato" (in viaggio) ──
+  useEffect(() => {
+    if (workflowStatus === "inviato" && user?.id && navigator.geolocation) {
+      const sendPosition = (pos: GeolocationPosition) => {
+        supabase.from("driver_locations").insert({
+          user_id: user.id,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          speed: pos.coords.speed,
+          accuracy: pos.coords.accuracy,
+          fir_id: editingFirId,
+          tenant_id: profile?.tenant_id || null,
+        }).then(({ error }) => {
+          if (error) console.warn("[GPS] Insert error:", error.message);
+        });
+      };
+
+      // Send immediately
+      navigator.geolocation.getCurrentPosition(sendPosition, () => {});
+
+      // Then every 30 seconds
+      gpsIntervalRef.current = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(sendPosition, () => {});
+      }, 30000);
+    }
+
+    return () => {
+      if (gpsIntervalRef.current) {
+        clearInterval(gpsIntervalRef.current);
+        gpsIntervalRef.current = null;
+      }
+    };
+  }, [workflowStatus, user?.id, editingFirId, profile?.tenant_id]);
 
   return (
     <MobileShell>

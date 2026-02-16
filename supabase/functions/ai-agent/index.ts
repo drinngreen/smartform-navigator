@@ -16,7 +16,8 @@ Il tuo compito principale è aiutare gli autisti a compilare i FIR tramite detta
 
 Quando l'utente ti detta informazioni per un FIR, devi:
 1. Estrarre i dati rilevanti (destinatario, trasportatore, codice EER, quantità, ecc.)
-2. Restituire un oggetto JSON "firUpdates" con i campi da aggiornare nel form
+2. Rispondere SEMPRE in linguaggio naturale italiano, in modo chiaro e amichevole.
+3. Se devi aggiornare campi nel form, aggiungi un blocco JSON alla fine del messaggio racchiuso tra \`\`\`json e \`\`\`, con la struttura {"firUpdates": {...}}
 
 I campi MODIFICABILI nel form FIR sono:
 - destinatarioDenominazione, destinatarioUnitaLocale, destinatarioCF, destinatarioOperazione, destinatarioCodiceOperazione
@@ -29,12 +30,15 @@ Rispondi SEMPRE in italiano. Sii conciso e pratico.
 
 Se l'utente chiede informazioni su codici EER, normativa RENTRI, o procedure FIR, rispondi con competenza.
 
-Quando aggiorni i campi del FIR, includi nella risposta JSON un campo "firUpdates" con le coppie chiave-valore da aggiornare.
-Per resettare il form, usa: { "__reset": true }
-
-Esempio risposta con aggiornamenti FIR:
+Esempio di risposta con aggiornamenti FIR:
 Se l'utente dice "il destinatario è Eco Green Srl, codice fiscale 12345678901, operazione R13"
-Rispondi con un messaggio di conferma e includi gli aggiornamenti.`;
+Rispondi così:
+"Ho aggiornato il destinatario con Eco Green Srl e l'operazione R13. Ecco i dati inseriti:
+\`\`\`json
+{"firUpdates": {"destinatarioDenominazione": "Eco Green Srl", "destinatarioCF": "12345678901", "destinatarioOperazione": "R", "destinatarioCodiceOperazione": "R13"}}
+\`\`\`"
+
+Per resettare il form, includi nel blocco JSON: {"firUpdates": {"__reset": true}}`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -65,7 +69,6 @@ serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT + contextMessage },
           ...messages,
         ],
-        response_format: { type: "json_object" },
         temperature: 0.3,
       }),
     });
@@ -87,28 +90,46 @@ serve(async (req) => {
     const data = await response.json();
     const assistantContent = data.choices?.[0]?.message?.content || "";
 
-    // Try to parse JSON response for firUpdates
+    // Parse mixed text+JSON response
     let content = assistantContent;
     let firUpdates = undefined;
 
-    try {
-      const parsed = JSON.parse(assistantContent);
-      content = parsed.message || parsed.content || parsed.response || assistantContent;
-      if (parsed.firUpdates) {
-        firUpdates = parsed.firUpdates;
-        // Server-side protection: strip protected fields even if AI included them
-        const PROTECTED = [
-          "produttoreDenominazione", "produttoreUnitaLocale", "produttoreCF",
-          "produttoreNumeroAut", "produttoreTipoAut", "produttoreDataAut",
-          "intermediarioDenominazione", "intermediarioCF", "intermediarioNumeroAlbo",
-        ];
-        for (const key of PROTECTED) {
-          delete firUpdates[key];
+    // Try to extract JSON block from markdown code fences
+    const jsonBlockMatch = assistantContent.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
+    if (jsonBlockMatch) {
+      try {
+        const parsed = JSON.parse(jsonBlockMatch[1]);
+        if (parsed.firUpdates) {
+          firUpdates = parsed.firUpdates;
         }
+        // Remove the JSON block from the displayed content
+        content = assistantContent.replace(/```json\s*\n?[\s\S]*?\n?\s*```/, "").trim();
+      } catch {
+        // Invalid JSON in code block, ignore
       }
-    } catch {
-      // Not JSON, use as plain text
-      content = assistantContent;
+    } else {
+      // Fallback: try parsing the entire response as JSON (backward compat)
+      try {
+        const parsed = JSON.parse(assistantContent);
+        content = parsed.message || parsed.content || parsed.response || assistantContent;
+        if (parsed.firUpdates) {
+          firUpdates = parsed.firUpdates;
+        }
+      } catch {
+        // Not JSON at all, use as plain text - this is the normal case now
+      }
+    }
+
+    // Server-side protection: strip protected fields
+    if (firUpdates) {
+      const PROTECTED = [
+        "produttoreDenominazione", "produttoreUnitaLocale", "produttoreCF",
+        "produttoreNumeroAut", "produttoreTipoAut", "produttoreDataAut",
+        "intermediarioDenominazione", "intermediarioCF", "intermediarioNumeroAlbo",
+      ];
+      for (const key of PROTECTED) {
+        delete firUpdates[key];
+      }
     }
 
     return new Response(JSON.stringify({ content, firUpdates }), {
