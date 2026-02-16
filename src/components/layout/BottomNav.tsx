@@ -18,7 +18,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto safe-area-bottom">
-      <div className="bg-card/95 backdrop-blur-xl border-t border-border/30">
+      <div className="bg-card/95 backdrop-blur-xl border-t border-primary/20" style={{ boxShadow: '0 -2px 20px rgba(192, 173, 103, 0.1)' }}>
         <div className="flex items-center justify-around py-2 px-0.5">
           {navItems.map((item) => {
             const active = location.pathname === item.href;
@@ -40,10 +40,19 @@ export function BottomNav() {
                   active && "bg-background/50"
                 )}>
                   <Icon 
-                    className={cn("h-5 w-5 transition-all", active && "drop-shadow-[0_0_8px_currentColor]")} 
+                    className={cn("h-5 w-5 transition-all", active && "icon-led-strong")} 
                   />
+                  {active && (
+                    <span 
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full animate-pulse"
+                      style={{ backgroundColor: `rgb(${item.color})`, boxShadow: `0 0 6px rgb(${item.color})` }}
+                    />
+                  )}
                 </div>
-                <span className="text-[9px] font-mono font-medium tracking-wider">{item.label}</span>
+                <span className={cn(
+                  "text-[9px] font-mono font-medium tracking-wider",
+                  active && "font-bold"
+                )}>{item.label}</span>
               </Link>
             );
           })}
