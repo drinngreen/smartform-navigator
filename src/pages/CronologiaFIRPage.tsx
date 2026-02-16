@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { useFIRForms } from "@/hooks/useFIRForms";
+import { useFIRStore } from "@/stores/firStore";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { FileText, Clock, CheckCircle, Send, Edit, Download, Printer, Trash2 } from "lucide-react";
@@ -10,37 +12,45 @@ import logoDragon from "@/assets/logo-dragon.png";
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
 export default function CronologiaFIRPage() {
+  const navigate = useNavigate();
+  const loadFromDatabase = useFIRStore((s) => s.loadFromDatabase);
   const { myForms: firForms, isLoadingMyForms: isLoading } = useFIRForms();
   const [filter, setFilter] = useState<FilterStatus>("all");
 
   const allForms = firForms || [];
   const counts = {
     all: allForms.length,
-    draft: allForms.filter((f: any) => f.status === "draft").length,
-    submitted: allForms.filter((f: any) => f.status === "submitted").length,
-    completed: allForms.filter((f: any) => f.status === "completed").length,
+    draft: allForms.filter((f: any) => f.status === "bozza").length,
+    submitted: allForms.filter((f: any) => f.status === "inviato").length,
+    completed: allForms.filter((f: any) => f.status === "completato").length,
   };
 
+  const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", completato: "completed" };
   const filtered = allForms.filter((fir: any) => {
     if (filter === "all") return true;
-    return fir.status === filter;
+    return statusMap[fir.status] === filter;
   });
+
+  const handleEdit = (fir: any) => {
+    loadFromDatabase(fir);
+    navigate("/app");
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "draft":
+      case "bozza":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
             <Clock className="h-3 w-3" /> Bozza
           </span>
         );
-      case "submitted":
+      case "inviato":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
             <CheckCircle className="h-3 w-3" /> Inviato
           </span>
         );
-      case "completed":
+      case "completato":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30">
             <CheckCircle className="h-3 w-3" /> Chiuso
@@ -119,7 +129,7 @@ export default function CronologiaFIRPage() {
               </p>
 
               {/* Details for submitted/completed */}
-              {fir.status !== "draft" && (
+              {fir.status !== "bozza" && (
                 <div className="space-y-0.5 mb-3">
                   {fir.codice_eer && (
                     <p className="text-xs text-muted-foreground">
@@ -141,8 +151,8 @@ export default function CronologiaFIRPage() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 mt-2">
-                {fir.status === "draft" && (
-                  <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
+                {fir.status === "bozza" && (
+                  <button onClick={() => handleEdit(fir)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
                     <Edit className="h-3.5 w-3.5" /> Modifica
                   </button>
                 )}
