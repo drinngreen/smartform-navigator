@@ -91,7 +91,7 @@ export default function GestioneFIRPage() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiediNuoviNumeri("global_reco");
+      const result = await richiediNuoviNumeri("global");
       if (result.numeri && result.numeri.length > 0) {
         // Save to pool
         const rows = result.numeri.map((n: string) => ({
@@ -225,7 +225,7 @@ export default function GestioneFIRPage() {
                 // Step 2: Actual test
                 console.log("[RENTRI TEST] Calling /firma-fir...");
                 const result = await inviaFirmaRentri({
-                  societaId: "global_reco",
+                  societaId: "global",
                   payloadFir: {
                     _test: true,
                     numero_fir: "SKKZR00000001",
