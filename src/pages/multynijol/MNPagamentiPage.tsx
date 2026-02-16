@@ -1,1 +1,2 @@
-export default function MNPagamentiPage() { return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">MN Pagamenti</h1></div>; }
+import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
+export default function MNPagamentiPage() { return <MNAdminLayout title="Pagamenti" subtitle="Gestione pagamenti"><div className="p-6 rounded-2xl bg-card/60 border border-border/30"><p className="text-muted-foreground">Pagamenti privati</p></div></MNAdminLayout>; }

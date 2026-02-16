@@ -1,1 +1,1 @@
-export default function MNMultyprogetAppPage() { return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">MN Multyproget App</h1></div>; }
+export default function MNMultyprogetAppPage() { return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">Multyproget App</h1></div>; }

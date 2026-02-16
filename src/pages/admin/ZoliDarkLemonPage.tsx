@@ -1,3 +1,14 @@
+import { AdminLayout } from "@/components/layout/AdminLayout";
+
 export default function ZoliDarkLemonPage() {
-  return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">Zoli Dark Lemon</h1><p className="text-muted-foreground mt-2">Pagina in fase di ripristino...</p></div>;
+  return (
+    <AdminLayout title="Zoli Dark Lemon" subtitle="Assistente AI Aziendale">
+      <div className="space-y-6">
+        <div className="p-6 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+          <h2 className="text-lg font-display text-foreground mb-2">AI Assistant</h2>
+          <p className="text-sm text-muted-foreground">Assistente intelligente per la gestione dei rifiuti e documentazione.</p>
+        </div>
+      </div>
+    </AdminLayout>
+  );
 }
