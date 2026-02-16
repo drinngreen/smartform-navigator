@@ -1,109 +1,104 @@
 
-# Piano di Risoluzione: Problemi Critici App e Dashboard
+# Piano Completo di Risoluzione - Tutti i Problemi Critici
 
-## Problemi Identificati
+## Problemi e Soluzioni
 
-### 1. GPS Flotta NON traccia automaticamente e admin non vede nulla
-- Le app registrano GPS solo con `console.log` (nessun salvataggio in database)
-- Non esiste una tabella `driver_locations` per salvare le posizioni
-- La pagina admin `/admin/gps` non esiste (nessun file corrispondente)
-- I trasportatori devono essere tracciati in automatico quando hanno un FIR attivo
+### 1. Drag & Drop icone non funziona
+**Causa**: Il componente `DesktopIconGrid` usa `onMouseDown` + `onClick` sullo stesso elemento. Il `handleClick` naviga via anche durante il drag perche' il timeout di 50ms su `isDragging.current = false` e' troppo breve o il click event si registra prima del timeout.
+**Fix**: Aggiungere una soglia di movimento minimo (5px) prima di attivare `isDragging`, e usare `e.preventDefault()` + `e.stopPropagation()` nel mouseDown per evitare conflitti. Separare click e drag con un `dragDistance` counter.
 
-### 2. Icone Dashboard: zoom esce dal riquadro LED
-- Le icone con `hover:scale-125` escono dal loro contenitore LED
-- Il riquadro LED deve rimanere fermo, solo il contenuto interno deve zoomare
-- Soluzione: aggiungere `overflow-hidden` al contenitore dell'icona
+### 2. GPS Flotta non funzionante
+**Causa**: La pagina esiste e il codice di tracking in `MobileAppPage` invia dati, ma:
+- Il campo `targa_automezzo` potrebbe non esistere nella tabella `profiles` (errore silenzioso nella query GPS)
+- Non c'e' un pulsante di refresh manuale nella pagina GPS
+- La finestra temporale di 5 minuti e' troppo stretta per test
 
-### 3. I FIR non si salvano correttamente
-- `closeFIR` usa `.maybeSingle()` che puo' restituire `null` senza errore quando RLS blocca
-- L'autosave puo' fallire silenziosamente senza feedback
-- Il salvataggio bozza chiama `resetForm()` che cancella tutto prima che l'utente veda conferma
+**Fix**:
+- Verificare e aggiornare la query per gestire campi mancanti
+- Aggiungere refresh manuale e ampliare la finestra a 30 minuti
+- Aggiungere un contatore "Ultimo aggiornamento" e auto-refresh piu' frequente (15s)
 
-### 4. Cronologia scompare
-- La query filtra per `deleted_by_user = false` ma non c'e' gestione errori
-- Se l'utente non e' autenticato la query fallisce silenziosamente
-- Il pulsante Elimina nella cronologia non ha un handler collegato (il bottone Trash2 non fa nulla)
+### 3. Personale - pulsanti modifica password e eliminazione
+**Stato attuale**: I pulsanti ESISTONO gia' (KeyRound cyan, Trash2 red) con le dialog funzionanti. Il problema e' che i pulsanti `ghost` su sfondo scuro sono quasi invisibili.
+**Fix**: Sostituire i pulsanti ghost con pulsanti con sfondo pieno e ben visibile:
+- Pulsante password: sfondo cyan con icona Pencil (matita) bianca, non solo icona ghost
+- Pulsante elimina: sfondo rosso con icona Trash2 bianca
+- Aggiungere label testuale accanto all'icona per chiarezza
 
-### 5. AI risponde con stringhe JSON invece di linguaggio naturale
-- L'edge function forza `response_format: { type: "json_object" }` su OpenRouter
-- Il modello e' obbligato a rispondere SEMPRE in JSON
-- Il frontend prova a estrarre `parsed.message` ma se il modello usa chiavi diverse, mostra il JSON grezzo
-- Soluzione: rimuovere il vincolo `response_format` e gestire risposte miste (testo + JSON opzionale)
+### 4. Registro FIR - pulsanti azione invisibili
+**Causa**: Il pulsante "Modifica Bozza" appare SOLO per status `draft`, con stile ghost quasi invisibile. Per gli altri stati non c'e' nessun pulsante.
+**Fix**:
+- Aggiungere pulsanti visibili per TUTTI gli stati: Visualizza (occhio, cyan), Modifica (matita, per bozze), Scarica JSON (download, verde), Elimina (cestino, rosso)
+- Usare pulsanti con sfondo colorato, non ghost
+- Sfondo pieno con bordo colorato per massima visibilita'
 
-### 6. App non ritorna al punto lasciato dopo chiusura/riapertura
-- Lo store Zustand persiste `editingFirId` e `workflowStatus` in localStorage
-- Ma `MobileAppPage` non controlla se c'e' un FIR attivo al mount
-- `FIRFormComplete` usa `useState(!!store.editingFirId)` per `isStarted`, il che funziona solo se lo store e' gia' idratato
-- La reidratazione puo' avvenire dopo il render iniziale, lasciando `isStarted = false`
+### 5. Messaggi Admin - pagina vuota
+**Causa**: `AdminMessagesPage.tsx` e' un placeholder vuoto (solo testo statico). Non usa affatto `useMessages` o la lista conversazioni.
+**Fix**: Ricostruire completamente la pagina:
+- Lista conversazioni sulla sinistra (tutti gli utenti che hanno scritto)
+- Chat sulla destra con lo storico messaggi
+- Input per scrivere e inviare messaggi con allegati
+- Usare `useMessages` hook gia' esistente che ha `fetchConversations` per admin
+- Supportare la rotta `/admin/messaggi/:partnerId` gia' definita in App.tsx
 
----
+### 6. Telefonate non funzionano
+**Causa**: Il sistema di chiamate e' completamente stub:
+- `CallContext` restituisce solo `{ isCallActive: false }`
+- `CallManager` restituisce `null`
+- `AdminCallDialog` restituisce `null`
+- `useWebRTCCall`, `useOfficeCall`, `useOfficeWebCall` sono tutti stub
+- Nessun codice Retell SDK presente nel progetto (nonostante la chiave API sia configurata)
+- Non esiste una edge function per creare web calls
 
-## Piano di Implementazione
+**Fix**: Implementare il sistema di chiamate Retell AI:
+- Creare edge function `retell-call` per creare web calls tramite API Retell
+- Implementare il `CallContext` con logica reale di chiamata
+- Aggiungere pulsante chiamata nella pagina messaggi admin (per chiamare singoli utenti)
+- Aggiungere pulsante "Disattiva ricezione / Attiva segreteria" nell'header admin
 
-### Fase 1: Tabella GPS e tracciamento automatico
-1. Creare tabella `driver_locations` con colonne: `id`, `user_id`, `lat`, `lng`, `speed`, `accuracy`, `fir_id`, `tenant_id`, `created_at`
-2. Aggiungere RLS per permettere INSERT dal trasportatore e SELECT dall'admin
-3. Modificare `MobileAppPage` per avviare automaticamente `watchPosition` quando c'e' un FIR in stato "inviato" (in viaggio), e inviare la posizione ogni 30 secondi
-4. Creare la pagina admin `/admin/gps` (`src/pages/admin/GPSFlottaPage.tsx`) che mostra in tempo reale le posizioni di tutti i trasportatori attivi con mappa tabellare (nome, targa, posizione, velocita', ultimo aggiornamento, FIR attivo)
-5. Aggiungere la rotta in `App.tsx`
-
-### Fase 2: Fix icone Dashboard
-1. In `DesktopIconGrid.tsx`, aggiungere `overflow-hidden` al contenitore dell'icona LED
-2. Spostare `hover:scale-125` dall'intero contenitore all'immagine interna (`img`)
-3. Il riquadro LED rimane fermo, solo l'icona PNG si ingrandisce
-
-### Fase 3: Fix salvataggio FIR
-1. In `useFIRForms.ts`:
-   - Nella mutation `closeFIR`, dopo `.maybeSingle()` verificare che `data` non sia `null` e in quel caso lanciare errore esplicito
-   - Aggiungere log di debug per tracciare i fallimenti
-2. In `FIRFormComplete.tsx`:
-   - Nel `handleSaveDraft`, spostare `resetForm()` DOPO il toast di successo e aggiungere un piccolo ritardo per evitare che il reset cancelli i dati prima del salvataggio completo
-   - Migliorare feedback errori nell'autosave
-
-### Fase 4: Fix Cronologia
-1. In `CronologiaFIRPage.tsx`:
-   - Collegare il pulsante Trash2 alla mutation `deleteFIR` con conferma
-   - Aggiungere gestione errori visibili
-   - Permettere modifica anche dei FIR "inviato" (non solo "bozza")
-
-### Fase 5: Fix AI - risposte in linguaggio naturale
-1. In `supabase/functions/ai-agent/index.ts`:
-   - Rimuovere `response_format: { type: "json_object" }`
-   - Aggiornare il system prompt per istruire il modello a rispondere in linguaggio naturale e includere `firUpdates` come blocco JSON separato (es. dentro tag ```json```)
-   - Nel parsing, cercare blocchi JSON nel testo della risposta per estrarre `firUpdates`
-   - Se non c'e' JSON, usare il testo come risposta diretta
-
-### Fase 6: Fix persistenza sessione FIR
-1. In `FIRFormComplete.tsx`:
-   - Cambiare `isStarted` da useState a un valore derivato dallo store: `const isStarted = !!store.editingFirId`
-   - Rimuovere `setIsStarted` e usare direttamente lo stato persistito
-   - Questo garantisce che alla riapertura dell'app, se c'e' un FIR attivo, il form si mostra subito
-2. Subscribere allo store per reagire ai cambiamenti di idratazione
+### 7. Pulsante disattivazione chiamate / segreteria
+**Fix**: Aggiungere nell'`AdminHeader` un toggle Phone con stati:
+- Attivo (verde): ricezione chiamate attiva
+- Disattivo (rosso): segreteria Retell attiva
+- Lo stato viene salvato in localStorage per persistenza
 
 ---
 
 ## Dettagli Tecnici
 
-### Schema tabella `driver_locations`
-```text
-driver_locations
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id     UUID NOT NULL (no FK to auth.users)
-  tenant_id   UUID
-  fir_id      UUID
-  lat         DOUBLE PRECISION NOT NULL
-  lng         DOUBLE PRECISION NOT NULL
-  speed       DOUBLE PRECISION
-  accuracy    DOUBLE PRECISION
-  created_at  TIMESTAMPTZ DEFAULT now()
-```
+### File da modificare
 
-### RLS Policies
-- INSERT: `auth.uid() = user_id`
-- SELECT: admin puo' vedere tutto tramite il ruolo admin nel profilo
+1. **`src/components/desktop/DesktopIconGrid.tsx`** - Fix drag & drop con soglia di movimento
+2. **`src/pages/admin/GPSFlottaPage.tsx`** - Finestra 30min, refresh manuale, gestione errori
+3. **`src/pages/admin/PersonalePage.tsx`** - Pulsanti con sfondo pieno (cyan/rosso) + label + icona matita
+4. **`src/pages/admin/RegistroFIRPage.tsx`** - Pulsanti azione visibili per tutti gli stati
+5. **`src/pages/admin/AdminMessagesPage.tsx`** - Ricostruzione completa con chat funzionante
+6. **`src/components/layout/AdminHeader.tsx`** - Aggiunta toggle ricezione chiamate
+7. **`src/contexts/CallContext.tsx`** - Implementazione reale con Retell SDK
 
-### Tracciamento GPS automatico
-Il componente `MobileAppPage` avviera' un `watchPosition` automatico quando `workflowStatus === 'inviato'` e inviera' coordinate ogni 30 secondi alla tabella `driver_locations`. Quando il FIR viene chiuso, il tracking si ferma.
+### Nuovi file
 
-### AI: strategia di parsing misto
-Il prompt verra' aggiornato per dire al modello: "Rispondi sempre in linguaggio naturale italiano. Se devi aggiornare campi FIR, aggiungi un blocco JSON alla fine del messaggio con la struttura `{firUpdates: {...}}`". Il backend cerchera' blocchi JSON nella risposta testuale.
+8. **`supabase/functions/retell-call/index.ts`** - Edge function per creare web calls Retell
+9. **Nessuna modifica al database** - Le tabelle `messages`, `driver_locations` esistono gia' con RLS corrette
+
+### Stile pulsanti (regola anti-nero-su-nero)
+Tutti i pulsanti di azione useranno:
+- Sfondo colorato solido (non trasparente/ghost)
+- Testo bianco
+- Bordo luminoso coordinato
+- Hover con brightness aumentata
+- Esempio: `bg-cyan-500/80 text-white border border-cyan-400 hover:bg-cyan-400`
+
+### Messaggi Admin - Architettura
+La pagina usera' un layout a due colonne:
+- Colonna sinistra: lista conversazioni da `useMessages().conversations`
+- Colonna destra: chat attiva con messaggi in tempo reale
+- La URL `/admin/messaggi/:partnerId` seleziona automaticamente la conversazione
+- Pulsante "Nuova conversazione" per contattare qualsiasi utente dalla lista personale
+
+### Retell AI - Flusso chiamata
+1. Admin clicca "Chiama" su un utente
+2. Frontend chiama edge function `retell-call` con `agent_id` configurato
+3. Edge function usa `RETELL_API_KEY` per creare una web call via `POST https://api.retell.ai/v2/create-web-call`
+4. Frontend riceve `access_token` e avvia `RetellWebClient`
+5. Toggle segreteria salva stato locale e disabilita la ricezione incoming
