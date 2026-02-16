@@ -5,7 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { richiediNuoviNumeri, inviaFirmaRentri, getRentriPdfUrl, checkRentriHealth } from "@/services/rentriApi";
-import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle } from "lucide-react";
+import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle, ChevronLeft, ChevronRight, Search, Filter } from "lucide-react";
+
+const PAGE_SIZE = 50;
+type PoolFilter = "all" | "available" | "reserved" | "consumed";
 
 export default function GestioneFIRPage() {
   const { user } = useAuth();
@@ -13,6 +16,9 @@ export default function GestioneFIRPage() {
   const [bulkInput, setBulkInput] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [poolFilter, setPoolFilter] = useState<PoolFilter>("all");
+  const [poolPage, setPoolPage] = useState(0);
+  const [poolSearch, setPoolSearch] = useState("");
   const [testResult, setTestResult] = useState<{
     success: boolean;
     message: string;
@@ -41,6 +47,27 @@ export default function GestioneFIRPage() {
       };
     },
     refetchInterval: 10000,
+  });
+
+  // ── Pool list query (paginated) ───────────────────────
+  const { data: poolData, isLoading: poolLoading } = useQuery({
+    queryKey: ["fir-pool-list", poolFilter, poolPage, poolSearch],
+    queryFn: async () => {
+      let q = supabase
+        .from("fir_number_pool")
+        .select("id, fir_number, status, user_id, created_at, assigned_at, consumed_at, suspended", { count: "exact" })
+        .eq("societa_id", "global")
+        .order("created_at", { ascending: false })
+        .range(poolPage * PAGE_SIZE, (poolPage + 1) * PAGE_SIZE - 1);
+
+      if (poolFilter !== "all") q = q.eq("status", poolFilter);
+      if (poolSearch.trim()) q = q.ilike("fir_number", `%${poolSearch.trim()}%`);
+
+      const { data, count, error } = await q;
+      if (error) throw error;
+      return { rows: data ?? [], total: count ?? 0 };
+    },
+    refetchInterval: 15000,
   });
 
   // ── Bulk import mutation ──────────────────────────────
@@ -319,6 +346,113 @@ export default function GestioneFIRPage() {
                   {testResult.details}
                 </pre>
               </details>
+            </div>
+          )}
+        </div>
+
+        {/* ── Pool Number List ── */}
+        <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+          <div className="flex items-center gap-2 text-primary">
+            <Database className="h-5 w-5" />
+            <h3 className="font-display text-lg tracking-wider uppercase">Elenco Numeri nel Serbatoio</h3>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={poolSearch}
+                onChange={(e) => { setPoolSearch(e.target.value); setPoolPage(0); }}
+                placeholder="Cerca numero FIR..."
+                className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div className="flex gap-1">
+              {(["all", "available", "reserved", "consumed"] as PoolFilter[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => { setPoolFilter(f); setPoolPage(0); }}
+                  className={`px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${
+                    poolFilter === f
+                      ? "bg-primary/20 text-primary border border-primary/30"
+                      : "bg-background/50 text-muted-foreground border border-border/20 hover:bg-primary/10"
+                  }`}
+                >
+                  {f === "all" ? "Tutti" : f === "available" ? "Disponibili" : f === "reserved" ? "Assegnati" : "Usati"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/30 text-muted-foreground font-mono text-xs uppercase">
+                  <th className="text-left py-2 px-3">Numero FIR</th>
+                  <th className="text-left py-2 px-3">Stato</th>
+                  <th className="text-left py-2 px-3 hidden md:table-cell">Creato il</th>
+                  <th className="text-left py-2 px-3 hidden lg:table-cell">Assegnato il</th>
+                  <th className="text-left py-2 px-3 hidden lg:table-cell">Sospeso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {poolLoading ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-muted-foreground font-mono text-xs">Caricamento...</td></tr>
+                ) : (poolData?.rows.length ?? 0) === 0 ? (
+                  <tr><td colSpan={5} className="py-8 text-center text-muted-foreground font-mono text-xs">Nessun numero trovato</td></tr>
+                ) : (
+                  poolData!.rows.map((row: any) => (
+                    <tr key={row.id} className="border-b border-border/10 hover:bg-primary/5 transition-colors">
+                      <td className="py-2 px-3 font-mono text-foreground">{row.fir_number}</td>
+                      <td className="py-2 px-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ${
+                          row.status === "available" ? "bg-green-500/15 text-green-400" :
+                          row.status === "reserved" ? "bg-cyan-500/15 text-cyan-400" :
+                          "bg-orange-500/15 text-orange-400"
+                        }`}>
+                          {row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : "Usato"}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">
+                        {new Date(row.created_at).toLocaleDateString("it-IT")}
+                      </td>
+                      <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
+                        {row.assigned_at ? new Date(row.assigned_at).toLocaleDateString("it-IT") : "—"}
+                      </td>
+                      <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
+                        {row.suspended ? "⚠️ Sì" : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {(poolData?.total ?? 0) > PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs font-mono text-muted-foreground">
+                {poolPage * PAGE_SIZE + 1}–{Math.min((poolPage + 1) * PAGE_SIZE, poolData!.total)} di {poolData!.total}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPoolPage((p) => Math.max(0, p - 1))}
+                  disabled={poolPage === 0}
+                  className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPoolPage((p) => p + 1)}
+                  disabled={(poolPage + 1) * PAGE_SIZE >= (poolData?.total ?? 0)}
+                  className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
