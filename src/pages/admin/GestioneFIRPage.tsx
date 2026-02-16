@@ -37,18 +37,38 @@ export default function GestioneFIRPage() {
     queryKey: ["fir-pool-stats"],
     queryFn: async () => {
       // Use separate count queries to avoid the 1000-row limit
-      const [totalRes, disponibiliRes, assegnatiRes, usatiRes] = await Promise.all([
+      const [totalRes, disponibiliRes, inUsoRes, usatiRes, totalProfilesRes] = await Promise.all([
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "available"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "reserved"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "consumed"),
+        supabase.from("profiles").select("user_id", { count: "exact", head: true }),
       ]);
+
+      // Count distinct users that have at least one FIR number
+      // We paginate user_ids to get distinct count
+      let distinctUsers = new Set<string>();
+      let page = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("fir_number_pool")
+          .select("user_id")
+          .eq("societa_id", "global")
+          .range(page * batchSize, (page + 1) * batchSize - 1);
+        if (!data || data.length === 0) break;
+        data.forEach((r: any) => distinctUsers.add(r.user_id));
+        if (data.length < batchSize) break;
+        page++;
+      }
 
       return {
         total: totalRes.count ?? 0,
         disponibili: disponibiliRes.count ?? 0,
-        assegnati: assegnatiRes.count ?? 0,
+        inUso: inUsoRes.count ?? 0,
         usati: usatiRes.count ?? 0,
+        utentiAssegnati: distinctUsers.size,
+        utentiTotali: totalProfilesRes.count ?? 0,
       };
     },
     refetchInterval: 10000,
@@ -231,11 +251,12 @@ export default function GestioneFIRPage() {
     <AdminLayout title="Gestione FIR" subtitle="Serbatoio Numeri Formulario">
       <div className="space-y-6">
         {/* ── Stats Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={<Database className="h-5 w-5" />} label="Totale" value={stats?.total ?? 0} color="text-primary" loading={statsLoading} />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard icon={<Database className="h-5 w-5" />} label="Totale Numeri" value={stats?.total ?? 0} color="text-primary" loading={statsLoading} />
+          <StatCard icon={<Users className="h-5 w-5" />} label="Utenti Assegnati" value={`${stats?.utentiAssegnati ?? 0}/${stats?.utentiTotali ?? 0}`} color="text-blue-400" loading={statsLoading} />
           <StatCard icon={<CheckCircle className="h-5 w-5" />} label="Disponibili" value={stats?.disponibili ?? 0} color="text-neon-green" loading={statsLoading} />
-          <StatCard icon={<Clock className="h-5 w-5" />} label="In Uso" value={stats?.assegnati ?? 0} color="text-neon-cyan" loading={statsLoading} />
-          <StatCard icon={<Package className="h-5 w-5" />} label="Usati" value={stats?.usati ?? 0} color="text-orange-400" loading={statsLoading} />
+          <StatCard icon={<Clock className="h-5 w-5" />} label="In Uso" value={stats?.inUso ?? 0} color="text-neon-cyan" loading={statsLoading} />
+          <StatCard icon={<Package className="h-5 w-5" />} label="Consumati" value={stats?.usati ?? 0} color="text-orange-400" loading={statsLoading} />
         </div>
 
         {/* ── Bulk Import ── */}
@@ -602,7 +623,7 @@ export default function GestioneFIRPage() {
     </AdminLayout>
   );
 }
-function StatCard({ icon, label, value, color, loading }: { icon: React.ReactNode; label: string; value: number; color: string; loading: boolean }) {
+function StatCard({ icon, label, value, color, loading }: { icon: React.ReactNode; label: string; value: number | string; color: string; loading: boolean }) {
   return (
     <div className="rounded-2xl bg-card/60 border border-border/30 p-4 flex flex-col items-center gap-2">
       <div className={`${color} opacity-70`}>{icon}</div>
