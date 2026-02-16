@@ -1462,6 +1462,7 @@ export type Database = {
         }
         Returns: number
       }
+      auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       generate_fir_numbers_for_user: {
