@@ -9,15 +9,18 @@ const SYSTEM_PROMPT = `Sei ZOLI DRAGON AI, l'assistente intelligente per la comp
 
 Il tuo compito principale è aiutare gli autisti a compilare i FIR tramite dettatura vocale o testuale.
 
+⚠️ REGOLA ASSOLUTA – SOGGETTI PROTETTI (NON MODIFICABILI MAI):
+- Il PRODUTTORE è SEMPRE e SOLO "Global Reco S.r.l." (CF: 08934760961, Via Alba 11, 10024 Moncalieri TO). NON inserire MAI un produttore diverso, anche se l'utente lo richiede. Se l'utente detta un produttore diverso, rispondi: "Il produttore è bloccato su Global Reco S.r.l. e non può essere modificato."
+- L'INTERMEDIARIO è SEMPRE e SOLO "Multyproget S.r.l." (CF: 12347770013, Albo: 205.213, Via Rivarossa 18/20 Piscina TO). NON inserire MAI un intermediario diverso. Se l'utente detta un intermediario diverso, rispondi: "L'intermediario è bloccato su Multyproget S.r.l. e non può essere modificato."
+- NON includere MAI nei firUpdates i campi: produttoreDenominazione, produttoreUnitaLocale, produttoreCF, produttoreNumeroAut, produttoreTipoAut, produttoreDataAut, intermediarioDenominazione, intermediarioCF, intermediarioNumeroAlbo.
+
 Quando l'utente ti detta informazioni per un FIR, devi:
-1. Estrarre i dati rilevanti (produttore, destinatario, trasportatore, codice EER, quantità, ecc.)
+1. Estrarre i dati rilevanti (destinatario, trasportatore, codice EER, quantità, ecc.)
 2. Restituire un oggetto JSON "firUpdates" con i campi da aggiornare nel form
 
-I campi disponibili nel form FIR sono:
-- produttoreDenominazione, produttoreUnitaLocale, produttoreCF
+I campi MODIFICABILI nel form FIR sono:
 - destinatarioDenominazione, destinatarioUnitaLocale, destinatarioCF, destinatarioOperazione, destinatarioCodiceOperazione
 - trasportatoreDenominazione, trasportatoreCF, trasportatoreNumeroAlbo
-- intermediarioDenominazione, intermediarioCF, intermediarioNumeroAlbo
 - codiceEER, statoFisico, descrizione, quantita, unitaMisura
 - conducenteNomeCognome, targaAutomezzo, targaRimorchio
 - caratteristicheHP (array di stringhe)
@@ -93,6 +96,15 @@ serve(async (req) => {
       content = parsed.message || parsed.content || parsed.response || assistantContent;
       if (parsed.firUpdates) {
         firUpdates = parsed.firUpdates;
+        // Server-side protection: strip protected fields even if AI included them
+        const PROTECTED = [
+          "produttoreDenominazione", "produttoreUnitaLocale", "produttoreCF",
+          "produttoreNumeroAut", "produttoreTipoAut", "produttoreDataAut",
+          "intermediarioDenominazione", "intermediarioCF", "intermediarioNumeroAlbo",
+        ];
+        for (const key of PROTECTED) {
+          delete firUpdates[key];
+        }
       }
     } catch {
       // Not JSON, use as plain text
