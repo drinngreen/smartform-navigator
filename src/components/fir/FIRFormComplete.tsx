@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale } from "lucide-react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Lock, Search } from "lucide-react";
 import { useFIRForms, mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useFIRStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId } from "@/services/rentriApi";
 import { generateFIRPdf } from "@/lib/firPdfExport";
+import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -78,6 +79,78 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-3">{children}</div>;
+}
+
+// ── Locked Field (read-only with lock icon) ──────────────────
+function LockedField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 flex items-center gap-1">
+        <Lock className="h-3 w-3 text-primary/60" />
+        {label}
+      </label>
+      <div className="w-full bg-secondary/30 border border-primary/10 rounded-lg px-3 py-2 text-foreground/70 text-sm font-mono cursor-not-allowed select-none">
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+// ── Searchable Destinatario Dropdown ──────────────────────────
+function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo: string, cf: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = search.length >= 1
+    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase())).slice(0, 20)
+    : DESTINATARI.slice(0, 20);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Seleziona Destinatario</label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Cerca impianto / destinatario..."
+          className="w-full bg-background/80 border border-neon-green/20 rounded-lg pl-9 pr-3 py-2 text-foreground text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-neon-green focus:border-neon-green/40 transition-all"
+        />
+      </div>
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-card border border-border/50 rounded-xl shadow-xl backdrop-blur-sm">
+          {filtered.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">Nessun risultato</div>
+          )}
+          {filtered.map((d, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                onSelect(d.nome, d.indirizzo, d.cf);
+                setSearch(d.nome);
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-neon-green/10 transition-colors border-b border-border/10 last:border-0"
+            >
+              <span className="text-xs text-foreground font-medium block">{d.nome}</span>
+              {d.indirizzo && <span className="text-[10px] text-muted-foreground block">{d.indirizzo}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Peso a Destino Popup ──────────────────────────────────
@@ -182,12 +255,12 @@ export function FIRFormComplete() {
     }
   };
 
-  // ── New FIR ─────────────────────────────────────
+  // ── New FIR (reset and start fresh) ─────────────────────────────────────
   const handleNewFIR = () => {
     store.resetForm();
     setIsStarted(false);
     setPdfBlobUrl(null);
-    toast.info("Nuovo FIR inizializzato");
+    toast.info("Pronto per un nuovo FIR");
   };
 
   // ── Validate departure fields ─────────────────────────
@@ -296,6 +369,13 @@ export function FIRFormComplete() {
     }
   };
 
+  // ── Handle destinatario selection from dropdown ──────────
+  const handleDestinatarioSelect = (nome: string, indirizzo: string, cf: string) => {
+    u("destinatarioDenominazione", nome);
+    u("destinatarioUnitaLocale", indirizzo);
+    u("destinatarioCF", cf);
+  };
+
   const tabs = [
     { label: "PRINCIPALE" },
     { label: "TRASBORDO" },
@@ -323,7 +403,7 @@ export function FIRFormComplete() {
         ))}
       </div>
 
-      {/* ── FORMULARI DISPONIBILI + INIZIA/RIPRENDI ── */}
+      {/* ── FORMULARI DISPONIBILI + INIZIA/RIPRENDI/NUOVO ── */}
       <div className="flex flex-col items-center gap-3 py-2">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-neon-green animate-pulse" />
@@ -382,12 +462,20 @@ export function FIRFormComplete() {
             </>
           )}
 
-          {/* CHIUSO state → FIR completato */}
+          {/* CHIUSO state → FIR completato + NUOVO FIR button */}
           {store.workflowStatus === 'chiuso' && (
-            <div className="text-center py-4 rounded-2xl bg-destructive/10 border border-destructive/30">
-              <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
-              {d.pesoRicevuto && <p className="text-xs text-muted-foreground mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
-            </div>
+            <>
+              <div className="text-center py-4 rounded-2xl bg-destructive/10 border border-destructive/30">
+                <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
+                {d.pesoRicevuto && <p className="text-xs text-muted-foreground mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
+              </div>
+              <button
+                onClick={handleNewFIR}
+                className="w-full py-4 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-base tracking-widest hover:bg-neon-green/10 transition-all flex items-center justify-center gap-3"
+              >
+                <Plus className="h-5 w-5" /> NUOVO FIR
+              </button>
+            </>
           )}
 
           {/* PDF Preview (Controllo Polizia) */}
@@ -401,7 +489,7 @@ export function FIRFormComplete() {
         </div>
       )}
 
-      {/* ── Action Buttons (Nuovo + Salva) ── */}
+      {/* ── Action Buttons (Nuovo + Salva) — only when active and NOT closed ── */}
       {(isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="flex gap-2">
           <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
@@ -436,15 +524,20 @@ export function FIRFormComplete() {
       {/* ═══════ PAGINA 1 - FORMULARIO ═══════ */}
       {activeTab === 0 && (
         <div className="space-y-3">
-          <Section title={`1. Produttore${d.produttoreDenominazione ? ` (${d.produttoreDenominazione})` : ""}`} defaultOpen>
-            <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
-            <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Via, CAP, Comune" />
-            <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} placeholder="CF o P.IVA" />
-            <Field label="Luogo produzione (se diverso)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
+          {/* ── 1. PRODUTTORE (LOCKED - Global Reco) ── */}
+          <Section title={`1. Produttore (${GLOBAL_RECO.nome})`} defaultOpen>
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <Lock className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-mono text-primary uppercase tracking-wider">Soggetto bloccato</span>
+            </div>
+            <LockedField label="Denominazione" value={d.produttoreDenominazione} />
+            <LockedField label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} />
+            <LockedField label="Codice Fiscale / P.IVA" value={d.produttoreCF} />
             <Row>
-              <Field label="N° Autorizzazione" value={d.produttoreNumeroAut} onChange={(v) => u("produttoreNumeroAut", v)} />
-              <Field label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => u("produttoreTipoAut", v)} />
+              <LockedField label="RENTRI / Autorizzazione" value={d.produttoreNumeroAut} />
+              <LockedField label="Tipo Aut." value={d.produttoreTipoAut} />
             </Row>
+            <Field label="Luogo produzione (se diverso)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
             <Field label="Data Autorizzazione" value={d.produttoreDataAut} onChange={(v) => u("produttoreDataAut", v)} type="date" />
             <Check label="Detentore diverso dal produttore" checked={d.isDetentore} onChange={(v) => u("isDetentore", v)} />
             {d.isDetentore && (
@@ -469,7 +562,9 @@ export function FIRFormComplete() {
             <Field label="CAP" value={d.cantiereCAP} onChange={(v) => u("cantiereCAP", v)} />
           </Section>
 
+          {/* ── 3. DESTINATARIO (Searchable dropdown) ── */}
           <Section title="3. Destinatario">
+            <DestinatarioSelector onSelect={handleDestinatarioSelect} />
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
@@ -501,10 +596,15 @@ export function FIRFormComplete() {
             <Field label="Nome Autista" value={d.trasportatoreNomeAutista} onChange={(v) => u("trasportatoreNomeAutista", v)} />
           </Section>
 
+          {/* ── 5. INTERMEDIARIO (LOCKED - Multyproget) ── */}
           <Section title="5. Intermediario / Commerciante">
-            <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
-            <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
-            <Field label="N° Iscrizione Albo" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <Lock className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-mono text-primary uppercase tracking-wider">Soggetto bloccato</span>
+            </div>
+            <LockedField label="Denominazione" value={d.intermediarioDenominazione} />
+            <LockedField label="Codice Fiscale / P.IVA" value={d.intermediarioCF} />
+            <LockedField label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} />
           </Section>
 
           <Section title="6. Caratteristiche del Rifiuto" defaultOpen>
