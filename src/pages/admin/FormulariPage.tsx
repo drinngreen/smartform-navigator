@@ -129,24 +129,24 @@ export default function FormulariPage() {
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
 
-    if (tab === "draft") return matchSearch && f.status === "draft";
-    if (tab === "submitted") return matchSearch && f.status === "submitted";
-    if (tab === "completed") return matchSearch && f.status === "completed";
+    if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
+    if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
+    if (tab === "completed") return matchSearch && (f.status === "completed" || f.status === "completato");
     return matchSearch;
   });
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => f.status === "draft").length,
-    submitted: forms.filter((f) => f.status === "submitted").length,
-    completed: forms.filter((f) => f.status === "completed").length,
+    draft: forms.filter((f) => f.status === "draft" || f.status === "bozza").length,
+    submitted: forms.filter((f) => f.status === "submitted" || f.status === "inviato").length,
+    completed: forms.filter((f) => f.status === "completed" || f.status === "completato").length,
   };
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case "draft": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
-      case "submitted": return <Badge className="gap-1 bg-blue-500/20 text-blue-400 border-blue-500/30"><FileText className="h-3 w-3" /> Inviato</Badge>;
-      case "completed": return <Badge className="gap-1 bg-green-500/20 text-green-400 border-green-500/30"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
+      case "draft": case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+      case "submitted": case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato</Badge>;
+      case "completed": case "completato": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -240,7 +240,7 @@ export default function FormulariPage() {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
-                        {form.status === "draft" && (
+                        {(form.status === "draft" || form.status === "bozza") && (
                           <Button
                             variant="ghost"
                             size="icon"
