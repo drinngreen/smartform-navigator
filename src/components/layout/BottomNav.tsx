@@ -18,7 +18,14 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto safe-area-bottom">
-      <div className="bg-card/95 backdrop-blur-xl border-t border-primary/20" style={{ boxShadow: '0 -2px 20px rgba(192, 173, 103, 0.1)' }}>
+      <div 
+        className="backdrop-blur-xl border-t-2 border-x border-b-0 rounded-t-2xl"
+        style={{ 
+          background: 'linear-gradient(180deg, rgba(15, 20, 40, 0.97) 0%, rgba(8, 12, 28, 0.99) 100%)',
+          borderColor: 'rgba(192, 173, 103, 0.4)',
+          boxShadow: '0 -4px 30px rgba(192, 173, 103, 0.15), 0 -1px 15px rgba(6, 182, 212, 0.1), inset 0 1px 0 rgba(192, 173, 103, 0.2)',
+        }}
+      >
         <div className="flex items-center justify-around py-2 px-0.5">
           {navItems.map((item) => {
             const active = location.pathname === item.href;
