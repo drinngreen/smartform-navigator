@@ -1,3 +1,42 @@
+import { BottomNav } from "@/components/layout/BottomNav";
+import { MobileShell } from "@/components/layout/MobileShell";
+import { FIRFormComplete } from "@/components/fir/FIRFormComplete";
+import { FIRTrafficLight } from "@/components/fir/FIRTrafficLight";
+import { useAuth } from "@/hooks/useAuth";
+import logoDragon from "@/assets/logo-dragon.png";
+
 export default function MobileAppPage() {
-  return <div className="min-h-screen bg-background p-4"><h1 className="text-2xl font-display text-foreground">App Mobile</h1><p className="text-muted-foreground mt-2">Pagina in fase di ripristino...</p></div>;
+  const { profile } = useAuth();
+  const firstName = profile?.nome?.split(" ")[0] || "Utente";
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  return (
+    <MobileShell>
+      <div className="px-4 pt-4 lg:pt-8 pb-2" style={{ borderBottom: '1px solid rgba(192, 173, 103, 0.15)' }}>
+        <div className="flex items-center gap-3">
+          <button onClick={handleRefresh} className="shrink-0 active:scale-95 transition-transform" title="Clicca per aggiornare">
+            <img src={logoDragon} alt="Zoli Dragon" className="h-12 w-12" style={{ filter: 'drop-shadow(0 0 8px rgba(192, 173, 103, 0.5))' }} />
+          </button>
+          <div>
+            <h1 className="text-2xl font-mono font-normal text-foreground tracking-wider text-glow">
+              Ciao {firstName}!
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1 font-mono uppercase tracking-wider" style={{ textShadow: '0 0 8px rgba(192, 173, 103, 0.3)' }}>
+              Benvenuto in Zoli Dragon
+            </p>
+          </div>
+        </div>
+        <FIRTrafficLight />
+      </div>
+
+      <div className="flex-1 overflow-y-auto pb-20">
+        <FIRFormComplete />
+      </div>
+
+      <BottomNav />
+    </MobileShell>
+  );
 }
