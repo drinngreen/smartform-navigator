@@ -56,7 +56,7 @@ import MNFormulariPage from "./pages/multynijol/MNFormulariPage";
 import MNAuthPage from "./pages/MNAuthPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
 
 function AdminOverlays() {
   const location = useLocation();
