@@ -5,12 +5,13 @@
  */
 
 const RENTRI_BASE_URL = "https://dragonrifiutisender.onrender.com/api/rentri";
+const RENTRI_HEALTH_URL = "https://dragonrifiutisender.onrender.com/health";
 
 /**
- * Health check – GET /health or /status to verify the server is reachable.
+ * Health check – GET /health to verify the server is reachable.
  */
 export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
-  const url = `${RENTRI_BASE_URL}/health`;
+  const url = RENTRI_HEALTH_URL;
   try {
     const res = await fetch(url, { method: "GET" });
     const text = await res.text();
