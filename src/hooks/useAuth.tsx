@@ -152,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // For initial load, getSession handles it below
         if (!initialLoad) {
+          setIsLoading(true);
           fetchUserData(session.user.id, session.user.email).then(() => {
             setIsLoading(false);
           });
