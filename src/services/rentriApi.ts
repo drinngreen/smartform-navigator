@@ -159,12 +159,12 @@ export async function inviaFirmaRentri(
  * Called when the pool is empty and admin requests replenishment.
  */
 export async function richiediNuoviNumeri(
-  societaId: string
+  company: string
 ): Promise<RentriVidimateResponse> {
   const res = await fetch(`${RENTRI_BASE_URL}/vidimate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ societaId, company: societaId }),
+    body: JSON.stringify({ company }),
   });
 
   const data = await res.json();
@@ -177,7 +177,19 @@ export async function richiediNuoviNumeri(
     throw new Error(errMsg);
   }
 
-  return data as RentriVidimateResponse;
+  // Normalize response: accept { numeri: [...] }, { firNumber: "..." }, or { numeri: "..." }
+  let numeri: string[] = [];
+  if (Array.isArray(data.numeri)) {
+    numeri = data.numeri;
+  } else if (typeof data.numeri === "string") {
+    numeri = [data.numeri];
+  } else if (typeof data.firNumber === "string") {
+    numeri = [data.firNumber];
+  } else if (Array.isArray(data.firNumbers)) {
+    numeri = data.firNumbers;
+  }
+
+  return { ...data, numeri };
 }
 
 /**
