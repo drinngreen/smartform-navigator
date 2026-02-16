@@ -4,7 +4,7 @@ import React from 'react'
 const variantStyles: Record<string, string> = {
   primary: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:brightness-110',
   default: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:brightness-110',
-  ghost: 'bg-transparent text-slate-200 hover:bg-slate-900/50 border border-slate-800',
+  ghost: 'bg-transparent hover:bg-white/10 border-none',
   destructive: 'bg-red-600 text-white hover:bg-red-700',
   outline: 'bg-transparent border border-slate-700 text-slate-200 hover:bg-slate-800',
 }
