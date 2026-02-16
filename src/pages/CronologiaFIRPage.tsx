@@ -4,7 +4,8 @@ import { MobileShell } from "@/components/layout/MobileShell";
 import { useFIRForms } from "@/hooks/useFIRForms";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import { FileText, Clock, CheckCircle, Send } from "lucide-react";
+import { FileText, Clock, CheckCircle, Send, Edit, Download, Printer, Trash2 } from "lucide-react";
+import logoDragon from "@/assets/logo-dragon.png";
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
@@ -12,56 +13,76 @@ export default function CronologiaFIRPage() {
   const { myForms: firForms, isLoadingMyForms: isLoading } = useFIRForms();
   const [filter, setFilter] = useState<FilterStatus>("all");
 
-  const filtered = (firForms || []).filter((fir: any) => {
+  const allForms = firForms || [];
+  const counts = {
+    all: allForms.length,
+    draft: allForms.filter((f: any) => f.status === "draft").length,
+    submitted: allForms.filter((f: any) => f.status === "submitted").length,
+    completed: allForms.filter((f: any) => f.status === "completed").length,
+  };
+
+  const filtered = allForms.filter((fir: any) => {
     if (filter === "all") return true;
     return fir.status === filter;
   });
 
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "draft": return <Clock className="h-4 w-4 text-primary" />;
-      case "submitted": return <Send className="h-4 w-4 text-neon-cyan" />;
-      case "completed": return <CheckCircle className="h-4 w-4 text-neon-green" />;
-      default: return <FileText className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "draft": return "Bozza";
-      case "submitted": return "Inviato";
-      case "completed": return "Completato";
-      default: return status;
+      case "draft":
+        return (
+          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+            <Clock className="h-3 w-3" /> Bozza
+          </span>
+        );
+      case "submitted":
+        return (
+          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
+            <CheckCircle className="h-3 w-3" /> Inviato
+          </span>
+        );
+      case "completed":
+        return (
+          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30">
+            <CheckCircle className="h-3 w-3" /> Chiuso
+          </span>
+        );
+      default:
+        return null;
     }
   };
 
   return (
     <MobileShell>
-      <div className="px-4 pt-4 pb-2" style={{ borderBottom: '1px solid rgba(192, 173, 103, 0.15)' }}>
-        <h1 className="text-xl font-display font-bold text-foreground tracking-wider">Cronologia FIR</h1>
-        <p className="text-muted-foreground text-xs font-mono mt-1">Storico formulari compilati</p>
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(192, 173, 103, 0.15)' }}>
+        <div>
+          <h1 className="text-xl font-display font-bold text-foreground tracking-wider">Cronologia FIR</h1>
+          <p className="text-muted-foreground text-xs font-mono mt-1 uppercase tracking-wider">I tuoi formulari salvati e inviati</p>
+        </div>
+        <img src={logoDragon} alt="Dragon" className="h-8 w-8 opacity-60" />
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-        {([
-          { key: "all", label: "Tutti" },
-          { key: "draft", label: "Bozze" },
-          { key: "submitted", label: "Inviati" },
-          { key: "completed", label: "Completati" },
-        ] as { key: FilterStatus; label: string }[]).map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-              filter === tab.key
-                ? "bg-primary/20 text-primary border border-primary/30"
-                : "bg-card/60 text-muted-foreground border border-border/30 hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter tabs with counts */}
+      <div className="px-4 py-3">
+        <div className="flex rounded-xl border border-border/30 overflow-hidden">
+          {([
+            { key: "all" as FilterStatus, label: "Tutti" },
+            { key: "draft" as FilterStatus, label: "Bozze" },
+            { key: "submitted" as FilterStatus, label: "Inviati" },
+            { key: "completed" as FilterStatus, label: "Chiusi" },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex-1 px-2 py-2.5 text-xs font-mono whitespace-nowrap transition-all ${
+                filter === tab.key
+                  ? "bg-primary/15 text-primary font-semibold"
+                  : "bg-card/40 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label} ({counts[tab.key]})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* List */}
@@ -81,24 +102,60 @@ export default function CronologiaFIRPage() {
               key={fir.id}
               className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl"
             >
+              {/* Header with number and status */}
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {getStatusIcon(fir.status)}
-                  <span className="text-xs font-mono text-primary">{fir.numero_fir || "—"}</span>
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-display font-semibold text-foreground">
+                    {fir.numero_fir || "—"}
+                  </span>
                 </div>
-                <span className="text-xs text-muted-foreground font-mono px-2 py-0.5 rounded bg-secondary/50">
-                  {getStatusLabel(fir.status)}
-                </span>
+                {getStatusBadge(fir.status)}
               </div>
-              <p className="text-sm text-foreground font-medium">
-                {fir.produttore_denominazione || "Produttore non specificato"}
+
+              {/* Date */}
+              <p className="text-xs text-muted-foreground font-mono mb-2">
+                {fir.created_at ? format(new Date(fir.created_at), "dd MMMM yyyy, HH:mm", { locale: it }) : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                EER: {fir.codice_eer || "—"} • {fir.quantita ? `${fir.quantita} ${fir.unita_misura || "kg"}` : "—"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {fir.created_at ? format(new Date(fir.created_at), "dd MMM yyyy, HH:mm", { locale: it }) : "—"}
-              </p>
+
+              {/* Details for submitted/completed */}
+              {fir.status !== "draft" && (
+                <div className="space-y-0.5 mb-3">
+                  {fir.codice_eer && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-primary font-semibold">EER:</span> {fir.codice_eer}
+                    </p>
+                  )}
+                  {fir.destinatario_denominazione && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-primary font-semibold">Dest.:</span> {fir.destinatario_denominazione}
+                    </p>
+                  )}
+                  {fir.quantita && (
+                    <p className="text-xs text-muted-foreground">
+                      <span className="text-primary font-semibold">Qtà:</span> {fir.quantita} {fir.unita_misura || "kg"}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 mt-2">
+                {fir.status === "draft" && (
+                  <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
+                    <Edit className="h-3.5 w-3.5" /> Modifica
+                  </button>
+                )}
+                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors">
+                  <Download className="h-3.5 w-3.5" /> PDF
+                </button>
+                <button className="p-2 rounded-xl bg-card border border-border/30 text-muted-foreground hover:text-foreground transition-colors">
+                  <Printer className="h-3.5 w-3.5" />
+                </button>
+                <button className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           ))
         )}
