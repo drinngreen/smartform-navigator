@@ -212,7 +212,7 @@ export default function PersonalePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-primary hover:text-primary"
+                          className="h-8 w-8 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
                           title="Cambia Password"
                           onClick={() => { setPasswordDialog({ open: true, user }); setNewPassword(""); }}
                         >
@@ -221,7 +221,7 @@ export default function PersonalePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-400/10"
                           title="Elimina Utente"
                           onClick={() => setDeleteDialog({ open: true, user })}
                         >
