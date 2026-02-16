@@ -25,19 +25,20 @@ export default function GestioneFIRPage() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["fir-pool-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fir_number_pool")
-        .select("status, societa_id")
-        .eq("societa_id", "global");
+      // Use separate count queries to avoid the 1000-row limit
+      const [totalRes, disponibiliRes, assegnatiRes, usatiRes] = await Promise.all([
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global"),
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "available"),
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "reserved"),
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "consumed"),
+      ]);
 
-      if (error) throw error;
-
-      const total = data?.length ?? 0;
-      const disponibili = data?.filter((r: any) => r.status === "available").length ?? 0;
-      const assegnati = data?.filter((r: any) => r.status === "reserved").length ?? 0;
-      const usati = data?.filter((r: any) => r.status === "consumed").length ?? 0;
-
-      return { total, disponibili, assegnati, usati };
+      return {
+        total: totalRes.count ?? 0,
+        disponibili: disponibiliRes.count ?? 0,
+        assegnati: assegnatiRes.count ?? 0,
+        usati: usatiRes.count ?? 0,
+      };
     },
     refetchInterval: 10000,
   });
