@@ -1,1 +1,2 @@
-export default function MNImpiantiPage() { return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">MN Impianti</h1></div>; }
+import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
+export default function MNImpiantiPage() { return <MNAdminLayout title="Impianti" subtitle="Gestione impianti"><div className="p-6 rounded-2xl bg-card/60 border border-border/30"><p className="text-muted-foreground">Elenco impianti</p></div></MNAdminLayout>; }

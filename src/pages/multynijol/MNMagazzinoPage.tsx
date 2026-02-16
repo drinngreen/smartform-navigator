@@ -1,1 +1,2 @@
-export default function MNMagazzinoPage() { return <div className="min-h-screen bg-background p-6"><h1 className="text-3xl font-display text-foreground">MN Magazzino</h1></div>; }
+import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
+export default function MNMagazzinoPage() { return <MNAdminLayout title="Magazzino" subtitle="Deposito temporaneo"><div className="p-6 rounded-2xl bg-card/60 border border-border/30"><p className="text-muted-foreground">Gestione magazzino deposito</p></div></MNAdminLayout>; }
