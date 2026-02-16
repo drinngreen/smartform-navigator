@@ -294,23 +294,9 @@ export default function GestioneFIRPage() {
               )}
 
               {testResult.success && testResult.numeroFir && (
-                <div className="flex gap-2">
-                  <a
-                    href={getRentriPdfUrl(testResult.numeroFir)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary text-xs font-display hover:bg-primary/30 transition-colors"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Scarica PDF Test
-                  </a>
-                  <a
-                    href={getRentriPdfUrl(testResult.numeroFir)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs font-display hover:text-foreground transition-colors"
-                  >
-                    <FileText className="h-3.5 w-3.5" /> Apri in nuova tab
-                  </a>
+                <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  <span>N. FIR: <span className="text-primary">{testResult.numeroFir}</span> — Connessione RENTRI verificata ✓</span>
                 </div>
               )}
 
