@@ -167,10 +167,37 @@ export function useFIRForms() {
         .single();
       if (error) throw error;
       await consumeNumber.mutateAsync(id);
+
+      // Auto-assign a new FIR number to the user
+      if (user?.id) {
+        try {
+          const { data: result, error: assignErr } = await supabase.rpc(
+            "auto_assign_after_consume" as any,
+            { p_user_id: user.id }
+          );
+          if (!assignErr && result) {
+            const [newNumber, remainingStr] = (result as string).split("|");
+            const remaining = parseInt(remainingStr, 10);
+            if (newNumber) {
+              toast.info(`📋 Nuovo formulario assegnato: ${newNumber}`);
+            }
+            if (remaining <= 10) {
+              toast.warning(`⚠️ Attenzione: solo ${remaining} formulari rimasti nel serbatoio!`, { duration: 10000 });
+            }
+            if (remaining === 0) {
+              toast.error("🚨 SERBATOIO ESAURITO! Richiedere nuovi numeri FIR.", { duration: 15000 });
+            }
+          }
+        } catch (e) {
+          console.warn("Auto-assign failed:", e);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fir-forms"] });
+      queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
       toast.success("FIR chiuso definitivamente");
     },
     onError: (error) => {
