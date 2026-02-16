@@ -23,8 +23,13 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 
 // ─── Tenant → societaId mapping ─────────────────────────────
 const TENANT_MAP: Record<string, string> = {
-  "167d07ad-9184-484e-85a6-da5ceafa42a3": "global_reco", // Global Reco
+  "167d07ad-9184-484e-85a6-da5ceafa42a3": "global", // Global Reco
   "dc2a6046-d9a8-4549-8e45-82367d695ac6": "multy_niyol", // Multy Niyol
+};
+
+const MN_CONTEXT_MAP: Record<string, string> = {
+  multyproget: "multy",
+  niyol: "niyol",
 };
 
 /**
@@ -37,11 +42,11 @@ export function resolveSocietaId(
   if (tenantId && TENANT_MAP[tenantId]) {
     const base = TENANT_MAP[tenantId];
     if (base === "multy_niyol" && mnContext) {
-      return mnContext;
+      return MN_CONTEXT_MAP[mnContext] || mnContext;
     }
     return base;
   }
-  return "global_reco";
+  return "global";
 }
 
 // ─── Types ───────────────────────────────────────────────────
