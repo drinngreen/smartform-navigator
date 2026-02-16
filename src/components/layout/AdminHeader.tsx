@@ -27,9 +27,9 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
   return (
     <div className="px-6 py-4 flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-display text-foreground tracking-wide">{title}</h1>
+        <h1 className="text-2xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] tracking-wide">{title}</h1>
         {subtitle && (
-          <p className="text-sm text-muted-foreground font-mono mt-1">{subtitle}</p>
+          <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
         )}
       </div>
 
@@ -45,7 +45,7 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
           title="Messaggi"
         >
-          <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          <MessageSquare className="h-5 w-5 text-white/80" />
         </button>
 
         {/* Notifications */}
@@ -53,7 +53,7 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
           className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
           title="Notifiche"
         >
-          <Bell className="h-5 w-5 text-muted-foreground" />
+          <Bell className="h-5 w-5 text-white/80" />
         </button>
       </div>
     </div>

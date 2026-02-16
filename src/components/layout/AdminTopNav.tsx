@@ -64,7 +64,7 @@ export function AdminTopNav() {
               className="flex items-center gap-2 mr-3 group"
             >
               <img src={logoDragon} alt="Zoli Dragon" className="h-8 w-8 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-display text-primary hidden lg:block">ZOLI DRAGON</span>
+              <span className="text-xs font-display text-white hidden lg:block">ZOLI DRAGON</span>
             </button>
 
             {/* Nav items */}
@@ -92,12 +92,12 @@ export function AdminTopNav() {
 
             {/* Profile & Logout */}
             <div className="flex items-center gap-2 ml-2">
-              <span className="text-xs text-muted-foreground font-mono hidden md:block">
+              <span className="text-xs text-white/80 font-mono hidden md:block">
                 {profile?.nome} {profile?.cognome}
               </span>
               <button
                 onClick={signOut}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="p-1.5 rounded-lg text-white/80 hover:text-destructive hover:bg-destructive/10 transition-colors"
                 title="Logout"
               >
                 <LogOut className="h-4 w-4" />

@@ -152,3 +152,25 @@
   @keyframes neon-green-pulse { 0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.25), 0 0 60px rgba(34, 197, 94, 0.1), inset 0 0 20px rgba(34, 197, 94, 0.05); border-color: rgba(34, 197, 94, 0.7); } 50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), 0 0 60px rgba(34, 197, 94, 0.4), 0 0 90px rgba(34, 197, 94, 0.2), inset 0 0 30px rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.9); } }
   .animate-pulse-subtle { animation: neon-green-pulse 2s ease-in-out infinite; }
 }
+
+/* Force ALL admin text to bright white */
+[class*="admin"] *,
+.admin-white-text *,
+main h1, main h2, main h3, main h4, main h5, main h6,
+main p, main span, main label, main td, main th,
+main li, main dt, main dd, main a:not(.btn),
+main div, main small, main strong, main em {
+  --tw-text-opacity: 1 !important;
+}
+
+/* Override muted-foreground globally in admin pages */
+body:has([data-admin-layout]) .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+body:has([data-admin-layout]) .text-foreground {
+  color: rgb(255, 255, 255) !important;
+}
+body:has([data-admin-layout]) .text-primary {
+  color: rgb(255, 255, 255) !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}

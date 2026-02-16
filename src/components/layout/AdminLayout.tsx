@@ -42,7 +42,7 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   }, [location.pathname]);
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden relative">
+    <div data-admin-layout className="flex flex-col h-screen bg-background overflow-hidden relative">
       {/* Background dinamico */}
       {!isDashboard && (
         <div
