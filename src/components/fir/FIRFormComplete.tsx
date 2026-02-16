@@ -129,11 +129,8 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
           className="w-full bg-background/80 border-2 border-neon-green/30 rounded-lg pl-9 pr-3 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-neon-green/50 focus:border-neon-green/60 transition-all"
         />
       </div>
-      {isOpen && (
+      {isOpen && filtered.length > 0 && (
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
-          {filtered.length === 0 && (
-            <div className="px-3 py-3 text-xs text-white/50">Nessun risultato per "{search}"</div>
-          )}
           {filtered.map((d, i) => (
             <button
               key={i}
@@ -148,18 +145,18 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
             </button>
           ))}
-          {/* Opzione per inserimento manuale */}
-          <button
-            onClick={() => {
-              onSelect(search || "", "", "");
-              setIsOpen(false);
-            }}
-            className="w-full text-left px-3 py-2.5 hover:bg-primary/10 transition-colors border-t border-primary/20 bg-primary/5"
-          >
-            <span className="text-xs text-primary font-medium block">✏️ Inserisci manualmente</span>
-            <span className="text-[10px] text-white/50 block">Compila i campi sotto se non trovi il soggetto</span>
-          </button>
         </div>
+      )}
+      {search.trim().length > 1 && (
+        <button
+          onClick={() => {
+            onSelect(search.trim(), "", "");
+            setIsOpen(false);
+          }}
+          className="w-full mt-1 text-left px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
+        >
+          <span className="text-xs text-primary font-medium">✏️ Usa "{search.trim()}" come nuovo impianto</span>
+        </button>
       )}
     </div>
   );
