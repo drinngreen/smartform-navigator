@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Search, Phone, MessageSquare, Bell, User } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Phone, PhoneOff, MessageSquare, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabaseClient";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 
@@ -11,10 +12,30 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
   const isWidgetOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
   const toggleWidget = useZoliDarkLemonWidgetStore((s) => s.toggle);
+  const [receiveCalls, setReceiveCalls] = useState(() => {
+    const saved = localStorage.getItem("admin_receive_calls");
+    return saved !== "false";
+  });
+
+  // Sync receive_calls to online_status table
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem("admin_receive_calls", String(receiveCalls));
+    supabase.from("online_status").upsert({
+      user_id: user.id,
+      receive_calls: receiveCalls,
+      status: "online",
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" }).then(({ error }) => {
+      if (error) console.error("Error updating receive_calls:", error);
+    });
+  }, [receiveCalls, user]);
+
+  const toggleReceiveCalls = () => setReceiveCalls((prev) => !prev);
 
   const widgetButtonClassName = useMemo(() => {
     return `p-2 rounded-lg border transition-all duration-300 ${
@@ -34,6 +55,22 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Phone toggle */}
+        <button
+          onClick={toggleReceiveCalls}
+          className={`p-2 rounded-lg border transition-all duration-300 ${
+            receiveCalls
+              ? "bg-green-600/30 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+              : "bg-red-600/30 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+          }`}
+          title={receiveCalls ? "Ricezione chiamate ATTIVA — clicca per attivare segreteria" : "Segreteria ATTIVA — clicca per ricevere chiamate"}
+        >
+          {receiveCalls
+            ? <Phone className="h-5 w-5 text-green-400" />
+            : <PhoneOff className="h-5 w-5 text-red-400" />
+          }
+        </button>
+
         {/* AI Widget toggle */}
         <button onClick={toggleWidget} className={widgetButtonClassName} title="Zoli Dark Lemon AI">
           <img src={zoliLemonIcon} alt="AI" className="h-5 w-5" />

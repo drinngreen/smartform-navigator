@@ -33,10 +33,10 @@ interface DesktopIconGridProps {
 export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const navigate = useNavigate();
   const [icons, setIcons] = useState<DesktopIcon[]>(() => createPositionedIcons(iconDefs));
-  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null);
+  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; startX: number; startY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
-
+  const DRAG_THRESHOLD = 5;
   const prevDefsRef = useRef(iconDefs);
   if (prevDefsRef.current !== iconDefs) {
     prevDefsRef.current = iconDefs;
@@ -54,10 +54,15 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       id: icon.id,
       offsetX: e.clientX - rect.left - icon.x,
       offsetY: e.clientY - rect.top - icon.y,
+      startX: e.clientX,
+      startY: e.clientY,
     };
     const handleMouseMove = (me: MouseEvent) => {
-      isDragging.current = true;
       if (!dragRef.current || !containerRef.current) return;
+      const dx = Math.abs(me.clientX - dragRef.current.startX);
+      const dy = Math.abs(me.clientY - dragRef.current.startY);
+      if (!isDragging.current && (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD)) return;
+      isDragging.current = true;
       const r = containerRef.current.getBoundingClientRect();
       setIcons(prev =>
         prev.map(ic =>
@@ -74,7 +79,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      setTimeout(() => { isDragging.current = false; }, 50);
+      setTimeout(() => { isDragging.current = false; }, 200);
       dragRef.current = null;
     };
     document.addEventListener("mousemove", handleMouseMove);

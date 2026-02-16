@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Shield, Eye, KeyRound, Trash2, Search, RefreshCw, Loader2 } from "lucide-react";
+import { Users, Shield, Eye, Pencil, Trash2, Search, RefreshCw, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -208,25 +208,23 @@ export default function PersonalePage() {
                       {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString("it-IT") : "Mai"}
                     </td>
                     <td className="p-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 !text-cyan-400 hover:!text-cyan-300 hover:bg-cyan-400/10"
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-medium border border-cyan-400 hover:bg-cyan-500 transition-colors"
                           title="Cambia Password"
                           onClick={() => { setPasswordDialog({ open: true, user }); setNewPassword(""); }}
                         >
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 !text-red-400 hover:!text-red-300 hover:bg-red-400/10"
+                          <Pencil className="h-3.5 w-3.5" />
+                          Password
+                        </button>
+                        <button
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium border border-red-400 hover:bg-red-500 transition-colors"
                           title="Elimina Utente"
                           onClick={() => setDeleteDialog({ open: true, user })}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Elimina
+                        </button>
                       </div>
                     </td>
                   </tr>

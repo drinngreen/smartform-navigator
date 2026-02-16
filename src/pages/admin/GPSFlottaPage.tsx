@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
-import { MapPin, Navigation, Clock, Truck } from "lucide-react";
+import { MapPin, Navigation, Clock, Truck, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -20,14 +20,15 @@ interface DriverLocation {
 export default function GPSFlottaPage() {
   const [locations, setLocations] = useState<DriverLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const fetchLocations = async () => {
-    // Get latest location per user (last 5 minutes)
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    // Get latest location per user (last 30 minutes)
+    const windowAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("driver_locations")
       .select("*")
-      .gte("created_at", fiveMinAgo)
+      .gte("created_at", windowAgo)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -59,6 +60,7 @@ export default function GPSFlottaPage() {
     }
 
     setLocations([...latestByUser.values()]);
+    setLastRefresh(new Date());
     setLoading(false);
   };
 
@@ -73,8 +75,8 @@ export default function GPSFlottaPage() {
       })
       .subscribe();
 
-    // Refresh every 30s
-    const interval = setInterval(fetchLocations, 30000);
+    // Refresh every 15s
+    const interval = setInterval(fetchLocations, 15000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -84,15 +86,28 @@ export default function GPSFlottaPage() {
 
   return (
     <AdminLayout title="GPS Flotta" subtitle="Tracciamento in tempo reale dei trasportatori">
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="p-4 rounded-2xl bg-card/60 border border-border/20 backdrop-blur-xl">
-          <div className="flex items-center gap-2 mb-2">
-            <Truck className="h-4 w-4 text-neon-green" />
-            <span className="text-xs font-mono uppercase text-white/60">In Viaggio</span>
+      {/* Stats + Refresh */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/20 backdrop-blur-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Truck className="h-4 w-4 text-green-400" />
+              <span className="text-xs font-mono uppercase text-white/60">In Viaggio</span>
+            </div>
+            <p className="text-2xl font-display text-green-400">{locations.length}</p>
           </div>
-          <p className="text-2xl font-display text-neon-green">{locations.length}</p>
+          <div className="text-xs text-white/50 font-mono">
+            Ultimo aggiornamento: {format(lastRefresh, "HH:mm:ss", { locale: it })}
+          </div>
         </div>
+        <button
+          onClick={() => { setLoading(true); fetchLocations(); }}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 text-white text-sm font-medium border border-cyan-400 hover:bg-cyan-500 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Aggiorna
+        </button>
       </div>
 
       {/* Table */}
