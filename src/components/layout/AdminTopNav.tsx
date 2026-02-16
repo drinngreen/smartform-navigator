@@ -57,7 +57,7 @@ export function AdminTopNav() {
         <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-r from-primary/40 via-neon-cyan/30 to-primary/40 animate-gradient-shift" />
 
         <div className="relative bg-card/80 backdrop-blur-xl rounded-2xl border border-border/30">
-          <div className="flex items-center gap-1 px-3 py-2">
+          <div className="flex items-center gap-2 px-4 py-3">
             {/* Dragon logo */}
             <button
               onClick={() => navigate("/admin")}
@@ -77,14 +77,14 @@ export function AdminTopNav() {
                     to={item.href}
                     end={item.href === "/admin"}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-300",
+                      "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
                       active
-                        ? "bg-primary/20 text-primary shadow-[0_0_12px_rgba(251,191,36,0.2)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        ? "bg-primary/20 text-white shadow-[0_0_20px_rgba(251,191,36,0.3)]"
+                        : "text-white/70 hover:text-white hover:bg-secondary/50"
                     )}
                   >
-                    <img src={item.iconImage} alt={item.label} className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
+                    <span className="text-white font-semibold">{item.label}</span>
                   </NavLink>
                 );
               })}

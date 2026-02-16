@@ -14,8 +14,8 @@ interface DesktopIcon extends DesktopIconDef {
   y: number;
 }
 
-const ICON_SPACING_X = 180;
-const ICON_SPACING_Y = 190;
+const ICON_SPACING_X = 220;
+const ICON_SPACING_Y = 240;
 const COLS = 5;
 
 function createPositionedIcons(items: DesktopIconDef[]): DesktopIcon[] {
@@ -114,21 +114,22 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
           <div
             key={icon.id}
             className="absolute cursor-grab active:cursor-grabbing group"
-            style={{ left: icon.x, top: icon.y, width: 120 }}
+            style={{ left: icon.x, top: icon.y, width: 160 }}
             onMouseDown={(e) => handleMouseDown(e, icon)}
             onClick={() => handleClick(icon.href)}
           >
-            <div className="flex flex-col items-center gap-2 p-3 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:shadow-[0_0_20px_rgba(251,191,36,0.1)]">
+            <div className="flex flex-col items-center gap-3 p-4 rounded-2xl transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                className="w-24 h-24 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-125"
                 style={{
-                  background: `linear-gradient(135deg, rgba(${icon.color}, 0.15), rgba(${icon.color}, 0.05))`,
-                  boxShadow: `0 0 20px rgba(${icon.color}, 0.1)`,
+                  background: `linear-gradient(135deg, rgba(${icon.color}, 0.25), rgba(${icon.color}, 0.1))`,
+                  boxShadow: `0 0 30px rgba(${icon.color}, 0.5), 0 0 60px rgba(${icon.color}, 0.3), 0 0 90px rgba(${icon.color}, 0.15), inset 0 0 20px rgba(${icon.color}, 0.1)`,
+                  border: `2px solid rgba(${icon.color}, 0.7)`,
                 }}
               >
-                <img src={icon.iconImage} alt={icon.label} className="h-8 w-8" />
+                <img src={icon.iconImage} alt={icon.label} className="h-12 w-12" />
               </div>
-              <span className="text-xs text-center font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+              <span className="text-sm text-center font-semibold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] group-hover:text-white transition-colors">
                 {icon.label}
               </span>
             </div>

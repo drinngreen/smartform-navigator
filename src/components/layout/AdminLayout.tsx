@@ -58,27 +58,15 @@ export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
         />
       )}
 
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-30"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(${accentColor}, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(${accentColor}, 0.04) 1px, transparent 1px)
-          `,
-          backgroundSize: '50px 50px',
-        }}
-      />
-
-      {/* Texture a quadretti globale */}
+      {/* Grid overlay a quadretti - MOLTO VISIBILE */}
       <div
         className="absolute inset-0 pointer-events-none z-[1]"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(192, 173, 103, 0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(192, 173, 103, 0.08) 1px, transparent 1px)
+            linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
           `,
-          backgroundSize: '25px 25px',
+          backgroundSize: '30px 30px',
         }}
       />
 
