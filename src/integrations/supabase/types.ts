@@ -1462,6 +1462,10 @@ export type Database = {
         }
         Returns: number
       }
+      auto_assign_after_consume: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
