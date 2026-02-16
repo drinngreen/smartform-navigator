@@ -104,8 +104,8 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
   const ref = useRef<HTMLDivElement>(null);
 
   const filtered = search.length >= 1
-    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase())).slice(0, 20)
-    : DESTINATARI.slice(0, 20);
+    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase())).slice(0, 50)
+    : DESTINATARI.slice(0, 50);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -157,7 +157,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
             className="w-full text-left px-3 py-2.5 hover:bg-primary/10 transition-colors border-t border-primary/20 bg-primary/5"
           >
             <span className="text-xs text-primary font-medium block">✏️ Inserisci manualmente</span>
-            <span className="text-[10px] text-muted-foreground block">Compila i campi sotto se non trovi il soggetto</span>
+            <span className="text-[10px] text-white/50 block">Compila i campi sotto se non trovi il soggetto</span>
           </button>
         </div>
       )}
@@ -175,7 +175,7 @@ function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) =
           <Scale className="h-5 w-5" />
           <h3 className="font-display text-lg tracking-wider">PESO A DESTINO</h3>
         </div>
-        <p className="text-sm text-muted-foreground">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
+        <p className="text-sm text-white/70">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
         <input
           type="number"
           value={peso}
@@ -185,7 +185,7 @@ function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) =
           autoFocus
         />
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-muted-foreground font-display text-sm">ANNULLA</button>
+          <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm">ANNULLA</button>
           <button
             onClick={() => { if (peso.trim()) onConfirm(peso); else toast.error("Inserisci il peso"); }}
             className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider"
@@ -431,7 +431,7 @@ export function FIRFormComplete() {
       {/* ── Tab Navigation ── */}
       <div className="flex gap-1 bg-secondary/30 rounded-xl p-1">
         {tabs.map((tab, i) => (
-          <button key={i} onClick={() => setActiveTab(i as 0 | 1 | 2)} className={`flex-1 py-2 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors ${activeTab === i ? "bg-primary/20 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+          <button key={i} onClick={() => setActiveTab(i as 0 | 1 | 2)} className={`flex-1 py-2 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors ${activeTab === i ? "bg-primary/20 text-primary font-semibold" : "text-white/50 hover:text-white"}`}>
             {tab.label}
           </button>
         ))}
@@ -501,7 +501,7 @@ export function FIRFormComplete() {
             <>
               <div className="text-center py-4 rounded-2xl bg-destructive/10 border border-destructive/30">
                 <p className="text-destructive font-display text-sm tracking-wider">🏁 FIR CHIUSO DEFINITIVAMENTE</p>
-                {d.pesoRicevuto && <p className="text-xs text-muted-foreground mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
+                {d.pesoRicevuto && <p className="text-xs text-white/60 mt-1 font-mono">Peso a destino: {d.pesoRicevuto} Kg</p>}
               </div>
               {/* Download PDF & xFIR from Render */}
               {d.selectedFirNumber && (
@@ -566,8 +566,8 @@ export function FIRFormComplete() {
           <div>
             <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Registro</label>
             <div className="flex gap-1 mb-2">
-              <button onClick={() => u("registroSi", true)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>SÌ</button>
-              <button onClick={() => u("registroSi", false)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${!d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground border border-border"}`}>NO</button>
+              <button onClick={() => u("registroSi", true)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-white/50 border border-border"}`}>SÌ</button>
+              <button onClick={() => u("registroSi", false)} className={`flex-1 py-1.5 rounded-lg text-xs font-display transition-colors ${!d.registroSi ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-white/50 border border-border"}`}>NO</button>
             </div>
             {d.registroSi && (
               <input type="text" value={d.selectedFirNumber || d.numeroRegistro} readOnly className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-1.5 text-white text-xs font-mono focus:outline-none" />
@@ -821,19 +821,19 @@ export function FIRFormComplete() {
           </Section>
 
           <Section title="14. Soste Tecniche">
-            <p className="text-xs text-muted-foreground mb-2">Sosta 1</p>
+            <p className="text-xs text-white/60 mb-2">Sosta 1</p>
             <Field label="Luogo" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
             <Row>
               <Field label="Inizio Sospensione" value={d.sosta1Inizio} onChange={(v) => u("sosta1Inizio", v)} type="datetime-local" />
               <Field label="Fine Sospensione" value={d.sosta1Fine} onChange={(v) => u("sosta1Fine", v)} type="datetime-local" />
             </Row>
-            <p className="text-xs text-muted-foreground mb-2 mt-3">Sosta 2</p>
+            <p className="text-xs text-white/60 mb-2 mt-3">Sosta 2</p>
             <Field label="Luogo" value={d.sosta2Luogo} onChange={(v) => u("sosta2Luogo", v)} />
             <Row>
               <Field label="Inizio Sospensione" value={d.sosta2Inizio} onChange={(v) => u("sosta2Inizio", v)} type="datetime-local" />
               <Field label="Fine Sospensione" value={d.sosta2Fine} onChange={(v) => u("sosta2Fine", v)} type="datetime-local" />
             </Row>
-            <p className="text-xs text-muted-foreground mb-2 mt-3">Sosta 3</p>
+            <p className="text-xs text-white/60 mb-2 mt-3">Sosta 3</p>
             <Field label="Luogo" value={d.sosta3Luogo} onChange={(v) => u("sosta3Luogo", v)} />
             <Row>
               <Field label="Inizio Sospensione" value={d.sosta3Inizio} onChange={(v) => u("sosta3Inizio", v)} type="datetime-local" />
@@ -852,8 +852,8 @@ export function FIRFormComplete() {
             <Field label="Data Autorizzazione" value={d.dest2DataAut} onChange={(v) => u("dest2DataAut", v)} type="date" />
             <Row>
               <div>
-                <label className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Operazione</label>
-                <select value={d.dest2Operazione} onChange={(e) => u("dest2Operazione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Operazione</label>
+                <select value={d.dest2Operazione} onChange={(e) => u("dest2Operazione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="R">Recupero (R)</option>
                   <option value="D">Smaltimento (D)</option>
                 </select>

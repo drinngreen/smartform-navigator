@@ -22,15 +22,15 @@ export default function MobileAppPage() {
             <img src={logoDragon} alt="Zoli Dragon" className="h-12 w-12 animate-float" style={{ filter: 'drop-shadow(0 0 12px rgba(192, 173, 103, 0.6))' }} />
           </button>
           <div>
-            <h1 className="text-2xl font-mono font-normal text-foreground tracking-wider text-glow">
+            <h1 className="text-2xl font-mono font-normal text-white tracking-wider text-glow">
               Ciao {firstName}!
             </h1>
-            <p className="text-muted-foreground text-sm mt-1 font-mono uppercase tracking-wider text-glow-cyan" style={{ textShadow: '0 0 8px rgba(6, 182, 212, 0.4)' }}>
+            <p className="text-white text-sm mt-1 font-mono uppercase tracking-wider text-glow-cyan" style={{ textShadow: '0 0 8px rgba(6, 182, 212, 0.4)' }}>
               Benvenuto in Zoli Dragon
             </p>
           </div>
         </div>
-        <p className="text-[10px] text-primary/60 font-mono mt-2 flex items-center gap-1">
+        <p className="text-[10px] text-white/50 font-mono mt-2 flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
           Clicca sul drago ogni volta che apri la app per vedere gli aggiornamenti!
         </p>

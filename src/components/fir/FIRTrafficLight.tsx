@@ -32,7 +32,7 @@ export function FIRTrafficLight() {
             <span
               className={`text-[10px] font-mono font-bold tracking-wider transition-all ${active ? "text-glow" : ""}`}
               style={{ 
-                color: active ? light.color : 'hsl(var(--muted-foreground))',
+                color: active ? light.color : 'rgba(255,255,255,0.3)',
                 textShadow: active ? `0 0 8px ${light.shadow}` : 'none',
               }}
             >
