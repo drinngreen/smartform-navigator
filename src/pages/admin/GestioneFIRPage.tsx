@@ -227,7 +227,6 @@ export default function GestioneFIRPage() {
                 const result = await inviaFirmaRentri({
                   societaId: "global",
                   payloadFir: {
-                    _test: true,
                     numero_fir: "SKKZR00000001",
                     produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                     destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
