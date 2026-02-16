@@ -558,7 +558,7 @@ export default function GestioneFIRPage() {
                         </span>
                       </td>
                       <td className="py-2 px-3 text-foreground text-xs">
-                        {profileMap[row.user_id] || <span className="text-muted-foreground italic">—</span>}
+                        {row.status !== "available" ? (profileMap[row.user_id] || "—") : <span className="text-muted-foreground italic">—</span>}
                       </td>
                       <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">
                         {new Date(row.created_at).toLocaleDateString("it-IT")}
