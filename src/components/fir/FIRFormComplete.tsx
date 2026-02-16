@@ -104,8 +104,8 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
   const ref = useRef<HTMLDivElement>(null);
 
   const filtered = search.length >= 1
-    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase())).slice(0, 50)
-    : DESTINATARI.slice(0, 50);
+    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase()))
+    : DESTINATARI;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

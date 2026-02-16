@@ -30,7 +30,7 @@ export default function MobileAppPage() {
             </p>
           </div>
         </div>
-        <p className="text-[10px] text-white/50 font-mono mt-2 flex items-center gap-1">
+        <p className="text-[10px] text-white font-mono mt-2 flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
           Clicca sul drago ogni volta che apri la app per vedere gli aggiornamenti!
         </p>
