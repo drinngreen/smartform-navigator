@@ -98,7 +98,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       <div className="flex justify-end mb-2">
         <button
           onClick={resetPositions}
-          className="text-xs text-muted-foreground hover:text-primary transition-colors font-mono"
+          className="text-xs text-white/70 hover:text-white transition-colors font-mono"
         >
           Reset Desktop
         </button>

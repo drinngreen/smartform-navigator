@@ -40,15 +40,15 @@ export default function DashboardPage() {
       <div className="mb-4 flex items-center gap-4 p-3 rounded-2xl bg-gradient-to-r from-card/60 to-transparent border border-border/20 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-          <span className="text-xs font-mono uppercase tracking-wider text-neon-green">Sistema Operativo</span>
+          <span className="text-xs font-mono uppercase tracking-wider text-white">Sistema Operativo</span>
         </div>
         <div className="h-4 w-px bg-border/30" />
         <div className="flex items-center gap-2">
-          <Signal className="h-3.5 w-3.5 text-neon-cyan animate-pulse" />
-          <span className="text-xs font-mono text-muted-foreground">Connessione Stabile</span>
+          <Signal className="h-3.5 w-3.5 text-white animate-pulse" />
+          <span className="text-xs font-mono text-white/80">Connessione Stabile</span>
         </div>
         <div className="flex-1" />
-        <div className="flex items-center gap-2 text-xs font-mono text-primary">
+        <div className="flex items-center gap-2 text-xs font-mono text-white">
           <Radio className="h-3.5 w-3.5 animate-pulse" />
           <span>LIVE DATA</span>
         </div>
