@@ -184,14 +184,16 @@ export function useIconStats(iconId: string | null) {
           ];
         }
 
-        case "notifiche": {
+        case "notifiche":
+        case "impianti":
+        case "magazzino":
+        case "privati":
+        case "registro-kg": {
           return [
             {
-              title: "Notifiche",
+              title: "__IN_SVILUPPO__",
               type: "bar",
-              data: [
-                { name: "Sistema", value: 0, color: "#ef4444" },
-              ],
+              data: [],
             },
           ];
         }
@@ -199,9 +201,9 @@ export function useIconStats(iconId: string | null) {
         default:
           return [
             {
-              title: "Nessun dato disponibile",
+              title: "__IN_SVILUPPO__",
               type: "bar",
-              data: [{ name: "N/D", value: 0, color: "#6b7280" }],
+              data: [],
             },
           ];
       }
