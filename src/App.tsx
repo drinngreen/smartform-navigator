@@ -59,6 +59,12 @@ import MNFormulariPage from "./pages/multynijol/MNFormulariPage";
 import MNGestioneFIRPage from "./pages/multynijol/MNGestioneFIRPage";
 import MNGPSFlottaPage from "./pages/multynijol/MNGPSFlottaPage";
 import MNZoliDarkLemonPage from "./pages/multynijol/MNZoliDarkLemonPage";
+import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
+import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
+import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
+import MNAppComunicazioniPage from "./pages/multynijol/MNAppComunicazioniPage";
+import MNAppProfiloPage from "./pages/multynijol/MNAppProfiloPage";
+import MNAppGuidaPage from "./pages/multynijol/MNAppGuidaPage";
 
 import MNAuthPage from "./pages/MNAuthPage";
 import NotFound from "./pages/NotFound";
@@ -140,7 +146,21 @@ const App = () => (
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
+              <Route path="/mn/app/multyproget/cronologia" element={<MNAppCronologiaPage />} />
+              <Route path="/mn/app/multyproget/gps" element={<MNAppGPSPage />} />
+              <Route path="/mn/app/multyproget/ai" element={<MNAppAIPage />} />
+              <Route path="/mn/app/multyproget/comunicazioni" element={<MNAppComunicazioniPage />} />
+              <Route path="/mn/app/multyproget/profilo" element={<MNAppProfiloPage />} />
+              <Route path="/mn/app/multyproget/guida" element={<MNAppGuidaPage />} />
+
               <Route path="/mn/app/niyol" element={<MNNiyolAppPage />} />
+              <Route path="/mn/app/niyol/cronologia" element={<MNAppCronologiaPage />} />
+              <Route path="/mn/app/niyol/gps" element={<MNAppGPSPage />} />
+              <Route path="/mn/app/niyol/ai" element={<MNAppAIPage />} />
+              <Route path="/mn/app/niyol/comunicazioni" element={<MNAppComunicazioniPage />} />
+              <Route path="/mn/app/niyol/profilo" element={<MNAppProfiloPage />} />
+              <Route path="/mn/app/niyol/guida" element={<MNAppGuidaPage />} />
+
               <Route path="/mn/app/messages" element={<ZoliMessagesPage />} />
 
               {/* MultyNiyol auth pages - /mn and /ni shortcuts */}
