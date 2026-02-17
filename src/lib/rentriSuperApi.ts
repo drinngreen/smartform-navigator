@@ -62,11 +62,11 @@ export async function richiestaVidimazione(societaId: string, quantita: number) 
 }
 
 export async function firmaFirProduttore(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { company: societaId, tipo: "produttore", ...firData });
+  return callRailway("/firma-fir", societaId, { societaId, payloadFir: firData });
 }
 
 export async function firmaFirDestinatario(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { company: societaId, tipo: "destinatario", ...firData });
+  return callRailway("/firma-fir", societaId, { societaId, payloadFir: firData });
 }
 
 export async function registroCarico(societaId: string, payload: any) {
