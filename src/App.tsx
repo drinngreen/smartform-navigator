@@ -56,6 +56,9 @@ import MNFirDigitaliPage from "./pages/multynijol/MNFirDigitaliPage";
 import MNMultyprogetAppPage from "./pages/multynijol/MNMultyprogetAppPage";
 import MNNiyolAppPage from "./pages/multynijol/MNNiyolAppPage";
 import MNFormulariPage from "./pages/multynijol/MNFormulariPage";
+import MNGestioneFIRPage from "./pages/multynijol/MNGestioneFIRPage";
+import MNGPSFlottaPage from "./pages/multynijol/MNGPSFlottaPage";
+import MNZoliDarkLemonPage from "./pages/multynijol/MNZoliDarkLemonPage";
 
 import MNAuthPage from "./pages/MNAuthPage";
 import NotFound from "./pages/NotFound";
@@ -131,6 +134,9 @@ const App = () => (
               <Route path="/mn/admin/:context/registro-kg" element={<MNRegistroKgPage />} />
               <Route path="/mn/admin/:context/fir-digitali" element={<MNFirDigitaliPage />} />
               <Route path="/mn/admin/:context/formulari" element={<MNFormulariPage />} />
+              <Route path="/mn/admin/:context/gestione-fir" element={<MNGestioneFIRPage />} />
+              <Route path="/mn/admin/:context/gps" element={<MNGPSFlottaPage />} />
+              <Route path="/mn/admin/:context/zoli-dark-lemon" element={<MNZoliDarkLemonPage />} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
