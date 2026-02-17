@@ -151,23 +151,44 @@ export default function MNMagazzinoPage() {
   const saveConferimento = async () => {
     if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
     const kg = parseFloat(confForm.kg_pesati);
+
+    // Controllo limiti — BLOCCA se superati
     if (confForm.privato_id) {
       const w = await checkLimits(confForm.privato_id, confForm.cer, kg);
-      if (w) setLimitWarning(w);
+      if (w) {
+        setLimitWarning(w);
+        toast.error("Conferimento bloccato: limiti superati");
+        return;
+      }
     }
+
     const privato = privati.find(p => p.id === confForm.privato_id);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : confForm.cognome_privato ? `${confForm.cognome_privato} ${confForm.nome_privato}`.trim() : "Anonimo";
     const cfFinale = privato?.codice_fiscale || confForm.cf_privato || null;
-    const { error } = await supabase.from("privati_conferimenti").insert({
+    const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
       impianto_id: selectedImpianto, cer: confForm.cer, kg_pesati: kg,
       nome_privato: nomeFinale,
       cf_pi: cfFinale,
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
       metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
       privato_id: confForm.privato_id || null,
-    } as any);
+    } as any).select().single();
     if (error) { toast.error(error.message); return; }
-    toast.success("Conferimento registrato");
+
+    // Genera ricevuta automaticamente
+    const conf = confData as any;
+    if (conf) {
+      const anno = new Date().getFullYear();
+      const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
+      await supabase.from("ricevute_privati" as any).insert({
+        impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
+        numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+        importo: conf.importo_pagato || 0,
+        note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg`,
+      } as any);
+    }
+
+    toast.success("Conferimento e ricevuta registrati");
     setShowNewConferimento(false);
     setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
     setPrivatoSearch("");
@@ -362,8 +383,10 @@ export default function MNMagazzinoPage() {
                     <span className="text-sm font-mono text-foreground">{c.importo_pagato ?? "—"}</span>
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-muted-foreground">{c.data ? format(new Date(c.data), "dd/MM/yy", { locale: it }) : "—"}</span>
-                      {!ricevute.find(r => r.conferimento_id === c.id) && (
-                        <button onClick={() => generateRicevuta(c)} title="Genera ricevuta" className="ml-1 p-1 rounded hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors"><Receipt className="h-3.5 w-3.5" /></button>
+                      {ricevute.find(r => r.conferimento_id === c.id) ? (
+                        <Receipt className="h-3.5 w-3.5 text-primary ml-1" />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground ml-1">no ric.</span>
                       )}
                     </div>
                   </div>
