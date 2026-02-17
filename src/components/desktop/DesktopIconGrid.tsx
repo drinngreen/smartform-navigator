@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DesktopIconContextMenu } from "./DesktopIconContextMenu";
 
 export interface DesktopIconDef {
   id: string;
@@ -59,6 +60,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const DRAG_THRESHOLD = 5;
+  const [contextMenu, setContextMenu] = useState<{ iconId: string; iconLabel: string; x: number; y: number } | null>(null);
   const prevDefsRef = useRef(iconDefs);
   if (prevDefsRef.current !== iconDefs) {
     prevDefsRef.current = iconDefs;
@@ -135,6 +137,10 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
     localStorage.removeItem(STORAGE_KEY);
   }, [iconDefs]);
 
+  const handleContextMenu = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
+    e.preventDefault();
+    setContextMenu({ iconId: icon.id, iconLabel: icon.label, x: e.clientX, y: e.clientY });
+  }, []);
   return (
     <>
       <div className="flex justify-end mb-2">
@@ -157,6 +163,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
             className="absolute cursor-grab active:cursor-grabbing group"
             style={{ left: icon.x, top: icon.y, width: 160 }}
             onMouseDown={(e) => handleMouseDown(e, icon)}
+            onContextMenu={(e) => handleContextMenu(e, icon)}
           >
             <div className="flex flex-col items-center gap-3 p-4 rounded-2xl transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">
               <div
@@ -176,6 +183,13 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
           </div>
         ))}
       </div>
+
+      <DesktopIconContextMenu
+        iconId={contextMenu?.iconId ?? null}
+        iconLabel={contextMenu?.iconLabel ?? ""}
+        position={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
+        onClose={() => setContextMenu(null)}
+      />
     </>
   );
 }
