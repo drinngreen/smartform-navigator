@@ -10,19 +10,30 @@ interface MNAdminLayoutProps {
 
 const routeColors: Record<string, string> = {
   "/mn/admin": "251, 191, 36",
-  "/mn/admin/registro": "249, 115, 22",
-  "/mn/admin/rentri": "236, 72, 153",
-  "/mn/admin/trasportatori": "6, 182, 212",
-  "/mn/admin/personale": "16, 185, 129",
-  "/mn/admin/messaggi": "244, 114, 182",
-  "/mn/admin/chiamate": "34, 197, 94",
-  "/mn/admin/magazzino": "20, 184, 166",
-  "/mn/admin/conferimenti": "249, 115, 22",
-  "/mn/admin/impianti": "59, 130, 246",
-  "/mn/admin/pagamenti": "239, 68, 68",
-  "/mn/admin/registro-kg": "16, 185, 129",
-  "/mn/admin/fir-digitali": "236, 72, 153",
-  "/mn/admin/formulari": "34, 197, 94",
+  "/mn/admin/multyproget": "249, 115, 22",
+  "/mn/admin/niyol": "6, 182, 212",
+  "/mn/admin/multyproget/registro": "249, 115, 22",
+  "/mn/admin/niyol/registro": "249, 115, 22",
+  "/mn/admin/multyproget/rentri": "236, 72, 153",
+  "/mn/admin/niyol/rentri": "236, 72, 153",
+  "/mn/admin/multyproget/trasportatori": "6, 182, 212",
+  "/mn/admin/niyol/trasportatori": "6, 182, 212",
+  "/mn/admin/multyproget/personale": "16, 185, 129",
+  "/mn/admin/niyol/personale": "16, 185, 129",
+  "/mn/admin/multyproget/messaggi": "244, 114, 182",
+  "/mn/admin/niyol/messaggi": "244, 114, 182",
+  "/mn/admin/multyproget/chiamate": "34, 197, 94",
+  "/mn/admin/niyol/chiamate": "34, 197, 94",
+  "/mn/admin/multyproget/magazzino": "20, 184, 166",
+  "/mn/admin/niyol/magazzino": "20, 184, 166",
+  "/mn/admin/multyproget/conferimenti": "249, 115, 22",
+  "/mn/admin/niyol/conferimenti": "249, 115, 22",
+  "/mn/admin/multyproget/impianti": "59, 130, 246",
+  "/mn/admin/niyol/impianti": "59, 130, 246",
+  "/mn/admin/multyproget/pagamenti": "239, 68, 68",
+  "/mn/admin/niyol/pagamenti": "239, 68, 68",
+  "/mn/admin/multyproget/formulari": "34, 197, 94",
+  "/mn/admin/niyol/formulari": "34, 197, 94",
 };
 
 export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps) {
@@ -31,10 +42,10 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
   const accentColor = useMemo(() => {
     if (routeColors[location.pathname]) return routeColors[location.pathname];
-    const match = Object.keys(routeColors)
-      .filter(r => r !== "/mn/admin")
-      .find(r => location.pathname.startsWith(r));
-    return match ? routeColors[match] : routeColors["/mn/admin"];
+    // Try matching context-based routes
+    if (location.pathname.includes("/mn/admin/niyol")) return "6, 182, 212";
+    if (location.pathname.includes("/mn/admin/multyproget")) return "249, 115, 22";
+    return routeColors["/mn/admin"];
   }, [location.pathname]);
 
   return (
