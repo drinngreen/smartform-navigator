@@ -58,23 +58,23 @@ export async function healthCheck() {
 }
 
 export async function richiestaVidimazione(societaId: string, quantita: number) {
-  return callRailway("/vidimate", societaId, { societaId, quantita });
+  return callRailway("/vidimate", societaId, { company: societaId, quantita });
 }
 
 export async function firmaFirProduttore(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { societaId, tipo: "produttore", ...firData });
+  return callRailway("/firma-fir", societaId, { company: societaId, tipo: "produttore", ...firData });
 }
 
 export async function firmaFirDestinatario(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { societaId, tipo: "destinatario", ...firData });
+  return callRailway("/firma-fir", societaId, { company: societaId, tipo: "destinatario", ...firData });
 }
 
 export async function registroCarico(societaId: string, payload: any) {
-  return callRailway("/registro/carico", societaId, { societaId, ...payload });
+  return callRailway("/registro/carico", societaId, { company: societaId, ...payload });
 }
 
 export async function registroScarico(societaId: string, payload: any) {
-  return callRailway("/registro/scarico", societaId, { societaId, ...payload });
+  return callRailway("/registro/scarico", societaId, { company: societaId, ...payload });
 }
 
 export function downloadCSV(numbers: string[], filename: string) {
