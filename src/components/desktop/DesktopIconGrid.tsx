@@ -71,6 +71,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const minHeight = rows * ICON_SPACING_Y + 40;
 
   const handleMouseDown = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
+    if (e.button !== 0) return; // only left click
     e.preventDefault();
     const wasDragging = isDragging.current;
     isDragging.current = false;
