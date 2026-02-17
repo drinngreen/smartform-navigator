@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Phone, PhoneOff, MessageSquare, Bell } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 

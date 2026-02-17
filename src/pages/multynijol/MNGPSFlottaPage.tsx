@@ -1,7 +1,7 @@
 import { useParams, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { MapPin, Navigation, Clock, Truck, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
