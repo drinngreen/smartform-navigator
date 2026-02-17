@@ -16,8 +16,10 @@ export function RoleBasedRedirect() {
 
   // Admin bypass — admin users skip profile setup
   if (isAdmin) {
-    // MultyNiyol admin goes to /mn/admin
     const email = user.email?.toLowerCase() ?? "";
+    if (email === "superadmin@zoli.live") {
+      return <Navigate to="/super" replace />;
+    }
     if (email === "multyniyol@zoli.live") {
       return <Navigate to="/mn/admin" replace />;
     }

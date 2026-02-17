@@ -70,8 +70,11 @@ export default function MNAuthPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!isLoading && user) navigate("/");
-  }, [user, isLoading, navigate]);
+    if (!isLoading && user) {
+      const appPath = context === "niyol" ? "/mn/app/niyol" : "/mn/app/multyproget";
+      navigate(appPath, { replace: true });
+    }
+  }, [user, isLoading, navigate, context]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,7 +267,7 @@ export default function MNAuthPage() {
 
         <p className="text-center text-xs text-muted-foreground mt-6">{config.title} • ZOLI DRAGON v1.0.0</p>
         <button
-          onClick={() => navigate("/mn/admin")}
+          onClick={() => navigate("/adminmn")}
           className="block mx-auto mt-3 text-xs text-primary/70 hover:text-primary transition-colors underline underline-offset-4"
         >
           Accedi come Admin →
