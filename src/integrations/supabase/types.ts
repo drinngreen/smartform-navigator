@@ -126,6 +126,69 @@ export type Database = {
           },
         ]
       }
+      anagrafica_privati: {
+        Row: {
+          attivo: boolean
+          codice_fiscale: string
+          cognome: string
+          comune_residenza: string | null
+          created_at: string
+          id: string
+          impianto_id: string | null
+          nome: string
+          note: string | null
+          numero_tessera: string | null
+          tenant_id: string | null
+          tipo_utenza: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          codice_fiscale: string
+          cognome: string
+          comune_residenza?: string | null
+          created_at?: string
+          id?: string
+          impianto_id?: string | null
+          nome: string
+          note?: string | null
+          numero_tessera?: string | null
+          tenant_id?: string | null
+          tipo_utenza?: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          codice_fiscale?: string
+          cognome?: string
+          comune_residenza?: string | null
+          created_at?: string
+          id?: string
+          impianto_id?: string | null
+          nome?: string
+          note?: string | null
+          numero_tessera?: string | null
+          tenant_id?: string | null
+          tipo_utenza?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anagrafica_privati_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anagrafica_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_cost_adjustments: {
         Row: {
           amount: number
@@ -753,6 +816,69 @@ export type Database = {
           },
         ]
       }
+      limiti_privati: {
+        Row: {
+          cer: string
+          created_at: string
+          id: string
+          impianto_id: string | null
+          limite_annuo_kg: number | null
+          limite_conferimento_kg: number | null
+          limite_giornaliero_kg: number | null
+          limite_mensile_kg: number | null
+          note: string | null
+          periodo_riferimento: string
+          tenant_id: string | null
+          tipo_utenza: string
+          updated_at: string
+        }
+        Insert: {
+          cer: string
+          created_at?: string
+          id?: string
+          impianto_id?: string | null
+          limite_annuo_kg?: number | null
+          limite_conferimento_kg?: number | null
+          limite_giornaliero_kg?: number | null
+          limite_mensile_kg?: number | null
+          note?: string | null
+          periodo_riferimento?: string
+          tenant_id?: string | null
+          tipo_utenza?: string
+          updated_at?: string
+        }
+        Update: {
+          cer?: string
+          created_at?: string
+          id?: string
+          impianto_id?: string | null
+          limite_annuo_kg?: number | null
+          limite_conferimento_kg?: number | null
+          limite_giornaliero_kg?: number | null
+          limite_mensile_kg?: number | null
+          note?: string | null
+          periodo_riferimento?: string
+          tenant_id?: string | null
+          tipo_utenza?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limiti_privati_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limiti_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       magazzino_deposito: {
         Row: {
           cer: string
@@ -1168,6 +1294,7 @@ export type Database = {
           metodo_pag: string | null
           nome_privato: string
           note: string | null
+          privato_id: string | null
           tenant_id: string | null
           updated_at: string
         }
@@ -1183,6 +1310,7 @@ export type Database = {
           metodo_pag?: string | null
           nome_privato: string
           note?: string | null
+          privato_id?: string | null
           tenant_id?: string | null
           updated_at?: string
         }
@@ -1198,6 +1326,7 @@ export type Database = {
           metodo_pag?: string | null
           nome_privato?: string
           note?: string | null
+          privato_id?: string | null
           tenant_id?: string | null
           updated_at?: string
         }
@@ -1207,6 +1336,13 @@ export type Database = {
             columns: ["impianto_id"]
             isOneToOne: false
             referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "privati_conferimenti_privato_id_fkey"
+            columns: ["privato_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_privati"
             referencedColumns: ["id"]
           },
           {
@@ -1407,6 +1543,86 @@ export type Database = {
           },
         ]
       }
+      ricevute_privati: {
+        Row: {
+          anno: number
+          conferimento_id: string | null
+          created_at: string
+          data_emissione: string
+          id: string
+          impianto_id: string | null
+          importo: number | null
+          note: string | null
+          numero_ricevuta: string
+          pdf_path: string | null
+          privato_id: string | null
+          qr_code_data: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          anno?: number
+          conferimento_id?: string | null
+          created_at?: string
+          data_emissione?: string
+          id?: string
+          impianto_id?: string | null
+          importo?: number | null
+          note?: string | null
+          numero_ricevuta: string
+          pdf_path?: string | null
+          privato_id?: string | null
+          qr_code_data?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anno?: number
+          conferimento_id?: string | null
+          created_at?: string
+          data_emissione?: string
+          id?: string
+          impianto_id?: string | null
+          importo?: number | null
+          note?: string | null
+          numero_ricevuta?: string
+          pdf_path?: string | null
+          privato_id?: string | null
+          qr_code_data?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ricevute_privati_conferimento_id_fkey"
+            columns: ["conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_privato_id_fkey"
+            columns: ["privato_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_privati"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signals: {
         Row: {
           candidate: Json | null
@@ -1526,6 +1742,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      next_ricevuta_number: {
+        Args: { p_anno: number; p_impianto_id: string }
+        Returns: string
       }
       reassign_fir_number: {
         Args: {
