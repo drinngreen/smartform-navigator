@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,8 +11,10 @@ import logoDragon from "@/assets/logo-dragon.png";
 
 export default function MNAppProfiloPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
   const basePath = `/mn/app/${context}`;
+  const loginPath = context === "niyol" ? "/ni" : "/mn";
   const { profile, user, signOut, refreshUserData } = useAuth();
   const { myForms } = useMNFIRForms();
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function MNAppProfiloPage() {
           <div className="p-4 rounded-2xl bg-card/60 border border-border/30 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"><Settings className="h-5 w-5 text-primary" /><span className="text-sm text-foreground">Impostazioni App</span></div>
           <div className="p-4 rounded-2xl bg-card/60 border border-border/30 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"><HelpCircle className="h-5 w-5 text-primary" /><span className="text-sm text-foreground">Assistenza</span></div>
         </div>
-        <button onClick={signOut} className="w-full py-3 rounded-xl bg-destructive/10 text-destructive font-display text-sm flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"><LogOut className="h-4 w-4" /> Esci dall'account</button>
+        <button onClick={async () => { await signOut(); navigate(loginPath, { replace: true }); }} className="w-full py-3 rounded-xl bg-destructive/10 text-destructive font-display text-sm flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"><LogOut className="h-4 w-4" /> Esci dall'account</button>
       </div>
       <MNBottomNav basePath={basePath} />
     </MobileShell>
