@@ -1,6 +1,7 @@
 import { ReactNode, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
+import { MNAdminHeader } from "./MNAdminHeader";
 
 interface MNAdminLayoutProps {
   children: ReactNode;
@@ -42,32 +43,54 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
   const accentColor = useMemo(() => {
     if (routeColors[location.pathname]) return routeColors[location.pathname];
-    // Try matching context-based routes
     if (location.pathname.includes("/mn/admin/niyol")) return "6, 182, 212";
     if (location.pathname.includes("/mn/admin/multyproget")) return "249, 115, 22";
     return routeColors["/mn/admin"];
   }, [location.pathname]);
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden relative">
+    <div data-admin-layout className="flex flex-col h-screen bg-background overflow-hidden relative">
+      {/* Background dinamico - identical to Global */}
       {!isDashboard && (
         <div
-          className="absolute inset-0 pointer-events-none transition-all duration-700"
+          className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out"
           style={{
-            background: `radial-gradient(ellipse at 50% 30%, rgba(${accentColor}, 0.18) 0%, rgba(${accentColor}, 0.08) 30%, transparent 70%)`,
+            background: `
+              radial-gradient(ellipse at 50% 30%, rgba(${accentColor}, 0.22) 0%, rgba(${accentColor}, 0.12) 25%, rgba(${accentColor}, 0.04) 55%, transparent 80%),
+              radial-gradient(ellipse at 85% 15%, rgba(${accentColor}, 0.17) 0%, rgba(${accentColor}, 0.07) 25%, transparent 55%),
+              radial-gradient(ellipse at 15% 75%, rgba(${accentColor}, 0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 70%, rgba(${accentColor}, 0.10) 0%, transparent 45%)
+            `,
           }}
         />
       )}
-      <div className="absolute inset-0 pointer-events-none opacity-20" style={{
-        backgroundImage: `linear-gradient(rgba(192,173,103,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(192,173,103,0.08) 1px, transparent 1px)`,
-        backgroundSize: '25px 25px',
-      }} />
-      <div className="relative z-20"><MNAdminTopNav /></div>
-      <div className="relative z-10 px-6 py-4">
-        <h1 className="text-2xl font-display text-foreground tracking-wide">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground font-mono mt-1">{subtitle}</p>}
+
+      {/* Grid overlay a quadretti - MOLTO VISIBILE - identical to Global */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
+          `,
+          backgroundSize: '30px 30px',
+        }}
+      />
+
+      {/* Top Navigation */}
+      <div className="relative z-20">
+        <MNAdminTopNav />
       </div>
-      <main className="flex-1 overflow-y-auto p-6 relative z-10">{children}</main>
+
+      {/* Header with Phone/AI/Messages - identical to Global */}
+      <div className="relative z-10">
+        <MNAdminHeader title={title} subtitle={subtitle} />
+      </div>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto p-6 relative z-10">
+        {children}
+      </main>
     </div>
   );
 }
