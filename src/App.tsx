@@ -13,6 +13,12 @@ import { CallManager } from "@/components/calls/CallManager";
 
 // Auth
 import AuthPage from "./pages/AuthPage";
+import MNAuthPage from "./pages/MNAuthPage";
+import MNAdminAuthPage from "./pages/MNAdminAuthPage";
+import SuperAdminAuthPage from "./pages/SuperAdminAuthPage";
+
+// Super Admin
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 // Mobile App Pages
 import MobileAppPage from "./pages/MobileAppPage";
@@ -66,7 +72,6 @@ import MNAppComunicazioniPage from "./pages/multynijol/MNAppComunicazioniPage";
 import MNAppProfiloPage from "./pages/multynijol/MNAppProfiloPage";
 import MNAppGuidaPage from "./pages/multynijol/MNAppGuidaPage";
 
-import MNAuthPage from "./pages/MNAuthPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
@@ -94,6 +99,19 @@ const App = () => (
             <Routes>
               {/* Auth */}
               <Route path="/auth" element={<AuthPage />} />
+
+              {/* MultyNiyol auth pages - app login only */}
+              <Route path="/mn" element={<MNAuthPage />} />
+              <Route path="/ni" element={<MNAuthPage />} />
+              <Route path="/mn/auth" element={<MNAuthPage />} />
+              <Route path="/mn/auth/:context" element={<MNAuthPage />} />
+
+              {/* Admin auth pages */}
+              <Route path="/adminmn" element={<MNAdminAuthPage />} />
+              <Route path="/superadmin" element={<SuperAdminAuthPage />} />
+
+              {/* Super Admin Dashboard */}
+              <Route path="/super" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
 
               {/* Root redirect based on role */}
               <Route path="/" element={<RoleBasedRedirect />} />
@@ -123,26 +141,26 @@ const App = () => (
               <Route path="/admin/gestione-fir" element={<ProtectedRoute><GestioneFIRPage /></ProtectedRoute>} />
               <Route path="/admin/gps" element={<ProtectedRoute><GPSFlottaPage /></ProtectedRoute>} />
 
-              {/* MultyNijol Admin Routes */}
-              <Route path="/mn/admin" element={<MNDashboardPage />} />
-              <Route path="/mn/admin/:context" element={<MNContextDashboardPage />} />
-              <Route path="/mn/admin/:context/registro" element={<MNRegistroFIRPage />} />
-              <Route path="/mn/admin/:context/rentri" element={<MNRENTRIPage />} />
-              <Route path="/mn/admin/:context/trasportatori" element={<MNTrasportatoriPage />} />
-              <Route path="/mn/admin/:context/transporter-app" element={<MNTransporterAppPage />} />
-              <Route path="/mn/admin/:context/personale" element={<MNPersonalePage />} />
-              <Route path="/mn/admin/:context/messaggi" element={<MNMessagesPage />} />
-              <Route path="/mn/admin/:context/chiamate" element={<MNCallReportsPage />} />
-              <Route path="/mn/admin/:context/magazzino" element={<MNMagazzinoPage />} />
-              <Route path="/mn/admin/:context/conferimenti" element={<MNConferimentiPage />} />
-              <Route path="/mn/admin/:context/impianti" element={<MNImpiantiPage />} />
-              <Route path="/mn/admin/:context/pagamenti" element={<MNPagamentiPage />} />
-              <Route path="/mn/admin/:context/registro-kg" element={<MNRegistroKgPage />} />
-              <Route path="/mn/admin/:context/fir-digitali" element={<MNFirDigitaliPage />} />
-              <Route path="/mn/admin/:context/formulari" element={<MNFormulariPage />} />
-              <Route path="/mn/admin/:context/gestione-fir" element={<MNGestioneFIRPage />} />
-              <Route path="/mn/admin/:context/gps" element={<MNGPSFlottaPage />} />
-              <Route path="/mn/admin/:context/zoli-dark-lemon" element={<MNZoliDarkLemonPage />} />
+              {/* MultyNijol Admin Routes - PROTECTED */}
+              <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context" element={<ProtectedRoute><MNContextDashboardPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/registro" element={<ProtectedRoute><MNRegistroFIRPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/rentri" element={<ProtectedRoute><MNRENTRIPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/trasportatori" element={<ProtectedRoute><MNTrasportatoriPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/transporter-app" element={<ProtectedRoute><MNTransporterAppPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/personale" element={<ProtectedRoute><MNPersonalePage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/messaggi" element={<ProtectedRoute><MNMessagesPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/chiamate" element={<ProtectedRoute><MNCallReportsPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/magazzino" element={<ProtectedRoute><MNMagazzinoPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/conferimenti" element={<ProtectedRoute><MNConferimentiPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/impianti" element={<ProtectedRoute><MNImpiantiPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/pagamenti" element={<ProtectedRoute><MNPagamentiPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/registro-kg" element={<ProtectedRoute><MNRegistroKgPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/fir-digitali" element={<ProtectedRoute><MNFirDigitaliPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/formulari" element={<ProtectedRoute><MNFormulariPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/gestione-fir" element={<ProtectedRoute><MNGestioneFIRPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/gps" element={<ProtectedRoute><MNGPSFlottaPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/zoli-dark-lemon" element={<ProtectedRoute><MNZoliDarkLemonPage /></ProtectedRoute>} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
@@ -162,12 +180,6 @@ const App = () => (
               <Route path="/mn/app/niyol/guida" element={<MNAppGuidaPage />} />
 
               <Route path="/mn/app/messages" element={<ZoliMessagesPage />} />
-
-              {/* MultyNiyol auth pages - /mn and /ni shortcuts */}
-              <Route path="/mn" element={<MNAuthPage />} />
-              <Route path="/ni" element={<MNAuthPage />} />
-              <Route path="/mn/auth" element={<MNAuthPage />} />
-              <Route path="/mn/auth/:context" element={<MNAuthPage />} />
 
               {/* Legacy routes redirect */}
               <Route path="/carica-fir" element={<Navigate to="/app" replace />} />

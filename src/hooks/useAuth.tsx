@@ -50,7 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     "amministrazioneglobalreco@zoli.live",
     "amministrazioneglobal@zoli.live",
     "segreteriaglobalreco@zoli.live",
-    "multyniyol@zoli.live"
+    "multyniyol@zoli.live",
+    "superadmin@zoli.live"
   ];
 
   const markPresence = async (userId: string, status: "online" | "offline") => {
