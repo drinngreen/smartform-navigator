@@ -83,7 +83,7 @@ export default function MNContextDashboardPage() {
         </div>
       </div>
 
-      <DesktopIconGrid icons={desktopIcons} />
+      <DesktopIconGrid icons={desktopIcons} storageKey={`desktop-icon-positions-mn-${context}`} />
     </MNAdminLayout>
   );
 }
