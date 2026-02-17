@@ -18,34 +18,34 @@ interface DesktopIcon extends DesktopIconDef {
 const ICON_SPACING_X = 220;
 const ICON_SPACING_Y = 240;
 const COLS = 5;
-const STORAGE_KEY = "desktop-icon-positions";
+const DEFAULT_STORAGE_KEY = "desktop-icon-positions";
 
 function createPositionedIcons(items: DesktopIconDef[]): DesktopIcon[] {
-  return items.map((item, i) => ({
+  return items.filter(Boolean).map((item, i) => ({
     ...item,
     x: (i % COLS) * ICON_SPACING_X + 40,
     y: Math.floor(i / COLS) * ICON_SPACING_Y + 20,
   }));
 }
 
-function loadPositions(): Record<string, { x: number; y: number }> {
+function loadPositions(storageKey: string): Record<string, { x: number; y: number }> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
 
-function savePositions(icons: DesktopIcon[]) {
+function savePositions(icons: DesktopIcon[], storageKey: string) {
   const map: Record<string, { x: number; y: number }> = {};
-  icons.forEach(ic => { map[ic.id] = { x: ic.x, y: ic.y }; });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  icons.forEach(ic => { if (ic) map[ic.id] = { x: ic.x, y: ic.y }; });
+  localStorage.setItem(storageKey, JSON.stringify(map));
 }
 
-function initIcons(defs: DesktopIconDef[]): DesktopIcon[] {
-  const saved = loadPositions();
-  const defaults = createPositionedIcons(defs.filter(Boolean));
+function initIcons(defs: DesktopIconDef[], storageKey: string): DesktopIcon[] {
+  const saved = loadPositions(storageKey);
+  const defaults = createPositionedIcons(defs);
   return defaults.map(icon => {
     if (!icon) return icon;
     const s = saved[icon.id];
@@ -55,11 +55,12 @@ function initIcons(defs: DesktopIconDef[]): DesktopIcon[] {
 
 interface DesktopIconGridProps {
   icons: DesktopIconDef[];
+  storageKey?: string;
 }
 
-export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
+export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_KEY }: DesktopIconGridProps) {
   const navigate = useNavigate();
-  const [icons, setIcons] = useState<DesktopIcon[]>(() => initIcons(iconDefs));
+  const [icons, setIcons] = useState<DesktopIcon[]>(() => initIcons(iconDefs, storageKey));
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; startX: number; startY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -68,7 +69,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const prevDefsRef = useRef(iconDefs);
   if (prevDefsRef.current !== iconDefs) {
     prevDefsRef.current = iconDefs;
-    setIcons(initIcons(iconDefs));
+    setIcons(initIcons(iconDefs, storageKey));
   }
 
   const rows = Math.ceil(iconDefs.length / COLS);
@@ -126,7 +127,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       } else {
         // Persist positions after drag
         setIcons(prev => {
-          savePositions(prev);
+          savePositions(prev, storageKey);
           return prev;
         });
       }
@@ -139,7 +140,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const resetPositions = useCallback(() => {
     const defaults = createPositionedIcons(iconDefs);
     setIcons(defaults);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey);
   }, [iconDefs]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
