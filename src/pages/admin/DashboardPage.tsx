@@ -9,6 +9,7 @@ import iconPersonale from "@/assets/menu-icons/personale.png";
 import iconRegistroFir from "@/assets/menu-icons/registro_fir.png";
 import iconRentri from "@/assets/menu-icons/rentri.png";
 import iconFatturazione from "@/assets/menu-icons/fatturazione.png";
+import iconGestioneFormulari from "@/assets/menu-icons/gestione_formulari.png";
 import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
 import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
 import iconAnalytics from "@/assets/menu-icons/analytics.png";
@@ -19,7 +20,7 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "gps", label: "GPS Flotta", iconImage: iconGpsFlotta, href: "/admin/gps", color: "6, 182, 212" },
   { id: "personale", label: "Personale", iconImage: iconPersonale, href: "/admin/personale", color: "16, 185, 129" },
   { id: "registro", label: "Registro FIR", iconImage: iconRegistroFir, href: "/admin/registro", color: "249, 115, 22" },
-  { id: "formulari", label: "Formulari", iconImage: iconRegistroFir, href: "/admin/formulari", color: "34, 197, 94" },
+  { id: "formulari", label: "Formulari", iconImage: iconGestioneFormulari, href: "/admin/formulari", color: "34, 197, 94" },
   { id: "rentri", label: "RENTRI", iconImage: iconRentri, href: "/admin/rentri", color: "236, 72, 153" },
   { id: "fatturazione", label: "Fatturazione", iconImage: iconFatturazione, href: "/admin/fatturazione", color: "20, 184, 166" },
   { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
