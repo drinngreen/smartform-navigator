@@ -1,104 +1,113 @@
+# Piano: App Mobile Multyproget e Niyol - Implementazione Completa
 
-# Piano: Sistema Multi-Tenant Multyproget e Niyol
+## Problemi identificati
 
-## Panoramica
-Creare un sistema completo dove l'admin multyniyol@zoli.live, dopo il login, vede una pagina con solo due grandi icone (Multyproget e Niyol) con effetto neon. Cliccando su ciascuna, entra in una dashboard identica a quella di Global Reco con drag-and-drop, isolamento dati e context switcher.
+1. **Preset Global Reco hardcoded**: Il componente `FIRFormComplete.tsx` ha i dati di Global Reco bloccati (Produttore) e Multyproget (Intermediario) hardcoded. Lo store `firStore.ts` inizializza i campi con i dati di Global Reco. Le app MN NON devono avere questi preset -- tutti i campi devono partire vuoti.
+2. **Routing rotto**: Le sotto-pagine (GPS, Cronologia, AI, ecc.) usano `useParams<{ context }>` ma le rotte in `App.tsx` non hanno il parametro `:context`. Il contesto e sempre `undefined` e ricade su `"multyproget"`. Niyol non funziona.
+3. **Messaggistica non collegata al tenant**: `MNAppComunicazioniPage` usa `useAdminId()` che trova l'admin di Global Reco, non l'admin del tenant corretto (Multyproget o Niyol).
+4. **Nessun isolamento dati FIR**: `useFIRForms` e `useFIRNumberPool` non filtrano per tenant. Gli utenti MN vedono i FIR di Global.
 
-## Struttura delle pagine
+## Soluzione
 
-### 1. Pagine di login utenti app
-- **/mn** -- Login trasportatori Multyproget (attualmente su /mn/auth/multyproget, va spostato)
-- **/ni** -- Login trasportatori Niyol (attualmente su /mn/auth/niyol, va spostato)
-- Entrambe le pagine avranno un link "Accedi come Admin" che rimanda a /mn/admin
+### 1. Creare `MNFIRFormComplete.tsx` -- form FIR senza preset
 
-### 2. Dashboard Admin iniziale (/mn/admin)
-La pagina MNDashboardPage attuale va completamente riscritta:
-- Sfondo scuro con griglia tecnica (stile HUD esistente)
-- Due icone enormi centrate (le immagini allegate: multyproget.png e niyol.png)
-- Ogni icona avra un bordo neon luminoso animato (arancione per Multyproget, ciano per Niyol)
-- NO drag-and-drop, posizionamento fisso centrato
-- Click su Multyproget naviga a /mn/admin/multyproget
-- Click su Niyol naviga a /mn/admin/niyol
+Nuovo componente che clona `FIRFormComplete.tsx` ma:
 
-### 3. Sub-dashboard per contesto (/mn/admin/multyproget e /mn/admin/niyol)
-Pagine identiche alla DashboardPage di Global con:
-- Stesse icone desktop (GPS, Personale, Registro FIR, Formulari, ecc.)
-- Sistema drag-and-drop completo (DesktopIconGrid)
-- Barra di stato sistema
-- I link punteranno ai percorsi /mn/admin/multyproget/... e /mn/admin/niyol/...
-- Context switcher (dropdown) in alto a sinistra nel TopNav per passare da un tenant all'altro
+- Rimuove `GLOBAL_RECO`, `MULTYPROGET` dagli import
+- Il Produttore NON e bloccato -- tutti i campi sono editabili e partono vuoti
+- L'Intermediario NON e bloccato -- tutti i campi sono editabili e partono vuoti
+- Mantiene identica l'interfaccia (accordion neon, tre tab, semaforo, pulsanti INIZIA/SALVA/INVIA)
+- Accetta un prop `tenantContext` per sapere se e multyproget o niyol
 
-### 4. Context Switcher
-Dropdown nel MNAdminTopNav in alto a sinistra (accanto al logo) che mostra:
-- "Multyproget" e "Niyol" come opzioni
-- Cambiando contesto, l'utente viene reindirizzato alla dashboard dell'altro tenant
-- Lo stato attivo viene gestito dallo store mnContextStore esistente
+### 2. Creare `mnFirStore.ts` -- store senza preset
 
-## File da modificare/creare
+Nuovo store Zustand che clona `firStore.ts` ma con `initialFIRData` che ha TUTTI i campi vuoti:
 
-### File da copiare nel progetto
-- `user-uploads://multyproget-2.png` --> `src/assets/multyproget-icon.png`
-- `user-uploads://niyol-2.png` --> `src/assets/niyol-icon.png`
+- `produttoreDenominazione: ""` (non "Global Reco")
+- `produttoreUnitaLocale: ""` (non "Via Alba 11...")
+- `produttoreCF: ""` (non "08934760961")
+- `intermediarioDenominazione: ""` (non "Multyproget")
+- `intermediarioCF: ""` (non "12347770013")
+- `annotazioni: ""` (non la stringa con Multyproget)
 
-### File da creare
-1. **`src/pages/multynijol/MNContextDashboardPage.tsx`** -- La sub-dashboard con DesktopIconGrid identica a Global, parametrizzata sul contesto (multyproget o niyol). Usa le stesse icone di DashboardPage ma con href adattati al prefisso /mn/admin/[contesto]/...
+### 3. Correggere il routing -- passare il contesto come prop, non come param
 
-### File da modificare
-1. **`src/pages/multynijol/MNDashboardPage.tsx`** -- Riscrittura completa: solo due grandi icone con neon, senza drag-and-drop, senza la griglia di moduli attuale
+Le sotto-pagine non possono usare `useParams` perche le rotte non hanno `:context`. Soluzione: estrarre il contesto dal pathname.
 
-2. **`src/components/multynijol/MNAdminTopNav.tsx`** -- Aggiunta del context switcher (dropdown) a sinistra. I link di navigazione si adatteranno al contesto attivo.
+```text
+/mn/app/multyproget/gps --> il path contiene "multyproget"
+/mn/app/niyol/gps       --> il path contiene "niyol"
+```
 
-3. **`src/components/multynijol/MNAdminLayout.tsx`** -- Aggiornamento routeColors per includere i percorsi con contesto
+Ogni sotto-pagina calcolera il contesto da `location.pathname`:
 
-4. **`src/App.tsx`** -- Aggiunta route:
-   - `/mn` e `/ni` per le pagine di login
-   - `/mn/admin/multyproget` e `/mn/admin/niyol` per le sub-dashboard
-   - Route nested per i moduli sotto ogni contesto (es. `/mn/admin/multyproget/registro`)
+```
+const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
+const basePath = `/mn/app/${context}`;
+```
 
-5. **`src/pages/MNAuthPage.tsx`** -- Aggiunta del link "Accedi come Admin" che punta a /mn/admin. Gestione del contesto automatico basato sul path (se /mn -> multyproget, se /ni -> niyol)
+### 4. Collegare la messaggistica al tenant corretto
 
-6. **`src/stores/mnContextStore.ts`** -- Adattamento per supportare il routing basato su contesto
+Creare un hook `useMNAdminId(context)` che restituisce l'admin del tenant corretto:
 
-## Isolamento dati
-L'isolamento per tenant e gia gestito dal campo `mn_context` nei profili e dal `tenant_id`. Le sub-dashboard filtreranno i dati in base al contesto attivo nello store. Questo sara implementato progressivamente nelle singole pagine dei moduli (Personale, Messaggi, Chiamate, ecc.) quando verranno sviluppate.
+- `multyproget` --> cerca l'utente con email `multyproget@zolidragon.cloud`
+- `niyol` --> cerca l'utente con email `niyol@zolidragon.cloud`
+
+Aggiornare `MNAppComunicazioniPage` per usare questo hook.
+
+### 5. Isolare i FIR per tenant
+
+Creare `useMNFIRForms(tenantId)` che filtra i FIR per `tenant_id` del contesto attivo, in modo che gli utenti Multyproget vedano solo i loro FIR e gli utenti Niyol solo i propri.
+
+### 6. Aggiornare le pagine principali
+
+`**MNMultyprogetAppPage.tsx**` e `**MNNiyolAppPage.tsx**`:
+
+- Usare `MNFIRFormComplete` al posto di `FIRFormComplete`
+- Usare `mnFirStore` al posto di `firStore`
+
+**Tutte le sotto-pagine** (`MNAppCronologiaPage`, `MNAppGPSPage`, `MNAppAIPage`, `MNAppComunicazioniPage`, `MNAppProfiloPage`, `MNAppGuidaPage`):
+
+- Estrarre contesto dal pathname invece di `useParams`
+- Collegare ai dati del tenant corretto
 
 ## Dettagli tecnici
 
-### MNDashboardPage (pagina selettore)
-```text
-+------------------------------------------+
-|            TopNav (senza nav links)       |
-+------------------------------------------+
-|                                          |
-|     [MULTYPROGET]      [NIYOL]           |
-|     grande icona       grande icona      |
-|     neon arancione     neon ciano        |
-|                                          |
-+------------------------------------------+
-```
+### File nuovi
 
-### MNContextDashboardPage (sub-dashboard)
-```text
-+------------------------------------------+
-| [Switcher v] TopNav con tutti i link     |
-+------------------------------------------+
-| Barra stato sistema                      |
-+------------------------------------------+
-| DesktopIconGrid con drag-and-drop        |
-| (stesse icone di Global)                 |
-+------------------------------------------+
-```
 
-### Routing
-```text
-/mn                    --> MNAuthPage (contesto=multyproget)
-/ni                    --> MNAuthPage (contesto=niyol)
-/mn/admin              --> MNDashboardPage (selettore 2 icone)
-/mn/admin/multyproget  --> MNContextDashboardPage
-/mn/admin/niyol        --> MNContextDashboardPage
-/mn/admin/multyproget/registro  --> MNRegistroFIRPage
-/mn/admin/niyol/registro        --> MNRegistroFIRPage
-... (stessi moduli per entrambi i contesti)
-```
+| File                                       | Descrizione                                  |
+| ------------------------------------------ | -------------------------------------------- |
+| `src/components/fir/MNFIRFormComplete.tsx` | Form FIR senza preset, tutti campi editabili |
+| `src/stores/mnFirStore.ts`                 | Store Zustand con dati iniziali vuoti        |
+| `src/hooks/useMNAdminId.ts`                | Hook per trovare l'admin del tenant MN       |
+| `src/hooks/useMNFIRForms.ts`               | Hook per FIR filtrati per tenant             |
 
-Nessuna modifica al database necessaria: le tabelle tenants, profiles e lo store mnContextStore gestiscono gia il multi-tenancy.
+
+### File da modificare
+
+
+| File                                              | Modifica                                        |
+| ------------------------------------------------- | ----------------------------------------------- |
+| `src/pages/multynijol/MNMultyprogetAppPage.tsx`   | Usa MNFIRFormComplete + mnFirStore              |
+| `src/pages/multynijol/MNNiyolAppPage.tsx`         | Usa MNFIRFormComplete + mnFirStore              |
+| `src/pages/multynijol/MNAppCronologiaPage.tsx`    | Contesto da pathname, FIR filtrati per tenant   |
+| `src/pages/multynijol/MNAppGPSPage.tsx`           | Contesto da pathname                            |
+| `src/pages/multynijol/MNAppAIPage.tsx`            | Contesto da pathname, AI collegata a mnFirStore |
+| `src/pages/multynijol/MNAppComunicazioniPage.tsx` | Contesto da pathname, admin tenant corretto     |
+| `src/pages/multynijol/MNAppProfiloPage.tsx`       | Contesto da pathname                            |
+| `src/pages/multynijol/MNAppGuidaPage.tsx`         | Contesto da pathname                            |
+
+
+### Flusso utente risultante
+
+1. L'utente va su `/mn` (Multyproget) o `/ni` (Niyol)
+2. Si registra o accede
+3. Viene reindirizzato a `/mn/app/multyproget` o `/mn/app/niyol`
+4. Vede il form FIR VUOTO (nessun preset)
+5. Compila tutto manualmente
+6. Naviga tra le sezioni (Cronologia, GPS, AI, Messaggi, Profilo, Guida)
+7. I messaggi vanno all'admin del proprio tenant
+8. L'admin del tenant (dalla dashboard `/mn/admin/multyproget` o `/mn/admin/niyol`) vede solo i dati dei propri autisti
+9. gli utenti si devono registrare con codice fiscale nome e cognome esattamente come per global
+10. sotto la pagina di login/registrazione di entrabe ci vuole un rimandoi a accedi come admin che porta alla pagina di login poer l'admin di multyproget e niyol vche è  [multyniyol@zoli.live](mailto:multyniyol@zoli.live)
