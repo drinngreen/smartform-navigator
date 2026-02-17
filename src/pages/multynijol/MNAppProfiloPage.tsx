@@ -1,0 +1,109 @@
+import { useState } from "react";
+import { useParams } from "react-router-dom";
+import { MNBottomNav } from "@/components/layout/MNBottomNav";
+import { MobileShell } from "@/components/layout/MobileShell";
+import { useAuth } from "@/hooks/useAuth";
+import { useFIRForms } from "@/hooks/useFIRForms";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
+import { User, Truck, Edit2, FileText, Bell, Settings, HelpCircle, LogOut, Camera } from "lucide-react";
+import logoDragon from "@/assets/logo-dragon.png";
+
+export default function MNAppProfiloPage() {
+  const { context } = useParams<{ context: string }>();
+  const basePath = `/mn/app/${context || "multyproget"}`;
+  const { profile, user, signOut, refreshUserData } = useAuth();
+  const { myForms } = useFIRForms();
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const firCount = myForms?.length || 0;
+
+  const handleSaveField = async (field: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("profiles").update({ [field]: editValue.trim() || null }).eq("user_id", user.id);
+      if (error) throw error;
+      await refreshUserData();
+      toast.success("Aggiornato!");
+    } catch (err: any) { toast.error(err?.message || "Errore"); }
+    setEditingField(null);
+  };
+
+  return (
+    <MobileShell>
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(192, 173, 103, 0.15)' }}>
+        <div>
+          <h1 className="text-xl font-display font-bold text-foreground tracking-wider">PROFILO</h1>
+          <p className="text-muted-foreground text-xs font-mono mt-1 uppercase tracking-wider">Il tuo account</p>
+        </div>
+        <img src={logoDragon} alt="Dragon" className="h-8 w-8 opacity-60" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-4">
+        <div className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-secondary/50 border-2 border-border/30 flex items-center justify-center overflow-hidden">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" /> : <User className="h-8 w-8 text-muted-foreground" />}
+              </div>
+              <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-neon-magenta flex items-center justify-center"><Camera className="h-3 w-3 text-white" /></button>
+            </div>
+            <div>
+              <p className="font-display font-bold text-lg text-foreground">{profile?.nome} {profile?.cognome}</p>
+              <p className="text-xs text-muted-foreground">Autista</p>
+              <p className="text-xs text-neon-magenta font-semibold">{context === "niyol" ? "Niyol" : "Multyproget"}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="p-3 rounded-xl bg-secondary/30 border border-border/20 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Truck className="h-3 w-3" /> Targa automezzo</p>
+                {editingField === "targa_automezzo" ? (
+                  <input autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value.toUpperCase())} onBlur={() => handleSaveField("targa_automezzo")} onKeyDown={(e) => e.key === "Enter" && handleSaveField("targa_automezzo")} className="bg-transparent border-none outline-none text-sm text-foreground font-mono mt-1 w-full" />
+                ) : (
+                  <p className="text-sm text-foreground font-mono mt-1">{profile?.targa_automezzo || "-"}</p>
+                )}
+              </div>
+              <button onClick={() => { setEditingField("targa_automezzo"); setEditValue(profile?.targa_automezzo || ""); }}><Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" /></button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-secondary/30 border border-border/20 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Autista alternativo</p>
+                {editingField === "autista_alternativo" ? (
+                  <input autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => handleSaveField("autista_alternativo")} onKeyDown={(e) => e.key === "Enter" && handleSaveField("autista_alternativo")} className="bg-transparent border-none outline-none text-sm text-foreground font-mono mt-1 w-full" />
+                ) : (
+                  <p className="text-sm text-foreground font-mono mt-1">{profile?.autista_alternativo || "-"}</p>
+                )}
+              </div>
+              <button onClick={() => { setEditingField("autista_alternativo"); setEditValue(profile?.autista_alternativo || ""); }}><Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" /></button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-3 rounded-2xl bg-card/60 border border-border/30 text-center"><FileText className="h-5 w-5 text-primary mx-auto mb-1" /><p className="text-xl font-display font-bold text-foreground">{firCount}</p><p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">FIR Totali</p></div>
+          <div className="p-3 rounded-2xl bg-card/60 border border-neon-cyan/20 text-center"><Truck className="h-5 w-5 text-neon-cyan mx-auto mb-1" /><p className="text-xl font-display font-bold text-foreground">0.0k</p><p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">KM Totali</p></div>
+          <div className="p-3 rounded-2xl bg-card/60 border border-neon-green/20 text-center"><FileText className="h-5 w-5 text-neon-green mx-auto mb-1" /><p className="text-xl font-display font-bold text-foreground">0</p><p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">Ritiri Mese</p></div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/30 flex items-center justify-between">
+            <div className="flex items-center gap-3"><Bell className="h-5 w-5 text-primary" /><span className="text-sm text-foreground">Notifiche</span></div>
+            <div className="w-10 h-5 rounded-full bg-secondary/50 border border-border/30 relative cursor-pointer"><div className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-primary/60 transition-all" /></div>
+          </div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/30 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"><Settings className="h-5 w-5 text-primary" /><span className="text-sm text-foreground">Impostazioni App</span></div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/30 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"><HelpCircle className="h-5 w-5 text-primary" /><span className="text-sm text-foreground">Assistenza</span></div>
+        </div>
+
+        <button onClick={signOut} className="w-full py-3 rounded-xl bg-destructive/10 text-destructive font-display text-sm flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors">
+          <LogOut className="h-4 w-4" /> Esci dall'account
+        </button>
+      </div>
+
+      <MNBottomNav basePath={basePath} />
+    </MobileShell>
+  );
+}
