@@ -1,11 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
-import { MessageSquare, Send, Paperclip, ArrowLeft, User, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import { MessageSquare, Send, Paperclip, ArrowLeft, User, Loader2, Plus, Search } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+
+interface ContextUser {
+  user_id: string;
+  nome: string;
+  cognome: string;
+  avatar_url: string | null;
+}
 
 export default function MNMessagesPage() {
   const { context, partnerId } = useParams<{ context: string; partnerId?: string }>();
@@ -17,6 +25,12 @@ export default function MNMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // New conversation state
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [contextUsers, setContextUsers] = useState<ContextUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const basePath = `/mn/admin/${context}/messaggi`;
 
   useEffect(() => {
@@ -26,6 +40,27 @@ export default function MNMessagesPage() {
   useEffect(() => {
     if (partnerId) markAsRead();
   }, [partnerId, markAsRead]);
+
+  const fetchContextUsers = useCallback(async () => {
+    if (!context || !user) return;
+    setLoadingUsers(true);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome, avatar_url")
+        .eq("mn_context", context)
+        .neq("user_id", user.id);
+      setContextUsers(data || []);
+    } catch (e) {
+      console.error("Error fetching context users:", e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [context, user]);
+
+  useEffect(() => {
+    if (showNewChat) fetchContextUsers();
+  }, [showNewChat, fetchContextUsers]);
 
   const handleSend = async () => {
     if (!text.trim() && files.length === 0) return;
@@ -41,17 +76,84 @@ export default function MNMessagesPage() {
     }
   };
 
+  const handleStartConversation = (userId: string) => {
+    setShowNewChat(false);
+    setSearchQuery("");
+    navigate(`${basePath}/${userId}`);
+  };
+
+  const filteredUsers = contextUsers.filter((u) => {
+    if (!searchQuery) return true;
+    const name = `${u.nome} ${u.cognome}`.toLowerCase();
+    return name.includes(searchQuery.toLowerCase());
+  });
+
+  // Get partner name - check conversations first, then contextUsers
+  const getPartnerName = () => {
+    const fromConv = conversations.find(c => c.user_id === partnerId);
+    if (fromConv) return fromConv.user_name;
+    const fromUsers = contextUsers.find(u => u.user_id === partnerId);
+    if (fromUsers) return `${fromUsers.nome} ${fromUsers.cognome}`;
+    return "Utente";
+  };
+
   return (
     <MNAdminLayout title="Messaggi" subtitle="Comunicazioni interne">
       <div className="flex h-[calc(100vh-180px)] rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden">
         {/* Sidebar */}
         <div className={`w-80 border-r border-border/30 flex flex-col ${partnerId ? "hidden lg:flex" : "flex w-full lg:w-80"}`}>
-          <div className="p-4 border-b border-border/30">
+          <div className="p-4 border-b border-border/30 flex items-center justify-between">
             <h3 className="text-sm font-display uppercase tracking-wider text-foreground flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-pink-400" />
               Conversazioni
             </h3>
+            <button
+              onClick={() => setShowNewChat(!showNewChat)}
+              className="p-2 rounded-lg bg-pink-600/20 hover:bg-pink-600/40 transition-colors"
+              title="Nuova conversazione"
+            >
+              <Plus className="h-4 w-4 text-pink-400" />
+            </button>
           </div>
+
+          {/* New chat panel */}
+          {showNewChat && (
+            <div className="border-b border-border/30 bg-background/50">
+              <div className="p-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cerca utente..."
+                    className="w-full bg-white/10 text-foreground rounded-lg pl-9 pr-3 py-2 text-sm border border-border/30 placeholder:text-muted-foreground focus:outline-none focus:border-pink-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {loadingUsers ? (
+                  <div className="p-4 text-center"><Loader2 className="h-4 w-4 animate-spin text-pink-400 mx-auto" /></div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-muted-foreground">Nessun utente trovato</div>
+                ) : (
+                  filteredUsers.map((u) => (
+                    <button
+                      key={u.user_id}
+                      onClick={() => handleStartConversation(u.user_id)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition-colors flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-pink-600/30 flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 text-pink-400" />
+                      </div>
+                      <span className="text-sm text-foreground truncate">{u.nome} {u.cognome}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto">
             {loading && !partnerId ? (
               <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin text-pink-400 mx-auto" /></div>
@@ -76,7 +178,7 @@ export default function MNMessagesPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.last_message || "..."}</p>
-                      <p className="text-[10px] text-white/40 mt-0.5">{format(new Date(conv.last_message_time), "dd/MM HH:mm", { locale: it })}</p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-0.5">{format(new Date(conv.last_message_time), "dd/MM HH:mm", { locale: it })}</p>
                     </div>
                   </div>
                 </button>
@@ -92,14 +194,14 @@ export default function MNMessagesPage() {
               {/* Chat Header */}
               <div className="p-4 border-b border-border/30 flex items-center gap-3">
                 <button onClick={() => navigate(basePath)} className="lg:hidden p-2 rounded-lg hover:bg-white/10">
-                  <ArrowLeft className="h-5 w-5 text-white" />
+                  <ArrowLeft className="h-5 w-5 text-foreground" />
                 </button>
                 <div className="w-10 h-10 rounded-full bg-pink-600/30 flex items-center justify-center">
                   <User className="h-5 w-5 text-pink-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-foreground">
-                    {conversations.find(c => c.user_id === partnerId)?.user_name || "Utente"}
+                    {getPartnerName()}
                   </p>
                 </div>
               </div>
@@ -120,7 +222,7 @@ export default function MNMessagesPage() {
                           {(msg as any).message_attachments?.map((att: any) => (
                             <AttachmentLink key={att.id} attachment={att} getUrl={getAttachmentUrl} />
                           ))}
-                          <p className={`text-[10px] mt-1 ${isMe ? "text-pink-200" : "text-white/40"}`}>
+                          <p className={`text-[10px] mt-1 ${isMe ? "text-pink-200" : "text-muted-foreground/50"}`}>
                             {format(new Date(msg.created_at), "HH:mm", { locale: it })}
                           </p>
                         </div>
@@ -138,14 +240,14 @@ export default function MNMessagesPage() {
                     {files.map((f, i) => (
                       <span key={i} className="text-xs bg-white/10 px-2 py-1 rounded text-foreground">
                         {f.name}
-                        <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="ml-1 text-red-400">×</button>
+                        <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))} className="ml-1 text-destructive">×</button>
                       </span>
                     ))}
                   </div>
                 )}
                 <div className="flex items-center gap-2">
                   <button onClick={() => fileInputRef.current?.click()} className="p-2.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-                    <Paperclip className="h-5 w-5 text-white/70" />
+                    <Paperclip className="h-5 w-5 text-muted-foreground" />
                   </button>
                   <input ref={fileInputRef} type="file" multiple className="hidden" accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
                   <input
@@ -154,7 +256,7 @@ export default function MNMessagesPage() {
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Scrivi un messaggio..."
-                    className="flex-1 bg-white/10 text-foreground rounded-lg px-4 py-2.5 text-sm border border-border/30 placeholder:text-white/30 focus:outline-none focus:border-pink-500"
+                    className="flex-1 bg-white/10 text-foreground rounded-lg px-4 py-2.5 text-sm border border-border/30 placeholder:text-muted-foreground focus:outline-none focus:border-pink-500"
                   />
                   <button
                     onClick={handleSend}
