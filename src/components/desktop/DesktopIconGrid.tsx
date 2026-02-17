@@ -47,6 +47,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const minHeight = rows * ICON_SPACING_Y + 40;
 
   const handleMouseDown = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
+    // Reset drag flag on new mousedown so a fresh click after a drag works
     isDragging.current = false;
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -79,7 +80,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      setTimeout(() => { isDragging.current = false; }, 200);
+      // Keep isDragging true — it will be reset on the next mousedown
       dragRef.current = null;
     };
     document.addEventListener("mousemove", handleMouseMove);
