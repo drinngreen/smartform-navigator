@@ -24,6 +24,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "personale", label: "Personale", iconImage: iconPersonale, href: `${prefix}/personale`, color: "16, 185, 129" },
     { id: "registro", label: "Registro FIR", iconImage: iconRegistroFir, href: `${prefix}/registro`, color: "249, 115, 22" },
     { id: "formulari", label: "Formulari", iconImage: iconGestioneFormulari, href: `${prefix}/formulari`, color: "34, 197, 94" },
+    { id: "gestione-fir", label: "Gestione FIR", iconImage: iconRegistroFir, href: `${prefix}/gestione-fir`, color: "59, 130, 246" },
     { id: "rentri", label: "RENTRI", iconImage: iconRentri, href: `${prefix}/rentri`, color: "236, 72, 153" },
     { id: "fatturazione", label: "Fatturazione", iconImage: iconFatturazione, href: `${prefix}/fatturazione`, color: "20, 184, 166" },
     { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: `${prefix}/chiamate`, color: "34, 197, 94" },

@@ -88,7 +88,7 @@ export function MNAdminTopNav() {
           <div className="flex items-center gap-2 px-4 py-3">
             {/* Dragon logo */}
             <button
-              onClick={() => navigate("/mn/admin")}
+              onClick={() => navigate(currentContext ? `/mn/admin/${currentContext}` : "/mn/admin")}
               className="flex items-center gap-2 mr-3 group"
             >
               <img src={logoDragon} alt="Multy Niyol" className="h-8 w-8 group-hover:scale-110 transition-transform" />
