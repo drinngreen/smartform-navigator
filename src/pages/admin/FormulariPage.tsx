@@ -241,15 +241,14 @@ export default function FormulariPage() {
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
                         {(form.status === "draft" || form.status === "bozza") && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 !text-cyan-400 hover:!text-cyan-300 hover:bg-cyan-400/10"
+                          <button
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium border border-blue-400 hover:bg-blue-500 transition-colors"
                             title="Modifica Bozza"
                             onClick={() => openEdit(form)}
                           >
                             <Edit className="h-4 w-4" />
-                          </Button>
+                            Modifica
+                          </button>
                         )}
                       </div>
                     </td>
