@@ -19,31 +19,29 @@ export default function MobileAppPage() {
     window.location.reload();
   };
 
-  // ── Auto GPS tracking when FIR is "inviato" (in viaggio) ──
+  // ── Always-on GPS tracking (unless user opted out via GPSPage) ──
   useEffect(() => {
-    if (workflowStatus === "inviato" && user?.id && navigator.geolocation) {
-      const sendPosition = (pos: GeolocationPosition) => {
-        supabase.from("driver_locations").insert({
-          user_id: user.id,
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          speed: pos.coords.speed,
-          accuracy: pos.coords.accuracy,
-          fir_id: editingFirId,
-          tenant_id: profile?.tenant_id || null,
-        }).then(({ error }) => {
-          if (error) console.warn("[GPS] Insert error:", error.message);
-        });
-      };
+    const optedOut = localStorage.getItem("gps_tracking_opted_out") === "true";
+    if (optedOut || !user?.id || !navigator.geolocation) return;
 
-      // Send immediately
+    const sendPosition = (pos: GeolocationPosition) => {
+      supabase.from("driver_locations").insert({
+        user_id: user.id,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        speed: pos.coords.speed,
+        accuracy: pos.coords.accuracy,
+        fir_id: editingFirId,
+        tenant_id: profile?.tenant_id || null,
+      }).then(({ error }) => {
+        if (error) console.warn("[GPS] Insert error:", error.message);
+      });
+    };
+
+    navigator.geolocation.getCurrentPosition(sendPosition, () => {});
+    gpsIntervalRef.current = setInterval(() => {
       navigator.geolocation.getCurrentPosition(sendPosition, () => {});
-
-      // Then every 30 seconds
-      gpsIntervalRef.current = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(sendPosition, () => {});
-      }, 30000);
-    }
+    }, 30000);
 
     return () => {
       if (gpsIntervalRef.current) {
@@ -51,7 +49,7 @@ export default function MobileAppPage() {
         gpsIntervalRef.current = null;
       }
     };
-  }, [workflowStatus, user?.id, editingFirId, profile?.tenant_id]);
+  }, [user?.id, editingFirId, profile?.tenant_id]);
 
   return (
     <MobileShell>
