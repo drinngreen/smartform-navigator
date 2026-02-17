@@ -17,6 +17,7 @@ interface DesktopIcon extends DesktopIconDef {
 const ICON_SPACING_X = 220;
 const ICON_SPACING_Y = 240;
 const COLS = 5;
+const STORAGE_KEY = "desktop-icon-positions";
 
 function createPositionedIcons(items: DesktopIconDef[]): DesktopIcon[] {
   return items.map((item, i) => ({
@@ -26,13 +27,34 @@ function createPositionedIcons(items: DesktopIconDef[]): DesktopIcon[] {
   }));
 }
 
+function loadPositions(): Record<string, { x: number; y: number }> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePositions(icons: DesktopIcon[]) {
+  const map: Record<string, { x: number; y: number }> = {};
+  icons.forEach(ic => { map[ic.id] = { x: ic.x, y: ic.y }; });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+
+function initIcons(defs: DesktopIconDef[]): DesktopIcon[] {
+  const saved = loadPositions();
+  const defaults = createPositionedIcons(defs);
+  return defaults.map(icon => saved[icon.id] ? { ...icon, ...saved[icon.id] } : icon);
+}
+
 interface DesktopIconGridProps {
   icons: DesktopIconDef[];
 }
 
 export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const navigate = useNavigate();
-  const [icons, setIcons] = useState<DesktopIcon[]>(() => createPositionedIcons(iconDefs));
+  const [icons, setIcons] = useState<DesktopIcon[]>(() => initIcons(iconDefs));
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; startX: number; startY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -40,7 +62,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const prevDefsRef = useRef(iconDefs);
   if (prevDefsRef.current !== iconDefs) {
     prevDefsRef.current = iconDefs;
-    setIcons(createPositionedIcons(iconDefs));
+    setIcons(initIcons(iconDefs));
   }
 
   const rows = Math.ceil(iconDefs.length / COLS);
@@ -50,15 +72,13 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
     e.preventDefault();
     const wasDragging = isDragging.current;
     isDragging.current = false;
-    
-    // If the previous interaction was a drag, this mousedown just resets - don't start a new drag/click cycle
     if (wasDragging) return;
-    
+
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     let didDrag = false;
-    
+
     dragRef.current = {
       id: icon.id,
       offsetX: e.clientX - rect.left - icon.x,
@@ -66,7 +86,7 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       startX: e.clientX,
       startY: e.clientY,
     };
-    
+
     const handleMouseMove = (me: MouseEvent) => {
       if (!dragRef.current || !containerRef.current) return;
       const dx = Math.abs(me.clientX - dragRef.current.startX);
@@ -75,8 +95,8 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       didDrag = true;
       isDragging.current = true;
       const r = containerRef.current.getBoundingClientRect();
-      setIcons(prev =>
-        prev.map(ic =>
+      setIcons(prev => {
+        const next = prev.map(ic =>
           ic.id === dragRef.current!.id
             ? {
                 ...ic,
@@ -84,33 +104,39 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
                 y: Math.max(0, Math.min(r.height - 100, me.clientY - r.top - dragRef.current!.offsetY)),
               }
             : ic
-        )
-      );
+        );
+        return next;
+      });
     };
-    
+
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       dragRef.current = null;
-      
-      // If no drag occurred, navigate
+
       if (!didDrag) {
         navigate(icon.href);
+      } else {
+        // Persist positions after drag
+        setIcons(prev => {
+          savePositions(prev);
+          return prev;
+        });
       }
-      // isDragging stays true if dragged — next mousedown resets it without navigating
     };
-    
+
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   }, [navigate]);
 
   const resetPositions = useCallback(() => {
-    setIcons(createPositionedIcons(iconDefs));
+    const defaults = createPositionedIcons(iconDefs);
+    setIcons(defaults);
+    localStorage.removeItem(STORAGE_KEY);
   }, [iconDefs]);
 
   return (
     <>
-      {/* Reset button */}
       <div className="flex justify-end mb-2">
         <button
           onClick={resetPositions}
@@ -120,7 +146,6 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
         </button>
       </div>
 
-      {/* Desktop area */}
       <div
         ref={containerRef}
         className="relative w-full select-none"
