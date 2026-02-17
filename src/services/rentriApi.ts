@@ -4,8 +4,8 @@
  * and pool replenishment (vidimate).
  */
 
-const RENTRI_BASE_URL = "https://dragonrifiutisender.onrender.com/api/rentri";
-const RENTRI_HEALTH_URL = "https://dragonrifiutisender.onrender.com/health";
+const RENTRI_BASE_URL = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
+const RENTRI_HEALTH_URL = "https://dragonrifiutisender-production.up.railway.app/health";
 
 /**
  * Health check – GET /health to verify the server is reachable.
