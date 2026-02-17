@@ -73,7 +73,9 @@ export default function MNMagazzinoPage() {
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
-  const [confForm, setConfForm] = useState({ privato_id: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+  const [confForm, setConfForm] = useState({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+  const [privatoSearch, setPrivatoSearch] = useState("");
+  const [showPrivatoDropdown, setShowPrivatoDropdown] = useState(false);
   const [limiteForm, setLimiteForm] = useState({ cer: "", tipo_utenza: "domestica", limite_conferimento_kg: "", limite_annuo_kg: "", limite_mensile_kg: "", limite_giornaliero_kg: "", periodo_riferimento: "annuale", note: "" });
 
   useEffect(() => {
@@ -154,10 +156,12 @@ export default function MNMagazzinoPage() {
       if (w) setLimitWarning(w);
     }
     const privato = privati.find(p => p.id === confForm.privato_id);
+    const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : confForm.cognome_privato ? `${confForm.cognome_privato} ${confForm.nome_privato}`.trim() : "Anonimo";
+    const cfFinale = privato?.codice_fiscale || confForm.cf_privato || null;
     const { error } = await supabase.from("privati_conferimenti").insert({
       impianto_id: selectedImpianto, cer: confForm.cer, kg_pesati: kg,
-      nome_privato: privato ? `${privato.cognome} ${privato.nome}` : "Anonimo",
-      cf_pi: privato?.codice_fiscale || null,
+      nome_privato: nomeFinale,
+      cf_pi: cfFinale,
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
       metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
       privato_id: confForm.privato_id || null,
@@ -165,7 +169,8 @@ export default function MNMagazzinoPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Conferimento registrato");
     setShowNewConferimento(false);
-    setConfForm({ privato_id: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+    setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+    setPrivatoSearch("");
     setLimitWarning(null);
     fetchAll();
   };
@@ -254,13 +259,62 @@ export default function MNMagazzinoPage() {
                 <DialogContent className="max-w-lg">
                   <DialogHeader><DialogTitle>Nuovo Conferimento</DialogTitle></DialogHeader>
                   <div className="grid gap-4 py-2">
-                    <div>
-                      <Label>Privato</Label>
-                      <Select value={confForm.privato_id} onValueChange={v => setConfForm(f => ({ ...f, privato_id: v }))}>
-                        <SelectTrigger className="bg-card/60"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                        <SelectContent>{privati.filter(p => p.attivo).map(p => <SelectItem key={p.id} value={p.id}>{p.cognome} {p.nome} — {p.codice_fiscale}</SelectItem>)}</SelectContent>
-                      </Select>
+                    {/* Ricerca privato esistente */}
+                    <div className="relative">
+                      <Label>Cerca Privato Registrato</Label>
+                      <Input
+                        placeholder="Cognome, nome o CF..."
+                        value={privatoSearch}
+                        onChange={e => { setPrivatoSearch(e.target.value); setShowPrivatoDropdown(true); }}
+                        onFocus={() => setShowPrivatoDropdown(true)}
+                        className="bg-card/60 border-border/30"
+                      />
+                      {showPrivatoDropdown && privatoSearch.length > 0 && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+                          {privati
+                            .filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase()))
+                            .slice(0, 10)
+                            .map(p => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className="w-full text-left px-3 py-2 hover:bg-accent/20 text-sm transition-colors"
+                                onClick={() => {
+                                  setConfForm(f => ({ ...f, privato_id: p.id, nome_privato: p.nome, cognome_privato: p.cognome, cf_privato: p.codice_fiscale }));
+                                  setPrivatoSearch(`${p.cognome} ${p.nome}`);
+                                  setShowPrivatoDropdown(false);
+                                }}
+                              >
+                                <span className="font-medium">{p.cognome} {p.nome}</span>
+                                <span className="text-muted-foreground ml-2 text-xs font-mono">{p.codice_fiscale}</span>
+                                {p.tipo_utenza !== "domestica" && <span className="text-muted-foreground ml-2 text-[10px]">(N.DOM)</span>}
+                              </button>
+                            ))}
+                          {privati.filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase())).length === 0 && (
+                            <div className="px-3 py-2 text-xs text-muted-foreground">Nessun risultato — compila manualmente</div>
+                          )}
+                        </div>
+                      )}
+                      {confForm.privato_id && (
+                        <button type="button" className="absolute right-2 top-8 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => { setConfForm(f => ({ ...f, privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "" })); setPrivatoSearch(""); }}>
+                          ✕ Rimuovi
+                        </button>
+                      )}
                     </div>
+
+                    {/* Dati privato manuali (se non selezionato da anagrafica) */}
+                    {!confForm.privato_id && (
+                      <div className="space-y-3 p-3 rounded-xl border border-dashed border-border/40 bg-muted/20">
+                        <p className="text-xs text-muted-foreground font-mono">DATI PRIVATO (inserisci manualmente)</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><Label>Nome</Label><Input placeholder="Mario" value={confForm.nome_privato} onChange={e => setConfForm(f => ({ ...f, nome_privato: e.target.value }))} /></div>
+                          <div><Label>Cognome</Label><Input placeholder="Rossi" value={confForm.cognome_privato} onChange={e => setConfForm(f => ({ ...f, cognome_privato: e.target.value }))} /></div>
+                        </div>
+                        <div><Label>Codice Fiscale / P.IVA</Label><Input placeholder="RSSMRA80A01H501Z" value={confForm.cf_privato} onChange={e => setConfForm(f => ({ ...f, cf_privato: e.target.value.toUpperCase() }))} /></div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>CER *</Label><Input placeholder="20 03 01" value={confForm.cer} onChange={e => { setConfForm(f => ({ ...f, cer: e.target.value })); setLimitWarning(null); }} /></div>
                       <div><Label>Kg *</Label><Input type="number" value={confForm.kg_pesati} onChange={e => { setConfForm(f => ({ ...f, kg_pesati: e.target.value })); setLimitWarning(null); }}
@@ -280,15 +334,12 @@ export default function MNMagazzinoPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={e => setConfForm(f => ({ ...f, importo_pagato: e.target.value }))} /></div>
                       <div><Label>Pagamento</Label>
-                        <Select value={confForm.metodo_pag} onValueChange={v => setConfForm(f => ({ ...f, metodo_pag: v }))}>
-                          <SelectTrigger className="bg-card/60"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="contanti">Contanti</SelectItem>
-                            <SelectItem value="pos">POS</SelectItem>
-                            <SelectItem value="bonifico">Bonifico</SelectItem>
-                            <SelectItem value="gratuito">Gratuito</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <select className="w-full px-3 py-2 rounded-md bg-card/60 border border-border/30 text-sm text-foreground" value={confForm.metodo_pag} onChange={e => setConfForm(f => ({ ...f, metodo_pag: e.target.value }))}>
+                          <option value="contanti">Contanti</option>
+                          <option value="pos">POS</option>
+                          <option value="bonifico">Bonifico</option>
+                          <option value="gratuito">Gratuito</option>
+                        </select>
                       </div>
                     </div>
                     <div><Label>Note</Label><Textarea value={confForm.note} onChange={e => setConfForm(f => ({ ...f, note: e.target.value }))} /></div>
