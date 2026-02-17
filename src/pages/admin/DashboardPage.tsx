@@ -21,6 +21,7 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "personale", label: "Personale", iconImage: iconPersonale, href: "/admin/personale", color: "16, 185, 129" },
   { id: "registro", label: "Registro FIR", iconImage: iconRegistroFir, href: "/admin/registro", color: "249, 115, 22" },
   { id: "formulari", label: "Formulari", iconImage: iconGestioneFormulari, href: "/admin/formulari", color: "34, 197, 94" },
+  { id: "gestione-fir", label: "Gestione FIR", iconImage: iconRegistroFir, href: "/admin/gestione-fir", color: "59, 130, 246" },
   { id: "rentri", label: "RENTRI", iconImage: iconRentri, href: "/admin/rentri", color: "236, 72, 153" },
   { id: "fatturazione", label: "Fatturazione", iconImage: iconFatturazione, href: "/admin/fatturazione", color: "20, 184, 166" },
   { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
