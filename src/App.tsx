@@ -39,6 +39,7 @@ import GPSFlottaPage from "./pages/admin/GPSFlottaPage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
+import MNContextDashboardPage from "./pages/multynijol/MNContextDashboardPage";
 import MNRegistroFIRPage from "./pages/multynijol/MNRegistroFIRPage";
 import MNRENTRIPage from "./pages/multynijol/MNRENTRIPage";
 import MNTrasportatoriPage from "./pages/multynijol/MNTrasportatoriPage";
@@ -115,27 +116,30 @@ const App = () => (
 
               {/* MultyNijol Admin Routes */}
               <Route path="/mn/admin" element={<MNDashboardPage />} />
-              <Route path="/mn/admin/registro" element={<MNRegistroFIRPage />} />
-              <Route path="/mn/admin/rentri" element={<MNRENTRIPage />} />
-              <Route path="/mn/admin/trasportatori" element={<MNTrasportatoriPage />} />
-              <Route path="/mn/admin/transporter-app" element={<MNTransporterAppPage />} />
-              <Route path="/mn/admin/personale" element={<MNPersonalePage />} />
-              <Route path="/mn/admin/messaggi" element={<MNMessagesPage />} />
-              <Route path="/mn/admin/chiamate" element={<MNCallReportsPage />} />
-              <Route path="/mn/admin/magazzino" element={<MNMagazzinoPage />} />
-              <Route path="/mn/admin/conferimenti" element={<MNConferimentiPage />} />
-              <Route path="/mn/admin/impianti" element={<MNImpiantiPage />} />
-              <Route path="/mn/admin/pagamenti" element={<MNPagamentiPage />} />
-              <Route path="/mn/admin/registro-kg" element={<MNRegistroKgPage />} />
-              <Route path="/mn/admin/fir-digitali" element={<MNFirDigitaliPage />} />
-              <Route path="/mn/admin/formulari" element={<MNFormulariPage />} />
+              <Route path="/mn/admin/:context" element={<MNContextDashboardPage />} />
+              <Route path="/mn/admin/:context/registro" element={<MNRegistroFIRPage />} />
+              <Route path="/mn/admin/:context/rentri" element={<MNRENTRIPage />} />
+              <Route path="/mn/admin/:context/trasportatori" element={<MNTrasportatoriPage />} />
+              <Route path="/mn/admin/:context/transporter-app" element={<MNTransporterAppPage />} />
+              <Route path="/mn/admin/:context/personale" element={<MNPersonalePage />} />
+              <Route path="/mn/admin/:context/messaggi" element={<MNMessagesPage />} />
+              <Route path="/mn/admin/:context/chiamate" element={<MNCallReportsPage />} />
+              <Route path="/mn/admin/:context/magazzino" element={<MNMagazzinoPage />} />
+              <Route path="/mn/admin/:context/conferimenti" element={<MNConferimentiPage />} />
+              <Route path="/mn/admin/:context/impianti" element={<MNImpiantiPage />} />
+              <Route path="/mn/admin/:context/pagamenti" element={<MNPagamentiPage />} />
+              <Route path="/mn/admin/:context/registro-kg" element={<MNRegistroKgPage />} />
+              <Route path="/mn/admin/:context/fir-digitali" element={<MNFirDigitaliPage />} />
+              <Route path="/mn/admin/:context/formulari" element={<MNFormulariPage />} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
               <Route path="/mn/app/niyol" element={<MNNiyolAppPage />} />
               <Route path="/mn/app/messages" element={<ZoliMessagesPage />} />
 
-              {/* MultyNiyol auth pages */}
+              {/* MultyNiyol auth pages - /mn and /ni shortcuts */}
+              <Route path="/mn" element={<MNAuthPage />} />
+              <Route path="/ni" element={<MNAuthPage />} />
               <Route path="/mn/auth" element={<MNAuthPage />} />
               <Route path="/mn/auth/:context" element={<MNAuthPage />} />
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Eye, EyeOff, User, Lock, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
@@ -51,7 +51,12 @@ const generateEmailFromCF = (codiceFiscale: string) => {
 export default function MNAuthPage() {
   const navigate = useNavigate();
   const { context: paramContext } = useParams<{ context?: string }>();
-  const context: MNContext = (paramContext === "multyproget" || paramContext === "niyol") ? paramContext : "multyproget";
+  const location = useLocation();
+  
+  // Detect context from URL: /ni -> niyol, /mn -> multyproget, /mn/auth/:context -> context
+  const context: MNContext = location.pathname === "/ni" ? "niyol"
+    : (paramContext === "multyproget" || paramContext === "niyol") ? paramContext
+    : "multyproget";
   const config = CONTEXT_CONFIG[context];
   
   const { user, isLoading } = useAuth();
@@ -258,6 +263,12 @@ export default function MNAuthPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">{config.title} • ZOLI DRAGON v1.0.0</p>
+        <button
+          onClick={() => navigate("/mn/admin")}
+          className="block mx-auto mt-3 text-xs text-primary/70 hover:text-primary transition-colors underline underline-offset-4"
+        >
+          Accedi come Admin →
+        </button>
       </div>
     </div>
   );
