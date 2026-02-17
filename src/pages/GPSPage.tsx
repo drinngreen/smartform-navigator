@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, Navigation, Signal, Truck } from "lucide-react";
+import { MapPin, Navigation, Signal, Truck, WifiOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logoDragon from "@/assets/logo-dragon.png";
 
 interface GeoPos {
@@ -12,15 +13,23 @@ interface GeoPos {
   accuracy: number | null;
 }
 
-export default function GPSPage() {
-  const { profile } = useAuth();
-  const [position, setPosition] = useState<GeoPos | null>(null);
-  const [tracking, setTracking] = useState(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
+const GPS_OPT_OUT_KEY = "gps_tracking_opted_out";
 
-  const startTracking = () => {
-    if (!navigator.geolocation) return;
-    const id = navigator.geolocation.watchPosition(
+export default function GPSPage() {
+  const { profile, user } = useAuth();
+  const [position, setPosition] = useState<GeoPos | null>(null);
+  const [optedOut, setOptedOut] = useState(() => localStorage.getItem(GPS_OPT_OUT_KEY) === "true");
+  const watchIdRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const tracking = !optedOut;
+
+  // Always-on GPS tracking (unless opted out)
+  useEffect(() => {
+    if (optedOut || !navigator.geolocation || !user?.id) return;
+
+    // Watch position for UI display
+    const wid = navigator.geolocation.watchPosition(
       (pos) => {
         setPosition({
           lat: pos.coords.latitude,
@@ -32,19 +41,43 @@ export default function GPSPage() {
       () => {},
       { enableHighAccuracy: true, timeout: 10000 }
     );
-    setWatchId(id);
-    setTracking(true);
-  };
+    watchIdRef.current = wid;
 
-  const stopTracking = () => {
-    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-    setTracking(false);
-    setWatchId(null);
-  };
+    // Send to DB every 30s
+    const sendPosition = (pos: GeolocationPosition) => {
+      supabase.from("driver_locations").insert({
+        user_id: user.id,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        speed: pos.coords.speed,
+        accuracy: pos.coords.accuracy,
+        tenant_id: profile?.tenant_id || null,
+      }).then(({ error }) => {
+        if (error) console.warn("[GPS] Insert error:", error.message);
+      });
+    };
 
-  useEffect(() => {
-    return () => { if (watchId !== null) navigator.geolocation.clearWatch(watchId); };
-  }, [watchId]);
+    navigator.geolocation.getCurrentPosition(sendPosition, () => {});
+    intervalRef.current = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(sendPosition, () => {});
+    }, 30000);
+
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      watchIdRef.current = null;
+      intervalRef.current = null;
+    };
+  }, [optedOut, user?.id, profile?.tenant_id]);
+
+  const toggleOptOut = () => {
+    setOptedOut((prev) => {
+      const next = !prev;
+      localStorage.setItem(GPS_OPT_OUT_KEY, String(next));
+      if (next) setPosition(null);
+      return next;
+    });
+  };
 
   const speedKmh = position?.speed ? (position.speed * 3.6).toFixed(0) : "--";
 
@@ -62,27 +95,30 @@ export default function GPSPage() {
         {/* Tracking status */}
         <div className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
           <div className="flex items-center gap-3 mb-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tracking ? 'bg-neon-green/20' : 'bg-secondary/50'}`}>
-              <Signal className={`h-5 w-5 ${tracking ? 'text-neon-green' : 'text-muted-foreground'}`} />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tracking ? 'bg-neon-green/20' : 'bg-destructive/20'}`}>
+              {tracking
+                ? <Signal className="h-5 w-5 text-neon-green" />
+                : <WifiOff className="h-5 w-5 text-destructive" />
+              }
             </div>
             <div>
-              <p className={`font-display font-bold text-sm ${tracking ? 'text-neon-green' : 'text-primary'}`}>
-                {tracking ? "TRACKING ATTIVO" : "TRACKING DISATTIVO"}
+              <p className={`font-display font-bold text-sm ${tracking ? 'text-neon-green' : 'text-destructive'}`}>
+                {tracking ? "COLLEGATO" : "SCOLLEGATO"}
               </p>
               <p className="text-xs text-muted-foreground font-mono">
-                {tracking ? "Dati in tempo reale" : "Nessun dato"}
+                {tracking ? "GPS attivo — dati in tempo reale" : "GPS disattivato per privacy"}
               </p>
             </div>
           </div>
           <button
-            onClick={tracking ? stopTracking : startTracking}
+            onClick={toggleOptOut}
             className={`w-full py-3 rounded-xl font-display font-bold text-sm tracking-wider transition-all ${
               tracking
-                ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                ? "bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/30"
                 : "bg-neon-green/20 text-neon-green hover:bg-neon-green/30 border border-neon-green/30"
             }`}
           >
-            {tracking ? "FERMA TRACKING" : "AVVIA TRACKING"}
+            {tracking ? "SCOLLEGATI (Privacy)" : "RICOLLEGATI"}
           </button>
         </div>
 
