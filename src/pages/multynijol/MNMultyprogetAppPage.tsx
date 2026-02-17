@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Navigate } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
@@ -11,12 +12,10 @@ import logoDragon from "@/assets/logo-dragon.png";
 const BASE_PATH = "/mn/app/multyproget";
 
 export default function MNMultyprogetAppPage() {
-  const { profile, user } = useAuth();
+  const { profile, user, isLoading } = useAuth();
   const firstName = profile?.nome?.split(" ")[0] || "Utente";
   const editingFirId = useMNFIRStore((s) => s.editingFirId);
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const handleRefresh = () => window.location.reload();
 
   useEffect(() => {
     const optedOut = localStorage.getItem("gps_tracking_opted_out") === "true";
@@ -28,6 +27,11 @@ export default function MNMultyprogetAppPage() {
     gpsIntervalRef.current = setInterval(() => { navigator.geolocation.getCurrentPosition(sendPosition, () => {}); }, 30000);
     return () => { if (gpsIntervalRef.current) { clearInterval(gpsIntervalRef.current); gpsIntervalRef.current = null; } };
   }, [user?.id, editingFirId, profile?.tenant_id]);
+
+  if (isLoading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="text-primary animate-pulse text-lg tracking-wider font-display">CARICAMENTO...</div></div>;
+  if (!user) return <Navigate to="/mn" replace />;
+
+  const handleRefresh = () => window.location.reload();
 
   return (
     <MobileShell>
