@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,8 +11,9 @@ interface GeoPos { lat: number; lng: number; speed: number | null; accuracy: num
 const GPS_OPT_OUT_KEY = "gps_tracking_opted_out";
 
 export default function MNAppGPSPage() {
-  const { context } = useParams<{ context: string }>();
-  const basePath = `/mn/app/${context || "multyproget"}`;
+  const location = useLocation();
+  const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
+  const basePath = `/mn/app/${context}`;
   const { profile, user } = useAuth();
   const [position, setPosition] = useState<GeoPos | null>(null);
   const [optedOut, setOptedOut] = useState(() => localStorage.getItem(GPS_OPT_OUT_KEY) === "true");
@@ -27,16 +28,11 @@ export default function MNAppGPSPage() {
       () => {}, { enableHighAccuracy: true, timeout: 10000 }
     );
     watchIdRef.current = wid;
-
     const sendPosition = (pos: GeolocationPosition) => {
-      supabase.from("driver_locations").insert({
-        user_id: user.id, lat: pos.coords.latitude, lng: pos.coords.longitude,
-        speed: pos.coords.speed, accuracy: pos.coords.accuracy, tenant_id: profile?.tenant_id || null,
-      }).then(({ error }) => { if (error) console.warn("[GPS] Insert error:", error.message); });
+      supabase.from("driver_locations").insert({ user_id: user.id, lat: pos.coords.latitude, lng: pos.coords.longitude, speed: pos.coords.speed, accuracy: pos.coords.accuracy, tenant_id: profile?.tenant_id || null }).then(({ error }) => { if (error) console.warn("[GPS]", error.message); });
     };
     navigator.geolocation.getCurrentPosition(sendPosition, () => {});
     intervalRef.current = setInterval(() => { navigator.geolocation.getCurrentPosition(sendPosition, () => {}); }, 30000);
-
     return () => {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -44,10 +40,7 @@ export default function MNAppGPSPage() {
     };
   }, [optedOut, user?.id, profile?.tenant_id]);
 
-  const toggleOptOut = () => {
-    setOptedOut((prev) => { const next = !prev; localStorage.setItem(GPS_OPT_OUT_KEY, String(next)); if (next) setPosition(null); return next; });
-  };
-
+  const toggleOptOut = () => { setOptedOut((prev) => { const next = !prev; localStorage.setItem(GPS_OPT_OUT_KEY, String(next)); if (next) setPosition(null); return next; }); };
   const speedKmh = position?.speed ? (position.speed * 3.6).toFixed(0) : "--";
 
   return (
@@ -59,7 +52,6 @@ export default function MNAppGPSPage() {
         </div>
         <img src={logoDragon} alt="Dragon" className="h-8 w-8 opacity-60" />
       </div>
-
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-20 space-y-4">
         <div className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
           <div className="flex items-center gap-3 mb-3">
@@ -68,36 +60,21 @@ export default function MNAppGPSPage() {
             </div>
             <div>
               <p className={`font-display font-bold text-sm ${tracking ? 'text-neon-green' : 'text-destructive'}`}>{tracking ? "COLLEGATO" : "SCOLLEGATO"}</p>
-              <p className="text-xs text-muted-foreground font-mono">{tracking ? "GPS attivo — dati in tempo reale" : "GPS disattivato per privacy"}</p>
+              <p className="text-xs text-muted-foreground font-mono">{tracking ? "GPS attivo" : "GPS disattivato per privacy"}</p>
             </div>
           </div>
           <button onClick={toggleOptOut} className={`w-full py-3 rounded-xl font-display font-bold text-sm tracking-wider transition-all ${tracking ? "bg-destructive/20 text-destructive hover:bg-destructive/30 border border-destructive/30" : "bg-neon-green/20 text-neon-green hover:bg-neon-green/30 border border-neon-green/30"}`}>
             {tracking ? "SCOLLEGATI (Privacy)" : "RICOLLEGATI"}
           </button>
         </div>
-
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 rounded-2xl bg-card/60 border border-border/30">
-            <div className="flex items-center gap-1.5 mb-2"><MapPin className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Latitudine</span></div>
-            <p className="text-sm font-mono text-foreground">{position ? position.lat.toFixed(6) : "--"}</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-card/60 border border-border/30">
-            <div className="flex items-center gap-1.5 mb-2"><MapPin className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Longitudine</span></div>
-            <p className="text-sm font-mono text-foreground">{position ? position.lng.toFixed(6) : "--"}</p>
-          </div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/30"><div className="flex items-center gap-1.5 mb-2"><MapPin className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Latitudine</span></div><p className="text-sm font-mono text-foreground">{position ? position.lat.toFixed(6) : "--"}</p></div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-border/30"><div className="flex items-center gap-1.5 mb-2"><MapPin className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Longitudine</span></div><p className="text-sm font-mono text-foreground">{position ? position.lng.toFixed(6) : "--"}</p></div>
         </div>
-
         <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 rounded-2xl bg-card/60 border border-neon-cyan/20">
-            <div className="flex items-center gap-1.5 mb-2"><Truck className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Velocità</span></div>
-            <p className="text-sm font-mono text-foreground">{speedKmh} km/h</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-card/60 border border-primary/20">
-            <div className="flex items-center gap-1.5 mb-2"><Navigation className="h-3.5 w-3.5 text-primary" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Precisione</span></div>
-            <p className="text-sm font-mono text-foreground">{position?.accuracy ? `${position.accuracy.toFixed(0)}m` : "--"}</p>
-          </div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-neon-cyan/20"><div className="flex items-center gap-1.5 mb-2"><Truck className="h-3.5 w-3.5 text-neon-cyan" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Velocità</span></div><p className="text-sm font-mono text-foreground">{speedKmh} km/h</p></div>
+          <div className="p-4 rounded-2xl bg-card/60 border border-primary/20"><div className="flex items-center gap-1.5 mb-2"><Navigation className="h-3.5 w-3.5 text-primary" /><span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Precisione</span></div><p className="text-sm font-mono text-foreground">{position?.accuracy ? `${position.accuracy.toFixed(0)}m` : "--"}</p></div>
         </div>
-
         <div className="p-4 rounded-2xl bg-card/60 border border-primary/20">
           <div className="flex items-center gap-2 mb-3"><Truck className="h-4 w-4 text-primary" /><span className="font-display font-bold text-sm text-foreground tracking-wider">INFO VEICOLO</span></div>
           <div className="space-y-2">
@@ -110,7 +87,6 @@ export default function MNAppGPSPage() {
           </div>
         </div>
       </div>
-
       <MNBottomNav basePath={basePath} />
     </MobileShell>
   );

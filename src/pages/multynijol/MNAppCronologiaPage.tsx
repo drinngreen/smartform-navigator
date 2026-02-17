@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { useFIRForms } from "@/hooks/useFIRForms";
-import { useFIRStore } from "@/stores/firStore";
+import { useMNFIRForms } from "@/hooks/useMNFIRForms";
+import { useMNFIRStore } from "@/stores/mnFirStore";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { FileText, Clock, CheckCircle, Edit, Download, Trash2 } from "lucide-react";
@@ -12,11 +12,12 @@ import logoDragon from "@/assets/logo-dragon.png";
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
 export default function MNAppCronologiaPage() {
-  const { context } = useParams<{ context: string }>();
-  const basePath = `/mn/app/${context || "multyproget"}`;
+  const location = useLocation();
+  const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
+  const basePath = `/mn/app/${context}`;
   const navigate = useNavigate();
-  const loadFromDatabase = useFIRStore((s) => s.loadFromDatabase);
-  const { myForms: firForms, isLoadingMyForms: isLoading, deleteFIR } = useFIRForms();
+  const loadFromDatabase = useMNFIRStore((s) => s.loadFromDatabase);
+  const { myForms: firForms, isLoadingMyForms: isLoading, deleteFIR } = useMNFIRForms();
   const [filter, setFilter] = useState<FilterStatus>("all");
 
   const allForms = firForms || [];
@@ -28,44 +29,17 @@ export default function MNAppCronologiaPage() {
   };
 
   const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", completato: "completed" };
-  const filtered = allForms.filter((fir: any) => {
-    if (filter === "all") return true;
-    return statusMap[fir.status] === filter;
-  });
+  const filtered = allForms.filter((fir: any) => filter === "all" || statusMap[fir.status] === filter);
 
-  const handleEdit = (fir: any) => {
-    loadFromDatabase(fir);
-    navigate(basePath);
-  };
-
-  const handleDelete = (fir: any) => {
-    if (window.confirm(`Sei sicuro di voler eliminare il FIR ${fir.numero_fir || "senza numero"}?`)) {
-      deleteFIR.mutate(fir.id);
-    }
-  };
+  const handleEdit = (fir: any) => { loadFromDatabase(fir); navigate(basePath); };
+  const handleDelete = (fir: any) => { if (window.confirm(`Eliminare FIR ${fir.numero_fir || "senza numero"}?`)) deleteFIR.mutate(fir.id); };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "bozza":
-        return (
-          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-            <Clock className="h-3 w-3" /> Bozza
-          </span>
-        );
-      case "inviato":
-        return (
-          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
-            <CheckCircle className="h-3 w-3" /> Inviato
-          </span>
-        );
-      case "completato":
-        return (
-          <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30">
-            <CheckCircle className="h-3 w-3" /> Chiuso
-          </span>
-        );
-      default:
-        return null;
+      case "bozza": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"><Clock className="h-3 w-3" /> Bozza</span>;
+      case "inviato": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30"><CheckCircle className="h-3 w-3" /> Inviato</span>;
+      case "completato": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30"><CheckCircle className="h-3 w-3" /> Chiuso</span>;
+      default: return null;
     }
   };
 
@@ -81,21 +55,8 @@ export default function MNAppCronologiaPage() {
 
       <div className="px-4 py-3">
         <div className="flex rounded-xl border border-border/30 overflow-hidden">
-          {([
-            { key: "all" as FilterStatus, label: "Tutti" },
-            { key: "draft" as FilterStatus, label: "Bozze" },
-            { key: "submitted" as FilterStatus, label: "Inviati" },
-            { key: "completed" as FilterStatus, label: "Chiusi" },
-          ]).map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`flex-1 px-2 py-2.5 text-xs font-mono whitespace-nowrap transition-all ${
-                filter === tab.key
-                  ? "bg-primary/15 text-primary font-semibold"
-                  : "bg-card/40 text-muted-foreground hover:text-foreground"
-              }`}
-            >
+          {([{ key: "all" as FilterStatus, label: "Tutti" }, { key: "draft" as FilterStatus, label: "Bozze" }, { key: "submitted" as FilterStatus, label: "Inviati" }, { key: "completed" as FilterStatus, label: "Chiusi" }]).map((tab) => (
+            <button key={tab.key} onClick={() => setFilter(tab.key)} className={`flex-1 px-2 py-2.5 text-xs font-mono whitespace-nowrap transition-all ${filter === tab.key ? "bg-primary/15 text-primary font-semibold" : "bg-card/40 text-muted-foreground hover:text-foreground"}`}>
               {tab.label} ({counts[tab.key]})
             </button>
           ))}
@@ -104,27 +65,17 @@ export default function MNAppCronologiaPage() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-20 space-y-3">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-primary animate-pulse font-display">Caricamento...</div>
-          </div>
+          <div className="flex items-center justify-center py-12"><div className="text-primary animate-pulse font-display">Caricamento...</div></div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <p className="text-muted-foreground text-sm">Nessun formulario trovato</p>
-          </div>
+          <div className="flex flex-col items-center justify-center py-12 text-center"><FileText className="h-12 w-12 text-muted-foreground/30 mb-3" /><p className="text-muted-foreground text-sm">Nessun formulario trovato</p></div>
         ) : (
           filtered.map((fir: any) => (
             <div key={fir.id} className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
               <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-display font-semibold text-foreground">{fir.numero_fir || "—"}</span>
-                </div>
+                <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="text-sm font-display font-semibold text-foreground">{fir.numero_fir || "—"}</span></div>
                 {getStatusBadge(fir.status)}
               </div>
-              <p className="text-xs text-muted-foreground font-mono mb-2">
-                {fir.created_at ? format(new Date(fir.created_at), "dd MMMM yyyy, HH:mm", { locale: it }) : "—"}
-              </p>
+              <p className="text-xs text-muted-foreground font-mono mb-2">{fir.created_at ? format(new Date(fir.created_at), "dd MMMM yyyy, HH:mm", { locale: it }) : "—"}</p>
               {fir.status !== "bozza" && (
                 <div className="space-y-0.5 mb-3">
                   {fir.codice_eer && <p className="text-xs text-muted-foreground"><span className="text-primary font-semibold">EER:</span> {fir.codice_eer}</p>}
@@ -138,18 +89,13 @@ export default function MNAppCronologiaPage() {
                     <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors">
-                  <Download className="h-3.5 w-3.5" /> PDF
-                </button>
-                <button onClick={() => handleDelete(fir)} className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors"><Download className="h-3.5 w-3.5" /> PDF</button>
+                <button onClick={() => handleDelete(fir)} className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           ))
         )}
       </div>
-
       <MNBottomNav basePath={basePath} />
     </MobileShell>
   );
