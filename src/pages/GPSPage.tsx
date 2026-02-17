@@ -3,7 +3,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { useAuth } from "@/hooks/useAuth";
 import { MapPin, Navigation, Signal, Truck, WifiOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import logoDragon from "@/assets/logo-dragon.png";
 
 interface GeoPos {
