@@ -1,104 +1,104 @@
 
-# Piano Completo di Risoluzione - Tutti i Problemi Critici
+# Piano: Sistema Multi-Tenant Multyproget e Niyol
 
-## Problemi e Soluzioni
+## Panoramica
+Creare un sistema completo dove l'admin multyniyol@zoli.live, dopo il login, vede una pagina con solo due grandi icone (Multyproget e Niyol) con effetto neon. Cliccando su ciascuna, entra in una dashboard identica a quella di Global Reco con drag-and-drop, isolamento dati e context switcher.
 
-### 1. Drag & Drop icone non funziona
-**Causa**: Il componente `DesktopIconGrid` usa `onMouseDown` + `onClick` sullo stesso elemento. Il `handleClick` naviga via anche durante il drag perche' il timeout di 50ms su `isDragging.current = false` e' troppo breve o il click event si registra prima del timeout.
-**Fix**: Aggiungere una soglia di movimento minimo (5px) prima di attivare `isDragging`, e usare `e.preventDefault()` + `e.stopPropagation()` nel mouseDown per evitare conflitti. Separare click e drag con un `dragDistance` counter.
+## Struttura delle pagine
 
-### 2. GPS Flotta non funzionante
-**Causa**: La pagina esiste e il codice di tracking in `MobileAppPage` invia dati, ma:
-- Il campo `targa_automezzo` potrebbe non esistere nella tabella `profiles` (errore silenzioso nella query GPS)
-- Non c'e' un pulsante di refresh manuale nella pagina GPS
-- La finestra temporale di 5 minuti e' troppo stretta per test
+### 1. Pagine di login utenti app
+- **/mn** -- Login trasportatori Multyproget (attualmente su /mn/auth/multyproget, va spostato)
+- **/ni** -- Login trasportatori Niyol (attualmente su /mn/auth/niyol, va spostato)
+- Entrambe le pagine avranno un link "Accedi come Admin" che rimanda a /mn/admin
 
-**Fix**:
-- Verificare e aggiornare la query per gestire campi mancanti
-- Aggiungere refresh manuale e ampliare la finestra a 30 minuti
-- Aggiungere un contatore "Ultimo aggiornamento" e auto-refresh piu' frequente (15s)
+### 2. Dashboard Admin iniziale (/mn/admin)
+La pagina MNDashboardPage attuale va completamente riscritta:
+- Sfondo scuro con griglia tecnica (stile HUD esistente)
+- Due icone enormi centrate (le immagini allegate: multyproget.png e niyol.png)
+- Ogni icona avra un bordo neon luminoso animato (arancione per Multyproget, ciano per Niyol)
+- NO drag-and-drop, posizionamento fisso centrato
+- Click su Multyproget naviga a /mn/admin/multyproget
+- Click su Niyol naviga a /mn/admin/niyol
 
-### 3. Personale - pulsanti modifica password e eliminazione
-**Stato attuale**: I pulsanti ESISTONO gia' (KeyRound cyan, Trash2 red) con le dialog funzionanti. Il problema e' che i pulsanti `ghost` su sfondo scuro sono quasi invisibili.
-**Fix**: Sostituire i pulsanti ghost con pulsanti con sfondo pieno e ben visibile:
-- Pulsante password: sfondo cyan con icona Pencil (matita) bianca, non solo icona ghost
-- Pulsante elimina: sfondo rosso con icona Trash2 bianca
-- Aggiungere label testuale accanto all'icona per chiarezza
+### 3. Sub-dashboard per contesto (/mn/admin/multyproget e /mn/admin/niyol)
+Pagine identiche alla DashboardPage di Global con:
+- Stesse icone desktop (GPS, Personale, Registro FIR, Formulari, ecc.)
+- Sistema drag-and-drop completo (DesktopIconGrid)
+- Barra di stato sistema
+- I link punteranno ai percorsi /mn/admin/multyproget/... e /mn/admin/niyol/...
+- Context switcher (dropdown) in alto a sinistra nel TopNav per passare da un tenant all'altro
 
-### 4. Registro FIR - pulsanti azione invisibili
-**Causa**: Il pulsante "Modifica Bozza" appare SOLO per status `draft`, con stile ghost quasi invisibile. Per gli altri stati non c'e' nessun pulsante.
-**Fix**:
-- Aggiungere pulsanti visibili per TUTTI gli stati: Visualizza (occhio, cyan), Modifica (matita, per bozze), Scarica JSON (download, verde), Elimina (cestino, rosso)
-- Usare pulsanti con sfondo colorato, non ghost
-- Sfondo pieno con bordo colorato per massima visibilita'
+### 4. Context Switcher
+Dropdown nel MNAdminTopNav in alto a sinistra (accanto al logo) che mostra:
+- "Multyproget" e "Niyol" come opzioni
+- Cambiando contesto, l'utente viene reindirizzato alla dashboard dell'altro tenant
+- Lo stato attivo viene gestito dallo store mnContextStore esistente
 
-### 5. Messaggi Admin - pagina vuota
-**Causa**: `AdminMessagesPage.tsx` e' un placeholder vuoto (solo testo statico). Non usa affatto `useMessages` o la lista conversazioni.
-**Fix**: Ricostruire completamente la pagina:
-- Lista conversazioni sulla sinistra (tutti gli utenti che hanno scritto)
-- Chat sulla destra con lo storico messaggi
-- Input per scrivere e inviare messaggi con allegati
-- Usare `useMessages` hook gia' esistente che ha `fetchConversations` per admin
-- Supportare la rotta `/admin/messaggi/:partnerId` gia' definita in App.tsx
+## File da modificare/creare
 
-### 6. Telefonate non funzionano
-**Causa**: Il sistema di chiamate e' completamente stub:
-- `CallContext` restituisce solo `{ isCallActive: false }`
-- `CallManager` restituisce `null`
-- `AdminCallDialog` restituisce `null`
-- `useWebRTCCall`, `useOfficeCall`, `useOfficeWebCall` sono tutti stub
-- Nessun codice Retell SDK presente nel progetto (nonostante la chiave API sia configurata)
-- Non esiste una edge function per creare web calls
+### File da copiare nel progetto
+- `user-uploads://multyproget-2.png` --> `src/assets/multyproget-icon.png`
+- `user-uploads://niyol-2.png` --> `src/assets/niyol-icon.png`
 
-**Fix**: Implementare il sistema di chiamate Retell AI:
-- Creare edge function `retell-call` per creare web calls tramite API Retell
-- Implementare il `CallContext` con logica reale di chiamata
-- Aggiungere pulsante chiamata nella pagina messaggi admin (per chiamare singoli utenti)
-- Aggiungere pulsante "Disattiva ricezione / Attiva segreteria" nell'header admin
-
-### 7. Pulsante disattivazione chiamate / segreteria
-**Fix**: Aggiungere nell'`AdminHeader` un toggle Phone con stati:
-- Attivo (verde): ricezione chiamate attiva
-- Disattivo (rosso): segreteria Retell attiva
-- Lo stato viene salvato in localStorage per persistenza
-
----
-
-## Dettagli Tecnici
+### File da creare
+1. **`src/pages/multynijol/MNContextDashboardPage.tsx`** -- La sub-dashboard con DesktopIconGrid identica a Global, parametrizzata sul contesto (multyproget o niyol). Usa le stesse icone di DashboardPage ma con href adattati al prefisso /mn/admin/[contesto]/...
 
 ### File da modificare
+1. **`src/pages/multynijol/MNDashboardPage.tsx`** -- Riscrittura completa: solo due grandi icone con neon, senza drag-and-drop, senza la griglia di moduli attuale
 
-1. **`src/components/desktop/DesktopIconGrid.tsx`** - Fix drag & drop con soglia di movimento
-2. **`src/pages/admin/GPSFlottaPage.tsx`** - Finestra 30min, refresh manuale, gestione errori
-3. **`src/pages/admin/PersonalePage.tsx`** - Pulsanti con sfondo pieno (cyan/rosso) + label + icona matita
-4. **`src/pages/admin/RegistroFIRPage.tsx`** - Pulsanti azione visibili per tutti gli stati
-5. **`src/pages/admin/AdminMessagesPage.tsx`** - Ricostruzione completa con chat funzionante
-6. **`src/components/layout/AdminHeader.tsx`** - Aggiunta toggle ricezione chiamate
-7. **`src/contexts/CallContext.tsx`** - Implementazione reale con Retell SDK
+2. **`src/components/multynijol/MNAdminTopNav.tsx`** -- Aggiunta del context switcher (dropdown) a sinistra. I link di navigazione si adatteranno al contesto attivo.
 
-### Nuovi file
+3. **`src/components/multynijol/MNAdminLayout.tsx`** -- Aggiornamento routeColors per includere i percorsi con contesto
 
-8. **`supabase/functions/retell-call/index.ts`** - Edge function per creare web calls Retell
-9. **Nessuna modifica al database** - Le tabelle `messages`, `driver_locations` esistono gia' con RLS corrette
+4. **`src/App.tsx`** -- Aggiunta route:
+   - `/mn` e `/ni` per le pagine di login
+   - `/mn/admin/multyproget` e `/mn/admin/niyol` per le sub-dashboard
+   - Route nested per i moduli sotto ogni contesto (es. `/mn/admin/multyproget/registro`)
 
-### Stile pulsanti (regola anti-nero-su-nero)
-Tutti i pulsanti di azione useranno:
-- Sfondo colorato solido (non trasparente/ghost)
-- Testo bianco
-- Bordo luminoso coordinato
-- Hover con brightness aumentata
-- Esempio: `bg-cyan-500/80 text-white border border-cyan-400 hover:bg-cyan-400`
+5. **`src/pages/MNAuthPage.tsx`** -- Aggiunta del link "Accedi come Admin" che punta a /mn/admin. Gestione del contesto automatico basato sul path (se /mn -> multyproget, se /ni -> niyol)
 
-### Messaggi Admin - Architettura
-La pagina usera' un layout a due colonne:
-- Colonna sinistra: lista conversazioni da `useMessages().conversations`
-- Colonna destra: chat attiva con messaggi in tempo reale
-- La URL `/admin/messaggi/:partnerId` seleziona automaticamente la conversazione
-- Pulsante "Nuova conversazione" per contattare qualsiasi utente dalla lista personale
+6. **`src/stores/mnContextStore.ts`** -- Adattamento per supportare il routing basato su contesto
 
-### Retell AI - Flusso chiamata
-1. Admin clicca "Chiama" su un utente
-2. Frontend chiama edge function `retell-call` con `agent_id` configurato
-3. Edge function usa `RETELL_API_KEY` per creare una web call via `POST https://api.retell.ai/v2/create-web-call`
-4. Frontend riceve `access_token` e avvia `RetellWebClient`
-5. Toggle segreteria salva stato locale e disabilita la ricezione incoming
+## Isolamento dati
+L'isolamento per tenant e gia gestito dal campo `mn_context` nei profili e dal `tenant_id`. Le sub-dashboard filtreranno i dati in base al contesto attivo nello store. Questo sara implementato progressivamente nelle singole pagine dei moduli (Personale, Messaggi, Chiamate, ecc.) quando verranno sviluppate.
+
+## Dettagli tecnici
+
+### MNDashboardPage (pagina selettore)
+```text
++------------------------------------------+
+|            TopNav (senza nav links)       |
++------------------------------------------+
+|                                          |
+|     [MULTYPROGET]      [NIYOL]           |
+|     grande icona       grande icona      |
+|     neon arancione     neon ciano        |
+|                                          |
++------------------------------------------+
+```
+
+### MNContextDashboardPage (sub-dashboard)
+```text
++------------------------------------------+
+| [Switcher v] TopNav con tutti i link     |
++------------------------------------------+
+| Barra stato sistema                      |
++------------------------------------------+
+| DesktopIconGrid con drag-and-drop        |
+| (stesse icone di Global)                 |
++------------------------------------------+
+```
+
+### Routing
+```text
+/mn                    --> MNAuthPage (contesto=multyproget)
+/ni                    --> MNAuthPage (contesto=niyol)
+/mn/admin              --> MNDashboardPage (selettore 2 icone)
+/mn/admin/multyproget  --> MNContextDashboardPage
+/mn/admin/niyol        --> MNContextDashboardPage
+/mn/admin/multyproget/registro  --> MNRegistroFIRPage
+/mn/admin/niyol/registro        --> MNRegistroFIRPage
+... (stessi moduli per entrambi i contesti)
+```
+
+Nessuna modifica al database necessaria: le tabelle tenants, profiles e lo store mnContextStore gestiscono gia il multi-tenancy.
