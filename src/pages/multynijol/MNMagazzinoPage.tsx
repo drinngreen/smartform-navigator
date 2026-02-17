@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Search, Users, AlertTriangle, Package,
-  Trash2, Receipt, Scale,
+  Trash2, Receipt, Scale, Download, FileSpreadsheet,
 } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -53,6 +54,50 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
     </div>
   );
 }
+
+function ExportButtons({ onPdf, onExcel }: { onPdf: () => void; onExcel: () => void }) {
+  return (
+    <div className="flex gap-1">
+      <button onClick={onPdf} className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors" title="Esporta PDF"><Download className="h-4 w-4" /></button>
+      <button onClick={onExcel} className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors" title="Esporta Excel"><FileSpreadsheet className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
+const CONF_COLS = [
+  { header: "Privato", key: "nome_privato", width: 25 },
+  { header: "CF/P.IVA", key: "cf_pi", width: 20 },
+  { header: "CER", key: "cer", width: 12 },
+  { header: "Kg", key: "kg_pesati", width: 10 },
+  { header: "Importo €", key: "importo_pagato", width: 12, format: (v: any) => v != null ? `€ ${v}` : "—" },
+  { header: "Pagamento", key: "metodo_pag", width: 12 },
+  { header: "Data", key: "data", width: 16, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "—" },
+  { header: "Note", key: "note", width: 20 },
+];
+const PRIV_COLS = [
+  { header: "Cognome", key: "cognome", width: 18 },
+  { header: "Nome", key: "nome", width: 18 },
+  { header: "Codice Fiscale", key: "codice_fiscale", width: 20 },
+  { header: "Comune", key: "comune_residenza", width: 16 },
+  { header: "Tessera", key: "numero_tessera", width: 14 },
+  { header: "Tipo Utenza", key: "tipo_utenza", width: 14 },
+  { header: "Note", key: "note", width: 20 },
+];
+const LIM_COLS = [
+  { header: "CER", key: "cer", width: 12 },
+  { header: "Utenza", key: "tipo_utenza", width: 14 },
+  { header: "Singolo kg", key: "limite_conferimento_kg", width: 12 },
+  { header: "Annuo kg", key: "limite_annuo_kg", width: 12 },
+  { header: "Mensile kg", key: "limite_mensile_kg", width: 12 },
+  { header: "Giornaliero kg", key: "limite_giornaliero_kg", width: 14 },
+  { header: "Note", key: "note", width: 18 },
+];
+const RIC_COLS = [
+  { header: "N° Ricevuta", key: "numero_ricevuta", width: 16 },
+  { header: "Dettagli", key: "note", width: 30 },
+  { header: "Importo €", key: "importo", width: 12, format: (v: any) => `€ ${v ?? 0}` },
+  { header: "Data", key: "data_emissione", width: 18, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "—" },
+];
 
 export default function MNMagazzinoPage() {
   const { context } = useParams<{ context: string }>();
@@ -275,99 +320,76 @@ export default function MNMagazzinoPage() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-mono text-muted-foreground uppercase">Registro Conferimenti</h3>
-              <Dialog open={showNewConferimento} onOpenChange={v => { setShowNewConferimento(v); setLimitWarning(null); }}>
-                <DialogTrigger asChild><Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nuovo</Button></DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>Nuovo Conferimento</DialogTitle></DialogHeader>
-                  <div className="grid gap-4 py-2">
-                    {/* Ricerca privato esistente */}
-                    <div className="relative">
-                      <Label>Cerca Privato Registrato</Label>
-                      <Input
-                        placeholder="Cognome, nome o CF..."
-                        value={privatoSearch}
-                        onChange={e => { setPrivatoSearch(e.target.value); setShowPrivatoDropdown(true); }}
-                        onFocus={() => setShowPrivatoDropdown(true)}
-                        className="bg-card/60 border-border/30"
-                      />
-                      {showPrivatoDropdown && privatoSearch.length > 0 && (
-                        <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
-                          {privati
-                            .filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase()))
-                            .slice(0, 10)
-                            .map(p => (
-                              <button
-                                key={p.id}
-                                type="button"
-                                className="w-full text-left px-3 py-2 hover:bg-accent/20 text-sm transition-colors"
-                                onClick={() => {
-                                  setConfForm(f => ({ ...f, privato_id: p.id, nome_privato: p.nome, cognome_privato: p.cognome, cf_privato: p.codice_fiscale }));
-                                  setPrivatoSearch(`${p.cognome} ${p.nome}`);
-                                  setShowPrivatoDropdown(false);
-                                }}
-                              >
+              <div className="flex items-center gap-2">
+                <ExportButtons
+                  onPdf={() => exportToPdf(filteredConf, CONF_COLS, "conferimenti", "Registro Conferimenti")}
+                  onExcel={() => exportToExcel(filteredConf, CONF_COLS, "conferimenti", "Conferimenti")}
+                />
+                <Dialog open={showNewConferimento} onOpenChange={v => { setShowNewConferimento(v); setLimitWarning(null); }}>
+                  <DialogTrigger asChild><Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nuovo</Button></DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader><DialogTitle>Nuovo Conferimento</DialogTitle></DialogHeader>
+                    <div className="grid gap-4 py-2">
+                      {/* Ricerca privato esistente */}
+                      <div className="relative">
+                        <Label>Cerca Privato Registrato</Label>
+                        <Input placeholder="Cognome, nome o CF..." value={privatoSearch}
+                          onChange={e => { setPrivatoSearch(e.target.value); setShowPrivatoDropdown(true); }}
+                          onFocus={() => setShowPrivatoDropdown(true)} className="bg-card/60 border-border/30" />
+                        {showPrivatoDropdown && privatoSearch.length > 0 && (
+                          <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background shadow-lg">
+                            {privati.filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase())).slice(0, 10).map(p => (
+                              <button key={p.id} type="button" className="w-full text-left px-3 py-2 hover:bg-accent/20 text-sm transition-colors"
+                                onClick={() => { setConfForm(f => ({ ...f, privato_id: p.id, nome_privato: p.nome, cognome_privato: p.cognome, cf_privato: p.codice_fiscale })); setPrivatoSearch(`${p.cognome} ${p.nome}`); setShowPrivatoDropdown(false); }}>
                                 <span className="font-medium">{p.cognome} {p.nome}</span>
                                 <span className="text-muted-foreground ml-2 text-xs font-mono">{p.codice_fiscale}</span>
                                 {p.tipo_utenza !== "domestica" && <span className="text-muted-foreground ml-2 text-[10px]">(N.DOM)</span>}
                               </button>
                             ))}
-                          {privati.filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase())).length === 0 && (
-                            <div className="px-3 py-2 text-xs text-muted-foreground">Nessun risultato — compila manualmente</div>
-                          )}
+                            {privati.filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase())).length === 0 && (
+                              <div className="px-3 py-2 text-xs text-muted-foreground">Nessun risultato — compila manualmente</div>
+                            )}
+                          </div>
+                        )}
+                        {confForm.privato_id && (
+                          <button type="button" className="absolute right-2 top-8 text-xs text-muted-foreground hover:text-destructive"
+                            onClick={() => { setConfForm(f => ({ ...f, privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "" })); setPrivatoSearch(""); }}>✕ Rimuovi</button>
+                        )}
+                      </div>
+                      {!confForm.privato_id && (
+                        <div className="space-y-3 p-3 rounded-xl border border-dashed border-border/40 bg-muted/20">
+                          <p className="text-xs text-muted-foreground font-mono">DATI PRIVATO (inserisci manualmente)</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div><Label>Nome</Label><Input placeholder="Mario" value={confForm.nome_privato} onChange={e => setConfForm(f => ({ ...f, nome_privato: e.target.value }))} /></div>
+                            <div><Label>Cognome</Label><Input placeholder="Rossi" value={confForm.cognome_privato} onChange={e => setConfForm(f => ({ ...f, cognome_privato: e.target.value }))} /></div>
+                          </div>
+                          <div><Label>Codice Fiscale / P.IVA</Label><Input placeholder="RSSMRA80A01H501Z" value={confForm.cf_privato} onChange={e => setConfForm(f => ({ ...f, cf_privato: e.target.value.toUpperCase() }))} /></div>
                         </div>
                       )}
-                      {confForm.privato_id && (
-                        <button type="button" className="absolute right-2 top-8 text-xs text-muted-foreground hover:text-destructive"
-                          onClick={() => { setConfForm(f => ({ ...f, privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "" })); setPrivatoSearch(""); }}>
-                          ✕ Rimuovi
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Dati privato manuali (se non selezionato da anagrafica) */}
-                    {!confForm.privato_id && (
-                      <div className="space-y-3 p-3 rounded-xl border border-dashed border-border/40 bg-muted/20">
-                        <p className="text-xs text-muted-foreground font-mono">DATI PRIVATO (inserisci manualmente)</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div><Label>Nome</Label><Input placeholder="Mario" value={confForm.nome_privato} onChange={e => setConfForm(f => ({ ...f, nome_privato: e.target.value }))} /></div>
-                          <div><Label>Cognome</Label><Input placeholder="Rossi" value={confForm.cognome_privato} onChange={e => setConfForm(f => ({ ...f, cognome_privato: e.target.value }))} /></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>CER *</Label><Input placeholder="20 03 01" value={confForm.cer} onChange={e => { setConfForm(f => ({ ...f, cer: e.target.value })); setLimitWarning(null); }} /></div>
+                        <div><Label>Kg *</Label><Input type="number" value={confForm.kg_pesati} onChange={e => { setConfForm(f => ({ ...f, kg_pesati: e.target.value })); setLimitWarning(null); }}
+                          onBlur={async () => { if (confForm.privato_id && confForm.cer && confForm.kg_pesati) { const w = await checkLimits(confForm.privato_id, confForm.cer, parseFloat(confForm.kg_pesati)); setLimitWarning(w); } }} /></div>
+                      </div>
+                      {limitWarning && (
+                        <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><pre className="whitespace-pre-wrap font-mono text-xs">{limitWarning}</pre>
                         </div>
-                        <div><Label>Codice Fiscale / P.IVA</Label><Input placeholder="RSSMRA80A01H501Z" value={confForm.cf_privato} onChange={e => setConfForm(f => ({ ...f, cf_privato: e.target.value.toUpperCase() }))} /></div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={e => setConfForm(f => ({ ...f, importo_pagato: e.target.value }))} /></div>
+                        <div><Label>Pagamento</Label>
+                          <select className="w-full px-3 py-2 rounded-md bg-card/60 border border-border/30 text-sm text-foreground" value={confForm.metodo_pag} onChange={e => setConfForm(f => ({ ...f, metodo_pag: e.target.value }))}>
+                            <option value="contanti">Contanti</option><option value="pos">POS</option><option value="bonifico">Bonifico</option><option value="gratuito">Gratuito</option>
+                          </select>
+                        </div>
                       </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>CER *</Label><Input placeholder="20 03 01" value={confForm.cer} onChange={e => { setConfForm(f => ({ ...f, cer: e.target.value })); setLimitWarning(null); }} /></div>
-                      <div><Label>Kg *</Label><Input type="number" value={confForm.kg_pesati} onChange={e => { setConfForm(f => ({ ...f, kg_pesati: e.target.value })); setLimitWarning(null); }}
-                        onBlur={async () => {
-                          if (confForm.privato_id && confForm.cer && confForm.kg_pesati) {
-                            const w = await checkLimits(confForm.privato_id, confForm.cer, parseFloat(confForm.kg_pesati));
-                            setLimitWarning(w);
-                          }
-                        }} /></div>
+                      <div><Label>Note</Label><Textarea value={confForm.note} onChange={e => setConfForm(f => ({ ...f, note: e.target.value }))} /></div>
+                      <Button onClick={saveConferimento} className="w-full">Registra Conferimento</Button>
                     </div>
-                    {limitWarning && (
-                      <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                        <pre className="whitespace-pre-wrap font-mono text-xs">{limitWarning}</pre>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={e => setConfForm(f => ({ ...f, importo_pagato: e.target.value }))} /></div>
-                      <div><Label>Pagamento</Label>
-                        <select className="w-full px-3 py-2 rounded-md bg-card/60 border border-border/30 text-sm text-foreground" value={confForm.metodo_pag} onChange={e => setConfForm(f => ({ ...f, metodo_pag: e.target.value }))}>
-                          <option value="contanti">Contanti</option>
-                          <option value="pos">POS</option>
-                          <option value="bonifico">Bonifico</option>
-                          <option value="gratuito">Gratuito</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div><Label>Note</Label><Textarea value={confForm.note} onChange={e => setConfForm(f => ({ ...f, note: e.target.value }))} /></div>
-                    <Button onClick={saveConferimento} className="w-full">Registra Conferimento</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
             <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
               <div className="grid grid-cols-[1fr_100px_80px_80px_120px] gap-2 px-4 py-2 border-b border-border/20 text-xs font-mono text-muted-foreground uppercase">
@@ -400,6 +422,11 @@ export default function MNMagazzinoPage() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-mono text-muted-foreground uppercase">Anagrafica Privati</h3>
+              <div className="flex items-center gap-2">
+                <ExportButtons
+                  onPdf={() => exportToPdf(filteredPrivati, PRIV_COLS, "anagrafica_privati", "Anagrafica Privati")}
+                  onExcel={() => exportToExcel(filteredPrivati, PRIV_COLS, "anagrafica_privati", "Anagrafica")}
+                />
               <Dialog open={showNewPrivato} onOpenChange={setShowNewPrivato}>
                 <DialogTrigger asChild><Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nuovo</Button></DialogTrigger>
                 <DialogContent className="max-w-lg">
@@ -425,6 +452,7 @@ export default function MNMagazzinoPage() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
               <div className="grid grid-cols-[1fr_150px_120px_80px_60px] gap-2 px-4 py-2 border-b border-border/20 text-xs font-mono text-muted-foreground uppercase">
@@ -449,6 +477,11 @@ export default function MNMagazzinoPage() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-mono text-muted-foreground uppercase">Limiti CER</h3>
+              <div className="flex items-center gap-2">
+                <ExportButtons
+                  onPdf={() => exportToPdf(limiti, LIM_COLS, "limiti_cer", "Limiti CER")}
+                  onExcel={() => exportToExcel(limiti, LIM_COLS, "limiti_cer", "Limiti")}
+                />
               <Dialog open={showNewLimite} onOpenChange={setShowNewLimite}>
                 <DialogTrigger asChild><Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Nuovo</Button></DialogTrigger>
                 <DialogContent className="max-w-lg">
@@ -476,6 +509,7 @@ export default function MNMagazzinoPage() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
               <div className="grid grid-cols-[100px_80px_1fr_1fr_1fr_1fr] gap-2 px-4 py-2 border-b border-border/20 text-xs font-mono text-muted-foreground uppercase">
@@ -499,7 +533,13 @@ export default function MNMagazzinoPage() {
         {/* RICEVUTE */}
         <TabsContent value="ricevute">
           <div className="space-y-3">
-            <h3 className="text-sm font-mono text-muted-foreground uppercase">Ricevute Emesse</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-mono text-muted-foreground uppercase">Ricevute Emesse</h3>
+              <ExportButtons
+                onPdf={() => exportToPdf(ricevute, RIC_COLS, "ricevute", "Ricevute Emesse")}
+                onExcel={() => exportToExcel(ricevute, RIC_COLS, "ricevute", "Ricevute")}
+              />
+            </div>
             <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
               <div className="grid grid-cols-[120px_1fr_100px_120px] gap-2 px-4 py-2 border-b border-border/20 text-xs font-mono text-muted-foreground uppercase">
                 <span>N° Ricevuta</span><span>Dettagli</span><span>Importo</span><span>Data</span>
