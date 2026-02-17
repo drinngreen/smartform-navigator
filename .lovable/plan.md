@@ -1,113 +1,135 @@
-# Piano: App Mobile Multyproget e Niyol - Implementazione Completa
+# Piano: Ristrutturazione Routing e Dashboard Super Admin RENTRI
 
-## Problemi identificati
+## Problemi attuali
 
-1. **Preset Global Reco hardcoded**: Il componente `FIRFormComplete.tsx` ha i dati di Global Reco bloccati (Produttore) e Multyproget (Intermediario) hardcoded. Lo store `firStore.ts` inizializza i campi con i dati di Global Reco. Le app MN NON devono avere questi preset -- tutti i campi devono partire vuoti.
-2. **Routing rotto**: Le sotto-pagine (GPS, Cronologia, AI, ecc.) usano `useParams<{ context }>` ma le rotte in `App.tsx` non hanno il parametro `:context`. Il contesto e sempre `undefined` e ricade su `"multyproget"`. Niyol non funziona.
-3. **Messaggistica non collegata al tenant**: `MNAppComunicazioniPage` usa `useAdminId()` che trova l'admin di Global Reco, non l'admin del tenant corretto (Multyproget o Niyol).
-4. **Nessun isolamento dati FIR**: `useFIRForms` e `useFIRNumberPool` non filtrano per tenant. Gli utenti MN vedono i FIR di Global.
+1. `/mn` reindirizza alla dashboard admin se l'utente e gia loggato (il `useEffect` in MNAuthPage manda a `/` che poi rimanda a `/mn/admin`)
+2. Le rotte `/mn/admin/*` NON hanno `ProtectedRoute` -- chiunque puo accedere
+3. Non esiste una pagina di login dedicata per l'admin di MultyNiyol
+4. Non esiste un Super Admin
 
-## Soluzione
-
-### 1. Creare `MNFIRFormComplete.tsx` -- form FIR senza preset
-
-Nuovo componente che clona `FIRFormComplete.tsx` ma:
-
-- Rimuove `GLOBAL_RECO`, `MULTYPROGET` dagli import
-- Il Produttore NON e bloccato -- tutti i campi sono editabili e partono vuoti
-- L'Intermediario NON e bloccato -- tutti i campi sono editabili e partono vuoti
-- Mantiene identica l'interfaccia (accordion neon, tre tab, semaforo, pulsanti INIZIA/SALVA/INVIA)
-- Accetta un prop `tenantContext` per sapere se e multyproget o niyol
-
-### 2. Creare `mnFirStore.ts` -- store senza preset
-
-Nuovo store Zustand che clona `firStore.ts` ma con `initialFIRData` che ha TUTTI i campi vuoti:
-
-- `produttoreDenominazione: ""` (non "Global Reco")
-- `produttoreUnitaLocale: ""` (non "Via Alba 11...")
-- `produttoreCF: ""` (non "08934760961")
-- `intermediarioDenominazione: ""` (non "Multyproget")
-- `intermediarioCF: ""` (non "12347770013")
-- `annotazioni: ""` (non la stringa con Multyproget)
-
-### 3. Correggere il routing -- passare il contesto come prop, non come param
-
-Le sotto-pagine non possono usare `useParams` perche le rotte non hanno `:context`. Soluzione: estrarre il contesto dal pathname.
+## Nuova struttura routing
 
 ```text
-/mn/app/multyproget/gps --> il path contiene "multyproget"
-/mn/app/niyol/gps       --> il path contiene "niyol"
+/mn              --> Login/Registrazione autisti Multyproget (SOLO app, mai redirect a admin)
+/ni              --> Login/Registrazione autisti Niyol (SOLO app, mai redirect a admin)
+/adminmn         --> Login admin MultyNiyol (solo multyniyol@zoli.live) --> /mn/admin
+/superadmin      --> Login Super Admin (solo superadmin@zoli.live) --> /super
+/super           --> Dashboard Super Admin con dropdown tenant
+/mn/admin/*      --> Protetto: solo multyniyol@zoli.live o superadmin@zoli.live
 ```
 
-Ogni sotto-pagina calcolera il contesto da `location.pathname`:
+## Modifiche dettagliate
 
-```
-const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
-const basePath = `/mn/app/${context}`;
-```
+### 1. Correggere MNAuthPage (`/mn` e `/ni`)
 
-### 4. Collegare la messaggistica al tenant corretto
+- Rimuovere il `useEffect` che reindirizza a `/` quando l'utente e loggato
+- Dopo login/registrazione, reindirizzare SEMPRE a `/mn/app/multyproget` o `/mn/app/niyol` in base al contesto
+- Il link "Accedi come Admin" deve puntare a `/adminmn` (non `/mn/admin`)
 
-Creare un hook `useMNAdminId(context)` che restituisce l'admin del tenant corretto:
+### 2. Creare pagina `/adminmn` -- Login Admin MultyNiyol
 
-- `multyproget` --> cerca l'utente con email `multyproget@zolidragon.cloud`
-- `niyol` --> cerca l'utente con email `niyol@zolidragon.cloud`
+- Pagina con login Email + Password (come la sezione admin di AuthPage)
+- Accetta SOLO `multyniyol@zoli.live`
+- Dopo login, reindirizza a `/mn/admin`
+- Stile coerente con il branding Multy Niyol (oro/ambra)
 
-Aggiornare `MNAppComunicazioniPage` per usare questo hook.
+### 3. Proteggere tutte le rotte `/mn/admin/*`
 
-### 5. Isolare i FIR per tenant
+- Avvolgere ogni rotta `/mn/admin/*` in `<ProtectedRoute>`
+- Aggiungere controllo admin: se l'utente non e admin, reindirizza a `/mn`
 
-Creare `useMNFIRForms(tenantId)` che filtra i FIR per `tenant_id` del contesto attivo, in modo che gli utenti Multyproget vedano solo i loro FIR e gli utenti Niyol solo i propri.
+### 4. Creare pagina `/superadmin` -- Login Super Admin
 
-### 6. Aggiornare le pagine principali
+- Login Email + Password
+- Accetta SOLO `superadmin@zoli.live`
+- Dopo login, reindirizza a `/super`
 
-`**MNMultyprogetAppPage.tsx**` e `**MNNiyolAppPage.tsx**`:
+### 5. Aggiungere `superadmin@zoli.live` al sistema
 
-- Usare `MNFIRFormComplete` al posto di `FIRFormComplete`
-- Usare `mnFirStore` al posto di `firStore`
+- Aggiungerlo a `ADMIN_TENANT_EMAILS` in `useAuth.tsx`
+- Aggiungerlo a `bootstrap_admin_role` nel database
+- Aggiornare `RoleBasedRedirect` per reindirizzare questo utente a `/super`
 
-**Tutte le sotto-pagine** (`MNAppCronologiaPage`, `MNAppGPSPage`, `MNAppAIPage`, `MNAppComunicazioniPage`, `MNAppProfiloPage`, `MNAppGuidaPage`):
+### 6. Creare Dashboard Super Admin (`/super`) -- Pagina completa
 
-- Estrarre contesto dal pathname invece di `useParams`
-- Collegare ai dati del tenant corretto
+Pagina con:
+
+- Menu a tendina in alto per selezionare tenant: Global Reco, Multy Proget, Niyol
+- Banner rosso: "STAI OPERANDO SUL PORTALE REALE RENTRI"
+- 5 sezioni operative:
+
+**A. Rifornimento FIR (Vidimazione)**
+
+- Selettore tenant (global/multy/niyol)
+- Selettore quantita (50, 100, 500)
+- Pulsante "RICHIEDI NUOVI NUMERI" che chiama `POST /vidimate` su Railway
+- I numeri ricevuti vengono caricati nel pool (`fir_number_pool`) con il `societa_id` corretto
+- Download CSV dei numeri ricevuti
+
+**B. Firme Digitali Smart**
+
+- Firma Produttore/Magazzino (Giallo -> Verde): `POST /firma-fir` con `societaId` corretto
+- Firma Destinatario/Accettazione (Verde -> Rosso): `POST /firma-fir` con tipo accettazione
+- Mappatura: Global -> "global", Multy Proget -> "multy", Niyol -> "niyol"
+
+**C. Registri Carico e Scarico**
+
+- `POST /registro/carico` per entrata rifiuti
+- `POST /registro/scarico` per uscita/recupero
+- Isolamento dati per tenant (mai incroci)
+
+**D. Console Log Operazioni RENTRI**
+
+- Log in tempo reale di ogni chiamata API (status 200, 400, 500)
+- Da ogni log di successo: download PDF FIR e xFIR (XML firmato)
+
+**E. Modalita Produzione**
+
+- Tutte le chiamate con `isSandbox: false`
+- Banner rosso permanente di avviso
 
 ## Dettagli tecnici
 
 ### File nuovi
 
 
-| File                                       | Descrizione                                  |
-| ------------------------------------------ | -------------------------------------------- |
-| `src/components/fir/MNFIRFormComplete.tsx` | Form FIR senza preset, tutti campi editabili |
-| `src/stores/mnFirStore.ts`                 | Store Zustand con dati iniziali vuoti        |
-| `src/hooks/useMNAdminId.ts`                | Hook per trovare l'admin del tenant MN       |
-| `src/hooks/useMNFIRForms.ts`               | Hook per FIR filtrati per tenant             |
+| File                                                    | Descrizione                                       |
+| ------------------------------------------------------- | ------------------------------------------------- |
+| `src/pages/MNAdminAuthPage.tsx`                         | Login admin MultyNiyol (`/adminmn`)               |
+| `src/pages/SuperAdminAuthPage.tsx`                      | Login Super Admin (`/superadmin`)                 |
+| `src/pages/SuperAdminDashboard.tsx`                     | Dashboard completa con 5 sezioni RENTRI           |
+| `src/components/superadmin/FIRPoolSection.tsx`          | Sezione vidimazione e rifornimento                |
+| `src/components/superadmin/DigitalSignatureSection.tsx` | Firme digitali mTLS                               |
+| `src/components/superadmin/RegistroCarScarSection.tsx`  | Registri carico/scarico                           |
+| `src/components/superadmin/RENTRILogConsole.tsx`        | Console log operazioni                            |
+| `src/lib/rentriSuperApi.ts`                             | Client API per Railway (tutte le chiamate RENTRI) |
 
 
 ### File da modificare
 
 
-| File                                              | Modifica                                        |
-| ------------------------------------------------- | ----------------------------------------------- |
-| `src/pages/multynijol/MNMultyprogetAppPage.tsx`   | Usa MNFIRFormComplete + mnFirStore              |
-| `src/pages/multynijol/MNNiyolAppPage.tsx`         | Usa MNFIRFormComplete + mnFirStore              |
-| `src/pages/multynijol/MNAppCronologiaPage.tsx`    | Contesto da pathname, FIR filtrati per tenant   |
-| `src/pages/multynijol/MNAppGPSPage.tsx`           | Contesto da pathname                            |
-| `src/pages/multynijol/MNAppAIPage.tsx`            | Contesto da pathname, AI collegata a mnFirStore |
-| `src/pages/multynijol/MNAppComunicazioniPage.tsx` | Contesto da pathname, admin tenant corretto     |
-| `src/pages/multynijol/MNAppProfiloPage.tsx`       | Contesto da pathname                            |
-| `src/pages/multynijol/MNAppGuidaPage.tsx`         | Contesto da pathname                            |
+| File                                   | Modifica                                                                     |
+| -------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/App.tsx`                          | Nuove rotte `/adminmn`, `/superadmin`, `/super`; proteggere `/mn/admin/*`    |
+| `src/pages/MNAuthPage.tsx`             | Rimuovere redirect a `/`; dopo login mandare a app; link admin -> `/adminmn` |
+| `src/hooks/useAuth.tsx`                | Aggiungere `superadmin@zoli.live` a `ADMIN_TENANT_EMAILS`                    |
+| `src/components/RoleBasedRedirect.tsx` | Gestire redirect per `superadmin@zoli.live` -> `/super`                      |
 
 
-### Flusso utente risultante
+### Migrazione database
 
-1. L'utente va su `/mn` (Multyproget) o `/ni` (Niyol)
-2. Si registra o accede
-3. Viene reindirizzato a `/mn/app/multyproget` o `/mn/app/niyol`
-4. Vede il form FIR VUOTO (nessun preset)
-5. Compila tutto manualmente
-6. Naviga tra le sezioni (Cronologia, GPS, AI, Messaggi, Profilo, Guida)
-7. I messaggi vanno all'admin del proprio tenant
-8. L'admin del tenant (dalla dashboard `/mn/admin/multyproget` o `/mn/admin/niyol`) vede solo i dati dei propri autisti
-9. gli utenti si devono registrare con codice fiscale nome e cognome esattamente come per global
-10. sotto la pagina di login/registrazione di entrabe ci vuole un rimandoi a accedi come admin che porta alla pagina di login poer l'admin di multyproget e niyol vche è  [multyniyol@zoli.live](mailto:multyniyol@zoli.live)
+Aggiornare la funzione `bootstrap_admin_role` per includere `superadmin@zoli.live`.
+
+### API Railway utilizzate
+
+Tutte le chiamate puntano a `https://dragonrifiutisender-production.up.railway.app/api/rentri`:
+
+- `POST /vidimate` -- Richiesta nuovi numeri FIR
+- `POST /firma-fir` -- Firma digitale mTLS
+- `POST /registro/carico` -- Registrazione entrata rifiuti
+- `POST /registro/scarico` -- Registrazione uscita rifiuti
+- `GET /health` -- Monitoraggio stato servizio
+
+Tutte con `isSandbox: false` (produzione).
+
+TUTTE LE PAGINE ADMIN E LE APP NON HANNO IL LOGUT FUNZIONANTE
