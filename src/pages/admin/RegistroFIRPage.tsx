@@ -211,7 +211,7 @@ export default function RegistroFIRPage() {
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Destinatario</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Quantità</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Data</th>
-                  <th className="text-right p-3 font-mono text-xs text-muted-foreground uppercase">Azioni</th>
+                  <th className="text-right p-3 font-mono text-xs text-muted-foreground uppercase min-w-[200px]">Azioni</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,8 +233,8 @@ export default function RegistroFIRPage() {
                     <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
                       {new Date(form.updated_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </td>
-                    <td className="p-3">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="p-3 min-w-[200px]">
+                      <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                         <button
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-600 text-white text-xs font-medium border border-cyan-400 hover:bg-cyan-500 transition-colors"
                           title="Visualizza / Modifica"
