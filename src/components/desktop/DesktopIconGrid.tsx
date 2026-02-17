@@ -45,8 +45,12 @@ function savePositions(icons: DesktopIcon[]) {
 
 function initIcons(defs: DesktopIconDef[]): DesktopIcon[] {
   const saved = loadPositions();
-  const defaults = createPositionedIcons(defs);
-  return defaults.map(icon => saved[icon.id] ? { ...icon, ...saved[icon.id] } : icon);
+  const defaults = createPositionedIcons(defs.filter(Boolean));
+  return defaults.map(icon => {
+    if (!icon) return icon;
+    const s = saved[icon.id];
+    return s && typeof s.x === "number" ? { ...icon, ...s } : icon;
+  });
 }
 
 interface DesktopIconGridProps {
