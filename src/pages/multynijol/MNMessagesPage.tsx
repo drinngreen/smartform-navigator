@@ -11,7 +11,7 @@ export default function MNMessagesPage() {
   const { context, partnerId } = useParams<{ context: string; partnerId?: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { messages, conversations, loading, sending, sendMessage, markAsRead, getAttachmentUrl, refetch } = useMessages(partnerId);
+  const { messages, conversations, loading, sending, sendMessage, markAsRead, getAttachmentUrl, refetch } = useMessages(partnerId, context);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);

@@ -38,7 +38,7 @@ export interface Conversation {
   isDeleted?: boolean;
 }
 
-export function useMessages(partnerId?: string) {
+export function useMessages(partnerId?: string, contextFilter?: string) {
   const { user, isAdmin } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -79,15 +79,20 @@ export function useMessages(partnerId?: string) {
         if (msg.sender_id !== user.id) userIds.add(msg.sender_id);
         if (msg.receiver_id !== user.id) userIds.add(msg.receiver_id);
       });
-      const { data: profiles } = await supabase
+      let profilesQuery = supabase
         .from("profiles")
-        .select("user_id, nome, cognome, avatar_url")
+        .select("user_id, nome, cognome, avatar_url, mn_context")
         .in("user_id", Array.from(userIds));
+      if (contextFilter) {
+        profilesQuery = profilesQuery.eq("mn_context", contextFilter);
+      }
+      const { data: profiles } = await profilesQuery;
       const conversationMap = new Map<string, Conversation>();
       const profileUserIds = new Set(profiles?.map(p => p.user_id) || []);
       (messagesData || []).forEach((msg) => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         if (otherUserId === user.id) return;
+        if (contextFilter && !profileUserIds.has(otherUserId)) return;
         if (!conversationMap.has(otherUserId)) {
           const profile = profiles?.find(p => p.user_id === otherUserId);
           conversationMap.set(otherUserId, {
@@ -111,7 +116,7 @@ export function useMessages(partnerId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, contextFilter]);
 
   const sendMessage = useCallback(async (content: string, files?: File[]) => {
     if (!user || !partnerId) return null;
