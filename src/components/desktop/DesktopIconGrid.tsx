@@ -47,10 +47,18 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
   const minHeight = rows * ICON_SPACING_Y + 40;
 
   const handleMouseDown = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
-    // Reset drag flag on new mousedown so a fresh click after a drag works
+    e.preventDefault();
+    const wasDragging = isDragging.current;
     isDragging.current = false;
+    
+    // If the previous interaction was a drag, this mousedown just resets - don't start a new drag/click cycle
+    if (wasDragging) return;
+    
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
+    
+    let didDrag = false;
+    
     dragRef.current = {
       id: icon.id,
       offsetX: e.clientX - rect.left - icon.x,
@@ -58,11 +66,13 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
       startX: e.clientX,
       startY: e.clientY,
     };
+    
     const handleMouseMove = (me: MouseEvent) => {
       if (!dragRef.current || !containerRef.current) return;
       const dx = Math.abs(me.clientX - dragRef.current.startX);
       const dy = Math.abs(me.clientY - dragRef.current.startY);
-      if (!isDragging.current && (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD)) return;
+      if (!didDrag && (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD)) return;
+      didDrag = true;
       isDragging.current = true;
       const r = containerRef.current.getBoundingClientRect();
       setIcons(prev =>
@@ -77,22 +87,22 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
         )
       );
     };
+    
     const handleMouseUp = () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      // Keep isDragging true — it will be reset on the next mousedown
       dragRef.current = null;
+      
+      // If no drag occurred, navigate
+      if (!didDrag) {
+        navigate(icon.href);
+      }
+      // isDragging stays true if dragged — next mousedown resets it without navigating
     };
+    
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, []);
-
-  const handleClick = useCallback(
-    (href: string) => {
-      if (!isDragging.current) navigate(href);
-    },
-    [navigate]
-  );
+  }, [navigate]);
 
   const resetPositions = useCallback(() => {
     setIcons(createPositionedIcons(iconDefs));
@@ -122,7 +132,6 @@ export function DesktopIconGrid({ icons: iconDefs }: DesktopIconGridProps) {
             className="absolute cursor-grab active:cursor-grabbing group"
             style={{ left: icon.x, top: icon.y, width: 160 }}
             onMouseDown={(e) => handleMouseDown(e, icon)}
-            onClick={() => handleClick(icon.href)}
           >
             <div className="flex flex-col items-center gap-3 p-4 rounded-2xl transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">
               <div
