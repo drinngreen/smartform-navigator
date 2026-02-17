@@ -1,0 +1,106 @@
+import { useMemo, useState, useEffect } from "react";
+import { Phone, PhoneOff, MessageSquare, Bell } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+
+interface MNAdminHeaderProps {
+  title: string;
+  subtitle?: string;
+}
+
+export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
+  const { profile, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isWidgetOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
+  const toggleWidget = useZoliDarkLemonWidgetStore((s) => s.toggle);
+  const [receiveCalls, setReceiveCalls] = useState(() => {
+    const saved = localStorage.getItem("admin_receive_calls");
+    return saved !== "false";
+  });
+
+  // Detect current context for message routing
+  const currentContext = location.pathname.includes("/mn/admin/niyol") ? "niyol"
+    : location.pathname.includes("/mn/admin/multyproget") ? "multyproget"
+    : null;
+
+  const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
+
+  // Sync receive_calls to online_status table
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem("admin_receive_calls", String(receiveCalls));
+    supabase.from("online_status").upsert({
+      user_id: user.id,
+      receive_calls: receiveCalls,
+      status: "online" as const,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" }).then(({ error }) => {
+      if (error) console.error("Error updating receive_calls:", error);
+    });
+  }, [receiveCalls, user]);
+
+  const toggleReceiveCalls = () => setReceiveCalls((prev) => !prev);
+
+  const widgetButtonClassName = useMemo(() => {
+    return `p-2 rounded-lg border transition-all duration-300 ${
+      isWidgetOpen
+        ? "bg-blue-500/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+        : "bg-secondary/50 border-border hover:bg-secondary hover:border-blue-500/30"
+    }`;
+  }, [isWidgetOpen]);
+
+  return (
+    <div className="px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] tracking-wide">{title}</h1>
+        {subtitle && (
+          <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* Phone toggle */}
+        <button
+          onClick={toggleReceiveCalls}
+          className={`p-2 rounded-lg border transition-all duration-300 ${
+            receiveCalls
+              ? "bg-green-600/30 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+              : "bg-red-600/30 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+          }`}
+          title={receiveCalls ? "Ricezione chiamate ATTIVA — clicca per attivare segreteria" : "Segreteria ATTIVA — clicca per ricevere chiamate"}
+        >
+          {receiveCalls
+            ? <Phone className="h-5 w-5 text-green-400" />
+            : <PhoneOff className="h-5 w-5 text-red-400" />
+          }
+        </button>
+
+        {/* AI Widget toggle */}
+        <button onClick={toggleWidget} className={widgetButtonClassName} title="Zoli Dark Lemon AI">
+          <img src={zoliLemonIcon} alt="AI" className="h-5 w-5" />
+        </button>
+
+        {/* Messages */}
+        <button
+          onClick={() => navigate(messagesPath)}
+          className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
+          title="Messaggi"
+        >
+          <MessageSquare className="h-5 w-5 text-white/80" />
+        </button>
+
+        {/* Notifications */}
+        <button
+          className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
+          title="Notifiche"
+        >
+          <Bell className="h-5 w-5 text-white/80" />
+        </button>
+      </div>
+    </div>
+  );
+}
