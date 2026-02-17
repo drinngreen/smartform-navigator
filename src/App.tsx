@@ -150,6 +150,7 @@ const App = () => (
               <Route path="/mn/admin/:context/transporter-app" element={<ProtectedRoute><MNTransporterAppPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/personale" element={<ProtectedRoute><MNPersonalePage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/messaggi" element={<ProtectedRoute><MNMessagesPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/messaggi/:partnerId" element={<ProtectedRoute><MNMessagesPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/chiamate" element={<ProtectedRoute><MNCallReportsPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/magazzino" element={<ProtectedRoute><MNMagazzinoPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/conferimenti" element={<ProtectedRoute><MNConferimentiPage /></ProtectedRoute>} />
