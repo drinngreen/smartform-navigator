@@ -52,8 +52,17 @@ async function callRailway(endpoint: string, tenant: string, body: any) {
 
 export async function healthCheck() {
   try {
-    const res = await fetch(`${RAILWAY_BASE}/health`);
-    return { ok: res.ok, status: res.status };
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const res = await fetch(`${supabaseUrl}/functions/v1/railway-health`, {
+      headers: {
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey,
+      },
+    });
+    if (!res.ok) return { ok: false, status: res.status };
+    const data = await res.json();
+    return { ok: data.ok, status: data.status };
   } catch { return { ok: false, status: 0 }; }
 }
 
