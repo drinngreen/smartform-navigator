@@ -4,7 +4,7 @@
  * and pool replenishment (vidimate).
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 
 const RENTRI_BASE_URL = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
 /**
