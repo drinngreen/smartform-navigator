@@ -56,6 +56,8 @@ import MNCallReportsPage from "./pages/multynijol/MNCallReportsPage";
 import MNMagazzinoPage from "./pages/multynijol/MNMagazzinoPage";
 import MNConferimentiPage from "./pages/multynijol/MNConferimentiPage";
 import MNImpiantiPage from "./pages/multynijol/MNImpiantiPage";
+import MNImpiantoProduttorePage from "./pages/multynijol/MNImpiantoProduttorePage";
+import MNImpiantoDestinatarioPage from "./pages/multynijol/MNImpiantoDestinatarioPage";
 import MNPagamentiPage from "./pages/multynijol/MNPagamentiPage";
 import MNRegistroKgPage from "./pages/multynijol/MNRegistroKgPage";
 import MNFirDigitaliPage from "./pages/multynijol/MNFirDigitaliPage";
@@ -152,6 +154,9 @@ const App = () => (
               <Route path="/mn/admin/:context/messaggi" element={<ProtectedRoute><MNMessagesPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/messaggi/:partnerId" element={<ProtectedRoute><MNMessagesPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/chiamate" element={<ProtectedRoute><MNCallReportsPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/impianto/privati" element={<ProtectedRoute><MNMagazzinoPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/impianto/produttore" element={<ProtectedRoute><MNImpiantoProduttorePage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/impianto/destinatario" element={<ProtectedRoute><MNImpiantoDestinatarioPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/magazzino" element={<ProtectedRoute><MNMagazzinoPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/conferimenti" element={<ProtectedRoute><MNConferimentiPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/impianti" element={<ProtectedRoute><MNImpiantiPage /></ProtectedRoute>} />
