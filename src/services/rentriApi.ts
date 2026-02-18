@@ -5,17 +5,23 @@
  */
 
 const RENTRI_BASE_URL = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
-const RENTRI_HEALTH_URL = "https://dragonrifiutisender-production.up.railway.app/health";
-
 /**
- * Health check – GET /health to verify the server is reachable.
+ * Health check – proxied through edge function to avoid CORS.
  */
 export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
-  const url = RENTRI_HEALTH_URL;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = `${supabaseUrl}/functions/v1/railway-health`;
   try {
-    const res = await fetch(url, { method: "GET" });
-    const text = await res.text();
-    return { ok: res.ok, url, status: res.status, body: text.slice(0, 500) };
+    const res = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey,
+      },
+    });
+    if (!res.ok) return { ok: false, url, status: res.status, body: "Edge function error" };
+    const data = await res.json();
+    return { ok: data.ok, url, status: data.status, body: JSON.stringify(data) };
   } catch (err: any) {
     return { ok: false, url, status: 0, body: err.message || String(err) };
   }
