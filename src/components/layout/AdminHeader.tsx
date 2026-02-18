@@ -55,20 +55,28 @@ export function AdminHeader({ title, subtitle }: AdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Phone toggle */}
+        {/* Phone icon → navigate to phone page */}
+        <button
+          onClick={() => navigate("/admin/telefono")}
+          className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary hover:border-white/30 transition-all duration-300"
+          title="Apri interfaccia telefono"
+        >
+          <Phone className="h-5 w-5 text-white/80" />
+        </button>
+
+        {/* Mini ON/OFF toggle for receive_calls */}
         <button
           onClick={toggleReceiveCalls}
-          className={`p-2 rounded-lg border transition-all duration-300 ${
+          className={`relative inline-flex h-6 w-10 items-center rounded-full border transition-all duration-300 ${
             receiveCalls
-              ? "bg-green-600/30 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
-              : "bg-red-600/30 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.3)]"
+              ? "bg-green-500/30 border-green-500/50"
+              : "bg-red-500/30 border-red-500/50"
           }`}
-          title={receiveCalls ? "Ricezione chiamate ATTIVA — clicca per attivare segreteria" : "Segreteria ATTIVA — clicca per ricevere chiamate"}
+          title={receiveCalls ? "Ricezione ON — clicca per OFF" : "Ricezione OFF — clicca per ON"}
         >
-          {receiveCalls
-            ? <Phone className="h-5 w-5 text-green-400" />
-            : <PhoneOff className="h-5 w-5 text-red-400" />
-          }
+          <span className={`inline-block h-4 w-4 transform rounded-full shadow-lg transition-transform ${
+            receiveCalls ? "translate-x-5 bg-green-400" : "translate-x-0.5 bg-red-400"
+          }`} />
         </button>
 
         {/* AI Widget toggle */}
