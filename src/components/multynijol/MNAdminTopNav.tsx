@@ -17,12 +17,23 @@ import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
 import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
 import iconAnalytics from "@/assets/menu-icons/analytics.png";
 import iconNotifiche from "@/assets/menu-icons/notifiche.png";
+import iconPrivati from "@/assets/menu-icons/privati.png";
+import iconProduttore from "@/assets/menu-icons/produttore.png";
+import iconDestinatario from "@/assets/menu-icons/destinatario.png";
+
+interface SubNavItem {
+  label: string;
+  iconImage: string;
+  path: string;
+  color: string;
+}
 
 interface NavItem {
   label: string;
   iconImage: string;
   path: string;
   color: string;
+  subItems?: SubNavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -32,9 +43,12 @@ const navItems: NavItem[] = [
   { label: "Trasportatori", iconImage: iconPersonale, path: "/trasportatori", color: "6, 182, 212" },
   { label: "Personale", iconImage: iconPersonale, path: "/personale", color: "16, 185, 129" },
   { label: "Messaggi", iconImage: iconZoliMessages, path: "/messaggi", color: "244, 114, 182" },
-  { label: "Magazzino", iconImage: iconFatturazione, path: "/magazzino", color: "20, 184, 166" },
+  { label: "Impianto", iconImage: iconPrivati, path: "/impianto/privati", color: "20, 184, 166", subItems: [
+    { label: "Privati", iconImage: iconPrivati, path: "/impianto/privati", color: "20, 184, 166" },
+    { label: "Produttore", iconImage: iconProduttore, path: "/impianto/produttore", color: "249, 115, 22" },
+    { label: "Destinatario", iconImage: iconDestinatario, path: "/impianto/destinatario", color: "59, 130, 246" },
+  ] },
   { label: "Conferimenti", iconImage: iconRegistroFir, path: "/conferimenti", color: "249, 115, 22" },
-  { label: "Impianti", iconImage: iconRentri, path: "/impianti", color: "59, 130, 246" },
   { label: "Pagamenti", iconImage: iconFatturazione, path: "/pagamenti", color: "239, 68, 68" },
   { label: "Formulari", iconImage: iconGestioneFormulari, path: "/formulari", color: "34, 197, 94" },
   { label: "Chiamate", iconImage: iconReportChiamate, path: "/chiamate", color: "34, 197, 94" },
@@ -53,6 +67,10 @@ export function MNAdminTopNav() {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
 
+  const [subMenuOpen, setSubMenuOpen] = useState<string | null>(null);
+  const [subMenuPos, setSubMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const subMenuRef = useRef<HTMLDivElement>(null);
+
   // Detect current context from URL
   const currentContext = location.pathname.includes("/mn/admin/niyol") ? "niyol"
     : location.pathname.includes("/mn/admin/multyproget") ? "multyproget"
@@ -67,10 +85,18 @@ export function MNAdminTopNav() {
     return location.pathname.startsWith(href);
   };
 
+  const isSubRouteActive = (item: NavItem) => {
+    if (!item.subItems) return false;
+    return item.subItems.some(sub => location.pathname.startsWith(`${prefix}${sub.path}`));
+  };
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
         setSwitcherOpen(false);
+      }
+      if (subMenuRef.current && !subMenuRef.current.contains(e.target as Node)) {
+        setSubMenuOpen(null);
       }
     };
     document.addEventListener("mousedown", handleClick);
@@ -129,11 +155,63 @@ export function MNAdminTopNav() {
               </div>
             )}
 
-            {/* Nav items with PNG icons - identical to AdminTopNav */}
+            {/* Nav items with PNG icons */}
             <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-hide">
               {isContextPage && navItems.map((item) => {
                 const href = item.path ? `${prefix}${item.path}` : prefix;
-                const active = isRouteActive(href);
+                const active = item.subItems ? isSubRouteActive(item) : isRouteActive(href);
+
+                if (item.subItems) {
+                  return (
+                    <div key={item.label} className="relative">
+                      <NavLink
+                        to={href}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setSubMenuPos({ x: rect.left, y: rect.bottom + 4 });
+                          setSubMenuOpen(subMenuOpen === item.label ? null : item.label);
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
+                          active
+                            ? "bg-primary/20 text-white shadow-[0_0_20px_rgba(251,191,36,0.3)]"
+                            : "text-white/70 hover:text-white hover:bg-secondary/50"
+                        )}
+                      >
+                        <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
+                        <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
+                      </NavLink>
+                      {subMenuOpen === item.label && (
+                        <div
+                          ref={subMenuRef}
+                          className="fixed z-[100] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
+                          style={{ left: subMenuPos.x, top: subMenuPos.y }}
+                        >
+                          {item.subItems.map((sub) => (
+                            <button
+                              key={sub.path}
+                              onClick={() => {
+                                navigate(`${prefix}${sub.path}`);
+                                setSubMenuOpen(null);
+                              }}
+                              className={cn(
+                                "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors",
+                                location.pathname.startsWith(`${prefix}${sub.path}`)
+                                  ? "bg-primary/20 text-white"
+                                  : "text-white/70 hover:text-white hover:bg-secondary/50"
+                              )}
+                            >
+                              <img src={sub.iconImage} alt={sub.label} className="h-8 w-8" />
+                              <span>{sub.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <NavLink
                     key={href}
