@@ -37,6 +37,7 @@ interface Conferimento {
   tipo_utenza: string | null; numero_fir: string | null;
   quantita_presunta: number | null; stato_rifiuto: string | null;
   codice_ce: string | null; esito_pesata: string | null;
+  targa_automezzo: string | null; modello_automezzo: string | null;
 }
 interface Ricevuta {
   id: string; numero_ricevuta: string; data_emissione: string;
@@ -303,7 +304,7 @@ export default function MNMagazzinoPage() {
     const { error } = await supabase.from("ricevute_privati" as any).insert({
       impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-      importo: conf.importo_pagato || 0, note: `CER ${conf.cer} - ${conf.kg_pesati} kg`,
+      importo: conf.importo_pagato || 0, note: `CER ${conf.cer} - ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}${conf.modello_automezzo ? ` — Modello: ${conf.modello_automezzo}` : ""}`,
     } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Ricevuta generata");
