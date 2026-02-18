@@ -1,62 +1,75 @@
 
-# Piano: Interfaccia Telefono + Toggle ON/OFF separato
 
-## Problema attuale
-Il pulsante Phone nell'header delle dashboard admin fa due cose contemporaneamente: toggling on/off E dovrebbe aprire un'interfaccia telefono. L'utente non riesce ad accedere alla pagina telefono perche' il click cambia lo stato on/off.
+# Dark Lemon AI -- Widget Persistente e Chat Futuristica
 
-## Soluzione
+## Panoramica
+Rinominare "AI Lemon" in "Dark Lemon" ovunque, trasformare il widget popup in un pannello draggabile persistente (sopravvive a navigazione e refresh), e creare una pagina chat AI futuristica con bordi LED multicolori.
 
-### 1. Separare il pulsante telefono dal toggle ON/OFF
+## Modifiche previste
 
-Nell'header di tutte le dashboard (AdminHeader per Global Reco, MNAdminHeader per Multy Niyol):
-- **Icona Phone**: cliccabile, naviga alla pagina telefono (`/admin/telefono` o `/mn/admin/:context/telefono`)
-- **Mini toggle ON/OFF**: piccolo switch accanto all'icona che controlla la ricezione chiamate, senza navigare
+### 1. Rinomina "AI Lemon" in "Dark Lemon"
+- `AdminTopNav.tsx` linea 38: label da "AI Lemon" a "Dark Lemon"
+- `MNAdminTopNav.tsx` linea 56: label da "AI Lemon" a "Dark Lemon"
+- Dashboard icone (DashboardPage.tsx, MNContextDashboardPage.tsx): label "Zoli Dark Lemon" resta corretto, verificare coerenza
 
-Layout visivo:
+### 2. Widget Popup Draggabile e Persistente
+Il widget deve:
+- Restare aperto anche cambiando pagina (gia' gestito dallo store Zustand)
+- Restare aperto dopo il refresh della pagina (salvare stato `isOpen` e `position` in localStorage)
+- Essere trascinabile in qualsiasi punto dell'area di lavoro
+- Avere bordi LED luminosissimi animati multicolori
+- Mostrare il logo Dark Lemon nell'header del popup
+
+**File da modificare:**
+- `zoliDarkLemonWidgetStore.ts`: aggiungere persistenza localStorage per `isOpen` e `position`
+- `ZoliDarkLemonWidget.tsx`: riscrivere completamente come pannello draggabile con bordi LED, mini-chat integrata
+- `App.tsx` (`AdminOverlays`): rimuovere il check `!isOpen` per rendere il componente sempre montato (gestira' internamente la visibilita')
+
+### 3. Chat AI Futuristica (Pagina dedicata)
+Le pagine `ZoliDarkLemonPage.tsx` e `MNZoliDarkLemonPage.tsx` verranno trasformate in una chat AI completa con:
+- Sfondo scuro profondo
+- Bordi LED multicolori animati su ogni elemento (input, messaggi, container)
+- Effetti gradient-shift sui bordi
+- Integrazione con OpenRouter (come da memoria del progetto) tramite edge function esistente o nuova
+- Streaming dei messaggi token-by-token
+- Design unico e creativo con glow effects
+
+### 4. Dettagli tecnici del Widget Draggabile
+
 ```text
-[ Phone icon ] [ ON/OFF switch ]   [ AI ] [ Messages ] [ Bell ]
-     |               |
-     v               v
-  Vai a pagina    Attiva/disattiva
-  telefono        ricezione
++------------------------------------------+
+|  [Logo] Dark Lemon AI            [_] [X] |
+|  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ |  <-- bordo LED multicolore animato
+|                                          |
+|  [Area chat in miniatura]                |
+|  - Ultimi messaggi                       |
+|  - Input rapido                          |
+|                                          |
+|  [Apri Chat Completa]                    |
++------------------------------------------+
 ```
 
-### 2. Creare la pagina Telefono per tutti i tenant
+- Posizione salvata in localStorage (gia' previsto nello store, va solo persistito)
+- Drag implementato con mousedown/mousemove/mouseup
+- z-index altissimo (z-[9999]) per restare sopra tutto
+- Il pulsante nell'header (vicino al telefono) apre/chiude il widget
+- Il widget minimizzato diventa un'icona flottante con il logo
 
-Nuova pagina `PhonePage` con interfaccia telefono che include:
-- Stato ricezione chiamate (ON/OFF) ben visibile
-- Tastierino numerico stile telefono
-- Pulsante chiamata (avvia chiamata Retell per Global Reco)
-- Cronologia chiamate recenti dalla tabella `office_calls`
-- Indicatore stato connessione
+### 5. File coinvolti
 
-### 3. Logica Retell solo per Global Reco
+| File | Azione |
+|------|--------|
+| `src/stores/zoliDarkLemonWidgetStore.ts` | Persistenza localStorage |
+| `src/components/ai/ZoliDarkLemonWidget.tsx` | Riscrittura completa: draggable, LED, mini-chat |
+| `src/components/layout/AdminTopNav.tsx` | Rinomina "AI Lemon" -> "Dark Lemon" |
+| `src/components/multynijol/MNAdminTopNav.tsx` | Rinomina "AI Lemon" -> "Dark Lemon" |
+| `src/App.tsx` | Aggiornare AdminOverlays per persistenza |
+| `src/pages/admin/ZoliDarkLemonPage.tsx` | Chat AI futuristica completa |
+| `src/pages/multynijol/MNZoliDarkLemonPage.tsx` | Chat AI futuristica (stessa UI) |
 
-- Quando il toggle e' su OFF **e** l'utente appartiene al tenant Global Reco (167d07ad-9184-484e-85a6-da5ceafa42a3), si attiva automaticamente la segreteria Retell AI
-- Per gli altri tenant (Multyproget, Niyol), il toggle OFF semplicemente disabilita le chiamate senza attivare alcuna segreteria
+### 6. Persistenza garantita
+- Lo store Zustand verra' connesso a localStorage tramite un middleware custom
+- Al refresh della pagina, lo stato `isOpen: true` viene ripristinato automaticamente
+- La posizione del widget viene ripristinata esattamente dove l'utente l'aveva lasciato
+- Navigando tra pagine il widget resta montato perche' vive in `App.tsx` fuori dalle Routes
 
----
-
-## Dettaglio tecnico
-
-### File da creare
-- `src/pages/admin/PhonePage.tsx` — Pagina telefono per Global Reco
-- `src/pages/multynijol/MNPhonePage.tsx` — Pagina telefono per tenant MN
-- `src/components/calls/PhoneInterface.tsx` — Componente condiviso con UI telefono (tastierino, cronologia, stato)
-
-### File da modificare
-- `src/components/layout/AdminHeader.tsx` — Separare icona Phone (naviga a `/admin/telefono`) dal mini-toggle ON/OFF; quando toggle OFF e tenant = Global Reco, attivare segreteria Retell
-- `src/components/multynijol/MNAdminHeader.tsx` — Stessa separazione, senza logica Retell
-- `src/App.tsx` — Aggiungere rotte `/admin/telefono` e `/mn/admin/:context/telefono`
-
-### Logica toggle ON/OFF + Retell (solo AdminHeader - Global Reco)
-- Toggle ON: `receive_calls = true`, stato verde, nessuna segreteria
-- Toggle OFF: `receive_calls = false`, stato rosso, chiama `supabase.functions.invoke("retell-call")` per attivare agente segreteria Retell AI
-- Persistenza su `online_status` e `localStorage` come gia' implementato
-
-### Interfaccia telefono (PhoneInterface)
-- Header con stato ON/OFF e indicatore tenant
-- Tastierino numerico (0-9, *, #) con stile neon/cyberpunk coerente col design
-- Pulsante verde "Chiama" che usa il `CallContext` esistente (Retell per Global Reco)
-- Lista chiamate recenti (query su `office_calls`)
-- Per MN: funzionalita' base senza Retell
