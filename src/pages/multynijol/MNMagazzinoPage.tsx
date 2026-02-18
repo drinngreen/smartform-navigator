@@ -123,7 +123,7 @@ export default function MNMagazzinoPage() {
   const [privatoSearch, setPrivatoSearch] = useState("");
   const [showPrivatoDropdown, setShowPrivatoDropdown] = useState(false);
   const [limiteForm, setLimiteForm] = useState({ cer: "", tipo_utenza: "domestica", limite_conferimento_kg: "", limite_annuo_kg: "", limite_mensile_kg: "", limite_giornaliero_kg: "", periodo_riferimento: "annuale", note: "" });
-  const [ricevutaForm, setRicevutaForm] = useState({ privato_id: "", importo: "", note: "" });
+  const [ricevutaForm, setRicevutaForm] = useState({ privato_id: "", nome_manuale: "", importo: "", note: "" });
 
   useEffect(() => {
     (async () => {
@@ -276,16 +276,19 @@ export default function MNMagazzinoPage() {
   const saveRicevutaManuale = async () => {
     const anno = new Date().getFullYear();
     const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
+    const privato = privati.find(p => p.id === ricevutaForm.privato_id);
+    const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : ricevutaForm.nome_manuale || "";
+    const noteFinale = [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ");
     const { error } = await supabase.from("ricevute_privati" as any).insert({
       impianto_id: selectedImpianto, privato_id: ricevutaForm.privato_id || null,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
-      note: ricevutaForm.note || null,
+      note: noteFinale || null,
     } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Ricevuta creata");
     setShowNewRicevuta(false);
-    setRicevutaForm({ privato_id: "", importo: "", note: "" });
+    setRicevutaForm({ privato_id: "", nome_manuale: "", importo: "", note: "" });
     fetchAll();
   };
 
@@ -564,12 +567,18 @@ export default function MNMagazzinoPage() {
                     <DialogHeader><DialogTitle>Nuova Ricevuta Manuale</DialogTitle></DialogHeader>
                     <div className="grid gap-4 py-2">
                       <div>
-                        <Label>Privato (opzionale)</Label>
-                        <Select value={ricevutaForm.privato_id} onValueChange={v => setRicevutaForm(f => ({ ...f, privato_id: v }))}>
+                        <Label>Privato da anagrafica (opzionale)</Label>
+                        <Select value={ricevutaForm.privato_id} onValueChange={v => setRicevutaForm(f => ({ ...f, privato_id: v, nome_manuale: "" }))}>
                           <SelectTrigger className="bg-card/60"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
                           <SelectContent>{privati.map(p => <SelectItem key={p.id} value={p.id}>{p.cognome} {p.nome}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
+                      {!ricevutaForm.privato_id && (
+                        <div><Label>Oppure scrivi Nome e Cognome</Label><Input placeholder="Es. Rossi Mario" value={ricevutaForm.nome_manuale} onChange={e => setRicevutaForm(f => ({ ...f, nome_manuale: e.target.value }))} /></div>
+                      )}
+                      {ricevutaForm.privato_id && (
+                        <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline text-left" onClick={() => setRicevutaForm(f => ({ ...f, privato_id: "" }))}>✏️ Inserisci manualmente</button>
+                      )}
                       <div><Label>Importo €</Label><Input type="number" step="0.01" value={ricevutaForm.importo} onChange={e => setRicevutaForm(f => ({ ...f, importo: e.target.value }))} /></div>
                       <div><Label>Note / Descrizione</Label><Textarea value={ricevutaForm.note} onChange={e => setRicevutaForm(f => ({ ...f, note: e.target.value }))} placeholder="Descrizione libera..." /></div>
                       <Button onClick={saveRicevutaManuale} className="w-full">Crea Ricevuta</Button>
