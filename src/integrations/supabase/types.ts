@@ -1051,6 +1051,100 @@ export type Database = {
         }
         Relationships: []
       }
+      movimenti_impianto: {
+        Row: {
+          cer: string
+          created_at: string
+          created_by: string | null
+          data_movimento: string
+          descrizione_rifiuto: string | null
+          destinatario_denominazione: string | null
+          esito_accettazione: string | null
+          fir_id: string | null
+          id: string
+          impianto_id: string
+          note: string | null
+          numero_fir: string | null
+          origine: string | null
+          produttore_denominazione: string | null
+          quantita_kg: number
+          quantita_presunta: number | null
+          ruolo_impianto: string
+          tenant_id: string | null
+          tipo_movimento: string
+          trasportatore_denominazione: string | null
+          updated_at: string
+        }
+        Insert: {
+          cer: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          descrizione_rifiuto?: string | null
+          destinatario_denominazione?: string | null
+          esito_accettazione?: string | null
+          fir_id?: string | null
+          id?: string
+          impianto_id: string
+          note?: string | null
+          numero_fir?: string | null
+          origine?: string | null
+          produttore_denominazione?: string | null
+          quantita_kg?: number
+          quantita_presunta?: number | null
+          ruolo_impianto: string
+          tenant_id?: string | null
+          tipo_movimento: string
+          trasportatore_denominazione?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cer?: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          descrizione_rifiuto?: string | null
+          destinatario_denominazione?: string | null
+          esito_accettazione?: string | null
+          fir_id?: string | null
+          id?: string
+          impianto_id?: string
+          note?: string | null
+          numero_fir?: string | null
+          origine?: string | null
+          produttore_denominazione?: string | null
+          quantita_kg?: number
+          quantita_presunta?: number | null
+          ruolo_impianto?: string
+          tenant_id?: string | null
+          tipo_movimento?: string
+          trasportatore_denominazione?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimenti_impianto_fir_id_fkey"
+            columns: ["fir_id"]
+            isOneToOne: false
+            referencedRelation: "fir_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_impianto_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_impianto_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       office_calls: {
         Row: {
           agent_id: string | null
