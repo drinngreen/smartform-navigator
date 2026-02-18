@@ -1,12 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, X, Minimize2, Maximize2, ExternalLink, Bot, User } from "lucide-react";
+import { Send, X, Minimize2, ExternalLink, Bot, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 
+const MIN_W = 300;
+const MIN_H = 280;
+const MAX_W = 900;
+const MAX_H = 800;
+
+type ResizeDir = "e" | "s" | "se" | "sw" | "w" | "n" | "ne" | "nw" | null;
+
 export function ZoliDarkLemonWidget() {
-  const { isOpen, setOpen, position, setPosition } = useZoliDarkLemonWidgetStore();
+  const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
     { role: "assistant", content: "Ciao! Sono Dark Lemon AI 🍋 Come posso aiutarti?" },
@@ -21,31 +28,74 @@ export function ZoliDarkLemonWidget() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Resize state
+  const isResizing = useRef<ResizeDir>(null);
+  const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("input, a")) return;
+    if ((e.target as HTMLElement).dataset.resize) return;
     isDragging.current = true;
     hasDragged.current = false;
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     e.preventDefault();
   }, [position]);
 
+  // Resize start
+  const handleResizeDown = useCallback((dir: ResizeDir) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    isResizing.current = dir;
+    resizeStart.current = { x: e.clientX, y: e.clientY, w: size.width, h: size.height, px: position.x, py: position.y };
+  }, [size, position]);
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
+      // Resize
+      if (isResizing.current) {
+        const dir = isResizing.current;
+        const dx = e.clientX - resizeStart.current.x;
+        const dy = e.clientY - resizeStart.current.y;
+        let newW = resizeStart.current.w;
+        let newH = resizeStart.current.h;
+        let newX = resizeStart.current.px;
+        let newY = resizeStart.current.py;
+
+        if (dir.includes("e")) newW = Math.min(MAX_W, Math.max(MIN_W, resizeStart.current.w + dx));
+        if (dir.includes("w")) {
+          newW = Math.min(MAX_W, Math.max(MIN_W, resizeStart.current.w - dx));
+          newX = resizeStart.current.px + (resizeStart.current.w - newW);
+        }
+        if (dir.includes("s")) newH = Math.min(MAX_H, Math.max(MIN_H, resizeStart.current.h + dy));
+        if (dir.includes("n")) {
+          newH = Math.min(MAX_H, Math.max(MIN_H, resizeStart.current.h - dy));
+          newY = resizeStart.current.py + (resizeStart.current.h - newH);
+        }
+
+        setSize({ width: newW, height: newH });
+        setPosition({ x: newX, y: newY });
+        return;
+      }
+      // Drag
       if (!isDragging.current) return;
       hasDragged.current = true;
       const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.current.x));
       const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.current.y));
       setPosition({ x: newX, y: newY });
     };
-    const onUp = () => { isDragging.current = false; };
+    const onUp = () => {
+      isDragging.current = false;
+      isResizing.current = null;
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [setPosition]);
+  }, [setPosition, setSize]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -60,13 +110,12 @@ export function ZoliDarkLemonWidget() {
   };
 
   const openFullChat = () => {
-    const isAdmin = location.pathname.startsWith("/admin");
     const isMN = location.pathname.startsWith("/mn/admin");
     if (isMN) {
       const match = location.pathname.match(/\/mn\/admin\/(\w+)/);
       const ctx = match?.[1] || "multyproget";
       navigate(`/mn/admin/${ctx}/zoli-dark-lemon`);
-    } else if (isAdmin) {
+    } else {
       navigate("/admin/zoli-dark-lemon");
     }
   };
@@ -97,46 +146,53 @@ export function ZoliDarkLemonWidget() {
     );
   }
 
+  const chatH = size.height - 110; // header ~50 + input ~60
+
   // Full widget
   return (
     <div
       ref={widgetRef}
       onMouseDown={handleMouseDown}
-      className="fixed z-[9999] cursor-grab active:cursor-grabbing select-none"
-      style={{ left: position.x, top: position.y, width: 380 }}
+      className="fixed z-[9999] select-none"
+      style={{ left: position.x, top: position.y, width: size.width, height: size.height }}
     >
+      {/* Resize handles */}
+      {/* Edges */}
+      <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
+      <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
+      <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
+      <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
+      {/* Corners */}
+      <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
+      <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
+      <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
+      <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
+
       {/* LED border wrapper */}
-      <div className="relative rounded-2xl p-[3px] overflow-hidden">
+      <div className="relative rounded-2xl p-[3px] overflow-hidden h-full">
         {/* Animated LED border */}
-        <div
-          className="absolute inset-0 rounded-2xl animate-gradient"
-          style={{
-            background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)",
-            backgroundSize: "300% 100%",
-          }}
-        />
-        {/* Extra glow layers */}
+        <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
         <div className="absolute inset-0 rounded-2xl blur-md opacity-60 animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
 
         {/* Inner content */}
-        <div className="relative rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10">
+        <div className="relative rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden h-full flex flex-col">
+          {/* Header - draggable */}
+          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
-            <button onClick={openFullChat} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title="Chat completa">
+            <button onClick={openFullChat} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title="Chat completa">
               <ExternalLink className="h-4 w-4" />
             </button>
-            <button onClick={() => setMinimized(true)} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
+            <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
             </button>
-            <button onClick={() => setOpen(false)} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
+            <button onClick={() => setOpen(false)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Chat area */}
-          <div className="h-64 overflow-y-auto p-3 space-y-3">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3" onMouseDown={e => e.stopPropagation()}>
             {messages.map((msg, i) => (
               <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                 {msg.role === "assistant" && (
@@ -173,7 +229,7 @@ export function ZoliDarkLemonWidget() {
           </div>
 
           {/* Input */}
-          <div className="p-3 border-t border-white/10">
+          <div className="p-3 border-t border-white/10 shrink-0">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -186,6 +242,7 @@ export function ZoliDarkLemonWidget() {
               />
               <button
                 onClick={handleSend}
+                onMouseDown={e => e.stopPropagation()}
                 disabled={!input.trim() || isLoading}
                 className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 disabled:opacity-30 hover:bg-cyan-500/30 transition-all"
               >
@@ -194,6 +251,15 @@ export function ZoliDarkLemonWidget() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Visual corner indicators */}
+      <div className="absolute bottom-0 right-0 w-3 h-3 pointer-events-none z-[10002]">
+        <svg viewBox="0 0 12 12" className="w-full h-full opacity-40">
+          <line x1="11" y1="3" x2="3" y2="11" stroke="white" strokeWidth="1" />
+          <line x1="11" y1="7" x2="7" y2="11" stroke="white" strokeWidth="1" />
+          <line x1="11" y1="11" x2="11" y2="11" stroke="white" strokeWidth="1" />
+        </svg>
       </div>
     </div>
   );
