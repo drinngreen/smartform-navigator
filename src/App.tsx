@@ -8,7 +8,6 @@ import { CallProvider } from "@/contexts/CallContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRedirect } from "@/components/RoleBasedRedirect";
 import { ZoliDarkLemonWidget } from "@/components/ai/ZoliDarkLemonWidget";
-import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { CallManager } from "@/components/calls/CallManager";
 
 // Auth
@@ -85,12 +84,10 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } 
 function AdminOverlays() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin");
-  const isOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
-  const setOpen = useZoliDarkLemonWidgetStore((s) => s.setOpen);
 
-  if (!isAdminRoute || !isOpen) return null;
+  if (!isAdminRoute) return null;
 
-  return <ZoliDarkLemonWidget isOpen={isOpen} onClose={() => setOpen(false)} />;
+  return <ZoliDarkLemonWidget />;
 }
 
 const App = () => (

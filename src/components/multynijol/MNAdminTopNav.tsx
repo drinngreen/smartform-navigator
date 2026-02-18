@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
   { label: "Pagamenti", iconImage: iconFatturazione, path: "/pagamenti", color: "239, 68, 68" },
   { label: "Formulari", iconImage: iconGestioneFormulari, path: "/formulari", color: "34, 197, 94" },
   { label: "Chiamate", iconImage: iconReportChiamate, path: "/chiamate", color: "34, 197, 94" },
-  { label: "AI Lemon", iconImage: zoliLemonIcon, path: "/zoli-dark-lemon", color: "59, 130, 246" },
+  { label: "Dark Lemon", iconImage: zoliLemonIcon, path: "/zoli-dark-lemon", color: "59, 130, 246" },
 ];
 
 const contexts = [

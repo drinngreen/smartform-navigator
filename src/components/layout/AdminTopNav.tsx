@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
   { label: "RENTRI", iconImage: iconRentri, href: "/admin/rentri", color: "236, 72, 153" },
   { label: "Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
   { label: "Messaggi", iconImage: iconZoliMessages, href: "/admin/messaggi", color: "244, 114, 182" },
-  { label: "AI Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
+  { label: "Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
 ];
 
 export function AdminTopNav() {
