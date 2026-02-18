@@ -4,23 +4,19 @@
  * and pool replenishment (vidimate).
  */
 
+import { supabase } from "@/integrations/supabase/client";
+
 const RENTRI_BASE_URL = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
 /**
  * Health check – proxied through edge function to avoid CORS.
  */
 export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `${supabaseUrl}/functions/v1/railway-health`;
+  const url = "railway-health (edge function)";
   try {
-    const res = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${supabaseKey}`,
-        "apikey": supabaseKey,
-      },
+    const { data, error } = await supabase.functions.invoke("railway-health", {
+      method: "GET",
     });
-    if (!res.ok) return { ok: false, url, status: res.status, body: "Edge function error" };
-    const data = await res.json();
+    if (error) return { ok: false, url, status: 0, body: error.message };
     return { ok: data.ok, url, status: data.status, body: JSON.stringify(data) };
   } catch (err: any) {
     return { ok: false, url, status: 0, body: err.message || String(err) };
