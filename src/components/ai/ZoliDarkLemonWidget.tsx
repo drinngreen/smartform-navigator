@@ -14,6 +14,7 @@ export function ZoliDarkLemonWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const isDragging = useRef(false);
+  const hasDragged = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,8 +26,9 @@ export function ZoliDarkLemonWidget() {
   }, [messages]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest("button, input, a")) return;
+    if ((e.target as HTMLElement).closest("input, a")) return;
     isDragging.current = true;
+    hasDragged.current = false;
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     e.preventDefault();
   }, [position]);
@@ -34,6 +36,7 @@ export function ZoliDarkLemonWidget() {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
+      hasDragged.current = true;
       const newX = Math.max(0, Math.min(window.innerWidth - 80, e.clientX - dragOffset.current.x));
       const newY = Math.max(0, Math.min(window.innerHeight - 80, e.clientY - dragOffset.current.y));
       setPosition({ x: newX, y: newY });
@@ -76,20 +79,20 @@ export function ZoliDarkLemonWidget() {
       <div
         ref={widgetRef}
         onMouseDown={handleMouseDown}
+        onMouseUp={() => { if (!hasDragged.current) setMinimized(false); }}
         className="fixed z-[9999] cursor-grab active:cursor-grabbing"
         style={{ left: position.x, top: position.y }}
       >
-        <button
-          onClick={() => setMinimized(false)}
-          className="relative w-14 h-14 rounded-full flex items-center justify-center animate-led-border-spin"
+        <div
+          className="relative w-14 h-14 rounded-full flex items-center justify-center"
           style={{
             background: "linear-gradient(135deg, hsl(222 47% 10%), hsl(222 47% 6%))",
             boxShadow: "0 0 20px rgba(59,130,246,0.5), 0 0 40px rgba(236,72,153,0.3), 0 0 60px rgba(34,197,94,0.2)",
           }}
         >
           <div className="absolute inset-0 rounded-full p-[2px] bg-gradient-to-r from-blue-500 via-pink-500 via-green-400 to-cyan-400 animate-gradient" style={{ WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude" }} />
-          <img src={zoliLemonIcon} alt="Dark Lemon" className="h-8 w-8 relative z-10" />
-        </button>
+          <img src={zoliLemonIcon} alt="Dark Lemon" className="h-8 w-8 relative z-10 pointer-events-none" />
+        </div>
       </div>
     );
   }
