@@ -34,6 +34,9 @@ interface Conferimento {
   id: string; nome_privato: string; cer: string; kg_pesati: number;
   data: string; importo_pagato: number | null; metodo_pag: string | null;
   note: string | null; privato_id: string | null; cf_pi: string | null;
+  tipo_utenza: string | null; numero_fir: string | null;
+  quantita_presunta: number | null; stato_rifiuto: string | null;
+  codice_ce: string | null; esito_pesata: string | null;
 }
 interface Ricevuta {
   id: string; numero_ricevuta: string; data_emissione: string;
@@ -119,7 +122,7 @@ export default function MNMagazzinoPage() {
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
-  const [confForm, setConfForm] = useState({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+  const [confForm, setConfForm] = useState({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "" });
   const [privatoSearch, setPrivatoSearch] = useState("");
   const [showPrivatoDropdown, setShowPrivatoDropdown] = useState(false);
   const [limiteForm, setLimiteForm] = useState({ cer: "", tipo_utenza: "domestica", limite_conferimento_kg: "", limite_annuo_kg: "", limite_mensile_kg: "", limite_giornaliero_kg: "", periodo_riferimento: "annuale", note: "" });
@@ -195,9 +198,35 @@ export default function MNMagazzinoPage() {
     fetchAll();
   };
 
+  const getConfTipoUtenza = useCallback(() => {
+    if (confForm.privato_id) {
+      const p = privati.find(pr => pr.id === confForm.privato_id);
+      return p?.tipo_utenza || "domestica";
+    }
+    return "domestica";
+  }, [confForm.privato_id, privati]);
+
   const saveConferimento = async () => {
+    const tipoUtenza = getConfTipoUtenza();
+    const isSpeciali = tipoUtenza === "produttore_speciali";
+
     if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
+    if (isSpeciali && !confForm.numero_fir) { toast.error("Numero FIR obbligatorio per Produttore Speciali"); return; }
     const kg = parseFloat(confForm.kg_pesati);
+
+    // Confronto pesata vs presunta per speciali
+    let esitoPesata: string | null = null;
+    if (isSpeciali && confForm.quantita_presunta) {
+      const presunta = parseFloat(confForm.quantita_presunta);
+      const diff = Math.abs(kg - presunta);
+      const pctDiff = presunta > 0 ? (diff / presunta) * 100 : 0;
+      if (pctDiff > 10) {
+        esitoPesata = "respinto";
+        toast.warning(`⚠️ Scostamento peso ${pctDiff.toFixed(1)}% (presunto: ${presunta} kg, pesato: ${kg} kg). Conferimento segnalato.`);
+      } else {
+        esitoPesata = "accettato";
+      }
+    }
 
     // Controllo limiti — BLOCCA se superati
     if (confForm.privato_id) {
@@ -219,12 +248,18 @@ export default function MNMagazzinoPage() {
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
       metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
       privato_id: confForm.privato_id || null,
+      tipo_utenza: tipoUtenza,
+      numero_fir: isSpeciali ? confForm.numero_fir : null,
+      quantita_presunta: isSpeciali && confForm.quantita_presunta ? parseFloat(confForm.quantita_presunta) : null,
+      stato_rifiuto: isSpeciali ? confForm.stato_rifiuto || null : null,
+      codice_ce: isSpeciali ? confForm.codice_ce || null : null,
+      esito_pesata: esitoPesata,
     } as any).select().single();
     if (error) { toast.error(error.message); return; }
 
-    // Genera ricevuta automaticamente
+    // Genera ricevuta automaticamente (per domestica/non_domestica)
     const conf = confData as any;
-    if (conf) {
+    if (conf && !isSpeciali) {
       const anno = new Date().getFullYear();
       const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
@@ -235,9 +270,9 @@ export default function MNMagazzinoPage() {
       } as any);
     }
 
-    toast.success("Conferimento e ricevuta registrati");
+    toast.success(isSpeciali ? "Conferimento speciale registrato (FIR)" : "Conferimento e ricevuta registrati");
     setShowNewConferimento(false);
-    setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "" });
+    setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "" });
     setPrivatoSearch("");
     setLimitWarning(null);
     fetchAll();
@@ -364,7 +399,8 @@ export default function MNMagazzinoPage() {
                                 onClick={() => { setConfForm(f => ({ ...f, privato_id: p.id, nome_privato: p.nome, cognome_privato: p.cognome, cf_privato: p.codice_fiscale })); setPrivatoSearch(`${p.cognome} ${p.nome}`); setShowPrivatoDropdown(false); }}>
                                 <span className="font-medium">{p.cognome} {p.nome}</span>
                                 <span className="text-muted-foreground ml-2 text-xs font-mono">{p.codice_fiscale}</span>
-                                {p.tipo_utenza !== "domestica" && <span className="text-muted-foreground ml-2 text-[10px]">(N.DOM)</span>}
+                                {p.tipo_utenza === "produttore_speciali" && <span className="text-amber-400 ml-2 text-[10px] font-bold">(SPEC)</span>}
+                                {p.tipo_utenza === "non_domestica" && <span className="text-muted-foreground ml-2 text-[10px]">(N.DOM)</span>}
                               </button>
                             ))}
                             {privati.filter(p => p.attivo && `${p.cognome} ${p.nome} ${p.codice_fiscale}`.toLowerCase().includes(privatoSearch.toLowerCase())).length === 0 && (
@@ -392,6 +428,40 @@ export default function MNMagazzinoPage() {
                         <div><Label>Kg *</Label><Input type="number" value={confForm.kg_pesati} onChange={e => { setConfForm(f => ({ ...f, kg_pesati: e.target.value })); setLimitWarning(null); }}
                           onBlur={async () => { if (confForm.privato_id && confForm.cer && confForm.kg_pesati) { const w = await checkLimits(confForm.privato_id, confForm.cer, parseFloat(confForm.kg_pesati)); setLimitWarning(w); } }} /></div>
                       </div>
+                      {/* Campi extra per Produttore Speciali */}
+                      {getConfTipoUtenza() === "produttore_speciali" && (
+                        <>
+                          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                            <span>⚠️ Per rifiuti speciali, il FIR compilato dal produttore è <strong>obbligatorio</strong> pena sanzioni. Dal 2026 è richiesto il FIR digitale RENTRI per certi produttori.</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div><Label>Numero FIR *</Label><Input placeholder="AA00000000" value={confForm.numero_fir} onChange={e => setConfForm(f => ({ ...f, numero_fir: e.target.value.toUpperCase() }))} /></div>
+                            <div><Label>Quantità Presunta (kg)</Label><Input type="number" placeholder="Es. 500" value={confForm.quantita_presunta} onChange={e => setConfForm(f => ({ ...f, quantita_presunta: e.target.value }))} /></div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div><Label>Stato Fisico Rifiuto</Label>
+                              <select className="w-full px-3 py-2 rounded-md bg-card/60 border border-border/30 text-sm text-foreground" value={confForm.stato_rifiuto} onChange={e => setConfForm(f => ({ ...f, stato_rifiuto: e.target.value }))}>
+                                <option value="">— Seleziona —</option>
+                                <option value="solido">Solido non pulverulento</option>
+                                <option value="solido_pulverulento">Solido pulverulento</option>
+                                <option value="fangoso">Fangoso palabile</option>
+                                <option value="liquido">Liquido</option>
+                              </select>
+                            </div>
+                            <div><Label>Codice C/E</Label>
+                              <select className="w-full px-3 py-2 rounded-md bg-card/60 border border-border/30 text-sm text-foreground" value={confForm.codice_ce} onChange={e => setConfForm(f => ({ ...f, codice_ce: e.target.value }))}>
+                                <option value="">— Seleziona —</option>
+                                <option value="R12">R12 - Scambio rifiuti</option>
+                                <option value="R13">R13 - Messa in riserva</option>
+                                <option value="D13">D13 - Raggruppamento</option>
+                                <option value="D14">D14 - Ricondizionamento</option>
+                                <option value="D15">D15 - Deposito preliminare</option>
+                              </select>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       {limitWarning && (
                         <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm flex items-start gap-2">
                           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /><pre className="whitespace-pre-wrap font-mono text-xs">{limitWarning}</pre>
@@ -465,7 +535,11 @@ export default function MNMagazzinoPage() {
                     <div><Label>Tipo Utenza</Label>
                       <Select value={privatoForm.tipo_utenza} onValueChange={v => setPrivatoForm(f => ({ ...f, tipo_utenza: v }))}>
                         <SelectTrigger className="bg-card/60"><SelectValue /></SelectTrigger>
-                        <SelectContent><SelectItem value="domestica">Domestica</SelectItem><SelectItem value="non_domestica">Non Domestica</SelectItem></SelectContent>
+                        <SelectContent>
+                          <SelectItem value="domestica">Domestica</SelectItem>
+                          <SelectItem value="non_domestica">Non Domestica / Assimilata</SelectItem>
+                          <SelectItem value="produttore_speciali">Produttore Speciali</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div><Label>Note</Label><Textarea value={privatoForm.note} onChange={e => setPrivatoForm(f => ({ ...f, note: e.target.value }))} /></div>
@@ -485,7 +559,7 @@ export default function MNMagazzinoPage() {
                     <span className="text-sm font-medium text-foreground">{p.cognome} {p.nome}</span>
                     <span className="text-xs font-mono text-muted-foreground">{p.codice_fiscale}</span>
                     <span className="text-xs text-muted-foreground">{p.comune_residenza || "—"}</span>
-                    <Badge variant={p.tipo_utenza === "domestica" ? "default" : "secondary"} className="text-[10px]">{p.tipo_utenza === "domestica" ? "DOM" : "N.DOM"}</Badge>
+                    <Badge variant={p.tipo_utenza === "domestica" ? "default" : p.tipo_utenza === "produttore_speciali" ? "destructive" : "secondary"} className="text-[10px]">{p.tipo_utenza === "domestica" ? "DOM" : p.tipo_utenza === "produttore_speciali" ? "SPEC" : "N.DOM"}</Badge>
                     <button onClick={() => deletePrivato(p.id)} className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 ))}
@@ -513,7 +587,11 @@ export default function MNMagazzinoPage() {
                       <div><Label>Utenza</Label>
                         <Select value={limiteForm.tipo_utenza} onValueChange={v => setLimiteForm(f => ({ ...f, tipo_utenza: v }))}>
                           <SelectTrigger className="bg-card/60"><SelectValue /></SelectTrigger>
-                          <SelectContent><SelectItem value="domestica">Domestica</SelectItem><SelectItem value="non_domestica">Non Domestica</SelectItem></SelectContent>
+                          <SelectContent>
+                            <SelectItem value="domestica">Domestica</SelectItem>
+                            <SelectItem value="non_domestica">Non Domestica / Assimilata</SelectItem>
+                            <SelectItem value="produttore_speciali">Produttore Speciali</SelectItem>
+                          </SelectContent>
                         </Select>
                       </div>
                     </div>
@@ -540,7 +618,7 @@ export default function MNMagazzinoPage() {
                 : limiti.map(l => (
                   <div key={l.id} className="grid grid-cols-[100px_80px_1fr_1fr_1fr_1fr] gap-2 px-4 py-3 border-b border-border/10 hover:bg-accent/5 items-center">
                     <Badge variant="outline" className="text-xs font-mono w-fit">{l.cer}</Badge>
-                    <span className="text-xs text-muted-foreground">{l.tipo_utenza === "domestica" ? "DOM" : "N.DOM"}</span>
+                    <span className="text-xs text-muted-foreground">{l.tipo_utenza === "domestica" ? "DOM" : l.tipo_utenza === "produttore_speciali" ? "SPEC" : "N.DOM"}</span>
                     <span className="text-sm font-mono text-foreground">{l.limite_conferimento_kg ?? "—"}</span>
                     <span className="text-sm font-mono text-foreground">{l.limite_annuo_kg ?? "—"}</span>
                     <span className="text-sm font-mono text-foreground">{l.limite_mensile_kg ?? "—"}</span>
