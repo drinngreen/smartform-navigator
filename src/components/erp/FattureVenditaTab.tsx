@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { Plus, Search, Eye, Trash2, FileCode, CheckCircle2, AlertCircle, Clock, Send } from "lucide-react";
 import { toast } from "sonner";
 import { FatturaVenditaFormDialog } from "./FatturaVenditaFormDialog";

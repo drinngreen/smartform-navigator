@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { Plus, Search, Edit2, Trash2, Building2, User, Landmark, Briefcase, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AnagraficaFormDialog } from "./AnagraficaFormDialog";
