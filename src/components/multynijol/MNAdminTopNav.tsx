@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { LogOut, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -163,7 +164,7 @@ export function MNAdminTopNav() {
 
                 if (item.subItems) {
                   return (
-                    <div key={item.label} className="relative" ref={subMenuRef}>
+                    <div key={item.label} className="relative">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -186,9 +187,10 @@ export function MNAdminTopNav() {
                         <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
                         <ChevronDown className="h-3 w-3 text-straw/60" />
                       </button>
-                      {subMenuOpen === item.label && (
+                      {subMenuOpen === item.label && createPortal(
                         <div
-                          className="fixed z-[100] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
+                          ref={subMenuRef}
+                          className="fixed z-[9999] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[220px]"
                           style={{ left: subMenuPos.x, top: subMenuPos.y }}
                         >
                           {item.subItems.map((sub) => (
@@ -209,7 +211,8 @@ export function MNAdminTopNav() {
                               <span>{sub.label}</span>
                             </button>
                           ))}
-                        </div>
+                        </div>,
+                        document.body
                       )}
                     </div>
                   );
