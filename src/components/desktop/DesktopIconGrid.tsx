@@ -188,7 +188,7 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
                   border: `2px solid rgba(${icon.color}, 0.7)`,
                 }}
               >
-                <img src={icon.iconImage} alt={icon.label} className="h-12 w-12 transition-transform duration-300 group-hover:scale-200" loading="lazy" decoding="async" />
+                <img src={icon.iconImage} alt={icon.label} className="h-12 w-12 transition-transform duration-300 group-hover:scale-200" loading="eager" decoding="async" fetchPriority="high" />
               </div>
               <span className="text-sm text-center font-semibold text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] group-hover:text-white transition-colors">
                 {icon.label}
