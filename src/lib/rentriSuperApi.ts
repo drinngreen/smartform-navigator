@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 
 const RAILWAY_BASE = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
 
