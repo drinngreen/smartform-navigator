@@ -163,14 +163,17 @@ export function MNAdminTopNav() {
 
                 if (item.subItems) {
                   return (
-                    <div key={item.label} className="relative">
-                      <NavLink
-                        to={href}
-                        onContextMenu={(e) => {
+                    <div key={item.label} className="relative" ref={subMenuRef}>
+                      <button
+                        onClick={(e) => {
                           e.preventDefault();
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setSubMenuPos({ x: rect.left, y: rect.bottom + 4 });
-                          setSubMenuOpen(subMenuOpen === item.label ? null : item.label);
+                          if (subMenuOpen === item.label) {
+                            setSubMenuOpen(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setSubMenuPos({ x: rect.left, y: rect.bottom + 4 });
+                            setSubMenuOpen(item.label);
+                          }
                         }}
                         className={cn(
                           "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
@@ -181,10 +184,10 @@ export function MNAdminTopNav() {
                       >
                         <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
                         <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
-                      </NavLink>
+                        <ChevronDown className="h-3 w-3 text-straw/60" />
+                      </button>
                       {subMenuOpen === item.label && (
                         <div
-                          ref={subMenuRef}
                           className="fixed z-[100] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[200px]"
                           style={{ left: subMenuPos.x, top: subMenuPos.y }}
                         >
