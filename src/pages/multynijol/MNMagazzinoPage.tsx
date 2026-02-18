@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Search, Users, AlertTriangle, Package,
-  Trash2, Receipt, Scale, Download, FileSpreadsheet,
+  Trash2, Receipt, Scale, FileUp, FileSpreadsheet,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { format } from "date-fns";
@@ -58,7 +58,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 function ExportButtons({ onPdf, onExcel }: { onPdf: () => void; onExcel: () => void }) {
   return (
     <div className="flex gap-1">
-      <button onClick={onPdf} className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors" title="Esporta PDF"><Download className="h-4 w-4" /></button>
+      <button onClick={onPdf} className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors" title="Esporta PDF"><FileUp className="h-4 w-4" /></button>
       <button onClick={onExcel} className="p-1.5 rounded-lg hover:bg-accent/20 text-muted-foreground hover:text-foreground transition-colors" title="Esporta Excel"><FileSpreadsheet className="h-4 w-4" /></button>
     </div>
   );
