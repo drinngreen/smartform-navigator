@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Home } from "lucide-react";
 import { AdminHeader } from "@/components/layout/AdminHeader";
 import { PhoneInterface } from "@/components/calls/PhoneInterface";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,6 +10,7 @@ const GLOBAL_RECO_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 
 export default function PhonePage() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const isGlobalReco = profile?.tenant_id === GLOBAL_RECO_TENANT_ID || !profile?.tenant_id;
 
   const [receiveCalls, setReceiveCalls] = useState(() => {
@@ -37,6 +40,13 @@ export default function PhonePage() {
     <div className="min-h-screen bg-background text-foreground">
       <AdminHeader title="Telefono" subtitle="Gestione chiamate e segreteria" />
       <div className="px-6 py-6">
+        <button
+          onClick={() => navigate("/admin")}
+          className="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary hover:border-white/30 transition-all text-sm text-white/80"
+        >
+          <Home className="h-4 w-4" />
+          Dashboard
+        </button>
         <PhoneInterface
           receiveCalls={receiveCalls}
           onToggleReceiveCalls={() => setReceiveCalls((p) => !p)}
