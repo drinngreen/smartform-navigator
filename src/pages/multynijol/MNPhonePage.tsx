@@ -26,6 +26,7 @@ export default function MNPhonePage() {
   }, [receiveCalls, user]);
 
   const label = context === "niyol" ? "Niyol" : "Multyproget";
+  const mnContext = context === "niyol" ? "niyol" : "multyproget";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -35,6 +36,7 @@ export default function MNPhonePage() {
           receiveCalls={receiveCalls}
           onToggleReceiveCalls={() => setReceiveCalls((p) => !p)}
           isGlobalReco={false}
+          mnContext={mnContext}
         />
       </div>
     </div>
