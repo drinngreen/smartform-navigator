@@ -115,6 +115,7 @@ export default function MNMagazzinoPage() {
   const [showNewPrivato, setShowNewPrivato] = useState(false);
   const [showNewConferimento, setShowNewConferimento] = useState(false);
   const [showNewLimite, setShowNewLimite] = useState(false);
+  const [showNewRicevuta, setShowNewRicevuta] = useState(false);
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
@@ -122,6 +123,7 @@ export default function MNMagazzinoPage() {
   const [privatoSearch, setPrivatoSearch] = useState("");
   const [showPrivatoDropdown, setShowPrivatoDropdown] = useState(false);
   const [limiteForm, setLimiteForm] = useState({ cer: "", tipo_utenza: "domestica", limite_conferimento_kg: "", limite_annuo_kg: "", limite_mensile_kg: "", limite_giornaliero_kg: "", periodo_riferimento: "annuale", note: "" });
+  const [ricevutaForm, setRicevutaForm] = useState({ privato_id: "", importo: "", note: "" });
 
   useEffect(() => {
     (async () => {
@@ -268,6 +270,22 @@ export default function MNMagazzinoPage() {
     } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Ricevuta generata");
+    fetchAll();
+  };
+
+  const saveRicevutaManuale = async () => {
+    const anno = new Date().getFullYear();
+    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
+    const { error } = await supabase.from("ricevute_privati" as any).insert({
+      impianto_id: selectedImpianto, privato_id: ricevutaForm.privato_id || null,
+      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+      importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
+      note: ricevutaForm.note || null,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Ricevuta creata");
+    setShowNewRicevuta(false);
+    setRicevutaForm({ privato_id: "", importo: "", note: "" });
     fetchAll();
   };
 
@@ -535,10 +553,30 @@ export default function MNMagazzinoPage() {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-mono text-muted-foreground uppercase">Ricevute Emesse</h3>
-              <ExportButtons
-                onPdf={() => exportToPdf(ricevute, RIC_COLS, "ricevute", "Ricevute Emesse")}
-                onExcel={() => exportToExcel(ricevute, RIC_COLS, "ricevute", "Ricevute")}
-              />
+              <div className="flex items-center gap-2">
+                <ExportButtons
+                  onPdf={() => exportToPdf(ricevute, RIC_COLS, "ricevute", "Ricevute Emesse")}
+                  onExcel={() => exportToExcel(ricevute, RIC_COLS, "ricevute", "Ricevute")}
+                />
+                <Dialog open={showNewRicevuta} onOpenChange={setShowNewRicevuta}>
+                  <DialogTrigger asChild><Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Crea Ricevuta</Button></DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader><DialogTitle>Nuova Ricevuta Manuale</DialogTitle></DialogHeader>
+                    <div className="grid gap-4 py-2">
+                      <div>
+                        <Label>Privato (opzionale)</Label>
+                        <Select value={ricevutaForm.privato_id} onValueChange={v => setRicevutaForm(f => ({ ...f, privato_id: v }))}>
+                          <SelectTrigger className="bg-card/60"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+                          <SelectContent>{privati.map(p => <SelectItem key={p.id} value={p.id}>{p.cognome} {p.nome}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label>Importo €</Label><Input type="number" step="0.01" value={ricevutaForm.importo} onChange={e => setRicevutaForm(f => ({ ...f, importo: e.target.value }))} /></div>
+                      <div><Label>Note / Descrizione</Label><Textarea value={ricevutaForm.note} onChange={e => setRicevutaForm(f => ({ ...f, note: e.target.value }))} placeholder="Descrizione libera..." /></div>
+                      <Button onClick={saveRicevutaManuale} className="w-full">Crea Ricevuta</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
             <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
               <div className="grid grid-cols-[120px_1fr_100px_120px] gap-2 px-4 py-2 border-b border-border/20 text-xs font-mono text-muted-foreground uppercase">
