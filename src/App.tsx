@@ -42,6 +42,7 @@ import ZoliDarkLemonPage from "./pages/admin/ZoliDarkLemonPage";
 import FormulariPage from "./pages/admin/FormulariPage";
 import GestioneFIRPage from "./pages/admin/GestioneFIRPage";
 import GPSFlottaPage from "./pages/admin/GPSFlottaPage";
+import FatturazionePage from "./pages/admin/FatturazionePage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
@@ -67,6 +68,7 @@ import MNFormulariPage from "./pages/multynijol/MNFormulariPage";
 import MNGestioneFIRPage from "./pages/multynijol/MNGestioneFIRPage";
 import MNGPSFlottaPage from "./pages/multynijol/MNGPSFlottaPage";
 import MNZoliDarkLemonPage from "./pages/multynijol/MNZoliDarkLemonPage";
+import MNFatturazionePage from "./pages/multynijol/MNFatturazionePage";
 import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
@@ -142,6 +144,7 @@ const App = () => (
               <Route path="/admin/formulari" element={<ProtectedRoute><FormulariPage /></ProtectedRoute>} />
               <Route path="/admin/gestione-fir" element={<ProtectedRoute><GestioneFIRPage /></ProtectedRoute>} />
               <Route path="/admin/gps" element={<ProtectedRoute><GPSFlottaPage /></ProtectedRoute>} />
+              <Route path="/admin/fatturazione" element={<ProtectedRoute><FatturazionePage /></ProtectedRoute>} />
 
               {/* MultyNijol Admin Routes - PROTECTED */}
               <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
@@ -167,6 +170,7 @@ const App = () => (
               <Route path="/mn/admin/:context/gestione-fir" element={<ProtectedRoute><MNGestioneFIRPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/gps" element={<ProtectedRoute><MNGPSFlottaPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/zoli-dark-lemon" element={<ProtectedRoute><MNZoliDarkLemonPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/fatturazione" element={<ProtectedRoute><MNFatturazionePage /></ProtectedRoute>} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />

@@ -311,6 +311,515 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_anagrafiche: {
+        Row: {
+          attivo: boolean
+          cap: string | null
+          codice_destinatario: string | null
+          codice_fiscale: string | null
+          cognome: string | null
+          comune: string | null
+          condizioni_pagamento_default: string | null
+          created_at: string
+          email: string | null
+          iban: string | null
+          id: string
+          indirizzo: string | null
+          nazione: string | null
+          nome: string | null
+          note: string | null
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          ragione_sociale: string
+          telefono: string | null
+          tenant_id: string | null
+          tipo_soggetto: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          cap?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          condizioni_pagamento_default?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          indirizzo?: string | null
+          nazione?: string | null
+          nome?: string | null
+          note?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale: string
+          telefono?: string | null
+          tenant_id?: string | null
+          tipo_soggetto: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          cap?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          condizioni_pagamento_default?: string | null
+          created_at?: string
+          email?: string | null
+          iban?: string | null
+          id?: string
+          indirizzo?: string | null
+          nazione?: string | null
+          nome?: string | null
+          note?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string
+          telefono?: string | null
+          tenant_id?: string | null
+          tipo_soggetto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_anagrafiche_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_causali_contabili: {
+        Row: {
+          attivo: boolean
+          codice: string
+          created_at: string
+          descrizione: string
+          id: string
+          tenant_id: string | null
+          tipo: string
+        }
+        Insert: {
+          attivo?: boolean
+          codice: string
+          created_at?: string
+          descrizione: string
+          id?: string
+          tenant_id?: string | null
+          tipo: string
+        }
+        Update: {
+          attivo?: boolean
+          codice?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          tenant_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_causali_contabili_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_codici_iva: {
+        Row: {
+          aliquota: number
+          attivo: boolean
+          codice: string
+          created_at: string
+          descrizione: string
+          id: string
+          natura: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          aliquota?: number
+          attivo?: boolean
+          codice: string
+          created_at?: string
+          descrizione: string
+          id?: string
+          natura?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          aliquota?: number
+          attivo?: boolean
+          codice?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          natura?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_codici_iva_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fatture_vendita: {
+        Row: {
+          causale_id: string | null
+          cliente_id: string | null
+          condizioni_pagamento: string | null
+          contabilizzata: boolean
+          created_at: string
+          created_by: string | null
+          da_conferimenti: boolean
+          data_fattura: string
+          id: string
+          imponibile: number
+          iva: number
+          metodo_pagamento_id: string | null
+          netto_a_pagare: number
+          note: string | null
+          numero: string
+          ritenuta_acconto: number | null
+          stato: string
+          tenant_id: string | null
+          tipo_documento: string
+          totale: number
+          updated_at: string
+        }
+        Insert: {
+          causale_id?: string | null
+          cliente_id?: string | null
+          condizioni_pagamento?: string | null
+          contabilizzata?: boolean
+          created_at?: string
+          created_by?: string | null
+          da_conferimenti?: boolean
+          data_fattura?: string
+          id?: string
+          imponibile?: number
+          iva?: number
+          metodo_pagamento_id?: string | null
+          netto_a_pagare?: number
+          note?: string | null
+          numero: string
+          ritenuta_acconto?: number | null
+          stato?: string
+          tenant_id?: string | null
+          tipo_documento?: string
+          totale?: number
+          updated_at?: string
+        }
+        Update: {
+          causale_id?: string | null
+          cliente_id?: string | null
+          condizioni_pagamento?: string | null
+          contabilizzata?: boolean
+          created_at?: string
+          created_by?: string | null
+          da_conferimenti?: boolean
+          data_fattura?: string
+          id?: string
+          imponibile?: number
+          iva?: number
+          metodo_pagamento_id?: string | null
+          netto_a_pagare?: number
+          note?: string | null
+          numero?: string
+          ritenuta_acconto?: number | null
+          stato?: string
+          tenant_id?: string | null
+          tipo_documento?: string
+          totale?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fatture_vendita_causale_id_fkey"
+            columns: ["causale_id"]
+            isOneToOne: false
+            referencedRelation: "erp_causali_contabili"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fatture_vendita_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "erp_anagrafiche"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fatture_vendita_metodo_pagamento_id_fkey"
+            columns: ["metodo_pagamento_id"]
+            isOneToOne: false
+            referencedRelation: "erp_metodi_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fatture_vendita_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fatture_xml: {
+        Row: {
+          created_at: string
+          esito_json: Json | null
+          fattura_id: string
+          id: string
+          nome_file: string | null
+          sdi_id: string | null
+          stato: string
+          tenant_id: string | null
+          updated_at: string
+          versione: number
+          xml_content: string | null
+        }
+        Insert: {
+          created_at?: string
+          esito_json?: Json | null
+          fattura_id: string
+          id?: string
+          nome_file?: string | null
+          sdi_id?: string | null
+          stato?: string
+          tenant_id?: string | null
+          updated_at?: string
+          versione?: number
+          xml_content?: string | null
+        }
+        Update: {
+          created_at?: string
+          esito_json?: Json | null
+          fattura_id?: string
+          id?: string
+          nome_file?: string | null
+          sdi_id?: string | null
+          stato?: string
+          tenant_id?: string | null
+          updated_at?: string
+          versione?: number
+          xml_content?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fatture_xml_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fatture_vendita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fatture_xml_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_metodi_pagamento: {
+        Row: {
+          attivo: boolean
+          codice: string
+          codice_fatturapa: string | null
+          created_at: string
+          descrizione: string
+          giorni_scadenza: number | null
+          id: string
+          numero_rate: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          attivo?: boolean
+          codice: string
+          codice_fatturapa?: string | null
+          created_at?: string
+          descrizione: string
+          giorni_scadenza?: number | null
+          id?: string
+          numero_rate?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          attivo?: boolean
+          codice?: string
+          codice_fatturapa?: string | null
+          created_at?: string
+          descrizione?: string
+          giorni_scadenza?: number | null
+          id?: string
+          numero_rate?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_metodi_pagamento_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_piano_conti: {
+        Row: {
+          codice: string
+          created_at: string
+          descrizione: string
+          id: string
+          is_movimentabile: boolean
+          livello: number
+          parent_id: string | null
+          tenant_id: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          codice: string
+          created_at?: string
+          descrizione: string
+          id?: string
+          is_movimentabile?: boolean
+          livello?: number
+          parent_id?: string | null
+          tenant_id?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          codice?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          is_movimentabile?: boolean
+          livello?: number
+          parent_id?: string | null
+          tenant_id?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_piano_conti_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "erp_piano_conti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_piano_conti_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_righe_fatture_vendita: {
+        Row: {
+          aliquota_iva: number
+          centro_costo: string | null
+          cer: string | null
+          codice_iva_id: string | null
+          commessa: string | null
+          conferimento_id: string | null
+          created_at: string
+          descrizione: string
+          fattura_id: string
+          fir_id: string | null
+          id: string
+          impianto_id: string | null
+          imponibile: number
+          importo_iva: number
+          peso_totale: number | null
+          prezzo_unitario: number
+          quantita: number
+          riga_numero: number
+          sconto_percentuale: number | null
+        }
+        Insert: {
+          aliquota_iva?: number
+          centro_costo?: string | null
+          cer?: string | null
+          codice_iva_id?: string | null
+          commessa?: string | null
+          conferimento_id?: string | null
+          created_at?: string
+          descrizione: string
+          fattura_id: string
+          fir_id?: string | null
+          id?: string
+          impianto_id?: string | null
+          imponibile?: number
+          importo_iva?: number
+          peso_totale?: number | null
+          prezzo_unitario?: number
+          quantita?: number
+          riga_numero?: number
+          sconto_percentuale?: number | null
+        }
+        Update: {
+          aliquota_iva?: number
+          centro_costo?: string | null
+          cer?: string | null
+          codice_iva_id?: string | null
+          commessa?: string | null
+          conferimento_id?: string | null
+          created_at?: string
+          descrizione?: string
+          fattura_id?: string
+          fir_id?: string | null
+          id?: string
+          impianto_id?: string | null
+          imponibile?: number
+          importo_iva?: number
+          peso_totale?: number | null
+          prezzo_unitario?: number
+          quantita?: number
+          riga_numero?: number
+          sconto_percentuale?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_righe_fatture_vendita_codice_iva_id_fkey"
+            columns: ["codice_iva_id"]
+            isOneToOne: false
+            referencedRelation: "erp_codici_iva"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_righe_fatture_vendita_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fatture_vendita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_righe_fatture_vendita_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fir: {
         Row: {
           caratteristiche_hp: string[] | null
