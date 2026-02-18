@@ -732,6 +732,114 @@ export type Database = {
           },
         ]
       }
+      erp_prima_nota: {
+        Row: {
+          causale_id: string | null
+          created_at: string
+          created_by: string | null
+          data_registrazione: string
+          descrizione: string
+          documento_id: string | null
+          documento_tipo: string | null
+          id: string
+          numero_registro: number
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          causale_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_registrazione?: string
+          descrizione?: string
+          documento_id?: string | null
+          documento_tipo?: string | null
+          id?: string
+          numero_registro?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          causale_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_registrazione?: string
+          descrizione?: string
+          documento_id?: string | null
+          documento_tipo?: string | null
+          id?: string
+          numero_registro?: number
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_prima_nota_causale_id_fkey"
+            columns: ["causale_id"]
+            isOneToOne: false
+            referencedRelation: "erp_causali_contabili"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_prima_nota_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_prima_nota_righe: {
+        Row: {
+          centro_costo: string | null
+          commessa: string | null
+          conto_id: string | null
+          created_at: string
+          descrizione_riga: string | null
+          id: string
+          importo: number
+          prima_nota_id: string
+          segno: string
+        }
+        Insert: {
+          centro_costo?: string | null
+          commessa?: string | null
+          conto_id?: string | null
+          created_at?: string
+          descrizione_riga?: string | null
+          id?: string
+          importo?: number
+          prima_nota_id: string
+          segno: string
+        }
+        Update: {
+          centro_costo?: string | null
+          commessa?: string | null
+          conto_id?: string | null
+          created_at?: string
+          descrizione_riga?: string | null
+          id?: string
+          importo?: number
+          prima_nota_id?: string
+          segno?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_prima_nota_righe_conto_id_fkey"
+            columns: ["conto_id"]
+            isOneToOne: false
+            referencedRelation: "erp_piano_conti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_prima_nota_righe_prima_nota_id_fkey"
+            columns: ["prima_nota_id"]
+            isOneToOne: false
+            referencedRelation: "erp_prima_nota"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_righe_fatture_vendita: {
         Row: {
           aliquota_iva: number
@@ -2369,6 +2477,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      next_prima_nota_number: {
+        Args: { p_anno: number; p_tenant_id: string }
+        Returns: number
       }
       next_ricevuta_number: {
         Args: { p_anno: number; p_impianto_id: string }
