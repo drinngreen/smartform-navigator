@@ -83,7 +83,7 @@ export function AdminTopNav() {
                         : "text-white/70 hover:text-white hover:bg-secondary/50"
                     )}
                   >
-                    <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
+                    <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" loading="lazy" decoding="async" />
                     <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
                   </NavLink>
                 );
