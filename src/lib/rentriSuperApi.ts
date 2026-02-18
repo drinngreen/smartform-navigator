@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const RAILWAY_BASE = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
 
 export interface RENTRILogEntry {
@@ -52,16 +54,10 @@ async function callRailway(endpoint: string, tenant: string, body: any) {
 
 export async function healthCheck() {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const res = await fetch(`${supabaseUrl}/functions/v1/railway-health`, {
-      headers: {
-        "Authorization": `Bearer ${supabaseKey}`,
-        "apikey": supabaseKey,
-      },
+    const { data, error } = await supabase.functions.invoke("railway-health", {
+      method: "GET",
     });
-    if (!res.ok) return { ok: false, status: res.status };
-    const data = await res.json();
+    if (error) return { ok: false, status: 0 };
     return { ok: data.ok, status: data.status };
   } catch { return { ok: false, status: 0 }; }
 }
