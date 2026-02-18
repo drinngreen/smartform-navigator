@@ -1388,12 +1388,14 @@ export type Database = {
           importo_pagato: number | null
           kg_pesati: number
           metodo_pag: string | null
+          modello_automezzo: string | null
           nome_privato: string
           note: string | null
           numero_fir: string | null
           privato_id: string | null
           quantita_presunta: number | null
           stato_rifiuto: string | null
+          targa_automezzo: string | null
           tenant_id: string | null
           tipo_utenza: string | null
           updated_at: string
@@ -1410,12 +1412,14 @@ export type Database = {
           importo_pagato?: number | null
           kg_pesati: number
           metodo_pag?: string | null
+          modello_automezzo?: string | null
           nome_privato: string
           note?: string | null
           numero_fir?: string | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
+          targa_automezzo?: string | null
           tenant_id?: string | null
           tipo_utenza?: string | null
           updated_at?: string
@@ -1432,12 +1436,14 @@ export type Database = {
           importo_pagato?: number | null
           kg_pesati?: number
           metodo_pag?: string | null
+          modello_automezzo?: string | null
           nome_privato?: string
           note?: string | null
           numero_fir?: string | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
+          targa_automezzo?: string | null
           tenant_id?: string | null
           tipo_utenza?: string | null
           updated_at?: string

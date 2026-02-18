@@ -122,7 +122,7 @@ export default function MNMagazzinoPage() {
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
   const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
-  const [confForm, setConfForm] = useState({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "" });
+  const [confForm, setConfForm] = useState({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "", targa_automezzo: "", modello_automezzo: "" });
   const [privatoSearch, setPrivatoSearch] = useState("");
   const [showPrivatoDropdown, setShowPrivatoDropdown] = useState(false);
   const [limiteForm, setLimiteForm] = useState({ cer: "", tipo_utenza: "domestica", limite_conferimento_kg: "", limite_annuo_kg: "", limite_mensile_kg: "", limite_giornaliero_kg: "", periodo_riferimento: "annuale", note: "" });
@@ -254,6 +254,8 @@ export default function MNMagazzinoPage() {
       stato_rifiuto: isSpeciali ? confForm.stato_rifiuto || null : null,
       codice_ce: isSpeciali ? confForm.codice_ce || null : null,
       esito_pesata: esitoPesata,
+      targa_automezzo: confForm.targa_automezzo || null,
+      modello_automezzo: confForm.modello_automezzo || null,
     } as any).select().single();
     if (error) { toast.error(error.message); return; }
 
@@ -266,13 +268,13 @@ export default function MNMagazzinoPage() {
         impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
         numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
-        note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg`,
+        note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}${conf.modello_automezzo ? ` — Modello: ${conf.modello_automezzo}` : ""}`,
       } as any);
     }
 
     toast.success(isSpeciali ? "Conferimento speciale registrato (FIR)" : "Conferimento e ricevuta registrati");
     setShowNewConferimento(false);
-    setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "" });
+    setConfForm({ privato_id: "", nome_privato: "", cognome_privato: "", cf_privato: "", cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", numero_fir: "", quantita_presunta: "", stato_rifiuto: "", codice_ce: "", targa_automezzo: "", modello_automezzo: "" });
     setPrivatoSearch("");
     setLimitWarning(null);
     fetchAll();
@@ -474,6 +476,10 @@ export default function MNMagazzinoPage() {
                             <option value="contanti">Contanti</option><option value="pos">POS</option><option value="bonifico">Bonifico</option><option value="gratuito">Gratuito</option>
                           </select>
                         </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Targa Automezzo</Label><Input placeholder="AA000BB" value={confForm.targa_automezzo} onChange={e => setConfForm(f => ({ ...f, targa_automezzo: e.target.value.toUpperCase() }))} /></div>
+                        <div><Label>Modello Automezzo</Label><Input placeholder="Es. Fiat Ducato" value={confForm.modello_automezzo} onChange={e => setConfForm(f => ({ ...f, modello_automezzo: e.target.value }))} /></div>
                       </div>
                       <div><Label>Note</Label><Textarea value={confForm.note} onChange={e => setConfForm(f => ({ ...f, note: e.target.value }))} /></div>
                       <Button onClick={saveConferimento} className="w-full">Registra Conferimento</Button>
