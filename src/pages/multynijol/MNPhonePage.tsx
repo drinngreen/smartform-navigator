@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { Home } from "lucide-react";
 import { MNAdminHeader } from "@/components/multynijol/MNAdminHeader";
 import { PhoneInterface } from "@/components/calls/PhoneInterface";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 export default function MNPhonePage() {
   const { context } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [receiveCalls, setReceiveCalls] = useState(() => {
@@ -32,6 +34,13 @@ export default function MNPhonePage() {
     <div className="min-h-screen bg-background text-foreground">
       <MNAdminHeader title={`Telefono — ${label}`} subtitle="Gestione chiamate" />
       <div className="px-6 py-6">
+        <button
+          onClick={() => navigate(context ? `/mn/admin/${context}` : "/mn/admin")}
+          className="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary hover:border-white/30 transition-all text-sm text-white/80"
+        >
+          <Home className="h-4 w-4" />
+          Dashboard
+        </button>
         <PhoneInterface
           receiveCalls={receiveCalls}
           onToggleReceiveCalls={() => setReceiveCalls((p) => !p)}
