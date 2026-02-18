@@ -1285,8 +1285,10 @@ export type Database = {
         Row: {
           cer: string
           cf_pi: string | null
+          codice_ce: string | null
           created_at: string
           data: string
+          esito_pesata: string | null
           id: string
           impianto_id: string
           importo_pagato: number | null
@@ -1294,15 +1296,21 @@ export type Database = {
           metodo_pag: string | null
           nome_privato: string
           note: string | null
+          numero_fir: string | null
           privato_id: string | null
+          quantita_presunta: number | null
+          stato_rifiuto: string | null
           tenant_id: string | null
+          tipo_utenza: string | null
           updated_at: string
         }
         Insert: {
           cer: string
           cf_pi?: string | null
+          codice_ce?: string | null
           created_at?: string
           data?: string
+          esito_pesata?: string | null
           id?: string
           impianto_id: string
           importo_pagato?: number | null
@@ -1310,15 +1318,21 @@ export type Database = {
           metodo_pag?: string | null
           nome_privato: string
           note?: string | null
+          numero_fir?: string | null
           privato_id?: string | null
+          quantita_presunta?: number | null
+          stato_rifiuto?: string | null
           tenant_id?: string | null
+          tipo_utenza?: string | null
           updated_at?: string
         }
         Update: {
           cer?: string
           cf_pi?: string | null
+          codice_ce?: string | null
           created_at?: string
           data?: string
+          esito_pesata?: string | null
           id?: string
           impianto_id?: string
           importo_pagato?: number | null
@@ -1326,8 +1340,12 @@ export type Database = {
           metodo_pag?: string | null
           nome_privato?: string
           note?: string | null
+          numero_fir?: string | null
           privato_id?: string | null
+          quantita_presunta?: number | null
+          stato_rifiuto?: string | null
           tenant_id?: string | null
+          tipo_utenza?: string | null
           updated_at?: string
         }
         Relationships: [
