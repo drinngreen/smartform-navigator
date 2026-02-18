@@ -133,8 +133,14 @@ export function MNAdminTopNav() {
                   {activeCtx?.label}
                   <ChevronDown className="h-3 w-3" />
                 </button>
-                {switcherOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-card border border-border/50 rounded-xl shadow-lg z-50 overflow-hidden min-w-[160px]">
+                {switcherOpen && createPortal(
+                  <div
+                    className="fixed z-[9999] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
+                    style={{
+                      left: switcherRef.current?.getBoundingClientRect().left ?? 0,
+                      top: (switcherRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
+                    }}
+                  >
                     {contexts.map((ctx) => (
                       <button
                         key={ctx.id}
@@ -151,7 +157,8 @@ export function MNAdminTopNav() {
                         {ctx.label}
                       </button>
                     ))}
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             )}
