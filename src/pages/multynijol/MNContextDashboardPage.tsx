@@ -17,6 +17,9 @@ import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
 import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
 import iconAnalytics from "@/assets/menu-icons/analytics.png";
 import iconNotifiche from "@/assets/menu-icons/notifiche.png";
+import iconPrivati from "@/assets/menu-icons/privati.png";
+import iconProduttore from "@/assets/menu-icons/produttore.png";
+import iconDestinatario from "@/assets/menu-icons/destinatario.png";
 
 function buildIcons(prefix: string): DesktopIconDef[] {
   return [
@@ -30,7 +33,11 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: `${prefix}/chiamate`, color: "34, 197, 94" },
     { id: "messaggi", label: "Zoli Messages", iconImage: iconZoliMessages, href: `${prefix}/messaggi`, color: "244, 114, 182" },
     { id: "ai", label: "Zoli Dark Lemon", iconImage: zoliLemonIcon, href: `${prefix}/zoli-dark-lemon`, color: "59, 130, 246" },
-    { id: "impianto", label: "Impianto", iconImage: iconFatturazione, href: `${prefix}/impianto/privati`, color: "20, 184, 166" },
+    { id: "impianto", label: "Impianto", iconImage: iconPrivati, href: `${prefix}/impianto/privati`, color: "20, 184, 166", subItems: [
+      { label: "Privati", iconImage: iconPrivati, href: `${prefix}/impianto/privati`, color: "20, 184, 166" },
+      { label: "Produttore", iconImage: iconProduttore, href: `${prefix}/impianto/produttore`, color: "249, 115, 22" },
+      { label: "Destinatario", iconImage: iconDestinatario, href: `${prefix}/impianto/destinatario`, color: "59, 130, 246" },
+    ] },
     { id: "conferimenti", label: "Conferimenti", iconImage: iconRegistroFir, href: `${prefix}/conferimenti`, color: "249, 115, 22" },
     { id: "pagamenti", label: "Pagamenti", iconImage: iconFatturazione, href: `${prefix}/pagamenti`, color: "239, 68, 68" },
     { id: "trasportatori", label: "Trasportatori", iconImage: iconPersonale, href: `${prefix}/trasportatori`, color: "6, 182, 212" },

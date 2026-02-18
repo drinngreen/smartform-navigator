@@ -2,12 +2,20 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DesktopIconContextMenu } from "./DesktopIconContextMenu";
 
+export interface DesktopIconSubItem {
+  label: string;
+  iconImage: string;
+  href: string;
+  color: string;
+}
+
 export interface DesktopIconDef {
   id: string;
   label: string;
   iconImage: string;
   href: string;
   color: string;
+  subItems?: DesktopIconSubItem[];
 }
 
 interface DesktopIcon extends DesktopIconDef {
@@ -65,7 +73,7 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const DRAG_THRESHOLD = 5;
-  const [contextMenu, setContextMenu] = useState<{ iconId: string; iconLabel: string; x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ iconId: string; iconLabel: string; x: number; y: number; subItems?: DesktopIconSubItem[] } | null>(null);
   const prevDefsRef = useRef(iconDefs);
   if (prevDefsRef.current !== iconDefs) {
     prevDefsRef.current = iconDefs;
@@ -145,7 +153,7 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
 
   const handleContextMenu = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
     e.preventDefault();
-    setContextMenu({ iconId: icon.id, iconLabel: icon.label, x: e.clientX, y: e.clientY });
+    setContextMenu({ iconId: icon.id, iconLabel: icon.label, x: e.clientX, y: e.clientY, subItems: icon.subItems });
   }, []);
   return (
     <>
@@ -194,6 +202,7 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
         iconId={contextMenu?.iconId ?? null}
         iconLabel={contextMenu?.iconLabel ?? ""}
         position={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
+        subItems={contextMenu?.subItems}
         onClose={() => setContextMenu(null)}
       />
     </>

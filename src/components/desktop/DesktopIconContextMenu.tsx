@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useIconStats, type IconChartData } from "@/hooks/useIconStats";
 import { Loader2, X, Construction } from "lucide-react";
+import type { DesktopIconSubItem } from "./DesktopIconGrid";
 
 interface Props {
   iconId: string | null;
   iconLabel: string;
   position: { x: number; y: number } | null;
+  subItems?: DesktopIconSubItem[];
   onClose: () => void;
 }
 
@@ -89,9 +92,11 @@ function ChartBlock({ chart }: { chart: IconChartData }) {
   );
 }
 
-export function DesktopIconContextMenu({ iconId, iconLabel, position, onClose }: Props) {
+export function DesktopIconContextMenu({ iconId, iconLabel, position, subItems, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const { data: charts, isLoading } = useIconStats(iconId);
+  const navigate = useNavigate();
+  const hasSubItems = subItems && subItems.length > 0;
+  const { data: charts, isLoading } = useIconStats(hasSubItems ? null : iconId);
 
   useEffect(() => {
     if (!position) return;
@@ -106,7 +111,6 @@ export function DesktopIconContextMenu({ iconId, iconLabel, position, onClose }:
 
   if (!position || !iconId) return null;
 
-  // Clamp position so the popup stays visible
   const popupW = 320;
   const popupH = 350;
   const x = Math.min(position.x, window.innerWidth - popupW - 16);
@@ -114,21 +118,17 @@ export function DesktopIconContextMenu({ iconId, iconLabel, position, onClose }:
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 z-[9998] bg-black/40" onClick={onClose} />
-
-      {/* Popup */}
       <div
         ref={ref}
         className="fixed z-[9999] w-[300px] max-h-[80vh] overflow-y-auto rounded-2xl border border-white/15 bg-black/95 backdrop-blur-2xl shadow-[0_0_60px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200"
         style={{ left: x, top: y }}
         onContextMenu={(e) => e.preventDefault()}
       >
-        {/* Header with close button */}
         <div className="sticky top-0 z-10 flex items-center justify-between p-4 pb-3 border-b border-white/10 bg-black/95 backdrop-blur-xl rounded-t-2xl">
           <div>
             <span className="text-sm font-bold text-white">{iconLabel}</span>
-            <span className="text-[10px] text-white/40 ml-2">Statistiche</span>
+            {!hasSubItems && <span className="text-[10px] text-white/40 ml-2">Statistiche</span>}
           </div>
           <button
             onClick={onClose}
@@ -138,9 +138,33 @@ export function DesktopIconContextMenu({ iconId, iconLabel, position, onClose }:
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-4">
-          {isLoading ? (
+          {hasSubItems ? (
+            <div className="flex flex-col gap-2">
+              {subItems.map((sub) => (
+                <button
+                  key={sub.href}
+                  onClick={() => {
+                    navigate(sub.href);
+                    onClose();
+                  }}
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl transition-all hover:bg-white/10 group"
+                >
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden"
+                    style={{
+                      background: `linear-gradient(135deg, rgba(${sub.color}, 0.25), rgba(${sub.color}, 0.1))`,
+                      border: `2px solid rgba(${sub.color}, 0.6)`,
+                      boxShadow: `0 0 20px rgba(${sub.color}, 0.4)`,
+                    }}
+                  >
+                    <img src={sub.iconImage} alt={sub.label} className="h-9 w-9 transition-transform group-hover:scale-110" />
+                  </div>
+                  <span className="text-sm font-semibold text-white/90 group-hover:text-white">{sub.label}</span>
+                </button>
+              ))}
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-white/50" />
             </div>
