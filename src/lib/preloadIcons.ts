@@ -18,13 +18,17 @@ import iconRegistroFir from "@/assets/menu-icons/registro_fir.png";
 import iconRentri from "@/assets/menu-icons/rentri.png";
 import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
 import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
+import iconSms from "@/assets/menu-icons/sms.png";
+import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
+import iconEmail from "@/assets/menu-icons/email.png";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 
 const ALL_ICONS = [
   iconAnalytics, iconAppMobile, iconDashboard, iconDestinatario,
   iconFatturazione, iconGestioneFormulari, iconGpsFlotta, iconNotifiche,
   iconPersonale, iconPrivati, iconProduttore, iconRegistroFir,
-  iconRentri, iconReportChiamate, iconZoliMessages, zoliLemonIcon,
+  iconRentri, iconReportChiamate, iconZoliMessages,
+  iconSms, iconWhatsapp, iconEmail, zoliLemonIcon,
 ];
 
 let preloaded = false;
