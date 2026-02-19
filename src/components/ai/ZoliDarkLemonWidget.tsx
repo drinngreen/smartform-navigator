@@ -3,7 +3,9 @@ import { Send, X, Minimize2, ExternalLink, Bot, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import ReactMarkdown from "react-markdown";
 
 const MIN_W = 300;
 const MIN_H = 280;
@@ -15,11 +17,7 @@ type ResizeDir = "e" | "s" | "se" | "sw" | "w" | "n" | "ne" | "nw" | null;
 export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
-    { role: "assistant", content: "Ciao! Sono Dark Lemon AI 🍋 Come posso aiutarti?" },
-  ]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const isDragging = useRef(false);
   const hasDragged = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -27,6 +25,13 @@ export function ZoliDarkLemonWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Determine context from URL
+  const isMN = location.pathname.startsWith("/mn/admin");
+  const ctxMatch = location.pathname.match(/\/mn\/admin\/(\w+)/);
+  const context = isMN ? (ctxMatch?.[1] || "multyproget") : "multyproget";
+
+  const { messages, isLoading, sendMessage } = useDarkLemonMN(context);
 
   // Resize state
   const isResizing = useRef<ResizeDir>(null);
@@ -101,20 +106,12 @@ export function ZoliDarkLemonWidget() {
     if (!input.trim() || isLoading) return;
     const userMsg = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
-    setIsLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "assistant", content: "Sto elaborando... L'integrazione AI è in fase di configurazione." }]);
-      setIsLoading(false);
-    }, 1200);
+    sendMessage(userMsg);
   };
 
   const openFullChat = () => {
-    const isMN = location.pathname.startsWith("/mn/admin");
     if (isMN) {
-      const match = location.pathname.match(/\/mn\/admin\/(\w+)/);
-      const ctx = match?.[1] || "multyproget";
-      navigate(`/mn/admin/${ctx}/zoli-dark-lemon`);
+      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
     } else {
       navigate("/admin/zoli-dark-lemon");
     }
@@ -146,9 +143,6 @@ export function ZoliDarkLemonWidget() {
     );
   }
 
-  const chatH = size.height - 110; // header ~50 + input ~60
-
-  // Full widget
   return (
     <div
       ref={widgetRef}
@@ -157,26 +151,21 @@ export function ZoliDarkLemonWidget() {
       style={{ left: position.x, top: position.y, width: size.width, height: size.height }}
     >
       {/* Resize handles */}
-      {/* Edges */}
       <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
       <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
       <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
       <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
-      {/* Corners */}
       <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
       <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
       <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
       <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
 
-      {/* LED border wrapper */}
       <div className="relative rounded-2xl p-[3px] overflow-hidden h-full">
-        {/* Animated LED border */}
         <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
         <div className="absolute inset-0 rounded-2xl blur-md opacity-60 animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
 
-        {/* Inner content */}
         <div className="relative rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden h-full flex flex-col">
-          {/* Header - draggable */}
+          {/* Header */}
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
@@ -193,20 +182,30 @@ export function ZoliDarkLemonWidget() {
 
           {/* Chat area */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3" onMouseDown={e => e.stopPropagation()}>
+            {messages.length === 0 && (
+              <div className="flex gap-2 justify-start">
+                <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="h-3 w-3 text-cyan-400" />
+                </div>
+                <div className="max-w-[80%] rounded-xl px-3 py-2 text-xs bg-white/5 text-white/90 border border-cyan-500/20">
+                  Ciao! Sono Dark Lemon AI 🍋 Chiedimi qualsiasi cosa sui dati aziendali!
+                </div>
+              </div>
+            )}
             {messages.map((msg, i) => (
-              <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+              <div key={msg.id || i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                 {msg.role === "assistant" && (
                   <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
                     <Bot className="h-3 w-3 text-cyan-400" />
                   </div>
                 )}
                 <div className={cn(
-                  "max-w-[80%] rounded-xl px-3 py-2 text-xs",
+                  "max-w-[80%] rounded-xl px-3 py-2 text-xs prose prose-sm prose-invert max-w-none",
                   msg.role === "user"
                     ? "bg-blue-500/20 text-white border border-blue-500/30"
                     : "bg-white/5 text-white/90 border border-cyan-500/20"
                 )}>
-                  {msg.content}
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
                 {msg.role === "user" && (
                   <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -221,7 +220,11 @@ export function ZoliDarkLemonWidget() {
                   <Bot className="h-3 w-3 text-cyan-400 animate-pulse" />
                 </div>
                 <div className="rounded-xl px-3 py-2 bg-white/5 border border-cyan-500/20 text-white/60 text-xs">
-                  Sto pensando...
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" />
+                    <span className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
                 </div>
               </div>
             )}
@@ -253,7 +256,6 @@ export function ZoliDarkLemonWidget() {
         </div>
       </div>
 
-      {/* Visual corner indicators */}
       <div className="absolute bottom-0 right-0 w-3 h-3 pointer-events-none z-[10002]">
         <svg viewBox="0 0 12 12" className="w-full h-full opacity-40">
           <line x1="11" y1="3" x2="3" y2="11" stroke="white" strokeWidth="1" />
