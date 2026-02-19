@@ -15,6 +15,9 @@ import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
 import iconAnalytics from "@/assets/menu-icons/analytics.png";
 import iconAppMobile from "@/assets/menu-icons/app_mobile.png";
 import iconNotifiche from "@/assets/menu-icons/notifiche.png";
+import iconSms from "@/assets/menu-icons/sms.png";
+import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
+import iconEmail from "@/assets/menu-icons/email.png";
 
 const desktopIcons: DesktopIconDef[] = [
   { id: "gps", label: "GPS Flotta", iconImage: iconGpsFlotta, href: "/admin/gps", color: "6, 182, 212" },
@@ -26,6 +29,10 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "fatturazione", label: "Fatturazione", iconImage: iconFatturazione, href: "/admin/fatturazione", color: "20, 184, 166" },
   { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
   { id: "messaggi", label: "Zoli Messages", iconImage: iconZoliMessages, href: "/admin/messaggi", color: "244, 114, 182" },
+  { id: "sms", label: "SMS", iconImage: iconSms, href: "/admin/sms", color: "59, 130, 246" },
+  { id: "whatsapp", label: "WhatsApp", iconImage: iconWhatsapp, href: "/admin/whatsapp", color: "34, 197, 94" },
+  { id: "email", label: "Email", iconImage: iconEmail, href: "/admin/email", color: "249, 115, 22" },
+  { id: "rubrica", label: "Rubrica", iconImage: iconPersonale, href: "/admin/rubrica", color: "16, 185, 129" },
   { id: "ai", label: "Zoli Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
   { id: "analytics", label: "Analytics", iconImage: iconAnalytics, href: "/admin/analytics", color: "249, 115, 22" },
   { id: "app", label: "App Mobile", iconImage: iconAppMobile, href: "/admin/app-mobile", color: "251, 191, 36" },
