@@ -1538,6 +1538,236 @@ export type Database = {
           },
         ]
       }
+      intermediari: {
+        Row: {
+          attivo: boolean
+          cap: string | null
+          categoria_albo: string | null
+          cer_autorizzati: string[] | null
+          codice_destinatario: string | null
+          codice_fiscale: string | null
+          cognome: string | null
+          comune: string | null
+          created_at: string
+          data_iscrizione_albo: string | null
+          data_scadenza_albo: string | null
+          email: string | null
+          id: string
+          indirizzo: string | null
+          nazione: string | null
+          nome: string | null
+          note: string | null
+          numero_iscrizione_albo: string | null
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          ragione_sociale: string
+          telefono: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          cap?: string | null
+          categoria_albo?: string | null
+          cer_autorizzati?: string[] | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          created_at?: string
+          data_iscrizione_albo?: string | null
+          data_scadenza_albo?: string | null
+          email?: string | null
+          id?: string
+          indirizzo?: string | null
+          nazione?: string | null
+          nome?: string | null
+          note?: string | null
+          numero_iscrizione_albo?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale: string
+          telefono?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          cap?: string | null
+          categoria_albo?: string | null
+          cer_autorizzati?: string[] | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          created_at?: string
+          data_iscrizione_albo?: string | null
+          data_scadenza_albo?: string | null
+          email?: string | null
+          id?: string
+          indirizzo?: string | null
+          nazione?: string | null
+          nome?: string | null
+          note?: string | null
+          numero_iscrizione_albo?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string
+          telefono?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intermediari_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intermediazioni: {
+        Row: {
+          cer: string | null
+          condizioni_economiche: string | null
+          contratto_ref: string | null
+          created_at: string
+          created_by: string | null
+          descrizione_rifiuto: string | null
+          destinatario_id: string | null
+          fattura_id: string | null
+          fatturata: boolean
+          fir_form_id: string | null
+          fir_id: string | null
+          id: string
+          importo_provvigione: number | null
+          intermediario_id: string
+          note: string | null
+          produttore_id: string | null
+          quantita_effettiva_kg: number | null
+          quantita_stimata_kg: number | null
+          stato: string
+          tenant_id: string | null
+          tipo_provvigione: string
+          trasportatore_id: string | null
+          updated_at: string
+          valore_provvigione: number
+        }
+        Insert: {
+          cer?: string | null
+          condizioni_economiche?: string | null
+          contratto_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione_rifiuto?: string | null
+          destinatario_id?: string | null
+          fattura_id?: string | null
+          fatturata?: boolean
+          fir_form_id?: string | null
+          fir_id?: string | null
+          id?: string
+          importo_provvigione?: number | null
+          intermediario_id: string
+          note?: string | null
+          produttore_id?: string | null
+          quantita_effettiva_kg?: number | null
+          quantita_stimata_kg?: number | null
+          stato?: string
+          tenant_id?: string | null
+          tipo_provvigione?: string
+          trasportatore_id?: string | null
+          updated_at?: string
+          valore_provvigione?: number
+        }
+        Update: {
+          cer?: string | null
+          condizioni_economiche?: string | null
+          contratto_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione_rifiuto?: string | null
+          destinatario_id?: string | null
+          fattura_id?: string | null
+          fatturata?: boolean
+          fir_form_id?: string | null
+          fir_id?: string | null
+          id?: string
+          importo_provvigione?: number | null
+          intermediario_id?: string
+          note?: string | null
+          produttore_id?: string | null
+          quantita_effettiva_kg?: number | null
+          quantita_stimata_kg?: number | null
+          stato?: string
+          tenant_id?: string | null
+          tipo_provvigione?: string
+          trasportatore_id?: string | null
+          updated_at?: string
+          valore_provvigione?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intermediazioni_destinatario_id_fkey"
+            columns: ["destinatario_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fatture_vendita"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_fir_form_id_fkey"
+            columns: ["fir_form_id"]
+            isOneToOne: false
+            referencedRelation: "fir_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_fir_id_fkey"
+            columns: ["fir_id"]
+            isOneToOne: false
+            referencedRelation: "fir"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_intermediario_id_fkey"
+            columns: ["intermediario_id"]
+            isOneToOne: false
+            referencedRelation: "intermediari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_produttore_id_fkey"
+            columns: ["produttore_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intermediazioni_trasportatore_id_fkey"
+            columns: ["trasportatore_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       limiti_privati: {
         Row: {
           cer: string
@@ -1594,6 +1824,79 @@ export type Database = {
           },
           {
             foreignKeyName: "limiti_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listini_intermediazione: {
+        Row: {
+          attivo: boolean
+          cer: string | null
+          created_at: string
+          descrizione: string | null
+          fee_minimo: number | null
+          id: string
+          intermediario_id: string
+          produttore_id: string | null
+          tenant_id: string | null
+          tipo_provvigione: string
+          updated_at: string
+          valido_al: string | null
+          valido_dal: string | null
+          valore_provvigione: number
+        }
+        Insert: {
+          attivo?: boolean
+          cer?: string | null
+          created_at?: string
+          descrizione?: string | null
+          fee_minimo?: number | null
+          id?: string
+          intermediario_id: string
+          produttore_id?: string | null
+          tenant_id?: string | null
+          tipo_provvigione?: string
+          updated_at?: string
+          valido_al?: string | null
+          valido_dal?: string | null
+          valore_provvigione?: number
+        }
+        Update: {
+          attivo?: boolean
+          cer?: string | null
+          created_at?: string
+          descrizione?: string | null
+          fee_minimo?: number | null
+          id?: string
+          intermediario_id?: string
+          produttore_id?: string | null
+          tenant_id?: string | null
+          tipo_provvigione?: string
+          updated_at?: string
+          valido_al?: string | null
+          valido_dal?: string | null
+          valore_provvigione?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listini_intermediazione_intermediario_id_fkey"
+            columns: ["intermediario_id"]
+            isOneToOne: false
+            referencedRelation: "intermediari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listini_intermediazione_produttore_id_fkey"
+            columns: ["produttore_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listini_intermediazione_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1860,6 +2163,125 @@ export type Database = {
           },
           {
             foreignKeyName: "movimenti_impianto_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimenti_intermediario: {
+        Row: {
+          cer: string
+          created_at: string
+          created_by: string | null
+          data_movimento: string
+          descrizione_rifiuto: string | null
+          destinatario_denominazione: string | null
+          destinatario_id: string | null
+          fir_form_id: string | null
+          fir_id: string | null
+          id: string
+          intermediario_id: string
+          intermediazione_id: string | null
+          note: string | null
+          numero_fir: string | null
+          produttore_denominazione: string | null
+          produttore_id: string | null
+          quantita_kg: number
+          tenant_id: string | null
+          tipo_movimento: string
+          updated_at: string
+        }
+        Insert: {
+          cer: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          descrizione_rifiuto?: string | null
+          destinatario_denominazione?: string | null
+          destinatario_id?: string | null
+          fir_form_id?: string | null
+          fir_id?: string | null
+          id?: string
+          intermediario_id: string
+          intermediazione_id?: string | null
+          note?: string | null
+          numero_fir?: string | null
+          produttore_denominazione?: string | null
+          produttore_id?: string | null
+          quantita_kg?: number
+          tenant_id?: string | null
+          tipo_movimento?: string
+          updated_at?: string
+        }
+        Update: {
+          cer?: string
+          created_at?: string
+          created_by?: string | null
+          data_movimento?: string
+          descrizione_rifiuto?: string | null
+          destinatario_denominazione?: string | null
+          destinatario_id?: string | null
+          fir_form_id?: string | null
+          fir_id?: string | null
+          id?: string
+          intermediario_id?: string
+          intermediazione_id?: string | null
+          note?: string | null
+          numero_fir?: string | null
+          produttore_denominazione?: string | null
+          produttore_id?: string | null
+          quantita_kg?: number
+          tenant_id?: string | null
+          tipo_movimento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimenti_intermediario_destinatario_id_fkey"
+            columns: ["destinatario_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_fir_form_id_fkey"
+            columns: ["fir_form_id"]
+            isOneToOne: false
+            referencedRelation: "fir_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_fir_id_fkey"
+            columns: ["fir_id"]
+            isOneToOne: false
+            referencedRelation: "fir"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_intermediario_id_fkey"
+            columns: ["intermediario_id"]
+            isOneToOne: false
+            referencedRelation: "intermediari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_intermediazione_id_fkey"
+            columns: ["intermediazione_id"]
+            isOneToOne: false
+            referencedRelation: "intermediazioni"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_produttore_id_fkey"
+            columns: ["produttore_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_intermediario_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

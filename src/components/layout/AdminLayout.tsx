@@ -25,6 +25,7 @@ const routeColors: Record<string, string> = {
   "/admin/notifiche": "239, 68, 68",
   "/admin/formulari": "34, 197, 94",
   "/admin/gestione-fir": "59, 130, 246",
+  "/admin/intermediazione": "168, 85, 247",
 };
 
 export function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
