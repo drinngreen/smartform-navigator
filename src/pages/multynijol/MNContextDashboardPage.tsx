@@ -24,6 +24,7 @@ import iconSms from "@/assets/menu-icons/sms.png";
 import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
 import iconEmail from "@/assets/menu-icons/email.png";
 import intermediazionIcon from "@/assets/intermediazione-icon.png";
+import systemPromptIcon from "@/assets/system-prompt-icon.png";
 
 function buildIcons(prefix: string): DesktopIconDef[] {
   return [
@@ -56,6 +57,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "anagrafica", label: "Anagrafica", iconImage: iconPersonale, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247", subItems: [
       { label: "Privati Cittadini", iconImage: iconPrivati, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247" },
     ] },
+    { id: "system-prompt", label: "System Prompt", iconImage: systemPromptIcon, href: `${prefix}/system-prompt`, color: "251, 191, 36" },
   ];
 }
 
