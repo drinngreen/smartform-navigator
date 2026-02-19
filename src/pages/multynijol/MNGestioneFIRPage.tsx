@@ -112,8 +112,10 @@ export default function MNGestioneFIRPage() {
     const company = context === "multyproget" ? "MULTY" : "NIYOL";
     try {
       const result = await richiestaVidimazioneNgrok(company, requestQty);
+      console.log("[RENTRI VIDIMAZIONE MN] Full result:", JSON.stringify(result.data));
       if (result.ok && result.data) {
-        const numeri = result.data.numeri || result.data.firNumbers || [];
+        const raw = result.data;
+        const numeri = raw.numeri || raw.firNumbers || raw.data?.numeri || raw.data?.firNumbers || [];
         const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
           (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
         );
