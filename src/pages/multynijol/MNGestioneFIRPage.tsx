@@ -6,7 +6,7 @@ import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiediNuoviNumeri, inviaFirmaRentri, checkRentriHealth } from "@/services/rentriApi";
+import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok, getPdfNgrok } from "@/lib/rentriNgrokApi";
 import {
   Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle,
   Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users
@@ -108,17 +108,25 @@ export default function MNGestioneFIRPage() {
 
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
+    const company = context === "multyproget" ? "MULTY" : "NIYOL";
     try {
-      const result = await richiediNuoviNumeri(societaId);
-      const realNumbers = (result.numeri || []).filter((n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-"));
-      if (realNumbers.length > 0) {
-        const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: societaId }));
-        const { error } = await supabase.from("fir_number_pool").insert(rows);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
-        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+      const result = await richiestaVidimazioneNgrok(company, 50);
+      if (result.ok && result.data) {
+        const numeri = result.data.numeri || result.data.firNumbers || [];
+        const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
+          (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
+        );
+        if (realNumbers.length > 0) {
+          const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: societaId }));
+          const { error } = await supabase.from("fir_number_pool").insert(rows);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
+          toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+        } else {
+          toast.info("Nessun nuovo numero disponibile da RENTRI");
+        }
       } else {
-        toast.info("Nessun nuovo numero disponibile da RENTRI");
+        toast.error(`Errore: ${result.data?.error || "Risposta non valida"}`);
       }
     } catch (err: any) {
       toast.error(`Errore richiesta RENTRI: ${err.message}`);
@@ -187,23 +195,28 @@ export default function MNGestioneFIRPage() {
             setIsTesting(true); setTestResult(null);
             const startTime = Date.now();
             try {
-              const health = await checkRentriHealth();
-              if (!health.ok) { setTestResult({ success: false, message: "❌ Server non raggiungibile", details: `${health.url}\n${health.body}` }); setIsTesting(false); return; }
+              const health = await ngrokHealthCheck();
+              if (!health.ok) { setTestResult({ success: false, message: "❌ Server Ngrok non raggiungibile", details: "Controlla che il tunnel Ngrok sia attivo." }); setIsTesting(false); return; }
               const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", societaId).eq("status", "available").limit(1).maybeSingle();
               const testFirNumber = poolNum?.fir_number || "SKKZR00000001";
-              const result = await inviaFirmaRentri({
-                societaId,
-                payloadFir: {
-                  numero_fir: testFirNumber,
-                  produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
-                  destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
-                  trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
-                  rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
-                },
+              const company = context === "multyproget" ? "MULTY" : "NIYOL";
+              const result = await emissioneFirNgrok(company, {
+                numero_fir: testFirNumber,
+                produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
+                destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
+                trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
+                rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
               });
               const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-              setTestResult({ success: true, message: `✅ TEST SUPERATO (${elapsed}s)`, details: JSON.stringify(result, null, 2), qrCode: result.qr_code || (result as any).qrCodeBytes || "", numeroFir: result.numero_fir || (result as any).firNumber || "" });
-              toast.success("Test RENTRI superato!");
+              setTestResult({
+                success: result.ok,
+                message: result.ok ? `✅ TEST SUPERATO (${elapsed}s)` : `❌ TEST FALLITO (${elapsed}s)`,
+                details: JSON.stringify(result.data, null, 2),
+                qrCode: result.data?.qr_code || result.data?.qrCodeBytes || "",
+                numeroFir: result.data?.numero_fir || result.data?.firNumber || "",
+              });
+              if (result.ok) toast.success("Test RENTRI superato!");
+              else toast.error("Test fallito");
             } catch (err: any) {
               setTestResult({ success: false, message: `❌ TEST FALLITO`, details: err.message });
               toast.error("Test fallito: " + err.message);

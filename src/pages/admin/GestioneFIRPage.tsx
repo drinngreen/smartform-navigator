@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiediNuoviNumeri, inviaFirmaRentri, getRentriPdfUrl, checkRentriHealth } from "@/services/rentriApi";
+import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok, getPdfNgrok } from "@/lib/rentriNgrokApi";
 import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle, ChevronLeft, ChevronRight, Search, Filter, UserPlus, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
@@ -221,32 +221,29 @@ export default function GestioneFIRPage() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiediNuoviNumeri("global");
-      // Filter out any fake/placeholder numbers (FIR- prefix = not from real RENTRI)
-      const realNumbers = (result.numeri || []).filter(
-        (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
-      );
-      if (realNumbers.length > 0) {
-        // Save to pool
-        const rows = realNumbers.map((n: string) => ({
-          fir_number: n,
-          user_id: user!.id,
-          status: "available" as const,
-          societa_id: "global",
-        }));
-
-        const { error } = await supabase.from("fir_number_pool").insert(rows);
-        if (error) throw error;
-
-        queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
-        const skipped = (result.numeri || []).length - realNumbers.length;
-        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI${skipped > 0 ? ` (${skipped} fittizi scartati)` : ""}`);
+      const result = await richiestaVidimazioneNgrok("GLOBAL", 50);
+      if (result.ok && result.data) {
+        const numeri = result.data.numeri || result.data.firNumbers || [];
+        const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
+          (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
+        );
+        if (realNumbers.length > 0) {
+          const rows = realNumbers.map((n: string) => ({
+            fir_number: n,
+            user_id: user!.id,
+            status: "available" as const,
+            societa_id: "global",
+          }));
+          const { error } = await supabase.from("fir_number_pool").insert(rows);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+          toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+        } else {
+          toast.info("Nessun nuovo numero disponibile da RENTRI");
+        }
       } else {
-        const hadFake = (result.numeri || []).some((n: string) => n?.startsWith("FIR-"));
-        toast.info(hadFake 
-          ? "Il server ha restituito solo numeri fittizi (FIR-...) — controlla il backend Render" 
-          : "Nessun nuovo numero disponibile da RENTRI");
+        toast.error(`Errore: ${result.data?.error || "Risposta non valida"}`);
       }
     } catch (err: any) {
       toast.error(`Errore richiesta RENTRI: ${err.message}`);
@@ -348,22 +345,21 @@ export default function GestioneFIRPage() {
               try {
                 // Step 1: Health check
                 console.log("[RENTRI TEST] Running health check...");
-                const health = await checkRentriHealth();
+                const health = await ngrokHealthCheck();
                 console.log("[RENTRI TEST] Health:", JSON.stringify(health));
                 if (!health.ok) {
                   setTestResult({
                     success: false,
-                    message: `❌ Server non raggiungibile`,
-                    details: `URL: ${health.url}\nStatus: ${health.status}\nBody: ${health.body}`,
+                    message: `❌ Server Ngrok non raggiungibile`,
+                    details: `Controlla che il tunnel Ngrok sia attivo.`,
                   });
-                  toast.error("Server RENTRI non raggiungibile");
+                  toast.error("Server RENTRI (Ngrok) non raggiungibile");
                   setIsTesting(false);
                   return;
                 }
 
-                // Step 2: Actual test
-                console.log("[RENTRI TEST] Calling /firma-fir...");
-                // Fetch a real FIR number from the pool for the test
+                // Step 2: Actual test via emissione
+                console.log("[RENTRI TEST] Calling emissione via Ngrok...");
                 const { data: poolNum, error: poolErr } = await supabase
                   .from("fir_number_pool")
                   .select("fir_number")
@@ -375,29 +371,27 @@ export default function GestioneFIRPage() {
                 const testFirNumber = poolNum?.fir_number || "SKKZR00000001";
                 if (poolErr) console.warn("[RENTRI TEST] Nessun numero disponibile nel pool, uso fallback:", poolErr.message);
 
-                const result = await inviaFirmaRentri({
-                  societaId: "global",
-                  payloadFir: {
-                    numero_fir: testFirNumber,
-                    produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
-                    destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
-                    trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
-                    rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
-                  },
+                const result = await emissioneFirNgrok("GLOBAL", {
+                  numero_fir: testFirNumber,
+                  produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
+                  destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
+                  trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
+                  rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                // Map backend field names (firNumber, rentriId) to expected names
-                const numeroFir = result.numero_fir || (result as any).firNumber || "";
-                const rentriId = (result as any).rentriId || "";
-                const qrCode = result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || "";
+                const numeroFir = result.data?.numero_fir || result.data?.firNumber || "";
+                const rentriId = result.data?.rentriId || "";
+                const qrCode = result.data?.qr_code || result.data?.qrCodeBytes || result.data?.qrCode || "";
                 setTestResult({
-                  success: true,
-                  message: `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}`,
-                  details: JSON.stringify(result, null, 2),
+                  success: result.ok,
+                  message: result.ok ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,
+                  details: JSON.stringify(result.data, null, 2),
                   qrCode: qrCode,
                   numeroFir: numeroFir,
                 });
-                toast.success("Test RENTRI superato!");
+                if (result.ok) toast.success("Test RENTRI superato!");
+                else toast.error("Test fallito");
+
               } catch (err: any) {
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                 setTestResult({
