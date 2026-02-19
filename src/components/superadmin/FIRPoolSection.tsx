@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
 import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
 import { downloadCSV } from "@/lib/rentriSuperApi";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
 const QUANTITIES = [50, 100, 500];
