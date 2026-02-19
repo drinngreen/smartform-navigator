@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import logoDragon from "@/assets/logo-dragon.png";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import intermediazionIcon from "@/assets/intermediazione-icon.png";
+import systemPromptIcon from "@/assets/system-prompt-icon.png";
 
 import iconDashboard from "@/assets/menu-icons/dashboard.png";
 import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
@@ -56,6 +57,7 @@ const navItems: NavItem[] = [
   { label: "Chiamate", iconImage: iconReportChiamate, path: "/chiamate", color: "34, 197, 94" },
   { label: "Intermediazione", iconImage: intermediazionIcon, path: "/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, path: "/zoli-dark-lemon", color: "59, 130, 246" },
+  { label: "System Prompt", iconImage: systemPromptIcon, path: "/system-prompt", color: "251, 191, 36" },
 ];
 
 const contexts = [
