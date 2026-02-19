@@ -42,6 +42,7 @@ import FormulariPage from "./pages/admin/FormulariPage";
 import GestioneFIRPage from "./pages/admin/GestioneFIRPage";
 import GPSFlottaPage from "./pages/admin/GPSFlottaPage";
 import FatturazionePage from "./pages/admin/FatturazionePage";
+import IntermediazionePage from "./pages/admin/IntermediazionePage";
 import PhonePage from "./pages/admin/PhonePage";
 import SMSPage from "./pages/admin/SMSPage";
 import WhatsAppPage from "./pages/admin/WhatsAppPage";
@@ -73,6 +74,7 @@ import MNGestioneFIRPage from "./pages/multynijol/MNGestioneFIRPage";
 import MNGPSFlottaPage from "./pages/multynijol/MNGPSFlottaPage";
 import MNZoliDarkLemonPage from "./pages/multynijol/MNZoliDarkLemonPage";
 import MNFatturazionePage from "./pages/multynijol/MNFatturazionePage";
+import MNIntermediazionePage from "./pages/multynijol/MNIntermediazionePage";
 import MNPhonePage from "./pages/multynijol/MNPhonePage";
 import MNSMSPage from "./pages/multynijol/MNSMSPage";
 import MNWhatsAppPage from "./pages/multynijol/MNWhatsAppPage";
@@ -154,6 +156,7 @@ const App = () => (
               <Route path="/admin/gestione-fir" element={<ProtectedRoute><GestioneFIRPage /></ProtectedRoute>} />
               <Route path="/admin/gps" element={<ProtectedRoute><GPSFlottaPage /></ProtectedRoute>} />
               <Route path="/admin/fatturazione" element={<ProtectedRoute><FatturazionePage /></ProtectedRoute>} />
+              <Route path="/admin/intermediazione" element={<ProtectedRoute><IntermediazionePage /></ProtectedRoute>} />
               <Route path="/admin/telefono" element={<ProtectedRoute><PhonePage /></ProtectedRoute>} />
               <Route path="/admin/sms" element={<ProtectedRoute><SMSPage /></ProtectedRoute>} />
               <Route path="/admin/whatsapp" element={<ProtectedRoute><WhatsAppPage /></ProtectedRoute>} />
@@ -185,6 +188,7 @@ const App = () => (
               <Route path="/mn/admin/:context/gps" element={<ProtectedRoute><MNGPSFlottaPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/zoli-dark-lemon" element={<ProtectedRoute><MNZoliDarkLemonPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/fatturazione" element={<ProtectedRoute><MNFatturazionePage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/intermediazione" element={<ProtectedRoute><MNIntermediazionePage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/telefono" element={<ProtectedRoute><MNPhonePage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/sms" element={<ProtectedRoute><MNSMSPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/whatsapp" element={<ProtectedRoute><MNWhatsAppPage /></ProtectedRoute>} />

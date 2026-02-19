@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import logoDragon from "@/assets/logo-dragon.png";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import intermediazionIcon from "@/assets/intermediazione-icon.png";
 
 import iconDashboard from "@/assets/menu-icons/dashboard.png";
 import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
   { label: "Pagamenti", iconImage: iconFatturazione, path: "/pagamenti", color: "239, 68, 68" },
   { label: "Formulari", iconImage: iconGestioneFormulari, path: "/formulari", color: "34, 197, 94" },
   { label: "Chiamate", iconImage: iconReportChiamate, path: "/chiamate", color: "34, 197, 94" },
+  { label: "Intermediazione", iconImage: intermediazionIcon, path: "/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, path: "/zoli-dark-lemon", color: "59, 130, 246" },
 ];
 

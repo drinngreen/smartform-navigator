@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import logoDragon from "@/assets/logo-dragon.png";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import intermediazionIcon from "@/assets/intermediazione-icon.png";
 
 import iconDashboard from "@/assets/menu-icons/dashboard.png";
 import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { label: "RENTRI", iconImage: iconRentri, href: "/admin/rentri", color: "236, 72, 153" },
   { label: "Chiamate", iconImage: iconReportChiamate, href: "/admin/chiamate", color: "34, 197, 94" },
   { label: "Messaggi", iconImage: iconZoliMessages, href: "/admin/messaggi", color: "244, 114, 182" },
+  { label: "Intermediazione", iconImage: intermediazionIcon, href: "/admin/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
 ];
 
