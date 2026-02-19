@@ -112,11 +112,31 @@ export default function MNGestioneFIRPage() {
     const company = context === "multyproget" ? "MULTY" : "NIYOL";
     try {
       const result = await richiestaVidimazioneNgrok(company, requestQty);
-      console.log("[RENTRI VIDIMAZIONE MN] Full result:", JSON.stringify(result.data));
+      console.log("[RENTRI VIDIMAZIONE MN] Full result:", JSON.stringify(result));
       if (result.ok && result.data) {
         const raw = result.data;
-        const numeri = raw.numeri || raw.firNumbers || raw.data?.numeri || raw.data?.firNumbers || [];
-        const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
+        let numeri: string[] = [];
+        for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
+          if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
+          if (raw.data && Array.isArray(raw.data[key])) { numeri = raw.data[key]; break; }
+        }
+        if (numeri.length === 0) {
+          const findStrArr = (obj: any): string[] => {
+            if (!obj || typeof obj !== 'object') return [];
+            for (const v of Object.values(obj)) {
+              if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v as string[];
+              const sub = findStrArr(v);
+              if (sub.length > 0) return sub;
+            }
+            return [];
+          };
+          numeri = findStrArr(raw);
+        }
+        if (numeri.length === 0 && typeof raw.numero === 'string') numeri = [raw.numero];
+        if (numeri.length === 0 && typeof raw.firNumber === 'string') numeri = [raw.firNumber];
+        
+        console.log("[RENTRI VIDIMAZIONE MN] Extracted numeri:", numeri);
+        const realNumbers = numeri.filter(
           (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
         );
         if (realNumbers.length > 0) {
