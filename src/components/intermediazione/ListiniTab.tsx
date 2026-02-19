@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Search, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useIntermediari } from "@/hooks/useIntermediari";
 import { ListinoFormDialog } from "./ListinoFormDialog";

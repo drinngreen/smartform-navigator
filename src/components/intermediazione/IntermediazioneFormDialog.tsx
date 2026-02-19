@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIntermediari } from "@/hooks/useIntermediari";
 import { useCreateIntermediazione, useUpdateIntermediazione, Intermediazione } from "@/hooks/useIntermediazioni";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
 
 interface Props {
