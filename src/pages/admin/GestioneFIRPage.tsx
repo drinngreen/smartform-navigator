@@ -223,8 +223,11 @@ export default function GestioneFIRPage() {
     setIsRequesting(true);
     try {
       const result = await richiestaVidimazioneNgrok("GLOBAL", requestQty);
+      console.log("[RENTRI VIDIMAZIONE] Full result:", JSON.stringify(result.data));
       if (result.ok && result.data) {
-        const numeri = result.data.numeri || result.data.firNumbers || [];
+        // Try multiple possible response shapes
+        const raw = result.data;
+        const numeri = raw.numeri || raw.firNumbers || raw.data?.numeri || raw.data?.firNumbers || [];
         const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
           (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
         );
