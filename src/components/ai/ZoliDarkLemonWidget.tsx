@@ -31,7 +31,7 @@ export function ZoliDarkLemonWidget() {
   const ctxMatch = location.pathname.match(/\/mn\/admin\/(\w+)/);
   const context = isMN ? (ctxMatch?.[1] || "multyproget") : "multyproget";
 
-  const { messages, isLoading, sendMessage } = useDarkLemonMN(context);
+  const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context);
 
   // Resize state
   const isResizing = useRef<ResizeDir>(null);
@@ -175,7 +175,7 @@ export function ZoliDarkLemonWidget() {
             <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
             </button>
-            <button onClick={() => setOpen(false)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
+            <button onClick={() => { newChat(); setOpen(false); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
               <X className="h-4 w-4" />
             </button>
           </div>
