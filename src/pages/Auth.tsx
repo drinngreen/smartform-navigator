@@ -8,13 +8,10 @@ import { toast } from "sonner"
 
 type Tab = "login" | "register"
 
-let _supabase: any = null
-async function getSupabase() {
-  if (!_supabase) {
-    const mod = await import("@/integrations/supabase/client")
-    _supabase = mod.supabase
-  }
-  return _supabase
+import { supabase } from "@/lib/supabaseClient"
+
+function getSupabase() {
+  return supabase
 }
 
 export default function Auth() {
