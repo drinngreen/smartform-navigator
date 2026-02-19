@@ -2,7 +2,7 @@ import { useParams, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
-import { DarkLemonChat } from "@/components/ai/DarkLemonChat";
+import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
 
 const validContexts = ["multyproget", "niyol"];
 
@@ -18,8 +18,8 @@ export default function MNZoliDarkLemonPage() {
   const contextLabel = context === "multyproget" ? "Multyproget" : "Niyol";
 
   return (
-    <MNAdminLayout title={`Dark Lemon AI — ${contextLabel}`} subtitle="Assistente AI Aziendale">
-      <DarkLemonChat />
+    <MNAdminLayout title={`Dark Lemon AI — ${contextLabel}`} subtitle="Assistente AI Aziendale con accesso DB">
+      <DarkLemonMNChat context={context} />
     </MNAdminLayout>
   );
 }
