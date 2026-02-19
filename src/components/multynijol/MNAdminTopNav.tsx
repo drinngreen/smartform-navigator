@@ -67,6 +67,7 @@ export function MNAdminTopNav() {
   const { profile, signOut } = useAuth();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
+  const switcherDropdownRef = useRef<HTMLDivElement>(null);
 
   const [subMenuOpen, setSubMenuOpen] = useState<string | null>(null);
   const [subMenuPos, setSubMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -93,10 +94,12 @@ export function MNAdminTopNav() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (switcherRef.current && !switcherRef.current.contains(target) && 
+          switcherDropdownRef.current && !switcherDropdownRef.current.contains(target)) {
         setSwitcherOpen(false);
       }
-      if (subMenuRef.current && !subMenuRef.current.contains(e.target as Node)) {
+      if (subMenuRef.current && !subMenuRef.current.contains(target)) {
         setSubMenuOpen(null);
       }
     };
@@ -135,6 +138,7 @@ export function MNAdminTopNav() {
                 </button>
                 {switcherOpen && createPortal(
                   <div
+                    ref={switcherDropdownRef}
                     className="fixed z-[9999] bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden min-w-[160px]"
                     style={{
                       left: switcherRef.current?.getBoundingClientRect().left ?? 0,
