@@ -5,10 +5,10 @@ import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
-const QUANTITIES = [50, 100, 500];
+const QUANTITIES = [5, 10, 50, 100, 500];
 
 export function FIRPoolSection({ tenant }: { tenant: string }) {
-  const [qty, setQty] = useState(50);
+  const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState(false);
   const [lastNumbers, setLastNumbers] = useState<string[]>([]);
 
