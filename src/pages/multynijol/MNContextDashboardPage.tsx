@@ -50,6 +50,9 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "trasportatori", label: "Trasportatori", iconImage: iconPersonale, href: `${prefix}/trasportatori`, color: "6, 182, 212" },
     { id: "analytics", label: "Analytics", iconImage: iconAnalytics, href: `${prefix}/analytics`, color: "249, 115, 22" },
     { id: "notifiche", label: "Notifiche", iconImage: iconNotifiche, href: `${prefix}/notifiche`, color: "239, 68, 68" },
+    { id: "anagrafica", label: "Anagrafica", iconImage: iconPersonale, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247", subItems: [
+      { label: "Privati Cittadini", iconImage: iconPrivati, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247" },
+    ] },
   ];
 }
 

@@ -78,6 +78,7 @@ import MNSMSPage from "./pages/multynijol/MNSMSPage";
 import MNWhatsAppPage from "./pages/multynijol/MNWhatsAppPage";
 import MNEmailPage from "./pages/multynijol/MNEmailPage";
 import MNRubricaPage from "./pages/multynijol/MNRubricaPage";
+import MNAnagraficaPrivatiPage from "./pages/multynijol/MNAnagraficaPrivatiPage";
 import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
@@ -188,6 +189,7 @@ const App = () => (
               <Route path="/mn/admin/:context/whatsapp" element={<ProtectedRoute><MNWhatsAppPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/email" element={<ProtectedRoute><MNEmailPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/rubrica" element={<ProtectedRoute><MNRubricaPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/anagrafica/privati" element={<ProtectedRoute><MNAnagraficaPrivatiPage /></ProtectedRoute>} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
