@@ -129,45 +129,87 @@ export type Database = {
       anagrafica_privati: {
         Row: {
           attivo: boolean
+          cap: string | null
+          cellulare: string | null
+          codice_destinatario: string | null
           codice_fiscale: string
           cognome: string
           comune_residenza: string | null
           created_at: string
+          denominazione: string | null
+          email: string | null
+          fax: string | null
           id: string
           impianto_id: string | null
+          import_batch_id: string | null
+          import_source: string | null
+          indirizzo: string | null
+          nazione: string | null
           nome: string
           note: string | null
           numero_tessera: string | null
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          telefono: string | null
           tenant_id: string | null
           tipo_utenza: string
           updated_at: string
         }
         Insert: {
           attivo?: boolean
+          cap?: string | null
+          cellulare?: string | null
+          codice_destinatario?: string | null
           codice_fiscale: string
           cognome: string
           comune_residenza?: string | null
           created_at?: string
+          denominazione?: string | null
+          email?: string | null
+          fax?: string | null
           id?: string
           impianto_id?: string | null
+          import_batch_id?: string | null
+          import_source?: string | null
+          indirizzo?: string | null
+          nazione?: string | null
           nome: string
           note?: string | null
           numero_tessera?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          telefono?: string | null
           tenant_id?: string | null
           tipo_utenza?: string
           updated_at?: string
         }
         Update: {
           attivo?: boolean
+          cap?: string | null
+          cellulare?: string | null
+          codice_destinatario?: string | null
           codice_fiscale?: string
           cognome?: string
           comune_residenza?: string | null
           created_at?: string
+          denominazione?: string | null
+          email?: string | null
+          fax?: string | null
           id?: string
           impianto_id?: string | null
+          import_batch_id?: string | null
+          import_source?: string | null
+          indirizzo?: string | null
+          nazione?: string | null
           nome?: string
           note?: string | null
           numero_tessera?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          telefono?: string | null
           tenant_id?: string | null
           tipo_utenza?: string
           updated_at?: string
