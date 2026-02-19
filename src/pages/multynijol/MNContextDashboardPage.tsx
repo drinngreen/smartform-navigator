@@ -20,6 +20,9 @@ import iconNotifiche from "@/assets/menu-icons/notifiche.png";
 import iconPrivati from "@/assets/menu-icons/privati.png";
 import iconProduttore from "@/assets/menu-icons/produttore.png";
 import iconDestinatario from "@/assets/menu-icons/destinatario.png";
+import iconSms from "@/assets/menu-icons/sms.png";
+import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
+import iconEmail from "@/assets/menu-icons/email.png";
 
 function buildIcons(prefix: string): DesktopIconDef[] {
   return [
@@ -32,6 +35,10 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "fatturazione", label: "Fatturazione", iconImage: iconFatturazione, href: `${prefix}/fatturazione`, color: "20, 184, 166" },
     { id: "chiamate", label: "Report Chiamate", iconImage: iconReportChiamate, href: `${prefix}/chiamate`, color: "34, 197, 94" },
     { id: "messaggi", label: "Zoli Messages", iconImage: iconZoliMessages, href: `${prefix}/messaggi`, color: "244, 114, 182" },
+    { id: "sms", label: "SMS", iconImage: iconSms, href: `${prefix}/sms`, color: "59, 130, 246" },
+    { id: "whatsapp", label: "WhatsApp", iconImage: iconWhatsapp, href: `${prefix}/whatsapp`, color: "34, 197, 94" },
+    { id: "email", label: "Email", iconImage: iconEmail, href: `${prefix}/email`, color: "249, 115, 22" },
+    { id: "rubrica", label: "Rubrica", iconImage: iconPersonale, href: `${prefix}/rubrica`, color: "16, 185, 129" },
     { id: "ai", label: "Zoli Dark Lemon", iconImage: zoliLemonIcon, href: `${prefix}/zoli-dark-lemon`, color: "59, 130, 246" },
     { id: "impianto", label: "Impianto", iconImage: iconPrivati, href: `${prefix}/impianto/privati`, color: "20, 184, 166", subItems: [
       { label: "Privati", iconImage: iconPrivati, href: `${prefix}/impianto/privati`, color: "20, 184, 166" },

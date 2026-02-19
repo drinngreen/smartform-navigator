@@ -275,6 +275,63 @@ export type Database = {
         }
         Relationships: []
       }
+      comunicazioni_log: {
+        Row: {
+          canale: string
+          contatto_id: string | null
+          contenuto: string
+          created_at: string
+          created_by: string | null
+          destinatario: string
+          id: string
+          oggetto: string | null
+          risposta_api: Json | null
+          stato: string
+          tenant_id: string
+        }
+        Insert: {
+          canale: string
+          contatto_id?: string | null
+          contenuto: string
+          created_at?: string
+          created_by?: string | null
+          destinatario: string
+          id?: string
+          oggetto?: string | null
+          risposta_api?: Json | null
+          stato?: string
+          tenant_id: string
+        }
+        Update: {
+          canale?: string
+          contatto_id?: string | null
+          contenuto?: string
+          created_at?: string
+          created_by?: string | null
+          destinatario?: string
+          id?: string
+          oggetto?: string | null
+          risposta_api?: Json | null
+          stato?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comunicazioni_log_contatto_id_fkey"
+            columns: ["contatto_id"]
+            isOneToOne: false
+            referencedRelation: "rubrica_contatti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comunicazioni_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -2351,6 +2408,87 @@ export type Database = {
           },
           {
             foreignKeyName: "ricevute_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rubrica_contatti: {
+        Row: {
+          anagrafica_id: string | null
+          cellulare: string | null
+          codice_fiscale: string | null
+          cognome: string | null
+          comune: string | null
+          created_at: string
+          email: string | null
+          id: string
+          indirizzo: string | null
+          nome: string
+          note: string | null
+          origine: string
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          ragione_sociale: string | null
+          telefono: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          anagrafica_id?: string | null
+          cellulare?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          indirizzo?: string | null
+          nome: string
+          note?: string | null
+          origine?: string
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          telefono?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          anagrafica_id?: string | null
+          cellulare?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          comune?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          indirizzo?: string | null
+          nome?: string
+          note?: string | null
+          origine?: string
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          telefono?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rubrica_contatti_anagrafica_id_fkey"
+            columns: ["anagrafica_id"]
+            isOneToOne: false
+            referencedRelation: "erp_anagrafiche"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rubrica_contatti_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

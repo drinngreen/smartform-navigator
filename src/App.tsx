@@ -43,6 +43,10 @@ import GestioneFIRPage from "./pages/admin/GestioneFIRPage";
 import GPSFlottaPage from "./pages/admin/GPSFlottaPage";
 import FatturazionePage from "./pages/admin/FatturazionePage";
 import PhonePage from "./pages/admin/PhonePage";
+import SMSPage from "./pages/admin/SMSPage";
+import WhatsAppPage from "./pages/admin/WhatsAppPage";
+import EmailPage from "./pages/admin/EmailPage";
+import RubricaPage from "./pages/admin/RubricaPage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
@@ -70,6 +74,10 @@ import MNGPSFlottaPage from "./pages/multynijol/MNGPSFlottaPage";
 import MNZoliDarkLemonPage from "./pages/multynijol/MNZoliDarkLemonPage";
 import MNFatturazionePage from "./pages/multynijol/MNFatturazionePage";
 import MNPhonePage from "./pages/multynijol/MNPhonePage";
+import MNSMSPage from "./pages/multynijol/MNSMSPage";
+import MNWhatsAppPage from "./pages/multynijol/MNWhatsAppPage";
+import MNEmailPage from "./pages/multynijol/MNEmailPage";
+import MNRubricaPage from "./pages/multynijol/MNRubricaPage";
 import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
@@ -145,6 +153,10 @@ const App = () => (
               <Route path="/admin/gps" element={<ProtectedRoute><GPSFlottaPage /></ProtectedRoute>} />
               <Route path="/admin/fatturazione" element={<ProtectedRoute><FatturazionePage /></ProtectedRoute>} />
               <Route path="/admin/telefono" element={<ProtectedRoute><PhonePage /></ProtectedRoute>} />
+              <Route path="/admin/sms" element={<ProtectedRoute><SMSPage /></ProtectedRoute>} />
+              <Route path="/admin/whatsapp" element={<ProtectedRoute><WhatsAppPage /></ProtectedRoute>} />
+              <Route path="/admin/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
+              <Route path="/admin/rubrica" element={<ProtectedRoute><RubricaPage /></ProtectedRoute>} />
 
               {/* MultyNijol Admin Routes - PROTECTED */}
               <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
@@ -172,6 +184,10 @@ const App = () => (
               <Route path="/mn/admin/:context/zoli-dark-lemon" element={<ProtectedRoute><MNZoliDarkLemonPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/fatturazione" element={<ProtectedRoute><MNFatturazionePage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/telefono" element={<ProtectedRoute><MNPhonePage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/sms" element={<ProtectedRoute><MNSMSPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/whatsapp" element={<ProtectedRoute><MNWhatsAppPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/email" element={<ProtectedRoute><MNEmailPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/rubrica" element={<ProtectedRoute><MNRubricaPage /></ProtectedRoute>} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
