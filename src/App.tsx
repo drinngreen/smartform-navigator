@@ -48,6 +48,7 @@ import SMSPage from "./pages/admin/SMSPage";
 import WhatsAppPage from "./pages/admin/WhatsAppPage";
 import EmailPage from "./pages/admin/EmailPage";
 import RubricaPage from "./pages/admin/RubricaPage";
+import SystemPromptPage from "./pages/admin/SystemPromptPage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
@@ -82,6 +83,7 @@ import MNEmailPage from "./pages/multynijol/MNEmailPage";
 import MNRubricaPage from "./pages/multynijol/MNRubricaPage";
 import MNAnagraficaPrivatiPage from "./pages/multynijol/MNAnagraficaPrivatiPage";
 import MNStoricoRicevutePage from "./pages/multynijol/MNStoricoRicevutePage";
+import MNSystemPromptPage from "./pages/multynijol/MNSystemPromptPage";
 import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
@@ -162,6 +164,7 @@ const App = () => (
               <Route path="/admin/whatsapp" element={<ProtectedRoute><WhatsAppPage /></ProtectedRoute>} />
               <Route path="/admin/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
               <Route path="/admin/rubrica" element={<ProtectedRoute><RubricaPage /></ProtectedRoute>} />
+              <Route path="/admin/system-prompt" element={<ProtectedRoute><SystemPromptPage /></ProtectedRoute>} />
 
               {/* MultyNijol Admin Routes - PROTECTED */}
               <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
@@ -196,6 +199,7 @@ const App = () => (
               <Route path="/mn/admin/:context/rubrica" element={<ProtectedRoute><MNRubricaPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/anagrafica/privati" element={<ProtectedRoute><MNAnagraficaPrivatiPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/storico-ricevute" element={<ProtectedRoute><MNStoricoRicevutePage /></ProtectedRoute>} />
+              <Route path="/mn/admin/:context/system-prompt" element={<ProtectedRoute><MNSystemPromptPage /></ProtectedRoute>} />
 
               {/* MultyNijol Mobile Apps */}
               <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />

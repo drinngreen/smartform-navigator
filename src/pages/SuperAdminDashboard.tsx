@@ -6,6 +6,7 @@ import { FIRPoolSection } from "@/components/superadmin/FIRPoolSection";
 import { DigitalSignatureSection } from "@/components/superadmin/DigitalSignatureSection";
 import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarSection";
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
+import { SystemPromptReviewSection } from "@/components/superadmin/SystemPromptReviewSection";
 import { healthCheck } from "@/lib/rentriSuperApi";
 import logoDragon from "@/assets/logo-dragon.png";
 
@@ -117,6 +118,7 @@ export default function SuperAdminDashboard() {
 
       {/* Content */}
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        <SystemPromptReviewSection />
         <FIRPoolSection tenant={activeTenant.id} />
         <DigitalSignatureSection tenant={activeTenant.id} />
         <RegistroCarScarSection tenant={activeTenant.id} />

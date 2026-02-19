@@ -3082,6 +3082,56 @@ export type Database = {
           },
         ]
       }
+      system_prompt_requests: {
+        Row: {
+          admin_notes: string | null
+          category: string
+          content: string
+          created_at: string
+          id: string
+          status: string
+          tenant_id: string | null
+          tenant_label: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          status?: string
+          tenant_id?: string | null
+          tenant_label: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          status?: string
+          tenant_id?: string | null
+          tenant_label?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_prompt_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string | null

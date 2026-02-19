@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import logoDragon from "@/assets/logo-dragon.png";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import intermediazionIcon from "@/assets/intermediazione-icon.png";
+import systemPromptIcon from "@/assets/system-prompt-icon.png";
 
 import iconDashboard from "@/assets/menu-icons/dashboard.png";
 import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { label: "Messaggi", iconImage: iconZoliMessages, href: "/admin/messaggi", color: "244, 114, 182" },
   { label: "Intermediazione", iconImage: intermediazionIcon, href: "/admin/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
+  { label: "System Prompt", iconImage: systemPromptIcon, href: "/admin/system-prompt", color: "251, 191, 36" },
 ];
 
 export function AdminTopNav() {
