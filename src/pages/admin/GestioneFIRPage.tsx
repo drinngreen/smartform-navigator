@@ -225,53 +225,48 @@ export default function GestioneFIRPage() {
       const result = await richiestaVidimazioneNgrok("GLOBAL", requestQty);
       console.log("[RENTRI VIDIMAZIONE] Full result:", JSON.stringify(result));
       console.log("[RENTRI VIDIMAZIONE] result.ok:", result.ok, "result.data:", JSON.stringify(result.data));
-      if (result.ok && result.data) {
-        // Try multiple possible response shapes - search deeply for string arrays
-        const raw = result.data;
-        let numeri: string[] = [];
-        // Direct keys
-        for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
-          if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
-          if (raw.data && Array.isArray(raw.data[key])) { numeri = raw.data[key]; break; }
-        }
-        // If still empty, find first array of strings in response
-        if (numeri.length === 0) {
-          const findStrArr = (obj: any): string[] => {
-            if (!obj || typeof obj !== 'object') return [];
-            for (const v of Object.values(obj)) {
-              if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v as string[];
-              const sub = findStrArr(v);
-              if (sub.length > 0) return sub;
-            }
-            return [];
-          };
-          numeri = findStrArr(raw);
-        }
-        // Single string value
-        if (numeri.length === 0 && typeof raw.numero === 'string') numeri = [raw.numero];
-        if (numeri.length === 0 && typeof raw.firNumber === 'string') numeri = [raw.firNumber];
-        
-        console.log("[RENTRI VIDIMAZIONE] Extracted numeri:", numeri);
-        const realNumbers = numeri.filter(
-          (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
-        );
-        if (realNumbers.length > 0) {
-          const rows = realNumbers.map((n: string) => ({
-            fir_number: n,
-            user_id: user!.id,
-            status: "available" as const,
-            societa_id: "global",
-          }));
-          const { error } = await supabase.from("fir_number_pool").insert(rows);
-          if (error) throw error;
-          queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-          queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
-          toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
-        } else {
-          toast.info("Nessun nuovo numero disponibile da RENTRI");
-        }
+      
+      // Parse numbers from ANY response shape, regardless of result.ok
+      const raw = result.data || {};
+      let numeri: string[] = [];
+      for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
+        if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
+        if (raw.data && Array.isArray(raw.data[key])) { numeri = raw.data[key]; break; }
+      }
+      if (numeri.length === 0) {
+        const findStrArr = (obj: any): string[] => {
+          if (!obj || typeof obj !== 'object') return [];
+          for (const v of Object.values(obj)) {
+            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v as string[];
+            const sub = findStrArr(v);
+            if (sub.length > 0) return sub;
+          }
+          return [];
+        };
+        numeri = findStrArr(raw);
+      }
+      if (numeri.length === 0 && typeof raw.numero === 'string') numeri = [raw.numero];
+      if (numeri.length === 0 && typeof raw.firNumber === 'string') numeri = [raw.firNumber];
+      
+      console.log("[RENTRI VIDIMAZIONE] Extracted numeri:", numeri);
+      const realNumbers = numeri.filter(
+        (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
+      );
+      if (realNumbers.length > 0) {
+        const rows = realNumbers.map((n: string) => ({
+          fir_number: n,
+          user_id: user!.id,
+          status: "available" as const,
+          societa_id: "global",
+        }));
+        const { error } = await supabase.from("fir_number_pool").insert(rows);
+        if (error) throw error;
+        queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
       } else {
-        toast.error(`Errore: ${result.data?.error || "Risposta non valida"}`);
+        console.warn("[RENTRI VIDIMAZIONE] No numbers found. Full raw:", JSON.stringify(raw));
+        toast.error(`Nessun numero trovato. Risposta backend: ${JSON.stringify(raw).slice(0, 200)}`);
       }
     } catch (err: any) {
       toast.error(`Errore richiesta RENTRI: ${err.message}`);
