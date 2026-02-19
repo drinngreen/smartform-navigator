@@ -15,6 +15,8 @@ interface Privato {
   tipo_utenza: string;
   note: string | null;
   attivo: boolean;
+  automezzo: string | null;
+  targa_automezzo: string | null;
 }
 
 function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenantId: string; onClose: () => void }) {
@@ -28,6 +30,8 @@ function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenant
     numero_tessera: item?.numero_tessera || "",
     tipo_utenza: item?.tipo_utenza || "domestica",
     note: item?.note || "",
+    automezzo: item?.automezzo || "",
+    targa_automezzo: item?.targa_automezzo || "",
   });
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -72,6 +76,8 @@ function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenant
           <Field label="Codice Fiscale" field="codice_fiscale" span={2} />
           <Field label="Comune Residenza" field="comune_residenza" />
           <Field label="N° Tessera" field="numero_tessera" />
+          <Field label="Automezzo" field="automezzo" />
+          <Field label="Targa Automezzo" field="targa_automezzo" />
           <div>
             <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1">Tipo Utenza</label>
             <select value={form.tipo_utenza} onChange={e => set("tipo_utenza", e.target.value)}
@@ -170,6 +176,8 @@ export default function MNAnagraficaPrivatiPage() {
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Codice Fiscale</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Comune</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Tessera</th>
+                    <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Automezzo</th>
+                    <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Targa</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Tipo</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Azioni</th>
                   </tr>
@@ -182,6 +190,8 @@ export default function MNAnagraficaPrivatiPage() {
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.codice_fiscale}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.comune_residenza || "—"}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.numero_tessera || "—"}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">{item.automezzo || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.targa_automezzo || "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{item.tipo_utenza?.replace("_", " ")}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">

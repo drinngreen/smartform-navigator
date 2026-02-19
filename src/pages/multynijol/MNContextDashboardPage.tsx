@@ -48,6 +48,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "conferimenti", label: "Conferimenti", iconImage: iconRegistroFir, href: `${prefix}/conferimenti`, color: "249, 115, 22" },
     { id: "pagamenti", label: "Pagamenti", iconImage: iconFatturazione, href: `${prefix}/pagamenti`, color: "239, 68, 68" },
     { id: "trasportatori", label: "Trasportatori", iconImage: iconPersonale, href: `${prefix}/trasportatori`, color: "6, 182, 212" },
+    { id: "storico-ricevute", label: "Storico Ricevute", iconImage: iconRegistroFir, href: `${prefix}/storico-ricevute`, color: "168, 85, 247" },
     { id: "analytics", label: "Analytics", iconImage: iconAnalytics, href: `${prefix}/analytics`, color: "249, 115, 22" },
     { id: "notifiche", label: "Notifiche", iconImage: iconNotifiche, href: `${prefix}/notifiche`, color: "239, 68, 68" },
     { id: "anagrafica", label: "Anagrafica", iconImage: iconPersonale, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247", subItems: [
