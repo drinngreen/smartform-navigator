@@ -127,37 +127,39 @@ serve(async (req) => {
       });
     }
 
-    // ACTION: list_fir_forms - list all fir_forms for admin
+    // ACTION: list_fir_forms - list all fir_forms for admin (filtered by tenant_id if provided)
     if (action === "list_fir_forms") {
-      const { data, error } = await adminClient
+      const filterTenantId = body.tenant_id || null;
+
+      let query = adminClient
         .from("fir_forms")
-        .select("*, profiles!fir_forms_user_id_fkey(nome, cognome, codice_fiscale)")
+        .select("*")
         .eq("deleted_by_user", false)
         .order("updated_at", { ascending: false });
 
-      // If the join fails due to missing FK, fallback
-      if (error) {
-        const { data: forms, error: e2 } = await adminClient
-          .from("fir_forms")
-          .select("*")
-          .eq("deleted_by_user", false)
-          .order("updated_at", { ascending: false });
-        if (e2) throw e2;
-
-        // Enrich with profiles manually
-        const { data: allProfiles } = await adminClient.from("profiles").select("user_id, nome, cognome, codice_fiscale");
-        const enriched = (forms || []).map((f: any) => {
-          const p = allProfiles?.find((pr: any) => pr.user_id === f.user_id);
-          return { ...f, user_profile: p || null };
-        });
-        return new Response(JSON.stringify({ forms: enriched }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (filterTenantId) {
+        query = query.eq("tenant_id", filterTenantId);
       }
 
-      const enriched = (data || []).map((f: any) => ({
+      const { data: forms, error } = await query;
+      if (error) throw error;
+
+      // Enrich with profiles
+      const userIds = [...new Set((forms || []).map((f: any) => f.user_id))];
+      let profileMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await adminClient
+          .from("profiles")
+          .select("user_id, nome, cognome, codice_fiscale")
+          .in("user_id", userIds);
+        if (profiles) {
+          for (const p of profiles) profileMap[p.user_id] = p;
+        }
+      }
+
+      const enriched = (forms || []).map((f: any) => ({
         ...f,
-        user_profile: f.profiles || null,
+        user_profile: profileMap[f.user_id] || null,
       }));
 
       return new Response(JSON.stringify({ forms: enriched }), {

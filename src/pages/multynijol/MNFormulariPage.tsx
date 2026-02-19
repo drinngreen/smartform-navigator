@@ -63,7 +63,7 @@ export default function MNFormulariPage() {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-user-manage", {
-        body: { action: "list_fir_forms", tenant_id: mnCtx.orgId },
+        body: { action: "list_fir_forms", tenant_id: mnCtx.tenantId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -73,7 +73,7 @@ export default function MNFormulariPage() {
     } finally {
       setLoading(false);
     }
-  }, [mnCtx?.orgId]);
+  }, [mnCtx?.tenantId]);
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
