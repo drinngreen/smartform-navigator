@@ -23,6 +23,7 @@ import iconDestinatario from "@/assets/menu-icons/destinatario.png";
 import iconSms from "@/assets/menu-icons/sms.png";
 import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
 import iconEmail from "@/assets/menu-icons/email.png";
+import intermediazionIcon from "@/assets/intermediazione-icon.png";
 
 function buildIcons(prefix: string): DesktopIconDef[] {
   return [
@@ -49,6 +50,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     { id: "pagamenti", label: "Pagamenti", iconImage: iconFatturazione, href: `${prefix}/pagamenti`, color: "239, 68, 68" },
     { id: "trasportatori", label: "Trasportatori", iconImage: iconPersonale, href: `${prefix}/trasportatori`, color: "6, 182, 212" },
     { id: "storico-ricevute", label: "Storico Ricevute", iconImage: iconRegistroFir, href: `${prefix}/storico-ricevute`, color: "168, 85, 247" },
+    { id: "intermediazione", label: "Intermediazione", iconImage: intermediazionIcon, href: `${prefix}/intermediazione`, color: "168, 85, 247" },
     { id: "analytics", label: "Analytics", iconImage: iconAnalytics, href: `${prefix}/analytics`, color: "249, 115, 22" },
     { id: "notifiche", label: "Notifiche", iconImage: iconNotifiche, href: `${prefix}/notifiche`, color: "239, 68, 68" },
     { id: "anagrafica", label: "Anagrafica", iconImage: iconPersonale, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247", subItems: [

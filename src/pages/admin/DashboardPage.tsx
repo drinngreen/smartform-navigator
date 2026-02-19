@@ -3,6 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { DesktopIconGrid, type DesktopIconDef } from "@/components/desktop/DesktopIconGrid";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import intermediazionIcon from "@/assets/intermediazione-icon.png";
 
 import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
 import iconPersonale from "@/assets/menu-icons/personale.png";
@@ -35,6 +36,7 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "rubrica", label: "Rubrica", iconImage: iconPersonale, href: "/admin/rubrica", color: "16, 185, 129" },
   { id: "ai", label: "Zoli Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
   { id: "analytics", label: "Analytics", iconImage: iconAnalytics, href: "/admin/analytics", color: "249, 115, 22" },
+  { id: "intermediazione", label: "Intermediazione", iconImage: intermediazionIcon, href: "/admin/intermediazione", color: "168, 85, 247" },
   { id: "app", label: "App Mobile", iconImage: iconAppMobile, href: "/admin/app-mobile", color: "251, 191, 36" },
   { id: "notifiche", label: "Notifiche", iconImage: iconNotifiche, href: "/admin/notifiche", color: "239, 68, 68" },
 ];

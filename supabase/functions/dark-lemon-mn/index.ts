@@ -86,6 +86,22 @@ Colonne: id, user_id, tenant_id, retell_call_id, agent_id, from_number, to_numbe
 ### messages
 Messaggi tra utenti.
 Colonne: id, sender_id, receiver_id, content, is_read, read_at, deleted_by_sender, deleted_by_receiver, created_at, updated_at.
+
+### intermediari
+Anagrafica intermediari rifiuti (Cat. 8 Albo Gestori Ambientali).
+Colonne: id (uuid PK), tenant_id (uuid), ragione_sociale (text NOT NULL), nome, cognome, codice_fiscale, partita_iva, indirizzo, cap, comune, provincia, nazione, pec, email, telefono, codice_destinatario, numero_iscrizione_albo, categoria_albo, data_iscrizione_albo (date), data_scadenza_albo (date), cer_autorizzati (text[]), note, attivo (bool default true), created_at, updated_at.
+
+### intermediazioni
+Operazioni di intermediazione rifiuti — collega produttore, intermediario, trasportatore e destinatario.
+Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), produttore_id (uuid FK->organizations), destinatario_id (uuid FK->organizations), trasportatore_id (uuid FK->organizations), fir_id (uuid FK->fir), fir_form_id (uuid FK->fir_forms), cer (text), descrizione_rifiuto, quantita_stimata_kg (numeric), quantita_effettiva_kg (numeric), tipo_provvigione (text: 'euro_ton'|'percentuale'|'forfait'), valore_provvigione (numeric), importo_provvigione (numeric), contratto_ref, condizioni_economiche, stato (text: 'bozza'|'in_corso'|'completata'|'annullata'), fatturata (bool), fattura_id (uuid FK->erp_fatture_vendita), note, created_by, created_at, updated_at.
+
+### movimenti_intermediario
+Registro cronologico movimenti dell'intermediario (obbligatorio per Cat. 8).
+Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), intermediazione_id (uuid FK->intermediazioni), data_movimento (date), fir_id (uuid FK->fir), fir_form_id (uuid FK->fir_forms), produttore_id (uuid FK->organizations), destinatario_id (uuid FK->organizations), produttore_denominazione, destinatario_denominazione, cer (text NOT NULL), descrizione_rifiuto, quantita_kg (numeric NOT NULL), numero_fir, tipo_movimento (text default 'intermediazione'), note, created_by, created_at, updated_at.
+
+### listini_intermediazione
+Listini provvigioni per intermediari (fee per produttore/CER).
+Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), produttore_id (uuid FK->organizations), cer, tipo_provvigione (text: 'euro_ton'|'percentuale'|'forfait'), valore_provvigione (numeric NOT NULL), fee_minimo (numeric), descrizione, valido_dal (date), valido_al (date), attivo (bool default true), created_at, updated_at.
 `;
 
 const SYSTEM_PROMPT = `Sei DARK LEMON AI, l'assistente intelligente avanzato per il tenant Multy Niyol.
