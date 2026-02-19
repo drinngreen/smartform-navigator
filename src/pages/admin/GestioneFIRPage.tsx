@@ -16,6 +16,7 @@ export default function GestioneFIRPage() {
   const queryClient = useQueryClient();
   const [bulkInput, setBulkInput] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [requestQty, setRequestQty] = useState(5);
   const [isTesting, setIsTesting] = useState(false);
   const [poolFilter, setPoolFilter] = useState<PoolFilter>("all");
   const [poolPage, setPoolPage] = useState(0);
@@ -221,7 +222,7 @@ export default function GestioneFIRPage() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazioneNgrok("GLOBAL", 50);
+      const result = await richiestaVidimazioneNgrok("GLOBAL", requestQty);
       if (result.ok && result.data) {
         const numeri = result.data.numeri || result.data.firNumbers || [];
         const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
@@ -314,6 +315,16 @@ export default function GestioneFIRPage() {
               ATTENZIONE: Serbatoio vuoto!
             </div>
           )}
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-muted-foreground">Quantità:</label>
+            <div className="flex gap-2">
+              {[5, 10, 50, 100].map((q) => (
+                <button key={q} onClick={() => setRequestQty(q)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${requestQty === q ? "bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-transparent"}`}
+                >{q}</button>
+              ))}
+            </div>
+          </div>
           <button
             onClick={handleRequestFromRentri}
             disabled={isRequesting}
