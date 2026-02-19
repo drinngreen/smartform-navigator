@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazione, downloadCSV } from "@/lib/rentriSuperApi";
-import { supabase } from "@/lib/supabaseClient";
+import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
+import { downloadCSV } from "@/lib/rentriSuperApi";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const QUANTITIES = [50, 100, 500];
@@ -13,7 +14,8 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
 
   const handleRequest = async () => {
     setLoading(true);
-    const result = await richiestaVidimazione(tenant, qty);
+    const company = tenant.toUpperCase() === "MULTYPROGET" ? "MULTY" : tenant.toUpperCase();
+    const result = await richiestaVidimazioneNgrok(company, qty);
     if (result.ok && result.data?.numeri) {
       const numbers: string[] = result.data.numeri;
       setLastNumbers(numbers);
