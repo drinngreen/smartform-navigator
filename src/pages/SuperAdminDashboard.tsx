@@ -7,7 +7,9 @@ import { DigitalSignatureSection } from "@/components/superadmin/DigitalSignatur
 import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarSection";
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
 import { SystemPromptReviewSection } from "@/components/superadmin/SystemPromptReviewSection";
+import { RENTRIActionsPanel } from "@/components/superadmin/RENTRIActionsPanel";
 import { healthCheck } from "@/lib/rentriSuperApi";
+import { ngrokHealthCheck } from "@/lib/rentriNgrokApi";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const TENANTS = [
@@ -29,6 +31,7 @@ export default function SuperAdminDashboard() {
   const [activeTenant, setActiveTenant] = useState(TENANTS[0]);
   const [showTenantMenu, setShowTenantMenu] = useState(false);
   const [railwayUp, setRailwayUp] = useState<boolean | null>(null);
+  const [ngrokUp, setNgrokUp] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!isLoading) {
@@ -41,6 +44,7 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     healthCheck().then((r) => setRailwayUp(r.ok));
+    ngrokHealthCheck().then((r) => setNgrokUp(r.ok));
   }, []);
 
   const handleLogout = async () => {
@@ -105,9 +109,15 @@ export default function SuperAdminDashboard() {
           </div>
 
           {/* Railway status */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className={`w-2 h-2 rounded-full ${railwayUp === true ? "bg-green-500" : railwayUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
-            Railway {railwayUp === true ? "Online" : railwayUp === false ? "Offline" : "..."}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${railwayUp === true ? "bg-green-500" : railwayUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
+              Railway {railwayUp === true ? "Online" : railwayUp === false ? "Offline" : "..."}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${ngrokUp === true ? "bg-green-500" : ngrokUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
+              Ngrok {ngrokUp === true ? "Online" : ngrokUp === false ? "Offline" : "..."}
+            </div>
           </div>
         </div>
 
@@ -118,6 +128,7 @@ export default function SuperAdminDashboard() {
 
       {/* Content */}
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        <RENTRIActionsPanel tenant={activeTenant.id} />
         <SystemPromptReviewSection />
         <FIRPoolSection tenant={activeTenant.id} />
         <DigitalSignatureSection tenant={activeTenant.id} />
