@@ -8,7 +8,6 @@ import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarS
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
 import { SystemPromptReviewSection } from "@/components/superadmin/SystemPromptReviewSection";
 import { RENTRIActionsPanel } from "@/components/superadmin/RENTRIActionsPanel";
-import { healthCheck } from "@/lib/rentriSuperApi";
 import { ngrokHealthCheck } from "@/lib/rentriNgrokApi";
 import logoDragon from "@/assets/logo-dragon.png";
 
@@ -30,7 +29,6 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const [activeTenant, setActiveTenant] = useState(TENANTS[0]);
   const [showTenantMenu, setShowTenantMenu] = useState(false);
-  const [railwayUp, setRailwayUp] = useState<boolean | null>(null);
   const [ngrokUp, setNgrokUp] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -43,7 +41,6 @@ export default function SuperAdminDashboard() {
   }, [user, isAdmin, isLoading, navigate]);
 
   useEffect(() => {
-    healthCheck().then((r) => setRailwayUp(r.ok));
     ngrokHealthCheck().then((r) => setNgrokUp(r.ok));
   }, []);
 
@@ -108,15 +105,11 @@ export default function SuperAdminDashboard() {
             )}
           </div>
 
-          {/* Railway status */}
+          {/* Backend status */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${railwayUp === true ? "bg-green-500" : railwayUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
-              Railway {railwayUp === true ? "Online" : railwayUp === false ? "Offline" : "..."}
-            </div>
-            <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${ngrokUp === true ? "bg-green-500" : ngrokUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
-              Ngrok {ngrokUp === true ? "Online" : ngrokUp === false ? "Offline" : "..."}
+              Backend {ngrokUp === true ? "Online" : ngrokUp === false ? "Offline" : "..."}
             </div>
           </div>
         </div>

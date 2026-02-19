@@ -1,6 +1,8 @@
-import { supabase } from "@/lib/supabaseClient";
+/**
+ * RENTRI Super Admin API — now routes through Ngrok backend.
+ */
 
-const RAILWAY_BASE = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
+const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
 
 export interface RENTRILogEntry {
   id: string;
@@ -34,18 +36,21 @@ export function subscribeToLogs(fn: () => void) {
 
 export function getLogs() { return logEntries; }
 
-async function callRailway(endpoint: string, tenant: string, body: any) {
-  const url = `${RAILWAY_BASE}${endpoint}`;
+async function callNgrok(endpoint: string, tenant: string, body: any) {
+  const url = `${NGROK_BASE}${endpoint}`;
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, isSandbox: false }),
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify(body),
     });
     let data: any;
     try { data = await res.json(); } catch { data = { raw: "non-json response" }; }
-    const entry = addLog({ endpoint, tenant, status: res.status, success: res.ok, response: data, request: body });
-    return { ok: res.ok, status: res.status, data, logEntry: entry };
+    const entry = addLog({ endpoint, tenant, status: res.status, success: data?.success ?? res.ok, response: data, request: body });
+    return { ok: data?.success ?? res.ok, status: res.status, data, logEntry: entry };
   } catch (err: any) {
     const entry = addLog({ endpoint, tenant, status: 0, success: false, response: { error: err.message }, request: body });
     return { ok: false, status: 0, data: { error: err.message }, logEntry: entry };
@@ -54,32 +59,31 @@ async function callRailway(endpoint: string, tenant: string, body: any) {
 
 export async function healthCheck() {
   try {
-    const { data, error } = await supabase.functions.invoke("railway-health", {
-      method: "GET",
+    const res = await fetch(`${NGROK_BASE}/api/rentri/health`, {
+      headers: { "ngrok-skip-browser-warning": "true" },
     });
-    if (error) return { ok: false, status: 0 };
-    return { ok: data.ok, status: data.status };
+    return { ok: res.ok, status: res.status };
   } catch { return { ok: false, status: 0 }; }
 }
 
 export async function richiestaVidimazione(societaId: string, quantita: number) {
-  return callRailway("/vidimate", societaId, { company: societaId, quantita });
+  return callNgrok("/api/rentri/action/vidimazione", societaId, { company: societaId, quantity: quantita });
 }
 
 export async function firmaFirProduttore(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { societaId, payloadFir: firData });
+  return callNgrok("/api/rentri/action/emissione", societaId, { company: societaId, payload: firData });
 }
 
 export async function firmaFirDestinatario(societaId: string, firData: any) {
-  return callRailway("/firma-fir", societaId, { societaId, payloadFir: firData });
+  return callNgrok("/api/rentri/action/firma-ricezione", societaId, { company: societaId, payload: firData });
 }
 
 export async function registroCarico(societaId: string, payload: any) {
-  return callRailway("/registro/carico", societaId, { company: societaId, ...payload });
+  return callNgrok("/api/rentri/action/emissione", societaId, { company: societaId, payload });
 }
 
 export async function registroScarico(societaId: string, payload: any) {
-  return callRailway("/registro/scarico", societaId, { company: societaId, ...payload });
+  return callNgrok("/api/rentri/action/firma-ricezione", societaId, { company: societaId, payload });
 }
 
 export function downloadCSV(numbers: string[], filename: string) {

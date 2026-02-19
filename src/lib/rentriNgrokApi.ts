@@ -1,14 +1,12 @@
 /**
  * RENTRI Actions API — calls the Ngrok-exposed backend.
- * Every call is logged through the same in-memory log used by the Railway API
- * so the Super Admin console displays both sources.
  */
 
-import { subscribeToLogs, getLogs, type RENTRILogEntry } from "./rentriSuperApi";
+import { type RENTRILogEntry } from "./rentriSuperApi";
 
 const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
 
-/* ── shared log (re-use existing infra from rentriSuperApi) ── */
+/* ── shared log ── */
 
 let ngrokLogs: RENTRILogEntry[] = [];
 let ngrokLogListeners: Array<() => void> = [];

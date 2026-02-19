@@ -1,54 +1,36 @@
 /**
- * RENTRI API Service – connects to the Dragon Rifiuti Sender on Render.
- * Handles FIR signature (vidimazione), QR code retrieval, PDF/xFIR download,
- * and pool replenishment (vidimate).
+ * RENTRI API Service – connects to the Ngrok-exposed backend.
  */
 
-import { supabase } from "@/lib/supabaseClient";
+const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
 
-const RENTRI_BASE_URL = "https://dragonrifiutisender-production.up.railway.app/api/rentri";
-/**
- * Health check – proxied through edge function to avoid CORS.
- */
-export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
-  const url = "railway-health (edge function)";
-  try {
-    const { data, error } = await supabase.functions.invoke("railway-health", {
-      method: "GET",
-    });
-    if (error) return { ok: false, url, status: 0, body: error.message };
-    return { ok: data.ok, url, status: data.status, body: JSON.stringify(data) };
-  } catch (err: any) {
-    return { ok: false, url, status: 0, body: err.message || String(err) };
-  }
-}
-
-// ─── Tenant → societaId mapping ─────────────────────────────
+// ─── Tenant → company mapping ─────────────────────────────
 const TENANT_MAP: Record<string, string> = {
-  "167d07ad-9184-484e-85a6-da5ceafa42a3": "global", // Global Reco
-  "dc2a6046-d9a8-4549-8e45-82367d695ac6": "multy_niyol", // Multy Niyol
+  "167d07ad-9184-484e-85a6-da5ceafa42a3": "GLOBAL",
+  "dc2a6046-d9a8-4549-8e45-82367d695ac6": "MULTY",
 };
 
 const MN_CONTEXT_MAP: Record<string, string> = {
-  multyproget: "multy",
-  niyol: "niyol",
+  multyproget: "MULTY",
+  "multyproget-intermediario": "MULTY",
+  "multyproget-impianto": "MULTY",
+  niyol: "NIYOL",
 };
 
 /**
- * Resolve the societaId from the user's profile / tenant.
+ * Resolve the company name from the user's profile / tenant.
  */
 export function resolveSocietaId(
   tenantId?: string | null,
   mnContext?: string | null
 ): string {
-  if (tenantId && TENANT_MAP[tenantId]) {
-    const base = TENANT_MAP[tenantId];
-    if (base === "multy_niyol" && mnContext) {
-      return MN_CONTEXT_MAP[mnContext] || mnContext;
-    }
-    return base;
+  if (mnContext && MN_CONTEXT_MAP[mnContext]) {
+    return MN_CONTEXT_MAP[mnContext];
   }
-  return "global";
+  if (tenantId && TENANT_MAP[tenantId]) {
+    return TENANT_MAP[tenantId];
+  }
+  return "GLOBAL";
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -59,8 +41,8 @@ export interface RentriFirmaPayload {
 
 export interface RentriFirmaResponse {
   numero_fir: string;
-  qr_code?: string;       // base64 string or data-uri for QR
-  qrCodeBytes?: string;   // alternative field name from some server versions
+  qr_code?: string;
+  qrCodeBytes?: string;
   pdf_url?: string;
   [key: string]: unknown;
 }
@@ -85,13 +67,7 @@ export interface RentriChiusuraPayload {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-/**
- * Strip heavy / binary fields from the payload before sending to Render.
- * The server loads certificates from its own /etc/secrets/ – we must NOT
- * include any base64, p12 data, or oversized blobs in the request.
- */
 function sanitizePayloadFir(raw: Record<string, unknown>): Record<string, unknown> {
-  // Fields that are relevant for RENTRI signature
   const ALLOWED_KEYS = new Set([
     "numero_fir",
     "produttore_denominazione", "produttore_codice_fiscale", "produttore_indirizzo",
@@ -105,14 +81,12 @@ function sanitizePayloadFir(raw: Record<string, unknown>): Record<string, unknow
     "codice_eer", "descrizione_rifiuto", "stato_fisico",
     "quantita", "unita_misura", "caratteristiche_hp",
     "data_partenza", "data_arrivo", "note",
-    // Nested objects accepted by old callers
     "produttore", "destinatario", "trasportatore", "intermediario", "rifiuto",
   ]);
 
   const clean: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!ALLOWED_KEYS.has(key)) continue;
-    // Extra safety: skip any string longer than 10 KB (base64 blobs, etc.)
     if (typeof value === "string" && value.length > 10_000) continue;
     clean[key] = value;
   }
@@ -121,26 +95,35 @@ function sanitizePayloadFir(raw: Record<string, unknown>): Record<string, unknow
 
 // ─── API Functions ───────────────────────────────────────────
 
+export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; status: number; body: string }> {
+  const url = `${NGROK_BASE}/api/rentri/health`;
+  try {
+    const res = await fetch(url, {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    return { ok: res.ok, url, status: res.status, body: res.ok ? "OK" : "Error" };
+  } catch (err: any) {
+    return { ok: false, url, status: 0, body: err.message || String(err) };
+  }
+}
+
 /**
- * Send FIR data to RENTRI server for signature (vidimazione).
- * Called when clicking "INVIA E FIRMA PARTENZA".
- *
- * IMPORTANT: Only sends societaId + clean FIR fields.
- * No certificates, no base64, no form_data blobs.
- * The Render server loads the .p12 certificate from /etc/secrets/.
+ * Send FIR data for signature (emissione) via Ngrok.
  */
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
   const body = {
-    societaId: payload.societaId,
-    payloadFir: sanitizePayloadFir(payload.payloadFir),
-    isSandbox: false,
+    company: payload.societaId,
+    payload: sanitizePayloadFir(payload.payloadFir),
   };
 
-  const res = await fetch(`${RENTRI_BASE_URL}/firma-fir`, {
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
     body: JSON.stringify(body),
   });
 
@@ -158,16 +141,18 @@ export async function inviaFirmaRentri(
 }
 
 /**
- * Request new vidimated FIR numbers from RENTRI.
- * Called when the pool is empty and admin requests replenishment.
+ * Request new vidimated FIR numbers.
  */
 export async function richiediNuoviNumeri(
   company: string
 ): Promise<RentriVidimateResponse> {
-  const res = await fetch(`${RENTRI_BASE_URL}/vidimate`, {
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/vidimazione`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ company }),
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify({ company, quantity: 50 }),
   });
 
   const data = await res.json();
@@ -180,31 +165,38 @@ export async function richiediNuoviNumeri(
     throw new Error(errMsg);
   }
 
-  // Normalize response: accept { numeri: [...] }, { firNumber: "..." }, or { numeri: "..." }
   let numeri: string[] = [];
-  if (Array.isArray(data.numeri)) {
-    numeri = data.numeri;
-  } else if (typeof data.numeri === "string") {
-    numeri = [data.numeri];
-  } else if (typeof data.firNumber === "string") {
-    numeri = [data.firNumber];
-  } else if (Array.isArray(data.firNumbers)) {
-    numeri = data.firNumbers;
-  }
+  if (Array.isArray(data.numeri)) numeri = data.numeri;
+  else if (typeof data.numeri === "string") numeri = [data.numeri];
+  else if (typeof data.firNumber === "string") numeri = [data.firNumber];
+  else if (Array.isArray(data.firNumbers)) numeri = data.firNumbers;
 
   return { ...data, numeri };
 }
 
 /**
- * Send closure data (peso accettato) to finalize FIR on RENTRI.
+ * Send closure data (firma ricezione) via Ngrok.
  */
 export async function chiudiFirRentri(
   payload: RentriChiusuraPayload
 ): Promise<Record<string, unknown>> {
-  const res = await fetch(`${RENTRI_BASE_URL}/chiudi-fir`, {
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/firma-ricezione`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify({
+      company: payload.societaId,
+      payload: {
+        fir_id: payload.numero_fir,
+        dati_arrivo: {
+          peso_verificato: payload.peso_accettato,
+          accettato: true,
+          data_arrivo: payload.data_arrivo || new Date().toISOString(),
+        },
+      },
+    }),
   });
 
   const data = await res.json();
@@ -221,22 +213,22 @@ export async function chiudiFirRentri(
 }
 
 /**
- * Build the PDF download URL for a given FIR number.
+ * Build the PDF download URL via Ngrok.
  */
 export function getRentriPdfUrl(numeroFir: string): string {
-  return `${RENTRI_BASE_URL}/pdf/${encodeURIComponent(numeroFir)}`;
+  return `${NGROK_BASE}/api/rentri/action/get-pdf?firId=${encodeURIComponent(numeroFir)}`;
 }
 
 /**
- * Build the xFIR download URL for a given FIR number.
+ * Build the xFIR download URL via Ngrok.
  */
 export function getRentriXfirUrl(numeroFir: string): string {
-  return `${RENTRI_BASE_URL}/xfir/${encodeURIComponent(numeroFir)}`;
+  return `${NGROK_BASE}/api/rentri/action/get-xfir?firId=${encodeURIComponent(numeroFir)}`;
 }
 
 /**
- * Build the QR code image URL if the server provides one via endpoint.
+ * Build the QR code image URL via Ngrok.
  */
 export function getRentriQrUrl(numeroFir: string): string {
-  return `${RENTRI_BASE_URL}/qr/${encodeURIComponent(numeroFir)}`;
+  return `${NGROK_BASE}/api/rentri/action/get-qr?firId=${encodeURIComponent(numeroFir)}`;
 }
