@@ -31,7 +31,7 @@ export default function MNGPSFlottaPage() {
   const fetchLocations = async () => {
     const windowAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     let q = supabase.from("driver_locations").select("*").gte("created_at", windowAgo).order("created_at", { ascending: false });
-    if (mnCtx?.orgId) q = q.eq("tenant_id", mnCtx.orgId);
+    if (mnCtx?.tenantId) q = q.eq("tenant_id", mnCtx.tenantId);
     const { data, error } = await q;
     if (error) { console.error("GPS fetch error:", error); setLoading(false); return; }
     const latestByUser = new Map<string, any>();
