@@ -136,15 +136,21 @@ export default function MNMagazzinoPage() {
     })();
   }, []);
 
+  const TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
+
   const fetchAll = useCallback(async () => {
-    if (!selectedImpianto) return;
     setLoading(true);
-    const [privRes, limRes, confRes, ricRes] = await Promise.all([
-      supabase.from("anagrafica_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("cognome"),
-      supabase.from("limiti_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("cer"),
-      supabase.from("privati_conferimenti").select("*").eq("impianto_id", selectedImpianto).order("data", { ascending: false }).limit(200),
-      supabase.from("ricevute_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("data_emissione", { ascending: false }).limit(200),
-    ]);
+    const privQuery = supabase.from("anagrafica_privati" as any).select("*").eq("tenant_id", TENANT_ID).order("cognome");
+    const limQuery = selectedImpianto
+      ? supabase.from("limiti_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("cer")
+      : supabase.from("limiti_privati" as any).select("*").eq("tenant_id", TENANT_ID).order("cer");
+    const confQuery = selectedImpianto
+      ? supabase.from("privati_conferimenti").select("*").eq("impianto_id", selectedImpianto).order("data", { ascending: false }).limit(200)
+      : supabase.from("privati_conferimenti").select("*").eq("tenant_id", TENANT_ID).order("data", { ascending: false }).limit(200);
+    const ricQuery = selectedImpianto
+      ? supabase.from("ricevute_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("data_emissione", { ascending: false }).limit(200)
+      : supabase.from("ricevute_privati" as any).select("*").eq("tenant_id", TENANT_ID).order("data_emissione", { ascending: false }).limit(200);
+    const [privRes, limRes, confRes, ricRes] = await Promise.all([privQuery, limQuery, confQuery, ricQuery]);
     setPrivati((privRes.data as any) || []);
     setLimiti((limRes.data as any) || []);
     setConferimenti((confRes.data as any) || []);

@@ -129,6 +129,7 @@ export type Database = {
       anagrafica_privati: {
         Row: {
           attivo: boolean
+          automezzo: string | null
           cap: string | null
           cellulare: string | null
           codice_destinatario: string | null
@@ -151,6 +152,7 @@ export type Database = {
           partita_iva: string | null
           pec: string | null
           provincia: string | null
+          targa_automezzo: string | null
           telefono: string | null
           tenant_id: string | null
           tipo_utenza: string
@@ -158,6 +160,7 @@ export type Database = {
         }
         Insert: {
           attivo?: boolean
+          automezzo?: string | null
           cap?: string | null
           cellulare?: string | null
           codice_destinatario?: string | null
@@ -180,6 +183,7 @@ export type Database = {
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
+          targa_automezzo?: string | null
           telefono?: string | null
           tenant_id?: string | null
           tipo_utenza?: string
@@ -187,6 +191,7 @@ export type Database = {
         }
         Update: {
           attivo?: boolean
+          automezzo?: string | null
           cap?: string | null
           cellulare?: string | null
           codice_destinatario?: string | null
@@ -209,6 +214,7 @@ export type Database = {
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
+          targa_automezzo?: string | null
           telefono?: string | null
           tenant_id?: string | null
           tipo_utenza?: string
@@ -2570,6 +2576,89 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      storico_ricevute_privati: {
+        Row: {
+          cap: string | null
+          citta: string | null
+          codice_cliente: string | null
+          codice_fiscale: string | null
+          created_at: string
+          data_doc: string
+          descrizione_pagamento: string | null
+          id: string
+          imponibile: number | null
+          indirizzo: string | null
+          metodo_pagamento: string | null
+          numero_doc: string
+          peso_lordo: number | null
+          peso_netto: number | null
+          provincia: string | null
+          quantita_fatturabile: number | null
+          quantita_kg: number | null
+          ragione_sociale: string
+          stato_ddt: string | null
+          tenant_id: string | null
+          tipo_doc: string | null
+          totale_doc: number | null
+        }
+        Insert: {
+          cap?: string | null
+          citta?: string | null
+          codice_cliente?: string | null
+          codice_fiscale?: string | null
+          created_at?: string
+          data_doc: string
+          descrizione_pagamento?: string | null
+          id?: string
+          imponibile?: number | null
+          indirizzo?: string | null
+          metodo_pagamento?: string | null
+          numero_doc: string
+          peso_lordo?: number | null
+          peso_netto?: number | null
+          provincia?: string | null
+          quantita_fatturabile?: number | null
+          quantita_kg?: number | null
+          ragione_sociale: string
+          stato_ddt?: string | null
+          tenant_id?: string | null
+          tipo_doc?: string | null
+          totale_doc?: number | null
+        }
+        Update: {
+          cap?: string | null
+          citta?: string | null
+          codice_cliente?: string | null
+          codice_fiscale?: string | null
+          created_at?: string
+          data_doc?: string
+          descrizione_pagamento?: string | null
+          id?: string
+          imponibile?: number | null
+          indirizzo?: string | null
+          metodo_pagamento?: string | null
+          numero_doc?: string
+          peso_lordo?: number | null
+          peso_netto?: number | null
+          provincia?: string | null
+          quantita_fatturabile?: number | null
+          quantita_kg?: number | null
+          ragione_sociale?: string
+          stato_ddt?: string | null
+          tenant_id?: string | null
+          tipo_doc?: string | null
+          totale_doc?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storico_ricevute_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenants: {
         Row: {

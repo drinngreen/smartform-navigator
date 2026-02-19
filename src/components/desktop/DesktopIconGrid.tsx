@@ -23,17 +23,33 @@ interface DesktopIcon extends DesktopIconDef {
   y: number;
 }
 
-const ICON_SPACING_X = 220;
-const ICON_SPACING_Y = 240;
-const COLS = 5;
+const CELL_W = 180;
+const CELL_H = 160;
+const COLS = 6;
+const PAD_X = 20;
+const PAD_Y = 10;
 const DEFAULT_STORAGE_KEY = "desktop-icon-positions";
 
+/** Convert grid col/row to pixel position */
+function cellToPixel(col: number, row: number) {
+  return { x: col * CELL_W + PAD_X, y: row * CELL_H + PAD_Y };
+}
+
+/** Convert pixel position to nearest grid col/row */
+function pixelToCell(x: number, y: number) {
+  return {
+    col: Math.max(0, Math.round((x - PAD_X) / CELL_W)),
+    row: Math.max(0, Math.round((y - PAD_Y) / CELL_H)),
+  };
+}
+
 function createPositionedIcons(items: DesktopIconDef[]): DesktopIcon[] {
-  return items.filter(Boolean).map((item, i) => ({
-    ...item,
-    x: (i % COLS) * ICON_SPACING_X + 40,
-    y: Math.floor(i / COLS) * ICON_SPACING_Y + 20,
-  }));
+  return items.filter(Boolean).map((item, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const { x, y } = cellToPixel(col, row);
+    return { ...item, x, y };
+  });
 }
 
 function loadPositions(storageKey: string): Record<string, { x: number; y: number }> {
@@ -51,14 +67,58 @@ function savePositions(icons: DesktopIcon[], storageKey: string) {
   localStorage.setItem(storageKey, JSON.stringify(map));
 }
 
+/** Find nearest free cell for an icon, avoiding occupied cells */
+function findFreeCell(
+  targetCol: number,
+  targetRow: number,
+  occupied: Set<string>,
+  maxCols: number = COLS
+): { col: number; row: number } {
+  const key = (c: number, r: number) => `${c},${r}`;
+  if (!occupied.has(key(targetCol, targetRow))) return { col: targetCol, row: targetRow };
+
+  // Spiral search for nearest free cell
+  for (let dist = 1; dist < 50; dist++) {
+    for (let dc = -dist; dc <= dist; dc++) {
+      for (let dr = -dist; dr <= dist; dr++) {
+        if (Math.abs(dc) !== dist && Math.abs(dr) !== dist) continue;
+        const c = targetCol + dc;
+        const r = targetRow + dr;
+        if (c < 0 || r < 0 || c >= maxCols) continue;
+        if (!occupied.has(key(c, r))) return { col: c, row: r };
+      }
+    }
+  }
+  return { col: targetCol, row: targetRow };
+}
+
 function initIcons(defs: DesktopIconDef[], storageKey: string): DesktopIcon[] {
   const saved = loadPositions(storageKey);
   const defaults = createPositionedIcons(defs);
-  return defaults.map(icon => {
-    if (!icon) return icon;
+  const occupied = new Set<string>();
+  const result: DesktopIcon[] = [];
+
+  for (const icon of defaults) {
+    if (!icon) { result.push(icon); continue; }
     const s = saved[icon.id];
-    return s && typeof s.x === "number" ? { ...icon, ...s } : icon;
-  });
+    let finalX = icon.x, finalY = icon.y;
+    if (s && typeof s.x === "number") { finalX = s.x; finalY = s.y; }
+
+    // Snap to grid
+    const { col, row } = pixelToCell(finalX, finalY);
+    const key = `${col},${row}`;
+    if (occupied.has(key)) {
+      const free = findFreeCell(col, row, occupied);
+      const pos = cellToPixel(free.col, free.row);
+      occupied.add(`${free.col},${free.row}`);
+      result.push({ ...icon, x: pos.x, y: pos.y });
+    } else {
+      occupied.add(key);
+      const pos = cellToPixel(col, row);
+      result.push({ ...icon, x: pos.x, y: pos.y });
+    }
+  }
+  return result;
 }
 
 interface DesktopIconGridProps {
@@ -81,10 +141,10 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
   }
 
   const rows = Math.ceil(iconDefs.length / COLS);
-  const minHeight = rows * ICON_SPACING_Y + 40;
+  const minHeight = rows * CELL_H + 40;
 
   const handleMouseDown = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
-    if (e.button !== 0) return; // only left click
+    if (e.button !== 0) return;
     e.preventDefault();
     const wasDragging = isDragging.current;
     isDragging.current = false;
@@ -111,18 +171,15 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
       didDrag = true;
       isDragging.current = true;
       const r = containerRef.current.getBoundingClientRect();
-      setIcons(prev => {
-        const next = prev.map(ic =>
-          ic.id === dragRef.current!.id
-            ? {
-                ...ic,
-                x: Math.max(0, Math.min(r.width - 100, me.clientX - r.left - dragRef.current!.offsetX)),
-                y: Math.max(0, Math.min(r.height - 100, me.clientY - r.top - dragRef.current!.offsetY)),
-              }
-            : ic
-        );
-        return next;
-      });
+      setIcons(prev => prev.map(ic =>
+        ic.id === dragRef.current!.id
+          ? {
+              ...ic,
+              x: Math.max(0, Math.min(r.width - 100, me.clientX - r.left - dragRef.current!.offsetX)),
+              y: Math.max(0, Math.min(r.height - 100, me.clientY - r.top - dragRef.current!.offsetY)),
+            }
+          : ic
+      ));
     };
 
     const handleMouseUp = () => {
@@ -133,28 +190,47 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
       if (!didDrag) {
         navigate(icon.href);
       } else {
-        // Persist positions after drag
+        // Snap to grid and resolve collisions
         setIcons(prev => {
-          savePositions(prev, storageKey);
-          return prev;
+          const draggedIdx = prev.findIndex(ic => ic.id === icon.id);
+          if (draggedIdx === -1) return prev;
+          const dragged = prev[draggedIdx];
+          const { col, row } = pixelToCell(dragged.x, dragged.y);
+
+          // Build occupied set from all other icons
+          const occupied = new Set<string>();
+          prev.forEach((ic, idx) => {
+            if (idx === draggedIdx) return;
+            const cell = pixelToCell(ic.x, ic.y);
+            occupied.add(`${cell.col},${cell.row}`);
+          });
+
+          const free = findFreeCell(col, row, occupied);
+          const pos = cellToPixel(free.col, free.row);
+          const next = prev.map((ic, idx) =>
+            idx === draggedIdx ? { ...ic, x: pos.x, y: pos.y } : ic
+          );
+          savePositions(next, storageKey);
+          return next;
         });
       }
     };
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, [navigate]);
+  }, [navigate, storageKey]);
 
   const resetPositions = useCallback(() => {
     const defaults = createPositionedIcons(iconDefs);
     setIcons(defaults);
     localStorage.removeItem(storageKey);
-  }, [iconDefs]);
+  }, [iconDefs, storageKey]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, icon: DesktopIcon) => {
     e.preventDefault();
     setContextMenu({ iconId: icon.id, iconLabel: icon.label, x: e.clientX, y: e.clientY, subItems: icon.subItems });
   }, []);
+
   return (
     <>
       <div className="flex justify-end mb-2">
