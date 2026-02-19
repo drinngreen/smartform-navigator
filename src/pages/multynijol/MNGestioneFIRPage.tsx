@@ -30,6 +30,7 @@ export default function MNGestioneFIRPage() {
 
   const [bulkInput, setBulkInput] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [requestQty, setRequestQty] = useState(5);
   const [isTesting, setIsTesting] = useState(false);
   const [poolFilter, setPoolFilter] = useState<PoolFilter>("all");
   const [poolPage, setPoolPage] = useState(0);
@@ -110,7 +111,7 @@ export default function MNGestioneFIRPage() {
     setIsRequesting(true);
     const company = context === "multyproget" ? "MULTY" : "NIYOL";
     try {
-      const result = await richiestaVidimazioneNgrok(company, 50);
+      const result = await richiestaVidimazioneNgrok(company, requestQty);
       if (result.ok && result.data) {
         const numeri = result.data.numeri || result.data.firNumbers || [];
         const realNumbers = (Array.isArray(numeri) ? numeri : [numeri]).filter(
@@ -183,6 +184,16 @@ export default function MNGestioneFIRPage() {
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
           <div className="flex items-center gap-2 text-neon-cyan"><RefreshCw className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Richiedi Nuovi Numeri a RENTRI</h3></div>
           {(stats?.disponibili ?? 0) === 0 && <div className="flex items-center gap-2 text-amber-400 text-xs font-mono"><AlertTriangle className="h-4 w-4" /> Serbatoio vuoto!</div>}
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-muted-foreground">Quantità:</label>
+            <div className="flex gap-2">
+              {[5, 10, 50, 100].map((q) => (
+                <button key={q} onClick={() => setRequestQty(q)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${requestQty === q ? "bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-transparent"}`}
+                >{q}</button>
+              ))}
+            </div>
+          </div>
           <button onClick={handleRequestFromRentri} disabled={isRequesting} className="px-6 py-3 rounded-xl bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan font-display text-sm tracking-wider hover:bg-neon-cyan/30 transition-colors disabled:opacity-50 flex items-center gap-2">
             {isRequesting ? <div className="w-4 h-4 border-2 border-neon-cyan/50 border-t-neon-cyan rounded-full animate-spin" /> : <RefreshCw className="h-4 w-4" />} RICHIEDI
           </button>
