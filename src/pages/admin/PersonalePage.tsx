@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Shield, Eye, Pencil, Trash2, Search, RefreshCw, Loader2 } from "lucide-react";
+import { Users, Shield, Eye, Pencil, Trash2, Search, RefreshCw, Loader2, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CreateTransporterDialog } from "@/components/admin/CreateTransporterDialog";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ export default function PersonalePage() {
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [createDialog, setCreateDialog] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -161,6 +163,10 @@ export default function PersonalePage() {
             className="pl-10 bg-card/60 border-border/30"
           />
         </div>
+        <Button onClick={() => setCreateDialog(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          <span className="hidden sm:inline">Crea Trasportatore</span>
+        </Button>
         <Button variant="outline" size="icon" onClick={fetchUsers} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
@@ -289,6 +295,12 @@ export default function PersonalePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Create Transporter Dialog */}
+      <CreateTransporterDialog
+        open={createDialog}
+        onOpenChange={setCreateDialog}
+        onCreated={fetchUsers}
+      />
     </AdminLayout>
   );
 }

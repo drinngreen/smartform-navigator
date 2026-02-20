@@ -188,6 +188,61 @@ serve(async (req) => {
       });
     }
 
+    // ACTION: create_user - admin creates a transporter user
+    if (action === "create_user") {
+      const { nome, cognome, codice_fiscale, password, tenant_id: targetTenantId, mn_context, org_id, targa_automezzo } = body;
+      if (!nome || !cognome || !codice_fiscale || !password) {
+        return new Response(JSON.stringify({ error: "nome, cognome, codice_fiscale, password required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const email = `${codice_fiscale.toLowerCase()}@zoli.internal`;
+
+      // Create auth user
+      const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { nome, cognome, codice_fiscale: codice_fiscale.toUpperCase() },
+      });
+
+      if (authError) {
+        return new Response(JSON.stringify({ error: authError.message }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const newUserId = authData.user.id;
+
+      // Create profile
+      await adminClient.from("profiles").insert({
+        user_id: newUserId,
+        nome,
+        cognome,
+        codice_fiscale: codice_fiscale.toUpperCase(),
+        tenant_id: targetTenantId || null,
+        mn_context: mn_context || null,
+        targa_automezzo: targa_automezzo || null,
+      });
+
+      // Assign user role
+      await adminClient.from("user_roles").insert({ user_id: newUserId, role: "user" });
+
+      // Create membership if org_id provided
+      if (org_id) {
+        await adminClient.from("memberships").insert({
+          user_id: newUserId,
+          organization_id: org_id,
+          role: "operator",
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, user_id: newUserId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
