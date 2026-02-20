@@ -300,6 +300,7 @@ export default function PersonalePage() {
         open={createDialog}
         onOpenChange={setCreateDialog}
         onCreated={fetchUsers}
+        tenant={{ label: "Global Reco", tenantId: "167d07ad-9184-484e-85a6-da5ceafa42a3", mnContext: null, orgId: null }}
       />
     </AdminLayout>
   );
