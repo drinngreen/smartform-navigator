@@ -12,42 +12,22 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-const TENANT_OPTIONS = [
-  {
-    label: "Global Reco",
-    tenantId: "167d07ad-9184-484e-85a6-da5ceafa42a3",
-    mnContext: null,
-    orgId: null,
-  },
-  {
-    label: "Multyproget",
-    tenantId: "dc2a6046-d9a8-4549-8e45-82367d695ac6",
-    mnContext: "multyproget",
-    orgId: "0d9cd11c-4ca8-4e5f-90ab-1529899124b5",
-  },
-  {
-    label: "Niyol",
-    tenantId: "dc2a6046-d9a8-4549-8e45-82367d695ac6",
-    mnContext: "niyol",
-    orgId: "b3eae77a-e973-425d-b7fb-283007583e72",
-  },
-] as const;
+export interface TenantConfig {
+  label: string;
+  tenantId: string;
+  mnContext: string | null;
+  orgId: string | null;
+}
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
+  tenant: TenantConfig;
 }
 
-export function CreateTransporterDialog({ open, onOpenChange, onCreated }: Props) {
+export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant }: Props) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     nome: "",
@@ -55,20 +35,16 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated }: Props
     codiceFiscale: "",
     password: "",
     targaAutomezzo: "",
-    tenant: "",
   });
-
-  const selectedTenant = TENANT_OPTIONS.find((t) => t.label === form.tenant);
 
   const isValid =
     form.nome.length >= 2 &&
     form.cognome.length >= 2 &&
     form.codiceFiscale.length === 16 &&
-    form.password.length >= 6 &&
-    !!selectedTenant;
+    form.password.length >= 6;
 
   const handleCreate = async () => {
-    if (!isValid || !selectedTenant) return;
+    if (!isValid) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-user-manage", {
@@ -78,16 +54,16 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated }: Props
           cognome: form.cognome.trim(),
           codice_fiscale: form.codiceFiscale.toUpperCase().trim(),
           password: form.password,
-          tenant_id: selectedTenant.tenantId,
-          mn_context: selectedTenant.mnContext,
-          org_id: selectedTenant.orgId,
+          tenant_id: tenant.tenantId,
+          mn_context: tenant.mnContext,
+          org_id: tenant.orgId,
           targa_automezzo: form.targaAutomezzo.trim() || null,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Trasportatore ${form.nome} ${form.cognome} creato con successo`);
-      setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "", tenant: "" });
+      toast.success(`Trasportatore ${form.nome} ${form.cognome} creato per ${tenant.label}`);
+      setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "" });
       onOpenChange(false);
       onCreated();
     } catch (e: any) {
@@ -103,10 +79,10 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated }: Props
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
-            Crea Trasportatore
+            Crea Trasportatore — {tenant.label}
           </DialogTitle>
           <DialogDescription>
-            Registra un nuovo autista/trasportatore assegnandogli le credenziali di accesso.
+            Registra un nuovo autista/trasportatore per {tenant.label}.
           </DialogDescription>
         </DialogHeader>
 
@@ -142,18 +118,6 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated }: Props
             onChange={(e) => setForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
             className="font-mono"
           />
-          <Select value={form.tenant} onValueChange={(v) => setForm((f) => ({ ...f, tenant: v }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Assegna a società *" />
-            </SelectTrigger>
-            <SelectContent>
-              {TENANT_OPTIONS.map((t) => (
-                <SelectItem key={t.label} value={t.label}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <DialogFooter>
