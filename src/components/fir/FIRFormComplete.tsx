@@ -6,7 +6,7 @@ import { useFIRStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
+import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
@@ -326,19 +326,20 @@ export function FIRFormComplete() {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
 
-      // Call Render API
+      // Call Ngrok Emissione API
       const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
       const result = await inviaFirmaRentri({
         societaId,
         payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber },
       });
 
-      // Persist numero_fir, qr_code and status
-      if (result.numero_fir) {
-        store.updateField("selectedFirNumber", result.numero_fir);
+      // Save the firId returned by RENTRI
+      const rentriFirId = result.firId || result.numero_fir || d.selectedFirNumber;
+      if (rentriFirId) {
+        store.updateField("selectedFirNumber", rentriFirId);
         await silentSaveFIR.mutateAsync({
           id: store.editingFirId,
-          numero_fir: result.numero_fir,
+          numero_fir: rentriFirId,
           status: "inviato",
           submitted_at: new Date().toISOString(),
         });
@@ -380,13 +381,31 @@ export function FIRFormComplete() {
   // ── CONTROLLO POLIZIA (QR CODE) → Generate PDF preview ──
   const handleControlloPolizia = async () => {
     try {
-      // Try to load QR code from DB if not already in memory
+      // Try to fetch PDF/QR from RENTRI backend
+      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const firId = d.selectedFirNumber;
+      if (firId) {
+        try {
+          const pdfResult = await getRentriPdf(societaId, firId);
+          if (pdfResult.qrCode) {
+            const qr = (pdfResult.qrCode as string).startsWith("data:") ? pdfResult.qrCode as string : `data:image/png;base64,${pdfResult.qrCode}`;
+            setQrCodeData(qr);
+          }
+          if (pdfResult.pdfBase64) {
+            const blob = new Blob([Uint8Array.from(atob(pdfResult.pdfBase64 as string), c => c.charCodeAt(0))], { type: "application/pdf" });
+            setPdfBlobUrl(URL.createObjectURL(blob));
+          }
+        } catch (pdfErr: any) {
+          console.warn("[RENTRI] get-pdf error, falling back to local QR:", pdfErr.message);
+        }
+      }
+      // Fallback: load QR from DB
       let qr = qrCodeData;
-      if (!qr && d.selectedFirNumber) {
+      if (!qr && firId) {
         const { data: poolRow } = await supabase
           .from("fir_number_pool")
           .select("qr_code_data")
-          .eq("fir_number", d.selectedFirNumber)
+          .eq("fir_number", firId)
           .maybeSingle();
         if (poolRow?.qr_code_data) {
           qr = poolRow.qr_code_data;
@@ -436,7 +455,7 @@ export function FIRFormComplete() {
         form_data: { ...dbFields.form_data, peso_ricevuto: peso },
       });
 
-      // Send closure to Render backend
+      // Send closure to RENTRI backend (firma-ricezione)
       try {
         const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
         await chiudiFirRentri({
@@ -444,6 +463,12 @@ export function FIRFormComplete() {
           numero_fir: d.selectedFirNumber,
           peso_accettato: parseFloat(peso),
           data_arrivo: new Date().toISOString(),
+          destinatario_denominazione: d.destinatarioDenominazione,
+          destinatario_codice_fiscale: d.destinatarioCF,
+          destinatario_indirizzo: d.destinatarioUnitaLocale,
+          destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
+          destinatario_numero_aut: d.destinatarioNumeroAut,
+          unita_misura: d.unitaMisura,
         });
       } catch (renderErr: any) {
         console.warn("[RENTRI] Chiusura server error (proceeding locally):", renderErr.message);

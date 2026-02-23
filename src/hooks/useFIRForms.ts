@@ -34,6 +34,8 @@ export interface FIRFormData {
   destinatario_provincia: string | null;
   destinatario_cap: string | null;
   destinatario_autorizzazione: string | null;
+  destinatario_tipo_aut?: string | null;
+  destinatario_numero_aut?: string | null;
   trasportatore_denominazione: string | null;
   trasportatore_codice_fiscale: string | null;
   trasportatore_iscrizione_albo: string | null;
@@ -239,6 +241,8 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     destinatario_codice_fiscale: storeData.destinatarioCF || null,
     destinatario_indirizzo: storeData.destinatarioUnitaLocale || null,
     destinatario_autorizzazione: storeData.destinatarioNumeroAut || null,
+    destinatario_tipo_aut: storeData.destinatarioTipoAut || null,
+    destinatario_numero_aut: storeData.destinatarioNumeroAut || null,
     trasportatore_denominazione: storeData.trasportatoreDenominazione || null,
     trasportatore_codice_fiscale: storeData.trasportatoreCF || null,
     trasportatore_iscrizione_albo: storeData.trasportatoreNumeroAlbo || null,

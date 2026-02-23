@@ -1,5 +1,6 @@
 /**
  * RENTRI API Service – connects to the Ngrok-exposed backend.
+ * Payload structures match the C# Bridge exactly.
  */
 
 const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
@@ -41,6 +42,7 @@ export interface RentriFirmaPayload {
 
 export interface RentriFirmaResponse {
   numero_fir: string;
+  firId?: string;
   qr_code?: string;
   qrCodeBytes?: string;
   pdf_url?: string;
@@ -62,35 +64,77 @@ export interface RentriChiusuraPayload {
   numero_fir: string;
   peso_accettato: number;
   data_arrivo?: string;
-  [key: string]: unknown;
+  destinatario_denominazione?: string;
+  destinatario_codice_fiscale?: string;
+  destinatario_indirizzo?: string;
+  destinatario_tipo_aut?: string;
+  destinatario_numero_aut?: string;
+  unita_misura?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function sanitizePayloadFir(raw: Record<string, unknown>): Record<string, unknown> {
-  const ALLOWED_KEYS = new Set([
-    "numero_fir",
-    "produttore_denominazione", "produttore_codice_fiscale", "produttore_indirizzo",
-    "produttore_comune", "produttore_provincia", "produttore_cap",
-    "destinatario_denominazione", "destinatario_codice_fiscale", "destinatario_indirizzo",
-    "destinatario_autorizzazione",
-    "trasportatore_denominazione", "trasportatore_codice_fiscale",
-    "trasportatore_iscrizione_albo", "trasportatore_targa_automezzo",
-    "trasportatore_targa_rimorchio", "trasportatore_conducente",
-    "intermediario_denominazione", "intermediario_codice_fiscale", "intermediario_iscrizione_albo",
-    "codice_eer", "descrizione_rifiuto", "stato_fisico",
-    "quantita", "unita_misura", "caratteristiche_hp",
-    "data_partenza", "data_arrivo", "note",
-    "produttore", "destinatario", "trasportatore", "intermediario", "rifiuto",
-  ]);
+/**
+ * Build the structured emissione payload from flat DB fields.
+ * Maps flat fields → nested JSON as expected by the C# Bridge.
+ */
+function buildEmissionePayload(flat: Record<string, unknown>): Record<string, unknown> {
+  const str = (key: string) => (flat[key] as string) || "";
+  const num = (key: string) => {
+    const v = flat[key];
+    if (typeof v === "number") return v;
+    const parsed = parseFloat(String(v || "0"));
+    return isNaN(parsed) ? 0 : parsed;
+  };
 
-  const clean: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (!ALLOWED_KEYS.has(key)) continue;
-    if (typeof value === "string" && value.length > 10_000) continue;
-    clean[key] = value;
+  const payload: Record<string, unknown> = {
+    numero_fir: str("numero_fir"),
+    produttore: {
+      denominazione: str("produttore_denominazione"),
+      codice_fiscale: str("produttore_codice_fiscale"),
+      indirizzo: str("produttore_indirizzo"),
+    },
+    destinatario: {
+      denominazione: str("destinatario_denominazione"),
+      codice_fiscale: str("destinatario_codice_fiscale"),
+      indirizzo: str("destinatario_indirizzo"),
+      autorizzazione: {
+        tipo: str("destinatario_tipo_aut") || "AIA",
+        numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "",
+      },
+    },
+    trasportatore: {
+      denominazione: str("trasportatore_denominazione"),
+      codice_fiscale: str("trasportatore_codice_fiscale"),
+      iscrizione_albo: str("trasportatore_iscrizione_albo"),
+      targa_automezzo: str("trasportatore_targa_automezzo"),
+      targa_rimorchio: str("trasportatore_targa_rimorchio"),
+      conducente: str("trasportatore_conducente"),
+    },
+    rifiuto: {
+      codice_eer: str("codice_eer"),
+      descrizione: str("descrizione_rifiuto"),
+      stato_fisico: str("stato_fisico"),
+      quantita: num("quantita"),
+      unita_misura: str("unita_misura") || "kg",
+      caratteristiche_hp: flat["caratteristiche_hp"] || [],
+    },
+  };
+
+  // Intermediario (optional)
+  if (str("intermediario_denominazione")) {
+    payload.intermediario = {
+      denominazione: str("intermediario_denominazione"),
+      codice_fiscale: str("intermediario_codice_fiscale"),
+      iscrizione_albo: str("intermediario_iscrizione_albo"),
+    };
   }
-  return clean;
+
+  // Date trasporto
+  if (str("data_partenza")) payload.data_partenza = str("data_partenza");
+  if (str("note")) payload.note = str("note");
+
+  return payload;
 }
 
 // ─── API Functions ───────────────────────────────────────────
@@ -108,14 +152,17 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 }
 
 /**
- * Send FIR data for signature (emissione) via Ngrok.
+ * 1. EMISSIONE — Send FIR data for signature (BOZZA → IN VIAGGIO).
+ * POST /api/rentri/action/emissione
  */
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
+  const structuredPayload = buildEmissionePayload(payload.payloadFir);
+
   const body = {
     company: payload.societaId,
-    payload: sanitizePayloadFir(payload.payloadFir),
+    payload: structuredPayload,
   };
 
   const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
@@ -137,14 +184,106 @@ export async function inviaFirmaRentri(
     throw new Error(errMsg);
   }
 
-  return data as RentriFirmaResponse;
+  // Normalize the firId from the response
+  const firId = data.firId || data.numero_fir || data.fir_id || "";
+
+  return { ...data, numero_fir: firId, firId } as RentriFirmaResponse;
 }
 
 /**
- * Request new vidimated FIR numbers.
+ * 2. GET-PDF — Fetch PDF/QR for Controllo Polizia (IN VIAGGIO).
+ * POST /api/rentri/action/get-pdf
+ */
+export async function getRentriPdf(
+  company: string,
+  firId: string
+): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; [key: string]: unknown }> {
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/get-pdf`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify({ company, firId }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const errMsg =
+      (data as RentriErrorResponse).error ||
+      (data as RentriErrorResponse).details ||
+      `Errore server (${res.status})`;
+    throw new Error(errMsg);
+  }
+
+  return data;
+}
+
+/**
+ * 3. FIRMA RICEZIONE — Close FIR at destination (IN VIAGGIO → ARRIVO).
+ * POST /api/rentri/action/firma-ricezione
+ * Company is always "MULTY" (the facility that signs the arrival).
+ */
+export async function chiudiFirRentri(
+  payload: RentriChiusuraPayload
+): Promise<Record<string, unknown>> {
+  const body = {
+    company: "MULTY", // Chi firma l'arrivo (Destinatario / Impianto)
+    firId: payload.numero_fir,
+    payload: {
+      dati_arrivo: {
+        numero_fir: payload.numero_fir,
+        data_ora_arrivo: payload.data_arrivo || new Date().toISOString(),
+        destinatario: {
+          denominazione: payload.destinatario_denominazione || "",
+          codice_fiscale: payload.destinatario_codice_fiscale || "",
+          indirizzo: payload.destinatario_indirizzo || "",
+          autorizzazione: {
+            tipo: payload.destinatario_tipo_aut || "AIA",
+            numero: payload.destinatario_numero_aut || "",
+          },
+        },
+        accettazione: {
+          accettato: true,
+          quantita_ricevuta: {
+            valore: payload.peso_accettato,
+            unita_misura: payload.unita_misura || "kg",
+          },
+        },
+      },
+    },
+  };
+
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/firma-ricezione`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    const errMsg =
+      (data as RentriErrorResponse).error ||
+      (data as RentriErrorResponse).details ||
+      `Errore server (${res.status})`;
+    throw new Error(errMsg);
+  }
+
+  return data;
+}
+
+/**
+ * 4. VIDIMAZIONE — Request new vidimated FIR numbers.
+ * POST /api/rentri/action/vidimazione
  */
 export async function richiediNuoviNumeri(
-  company: string
+  company: string,
+  quantity: number = 5
 ): Promise<RentriVidimateResponse> {
   const res = await fetch(`${NGROK_BASE}/api/rentri/action/vidimazione`, {
     method: "POST",
@@ -152,7 +291,7 @@ export async function richiediNuoviNumeri(
       "Content-Type": "application/json",
       "ngrok-skip-browser-warning": "true",
     },
-    body: JSON.stringify({ company, quantity: 50 }),
+    body: JSON.stringify({ company, quantity }),
   });
 
   const data = await res.json();
@@ -170,65 +309,21 @@ export async function richiediNuoviNumeri(
   else if (typeof data.numeri === "string") numeri = [data.numeri];
   else if (typeof data.firNumber === "string") numeri = [data.firNumber];
   else if (Array.isArray(data.firNumbers)) numeri = data.firNumbers;
+  else if (Array.isArray(data.firCodes)) numeri = data.firCodes;
 
   return { ...data, numeri };
 }
 
-/**
- * Send closure data (firma ricezione) via Ngrok.
- */
-export async function chiudiFirRentri(
-  payload: RentriChiusuraPayload
-): Promise<Record<string, unknown>> {
-  const res = await fetch(`${NGROK_BASE}/api/rentri/action/firma-ricezione`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: JSON.stringify({
-      company: payload.societaId,
-      payload: {
-        fir_id: payload.numero_fir,
-        dati_arrivo: {
-          peso_verificato: payload.peso_accettato,
-          accettato: true,
-          data_arrivo: payload.data_arrivo || new Date().toISOString(),
-        },
-      },
-    }),
-  });
+// ─── Legacy URL builders (kept for download links) ───────────
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    const errMsg =
-      (data as RentriErrorResponse).error ||
-      (data as RentriErrorResponse).details ||
-      `Errore server (${res.status})`;
-    throw new Error(errMsg);
-  }
-
-  return data;
-}
-
-/**
- * Build the PDF download URL via Ngrok.
- */
 export function getRentriPdfUrl(numeroFir: string): string {
   return `${NGROK_BASE}/api/rentri/action/get-pdf?firId=${encodeURIComponent(numeroFir)}`;
 }
 
-/**
- * Build the xFIR download URL via Ngrok.
- */
 export function getRentriXfirUrl(numeroFir: string): string {
   return `${NGROK_BASE}/api/rentri/action/get-xfir?firId=${encodeURIComponent(numeroFir)}`;
 }
 
-/**
- * Build the QR code image URL via Ngrok.
- */
 export function getRentriQrUrl(numeroFir: string): string {
   return `${NGROK_BASE}/api/rentri/action/get-qr?firId=${encodeURIComponent(numeroFir)}`;
 }
