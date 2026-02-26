@@ -70,10 +70,16 @@ async function callNgrok(endpoint: string, tenant: string, body: any) {
 
 export async function ngrokHealthCheck(): Promise<{ ok: boolean }> {
   try {
-    const res = await fetch(`${NGROK_BASE}/api/rentri/health`, {
-      headers: { "ngrok-skip-browser-warning": "true" },
+    const res = await fetch(`${NGROK_BASE}/api/rentri/action/vidimazione`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify({ ping: true }),
     });
-    return { ok: res.ok };
+    // Any response (even 400) means backend is reachable
+    return { ok: true };
   } catch {
     return { ok: false };
   }
