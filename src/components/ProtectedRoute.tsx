@@ -14,6 +14,20 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
+    // Context-aware redirect: MN admin routes go to MN admin auth
+    const path = location.pathname;
+    if (path.startsWith("/mn/admin")) {
+      return <Navigate to="/adminmn" state={{ from: location }} replace />;
+    }
+    if (path.startsWith("/mn/app/multyproget") || path === "/mn") {
+      return <Navigate to="/mn" state={{ from: location }} replace />;
+    }
+    if (path.startsWith("/mn/app/niyol") || path === "/ni") {
+      return <Navigate to="/ni" state={{ from: location }} replace />;
+    }
+    if (path.startsWith("/super")) {
+      return <Navigate to="/superadmin" state={{ from: location }} replace />;
+    }
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

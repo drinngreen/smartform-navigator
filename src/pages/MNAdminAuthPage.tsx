@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
@@ -10,7 +10,9 @@ const ALLOWED_EMAIL = "multyniyol@zoli.live";
 
 export default function MNAdminAuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAdmin, isLoading } = useAuth();
+  const returnTo = (location.state as any)?.from?.pathname || "/mn/admin";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,7 +22,7 @@ export default function MNAdminAuthPage() {
     if (!isLoading && user) {
       const e = user.email?.toLowerCase() ?? "";
       if (e === ALLOWED_EMAIL && isAdmin) {
-        navigate("/mn/admin", { replace: true });
+        navigate(returnTo, { replace: true });
       }
     }
   }, [user, isAdmin, isLoading, navigate]);
@@ -37,7 +39,7 @@ export default function MNAdminAuthPage() {
       toast.error("Credenziali non valide");
     } else {
       toast.success("Accesso effettuato!");
-      navigate("/mn/admin", { replace: true });
+      navigate(returnTo, { replace: true });
     }
     setIsSubmitting(false);
   };
