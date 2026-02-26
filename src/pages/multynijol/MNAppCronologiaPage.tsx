@@ -8,6 +8,8 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { FileText, Clock, CheckCircle, Edit, Download, Trash2 } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
+import { toast } from "sonner";
+import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
@@ -33,6 +35,45 @@ export default function MNAppCronologiaPage() {
 
   const handleEdit = (fir: any) => { loadFromDatabase(fir); navigate(basePath); };
   const handleDelete = (fir: any) => { if (window.confirm(`Eliminare FIR ${fir.numero_fir || "senza numero"}?`)) deleteFIR.mutate(fir.id); };
+  const handleDownloadPdf = async (fir: any) => {
+    try {
+      const storeData = {
+        selectedFirNumber: fir.numero_fir || "",
+        codiceEER: fir.codice_eer || "",
+        descrizioneRifiuto: fir.descrizione_rifiuto || "",
+        quantita: fir.quantita?.toString() || "",
+        unitaMisura: fir.unita_misura || "kg",
+        statoFisico: fir.stato_fisico || "",
+        produttoreDenominazione: fir.produttore_denominazione || "",
+        produttoreCF: fir.produttore_codice_fiscale || "",
+        produttoreUnitaLocale: fir.produttore_indirizzo || "",
+        destinatarioDenominazione: fir.destinatario_denominazione || "",
+        destinatarioCF: fir.destinatario_codice_fiscale || "",
+        destinatarioUnitaLocale: fir.destinatario_indirizzo || "",
+        trasportatoreDenominazione: fir.trasportatore_denominazione || "",
+        trasportatoreCF: fir.trasportatore_codice_fiscale || "",
+        trasportatoreNumeroAlbo: fir.trasportatore_iscrizione_albo || "",
+        targaAutomezzo: fir.trasportatore_targa_automezzo || "",
+        targaRimorchio: fir.trasportatore_targa_rimorchio || "",
+        conducente: fir.trasportatore_conducente || "",
+        intermediarioDenominazione: fir.intermediario_denominazione || "",
+        intermediarioCF: fir.intermediario_codice_fiscale || "",
+        intermediarioNumeroAlbo: fir.intermediario_iscrizione_albo || "",
+        annotazioni: fir.note || "",
+        caratteristicheHP: fir.caratteristiche_hp || [],
+        ...(fir.form_data || {}),
+      };
+      const blob = await generateFIRSummaryPdf(storeData as any);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `FIR_${fir.numero_fir || fir.id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast.error("Errore generazione PDF: " + err.message);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -89,7 +130,7 @@ export default function MNAppCronologiaPage() {
                     <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
-                <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors"><Download className="h-3.5 w-3.5" /> PDF</button>
+                <button onClick={() => handleDownloadPdf(fir)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors"><Download className="h-3.5 w-3.5" /> PDF</button>
                 <button onClick={() => handleDelete(fir)} className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
