@@ -15,6 +15,7 @@ export function DevIntermediarioModule() {
         .from("fir_forms")
         .select("id, numero_fir, produttore_denominazione, destinatario_denominazione, codice_eer, quantita, status, created_at, trasportatore_targa_automezzo")
         .eq("tenant_id", GLOBAL_TENANT_ID)
+        .eq("deleted_by_user", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       // Supabase default limit is 1000, fetch all pages if needed
@@ -26,6 +27,7 @@ export function DevIntermediarioModule() {
             .from("fir_forms")
             .select("id, numero_fir, produttore_denominazione, destinatario_denominazione, codice_eer, quantita, status, created_at, trasportatore_targa_automezzo")
             .eq("tenant_id", GLOBAL_TENANT_ID)
+            .eq("deleted_by_user", false)
             .order("created_at", { ascending: false })
             .range(page * 1000, (page + 1) * 1000 - 1);
           if (moreErr || !more?.length) break;
