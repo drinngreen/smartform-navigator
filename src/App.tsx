@@ -84,6 +84,7 @@ import MNRubricaPage from "./pages/multynijol/MNRubricaPage";
 import MNAnagraficaPrivatiPage from "./pages/multynijol/MNAnagraficaPrivatiPage";
 import MNStoricoRicevutePage from "./pages/multynijol/MNStoricoRicevutePage";
 import MNSystemPromptPage from "./pages/multynijol/MNSystemPromptPage";
+import MNDevDashboardPage from "./pages/multynijol/MNDevDashboardPage";
 import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
@@ -168,6 +169,7 @@ const App = () => (
 
               {/* MultyNijol Admin Routes - PROTECTED */}
               <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
+              <Route path="/mn/admin/dev-multyproget" element={<ProtectedRoute><MNDevDashboardPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context" element={<ProtectedRoute><MNContextDashboardPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/registro" element={<ProtectedRoute><MNRegistroFIRPage /></ProtectedRoute>} />
               <Route path="/mn/admin/:context/rentri" element={<ProtectedRoute><MNRENTRIPage /></ProtectedRoute>} />

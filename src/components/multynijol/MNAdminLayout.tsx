@@ -10,7 +10,8 @@ interface MNAdminLayoutProps {
 }
 
 const routeColors: Record<string, string> = {
-  "/mn/admin": "251, 191, 36",
+  "/mn/admin": "34, 197, 94",
+  "/mn/admin/dev-multyproget": "34, 197, 94",
   "/mn/admin/multyproget": "249, 115, 22",
   "/mn/admin/niyol": "6, 182, 212",
   "/mn/admin/multyproget/registro": "249, 115, 22",
@@ -49,6 +50,7 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
   const accentColor = useMemo(() => {
     if (routeColors[location.pathname]) return routeColors[location.pathname];
+    if (location.pathname.includes("/mn/admin/dev-multyproget")) return "34, 197, 94";
     if (location.pathname.includes("/mn/admin/niyol")) return "6, 182, 212";
     if (location.pathname.includes("/mn/admin/multyproget")) return "249, 115, 22";
     return routeColors["/mn/admin"];
