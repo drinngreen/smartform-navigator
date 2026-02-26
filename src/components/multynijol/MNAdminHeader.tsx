@@ -23,8 +23,8 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
   });
 
   // Detect current context for message routing
-  const currentContext = location.pathname.includes("/mn/admin/niyol") ? "niyol"
-    : location.pathname.includes("/mn/admin/multyproget") ? "multyproget"
+  const currentContext = (location.pathname.includes("/mn/admin/niyol")) ? "niyol"
+    : (location.pathname.includes("/mn/admin/multyproget") || location.pathname.includes("/mn/admin/dev-multyproget")) ? "multyproget"
     : null;
 
   const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
