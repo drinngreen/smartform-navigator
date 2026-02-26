@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,8 +26,11 @@ const SOCIETA_ID = "multy";
 
 export function DevImpiantoModule() {
   return (
-    <Tabs defaultValue="giacenze" className="space-y-4">
+    <Tabs defaultValue="nuovo-fir" className="space-y-4">
       <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
+        <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <Plus className="h-4 w-4" /> Nuovo FIR
+        </TabsTrigger>
         <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <Package className="h-4 w-4" /> Giacenze
         </TabsTrigger>
@@ -38,6 +42,11 @@ export function DevImpiantoModule() {
         </TabsTrigger>
       </TabsList>
 
+      <TabsContent value="nuovo-fir">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <MNFIRFormComplete />
+        </div>
+      </TabsContent>
       <TabsContent value="giacenze">
         <DevGiacenzeModule />
       </TabsContent>
@@ -133,7 +142,6 @@ function ImpiantoFormulari() {
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Totale", value: stats.total, icon: FileText, color: "text-emerald-400" },
@@ -153,7 +161,6 @@ function ImpiantoFormulari() {
         ))}
       </div>
 
-      {/* Search */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -164,7 +171,6 @@ function ImpiantoFormulari() {
         </Button>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex gap-2">
         {["all", "draft", "submitted", "completed"].map((t) => (
           <Button key={t} variant={tab === t ? "default" : "outline"} size="sm" onClick={() => setTab(t)}
@@ -174,7 +180,6 @@ function ImpiantoFormulari() {
         ))}
       </div>
 
-      {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-emerald-400" /></div>
       ) : (
@@ -225,7 +230,6 @@ function ImpiantoFormulari() {
         </Card>
       )}
 
-      {/* Edit Dialog */}
       <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ open: o, form: o ? editDialog.form : null })}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Modifica Bozza — {editDialog.form?.numero_fir || "N/D"}</DialogTitle></DialogHeader>
@@ -327,7 +331,6 @@ function ImpiantoGestioneFIR() {
 
   return (
     <div className="space-y-4">
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-card/60 border-emerald-500/30">
           <CardContent className="p-4 flex items-center gap-3">
@@ -355,7 +358,6 @@ function ImpiantoGestioneFIR() {
         </Card>
       </div>
 
-      {/* Bulk Import */}
       <Card className="bg-card/60 border-emerald-500/30">
         <CardHeader><CardTitle className="text-emerald-400 flex items-center gap-2"><Upload className="h-5 w-5" /> Carica Numeri nel Serbatoio</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -367,7 +369,6 @@ function ImpiantoGestioneFIR() {
         </CardContent>
       </Card>
 
-      {/* RENTRI Request */}
       <Card className="bg-card/60 border-emerald-500/30">
         <CardHeader><CardTitle className="text-cyan-400 flex items-center gap-2"><RefreshCw className="h-5 w-5" /> Richiedi Numeri a RENTRI</CardTitle></CardHeader>
         <CardContent className="space-y-3">
@@ -391,7 +392,6 @@ function ImpiantoGestioneFIR() {
         </CardContent>
       </Card>
 
-      {/* Test RENTRI */}
       <Card className="bg-card/60 border-emerald-500/30">
         <CardHeader><CardTitle className="text-amber-400 flex items-center gap-2"><Zap className="h-5 w-5" /> Test Invio RENTRI</CardTitle></CardHeader>
         <CardContent>

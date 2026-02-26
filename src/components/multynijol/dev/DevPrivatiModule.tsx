@@ -1,22 +1,24 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 
-// CER critici con limiti normativi
 const CER_CRITICI: Record<string, { label: string; limite_annuo_kg: number }> = {
   "200140": { label: "Metalli", limite_annuo_kg: 200 },
   "200307": { label: "Rifiuti ingombranti", limite_annuo_kg: 300 },
   "200101": { label: "Carta e cartone", limite_annuo_kg: 500 },
   "200110": { label: "Abbigliamento", limite_annuo_kg: 200 },
-  "200140-RA": { label: "Rame", limite_annuo_kg: 100 },
-  "200140-PI": { label: "Piombo", limite_annuo_kg: 50 },
 };
 
 export function DevPrivatiModule() {
@@ -24,54 +26,57 @@ export function DevPrivatiModule() {
   const [searchPrivato, setSearchPrivato] = useState("");
   const [selectedPrivatoId, setSelectedPrivatoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showNewConferimento, setShowNewConferimento] = useState(false);
+  const [showNewRicevuta, setShowNewRicevuta] = useState(false);
+  const [showNewPrivato, setShowNewPrivato] = useState(false);
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
 
-  // Fetch privati
+  // Forms
+  const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+  const [ricevutaForm, setRicevutaForm] = useState({ importo: "", note: "" });
+  const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
+
+  // Fetch impianti for the tenant
+  const { data: impianti } = useQuery({
+    queryKey: ["dev-impianti", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("impianti").select("id, nome").eq("tenant_id", MULTY_TENANT_ID);
+      if (error) throw error;
+      return data;
+    },
+  });
+  const impiantoId = impianti?.[0]?.id;
+
   const { data: privati } = useQuery({
     queryKey: ["dev-privati", MULTY_TENANT_ID],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("anagrafica_privati")
-        .select("*")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .eq("attivo", true)
-        .order("cognome");
+      const { data, error } = await supabase.from("anagrafica_privati").select("*").eq("tenant_id", MULTY_TENANT_ID).eq("attivo", true).order("cognome");
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch conferimenti for limit check
   const { data: conferimenti } = useQuery({
     queryKey: ["dev-conferimenti-anno", MULTY_TENANT_ID],
     queryFn: async () => {
       const annoCorrente = new Date().getFullYear();
-      const { data, error } = await supabase
-        .from("privati_conferimenti")
-        .select("privato_id, cer, kg_pesati, data")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .gte("data", `${annoCorrente}-01-01`);
+      const { data, error } = await supabase.from("privati_conferimenti").select("privato_id, cer, kg_pesati, data").eq("tenant_id", MULTY_TENANT_ID).gte("data", `${annoCorrente}-01-01`);
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch documenti for selected privato
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
       if (!selectedPrivatoId) return [];
-      const { data, error } = await supabase
-        .from("documenti_privati")
-        .select("*")
-        .eq("anagrafica_id", selectedPrivatoId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("documenti_privati").select("*").eq("anagrafica_id", selectedPrivatoId).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!selectedPrivatoId,
   });
 
-  // Upload document
   const uploadDoc = useMutation({
     mutationFn: async (file: File) => {
       if (!selectedPrivatoId) throw new Error("Seleziona un privato");
@@ -79,22 +84,15 @@ export function DevPrivatiModule() {
       const { error: uploadError } = await supabase.storage.from("documenti-privati").upload(path, file);
       if (uploadError) throw uploadError;
       const { error: dbError } = await supabase.from("documenti_privati").insert({
-        anagrafica_id: selectedPrivatoId,
-        tenant_id: MULTY_TENANT_ID,
-        nome_file: file.name,
-        storage_path: path,
-        tipo_documento: "documento_identita",
+        anagrafica_id: selectedPrivatoId, tenant_id: MULTY_TENANT_ID,
+        nome_file: file.name, storage_path: path, tipo_documento: "documento_identita",
       });
       if (dbError) throw dbError;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dev-documenti"] });
-      toast.success("Documento caricato");
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["dev-documenti"] }); toast.success("Documento caricato"); },
     onError: (e) => toast.error("Errore upload: " + e.message),
   });
 
-  // Calculate CER usage per privato
   const getCerUsage = (privatoId: string) => {
     if (!conferimenti) return {};
     const usage: Record<string, number> = {};
@@ -104,6 +102,107 @@ export function DevPrivatiModule() {
       }
     }
     return usage;
+  };
+
+  const checkLimits = async (cer: string, kgNew: number): Promise<string | null> => {
+    if (!selectedPrivatoId || !impiantoId) return null;
+    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    if (!privato) return null;
+    const critico = CER_CRITICI[cer];
+    if (!critico) return null;
+    const usage = getCerUsage(selectedPrivatoId);
+    const totalAnnuo = (usage[cer] || 0) + kgNew;
+    if (totalAnnuo > critico.limite_annuo_kg) {
+      return `⚠️ LIMITE SUPERATO per CER ${cer}: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui`;
+    }
+    if (totalAnnuo >= critico.limite_annuo_kg * 0.8) {
+      return `⚠️ Attenzione: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui (${Math.round(totalAnnuo / critico.limite_annuo_kg * 100)}%)`;
+    }
+    return null;
+  };
+
+  const handleSaveConferimento = async () => {
+    if (!selectedPrivatoId || !confForm.cer || !confForm.kg_pesati) {
+      toast.error("Seleziona un privato, CER e kg obbligatori");
+      return;
+    }
+    const kg = parseFloat(confForm.kg_pesati);
+
+    // Check limits - BLOCK if exceeded
+    const warning = await checkLimits(confForm.cer, kg);
+    if (warning && warning.includes("LIMITE SUPERATO")) {
+      setLimitWarning(warning);
+      toast.error("Conferimento BLOCCATO: limite annuo superato");
+      return;
+    }
+    if (warning) setLimitWarning(warning);
+
+    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
+
+    const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
+      impianto_id: impiantoId, cer: confForm.cer, kg_pesati: kg,
+      nome_privato: nomeFinale, cf_pi: privato?.codice_fiscale || null,
+      importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
+      metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
+      privato_id: selectedPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
+      targa_automezzo: confForm.targa_automezzo || null,
+      modello_automezzo: confForm.modello_automezzo || null,
+    } as any).select().single();
+
+    if (error) { toast.error(error.message); return; }
+
+    // Auto-generate receipt
+    const conf = confData as any;
+    if (conf && impiantoId) {
+      const anno = new Date().getFullYear();
+      const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+      await supabase.from("ricevute_privati" as any).insert({
+        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: selectedPrivatoId,
+        numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+        importo: conf.importo_pagato || 0,
+        note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
+      } as any);
+    }
+
+    toast.success("✅ Conferimento e ricevuta registrati!");
+    setShowNewConferimento(false);
+    setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+    setLimitWarning(null);
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+  };
+
+  const handleSaveRicevutaManuale = async () => {
+    if (!selectedPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
+    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
+    const anno = new Date().getFullYear();
+    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+    const { error } = await supabase.from("ricevute_privati" as any).insert({
+      impianto_id: impiantoId, privato_id: selectedPrivatoId,
+      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+      importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
+      note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("✅ Ricevuta manuale generata!");
+    setShowNewRicevuta(false);
+    setRicevutaForm({ importo: "", note: "" });
+  };
+
+  const handleSavePrivato = async () => {
+    if (!privatoForm.nome || !privatoForm.cognome || !privatoForm.codice_fiscale) {
+      toast.error("Nome, cognome e CF obbligatori");
+      return;
+    }
+    const { error } = await supabase.from("anagrafica_privati").insert({
+      ...privatoForm, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId,
+    } as any);
+    if (error) { toast.error(error.message); return; }
+    toast.success("✅ Privato registrato");
+    setShowNewPrivato(false);
+    setPrivatoForm({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
+    queryClient.invalidateQueries({ queryKey: ["dev-privati"] });
   };
 
   const filteredPrivati = privati?.filter(p =>
@@ -116,35 +215,46 @@ export function DevPrivatiModule() {
 
   return (
     <div className="space-y-4">
-      {/* Alert Limiti CER */}
+      {/* CER Limits Alert */}
       <Card className="bg-red-950/30 border-red-500/30">
         <CardHeader>
           <CardTitle className="text-red-400 flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" />
-            Codici CER Critici — Limiti Normativi
+            <ShieldAlert className="h-5 w-5" /> Codici CER Critici — Limiti Normativi
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {Object.entries(CER_CRITICI).map(([cer, info]) => (
               <div key={cer} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20">
                 <span className="font-mono text-amber-300">{cer}</span>
-                <span className="text-muted-foreground">{info.label}</span>
-                <span className="ml-auto text-red-400 font-bold">{info.limite_annuo_kg} kg/anno</span>
+                <span className="text-muted-foreground text-xs">{info.label}</span>
+                <span className="ml-auto text-red-400 font-bold text-xs">{info.limite_annuo_kg}kg</span>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
+      {/* Action Buttons */}
+      <div className="flex gap-2 flex-wrap">
+        <Button onClick={() => setShowNewPrivato(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+          <Plus className="h-4 w-4" /> Nuovo Privato
+        </Button>
+        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewConferimento(true); }}
+          variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
+          <Scale className="h-4 w-4" /> Nuovo Conferimento
+        </Button>
+        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewRicevuta(true); }}
+          variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
+          <Receipt className="h-4 w-4" /> Ricevuta Manuale
+        </Button>
+      </div>
+
       {/* Search */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Cerca privato (nome, cognome, CF)..."
-          value={searchPrivato}
-          onChange={(e) => setSearchPrivato(e.target.value)}
-          className="max-w-md bg-card/60 border-border/50"
-        />
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Cerca privato (nome, cognome, CF)..." value={searchPrivato}
+          onChange={(e) => setSearchPrivato(e.target.value)} className="pl-10 max-w-md bg-card/60 border-border/50" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -152,8 +262,7 @@ export function DevPrivatiModule() {
         <Card className="bg-card/60 border-border/30">
           <CardHeader>
             <CardTitle className="text-emerald-400 flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Anagrafica Privati ({filteredPrivati?.length ?? 0})
+              <Users className="h-5 w-5" /> Anagrafica Privati ({filteredPrivati?.length ?? 0})
             </CardTitle>
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
@@ -163,15 +272,10 @@ export function DevPrivatiModule() {
                 CER_CRITICI[cer] && kg >= CER_CRITICI[cer].limite_annuo_kg * 0.8
               );
               return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedPrivatoId(p.id)}
+                <div key={p.id} onClick={() => setSelectedPrivatoId(p.id)}
                   className={`p-3 rounded cursor-pointer mb-1 border transition-all ${
-                    selectedPrivatoId === p.id
-                      ? "bg-emerald-500/10 border-emerald-500/30"
-                      : "bg-card/30 border-border/10 hover:bg-white/5"
-                  }`}
-                >
+                    selectedPrivatoId === p.id ? "bg-emerald-500/10 border-emerald-500/30" : "bg-card/30 border-border/10 hover:bg-white/5"
+                  }`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="font-medium">{p.cognome} {p.nome}</span>
@@ -192,12 +296,10 @@ export function DevPrivatiModule() {
         <div className="space-y-4">
           {selectedPrivato ? (
             <>
-              {/* CER Usage with alerts */}
+              {/* CER Usage */}
               <Card className="bg-card/60 border-border/30">
                 <CardHeader>
-                  <CardTitle className="text-sm">
-                    Consumi CER Anno — {selectedPrivato.cognome} {selectedPrivato.nome}
-                  </CardTitle>
+                  <CardTitle className="text-sm">Consumi CER Anno — {selectedPrivato.cognome} {selectedPrivato.nome}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {Object.keys(selectedUsage).length === 0 ? (
@@ -219,16 +321,13 @@ export function DevPrivatiModule() {
                             </div>
                             {critico && (
                               <div className="h-2 bg-card/60 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`}
-                                  style={{ width: `${Math.min(pct, 100)}%` }}
-                                />
+                                <div className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`}
+                                  style={{ width: `${Math.min(pct, 100)}%` }} />
                               </div>
                             )}
                             {isOver && (
                               <div className="flex items-center gap-1 text-red-400 text-xs">
-                                <AlertTriangle className="h-3 w-3" />
-                                LIMITE SUPERATO — Operazione bloccata
+                                <AlertTriangle className="h-3 w-3" /> LIMITE SUPERATO — Operazione bloccata
                               </div>
                             )}
                           </div>
@@ -243,30 +342,15 @@ export function DevPrivatiModule() {
               <Card className="bg-card/60 border-border/30">
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Documenti Scansionati
+                    <FileText className="h-4 w-4" /> Documenti Scansionati
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) uploadDoc.mutate(f);
-                    }}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadDoc.isPending}
-                    className="gap-2 mb-3 border-emerald-500/30 text-emerald-400"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Carica Documento
+                  <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc.mutate(f); }} />
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadDoc.isPending} className="gap-2 mb-3 border-emerald-500/30 text-emerald-400">
+                    <Upload className="h-4 w-4" /> Carica Documento
                   </Button>
                   {documenti?.length ? (
                     <div className="space-y-1">
@@ -274,9 +358,7 @@ export function DevPrivatiModule() {
                         <div key={d.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30">
                           <FileText className="h-4 w-4 text-muted-foreground" />
                           <span>{d.nome_file}</span>
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {new Date(d.created_at).toLocaleDateString("it-IT")}
-                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">{new Date(d.created_at).toLocaleDateString("it-IT")}</span>
                         </div>
                       ))}
                     </div>
@@ -289,12 +371,108 @@ export function DevPrivatiModule() {
           ) : (
             <Card className="bg-card/60 border-border/30">
               <CardContent className="p-8 text-center text-muted-foreground">
-                Seleziona un privato dalla lista per visualizzare i dettagli
+                Seleziona un privato dalla lista per operare
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      {/* ─── New Privato Dialog ─── */}
+      <Dialog open={showNewPrivato} onOpenChange={setShowNewPrivato}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Nuovo Privato</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
+            <div><Label>Cognome *</Label><Input value={privatoForm.cognome} onChange={(e) => setPrivatoForm(p => ({ ...p, cognome: e.target.value }))} /></div>
+            <div className="col-span-2"><Label>Codice Fiscale *</Label><Input value={privatoForm.codice_fiscale} onChange={(e) => setPrivatoForm(p => ({ ...p, codice_fiscale: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div><Label>Comune</Label><Input value={privatoForm.comune_residenza} onChange={(e) => setPrivatoForm(p => ({ ...p, comune_residenza: e.target.value }))} /></div>
+            <div><Label>N° Tessera</Label><Input value={privatoForm.numero_tessera} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_tessera: e.target.value }))} /></div>
+            <div>
+              <Label>Tipo Utenza</Label>
+              <Select value={privatoForm.tipo_utenza} onValueChange={(v) => setPrivatoForm(p => ({ ...p, tipo_utenza: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="domestica">Domestica</SelectItem>
+                  <SelectItem value="non_domestica">Non Domestica</SelectItem>
+                  <SelectItem value="produttore_speciali">Produttore Speciali</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Note</Label><Input value={privatoForm.note} onChange={(e) => setPrivatoForm(p => ({ ...p, note: e.target.value }))} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewPrivato(false)}>Annulla</Button>
+            <Button onClick={handleSavePrivato} className="bg-emerald-600 hover:bg-emerald-700">Registra</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── New Conferimento Dialog ─── */}
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-emerald-400" />
+              Nuovo Conferimento — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          {limitWarning && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>{limitWarning}</span>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Codice CER *</Label><Input value={confForm.cer} onChange={(e) => setConfForm(p => ({ ...p, cer: e.target.value }))} placeholder="es. 200140" className="font-mono" /></div>
+            <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
+            <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
+            <div>
+              <Label>Metodo Pagamento</Label>
+              <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="contanti">Contanti</SelectItem>
+                  <SelectItem value="pos">POS</SelectItem>
+                  <SelectItem value="bonifico">Bonifico</SelectItem>
+                  <SelectItem value="gratuito">Gratuito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Targa Automezzo</Label><Input value={confForm.targa_automezzo} onChange={(e) => setConfForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div><Label>Modello</Label><Input value={confForm.modello_automezzo} onChange={(e) => setConfForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
+            <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewConferimento(false)}>Annulla</Button>
+            <Button onClick={handleSaveConferimento} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+              <Scale className="h-4 w-4" /> Registra Conferimento + Ricevuta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Manual Ricevuta Dialog ─── */}
+      <Dialog open={showNewRicevuta} onOpenChange={setShowNewRicevuta}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-emerald-400" />
+              Ricevuta Manuale — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Importo €</Label><Input type="number" value={ricevutaForm.importo} onChange={(e) => setRicevutaForm(p => ({ ...p, importo: e.target.value }))} /></div>
+            <div><Label>Note</Label><Textarea value={ricevutaForm.note} onChange={(e) => setRicevutaForm(p => ({ ...p, note: e.target.value }))} rows={3} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewRicevuta(false)}>Annulla</Button>
+            <Button onClick={handleSaveRicevutaManuale} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
+              <Receipt className="h-4 w-4" /> Genera Ricevuta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
