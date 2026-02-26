@@ -380,6 +380,57 @@ export type Database = {
           },
         ]
       }
+      documenti_privati: {
+        Row: {
+          anagrafica_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          nome_file: string
+          note: string | null
+          storage_path: string
+          tenant_id: string | null
+          tipo_documento: string
+        }
+        Insert: {
+          anagrafica_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome_file: string
+          note?: string | null
+          storage_path: string
+          tenant_id?: string | null
+          tipo_documento?: string
+        }
+        Update: {
+          anagrafica_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome_file?: string
+          note?: string | null
+          storage_path?: string
+          tenant_id?: string | null
+          tipo_documento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documenti_privati_anagrafica_id_fkey"
+            columns: ["anagrafica_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_privati"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -1957,6 +2008,60 @@ export type Database = {
           },
           {
             foreignKeyName: "magazzino_deposito_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      magazzino_giacenze: {
+        Row: {
+          cer: string
+          created_at: string
+          descrizione_cer: string | null
+          id: string
+          impianto_id: string | null
+          quantita_kg: number
+          tenant_id: string | null
+          ultimo_carico_at: string | null
+          ultimo_scarico_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          cer: string
+          created_at?: string
+          descrizione_cer?: string | null
+          id?: string
+          impianto_id?: string | null
+          quantita_kg?: number
+          tenant_id?: string | null
+          ultimo_carico_at?: string | null
+          ultimo_scarico_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cer?: string
+          created_at?: string
+          descrizione_cer?: string | null
+          id?: string
+          impianto_id?: string | null
+          quantita_kg?: number
+          tenant_id?: string | null
+          ultimo_carico_at?: string | null
+          ultimo_scarico_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "magazzino_giacenze_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "magazzino_giacenze_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

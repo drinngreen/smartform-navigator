@@ -19,6 +19,13 @@ const tenants = [
     href: "/mn/admin/niyol",
     color: "6, 182, 212",
   },
+  {
+    id: "dev-multy",
+    label: "🧪 Dev Multy",
+    icon: multyprogetIcon,
+    href: "/mn/admin/dev-multyproget",
+    color: "34, 197, 94",
+  },
 ];
 
 export default function MNDashboardPage() {
@@ -28,6 +35,7 @@ export default function MNDashboardPage() {
 
   return (
     <MNAdminLayout title={`Multy Niyol — ${firstName}`} subtitle="Seleziona Contesto Operativo">
+      {/* Hub accent is green as institutional reference */}
       <div className="flex-1 flex items-center justify-center">
         <div className="flex gap-16 md:gap-24">
           {tenants.map((t) => (
