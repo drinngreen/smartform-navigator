@@ -15,10 +15,26 @@ export function DevIntermediarioModule() {
         .from("fir_forms")
         .select("id, numero_fir, produttore_denominazione, destinatario_denominazione, codice_eer, quantita, status, created_at, trasportatore_targa_automezzo")
         .eq("tenant_id", GLOBAL_TENANT_ID)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // Supabase default limit is 1000, fetch all pages if needed
+      let allData = data || [];
+      if (allData.length === 1000) {
+        let page = 1;
+        while (true) {
+          const { data: more, error: moreErr } = await supabase
+            .from("fir_forms")
+            .select("id, numero_fir, produttore_denominazione, destinatario_denominazione, codice_eer, quantita, status, created_at, trasportatore_targa_automezzo")
+            .eq("tenant_id", GLOBAL_TENANT_ID)
+            .order("created_at", { ascending: false })
+            .range(page * 1000, (page + 1) * 1000 - 1);
+          if (moreErr || !more?.length) break;
+          allData = [...allData, ...more];
+          if (more.length < 1000) break;
+          page++;
+        }
+      }
+      return allData;
     },
   });
 
@@ -30,8 +46,7 @@ export function DevIntermediarioModule() {
         .from("intermediazioni")
         .select("*, intermediario:intermediari(ragione_sociale)")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
