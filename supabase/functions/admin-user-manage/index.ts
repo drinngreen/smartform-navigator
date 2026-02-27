@@ -58,14 +58,38 @@ serve(async (req) => {
 
     // ACTION: list_users - list all users with profiles
     if (action === "list_users") {
-      const { data: users, error } = await adminClient.auth.admin.listUsers({ perPage: 500 });
-      if (error) throw error;
+      const perPage = 200;
+      let page = 1;
+      const allUsers: any[] = [];
+
+      while (true) {
+        const { data: usersPage, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+        if (error) throw error;
+
+        const batch = usersPage?.users || [];
+        allUsers.push(...batch);
+
+        const nextPage = (usersPage as any)?.nextPage as number | null | undefined;
+        if (nextPage) {
+          page = nextPage;
+          continue;
+        }
+
+        if (batch.length === perPage) {
+          page += 1;
+          continue;
+        }
+
+        break;
+      }
+
+      const users = Array.from(new Map(allUsers.map((u: any) => [u.id, u])).values());
 
       const { data: profiles } = await adminClient.from("profiles").select("*");
       const { data: roles } = await adminClient.from("user_roles").select("*");
       const { data: statuses } = await adminClient.from("online_status").select("*");
 
-      const enriched = users.users.map((u: any) => {
+      const enriched = users.map((u: any) => {
         const profile = profiles?.find((p: any) => p.user_id === u.id);
         const role = roles?.find((r: any) => r.user_id === u.id);
         const status = statuses?.find((s: any) => s.user_id === u.id);
