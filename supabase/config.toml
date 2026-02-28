@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.admin-user-manage]
 verify_jwt = false
+
+[functions.dark-lemon-mn]
+verify_jwt = false

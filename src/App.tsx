@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRedirect } from "@/components/RoleBasedRedirect";
 import { ZoliDarkLemonWidget } from "@/components/ai/ZoliDarkLemonWidget";
 import { CallManager } from "@/components/calls/CallManager";
+import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 
 // Auth
 import AuthPage from "./pages/AuthPage";
@@ -116,6 +117,7 @@ const App = () => (
           <CallProvider>
             <Toaster position="top-right" theme="dark" />
             <CallManager />
+            <GlobalNotificationBell />
 
             <Routes>
               {/* Auth */}

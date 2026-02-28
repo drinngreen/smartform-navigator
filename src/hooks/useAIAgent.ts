@@ -69,10 +69,13 @@ export function useAIAgent() {
       const { data, error } = await supabase.functions.invoke("ai-agent", { body: { messages: apiMessages, conversation_id: convId, currentFirData, stream: false } });
       if (error) throw new Error(error.message || "Errore nella risposta");
       const assistantContent = data.content || data.choices?.[0]?.message?.content || "Mi dispiace, non ho capito.";
+      
+      // Handle firUpdates from tool-calling response
       if (data.firUpdates) {
         if (data.firUpdates.__reset) { firStore.resetForm(); }
         else { firStore.setFromAgent(data.firUpdates); }
       }
+      
       const assistantMessage: AIMessage = { id: crypto.randomUUID(), role: "assistant", content: assistantContent, createdAt: new Date(), firUpdates: data.firUpdates };
       setMessages(prev => [...prev, assistantMessage]);
       if (convId) {

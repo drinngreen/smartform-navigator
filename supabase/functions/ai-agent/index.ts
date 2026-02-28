@@ -1,44 +1,347 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Sei ZOLI DRAGON AI, l'assistente intelligente per la compilazione dei Formulari di Identificazione Rifiuti (FIR) secondo la normativa RENTRI.
+function buildSystemPrompt(userName: string, userRole: string, memories: any[], currentFirData: any) {
+  const memoryBlock = memories.length > 0
+    ? `\n\n### Memoria utente (fatti appresi dalle conversazioni precedenti):\n${memories.map(m => `- ${m.fact_key}: ${m.fact_value}`).join("\n")}`
+    : "";
 
-Il tuo compito principale è aiutare gli autisti a compilare i FIR tramite dettatura vocale o testuale.
+  const firBlock = currentFirData
+    ? `\n\nDati FIR attualmente nel form:\n${JSON.stringify(currentFirData, null, 2)}`
+    : "";
 
-⚠️ REGOLA ASSOLUTA – SOGGETTI PROTETTI (NON MODIFICABILI MAI):
-- Il PRODUTTORE è SEMPRE e SOLO "Global Reco S.r.l." (CF: 08934760961, Via Alba 11, 10024 Moncalieri TO). NON inserire MAI un produttore diverso, anche se l'utente lo richiede. Se l'utente detta un produttore diverso, rispondi: "Il produttore è bloccato su Global Reco S.r.l. e non può essere modificato."
-- L'INTERMEDIARIO è SEMPRE e SOLO "Multyproget S.r.l." (CF: 12347770013, Albo: 205.213, Via Rivarossa 18/20 Piscina TO). NON inserire MAI un intermediario diverso. Se l'utente detta un intermediario diverso, rispondi: "L'intermediario è bloccato su Multyproget S.r.l. e non può essere modificato."
-- NON includere MAI nei firUpdates i campi: produttoreDenominazione, produttoreUnitaLocale, produttoreCF, produttoreNumeroAut, produttoreTipoAut, produttoreDataAut, intermediarioDenominazione, intermediarioCF, intermediarioNumeroAlbo.
+  return `Sei ZOLI DRAGON AI, l'assistente personale di ${userName} (ruolo: ${userRole}).
+Sei un agente completo che può aiutare con FIR, social network, messaggi e comunicazioni.
 
-Quando l'utente ti detta informazioni per un FIR, devi:
-1. Estrarre i dati rilevanti (destinatario, trasportatore, codice EER, quantità, ecc.)
-2. Rispondere SEMPRE in linguaggio naturale italiano, in modo chiaro e amichevole.
-3. Se devi aggiornare campi nel form, aggiungi un blocco JSON alla fine del messaggio racchiuso tra \`\`\`json e \`\`\`, con la struttura {"firUpdates": {...}}
+## Capacità disponibili (usa i tool forniti):
+1. **FIR**: Compilare e aggiornare formulari rifiuti, leggere cronologia FIR
+2. **Social**: Pubblicare post, leggere il feed, cercare membri
+3. **Messaggi**: Inviare e leggere messaggi diretti tra membri
+4. **Sede**: Inviare e leggere messaggi dalla/alla sede (admin)
+5. **Notifiche**: Leggere le notifiche dell'utente
+6. **Memoria**: Salvare fatti importanti sull'utente per ricordarli in futuro
 
-I campi MODIFICABILI nel form FIR sono:
-- destinatarioDenominazione, destinatarioUnitaLocale, destinatarioCF, destinatarioOperazione, destinatarioCodiceOperazione
-- trasportatoreDenominazione, trasportatoreCF, trasportatoreNumeroAlbo
-- codiceEER, statoFisico, descrizione, quantita, unitaMisura
-- conducenteNomeCognome, targaAutomezzo, targaRimorchio
-- caratteristicheHP (array di stringhe)
+## Regole FIR:
+⚠️ SOGGETTI PROTETTI (NON MODIFICABILI):
+- PRODUTTORE: sempre "Global Reco S.r.l." (CF: 08934760961, Via Alba 11, 10024 Moncalieri TO)
+- INTERMEDIARIO: sempre "Multyproget S.r.l." (CF: 12347770013, Albo: 205.213, Via Rivarossa 18/20 Piscina TO)
+- NON includere MAI nei firUpdates i campi protetti (produttore*, intermediario*)
 
-Rispondi SEMPRE in italiano. Sii conciso e pratico.
+Campi FIR modificabili: destinatarioDenominazione, destinatarioUnitaLocale, destinatarioCF, destinatarioOperazione, destinatarioCodiceOperazione, trasportatoreDenominazione, trasportatoreCF, trasportatoreNumeroAlbo, codiceEER, statoFisico, descrizione, quantita, unitaMisura, conducenteNomeCognome, targaAutomezzo, targaRimorchio, caratteristicheHP
 
-Se l'utente chiede informazioni su codici EER, normativa RENTRI, o procedure FIR, rispondi con competenza.
+Quando aggiorni il FIR, usa il tool update_fir.
 
-Esempio di risposta con aggiornamenti FIR:
-Se l'utente dice "il destinatario è Eco Green Srl, codice fiscale 12345678901, operazione R13"
-Rispondi così:
-"Ho aggiornato il destinatario con Eco Green Srl e l'operazione R13. Ecco i dati inseriti:
-\`\`\`json
-{"firUpdates": {"destinatarioDenominazione": "Eco Green Srl", "destinatarioCF": "12345678901", "destinatarioOperazione": "R", "destinatarioCodiceOperazione": "R13"}}
-\`\`\`"
+## Regole generali:
+- Rispondi SEMPRE in italiano, conciso e pratico
+- Usa i tool per azioni concrete, non inventare dati
+- Per le azioni social/messaggi, cerca prima il membro se serve il suo ID
+- Salva fatti utili con save_memory (es. targa preferita, destinatari frequenti)
+${memoryBlock}${firBlock}`;
+}
 
-Per resettare il form, includi nel blocco JSON: {"firUpdates": {"__reset": true}}`;
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "update_fir",
+      description: "Aggiorna i campi del FIR corrente nel form dell'utente",
+      parameters: {
+        type: "object",
+        properties: {
+          updates: {
+            type: "object",
+            description: "Oggetto con i campi da aggiornare (es. {destinatarioDenominazione: 'Eco Green', codiceEER: '170405'})"
+          },
+          reset: { type: "boolean", description: "Se true, resetta il form FIR" }
+        },
+        required: ["updates"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_my_firs",
+      description: "Leggi i FIR dell'utente (bozze, inviati, completati). Puoi filtrare per stato.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", description: "Filtra per stato: bozza, inviato, completato (opzionale)" },
+          limit: { type: "number", description: "Numero max risultati (default 10)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_social_post",
+      description: "Pubblica un post nel social feed della community Global Reco",
+      parameters: {
+        type: "object",
+        properties: {
+          content: { type: "string", description: "Testo del post" },
+          post_type: { type: "string", enum: ["general", "safety_tip", "announcement"], description: "Tipo post (default: general)" }
+        },
+        required: ["content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_social_feed",
+      description: "Leggi gli ultimi post dal social feed",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Numero post da leggere (default 10)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_dm",
+      description: "Invia un messaggio diretto a un membro della community",
+      parameters: {
+        type: "object",
+        properties: {
+          receiver_id: { type: "string", description: "UUID del destinatario" },
+          content: { type: "string", description: "Testo del messaggio" }
+        },
+        required: ["receiver_id", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_dms",
+      description: "Leggi i messaggi diretti recenti (inviati e ricevuti)",
+      parameters: {
+        type: "object",
+        properties: {
+          partner_id: { type: "string", description: "UUID di un utente specifico (opzionale)" },
+          limit: { type: "number", description: "Numero messaggi (default 20)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_hq_message",
+      description: "Invia un messaggio alla sede (admin del tenant)",
+      parameters: {
+        type: "object",
+        properties: {
+          content: { type: "string", description: "Testo del messaggio" }
+        },
+        required: ["content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_hq_messages",
+      description: "Leggi i messaggi scambiati con la sede",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Numero messaggi (default 20)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_members",
+      description: "Cerca membri della community per nome o cognome",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Nome o cognome da cercare" }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_notifications",
+      description: "Leggi le notifiche dell'utente",
+      parameters: {
+        type: "object",
+        properties: {
+          unread_only: { type: "boolean", description: "Solo non lette (default true)" },
+          limit: { type: "number", description: "Numero notifiche (default 10)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "save_memory",
+      description: "Salva un fatto importante sull'utente per ricordarlo nelle conversazioni future (es. targa preferita, destinatario abituale)",
+      parameters: {
+        type: "object",
+        properties: {
+          fact_key: { type: "string", description: "Chiave del fatto (es. 'targa_preferita', 'destinatario_abituale')" },
+          fact_value: { type: "string", description: "Valore del fatto" }
+        },
+        required: ["fact_key", "fact_value"]
+      }
+    }
+  }
+];
+
+async function executeTool(db: any, userId: string, toolName: string, args: any): Promise<any> {
+  switch (toolName) {
+    case "update_fir": {
+      if (args.reset) return { firUpdates: { __reset: true } };
+      const PROTECTED = [
+        "produttoreDenominazione", "produttoreUnitaLocale", "produttoreCF",
+        "produttoreNumeroAut", "produttoreTipoAut", "produttoreDataAut",
+        "intermediarioDenominazione", "intermediarioCF", "intermediarioNumeroAlbo",
+      ];
+      const updates = { ...args.updates };
+      for (const key of PROTECTED) delete updates[key];
+      return { firUpdates: updates };
+    }
+
+    case "get_my_firs": {
+      let query = db.from("fir_forms").select("id, numero_fir, status, codice_eer, descrizione_rifiuto, destinatario_denominazione, quantita, created_at, updated_at")
+        .eq("user_id", userId).eq("deleted_by_user", false).order("updated_at", { ascending: false }).limit(args.limit || 10);
+      if (args.status) query = query.eq("status", args.status);
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { firs: data, count: data?.length || 0 };
+    }
+
+    case "send_social_post": {
+      const { data, error } = await db.from("social_posts").insert({
+        author_id: userId,
+        content: args.content,
+        post_type: args.post_type || "general",
+      }).select("id").single();
+      if (error) return { error: error.message };
+      return { success: true, post_id: data.id, message: "Post pubblicato!" };
+    }
+
+    case "read_social_feed": {
+      const { data, error } = await db.from("social_posts")
+        .select("id, content, post_type, created_at, likes_count, comments_count, author_id")
+        .eq("is_hidden", false).order("created_at", { ascending: false }).limit(args.limit || 10);
+      if (error) return { error: error.message };
+      // Enrich with author names
+      if (data && data.length > 0) {
+        const authorIds = [...new Set(data.map((p: any) => p.author_id))];
+        const { data: profiles } = await db.from("profiles").select("user_id, nome, cognome").in("user_id", authorIds);
+        const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, `${p.nome || ""} ${p.cognome || ""}`.trim()]));
+        return { posts: data.map((p: any) => ({ ...p, author_name: profileMap[p.author_id] || "Utente" })) };
+      }
+      return { posts: data || [] };
+    }
+
+    case "send_dm": {
+      const { data, error } = await db.from("messages").insert({
+        sender_id: userId,
+        receiver_id: args.receiver_id,
+        content: args.content,
+      }).select("id").single();
+      if (error) return { error: error.message };
+      return { success: true, message: "Messaggio inviato!" };
+    }
+
+    case "read_dms": {
+      let query = db.from("messages")
+        .select("id, sender_id, receiver_id, content, is_read, created_at")
+        .order("created_at", { ascending: false }).limit(args.limit || 20);
+      if (args.partner_id) {
+        query = query.or(`and(sender_id.eq.${userId},receiver_id.eq.${args.partner_id}),and(sender_id.eq.${args.partner_id},receiver_id.eq.${userId})`);
+      } else {
+        query = query.or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      }
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { messages: data || [] };
+    }
+
+    case "send_hq_message": {
+      // Find admin user for this tenant
+      const { data: profile } = await db.from("profiles").select("tenant_id").eq("user_id", userId).single();
+      const tenantId = profile?.tenant_id;
+      const { data: admins } = await db.from("user_roles").select("user_id").eq("role", "admin");
+      let adminId = admins?.[0]?.user_id;
+      // Try to find admin of same tenant
+      if (admins && admins.length > 1 && tenantId) {
+        const { data: adminProfiles } = await db.from("profiles").select("user_id").eq("tenant_id", tenantId).in("user_id", admins.map((a: any) => a.user_id));
+        if (adminProfiles && adminProfiles.length > 0) adminId = adminProfiles[0].user_id;
+      }
+      if (!adminId) return { error: "Nessun admin trovato" };
+      const { error } = await db.from("messages").insert({ sender_id: userId, receiver_id: adminId, content: args.content });
+      if (error) return { error: error.message };
+      return { success: true, message: "Messaggio inviato alla sede!" };
+    }
+
+    case "read_hq_messages": {
+      const { data: admins } = await db.from("user_roles").select("user_id").eq("role", "admin");
+      const adminIds = (admins || []).map((a: any) => a.user_id);
+      if (adminIds.length === 0) return { messages: [] };
+      const { data, error } = await db.from("messages")
+        .select("id, sender_id, receiver_id, content, is_read, created_at")
+        .or(`and(sender_id.eq.${userId},receiver_id.in.(${adminIds.join(",")})),and(receiver_id.eq.${userId},sender_id.in.(${adminIds.join(",")}))`)
+        .order("created_at", { ascending: false }).limit(args.limit || 20);
+      if (error) return { error: error.message };
+      return { messages: data || [] };
+    }
+
+    case "search_members": {
+      const q = `%${args.query}%`;
+      const { data, error } = await db.from("profiles")
+        .select("user_id, nome, cognome, ruolo, email")
+        .or(`nome.ilike.${q},cognome.ilike.${q}`)
+        .limit(10);
+      if (error) return { error: error.message };
+      return { members: data || [] };
+    }
+
+    case "get_notifications": {
+      let query = db.from("notifications").select("id, type, title, body, is_read, created_at")
+        .eq("user_id", userId).order("created_at", { ascending: false }).limit(args.limit || 10);
+      if (args.unread_only !== false) query = query.eq("is_read", false);
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { notifications: data || [] };
+    }
+
+    case "save_memory": {
+      // Upsert: update if same key exists
+      const { data: existing } = await db.from("ai_user_memory")
+        .select("id").eq("user_id", userId).eq("fact_key", args.fact_key).single();
+      if (existing) {
+        await db.from("ai_user_memory").update({ fact_value: args.fact_value }).eq("id", existing.id);
+      } else {
+        await db.from("ai_user_memory").insert({ user_id: userId, fact_key: args.fact_key, fact_value: args.fact_value });
+      }
+      return { success: true, message: `Memorizzato: ${args.fact_key} = ${args.fact_value}` };
+    }
+
+    default:
+      return { error: `Tool sconosciuto: ${toolName}` };
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,99 +349,124 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversation_id, currentFirData, stream } = await req.json();
-    
+    const { messages, conversation_id, currentFirData } = await req.json();
+
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
-    if (!OPENROUTER_API_KEY) {
-      throw new Error("OPENROUTER_API_KEY non configurata");
-    }
+    if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
 
-    const contextMessage = currentFirData ? `\n\nDati FIR attualmente nel form:\n${JSON.stringify(currentFirData, null, 2)}` : "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const db = createClient(supabaseUrl, supabaseServiceKey);
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://zolidragon.app",
-        "X-Title": "Zoli Dragon AI",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT + contextMessage },
-          ...messages,
-        ],
-        temperature: 0.3,
-      }),
-    });
+    // Extract user from JWT
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    let userId = "";
+    let userName = "Utente";
+    let userRole = "trasportatore";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Troppe richieste, riprova tra poco." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(`OpenRouter error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const assistantContent = data.choices?.[0]?.message?.content || "";
-
-    // Parse mixed text+JSON response
-    let content = assistantContent;
-    let firUpdates = undefined;
-
-    // Try to extract JSON block from markdown code fences
-    const jsonBlockMatch = assistantContent.match(/```json\s*\n?([\s\S]*?)\n?\s*```/);
-    if (jsonBlockMatch) {
-      try {
-        const parsed = JSON.parse(jsonBlockMatch[1]);
-        if (parsed.firUpdates) {
-          firUpdates = parsed.firUpdates;
+    if (token) {
+      const { data: { user } } = await createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${token}` } }
+      }).auth.getUser();
+      if (user) {
+        userId = user.id;
+        const { data: profile } = await db.from("profiles").select("nome, cognome, ruolo").eq("user_id", user.id).single();
+        if (profile) {
+          userName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente";
+          userRole = profile.ruolo || "trasportatore";
         }
-        // Remove the JSON block from the displayed content
-        content = assistantContent.replace(/```json\s*\n?[\s\S]*?\n?\s*```/, "").trim();
-      } catch {
-        // Invalid JSON in code block, ignore
       }
-    } else {
-      // Fallback: try parsing the entire response as JSON (backward compat)
-      try {
-        const parsed = JSON.parse(assistantContent);
-        content = parsed.message || parsed.content || parsed.response || assistantContent;
-        if (parsed.firUpdates) {
-          firUpdates = parsed.firUpdates;
+    }
+
+    // Load user memories
+    let memories: any[] = [];
+    if (userId) {
+      const { data } = await db.from("ai_user_memory").select("fact_key, fact_value").eq("user_id", userId).order("updated_at", { ascending: false }).limit(30);
+      memories = data || [];
+    }
+
+    const systemPrompt = buildSystemPrompt(userName, userRole, memories, currentFirData);
+
+    // Build conversation
+    const conversationMessages: any[] = [
+      { role: "system", content: systemPrompt },
+      ...messages,
+    ];
+
+    // Iterative tool-calling loop (max 5 iterations)
+    let finalContent = "";
+    let firUpdates: any = undefined;
+
+    for (let iteration = 0; iteration < 5; iteration++) {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://zolidragon.app",
+          "X-Title": "Zoli Dragon AI",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: conversationMessages,
+          tools,
+          temperature: 0.3,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenRouter error:", response.status, errorText);
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Troppe richieste, riprova tra poco." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
-      } catch {
-        // Not JSON at all, use as plain text - this is the normal case now
+        throw new Error(`OpenRouter error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const choice = data.choices?.[0];
+      if (!choice) throw new Error("No response from model");
+
+      const assistantMsg = choice.message;
+      conversationMessages.push(assistantMsg);
+
+      if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
+        finalContent = assistantMsg.content || "";
+        break;
+      }
+
+      // Process tool calls
+      for (const toolCall of assistantMsg.tool_calls) {
+        const fn = toolCall.function;
+        let args: any;
+        try {
+          args = JSON.parse(fn.arguments);
+        } catch {
+          conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify({ error: "JSON non valido" }) });
+          continue;
+        }
+
+        const result = await executeTool(db, userId, fn.name, args);
+
+        // Capture firUpdates from update_fir tool
+        if (fn.name === "update_fir" && result.firUpdates) {
+          firUpdates = result.firUpdates;
+        }
+
+        conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(result) });
       }
     }
 
-    // Server-side protection: strip protected fields
-    if (firUpdates) {
-      const PROTECTED = [
-        "produttoreDenominazione", "produttoreUnitaLocale", "produttoreCF",
-        "produttoreNumeroAut", "produttoreTipoAut", "produttoreDataAut",
-        "intermediarioDenominazione", "intermediarioCF", "intermediarioNumeroAlbo",
-      ];
-      for (const key of PROTECTED) {
-        delete firUpdates[key];
-      }
-    }
-
-    return new Response(JSON.stringify({ content, firUpdates }), {
+    return new Response(JSON.stringify({ content: finalContent, firUpdates }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error("AI agent error:", error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : "Errore sconosciuto",
       content: `❌ Errore: ${error instanceof Error ? error.message : "Errore sconosciuto"}`
     }), {
