@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, MessageCircle, Shield, User } from "lucide-react";
+import { Search, MessageCircle, User } from "lucide-react";
+import { SocialCallButton } from "./SocialCallButton";
 
 interface SocialMember {
   user_id: string;
@@ -106,14 +107,17 @@ export function SocialMembers({ onOpenChat }: SocialMembersProps) {
               )}
             </div>
 
-            {/* DM button */}
-            <button
-              onClick={() => onOpenChat(member.user_id, `${member.nome} ${member.cognome}`)}
-              className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-all"
-              title="Invia messaggio"
-            >
-              <MessageCircle size={16} />
-            </button>
+            {/* Actions */}
+            <div className="flex items-center gap-1.5">
+              <SocialCallButton targetUserId={member.user_id} targetUserName={`${member.nome} ${member.cognome}`} />
+              <button
+                onClick={() => onOpenChat(member.user_id, `${member.nome} ${member.cognome}`)}
+                className="p-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary transition-all"
+                title="Invia messaggio"
+              >
+                <MessageCircle size={16} />
+              </button>
+            </div>
           </div>
         ))}
 
