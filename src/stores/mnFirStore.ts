@@ -226,7 +226,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
           ? STATO_FISICO_REVERSE_MAP[dbData.stato_fisico] || ""
           : "";
 
-        const dbStatus = (dbData as any).status as string | undefined;
+        const dbStatus = dbData.status as string | undefined;
         let mappedWorkflow: 'bozza' | 'inviato' | 'chiuso' | null = 'bozza';
         if (dbStatus === 'inviato') mappedWorkflow = 'inviato';
         else if (dbStatus === 'chiuso' || dbStatus === 'completato') mappedWorkflow = 'chiuso';

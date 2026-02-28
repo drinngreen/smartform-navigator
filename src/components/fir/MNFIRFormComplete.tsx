@@ -161,6 +161,66 @@ export function MNFIRFormComplete() {
   const u = store.updateField;
   const d = store.data;
 
+  // ── Auto-restore active FIR from DB on mount ─────────────
+  const hasAutoRestored = useRef(false);
+  useEffect(() => {
+    if (hasAutoRestored.current) return;
+    if (store.editingFirId) return;
+    if (!user?.id) return;
+    hasAutoRestored.current = true;
+
+    (async () => {
+      try {
+        const { data: activeFirs } = await supabase
+          .from("fir_forms")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("deleted_by_user", false)
+          .in("status", ["bozza", "inviato"])
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        if (activeFirs && activeFirs.length > 0) {
+          const fir = activeFirs[0];
+          store.loadFromDatabase({
+            id: fir.id,
+            numero_fir: fir.numero_fir,
+            status: fir.status,
+            produttore_denominazione: fir.produttore_denominazione,
+            produttore_codice_fiscale: fir.produttore_codice_fiscale,
+            produttore_indirizzo: fir.produttore_indirizzo,
+            destinatario_denominazione: fir.destinatario_denominazione,
+            destinatario_codice_fiscale: fir.destinatario_codice_fiscale,
+            destinatario_indirizzo: fir.destinatario_indirizzo,
+            destinatario_autorizzazione: fir.destinatario_autorizzazione,
+            trasportatore_denominazione: fir.trasportatore_denominazione,
+            trasportatore_codice_fiscale: fir.trasportatore_codice_fiscale,
+            trasportatore_iscrizione_albo: fir.trasportatore_iscrizione_albo,
+            trasportatore_targa_automezzo: fir.trasportatore_targa_automezzo,
+            trasportatore_targa_rimorchio: fir.trasportatore_targa_rimorchio,
+            trasportatore_conducente: fir.trasportatore_conducente,
+            codice_eer: fir.codice_eer,
+            descrizione_rifiuto: fir.descrizione_rifiuto,
+            stato_fisico: fir.stato_fisico,
+            quantita: fir.quantita,
+            unita_misura: fir.unita_misura,
+            caratteristiche_hp: fir.caratteristiche_hp,
+            data_partenza: fir.data_partenza,
+            data_arrivo: fir.data_arrivo,
+            intermediario_denominazione: fir.intermediario_denominazione,
+            intermediario_codice_fiscale: fir.intermediario_codice_fiscale,
+            intermediario_iscrizione_albo: fir.intermediario_iscrizione_albo,
+            note: fir.note,
+            form_data: fir.form_data as Record<string, any> | null,
+          });
+          console.log("[MN-FIR] Auto-restored active FIR:", fir.numero_fir, "status:", fir.status);
+        }
+      } catch (err) {
+        console.warn("[MN-FIR] Auto-restore failed:", err);
+      }
+    })();
+  }, [user?.id, store.editingFirId]);
+
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
