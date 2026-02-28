@@ -1,5 +1,4 @@
-import { Bell, MessageCircle, Trophy, Users } from "lucide-react";
-import logoDragon from "@/assets/logo-dragon.png";
+import { Bell, MessageCircle, Send } from "lucide-react";
 
 interface SocialHeaderProps {
   userName?: string;
@@ -8,30 +7,39 @@ interface SocialHeaderProps {
 
 export function SocialHeader({ userName = "Utente", userInitial = "U" }: SocialHeaderProps) {
   return (
-    <div className="bg-card border-b border-border px-4 py-3">
-      <div className="flex items-center justify-between">
+    <div className="relative bg-gradient-to-r from-card via-card to-secondary/50 border-b border-border/50 px-4 py-3">
+      {/* Subtle glow accent */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      
+      <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 border-2 border-primary/50 flex items-center justify-center text-sm font-bold text-primary shadow-[var(--glow-gold-subtle)]">
-            {userInitial}
+          {/* Avatar with gradient ring */}
+          <div className="relative">
+            <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-br from-primary via-accent to-primary">
+              <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-sm font-bold text-primary">
+                {userInitial}
+              </div>
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success border-2 border-card" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-foreground leading-tight flex items-center gap-1.5">
-              <Users size={16} className="text-accent shrink-0" />
+            <h1 className="text-sm font-bold text-foreground leading-tight tracking-wide">
               Social Global Reco
             </h1>
-            <p className="text-[10px] text-muted-foreground">Comunità trasportatori</p>
+            <p className="text-[10px] text-muted-foreground font-medium">Comunità trasportatori</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="relative p-2 rounded-full hover:bg-secondary transition-colors">
-            <Trophy size={18} className="text-primary" />
+
+        <div className="flex items-center gap-0.5">
+          <button className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group">
+            <Send size={18} className="text-muted-foreground group-hover:text-accent transition-colors" />
           </button>
-          <button className="relative p-2 rounded-full hover:bg-secondary transition-colors">
-            <MessageCircle size={18} className="text-muted-foreground" />
+          <button className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group">
+            <MessageCircle size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
           </button>
-          <button className="relative p-2 rounded-full hover:bg-secondary transition-colors">
-            <Bell size={18} className="text-muted-foreground" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+          <button className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group">
+            <Bell size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full ring-2 ring-card" />
           </button>
         </div>
       </div>
