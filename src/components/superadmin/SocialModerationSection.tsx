@@ -84,9 +84,10 @@ export function SocialModerationSection() {
   };
 
   const handleWarnUser = async (userId: string, reason: string) => {
-    await supabase.rpc("exec_sql_write", {
-      query: `UPDATE profiles SET social_warnings = social_warnings + 1 WHERE user_id = '${userId}'`,
-    });
+    await supabase
+      .from("profiles")
+      .update({ social_warnings: (await supabase.from("profiles").select("social_warnings").eq("user_id", userId).single()).data?.social_warnings + 1 || 1 })
+      .eq("user_id", userId);
     await logModeration("user_warning", userId, "user", reason);
     fetchLogs();
   };

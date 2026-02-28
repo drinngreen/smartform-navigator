@@ -3522,6 +3522,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_superadmin: { Args: never; Returns: boolean }
       next_prima_nota_number: {
         Args: { p_anno: number; p_tenant_id: string }
         Returns: number

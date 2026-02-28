@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { SocialFeed } from "@/components/social/SocialFeed";
 import { SocialHeader } from "@/components/social/SocialHeader";
+import { SocialMembers } from "@/components/social/SocialMembers";
+import { SocialChat } from "@/components/social/SocialChat";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { Users } from "lucide-react";
@@ -14,17 +17,31 @@ export default function SocialPage() {
   const userInitial = (userName[0] || "U").toUpperCase();
   const userAvatar = (profile as any)?.avatar_url || null;
 
+  const [chatPartner, setChatPartner] = useState<{ id: string; name: string } | null>(null);
+
+  const handleOpenChat = (userId: string, userName: string) => {
+    setChatPartner({ id: userId, name: userName });
+  };
+
+  // Chat view
+  if (chatPartner) {
+    return (
+      <MobileShell>
+        <SocialChat
+          partnerId={chatPartner.id}
+          partnerName={chatPartner.name}
+          onBack={() => setChatPartner(null)}
+        />
+      </MobileShell>
+    );
+  }
+
   return (
     <MobileShell>
-      {/* Social Header */}
       <SocialHeader userName={userName} userInitial={userInitial} userAvatar={userAvatar} />
-
-      {/* Feed */}
       <div className="flex-1 overflow-y-auto pb-20">
-        <SocialFeed />
+        <SocialFeed onOpenChat={handleOpenChat} />
       </div>
-
-      {/* Bottom nav */}
       {isSocialOnly ? (
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-6 py-3 flex justify-around max-w-lg mx-auto">
           <button onClick={() => navigate("/social")} className="flex flex-col items-center gap-1 text-primary">
