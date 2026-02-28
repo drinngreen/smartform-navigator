@@ -8,6 +8,7 @@ import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarS
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
 import { SystemPromptReviewSection } from "@/components/superadmin/SystemPromptReviewSection";
 import { RENTRIActionsPanel } from "@/components/superadmin/RENTRIActionsPanel";
+import { SocialModerationSection } from "@/components/superadmin/SocialModerationSection";
 import { ngrokHealthCheck } from "@/lib/rentriNgrokApi";
 import logoDragon from "@/assets/logo-dragon.png";
 
@@ -121,6 +122,7 @@ export default function SuperAdminDashboard() {
 
       {/* Content */}
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        <SocialModerationSection />
         <RENTRIActionsPanel tenant={activeTenant.id} />
         <SystemPromptReviewSection />
         <FIRPoolSection tenant={activeTenant.id} />

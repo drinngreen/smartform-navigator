@@ -18,6 +18,8 @@ import SuperAdminAuthPage from "./pages/SuperAdminAuthPage";
 
 // Super Admin
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SocialPage from "./pages/SocialPage";
+import SocialGuestAuthPage from "./pages/SocialGuestAuthPage";
 
 // Mobile App Pages
 import MobileAppPage from "./pages/MobileAppPage";
@@ -49,6 +51,7 @@ import WhatsAppPage from "./pages/admin/WhatsAppPage";
 import EmailPage from "./pages/admin/EmailPage";
 import RubricaPage from "./pages/admin/RubricaPage";
 import SystemPromptPage from "./pages/admin/SystemPromptPage";
+import SocialGuestsPage from "./pages/admin/SocialGuestsPage";
 
 // MultyNiyol Pages
 import MNDashboardPage from "./pages/multynijol/MNDashboardPage";
@@ -131,6 +134,10 @@ const App = () => (
               {/* Super Admin Dashboard */}
               <Route path="/super" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
 
+              {/* Social Network */}
+              <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
+              <Route path="/social/guest" element={<SocialGuestAuthPage />} />
+
               {/* Root redirect based on role */}
               <Route path="/" element={<RoleBasedRedirect />} />
 
@@ -166,6 +173,7 @@ const App = () => (
               <Route path="/admin/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
               <Route path="/admin/rubrica" element={<ProtectedRoute><RubricaPage /></ProtectedRoute>} />
               <Route path="/admin/system-prompt" element={<ProtectedRoute><SystemPromptPage /></ProtectedRoute>} />
+              <Route path="/admin/social-guests" element={<ProtectedRoute><SocialGuestsPage /></ProtectedRoute>} />
 
               {/* MultyNijol Admin Routes - PROTECTED */}
               <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
