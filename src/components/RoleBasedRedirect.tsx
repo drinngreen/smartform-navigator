@@ -26,6 +26,11 @@ export function RoleBasedRedirect() {
     return <Navigate to="/admin" replace />;
   }
 
+  // Social-only guests go directly to social
+  if (profile?.is_social_only) {
+    return <Navigate to="/social" replace />;
+  }
+
   // Regular users must complete profile
   if (!profile?.nome || !profile?.cognome) {
     return <Navigate to="/profile/setup" replace />;

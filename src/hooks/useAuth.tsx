@@ -15,6 +15,8 @@ interface Profile {
   autista_alternativo: string | null;
   avatar_url: string | null;
   mn_context: string | null;
+  is_social_only: boolean;
+  social_warnings: number;
 }
 
 interface AuthContextType {

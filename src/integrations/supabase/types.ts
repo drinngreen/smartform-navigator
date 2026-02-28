@@ -2730,8 +2730,12 @@ export type Database = {
           cognome: string
           created_at: string | null
           id: string
+          invited_by: string | null
+          is_social_only: boolean
           mn_context: string | null
           nome: string
+          social_bio: string | null
+          social_warnings: number
           targa_automezzo: string | null
           tenant_id: string | null
           updated_at: string | null
@@ -2745,8 +2749,12 @@ export type Database = {
           cognome: string
           created_at?: string | null
           id?: string
+          invited_by?: string | null
+          is_social_only?: boolean
           mn_context?: string | null
           nome: string
+          social_bio?: string | null
+          social_warnings?: number
           targa_automezzo?: string | null
           tenant_id?: string | null
           updated_at?: string | null
@@ -2760,8 +2768,12 @@ export type Database = {
           cognome?: string
           created_at?: string | null
           id?: string
+          invited_by?: string | null
+          is_social_only?: boolean
           mn_context?: string | null
           nome?: string
+          social_bio?: string | null
+          social_warnings?: number
           targa_automezzo?: string | null
           tenant_id?: string | null
           updated_at?: string | null
@@ -3101,6 +3113,190 @@ export type Database = {
           sdp?: Json | null
           to_ids?: string[] | null
           type?: string
+        }
+        Relationships: []
+      }
+      social_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          guest_cf: string | null
+          guest_name: string | null
+          id: string
+          invite_code: string
+          invited_by: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          guest_cf?: string | null
+          guest_name?: string | null
+          id?: string
+          invite_code?: string
+          invited_by: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          guest_cf?: string | null
+          guest_name?: string | null
+          id?: string
+          invite_code?: string
+          invited_by?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      social_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_moderation: {
+        Row: {
+          action_type: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          id: string
+          moderator_id: string
+          reason: string | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          moderator_id: string
+          reason?: string | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          moderator_id?: string
+          reason?: string | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      social_posts: {
+        Row: {
+          author_id: string
+          comments_count: number
+          content: string
+          created_at: string
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          image_url: string | null
+          is_hidden: boolean
+          likes_count: number
+          post_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          comments_count?: number
+          content: string
+          created_at?: string
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          image_url?: string | null
+          is_hidden?: boolean
+          likes_count?: number
+          post_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          comments_count?: number
+          content?: string
+          created_at?: string
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          image_url?: string | null
+          is_hidden?: boolean
+          likes_count?: number
+          post_type?: string
+          tenant_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
