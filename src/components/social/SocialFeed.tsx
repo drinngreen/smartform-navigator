@@ -6,7 +6,7 @@ import { SocialComments } from "./SocialComments";
 import { SocialComposer } from "./SocialComposer";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialTabs } from "./SocialTabs";
-import { SocialLeaderboard } from "./SocialLeaderboard";
+
 
 interface SocialFeedProps {
   isModerator?: boolean;
@@ -55,15 +55,6 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
     );
   }
 
-  // Leaderboard tab
-  if (activeTab === "classifica") {
-    return (
-      <div>
-        <SocialTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        <SocialLeaderboard />
-      </div>
-    );
-  }
 
   return (
     <div>

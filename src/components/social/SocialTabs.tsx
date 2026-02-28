@@ -7,7 +7,6 @@ const tabs = [
   { id: "feed", label: "Feed", emoji: "🏠" },
   { id: "safety", label: "Safety", emoji: "🛡️" },
   { id: "annunci", label: "Annunci", emoji: "📢" },
-  { id: "classifica", label: "Classifica", emoji: "🏆" },
 ];
 
 export function SocialTabs({ activeTab, onTabChange }: SocialTabsProps) {
