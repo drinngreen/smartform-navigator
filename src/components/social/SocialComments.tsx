@@ -37,9 +37,13 @@ export function SocialComments({ postId, fetchComments, addComment }: SocialComm
       {comments.map((c) => (
         <div key={c.id} className="flex gap-2.5">
           <div className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-br from-accent/40 to-primary/30 shrink-0">
-            <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-[9px] font-bold text-accent">
-              {(c.author_nome?.[0] || "U").toUpperCase()}
-            </div>
+            {c.author_avatar ? (
+              <img src={c.author_avatar} alt="" className="w-full h-full rounded-full object-cover" />
+            ) : (
+              <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-[9px] font-bold text-accent">
+                {(c.author_nome?.[0] || "U").toUpperCase()}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0 bg-secondary/30 rounded-xl px-3 py-2">
             <div className="flex items-baseline gap-2">

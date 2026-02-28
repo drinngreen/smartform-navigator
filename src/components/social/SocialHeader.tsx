@@ -3,22 +3,25 @@ import { Bell, MessageCircle, Send } from "lucide-react";
 interface SocialHeaderProps {
   userName?: string;
   userInitial?: string;
+  userAvatar?: string | null;
 }
 
-export function SocialHeader({ userName = "Utente", userInitial = "U" }: SocialHeaderProps) {
+export function SocialHeader({ userName = "Utente", userInitial = "U", userAvatar }: SocialHeaderProps) {
   return (
     <div className="relative bg-gradient-to-r from-card via-card to-secondary/50 border-b border-border/50 px-4 py-3">
-      {/* Subtle glow accent */}
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Avatar with gradient ring */}
           <div className="relative">
             <div className="w-11 h-11 rounded-full p-[2px] bg-gradient-to-br from-primary via-accent to-primary">
-              <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-sm font-bold text-primary">
-                {userInitial}
-              </div>
+              {userAvatar ? (
+                <img src={userAvatar} alt="" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-sm font-bold text-primary">
+                  {userInitial}
+                </div>
+              )}
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success border-2 border-card" />
           </div>

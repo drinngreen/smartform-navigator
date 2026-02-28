@@ -31,6 +31,7 @@ export interface SocialComment {
   created_at: string;
   author_nome?: string;
   author_cognome?: string;
+  author_avatar?: string | null;
 }
 
 export function useSocialFeed() {
@@ -60,14 +61,12 @@ export function useSocialFeed() {
       return;
     }
 
-    // Get author profiles
     const authorIds = [...new Set(postsData.map((p: any) => p.author_id))];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, nome, cognome, avatar_url, is_social_only")
       .in("user_id", authorIds);
 
-    // Get my likes
     const { data: myLikes } = await supabase
       .from("social_likes")
       .select("post_id")
@@ -82,7 +81,7 @@ export function useSocialFeed() {
         ...p,
         author_nome: profile?.nome || "Utente",
         author_cognome: profile?.cognome || "",
-        author_avatar: profile?.avatar_url,
+        author_avatar: profile?.avatar_url || null,
         author_is_social_only: profile?.is_social_only || false,
         liked_by_me: likedPostIds.has(p.id),
       };
@@ -96,7 +95,6 @@ export function useSocialFeed() {
     fetchPosts();
   }, [fetchPosts]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel("social-posts-realtime")
@@ -107,6 +105,19 @@ export function useSocialFeed() {
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchPosts]);
+
+  const uploadMedia = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("social-media").upload(path, file);
+    if (error) {
+      console.error("Upload error:", error);
+      return null;
+    }
+    const { data } = supabase.storage.from("social-media").getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const createPost = async (content: string, postType = "general", imageUrl?: string) => {
     if (!user) return;
@@ -147,14 +158,19 @@ export function useSocialFeed() {
     const authorIds = [...new Set(data.map((c: any) => c.author_id))];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, nome, cognome")
+      .select("user_id, nome, cognome, avatar_url")
       .in("user_id", authorIds);
 
     const profileMap = new Map(profiles?.map((p: any) => [p.user_id, p]) || []);
 
     return data.map((c: any) => {
       const profile = profileMap.get(c.author_id);
-      return { ...c, author_nome: profile?.nome || "Utente", author_cognome: profile?.cognome || "" };
+      return {
+        ...c,
+        author_nome: profile?.nome || "Utente",
+        author_cognome: profile?.cognome || "",
+        author_avatar: profile?.avatar_url || null,
+      };
     });
   };
 
@@ -164,5 +180,5 @@ export function useSocialFeed() {
     fetchPosts();
   };
 
-  return { posts, loading, createPost, toggleLike, deletePost, fetchComments, addComment, refreshPosts: fetchPosts };
+  return { posts, loading, createPost, uploadMedia, toggleLike, deletePost, fetchComments, addComment, refreshPosts: fetchPosts };
 }
