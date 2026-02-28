@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
-import { Phone, PhoneOff, MessageSquare, Bell } from "lucide-react";
+import { Phone, PhoneOff, MessageSquare } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
@@ -102,12 +103,7 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         </button>
 
         {/* Notifications */}
-        <button
-          className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
-          title="Notifiche"
-        >
-          <Bell className="h-5 w-5 text-white/80" />
-        </button>
+        <NotificationBell />
       </div>
     </div>
   );

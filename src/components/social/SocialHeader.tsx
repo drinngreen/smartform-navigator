@@ -1,4 +1,5 @@
-import { Bell, MessageCircle, Send } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface SocialHeaderProps {
   userName?: string;
@@ -40,10 +41,10 @@ export function SocialHeader({ userName = "Utente", userInitial = "U", userAvata
           <button className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group">
             <MessageCircle size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
           </button>
-          <button className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group">
-            <Bell size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full ring-2 ring-card" />
-          </button>
+          <NotificationBell
+            className="relative p-2.5 rounded-xl hover:bg-secondary/80 transition-all group"
+            iconClassName="h-[18px] w-[18px] text-muted-foreground group-hover:text-primary transition-colors"
+          />
         </div>
       </div>
     </div>
