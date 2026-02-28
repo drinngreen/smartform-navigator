@@ -473,6 +473,8 @@ export interface DatabaseFIRData {
   intermediario_codice_fiscale?: string | null;
   intermediario_iscrizione_albo?: string | null;
   note?: string | null;
+  form_data?: Record<string, any> | null;
+  status?: string | null;
 }
 
 const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
@@ -568,7 +570,7 @@ export const useFIRStore = create<FIRStore>()(
           ? STATO_FISICO_REVERSE_MAP[dbData.stato_fisico] || ""
           : "";
 
-        const dbStatus = (dbData as any).status as string | undefined;
+        const dbStatus = dbData.status as string | undefined;
         let mappedWorkflow: 'bozza' | 'inviato' | 'chiuso' | null = 'bozza';
         if (dbStatus === 'inviato') mappedWorkflow = 'inviato';
         else if (dbStatus === 'chiuso' || dbStatus === 'completato') mappedWorkflow = 'chiuso';
@@ -576,6 +578,7 @@ export const useFIRStore = create<FIRStore>()(
         set({
           data: {
             ...initialFIRData,
+            selectedFirNumber: dbData.numero_fir || "",
             dataEmissione: new Date().toISOString().split("T")[0],
             numeroRegistro: dbData.numero_fir || "",
             produttoreDenominazione: dbData.produttore_denominazione || "",
@@ -603,6 +606,23 @@ export const useFIRStore = create<FIRStore>()(
             intermediarioCF: dbData.intermediario_codice_fiscale || "",
             intermediarioNumeroAlbo: dbData.intermediario_iscrizione_albo || "",
             annotazioni: dbData.note || "",
+            // Restore form_data fields
+            ...(dbData.form_data ? {
+              registroSi: dbData.form_data.registro_no !== "NO",
+              produttoreLuogoProduzioneDiverso: dbData.form_data.produttore_luogo_produzione || "",
+              produttoreNumeroAut: dbData.form_data.produttore_iscrizione_albo || initialFIRData.produttoreNumeroAut,
+              isDetentore: dbData.form_data.detentore_checkbox || false,
+              destinatarioTipoAut: dbData.form_data.destinatario_tipo || "",
+              pesoRicevuto: dbData.form_data.peso_ricevuto || "",
+              percorsoDiverso: dbData.form_data.percorso || "",
+              accettazione: dbData.form_data.accettato_per_intero ? "intero" : dbData.form_data.accettato_parzialmente ? "parziale" : dbData.form_data.respinto ? "respinto" : "",
+              quantitaAccettata: dbData.form_data.quantita_accettata || "",
+              numeroColli: dbData.form_data.numero_colli || "",
+              trasportoADR: dbData.form_data.trasporto_adr_rid || false,
+              adrClassePericolo: dbData.form_data.classe_pericolo || "",
+              adrNumeroONU: dbData.form_data.nr_onu || "",
+              adrNote: dbData.form_data.note_adr || "",
+            } : {}),
           },
           editingFirId: dbData.id,
           workflowStatus: mappedWorkflow,
