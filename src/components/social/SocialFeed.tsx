@@ -16,7 +16,7 @@ interface SocialFeedProps {
 }
 
 export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }: SocialFeedProps) {
-  const { posts, loading, createPost, toggleLike, deletePost, fetchComments, addComment } = useSocialFeed();
+  const { posts, loading, createPost, uploadMedia, toggleLike, deletePost, fetchComments, addComment } = useSocialFeed();
   const { user, profile } = useAuth();
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("feed");
@@ -38,6 +38,10 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
     if (action === "warn" && onWarnUser) onWarnUser(targetId, reason);
   };
 
+  const handleCreatePost = async (content: string, postType?: string, imageUrl?: string) => {
+    await createPost(content, postType, imageUrl);
+  };
+
   const filteredPosts = activeTab === "safety"
     ? posts.filter(p => p.post_type === "safety_tip")
     : activeTab === "annunci"
@@ -45,6 +49,7 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
     : posts;
 
   const userInitial = ((profile as any)?.nome?.[0] || user?.email?.[0] || "U").toUpperCase();
+  const userAvatar = (profile as any)?.avatar_url || null;
 
   if (loading) {
     return (
@@ -56,17 +61,17 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
 
   return (
     <div>
-      {/* Stories */}
       <SocialStories />
-
-      {/* Tabs */}
       <SocialTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="space-y-3 p-4">
-        {/* Composer */}
-        <SocialComposer userInitial={userInitial} onSubmit={createPost} />
+        <SocialComposer
+          userInitial={userInitial}
+          userAvatar={userAvatar}
+          onSubmit={handleCreatePost}
+          onUploadMedia={uploadMedia}
+        />
 
-        {/* Empty state */}
         {filteredPosts.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <div className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center mx-auto mb-4">
@@ -79,7 +84,6 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
           </div>
         )}
 
-        {/* Post cards */}
         {filteredPosts.map((post) => (
           <SocialPostCard
             key={post.id}

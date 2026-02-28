@@ -12,11 +12,12 @@ export default function SocialPage() {
   const isSocialOnly = (profile as any)?.is_social_only === true;
   const userName = (profile as any)?.nome || user?.email?.split("@")[0] || "Utente";
   const userInitial = (userName[0] || "U").toUpperCase();
+  const userAvatar = (profile as any)?.avatar_url || null;
 
   return (
     <MobileShell>
       {/* Social Header */}
-      <SocialHeader userName={userName} userInitial={userInitial} />
+      <SocialHeader userName={userName} userInitial={userInitial} userAvatar={userAvatar} />
 
       {/* Feed */}
       <div className="flex-1 overflow-y-auto pb-20">
