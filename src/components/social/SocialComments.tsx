@@ -31,41 +31,43 @@ export function SocialComments({ postId, fetchComments, addComment }: SocialComm
   };
 
   return (
-    <div className="border-t border-border bg-secondary/20 px-4 py-3 space-y-3">
-      {loading && <div className="text-xs text-muted-foreground">Caricamento...</div>}
+    <div className="border-t border-border/20 bg-secondary/10 px-4 py-3 space-y-3">
+      {loading && <div className="text-[10px] text-muted-foreground/50">Caricamento...</div>}
 
       {comments.map((c) => (
-        <div key={c.id} className="flex gap-2">
-          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-bold text-accent shrink-0">
-            {(c.author_nome?.[0] || "U").toUpperCase()}
+        <div key={c.id} className="flex gap-2.5">
+          <div className="w-7 h-7 rounded-full p-[1.5px] bg-gradient-to-br from-accent/40 to-primary/30 shrink-0">
+            <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-[9px] font-bold text-accent">
+              {(c.author_nome?.[0] || "U").toUpperCase()}
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 bg-secondary/30 rounded-xl px-3 py-2">
             <div className="flex items-baseline gap-2">
-              <span className="text-xs font-semibold text-foreground">{c.author_nome} {c.author_cognome}</span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[11px] font-semibold text-foreground">{c.author_nome} {c.author_cognome}</span>
+              <span className="text-[9px] text-muted-foreground/50">
                 {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: it })}
               </span>
             </div>
-            <p className="text-xs text-foreground/80 mt-0.5">{c.content}</p>
+            <p className="text-[12px] text-foreground/75 mt-0.5 leading-relaxed">{c.content}</p>
           </div>
         </div>
       ))}
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pt-1">
         <input
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           placeholder="Scrivi un commento..."
-          className="flex-1 px-3 py-2 text-xs bg-background border border-border rounded-lg"
+          className="flex-1 px-3 py-2 text-xs bg-secondary/40 border border-border/20 rounded-xl text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-primary/30 transition-colors"
           maxLength={500}
         />
         <button
           onClick={handleSubmit}
           disabled={!newComment.trim()}
-          className="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 disabled:opacity-50 transition-all"
+          className="p-2 rounded-xl bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-30 transition-all"
         >
-          <Send size={14} />
+          <Send size={13} />
         </button>
       </div>
     </div>

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useSocialFeed, SocialPost } from "@/hooks/useSocialFeed";
+import { useSocialFeed } from "@/hooks/useSocialFeed";
 import { useAuth } from "@/hooks/useAuth";
 import { MessageCircle } from "lucide-react";
 import { SocialComments } from "./SocialComments";
 import { SocialComposer } from "./SocialComposer";
 import { SocialPostCard } from "./SocialPostCard";
 import { SocialTabs } from "./SocialTabs";
-
+import { SocialStories } from "./SocialStories";
 
 interface SocialFeedProps {
   isModerator?: boolean;
@@ -38,7 +38,6 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
     if (action === "warn" && onWarnUser) onWarnUser(targetId, reason);
   };
 
-  // Filter posts by tab
   const filteredPosts = activeTab === "safety"
     ? posts.filter(p => p.post_type === "safety_tip")
     : activeTab === "annunci"
@@ -49,29 +48,34 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
-
   return (
     <div>
+      {/* Stories */}
+      <SocialStories />
+
+      {/* Tabs */}
       <SocialTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="space-y-4 p-4">
+      <div className="space-y-3 p-4">
         {/* Composer */}
         <SocialComposer userInitial={userInitial} onSubmit={createPost} />
 
         {/* Empty state */}
         {filteredPosts.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
-            <MessageCircle size={48} className="mx-auto mb-3 opacity-20" />
+            <div className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center mx-auto mb-4">
+              <MessageCircle size={28} className="opacity-30" />
+            </div>
             <p className="text-sm font-medium">
               {activeTab === "safety" ? "Nessun safety tip ancora." : activeTab === "annunci" ? "Nessun annuncio." : "Nessun post ancora. Sii il primo!"}
             </p>
-            <p className="text-xs mt-1 opacity-60">Condividi qualcosa con la community 🚛</p>
+            <p className="text-xs mt-1.5 opacity-50">Condividi qualcosa con la community 🚛</p>
           </div>
         )}
 

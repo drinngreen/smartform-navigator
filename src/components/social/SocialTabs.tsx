@@ -11,20 +11,18 @@ const tabs = [
 
 export function SocialTabs({ activeTab, onTabChange }: SocialTabsProps) {
   return (
-    <div className="flex bg-card border-b border-border overflow-x-auto">
+    <div className="flex gap-2 px-4 py-2.5 bg-card/50 border-b border-border/30">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`flex-1 min-w-0 py-3 px-2 text-xs font-semibold transition-all border-b-2 ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all ${
             activeTab === tab.id
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              ? "bg-gradient-to-r from-primary/20 to-accent/10 text-primary border border-primary/30 shadow-[var(--glow-gold-subtle)]"
+              : "bg-secondary/40 text-muted-foreground hover:bg-secondary/70 hover:text-foreground border border-transparent"
           }`}
         >
-          <span className="block text-center">
-            {tab.emoji} {tab.label}
-          </span>
+          {tab.emoji} {tab.label}
         </button>
       ))}
     </div>
