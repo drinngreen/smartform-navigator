@@ -23,132 +23,80 @@ Colonne: id (uuid PK), tenant_id (uuid), impianto_id (uuid), privato_id (uuid FK
 Pagamenti effettuati dai privati per i conferimenti.
 Colonne: id (uuid PK), tenant_id (uuid), privato_id (uuid FK->anagrafica_privati), conferimento_id (uuid FK->privati_conferimenti), importo (numeric), metodo_pagamento, data_pagamento (date), numero_ricevuta, note, created_at.
 
-### ricevute_privati
-Ricevute emesse ai privati.
-Colonne: id (uuid PK), tenant_id (uuid), conferimento_id (uuid), privato_id (uuid), numero_ricevuta, data_ricevuta, importo, descrizione, created_at.
-
-### storico_ricevute_privati
-Archivio storico ricevute importate.
-Colonne: id (uuid PK), tenant_id (uuid), numero_doc, data_doc (date), tipo_doc, codice_cliente, ragione_sociale, codice_fiscale, imponibile, totale_doc, quantita_kg, indirizzo, cap, citta, provincia, peso_netto, peso_lordo, metodo_pagamento, descrizione_pagamento, stato_ddt, quantita_fatturabile, created_at.
-
-### rubrica_contatti
-Rubrica contatti aziendali.
-Colonne: id (uuid PK), tenant_id (uuid), nome, cognome, ruolo, azienda, email, telefono, cellulare, note, mn_context, created_at, updated_at.
-
 ### profiles
 Profili utenti della piattaforma.
 Colonne: id (uuid PK), user_id (uuid), nome, cognome, email, ruolo, telefono, tenant_id (uuid), mn_context, avatar_url, created_at, updated_at.
 
 ### fir_forms
 Formulari di Identificazione Rifiuti compilati dagli autisti.
-Colonne: id (uuid PK), user_id, tenant_id, status, numero_fir, produttore_denominazione, produttore_codice_fiscale, produttore_indirizzo/comune/provincia/cap, destinatario_denominazione/codice_fiscale/indirizzo/comune/provincia/cap/autorizzazione, intermediario_denominazione/codice_fiscale/iscrizione_albo, trasportatore_denominazione/codice_fiscale/iscrizione_albo/conducente/targa_automezzo/targa_rimorchio, codice_eer, stato_fisico, descrizione_rifiuto, quantita, unita_misura, caratteristiche_hp, note, data_partenza, data_arrivo, form_data, allegati, created_at, updated_at, submitted_at, completed_at.
-
-### fir_number_pool
-Pool numeri FIR assegnati agli autisti.
-Colonne: id, societa_id, user_id, fir_number, status, assigned_at, assigned_by, consumed_at, reserved_by_fir_id, qr_code_data, suspended, created_at.
-
-### impianti
-Impianti di trattamento rifiuti.
-Colonne: id, tenant_id, organization_id, nome, indirizzo, comune, provincia, codice_rentri, autorizzaz_regione, capacita_m3, tipi_trattamento, coord_geo, created_at, updated_at.
-
-### movimenti_impianto
-Movimenti in entrata/uscita dall'impianto.
-Colonne: id, tenant_id, impianto_id, tipo_movimento, data_movimento, cer, quantita_kg, quantita_presunta, descrizione_rifiuto, produttore_denominazione, trasportatore_denominazione, destinatario_denominazione, numero_fir, fir_id, ruolo_impianto, esito_accettazione, origine, note, created_at, updated_at.
-
-### magazzino_deposito
-Giacenze magazzino per CER e impianto.
-Colonne: id, tenant_id, impianto_id, cer, kg_in, kg_out, data_in, data_out, limite_m3, note, created_at, updated_at.
-
-### limiti_privati
-Limiti di conferimento per tipo utenza e CER.
-Colonne: id, tenant_id, impianto_id, tipo_utenza, cer, limite_conferimento_kg, limite_giornaliero_kg, limite_mensile_kg, limite_annuo_kg, periodo_riferimento, note, created_at, updated_at.
-
-### registro_kg_privati
-Registro chilogrammi conferiti dai privati (cumulo).
-Colonne: id, tenant_id, privato_id, cer, kg_totale, anno, mese, created_at, updated_at.
-
-### organizations
-Organizzazioni (produttori, trasportatori, destinatari, intermediari).
-Colonne: id, name, codice_fiscale, partita_iva, indirizzo, comune, provincia, cap, tipo, numero_albo, tipo_autorizzazione, numero_autorizzazione, data_autorizzazione, codice_rentri, tenant_id, created_at, updated_at.
-
-### tenants
-Tenant della piattaforma.
-Colonne: id, name, slug, created_at.
-
-### comunicazioni_log
-Log comunicazioni (SMS, email, WhatsApp).
-Colonne: id, tenant_id, canale, destinatario, oggetto, contenuto, stato, contatto_id, risposta_api, created_by, created_at.
-
-### office_calls
-Registro chiamate telefoniche.
-Colonne: id, user_id, tenant_id, retell_call_id, agent_id, from_number, to_number, direction, status, duration_ms, start_timestamp, end_timestamp, transcript, call_summary, recording_url, call_successful, user_sentiment, disconnection_reason, metadata, fir_id, created_at, updated_at.
+Colonne: id (uuid PK), user_id, tenant_id, status, numero_fir, produttore_denominazione, destinatario_denominazione, trasportatore_denominazione, codice_eer, stato_fisico, descrizione_rifiuto, quantita, unita_misura, note, created_at, updated_at.
 
 ### messages
 Messaggi tra utenti.
-Colonne: id, sender_id, receiver_id, content, is_read, read_at, deleted_by_sender, deleted_by_receiver, created_at, updated_at.
+Colonne: id, sender_id, receiver_id, content, is_read, read_at, created_at.
 
-### intermediari
-Anagrafica intermediari rifiuti (Cat. 8 Albo Gestori Ambientali).
-Colonne: id (uuid PK), tenant_id (uuid), ragione_sociale (text NOT NULL), nome, cognome, codice_fiscale, partita_iva, indirizzo, cap, comune, provincia, nazione, pec, email, telefono, codice_destinatario, numero_iscrizione_albo, categoria_albo, data_iscrizione_albo (date), data_scadenza_albo (date), cer_autorizzati (text[]), note, attivo (bool default true), created_at, updated_at.
+### social_posts
+Post del social network.
+Colonne: id, author_id, content, post_type, is_hidden, likes_count, comments_count, created_at.
 
-### intermediazioni
-Operazioni di intermediazione rifiuti — collega produttore, intermediario, trasportatore e destinatario.
-Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), produttore_id (uuid FK->organizations), destinatario_id (uuid FK->organizations), trasportatore_id (uuid FK->organizations), fir_id (uuid FK->fir), fir_form_id (uuid FK->fir_forms), cer (text), descrizione_rifiuto, quantita_stimata_kg (numeric), quantita_effettiva_kg (numeric), tipo_provvigione (text: 'euro_ton'|'percentuale'|'forfait'), valore_provvigione (numeric), importo_provvigione (numeric), contratto_ref, condizioni_economiche, stato (text: 'bozza'|'in_corso'|'completata'|'annullata'), fatturata (bool), fattura_id (uuid FK->erp_fatture_vendita), note, created_by, created_at, updated_at.
+### social_comments
+Commenti ai post social.
+Colonne: id, post_id, author_id, content, created_at.
 
-### movimenti_intermediario
-Registro cronologico movimenti dell'intermediario (obbligatorio per Cat. 8).
-Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), intermediazione_id (uuid FK->intermediazioni), data_movimento (date), fir_id (uuid FK->fir), fir_form_id (uuid FK->fir_forms), produttore_id (uuid FK->organizations), destinatario_id (uuid FK->organizations), produttore_denominazione, destinatario_denominazione, cer (text NOT NULL), descrizione_rifiuto, quantita_kg (numeric NOT NULL), numero_fir, tipo_movimento (text default 'intermediazione'), note, created_by, created_at, updated_at.
+### social_moderation
+Azioni di moderazione social.
+Colonne: id, moderator_id, target_type, target_id, action, reason, created_at.
 
-### listini_intermediazione
-Listini provvigioni per intermediari (fee per produttore/CER).
-Colonne: id (uuid PK), tenant_id (uuid), intermediario_id (uuid FK->intermediari NOT NULL), produttore_id (uuid FK->organizations), cer, tipo_provvigione (text: 'euro_ton'|'percentuale'|'forfait'), valore_provvigione (numeric NOT NULL), fee_minimo (numeric), descrizione, valido_dal (date), valido_al (date), attivo (bool default true), created_at, updated_at.
+### organizations, tenants, intermediari, intermediazioni, impianti, movimenti_impianto, magazzino_deposito, limiti_privati, registro_kg_privati, comunicazioni_log, office_calls
+(vedi schema completo nella knowledge base)
 `;
 
-const SYSTEM_PROMPT = `Sei DARK LEMON AI, l'assistente intelligente avanzato per il tenant Multy Niyol.
+function buildSystemPrompt(adminName: string, contextNote: string, memories: any[]) {
+  const memoryBlock = memories.length > 0
+    ? `\n\n### Memoria admin (fatti appresi dalle conversazioni precedenti):\n${memories.map(m => `- ${m.fact_key}: ${m.fact_value}`).join("\n")}`
+    : "";
+
+  return `Sei DARK LEMON AI, l'assistente intelligente avanzato per il tenant Multy Niyol, personalizzato per ${adminName}.
 Multy Niyol è il tenant consolidato che gestisce due società gemelle:
 - **Multyproget S.r.l.** — società di trasporto e intermediazione rifiuti
 - **Niyol S.r.l.** — società gemella con funzioni analoghe
 
 Il tenant_id di Multy Niyol è: ${TENANT_ID}
+${contextNote}
 
 Hai PIENO accesso al database e puoi:
-1. **Leggere dati** — interrogare qualsiasi tabella (anagrafica, conferimenti, FIR, magazzino, ecc.)
-2. **Scrivere dati** — inserire nuovi record (contatti in rubrica, privati in anagrafica, conferimenti, ecc.)
+1. **Leggere dati** — interrogare qualsiasi tabella
+2. **Scrivere dati** — inserire nuovi record
 3. **Aggiornare dati** — modificare record esistenti
 4. **Eliminare dati** — rimuovere record (con conferma)
-5. **Compilare moduli** — compilare FIR e altri formulari
-6. **Dare informazioni** — rispondere a qualsiasi domanda sui dati in pancia
+5. **Social** — leggere feed, moderare post, inviare messaggi
+6. **Messaggi** — inviare e leggere messaggi con trasportatori
+7. **Memoria** — salvare fatti per ricordarli in futuro
 
 ${DB_SCHEMA}
 
 ### Regole operative:
 - Rispondi SEMPRE in italiano, in modo chiaro e professionale.
-- Quando l'utente chiede dati, usa lo strumento query_database per recuperarli.
-- Quando l'utente chiede di aggiungere dati, usa lo strumento write_database.
+- Quando l'utente chiede dati, usa query_database.
+- Quando chiede di scrivere, usa write_database.
 - Per le query, filtra SEMPRE per tenant_id = '${TENANT_ID}' dove la colonna esiste.
-- Quando mostri dati tabellari, formattali in modo leggibile.
-- Se una richiesta è ambigua, chiedi chiarimenti.
-- Non inventare dati. Se non trovi risultati, dillo chiaramente.
-- Per operazioni distruttive (DELETE, UPDATE massivo), chiedi sempre conferma all'utente.
-- Limita le SELECT a max 50 righe se non specificato altrimenti.`;
+- Formatta i dati tabellari in modo leggibile.
+- Per operazioni distruttive, chiedi conferma.
+- Limita le SELECT a max 50 righe.
+${memoryBlock}`;
+}
 
 const tools = [
   {
     type: "function",
     function: {
       name: "query_database",
-      description: "Esegui una query SELECT sul database per leggere dati. Usa SEMPRE il filtro tenant_id dove applicabile. Limita a 50 righe.",
+      description: "Esegui una query SELECT sul database. Filtra per tenant_id. Limita a 50 righe.",
       parameters: {
         type: "object",
         properties: {
-          sql: {
-            type: "string",
-            description: "Query SQL SELECT da eseguire. DEVE essere una SELECT. Includi LIMIT. Filtra per tenant_id dove possibile."
-          },
-          explanation: {
-            type: "string",
-            description: "Breve spiegazione di cosa stai cercando"
-          }
+          sql: { type: "string", description: "Query SQL SELECT" },
+          explanation: { type: "string", description: "Spiegazione" }
         },
         required: ["sql", "explanation"]
       }
@@ -158,23 +106,13 @@ const tools = [
     type: "function",
     function: {
       name: "write_database",
-      description: "Esegui operazioni di scrittura sul database (INSERT, UPDATE, DELETE). Per DELETE/UPDATE chiedi sempre conferma.",
+      description: "Esegui INSERT/UPDATE/DELETE sul database.",
       parameters: {
         type: "object",
         properties: {
-          sql: {
-            type: "string",
-            description: "Query SQL INSERT/UPDATE/DELETE da eseguire. Per INSERT, includi RETURNING per mostrare il risultato."
-          },
-          operation: {
-            type: "string",
-            enum: ["INSERT", "UPDATE", "DELETE"],
-            description: "Tipo di operazione"
-          },
-          explanation: {
-            type: "string",
-            description: "Spiegazione di cosa stai facendo e perché"
-          }
+          sql: { type: "string", description: "Query SQL INSERT/UPDATE/DELETE" },
+          operation: { type: "string", enum: ["INSERT", "UPDATE", "DELETE"] },
+          explanation: { type: "string", description: "Spiegazione" }
         },
         required: ["sql", "operation", "explanation"]
       }
@@ -184,20 +122,88 @@ const tools = [
     type: "function",
     function: {
       name: "count_records",
-      description: "Conta i record in una tabella con filtri opzionali. Utile per dare panoramiche rapide.",
+      description: "Conta record in una tabella.",
       parameters: {
         type: "object",
         properties: {
-          table: {
-            type: "string",
-            description: "Nome della tabella"
-          },
-          filter: {
-            type: "string",
-            description: "Condizione WHERE opzionale (es: \"attivo = true\")"
-          }
+          table: { type: "string" },
+          filter: { type: "string", description: "WHERE opzionale" }
         },
         required: ["table"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_message_to_user",
+      description: "Invia un messaggio diretto a un trasportatore/utente specifico",
+      parameters: {
+        type: "object",
+        properties: {
+          receiver_id: { type: "string", description: "UUID del destinatario" },
+          content: { type: "string", description: "Testo del messaggio" }
+        },
+        required: ["receiver_id", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_messages",
+      description: "Leggi conversazioni con trasportatori/utenti",
+      parameters: {
+        type: "object",
+        properties: {
+          partner_id: { type: "string", description: "UUID utente specifico (opzionale)" },
+          limit: { type: "number", description: "Numero messaggi (default 20)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "read_social_feed",
+      description: "Leggi i post del social feed (inclusi nascosti per admin)",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "number", description: "Numero post (default 15)" },
+          include_hidden: { type: "boolean", description: "Includi post nascosti (default true)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "moderate_post",
+      description: "Nascondi o elimina un post social (azione di moderazione)",
+      parameters: {
+        type: "object",
+        properties: {
+          post_id: { type: "string", description: "UUID del post" },
+          action: { type: "string", enum: ["hide", "delete"], description: "Azione: hide (nasconde) o delete (elimina)" },
+          reason: { type: "string", description: "Motivo della moderazione" }
+        },
+        required: ["post_id", "action", "reason"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "save_memory",
+      description: "Salva un fatto importante per ricordarlo in futuro",
+      parameters: {
+        type: "object",
+        properties: {
+          fact_key: { type: "string", description: "Chiave del fatto" },
+          fact_value: { type: "string", description: "Valore del fatto" }
+        },
+        required: ["fact_key", "fact_value"]
       }
     }
   }
@@ -218,15 +224,38 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseServiceKey);
 
-    const contextNote = context ? `\n\nContesto attivo: ${context === "multyproget" ? "Multyproget S.r.l." : "Niyol S.r.l."}` : "";
+    // Extract admin user from JWT
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    let adminUserId = "";
+    let adminName = "Admin";
 
-    // Build conversation with tools
-    const conversationMessages = [
-      { role: "system", content: SYSTEM_PROMPT + contextNote },
+    if (token) {
+      const { data: { user } } = await createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: `Bearer ${token}` } }
+      }).auth.getUser();
+      if (user) {
+        adminUserId = user.id;
+        const { data: profile } = await db.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
+        if (profile) adminName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Admin";
+      }
+    }
+
+    // Load admin memories
+    let memories: any[] = [];
+    if (adminUserId) {
+      const { data } = await db.from("ai_user_memory").select("fact_key, fact_value").eq("user_id", adminUserId).order("updated_at", { ascending: false }).limit(30);
+      memories = data || [];
+    }
+
+    const contextNote = context ? `\nContesto attivo: ${context === "multyproget" ? "Multyproget S.r.l." : "Niyol S.r.l."}` : "";
+    const systemPrompt = buildSystemPrompt(adminName, contextNote, memories);
+
+    const conversationMessages: any[] = [
+      { role: "system", content: systemPrompt },
       ...messages,
     ];
 
-    // Iterative tool-calling loop (max 5 iterations)
     let finalContent = "";
     for (let iteration = 0; iteration < 5; iteration++) {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -263,83 +292,134 @@ serve(async (req) => {
       const assistantMsg = choice.message;
       conversationMessages.push(assistantMsg);
 
-      // If no tool calls, we're done
       if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
         finalContent = assistantMsg.content || "";
         break;
       }
 
-      // Process tool calls
       for (const toolCall of assistantMsg.tool_calls) {
         const fn = toolCall.function;
         let args: any;
         try {
           args = JSON.parse(fn.arguments);
         } catch {
-          conversationMessages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: JSON.stringify({ error: "Parametri JSON non validi" }),
-          });
+          conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify({ error: "JSON non valido" }) });
           continue;
         }
 
         let result: any;
-
         try {
-          if (fn.name === "query_database") {
-            // Validate it's a SELECT
-            const sql = args.sql.trim();
-            if (!sql.toUpperCase().startsWith("SELECT")) {
-              result = { error: "Solo query SELECT sono permesse con questo strumento. Usa write_database per INSERT/UPDATE/DELETE." };
-            } else {
-              const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
-              if (error) {
-                // Fallback: try direct query via postgrest
-                const { data: directRows, error: directError } = await db.from("").select().limit(0); // won't work, use raw
-                result = { error: error.message };
+          switch (fn.name) {
+            case "query_database": {
+              const sql = args.sql.trim();
+              if (!sql.toUpperCase().startsWith("SELECT")) {
+                result = { error: "Solo SELECT permesse. Usa write_database." };
               } else {
-                result = rows;
+                const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+                result = error ? { error: error.message } : rows;
               }
+              break;
             }
-          } else if (fn.name === "write_database") {
-            const sql = args.sql.trim();
-            const upper = sql.toUpperCase();
-            if (upper.startsWith("SELECT")) {
-              result = { error: "Usa query_database per le SELECT." };
-            } else {
-              // Execute via raw SQL
-              const { data: rows, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-              if (error) {
-                result = { error: error.message };
+            case "write_database": {
+              const sql = args.sql.trim();
+              const upper = sql.toUpperCase();
+              if (upper.startsWith("SELECT")) {
+                result = { error: "Usa query_database per le SELECT." };
               } else {
-                result = { success: true, data: rows, operation: args.operation };
+                const { data: rows, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
+                result = error ? { error: error.message } : { success: true, data: rows };
               }
+              break;
             }
-          } else if (fn.name === "count_records") {
-            const table = args.table.replace(/[^a-zA-Z0-9_]/g, ""); // sanitize
-            let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${TENANT_ID}'`;
-            if (args.filter) {
-              countQuery += ` AND (${args.filter})`;
+            case "count_records": {
+              const table = args.table.replace(/[^a-zA-Z0-9_]/g, "");
+              let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${TENANT_ID}'`;
+              if (args.filter) countQuery += ` AND (${args.filter})`;
+              const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: countQuery }).maybeSingle();
+              result = error ? { error: error.message } : rows;
+              break;
             }
-            const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: countQuery }).maybeSingle();
-            if (error) {
-              result = { error: error.message };
-            } else {
-              result = rows;
+            case "send_message_to_user": {
+              if (!adminUserId) { result = { error: "Admin non autenticato" }; break; }
+              const { error } = await db.from("messages").insert({
+                sender_id: adminUserId,
+                receiver_id: args.receiver_id,
+                content: args.content,
+              });
+              result = error ? { error: error.message } : { success: true, message: "Messaggio inviato!" };
+              break;
             }
-          } else {
-            result = { error: `Strumento sconosciuto: ${fn.name}` };
+            case "read_messages": {
+              if (!adminUserId) { result = { error: "Admin non autenticato" }; break; }
+              let query = db.from("messages")
+                .select("id, sender_id, receiver_id, content, is_read, created_at")
+                .order("created_at", { ascending: false }).limit(args.limit || 20);
+              if (args.partner_id) {
+                query = query.or(`and(sender_id.eq.${adminUserId},receiver_id.eq.${args.partner_id}),and(sender_id.eq.${args.partner_id},receiver_id.eq.${adminUserId})`);
+              } else {
+                query = query.or(`sender_id.eq.${adminUserId},receiver_id.eq.${adminUserId}`);
+              }
+              const { data: msgs, error } = await query;
+              result = error ? { error: error.message } : { messages: msgs || [] };
+              break;
+            }
+            case "read_social_feed": {
+              let query = db.from("social_posts")
+                .select("id, author_id, content, post_type, is_hidden, likes_count, comments_count, created_at")
+                .order("created_at", { ascending: false }).limit(args.limit || 15);
+              if (!args.include_hidden) query = query.eq("is_hidden", false);
+              const { data: posts, error } = await query;
+              if (error) { result = { error: error.message }; break; }
+              if (posts && posts.length > 0) {
+                const authorIds = [...new Set(posts.map((p: any) => p.author_id))];
+                const { data: profiles } = await db.from("profiles").select("user_id, nome, cognome").in("user_id", authorIds);
+                const map = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, `${p.nome || ""} ${p.cognome || ""}`.trim()]));
+                result = { posts: posts.map((p: any) => ({ ...p, author_name: map[p.author_id] || "Utente" })) };
+              } else {
+                result = { posts: [] };
+              }
+              break;
+            }
+            case "moderate_post": {
+              if (!adminUserId) { result = { error: "Admin non autenticato" }; break; }
+              if (args.action === "hide") {
+                const { error } = await db.from("social_posts").update({ is_hidden: true }).eq("id", args.post_id);
+                if (error) { result = { error: error.message }; break; }
+              } else if (args.action === "delete") {
+                const { error } = await db.from("social_posts").delete().eq("id", args.post_id);
+                if (error) { result = { error: error.message }; break; }
+              }
+              // Log moderation
+              await db.from("social_moderation").insert({
+                moderator_id: adminUserId,
+                target_type: "post",
+                target_id: args.post_id,
+                action: args.action,
+                reason: args.reason,
+              });
+              result = { success: true, message: `Post ${args.action === "hide" ? "nascosto" : "eliminato"}!` };
+              break;
+            }
+            case "save_memory": {
+              if (!adminUserId) { result = { error: "Admin non autenticato" }; break; }
+              const { data: existing } = await db.from("ai_user_memory")
+                .select("id").eq("user_id", adminUserId).eq("fact_key", args.fact_key).single();
+              if (existing) {
+                await db.from("ai_user_memory").update({ fact_value: args.fact_value }).eq("id", existing.id);
+              } else {
+                await db.from("ai_user_memory").insert({ user_id: adminUserId, fact_key: args.fact_key, fact_value: args.fact_value });
+              }
+              result = { success: true, message: `Memorizzato: ${args.fact_key}` };
+              break;
+            }
+            default:
+              result = { error: `Strumento sconosciuto: ${fn.name}` };
           }
         } catch (e) {
-          result = { error: e instanceof Error ? e.message : "Errore sconosciuto durante l'esecuzione" };
+          result = { error: e instanceof Error ? e.message : "Errore" };
         }
 
-        conversationMessages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: JSON.stringify(result),
-        });
+        conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(result) });
       }
     }
 
