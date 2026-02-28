@@ -8,6 +8,7 @@ import { SocialPostCard } from "./SocialPostCard";
 import { SocialTabs } from "./SocialTabs";
 import { SocialStories } from "./SocialStories";
 import { SocialMembers } from "./SocialMembers";
+import { SocialGroupList } from "./SocialGroupList";
 
 interface SocialFeedProps {
   isModerator?: boolean;
@@ -15,9 +16,10 @@ interface SocialFeedProps {
   onDeletePost?: (postId: string, reason: string) => void;
   onWarnUser?: (userId: string, reason: string) => void;
   onOpenChat?: (userId: string, userName: string) => void;
+  onOpenGroup?: (groupId: string, groupName: string) => void;
 }
 
-export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser, onOpenChat }: SocialFeedProps) {
+export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser, onOpenChat, onOpenGroup }: SocialFeedProps) {
   const { posts, loading, createPost, uploadMedia, toggleLike, deletePost, fetchComments, addComment } = useSocialFeed();
   const { user, profile } = useAuth();
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
@@ -66,8 +68,10 @@ export function SocialFeed({ isModerator, onHidePost, onDeletePost, onWarnUser, 
       <SocialStories />
       <SocialTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Members tab */}
-      {activeTab === "membri" && onOpenChat ? (
+      {/* Groups tab */}
+      {activeTab === "gruppi" ? (
+        <SocialGroupList onOpenGroup={onOpenGroup || (() => {})} />
+      ) : activeTab === "membri" && onOpenChat ? (
         <SocialMembers onOpenChat={onOpenChat} />
       ) : activeTab === "membri" ? (
         <SocialMembers onOpenChat={() => {}} />
