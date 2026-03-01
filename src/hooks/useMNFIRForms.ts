@@ -104,7 +104,16 @@ export function useMNFIRForms() {
             const remaining = parseInt(remainingStr, 10);
             if (newNumber) toast.info(`📋 Nuovo formulario assegnato: ${newNumber}`);
             if (remaining <= 10) toast.warning(`⚠️ Solo ${remaining} formulari rimasti!`, { duration: 10000 });
-            if (remaining === 0) toast.error("🚨 SERBATOIO ESAURITO!", { duration: 15000 });
+            if (remaining === 0) {
+              toast.error("🚨 SERBATOIO ESAURITO!", { duration: 15000 });
+              try {
+                const profileRes = await supabase.from("profiles").select("tenant_id, mn_context").eq("user_id", user.id).single();
+                const tenantId = profileRes.data?.tenant_id;
+                const mnCtx = profileRes.data?.mn_context;
+                const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
+                if (tenantId) await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: societaId });
+              } catch { /* silent */ }
+            }
           }
         } catch (e) { console.warn("Auto-assign failed:", e); }
       }

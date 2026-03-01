@@ -239,7 +239,13 @@ export function MNFIRFormComplete() {
 
   const handleStart = async () => {
     if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("Nessun numero FIR disponibile nel tuo pool");
+      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
+      try {
+        const tenantId = profile?.tenant_id;
+        const mnCtx = profile?.mn_context;
+        const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
+        if (tenantId) await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: societaId });
+      } catch { /* silent */ }
       return;
     }
     try {
@@ -279,7 +285,13 @@ export function MNFIRFormComplete() {
     }
     store.resetForm();
     if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("Nessun numero FIR disponibile nel tuo pool");
+      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
+      try {
+        const tenantId = profile?.tenant_id;
+        const mnCtx = profile?.mn_context;
+        const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
+        if (tenantId) await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: societaId });
+      } catch { /* silent */ }
       return;
     }
     try {

@@ -189,6 +189,12 @@ export function useFIRForms() {
             }
             if (remaining === 0) {
               toast.error("🚨 SERBATOIO ESAURITO! Richiedere nuovi numeri FIR.", { duration: 15000 });
+              // Alert tenant admin + super admin
+              try {
+                const profileRes = await supabase.from("profiles").select("tenant_id").eq("user_id", user.id).single();
+                const tenantId = profileRes.data?.tenant_id || '167d07ad-9184-484e-85a6-da5ceafa42a3';
+                await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: "global" });
+              } catch { /* silent */ }
             }
           }
         } catch (e) {

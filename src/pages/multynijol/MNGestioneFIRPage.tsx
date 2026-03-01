@@ -229,7 +229,13 @@ export default function MNGestioneFIRPage() {
               const health = await ngrokHealthCheck();
               if (!health.ok) { setTestResult({ success: false, message: "❌ Server Ngrok non raggiungibile", details: "Controlla che il tunnel Ngrok sia attivo." }); setIsTesting(false); return; }
               const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", societaId).eq("status", "available").limit(1).maybeSingle();
-              const testFirNumber = poolNum?.fir_number || "SKKZR00000001";
+              if (!poolNum?.fir_number) {
+                setTestResult({ success: false, message: "❌ NESSUN NUMERO FIR REALE DISPONIBILE", details: "Richiedere nuovi numeri tramite vidimazione RENTRI." });
+                toast.error("Nessun numero FIR reale disponibile per il test");
+                setIsTesting(false);
+                return;
+              }
+              const testFirNumber = poolNum.fir_number;
               const company = context === "multyproget" ? "MULTY" : "NIYOL";
               const result = await emissioneFirNgrok(company, {
                 numero_fir: testFirNumber,

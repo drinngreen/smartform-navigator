@@ -88,7 +88,7 @@ export function useNotifications() {
             user_id: user.id,
             type: "fir_draft",
             title: "FIR in bozza",
-            body: `Hai un FIR (#${draft.numero_fir || "N/A"}) ancora in bozza da più di 2 ore.`,
+            body: `Hai un FIR (#${draft.numero_fir || "senza numero"}) ancora in bozza da più di 2 ore.`,
             reference_id: draft.id,
             reference_type: "fir_form",
           });
