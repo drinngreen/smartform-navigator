@@ -31,6 +31,7 @@ import ComunicazioniPage from "./pages/ComunicazioniPage";
 import ZoliMessagesPage from "./pages/ZoliMessagesPage";
 import ProfiloPage from "./pages/ProfiloPage";
 import GuidaPage from "./pages/GuidaPage";
+import AppPhonePage from "./pages/AppPhonePage";
 import ProfileSetupPage from "./pages/ProfileSetupPage";
 
 // Admin Pages
@@ -93,6 +94,7 @@ import MNAppCronologiaPage from "./pages/multynijol/MNAppCronologiaPage";
 import MNAppGPSPage from "./pages/multynijol/MNAppGPSPage";
 import MNAppAIPage from "./pages/multynijol/MNAppAIPage";
 import MNAppComunicazioniPage from "./pages/multynijol/MNAppComunicazioniPage";
+import MNAppPhonePage from "./pages/multynijol/MNAppPhonePage";
 import MNAppProfiloPage from "./pages/multynijol/MNAppProfiloPage";
 import MNAppGuidaPage from "./pages/multynijol/MNAppGuidaPage";
 
@@ -151,6 +153,7 @@ const App = () => (
               <Route path="/app/cronologia" element={<ProtectedRoute><CronologiaFIRPage /></ProtectedRoute>} />
               <Route path="/app/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
               <Route path="/app/ai" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
+              <Route path="/app/telefono" element={<ProtectedRoute><AppPhonePage /></ProtectedRoute>} />
               <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
               <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
               <Route path="/app/guida" element={<ProtectedRoute><GuidaPage /></ProtectedRoute>} />
@@ -218,6 +221,7 @@ const App = () => (
               <Route path="/mn/app/multyproget/cronologia" element={<MNAppCronologiaPage />} />
               <Route path="/mn/app/multyproget/gps" element={<MNAppGPSPage />} />
               <Route path="/mn/app/multyproget/ai" element={<MNAppAIPage />} />
+              <Route path="/mn/app/multyproget/telefono" element={<MNAppPhonePage />} />
               <Route path="/mn/app/multyproget/comunicazioni" element={<MNAppComunicazioniPage />} />
               <Route path="/mn/app/multyproget/profilo" element={<MNAppProfiloPage />} />
               <Route path="/mn/app/multyproget/guida" element={<MNAppGuidaPage />} />
@@ -226,6 +230,7 @@ const App = () => (
               <Route path="/mn/app/niyol/cronologia" element={<MNAppCronologiaPage />} />
               <Route path="/mn/app/niyol/gps" element={<MNAppGPSPage />} />
               <Route path="/mn/app/niyol/ai" element={<MNAppAIPage />} />
+              <Route path="/mn/app/niyol/telefono" element={<MNAppPhonePage />} />
               <Route path="/mn/app/niyol/comunicazioni" element={<MNAppComunicazioniPage />} />
               <Route path="/mn/app/niyol/profilo" element={<MNAppProfiloPage />} />
               <Route path="/mn/app/niyol/guida" element={<MNAppGuidaPage />} />
