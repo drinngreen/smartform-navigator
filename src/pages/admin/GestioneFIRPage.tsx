@@ -401,8 +401,13 @@ export default function GestioneFIRPage() {
                   .limit(1)
                   .single();
 
-                const testFirNumber = poolNum?.fir_number || "SKKZR00000001";
-                if (poolErr) console.warn("[RENTRI TEST] Nessun numero disponibile nel pool, uso fallback:", poolErr.message);
+                if (!poolNum?.fir_number) {
+                  setTestResult({ success: false, message: "❌ NESSUN NUMERO FIR REALE DISPONIBILE", details: "Impossibile eseguire il test senza un numero FIR reale nel pool. Richiedere nuovi numeri tramite vidimazione RENTRI." });
+                  toast.error("Nessun numero FIR reale disponibile per il test");
+                  setIsTesting(false);
+                  return;
+                }
+                const testFirNumber = poolNum.fir_number;
 
                 const result = await emissioneFirNgrok("GLOBAL", {
                   numero_fir: testFirNumber,

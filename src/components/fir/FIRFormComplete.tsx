@@ -295,7 +295,12 @@ export function FIRFormComplete() {
   // ── Start FIR ─────────────────────────────────────
   const handleStart = async () => {
     if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("Nessun numero FIR disponibile nel tuo pool");
+      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
+      // Fire pool-empty alert to tenant admin + super admin
+      try {
+        const tenantId = profile?.tenant_id || '167d07ad-9184-484e-85a6-da5ceafa42a3';
+        await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: "global" });
+      } catch { /* silent */ }
       return;
     }
     try {
@@ -343,7 +348,11 @@ export function FIRFormComplete() {
     setPdfBlobUrl(null);
     // Auto-assign a new number and start
     if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("Nessun numero FIR disponibile nel tuo pool");
+      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
+      try {
+        const tenantId = profile?.tenant_id || '167d07ad-9184-484e-85a6-da5ceafa42a3';
+        await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: "global" });
+      } catch { /* silent */ }
       return;
     }
     try {

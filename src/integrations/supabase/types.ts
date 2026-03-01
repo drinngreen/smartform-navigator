@@ -3694,6 +3694,14 @@ export type Database = {
         Args: { p_anno: number; p_impianto_id: string }
         Returns: string
       }
+      notify_fir_pool_empty: {
+        Args: {
+          p_societa_id: string
+          p_tenant_id: string
+          p_triggered_by?: string
+        }
+        Returns: number
+      }
       reassign_fir_number: {
         Args: {
           p_assigned_by?: string
