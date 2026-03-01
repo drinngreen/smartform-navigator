@@ -150,6 +150,9 @@ const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
   "altro": "6",
 };
 
+const isTestFirNumberMN = (value: unknown): boolean =>
+  typeof value === "string" && /^(test[\s-]?|skkzr)/i.test(value.trim());
+
 interface MNFIRStore {
   data: FIRDataStore;
   editingFirId: string | null;
@@ -298,7 +301,27 @@ export const useMNFIRStore = create<MNFIRStore>()(
     }),
     {
       name: 'mn-fir-store',
-      version: 1,
+      version: 2,
+      migrate: (persistedState: unknown): any => {
+        const state = (persistedState ?? {}) as Partial<MNFIRStore> & { data?: Partial<FIRDataStore> };
+
+        if (isTestFirNumberMN(state?.data?.selectedFirNumber) || isTestFirNumberMN(state?.data?.numeroRegistro)) {
+          return {
+            ...state,
+            data: {
+              ...mnInitialFIRData,
+              ...(state.data ?? {}),
+              dataEmissione: new Date().toISOString().split("T")[0],
+              selectedFirNumber: "",
+              numeroRegistro: "",
+            },
+            editingFirId: null,
+            workflowStatus: null,
+          };
+        }
+
+        return persistedState as MNFIRStore;
+      },
       partialize: (state) => ({
         data: state.data,
         editingFirId: state.editingFirId,
