@@ -1,9 +1,26 @@
-import { Phone } from "lucide-react";
+import { Phone, PhoneOff } from "lucide-react";
 
-export function CallOfficeButton() {
+interface CallOfficeButtonProps {
+  onClick?: () => void;
+  disabled?: boolean;
+  isActive?: boolean;
+  title?: string;
+}
+
+export function CallOfficeButton({
+  onClick,
+  disabled = false,
+  isActive = false,
+  title = "Chiama sede",
+}: CallOfficeButtonProps) {
   return (
-    <button className="p-2.5 rounded-xl bg-neon-green/20 border border-neon-green/30 text-neon-green hover:bg-neon-green/30 transition-colors">
-      <Phone className="h-5 w-5" />
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className="p-2.5 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {isActive ? <PhoneOff className="h-5 w-5" /> : <Phone className="h-5 w-5" />}
     </button>
   );
 }

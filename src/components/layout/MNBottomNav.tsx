@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, History, MapPin, MessageCircle, Bot, User, HelpCircle } from "lucide-react";
+import { Home, History, MapPin, Phone, MessageCircle, Bot, User, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MNBottomNavProps {
@@ -13,6 +13,7 @@ export function MNBottomNav({ basePath }: MNBottomNavProps) {
     { icon: Home, label: "FIR", href: basePath, color: "251, 191, 36" },
     { icon: History, label: "CRONOLOGIA", href: `${basePath}/cronologia`, color: "249, 115, 22" },
     { icon: MapPin, label: "GPS", href: `${basePath}/gps`, color: "6, 182, 212" },
+    { icon: Phone, label: "TEL", href: `${basePath}/telefono`, color: "16, 185, 129" },
     { icon: MessageCircle, label: "MSG", href: `${basePath}/comunicazioni`, color: "34, 197, 94" },
     { icon: Bot, label: "AI", href: `${basePath}/ai`, color: "59, 130, 246" },
     { icon: User, label: "PROFILO", href: `${basePath}/profilo`, color: "236, 72, 153" },
