@@ -3686,6 +3686,7 @@ export type Database = {
         Returns: boolean
       }
       is_superadmin: { Args: never; Returns: boolean }
+      map_tenant_to_societa: { Args: { p_tenant_id: string }; Returns: string }
       next_prima_nota_number: {
         Args: { p_anno: number; p_tenant_id: string }
         Returns: number
