@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useLocation } from "react-router-dom";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth() as any;
+  const { user, isLoading, profile } = useAuth() as any;
   const location = useLocation();
 
   if (isLoading) {
@@ -32,6 +32,14 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return <Navigate to="/social/guest" state={{ from: location }} replace />;
     }
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Social-only users can ONLY access /social and /social/ai routes
+  if (profile?.is_social_only) {
+    const path = location.pathname;
+    if (!path.startsWith("/social")) {
+      return <Navigate to="/social" replace />;
+    }
   }
 
   return <>{children}</>;
