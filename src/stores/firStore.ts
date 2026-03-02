@@ -578,22 +578,26 @@ export const useFIRStore = create<FIRStore>()(
         if (dbStatus === 'inviato') mappedWorkflow = 'inviato';
         else if (dbStatus === 'chiuso' || dbStatus === 'completato') mappedWorkflow = 'chiuso';
 
+        // Helper: use DB value if present, otherwise fall back to initialFIRData default
+        const f = <K extends keyof FIRDataStore>(dbVal: string | null | undefined, key: K): FIRDataStore[K] =>
+          (dbVal != null && dbVal !== "" ? dbVal : initialFIRData[key]) as FIRDataStore[K];
+
         set({
           data: {
             ...initialFIRData,
             selectedFirNumber: dbData.numero_fir || "",
             dataEmissione: new Date().toISOString().split("T")[0],
             numeroRegistro: dbData.numero_fir || "",
-            produttoreDenominazione: dbData.produttore_denominazione || "",
-            produttoreUnitaLocale: dbData.produttore_indirizzo || "",
-            produttoreCF: dbData.produttore_codice_fiscale || "",
+            produttoreDenominazione: f(dbData.produttore_denominazione, "produttoreDenominazione"),
+            produttoreUnitaLocale: f(dbData.produttore_indirizzo, "produttoreUnitaLocale"),
+            produttoreCF: f(dbData.produttore_codice_fiscale, "produttoreCF"),
             destinatarioDenominazione: dbData.destinatario_denominazione || "",
             destinatarioUnitaLocale: dbData.destinatario_indirizzo || "",
             destinatarioCF: dbData.destinatario_codice_fiscale || "",
             destinatarioNumeroAut: dbData.destinatario_autorizzazione || "",
-            trasportatoreDenominazione: dbData.trasportatore_denominazione || "",
-            trasportatoreCF: dbData.trasportatore_codice_fiscale || "",
-            trasportatoreNumeroAlbo: dbData.trasportatore_iscrizione_albo || "",
+            trasportatoreDenominazione: f(dbData.trasportatore_denominazione, "trasportatoreDenominazione"),
+            trasportatoreCF: f(dbData.trasportatore_codice_fiscale, "trasportatoreCF"),
+            trasportatoreNumeroAlbo: f(dbData.trasportatore_iscrizione_albo, "trasportatoreNumeroAlbo"),
             targaAutomezzo: dbData.trasportatore_targa_automezzo || "",
             targaRimorchio: dbData.trasportatore_targa_rimorchio || "",
             conducenteNomeCognome: dbData.trasportatore_conducente || "",
@@ -605,9 +609,9 @@ export const useFIRStore = create<FIRStore>()(
             caratteristicheHP: dbData.caratteristiche_hp || [],
             oraDataInizioTrasporto: dbData.data_partenza || "",
             dataOraArrivo: dbData.data_arrivo || "",
-            intermediarioDenominazione: dbData.intermediario_denominazione || "",
-            intermediarioCF: dbData.intermediario_codice_fiscale || "",
-            intermediarioNumeroAlbo: dbData.intermediario_iscrizione_albo || "",
+            intermediarioDenominazione: f(dbData.intermediario_denominazione, "intermediarioDenominazione"),
+            intermediarioCF: f(dbData.intermediario_codice_fiscale, "intermediarioCF"),
+            intermediarioNumeroAlbo: f(dbData.intermediario_iscrizione_albo, "intermediarioNumeroAlbo"),
             annotazioni: dbData.note || "",
             // Restore form_data fields
             ...(dbData.form_data ? {
