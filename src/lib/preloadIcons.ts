@@ -1,35 +1,29 @@
 /**
  * Preload all menu icons at app startup to eliminate loading delays.
- * Images are decoded eagerly so they render instantly when needed.
+ * Uses dynamic imports so a single 503/failure doesn't crash the entire app.
  */
 
-import iconAnalytics from "@/assets/menu-icons/analytics.png";
-import iconAppMobile from "@/assets/menu-icons/app_mobile.png";
-import iconDashboard from "@/assets/menu-icons/dashboard.png";
-import iconDestinatario from "@/assets/menu-icons/destinatario.png";
-import iconFatturazione from "@/assets/menu-icons/fatturazione.png";
-import iconGestioneFormulari from "@/assets/menu-icons/gestione_formulari.png";
-import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
-import iconNotifiche from "@/assets/menu-icons/notifiche.png";
-import iconPersonale from "@/assets/menu-icons/personale.png";
-import iconPrivati from "@/assets/menu-icons/privati.png";
-import iconProduttore from "@/assets/menu-icons/produttore.png";
-import iconRegistroFir from "@/assets/menu-icons/registro_fir.png";
-import iconRentri from "@/assets/menu-icons/rentri.png";
-import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
-import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
-import iconSms from "@/assets/menu-icons/sms.png";
-import iconWhatsapp from "@/assets/menu-icons/whatsapp.png";
-import iconEmail from "@/assets/menu-icons/email.png";
-import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
-import systemPromptIcon from "@/assets/system-prompt-icon.png";
-
-const ALL_ICONS = [
-  iconAnalytics, iconAppMobile, iconDashboard, iconDestinatario,
-  iconFatturazione, iconGestioneFormulari, iconGpsFlotta, iconNotifiche,
-  iconPersonale, iconPrivati, iconProduttore, iconRegistroFir,
-  iconRentri, iconReportChiamate, iconZoliMessages,
-  iconSms, iconWhatsapp, iconEmail, zoliLemonIcon, systemPromptIcon,
+const ICON_MODULES = [
+  () => import("@/assets/menu-icons/analytics.png"),
+  () => import("@/assets/menu-icons/app_mobile.png"),
+  () => import("@/assets/menu-icons/dashboard.png"),
+  () => import("@/assets/menu-icons/destinatario.png"),
+  () => import("@/assets/menu-icons/fatturazione.png"),
+  () => import("@/assets/menu-icons/gestione_formulari.png"),
+  () => import("@/assets/menu-icons/gps_flotta.png"),
+  () => import("@/assets/menu-icons/notifiche.png"),
+  () => import("@/assets/menu-icons/personale.png"),
+  () => import("@/assets/menu-icons/privati.png"),
+  () => import("@/assets/menu-icons/produttore.png"),
+  () => import("@/assets/menu-icons/registro_fir.png"),
+  () => import("@/assets/menu-icons/rentri.png"),
+  () => import("@/assets/menu-icons/report_chiamate.png"),
+  () => import("@/assets/menu-icons/zoli_messages.png"),
+  () => import("@/assets/menu-icons/sms.png"),
+  () => import("@/assets/menu-icons/whatsapp.png"),
+  () => import("@/assets/menu-icons/email.png"),
+  () => import("@/assets/zoli-dark-lemon-icon.png"),
+  () => import("@/assets/system-prompt-icon.png"),
 ];
 
 let preloaded = false;
@@ -38,10 +32,16 @@ export function preloadMenuIcons() {
   if (preloaded) return;
   preloaded = true;
 
-  ALL_ICONS.forEach((src) => {
-    const img = new Image();
-    img.decoding = "async";
-    img.fetchPriority = "high" as any;
-    img.src = src;
+  ICON_MODULES.forEach((loadIcon) => {
+    loadIcon()
+      .then((mod) => {
+        const src = mod.default;
+        const img = new Image();
+        img.decoding = "async";
+        img.src = src;
+      })
+      .catch((err) => {
+        console.warn("[preloadIcons] failed to load an icon, skipping:", err);
+      });
   });
 }
