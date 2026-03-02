@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Users, Trash2, Search, UserX } from "lucide-react";
+import { Users, Trash2, Search, UserX, UserCheck } from "lucide-react";
 
 interface SocialGuest {
   id: string;
@@ -17,7 +17,7 @@ export function SocialGuestsPanel() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
-
+  const [promoting, setPromoting] = useState<string | null>(null);
   const fetchGuests = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -44,6 +44,19 @@ export function SocialGuestsPanel() {
 
     fetchGuests();
     setDeleting(null);
+  };
+
+  const handlePromote = async (guest: SocialGuest) => {
+    if (!confirm(`Promuovere ${guest.nome} ${guest.cognome} a collaboratore con accesso completo all'app operativa?`)) return;
+    setPromoting(guest.user_id);
+
+    await supabase
+      .from("profiles")
+      .update({ is_social_only: false })
+      .eq("user_id", guest.user_id);
+
+    fetchGuests();
+    setPromoting(null);
   };
 
   const filtered = guests.filter((g) => {
@@ -92,13 +105,23 @@ export function SocialGuestsPanel() {
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{g.codice_fiscale}</span>
                 </div>
-                <button
-                  onClick={() => handleDelete(g)}
-                  disabled={deleting === g.user_id}
-                  className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive disabled:opacity-50 transition-all"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePromote(g)}
+                    disabled={promoting === g.user_id}
+                    title="Promuovi a collaboratore operativo"
+                    className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary disabled:opacity-50 transition-all"
+                  >
+                    <UserCheck size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(g)}
+                    disabled={deleting === g.user_id}
+                    className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive disabled:opacity-50 transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
