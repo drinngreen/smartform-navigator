@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DesktopIconContextMenu } from "./DesktopIconContextMenu";
 
@@ -134,11 +134,10 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
   const isDragging = useRef(false);
   const DRAG_THRESHOLD = 5;
   const [contextMenu, setContextMenu] = useState<{ iconId: string; iconLabel: string; x: number; y: number; subItems?: DesktopIconSubItem[] } | null>(null);
-  const prevDefsRef = useRef(iconDefs);
-  if (prevDefsRef.current !== iconDefs) {
-    prevDefsRef.current = iconDefs;
+
+  useEffect(() => {
     setIcons(initIcons(iconDefs, storageKey));
-  }
+  }, [iconDefs, storageKey]);
 
   const rows = Math.ceil(iconDefs.length / COLS);
   const minHeight = rows * CELL_H + 40;
@@ -284,3 +283,4 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
     </>
   );
 }
+

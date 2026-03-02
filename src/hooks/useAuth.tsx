@@ -140,9 +140,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let initialLoad = true;
+    let mounted = true;
+
+    const forceUnlockTimer = window.setTimeout(() => {
+      if (mounted) {
+        console.warn("[Auth] bootstrap timeout, forcing UI unlock");
+        setIsLoading(false);
+      }
+    }, 7000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -156,26 +165,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // For initial load, getSession handles it below
         if (!initialLoad) {
           setIsLoading(true);
-          fetchUserData(session.user.id, session.user.email).then(() => {
-            setIsLoading(false);
-          });
+          fetchUserData(session.user.id, session.user.email)
+            .catch((error) => {
+              console.error("[Auth] onAuthStateChange fetchUserData failed:", error);
+            })
+            .finally(() => {
+              if (mounted) setIsLoading(false);
+            });
         }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await fetchUserData(session.user.id, session.user.email);
-      }
+        if (session?.user) {
+          try {
+            await fetchUserData(session.user.id, session.user.email);
+          } catch (error) {
+            console.error("[Auth] initial fetchUserData failed:", error);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("[Auth] getSession failed:", error);
+      })
+      .finally(() => {
+        initialLoad = false;
+        if (mounted) setIsLoading(false);
+      });
 
-      initialLoad = false;
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      window.clearTimeout(forceUnlockTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (
