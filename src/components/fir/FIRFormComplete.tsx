@@ -253,6 +253,13 @@ export function FIRFormComplete() {
               ...persistedFir,
               form_data: persistedFir.form_data as Record<string, any> | null,
             });
+            // Pre-fill targa and conducente from profile if empty
+            if (!persistedFir.trasportatore_targa_automezzo && profile?.targa_automezzo) {
+              store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
+            }
+            if (!persistedFir.trasportatore_conducente && profile?.nome) {
+              store.updateField("conducenteNomeCognome", profile.nome.trim());
+            }
           }
           return;
         }
@@ -274,6 +281,13 @@ export function FIRFormComplete() {
             ...fir,
             form_data: fir.form_data as Record<string, any> | null,
           });
+          // Pre-fill targa and conducente from profile if draft has them empty
+          if (!fir.trasportatore_targa_automezzo && profile?.targa_automezzo) {
+            store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
+          }
+          if (!fir.trasportatore_conducente && profile?.nome) {
+            store.updateField("conducenteNomeCognome", profile.nome.trim());
+          }
           console.log("[FIR] Auto-restored active FIR:", fir.numero_fir, "status:", fir.status);
         } else if (isTestFirNumber(store.data.selectedFirNumber)) {
           // Pulisce eventuale valore TEST rimasto nel local storage
