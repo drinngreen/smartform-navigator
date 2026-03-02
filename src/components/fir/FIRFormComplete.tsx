@@ -402,7 +402,6 @@ export function FIRFormComplete() {
     const errors: string[] = [];
     if (!d.targaAutomezzo.trim()) errors.push("Targa Automezzo");
     if (!d.codiceEER.trim()) errors.push("Codice EER");
-    if (!d.quantita.trim()) errors.push("Quantità (Kg)");
     if (!d.produttoreDenominazione.trim()) errors.push("Produttore");
     if (!d.destinatarioDenominazione.trim()) errors.push("Destinatario");
     return errors;
