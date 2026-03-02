@@ -16,15 +16,18 @@ export default function SocialGuestAuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [inviteValid, setInviteValid] = useState<boolean | null>(null);
   const [inviteData, setInviteData] = useState<any>(null);
 
-  // Validate invite code
+  // Check if already logged in
   useEffect(() => {
-    if (!inviteCode) {
-      setInviteValid(false);
-      return;
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/social");
+    });
+  }, [navigate]);
+
+  // Validate invite code if present (optional)
+  useEffect(() => {
+    if (!inviteCode) return;
     supabase
       .from("social_invites")
       .select("*")
@@ -33,7 +36,6 @@ export default function SocialGuestAuthPage() {
       .gt("expires_at", new Date().toISOString())
       .maybeSingle()
       .then(({ data }) => {
-        setInviteValid(!!data);
         setInviteData(data);
         if (data?.guest_name) setNome(data.guest_name);
         if (data?.guest_cf) setCodiceFiscale(data.guest_cf);
@@ -47,6 +49,10 @@ export default function SocialGuestAuthPage() {
     }
     if (codiceFiscale.length !== 16) {
       setError("Il codice fiscale deve avere 16 caratteri");
+      return;
+    }
+    if (password.length < 6) {
+      setError("La password deve avere almeno 6 caratteri");
       return;
     }
 
@@ -64,7 +70,11 @@ export default function SocialGuestAuthPage() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      if (signUpError.message.includes("already registered")) {
+        setError("Codice fiscale già registrato. Prova ad accedere.");
+      } else {
+        setError(signUpError.message);
+      }
       setLoading(false);
       return;
     }
@@ -86,7 +96,7 @@ export default function SocialGuestAuthPage() {
         role: "user",
       });
 
-      // Mark invite as used
+      // Mark invite as used if present
       if (inviteData) {
         await supabase
           .from("social_invites")
@@ -130,22 +140,16 @@ export default function SocialGuestAuthPage() {
           <p className="text-xs text-muted-foreground mt-1">Comunità trasportatori — Accesso ospite</p>
         </div>
 
-        {inviteCode && inviteValid === false && (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-xs text-destructive text-center">
-            Invito non valido o scaduto
-          </div>
-        )}
-
         {/* Toggle */}
         <div className="flex bg-secondary rounded-lg p-1">
           <button
-            onClick={() => setMode("register")}
+            onClick={() => { setMode("register"); setError(""); }}
             className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${mode === "register" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           >
             <UserPlus size={14} className="inline mr-1" /> Registrati
           </button>
           <button
-            onClick={() => setMode("login")}
+            onClick={() => { setMode("login"); setError(""); }}
             className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all ${mode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           >
             <Shield size={14} className="inline mr-1" /> Accedi
@@ -194,6 +198,10 @@ export default function SocialGuestAuthPage() {
             {loading ? "..." : mode === "register" ? "Registrati come Ospite" : "Accedi"}
           </button>
         </div>
+
+        <p className="text-[10px] text-muted-foreground text-center">
+          Accesso riservato alla community Global Reco
+        </p>
       </div>
     </div>
   );

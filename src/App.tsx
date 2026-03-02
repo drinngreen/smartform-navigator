@@ -21,6 +21,7 @@ import SuperAdminAuthPage from "./pages/SuperAdminAuthPage";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import SocialPage from "./pages/SocialPage";
 import SocialGuestAuthPage from "./pages/SocialGuestAuthPage";
+import SocialAIPage from "./pages/SocialAIPage";
 
 // Mobile App Pages
 import MobileAppPage from "./pages/MobileAppPage";
@@ -140,6 +141,7 @@ const App = () => (
 
               {/* Social Network */}
               <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
+              <Route path="/social/ai" element={<ProtectedRoute><SocialAIPage /></ProtectedRoute>} />
               <Route path="/social/guest" element={<SocialGuestAuthPage />} />
 
               {/* Root redirect based on role */}
