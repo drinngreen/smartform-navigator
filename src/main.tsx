@@ -7,12 +7,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root non trovato");
 
-try {
-  preloadMenuIcons();
-} catch (error) {
-  console.error("[bootstrap] preloadMenuIcons failed", error);
-}
-
 window.addEventListener("unhandledrejection", (event) => {
   console.error("[unhandledrejection]", event.reason);
 });
@@ -27,3 +21,20 @@ createRoot(rootEl).render(
   </ErrorBoundary>
 );
 
+// Defer non-critical icon preload to idle time (prevents slow black startup)
+const schedulePreload = () => {
+  try {
+    preloadMenuIcons();
+  } catch (error) {
+    console.error("[bootstrap] preloadMenuIcons failed", error);
+  }
+};
+
+if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+  (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(
+    schedulePreload,
+    { timeout: 1200 }
+  );
+} else {
+  globalThis.setTimeout(schedulePreload, 350);
+}
