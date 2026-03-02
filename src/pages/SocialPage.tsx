@@ -7,7 +7,8 @@ import { SocialChat } from "@/components/social/SocialChat";
 import { SocialGroupChat } from "@/components/social/SocialGroupChat";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { Users } from "lucide-react";
+import { Users, Bot, LogOut } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SocialPage() {
   const { profile, user } = useAuth();
@@ -66,9 +67,16 @@ export default function SocialPage() {
             <Users size={20} />
             <span className="text-[10px] font-medium">Social</span>
           </button>
-          <button onClick={() => navigate("/app/profilo")} className="flex flex-col items-center gap-1 text-muted-foreground">
-            <Users size={20} />
-            <span className="text-[10px]">Profilo</span>
+          <button onClick={() => navigate("/social/ai")} className="flex flex-col items-center gap-1 text-muted-foreground">
+            <Bot size={20} />
+            <span className="text-[10px]">AI</span>
+          </button>
+          <button
+            onClick={async () => { await supabase.auth.signOut(); navigate("/social/guest"); }}
+            className="flex flex-col items-center gap-1 text-muted-foreground"
+          >
+            <LogOut size={20} />
+            <span className="text-[10px]">Esci</span>
           </button>
         </div>
       ) : (

@@ -28,6 +28,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     if (path.startsWith("/super")) {
       return <Navigate to="/superadmin" state={{ from: location }} replace />;
     }
+    if (path.startsWith("/social")) {
+      return <Navigate to="/social/guest" state={{ from: location }} replace />;
+    }
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

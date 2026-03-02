@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.dark-lemon-mn]
 verify_jwt = false
+
+[functions.social-ai-agent]
+verify_jwt = false
