@@ -2,7 +2,7 @@
  * RENTRI Super Admin API — now routes through Ngrok backend.
  */
 
-const NGROK_BASE = "https://pleasing-glorious-skunk.ngrok-free.app";
+const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
 
 export interface RENTRILogEntry {
   id: string;
