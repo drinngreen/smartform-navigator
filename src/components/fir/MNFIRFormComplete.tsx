@@ -8,6 +8,7 @@ import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
+import { toRentriImageSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI } from "@/data/anagrafiche";
 
@@ -359,11 +360,12 @@ export function MNFIRFormComplete() {
         store.updateField("selectedFirNumber", rentriFirId);
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: rentriFirId, status: "inviato", submitted_at: new Date().toISOString() });
       }
-      const rawQr = result.qr_code || (result as any).qrCodeBytes || "";
-      if (rawQr && d.selectedFirNumber) {
-        const qrDataUri = rawQr.startsWith("data:") ? rawQr : `data:image/png;base64,${rawQr}`;
-        setQrCodeData(qrDataUri);
-        await supabase.from("fir_number_pool").update({ qr_code_data: qrDataUri } as any).eq("fir_number", d.selectedFirNumber);
+      const qrFromFirma = toRentriImageSrc(
+        result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
+      );
+      if (qrFromFirma && d.selectedFirNumber) {
+        setQrCodeData(qrFromFirma);
+        await supabase.from("fir_number_pool").update({ qr_code_data: qrFromFirma } as any).eq("fir_number", d.selectedFirNumber);
       }
       useMNFIRStore.setState({ workflowStatus: 'inviato' });
       if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
@@ -377,11 +379,12 @@ export function MNFIRFormComplete() {
             console.log("[RENTRI] Auto-fetching PDF/QR for", firIdForPdf);
             const pdfResult = await getRentriPdf(societaId, firIdForPdf);
             console.log("[RENTRI] get-pdf response keys:", Object.keys(pdfResult));
-            const qr = pdfResult.qrCode || pdfResult.qr_code || (pdfResult as any).qrCodeBytes || "";
-            if (qr) {
-              const qrUri = String(qr).startsWith("data:") ? String(qr) : `data:image/png;base64,${qr}`;
-              setQrCodeData(qrUri);
-              await supabase.from("fir_number_pool").update({ qr_code_data: qrUri } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
+            const qrSrc = toRentriImageSrc(
+              pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
+            );
+            if (qrSrc) {
+              setQrCodeData(qrSrc);
+              await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
             }
           } catch (e: any) {
             console.warn("[RENTRI] Auto-fetch PDF/QR failed:", e.message);
@@ -402,9 +405,11 @@ export function MNFIRFormComplete() {
       if (firId) {
         try {
           const pdfResult = await getRentriPdf(societaId, firId);
-          if (pdfResult.qrCode) {
-            const qr = (pdfResult.qrCode as string).startsWith("data:") ? pdfResult.qrCode as string : `data:image/png;base64,${pdfResult.qrCode}`;
-            setQrCodeData(qr);
+          const qrSrc = toRentriImageSrc(
+            pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
+          );
+          if (qrSrc) {
+            setQrCodeData(qrSrc);
           }
         } catch (pdfErr: any) {
           console.warn("[RENTRI] get-pdf error, falling back to local QR:", pdfErr.message);
