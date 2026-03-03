@@ -377,6 +377,7 @@ export async function getRentriPdf(
   });
 
   const data = await res.json();
+  console.log("[RENTRI] get-pdf raw response keys:", Object.keys(data), "status:", res.status);
 
   if (!res.ok) {
     const errMsg =
@@ -386,7 +387,16 @@ export async function getRentriPdf(
     throw new Error(errMsg);
   }
 
-  return data;
+  // Normalize response keys - backend may return qr_code, qrCode, qrCodeBytes, content etc.
+  const normalized: any = { ...data };
+  if (!normalized.qrCode) {
+    normalized.qrCode = data.qr_code || data.qrCodeBytes || data.qr_code_bytes || "";
+  }
+  if (!normalized.pdfBase64) {
+    normalized.pdfBase64 = data.pdf_base64 || data.pdfContent || data.content || "";
+  }
+
+  return normalized;
 }
 
 /**
