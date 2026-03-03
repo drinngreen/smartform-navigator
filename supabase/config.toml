@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.social-ai-agent]
 verify_jwt = false
+
+[functions.send-global-email]
+verify_jwt = false
+
+[functions.sync-global-inbox]
+verify_jwt = false

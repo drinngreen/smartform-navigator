@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
   { label: "Intermediazione", iconImage: intermediazionIcon, href: "/admin/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, href: "/admin/zoli-dark-lemon", color: "59, 130, 246" },
   { label: "System Prompt", iconImage: systemPromptIcon, href: "/admin/system-prompt", color: "251, 191, 36" },
+  { label: "Email GR", iconImage: iconZoliMessages, href: "/admin/email-global", color: "6, 182, 212" },
 ];
 
 export function AdminTopNav() {
