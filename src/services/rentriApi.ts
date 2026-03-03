@@ -211,6 +211,10 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
   const formData = (flat.form_data as Record<string, unknown> | null) || {};
   const isUrbano = Boolean(formData.provenienza_urbano);
   const provenienza = isUrbano ? "U" : "S";
+  const destinatarioAttivita =
+    (formData.destinatario_operazione_R as string) ||
+    (formData.destinatario_operazione_D as string) ||
+    "R13";
 
   const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
   const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "SP";
@@ -239,6 +243,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
           tipo: str("destinatario_tipo_aut") || "AIA",
           numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "N/D",
         },
+        attivita: destinatarioAttivita,
         indirizzo: parseIndirizzo(flat["destinatario_indirizzo"]),
       },
       trasportatori: [
