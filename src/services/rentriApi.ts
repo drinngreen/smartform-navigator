@@ -134,17 +134,19 @@ function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap:
  */
 const STATO_FISICO_TO_CODE: Record<string, string> = {
   "1": "SP",
-  "2": "SNP",
+  "2": "SP",
   "3": "F",
   "4": "L",
   "5": "A",
-  "6": "SNP",
+  "6": "SP",
+  "s": "SP",
+  "sp": "SP",
   "solido pulverulento": "SP",
-  "solido non pulverulento": "SNP",
+  "solido non pulverulento": "SP",
   "fangoso palabile": "F",
   "liquido": "L",
   "aeriforme": "A",
-  "altro": "SNP",
+  "altro": "SP",
 };
 
 /**
@@ -168,7 +170,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
   const provenienza = isUrbano ? "U" : "S";
 
   const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
-  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "SNP";
+  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "SP";
 
   const unitId = COMPANY_CONFIG[societaId]?.unitId || COMPANY_CONFIG.GLOBAL.unitId;
   const unitaMisura = str("unita_misura") || "kg";
