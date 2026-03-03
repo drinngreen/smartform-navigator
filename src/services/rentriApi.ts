@@ -117,8 +117,20 @@ function parseIndirizzo(raw: string): { indirizzo: string; civico: string; cap: 
 }
 
 /**
+ * Map descriptive stato_fisico strings back to RENTRI numeric codes.
+ */
+const STATO_FISICO_TO_CODE: Record<string, string> = {
+  "solido pulverulento": "1",
+  "solido non pulverulento": "2",
+  "fangoso palabile": "3",
+  "liquido": "4",
+  "aeriforme": "5",
+  "altro": "6",
+};
+
+/**
  * Build the structured emissione payload from flat DB fields.
- * Maps flat fields → nested JSON as expected by the C# Bridge.
+ * Maps flat fields → nested JSON as expected by the C# Bridge / RENTRI API.
  */
 function buildEmissionePayload(flat: Record<string, unknown>): Record<string, unknown> {
   const str = (key: string) => (flat[key] as string) || "";
@@ -128,6 +140,12 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
     const parsed = parseFloat(String(v || "0"));
     return isNaN(parsed) ? 0 : parsed;
   };
+
+  // Resolve stato_fisico: accept both codes ("1") and descriptions ("solido pulverulento")
+  const rawStatoFisico = str("stato_fisico");
+  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || rawStatoFisico || "";
+
+  const unitaMisura = str("unita_misura") || "kg";
 
   const payload: Record<string, unknown> = {
     numero_fir: str("numero_fir"),
@@ -156,9 +174,11 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
     rifiuto: {
       codice_eer: str("codice_eer"),
       descrizione: str("descrizione_rifiuto"),
-      stato_fisico: str("stato_fisico"),
-      quantita: num("quantita"),
-      unita_misura: str("unita_misura") || "kg",
+      stato_fisico: statoFisicoCode,
+      quantita: {
+        valore: num("quantita"),
+        unita_misura: unitaMisura,
+      },
       caratteristiche_hp: flat["caratteristiche_hp"] || [],
     },
   };
