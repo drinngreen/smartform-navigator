@@ -262,6 +262,12 @@ export function FIRFormComplete() {
               store.updateField("conducenteNomeCognome", profile.nome.trim());
             }
           }
+          // Load persisted PDF URL if available
+          const formData = persistedFir.form_data as Record<string, any> | null;
+          if (formData?.rentri_pdf_url && !pdfBlobUrl) {
+            setPdfBlobUrl(formData.rentri_pdf_url);
+            console.log("[FIR] Loaded persisted RENTRI PDF URL from form_data");
+          }
           return;
         }
 
@@ -290,6 +296,12 @@ export function FIRFormComplete() {
             store.updateField("conducenteNomeCognome", profile.nome.trim());
           }
           console.log("[FIR] Auto-restored active FIR:", fir.numero_fir, "status:", fir.status);
+          // Load persisted PDF URL if available
+          const fd = fir.form_data as Record<string, any> | null;
+          if (fd?.rentri_pdf_url && !pdfBlobUrl) {
+            setPdfBlobUrl(fd.rentri_pdf_url);
+            console.log("[FIR] Loaded persisted RENTRI PDF URL from form_data (restore)");
+          }
         } else if (isTestFirNumber(store.data.selectedFirNumber)) {
           // Pulisce eventuale valore TEST rimasto nel local storage
           store.updateMultipleFields({ selectedFirNumber: "", numeroRegistro: "" });
