@@ -335,11 +335,26 @@ export async function inviaFirmaRentri(
     });
 
     const data = await res.json();
-    console.log("[RENTRI] Emissione response:", { status: res.status, keys: Object.keys(data), hasPdfContent: Boolean(data.pdf_content || data.pdfContent), hasFirId: Boolean(data.firId) });
+    const root = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data || {};
+
+    console.log("[RENTRI] Emissione response:", {
+      status: res.status,
+      keys: Object.keys(data || {}),
+      rootKeys: Object.keys(root || {}),
+      hasPdfContent: Boolean(root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64),
+      hasFirId: Boolean(root.firId || root.numero_fir || root.fir_id),
+    });
 
     if (res.ok) {
-      const firId = data.firId || data.numero_fir || data.fir_id || "";
-      return { ...data, numero_fir: firId, firId } as RentriFirmaResponse;
+      const firId = root.firId || root.numero_fir || root.fir_id || "";
+      return {
+        ...(data as Record<string, unknown>),
+        ...(root as Record<string, unknown>),
+        numero_fir: firId,
+        firId,
+        pdf_content: root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64 || undefined,
+        qr_code: root.qr_code || root.qrCodeBytes || root.qrCode || root.qr_base64 || root.qrBase64 || undefined,
+      } as RentriFirmaResponse;
     }
 
     const modelState = (data as any)?.model_state || {};
@@ -384,14 +399,37 @@ export async function getRentriPdf(
   });
 
   const data = await res.json();
-  console.log("[RENTRI] get-pdf proxy response:", { status: res.status, keys: Object.keys(data), hasQr: Boolean(data.qrCode), hasPdf: Boolean(data.pdfBase64) });
+  const root = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data || {};
+
+  const normalized = {
+    ...(data as Record<string, unknown>),
+    ...(root as Record<string, unknown>),
+    qrCode: root.qrCode || root.qr_code || root.qrCodeBytes || root.qr_base64 || root.qrBase64 || undefined,
+    pdfBase64:
+      root.pdfBase64 ||
+      root.pdf_base64 ||
+      root.pdf_content ||
+      root.pdfContent ||
+      root.pdf_base_64 ||
+      root.content ||
+      undefined,
+    pdfUrl: root.pdfUrl || root.pdf_url || root.url || undefined,
+  };
+
+  console.log("[RENTRI] get-pdf proxy response:", {
+    status: res.status,
+    keys: Object.keys(data || {}),
+    rootKeys: Object.keys(root || {}),
+    hasQr: Boolean(normalized.qrCode),
+    hasPdf: Boolean(normalized.pdfBase64),
+  });
 
   if (!res.ok) {
-    const errMsg = data?.error || data?.details || `Errore server (${res.status})`;
+    const errMsg = (normalized as any)?.error || (normalized as any)?.details || `Errore server (${res.status})`;
     throw new Error(errMsg);
   }
 
-  return data;
+  return normalized;
 }
 
 /**
