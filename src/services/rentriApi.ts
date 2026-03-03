@@ -176,20 +176,20 @@ function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap
  * Map stato fisico to RENTRI codes.
  */
 const STATO_FISICO_TO_CODE: Record<string, string> = {
-  "1": "SP",
-  "2": "SP",
+  "1": "S",
+  "2": "S",
   "3": "F",
   "4": "L",
   "5": "A",
-  "6": "SP",
-  "s": "SP",
-  "sp": "SP",
-  "solido pulverulento": "SP",
-  "solido non pulverulento": "SP",
+  "6": "S",
+  "s": "S",
+  "sp": "S",
+  "solido pulverulento": "S",
+  "solido non pulverulento": "S",
   "fangoso palabile": "F",
   "liquido": "L",
   "aeriforme": "A",
-  "altro": "SP",
+  "altro": "S",
 };
 
 /**
@@ -217,7 +217,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
     "R13";
 
   const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
-  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "SP";
+  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "S";
 
   const unitId = COMPANY_CONFIG[societaId]?.unitId || COMPANY_CONFIG.GLOBAL.unitId;
   const unitaMisura = str("unita_misura") || "kg";
