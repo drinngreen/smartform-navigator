@@ -117,15 +117,22 @@ function parseIndirizzo(raw: string): { indirizzo: string; civico: string; cap: 
 }
 
 /**
- * Map descriptive stato_fisico strings back to RENTRI numeric codes.
+ * Map stato fisico to RENTRI letter codes.
+ * RENTRI expects symbolic values (e.g. S/F/L/A), not numeric labels.
  */
-const STATO_FISICO_TO_CODE: Record<string, number> = {
-  "solido pulverulento": 1,
-  "solido non pulverulento": 2,
-  "fangoso palabile": 3,
-  "liquido": 4,
-  "aeriforme": 5,
-  "altro": 6,
+const STATO_FISICO_TO_CODE: Record<string, string> = {
+  "1": "S",
+  "2": "S",
+  "3": "F",
+  "4": "L",
+  "5": "A",
+  "6": "S",
+  "solido pulverulento": "S",
+  "solido non pulverulento": "S",
+  "fangoso palabile": "F",
+  "liquido": "L",
+  "aeriforme": "A",
+  "altro": "S",
 };
 
 /**
@@ -141,9 +148,9 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // Resolve stato_fisico: accept both codes ("1") and descriptions ("solido pulverulento")
-  const rawStatoFisico = str("stato_fisico");
-  const statoFisicoCode: number = STATO_FISICO_TO_CODE[rawStatoFisico] ?? (parseInt(rawStatoFisico, 10) || 1);
+  // Resolve stato_fisico to RENTRI enum code (S/F/L/A)
+  const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
+  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "S";
 
   const unitaMisura = str("unita_misura") || "kg";
 
