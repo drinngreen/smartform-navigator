@@ -46,6 +46,7 @@ export interface RentriFirmaResponse {
   qr_code?: string;
   qrCodeBytes?: string;
   pdf_url?: string;
+  pdf_content?: string;
   [key: string]: unknown;
 }
 
@@ -334,6 +335,7 @@ export async function inviaFirmaRentri(
     });
 
     const data = await res.json();
+    console.log("[RENTRI] Emissione response:", { status: res.status, keys: Object.keys(data), hasPdfContent: Boolean(data.pdf_content || data.pdfContent), hasFirId: Boolean(data.firId) });
 
     if (res.ok) {
       const firId = data.firId || data.numero_fir || data.fir_id || "";
