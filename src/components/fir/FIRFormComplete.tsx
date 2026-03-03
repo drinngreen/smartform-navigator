@@ -455,41 +455,34 @@ export function FIRFormComplete() {
           .eq("fir_number", d.selectedFirNumber);
       }
 
-      // Set workflow to green
-      useFIRStore.setState({ workflowStatus: 'inviato' });
-
-      // Register GPS
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-          console.log("[FIR] GPS partenza:", pos.coords.latitude, pos.coords.longitude);
-        });
+      // Extract PDF directly from emissione response (backend now returns pdf_content)
+      const pdfFromEmissione = (result as any).pdf_content || (result as any).pdfContent || (result as any).pdf_base64 || (result as any).pdfBase64;
+      if (pdfFromEmissione) {
+        console.log("[RENTRI] PDF received directly from emissione response!");
+        const pdfSrc = toRentriPdfPreviewSrc(pdfFromEmissione);
+        if (pdfSrc) setPdfBlobUrl(pdfSrc);
       }
 
-      toast.success("✅ FIR firmato e inviato con successo!");
-
-      // Auto-fetch QR/PDF from get-pdf endpoint if not already available
-      if (!qrCodeData) {
+      // Fallback: if no PDF/QR from emissione, try get-pdf proxy
+      if (!pdfFromEmissione || !qrFromFirma) {
         const firIdForPdf = rentriFirId || d.selectedFirNumber;
         if (firIdForPdf) {
           try {
-            console.log("[RENTRI] Auto-fetching PDF/QR for", firIdForPdf);
+            console.log("[RENTRI] Fallback: fetching via get-pdf proxy for", firIdForPdf);
             const pdfResult = await getRentriPdf(societaId, firIdForPdf);
-            console.log("[RENTRI] get-pdf response keys:", Object.keys(pdfResult));
-
-            const qrSrc = toRentriImageSrc(
-              pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
-            );
-            if (qrSrc) {
-              setQrCodeData(qrSrc);
-              await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
+            if (!qrFromFirma) {
+              const qrSrc = toRentriImageSrc(pdfResult.qrCode || (pdfResult as any).qr_code);
+              if (qrSrc) {
+                setQrCodeData(qrSrc);
+                await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
+              }
             }
-
-            const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
-            if (pdfSrc) {
-              setPdfBlobUrl(pdfSrc);
+            if (!pdfFromEmissione) {
+              const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+              if (pdfSrc) setPdfBlobUrl(pdfSrc);
             }
           } catch (e: any) {
-            console.warn("[RENTRI] Auto-fetch PDF/QR failed:", e.message);
+            console.warn("[RENTRI] Fallback get-pdf failed:", e.message);
           }
         }
       }
