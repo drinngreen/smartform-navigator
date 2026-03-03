@@ -247,7 +247,6 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
           codice_fiscale: str("trasportatore_codice_fiscale") || produttoreCf,
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
-          numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("trasportatore_iscrizione_albo")),
           indirizzo: parseIndirizzo(flat["produttore_indirizzo"]),
         },
       ],
