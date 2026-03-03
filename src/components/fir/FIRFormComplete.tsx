@@ -799,6 +799,22 @@ export function FIRFormComplete() {
                   <Download className="h-4 w-4" /> Scarica Riepilogo Viaggio
                 </button>
                 <button
+                  onClick={() => {
+                    if (pdfBlobUrl) {
+                      window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    if (d.selectedFirNumber) {
+                      window.open(getRentriPdfUrl(d.selectedFirNumber), "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    toast.error("PDF ufficiale non disponibile");
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
+                >
+                  <FileText className="h-4 w-4" /> Apri PDF RENTRI
+                </button>
+                <button
                   onClick={() => setShowControlloStrada(false)}
                   className="py-3 px-4 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground font-display text-sm hover:bg-muted/30 transition-colors"
                 >
