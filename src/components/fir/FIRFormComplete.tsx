@@ -876,14 +876,18 @@ export function FIRFormComplete() {
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
 
-          <Section title="4. Trasportatore">
-            <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
-            <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
+          <Section title={`4. Trasportatore (${GLOBAL_RECO.nome})`}>
+            <div className="flex items-center gap-1.5 mb-2 px-1">
+              <Lock className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-mono text-primary uppercase tracking-wider">Soggetto bloccato</span>
+            </div>
+            <LockedField label="Denominazione" value={d.trasportatoreDenominazione} />
+            <LockedField label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} />
             <Row>
-              <Field label="N° Iscrizione Albo" value={d.trasportatoreNumeroAlbo} onChange={(v) => u("trasportatoreNumeroAlbo", v)} />
-              <Field label="Data Iscrizione" value={d.trasportatoreDataAlbo} onChange={(v) => u("trasportatoreDataAlbo", v)} type="date" />
+              <LockedField label="N° Iscrizione Albo" value={d.trasportatoreNumeroAlbo} />
+              <LockedField label="Data Iscrizione" value={d.trasportatoreDataAlbo} />
             </Row>
-            <Field label="Situato in" value={d.trasportatoreSituatoIn} onChange={(v) => u("trasportatoreSituatoIn", v)} />
+            <LockedField label="Situato in" value={d.trasportatoreSituatoIn} />
             <Field label="Nome Autista" value={d.trasportatoreNomeAutista} onChange={(v) => u("trasportatoreNomeAutista", v)} />
           </Section>
 
