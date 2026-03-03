@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { safeLocalStorage } from '@/lib/safeStorage';
 
 // Tipi per lo store FIR - basato su FIRFormComplete.tsx FIRData interface
 export interface FIRDataStore {
@@ -682,6 +683,7 @@ export const useFIRStore = create<FIRStore>()(
       },
     }),
     {
+      storage: createJSONStorage(() => safeLocalStorage),
       name: 'fir-store',
       version: 3,
       migrate: (persistedState: unknown, version: number): any => {

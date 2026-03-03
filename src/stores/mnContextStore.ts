@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { safeLocalStorage } from "@/lib/safeStorage";
 
 export interface MNContext {
   id: string;
@@ -26,6 +27,6 @@ export const useMNContextStore = create<MNContextStore>()(
       activeContext: MN_CONTEXTS[0],
       setActiveContext: (ctx) => set({ activeContext: ctx }),
     }),
-    { name: "mn-context" }
+    { name: "mn-context", storage: createJSONStorage(() => safeLocalStorage) }
   )
 );
