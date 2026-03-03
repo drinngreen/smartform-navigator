@@ -119,13 +119,13 @@ function parseIndirizzo(raw: string): { indirizzo: string; civico: string; cap: 
 /**
  * Map descriptive stato_fisico strings back to RENTRI numeric codes.
  */
-const STATO_FISICO_TO_CODE: Record<string, string> = {
-  "solido pulverulento": "1",
-  "solido non pulverulento": "2",
-  "fangoso palabile": "3",
-  "liquido": "4",
-  "aeriforme": "5",
-  "altro": "6",
+const STATO_FISICO_TO_CODE: Record<string, number> = {
+  "solido pulverulento": 1,
+  "solido non pulverulento": 2,
+  "fangoso palabile": 3,
+  "liquido": 4,
+  "aeriforme": 5,
+  "altro": 6,
 };
 
 /**
@@ -143,7 +143,7 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
 
   // Resolve stato_fisico: accept both codes ("1") and descriptions ("solido pulverulento")
   const rawStatoFisico = str("stato_fisico");
-  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || rawStatoFisico || "";
+  const statoFisicoCode: number = STATO_FISICO_TO_CODE[rawStatoFisico] ?? (parseInt(rawStatoFisico, 10) || 1);
 
   const unitaMisura = str("unita_misura") || "kg";
 
