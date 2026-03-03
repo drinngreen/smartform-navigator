@@ -504,26 +504,26 @@ export function FIRFormComplete() {
   // ── CONTROLLO POLIZIA (QR CODE) → Generate PDF preview ──
   const handleControlloPolizia = async () => {
     try {
-      // Try to fetch PDF/QR from RENTRI backend
       const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
       const firId = d.selectedFirNumber;
       if (firId) {
         try {
+          toast.info("Recupero documenti RENTRI...");
           const pdfResult = await getRentriPdf(societaId, firId);
+          console.log("[RENTRI] Controllo Polizia response:", { hasQr: Boolean(pdfResult.qrCode), hasPdf: Boolean(pdfResult.pdfBase64), hasPdfUrl: Boolean(pdfResult.pdfUrl) });
 
-          const qrSrc = toRentriImageSrc(
-            pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
-          );
-          if (qrSrc) {
-            setQrCodeData(qrSrc);
-          }
+          const qrSrc = toRentriImageSrc(pdfResult.qrCode);
+          if (qrSrc) setQrCodeData(qrSrc);
 
-          const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+          const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, pdfResult.pdfUrl);
           if (pdfSrc) {
             setPdfBlobUrl(pdfSrc);
+            if (!qrSrc) toast.success("PDF RENTRI pronto! (QR Code non disponibile dal server)");
+            else toast.success("Documenti RENTRI pronti!");
           }
         } catch (pdfErr: any) {
-          console.warn("[RENTRI] get-pdf error, falling back to local QR:", pdfErr.message);
+          console.warn("[RENTRI] get-pdf error:", pdfErr.message);
+          toast.error("Errore recupero documenti: " + pdfErr.message);
         }
       }
       // Fallback: load QR from DB

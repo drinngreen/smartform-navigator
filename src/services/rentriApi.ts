@@ -367,78 +367,29 @@ export async function getRentriPdf(
   company: string,
   firId: string
 ): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; qrUrl?: string; [key: string]: unknown }> {
-  const res = await fetch(`${NGROK_BASE}/api/rentri/action/get-pdf`, {
+  // Use edge function proxy to bypass CORS restrictions on ngrok
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/rentri-get-pdf`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
+      "Authorization": `Bearer ${supabaseKey}`,
+      "apikey": supabaseKey,
     },
     body: JSON.stringify({ company, firId }),
   });
 
   const data = await res.json();
-  console.log("[RENTRI] get-pdf raw response keys:", Object.keys(data), "status:", res.status);
+  console.log("[RENTRI] get-pdf proxy response:", { status: res.status, keys: Object.keys(data), hasQr: Boolean(data.qrCode), hasPdf: Boolean(data.pdfBase64) });
 
   if (!res.ok) {
-    const errMsg =
-      (data as RentriErrorResponse).error ||
-      (data as RentriErrorResponse).details ||
-      `Errore server (${res.status})`;
+    const errMsg = data?.error || data?.details || `Errore server (${res.status})`;
     throw new Error(errMsg);
   }
 
-  const root: any = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data;
-  const absolutize = (value: unknown): string => {
-    const v = String(value || "").trim();
-    if (!v) return "";
-    if (v.startsWith("http://") || v.startsWith("https://")) return v;
-    if (v.startsWith("/")) return `${NGROK_BASE}${v}`;
-    return "";
-  };
-
-  // Normalize response keys - backend may return nested payload and URL fields
-  const normalized: any = { ...data, ...root };
-  if (!normalized.qrCode) {
-    normalized.qrCode =
-      root.qr_code || root.qrCodeBytes || root.qr_code_bytes || root.qr_base64 || root.qrBase64 || "";
-  }
-  if (!normalized.qrUrl) {
-    normalized.qrUrl = absolutize(root.qr_url || root.qrUrl || root.qrcode_url || root.qrcodeUrl || "");
-  }
-  if (!normalized.pdfBase64) {
-    normalized.pdfBase64 =
-      root.pdf_base64 || root.pdfContent || root.content || root.pdf_base_64 || "";
-  }
-  if (!normalized.pdfUrl) {
-    normalized.pdfUrl = absolutize(root.pdf_url || root.pdfUrl || root.url || "");
-  }
-
-  // Fallback dedicated QR endpoint if get-pdf does not carry qr bytes
-  if (!normalized.qrCode) {
-    try {
-      const qrRes = await fetch(`${NGROK_BASE}/api/rentri/action/get-qr?firId=${encodeURIComponent(firId)}`, {
-        headers: { "ngrok-skip-browser-warning": "true" },
-      });
-      if (qrRes.ok) {
-        const contentType = qrRes.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          const qrData = await qrRes.json();
-          normalized.qrCode =
-            qrData?.qr_code || qrData?.qrCode || qrData?.qrCodeBytes || qrData?.content || "";
-        } else {
-          const buffer = await qrRes.arrayBuffer();
-          const bytes = new Uint8Array(buffer);
-          let binary = "";
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-          normalized.qrCode = btoa(binary);
-        }
-      }
-    } catch (err) {
-      console.warn("[RENTRI] get-qr fallback failed:", err);
-    }
-  }
-
-  return normalized;
+  return data;
 }
 
 /**
