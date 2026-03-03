@@ -83,50 +83,63 @@ const COMPANY_CONFIG: Record<string, { unitId: string }> = {
   NIYOL: { unitId: "OP2501SXW021767-TO0001" },
 };
 
+const COMUNE_ID_BY_NAME: Record<string, string> = {
+  roma: "058091",
+  moncalieri: "001156",
+  torino: "001272",
+};
+
+function normalizeNumeroIscrizioneAlbo(raw: string): string | undefined {
+  const v = (raw || "").trim().toUpperCase();
+  if (!v) return undefined;
+  // Transform MI58420 -> MI/58420
+  const m = v.match(/^([A-Z]{2})(\d{3,})$/);
+  if (m) return `${m[1]}/${m[2]}`;
+  return v;
+}
+
 /**
  * Parse a flat Italian address string into the RENTRI structured format.
  */
-function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string } } {
-  if (!raw) {
-    return {
-      indirizzo: "",
-      civico: "",
-      cap: "",
-      nazione_id: "IT",
-      citta: { nome_citta: "", nazione_id: "IT" },
-    };
-  }
+function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string; comune_id: string } } {
+  const empty = {
+    indirizzo: "",
+    civico: "",
+    cap: "",
+    nazione_id: "IT",
+    citta: { nome_citta: "Roma", nazione_id: "IT", comune_id: "058091" },
+  };
+
+  if (!raw) return empty;
 
   const cleaned = raw.trim();
+  const pickComuneId = (city: string) => COMUNE_ID_BY_NAME[city.trim().toLowerCase()] || "058091";
+
   const match = cleaned.match(/^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match) {
+    const city = match[4].trim();
     return {
       indirizzo: match[1].trim(),
       civico: match[2].trim(),
       cap: match[3].trim(),
       nazione_id: "IT",
-      citta: { nome_citta: match[4].trim(), nazione_id: "IT" },
+      citta: { nome_citta: city, nazione_id: "IT", comune_id: pickComuneId(city) },
     };
   }
 
   const match2 = cleaned.match(/^(.+?)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match2) {
+    const city = match2[3].trim();
     return {
       indirizzo: match2[1].trim(),
       civico: "",
       cap: match2[2].trim(),
       nazione_id: "IT",
-      citta: { nome_citta: match2[3].trim(), nazione_id: "IT" },
+      citta: { nome_citta: city, nazione_id: "IT", comune_id: pickComuneId(city) },
     };
   }
 
-  return {
-    indirizzo: cleaned,
-    civico: "",
-    cap: "",
-    nazione_id: "IT",
-    citta: { nome_citta: "", nazione_id: "IT" },
-  };
+  return empty;
 }
 
 /**
@@ -204,7 +217,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
           codice_fiscale: str("trasportatore_codice_fiscale") || produttoreCf,
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
-          numero_iscrizione_albo: str("trasportatore_iscrizione_albo") || undefined,
+          numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("trasportatore_iscrizione_albo")),
           indirizzo: parseIndirizzo(str("produttore_indirizzo")),
         },
       ],
