@@ -10,7 +10,7 @@ import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getR
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
-import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
+import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -100,7 +100,7 @@ function LockedField({ label, value }: { label: string; value: string }) {
 }
 
 // ── Searchable Destinatario Dropdown ──────────────────────────
-function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo: string, cf: string) => void }) {
+function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => void }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -137,7 +137,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
             <button
               key={i}
               onClick={() => {
-                onSelect(d.nome, d.indirizzo, d.cf);
+                onSelect(d);
                 setSearch(d.nome);
                 setIsOpen(false);
               }}
@@ -145,6 +145,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
             >
               <span className="text-xs text-white font-medium block">{d.nome}</span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
+              {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
             </button>
           ))}
         </div>
@@ -152,7 +153,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
       {search.trim().length > 1 && (
         <button
           onClick={() => {
-            onSelect(search.trim(), "", "");
+            onSelect({ nome: search.trim(), indirizzo: "", cf: "", tipo: "IMPIANTO" });
             setIsOpen(false);
           }}
           className="w-full mt-1 text-left px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors"
@@ -630,10 +631,22 @@ export function FIRFormComplete() {
   };
 
   // ── Handle destinatario selection from dropdown ──────────
-  const handleDestinatarioSelect = (nome: string, indirizzo: string, cf: string) => {
-    u("destinatarioDenominazione", nome);
-    u("destinatarioUnitaLocale", indirizzo);
-    u("destinatarioCF", cf);
+  const handleDestinatarioSelect = (soggetto: Soggetto) => {
+    u("destinatarioDenominazione", soggetto.nome);
+    u("destinatarioUnitaLocale", soggetto.indirizzo);
+    u("destinatarioCF", soggetto.cf);
+    if (soggetto.autorizzazione) u("destinatarioNumeroAut", soggetto.autorizzazione);
+    if (soggetto.tipoAut) u("destinatarioTipoAut", soggetto.tipoAut);
+    if (soggetto.operazione) {
+      const isR = soggetto.operazione.startsWith("R");
+      u("destinatarioOperazione", isR ? "R" : "D");
+      u("destinatarioCodiceOperazione", soggetto.operazione);
+      // Also store in form_data via updateMultipleFields
+      store.updateMultipleFields({
+        destinatarioOperazione: isR ? "R" : "D",
+        destinatarioCodiceOperazione: soggetto.operazione,
+      });
+    }
   };
 
   const tabs = [
