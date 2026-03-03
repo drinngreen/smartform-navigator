@@ -75,6 +75,48 @@ export interface RentriChiusuraPayload {
 // ─── Helpers ─────────────────────────────────────────────────
 
 /**
+ * Parse a flat Italian address string into the RENTRI structured format.
+ * Handles patterns like:
+ *   "Via Roma 1 - 00100 Roma (RM)"
+ *   "Via Alba 11 - 10024 Moncalieri (TO)"
+ *   "Strada Provinciale 28, 15033 Casale Monferrato (AL)"
+ */
+function parseIndirizzo(raw: string): { indirizzo: string; civico: string; cap: string; citta: { comune: string } } {
+  if (!raw) return { indirizzo: "", civico: "", cap: "", citta: { comune: "" } };
+
+  const cleaned = raw.trim();
+
+  // Try pattern: "Via/Strada ... N - CAP Comune (PROV)"
+  const match = cleaned.match(
+    /^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/
+  );
+  if (match) {
+    return {
+      indirizzo: match[1].trim(),
+      civico: match[2].trim(),
+      cap: match[3].trim(),
+      citta: { comune: match[4].trim() },
+    };
+  }
+
+  // Try pattern without civico: "Via Roma - 00100 Roma (RM)"
+  const match2 = cleaned.match(
+    /^(.+?)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/
+  );
+  if (match2) {
+    return {
+      indirizzo: match2[1].trim(),
+      civico: "",
+      cap: match2[2].trim(),
+      citta: { comune: match2[3].trim() },
+    };
+  }
+
+  // Fallback: put everything in indirizzo
+  return { indirizzo: cleaned, civico: "", cap: "", citta: { comune: "" } };
+}
+
+/**
  * Build the structured emissione payload from flat DB fields.
  * Maps flat fields → nested JSON as expected by the C# Bridge.
  */
@@ -92,12 +134,12 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
     produttore: {
       denominazione: str("produttore_denominazione"),
       codice_fiscale: str("produttore_codice_fiscale"),
-      indirizzo: str("produttore_indirizzo"),
+      indirizzo: parseIndirizzo(str("produttore_indirizzo")),
     },
     destinatario: {
       denominazione: str("destinatario_denominazione"),
       codice_fiscale: str("destinatario_codice_fiscale"),
-      indirizzo: str("destinatario_indirizzo"),
+      indirizzo: parseIndirizzo(str("destinatario_indirizzo")),
       autorizzazione: {
         tipo: str("destinatario_tipo_aut") || "AIA",
         numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "",
@@ -238,7 +280,7 @@ export async function chiudiFirRentri(
         destinatario: {
           denominazione: payload.destinatario_denominazione || "",
           codice_fiscale: payload.destinatario_codice_fiscale || "",
-          indirizzo: payload.destinatario_indirizzo || "",
+          indirizzo: parseIndirizzo(payload.destinatario_indirizzo || ""),
           autorizzazione: {
             tipo: payload.destinatario_tipo_aut || "AIA",
             numero: payload.destinatario_numero_aut || "",
