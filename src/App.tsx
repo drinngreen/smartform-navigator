@@ -49,6 +49,7 @@ const PhonePage = React.lazy(() => import("./pages/admin/PhonePage"));
 const SMSPage = React.lazy(() => import("./pages/admin/SMSPage"));
 const WhatsAppPage = React.lazy(() => import("./pages/admin/WhatsAppPage"));
 const EmailPage = React.lazy(() => import("./pages/admin/EmailPage"));
+const GlobalEmailPage = React.lazy(() => import("./pages/admin/GlobalEmailPage"));
 const RubricaPage = React.lazy(() => import("./pages/admin/RubricaPage"));
 const SystemPromptPage = React.lazy(() => import("./pages/admin/SystemPromptPage"));
 const SocialGuestsPage = React.lazy(() => import("./pages/admin/SocialGuestsPage"));
@@ -186,6 +187,7 @@ const App = () => (
                 <Route path="/admin/sms" element={<ProtectedRoute><SMSPage /></ProtectedRoute>} />
                 <Route path="/admin/whatsapp" element={<ProtectedRoute><WhatsAppPage /></ProtectedRoute>} />
                 <Route path="/admin/email" element={<ProtectedRoute><EmailPage /></ProtectedRoute>} />
+                <Route path="/admin/email-global" element={<ProtectedRoute><GlobalEmailPage /></ProtectedRoute>} />
                 <Route path="/admin/rubrica" element={<ProtectedRoute><RubricaPage /></ProtectedRoute>} />
                 <Route path="/admin/system-prompt" element={<ProtectedRoute><SystemPromptPage /></ProtectedRoute>} />
                 <Route path="/admin/social-guests" element={<ProtectedRoute><SocialGuestsPage /></ProtectedRoute>} />

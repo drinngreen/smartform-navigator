@@ -497,6 +497,96 @@ export type Database = {
         }
         Relationships: []
       }
+      emails_global_inbox: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          created_at: string | null
+          fir_id: string | null
+          from_address: string
+          id: string
+          impianto_id: string | null
+          is_read: boolean
+          message_id: string
+          received_at: string
+          subject: string | null
+          to_address: string
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string | null
+          fir_id?: string | null
+          from_address: string
+          id?: string
+          impianto_id?: string | null
+          is_read?: boolean
+          message_id: string
+          received_at: string
+          subject?: string | null
+          to_address: string
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string | null
+          fir_id?: string | null
+          from_address?: string
+          id?: string
+          impianto_id?: string | null
+          is_read?: boolean
+          message_id?: string
+          received_at?: string
+          subject?: string | null
+          to_address?: string
+        }
+        Relationships: []
+      }
+      emails_global_outbox: {
+        Row: {
+          body_html: string | null
+          category: string
+          created_at: string | null
+          error_message: string | null
+          fir_id: string | null
+          from_address: string
+          id: string
+          impianto_id: string | null
+          sent_at: string
+          status: string
+          subject: string | null
+          to_address: string
+        }
+        Insert: {
+          body_html?: string | null
+          category?: string
+          created_at?: string | null
+          error_message?: string | null
+          fir_id?: string | null
+          from_address?: string
+          id?: string
+          impianto_id?: string | null
+          sent_at?: string
+          status?: string
+          subject?: string | null
+          to_address: string
+        }
+        Update: {
+          body_html?: string | null
+          category?: string
+          created_at?: string | null
+          error_message?: string | null
+          fir_id?: string | null
+          from_address?: string
+          id?: string
+          impianto_id?: string | null
+          sent_at?: string
+          status?: string
+          subject?: string | null
+          to_address?: string
+        }
+        Relationships: []
+      }
       erp_anagrafiche: {
         Row: {
           attivo: boolean
