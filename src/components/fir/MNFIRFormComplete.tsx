@@ -155,7 +155,6 @@ export function MNFIRFormComplete() {
   const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms();
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
-  const { availableNumbers } = useFIRNumberPool();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const isStarted = !!store.editingFirId;
   const [isSigning, setIsSigning] = useState(false);
@@ -264,27 +263,43 @@ export function MNFIRFormComplete() {
     return () => { if (autosaveRef.current) clearInterval(autosaveRef.current); };
   }, [store.editingFirId, store.workflowStatus, doAutosave]);
 
+  const ensureAndLoadDraft = async () => {
+    if (!user?.id) throw new Error("Utente non autenticato");
+
+    const { data: draftId, error: ensureErr } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
+      p_user_id: user.id,
+    });
+    if (ensureErr) throw ensureErr;
+    if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
+
+    const { data: draft, error: draftErr } = await supabase
+      .from("fir_forms")
+      .select("*")
+      .eq("id", draftId)
+      .eq("user_id", user.id)
+      .eq("deleted_by_user", false)
+      .maybeSingle();
+
+    if (draftErr) throw draftErr;
+    if (!draft) throw new Error("Bozza FIR non trovata dopo assegnazione");
+
+    store.loadFromDatabase({
+      ...draft,
+      form_data: draft.form_data as Record<string, any> | null,
+    });
+    useMNFIRStore.setState({ editingFirId: draft.id, workflowStatus: 'bozza' });
+
+    return draft.numero_fir;
+  };
+
   const handleStart = async () => {
-    if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
-      try {
-        const tenantId = profile?.tenant_id;
-        const mnCtx = profile?.mn_context;
-        const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
-        if (tenantId) await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: societaId });
-      } catch { /* silent */ }
-      return;
-    }
     try {
-      const firNumber = availableNumbers[0];
-      const dbFields = mapStoreToDatabaseFields(store.data);
-      const result = await createFIR.mutateAsync({ ...dbFields, numero_fir: firNumber.fir_number, status: "bozza" });
-      store.updateField("selectedFirNumber", firNumber.fir_number);
-      store.updateField("numeroRegistro", firNumber.fir_number);
-      useMNFIRStore.setState({ editingFirId: result.id, workflowStatus: 'bozza' });
-      toast.success(`FIR ${firNumber.fir_number} inizializzato!`);
-    } catch {
-      toast.error("Errore nell'inizializzazione del FIR");
+      const numero = await ensureAndLoadDraft();
+      toast.success(`FIR ${numero || "assegnato"} inizializzato!`);
+    } catch (error: any) {
+      toast.error(error?.message?.includes("Nessun numero FIR")
+        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
+        : "Errore nell'inizializzazione del FIR");
     }
   };
 
@@ -310,27 +325,16 @@ export function MNFIRFormComplete() {
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       } catch { /* silent */ }
     }
+
     store.resetForm();
-    if (!availableNumbers || availableNumbers.length === 0) {
-      toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
-      try {
-        const tenantId = profile?.tenant_id;
-        const mnCtx = profile?.mn_context;
-        const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
-        if (tenantId) await supabase.rpc("notify_fir_pool_empty" as any, { p_tenant_id: tenantId, p_societa_id: societaId });
-      } catch { /* silent */ }
-      return;
-    }
+
     try {
-      const firNumber = availableNumbers[0];
-      const freshData = mapStoreToDatabaseFields(store.data);
-      const result = await createFIR.mutateAsync({ ...freshData, numero_fir: firNumber.fir_number, status: "bozza" });
-      store.updateField("selectedFirNumber", firNumber.fir_number);
-      store.updateField("numeroRegistro", firNumber.fir_number);
-      useMNFIRStore.setState({ editingFirId: result.id, workflowStatus: 'bozza' });
-      toast.success(`Nuovo FIR ${firNumber.fir_number} inizializzato!`);
-    } catch {
-      toast.error("Errore nell'inizializzazione del nuovo FIR");
+      const numero = await ensureAndLoadDraft();
+      toast.success(`Nuovo FIR ${numero || "assegnato"} inizializzato!`);
+    } catch (error: any) {
+      toast.error(error?.message?.includes("Nessun numero FIR")
+        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
+        : "Errore nell'inizializzazione del nuovo FIR");
     }
   };
 
