@@ -42,7 +42,7 @@ export const MULTYPROGET: Soggetto = {
 export const IMPIANTI: Soggetto[] = [
   // === A ===
   { nome: "\"Thermo Service Srl\"", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "amministrazione@thermoserviceplus.it" },
-  { nome: "A.G. Gas Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@ag-gas.com" },
+  { nome: "A.G. Gas Srl", indirizzo: "VIA CISE SUD 563, 19035 SANTO STEFANO MAGRA (SP)", cf: "01215840115", piva: "01215840115", tipo: "IMPIANTO", email: "info@ag-gas.com", comuneIstat: "011027" },
   { nome: "Abbondanzia Francesco S.r.l.", indirizzo: "STRADA PROV. 44, 65020 ROSCIANO (PE)", cf: "01494110685", tipo: "IMPIANTO", email: "abbondanzia@virgilio.it", tel: "328 410 8164", comuneIstat: "068033", operazione: "R13", tipoAut: "AIA" },
   { nome: "Adriatica Rottami Srl", indirizzo: "VIA SANTERNO AMMONITE 425X, SANTERNO RAVENNA (RA)", cf: "02496490398", tipo: "IMPIANTO", email: "info@adriaticarottami.it", comuneIstat: "039014", operazione: "R13", tipoAut: "AIA" },
   { nome: "Afim S.r.l.", indirizzo: "VIA PINEROLO 29, 10060 FROSSASCO (TO)", cf: "03926910047", tipo: "IMPIANTO", email: "afimcommercio@gmail.com", tel: "0121 329424", comuneIstat: "001111", operazione: "R13", tipoAut: "AIA" },
@@ -56,7 +56,8 @@ export const IMPIANTI: Soggetto[] = [
   { nome: "Azienda Agricola Ferraro Maurizio", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "az.agr.ferraro.maurizio@postecert.it" },
 
   // === B ===
-  { nome: "Badulescu Tudor", indirizzo: "VIA SETTE COMUNI 61, 10127 TORINO (TO)", cf: "13211740017", tipo: "TRASPORTATORE", comuneIstat: "001272" },
+  { nome: "Badulescu Tudor", indirizzo: "VIA SETTE COMUNI 61, 10127 TORINO (TO)", cf: "13211740017", piva: "13211740017", tipo: "TRASPORTATORE", comuneIstat: "001272" },
+  { nome: "Rainbow Srl", indirizzo: "VIA FRATELLI SIGNORELLI 159, 20024 GARBAGNATE MILANESE (MI)", cf: "08526860963", piva: "08526860963", tipo: "TRASPORTATORE", comuneIstat: "015101" },
   { nome: "Bellani Adriano", indirizzo: "VIA SAURO 64, 23893 CASSAGO BRIANZA (LC)", cf: "BLLDRN65R06B943L", tipo: "IMPIANTO", email: "info@abliving.it", comuneIstat: "097015", operazione: "R13", tipoAut: "AIA" },
   { nome: "Bertorelli S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@bertorellisrl.com" },
   { nome: "Bianchi Srl", indirizzo: "VIA PAPA GIOVANNI XXXIII 1, ANNICO (CR)", cf: "01040110197", tipo: "IMPIANTO", email: "info@bianchi-srl.com", comuneIstat: "019003", operazione: "R13", tipoAut: "AIA" },
@@ -83,7 +84,7 @@ export const IMPIANTI: Soggetto[] = [
   // === D ===
   { nome: "D.B.S. Rottami S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "formularidbsrottami@gmail.com" },
   { nome: "Degli Esposti Mario S.r.l.", indirizzo: "VIA DELLA COOPERAZIONE 30/2, BOLOGNA (BO)", cf: "02230830370", tipo: "IMPIANTO", email: "info@degliespostimario.it", comuneIstat: "037006", operazione: "R13", tipoAut: "AIA" },
-  { nome: "Dello Margio Ferro S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "dellomargioferro@gmail.com" },
+  { nome: "Dello Margio Ferro S.r.l.", indirizzo: "Strada Provinciale Per S.M.O. 7, 86077 POZZILLI (IS)", cf: "03407370612", piva: "03407370612", tipo: "IMPIANTO", email: "dellomargioferro@gmail.com", comuneIstat: "094034", operazione: "R13", tipoAut: "AIA" },
   { nome: "Devoti Recuperi Ecologia S.r.l.", indirizzo: "VIA BANDIRALI 4, 29016 CORTEMAGGIORE (PC)", cf: "01370860338", tipo: "IMPIANTO", email: "info@devoti-ecologia.it", tel: "0523 839255", comuneIstat: "033015", operazione: "R13", tipoAut: "AIA" },
   { nome: "Dgv Metal Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "contabilita@dgvmetal.com" },
   { nome: "Ditta Brunatti Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "ufficio@dittabrunatti.com" },
@@ -95,7 +96,7 @@ export const IMPIANTI: Soggetto[] = [
   { nome: "Eco Lombarda Rottami Srl", indirizzo: "STRADA DELLA COSTIERA SNC, 27020 DORNO (PV)", cf: "02736920188", tipo: "IMPIANTO", email: "ecolombardarottamisrl@gmail.com", comuneIstat: "018059", operazione: "R13", tipoAut: "AIA" },
   { nome: "Ecometal Srl", indirizzo: "VIA LAURENTINA KM 26,080, 00071 POMEZIA (RM)", cf: "06800721000", tipo: "IMPIANTO", email: "amministrazione@ecometalrecycling.it", comuneIstat: "058077", operazione: "R13", tipoAut: "AIA" },
   { nome: "E-costruzioni S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "contabilita@e-costruzioni.com" },
-  { nome: "Ecotek Metalli S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "ecotekmetalli@gmail.com" },
+  { nome: "Ecotek Metalli S.r.l.", indirizzo: "CASCINA RUBINA 34/BIS, POIRINO (TO)", cf: "10674340012", piva: "10674340012", tipo: "IMPIANTO", email: "ecotekmetalli@gmail.com", comuneIstat: "001197", operazione: "R13", tipoAut: "AIA" },
   { nome: "Ecotrade S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "accettazione@ecotradesrl.com" },
   { nome: "Edil-Val Di Fossanetti Maddalena S.a.s.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@edival.it" },
   { nome: "Effe.Emme S.r.l.", indirizzo: "VIA BUSCA 29, 12024 COSTIGLIOLE SALUZZO (CN)", cf: "03327200048", tipo: "IMPIANTO", email: "effeemmerecuperi@gmail.com", tel: "0175 239499", comuneIstat: "004077", operazione: "R13", tipoAut: "AIA" },
@@ -103,7 +104,7 @@ export const IMPIANTI: Soggetto[] = [
   { nome: "Eureka S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "contabilita@e-costruzioni.com" },
 
   // === F ===
-  { nome: "F.lli Cattaneo S.r.l.", indirizzo: "VIA GOITO 74, 20871 VIMERCATE (MB)", cf: "00785840968", tipo: "IMPIANTO", email: "FLLICATTANEOSRL@GMAIL.COM", comuneIstat: "108050", operazione: "R13", tipoAut: "AIA" },
+  { nome: "F.lli Cattaneo S.r.l.", indirizzo: "VIA GOITO 74, 20871 VIMERCATE (MB)", cf: "04633950151", piva: "00785840968", tipo: "IMPIANTO", email: "FLLICATTANEOSRL@GMAIL.COM", comuneIstat: "108050", operazione: "R13", tipoAut: "AIA" },
   { nome: "F.lli Dell'Olio Srls", indirizzo: "STRADA COMUNALE PER CINISELLO 36, 20900 MONZA (MB)", cf: "10421630962", tipo: "IMPIANTO", email: "info@dellolioeco.it", comuneIstat: "108033", operazione: "R13", tipoAut: "AIA" },
   { nome: "F.lli Lunardi S.a.s.", indirizzo: "STRADA LANZO 230, 10148 TORINO (TO)", cf: "00788730018", tipo: "IMPIANTO", email: "FRATELLILUNARDI1@LEGALMAIL.IT", tel: "011 226 1854", comuneIstat: "001272", operazione: "R13", tipoAut: "AIA" },
   { nome: "F.lli Lucati S.r.l.", indirizzo: "VIALE DEL LAVORO 82, 35020 PONTE SAN NICOLO' (PD)", cf: "00825290281", tipo: "IMPIANTO", email: "fratellilucati@gmail.com", tel: "+39 049 8969056", comuneIstat: "028066", operazione: "R13", tipoAut: "AIA" },
@@ -122,7 +123,7 @@ export const IMPIANTI: Soggetto[] = [
   // === G ===
   { nome: "Futura Società Cooperativa", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "coop.futura224@gmail.com" },
   { nome: "G.E.A. Srl", indirizzo: "S.S. PER VOGHERA 95, 15057 TORTONA (AL)", cf: "09523470962", tipo: "IMPIANTO", comuneIstat: "006175", operazione: "R13", tipoAut: "AIA" },
-  { nome: "Gabbero Davide", indirizzo: "FRAZ.SAN LUCA 10, 10068 VILLAFRANCA PIEMONTE (TO)", cf: "11044930011", tipo: "IMPIANTO", email: "annamariacianfaglia@libero.it", comuneIstat: "001296", operazione: "R13", tipoAut: "AIA" },
+  { nome: "Gabbero Davide", indirizzo: "FRAZ.SAN LUCA 10, 10068 VILLAFRANCA PIEMONTE (TO)", cf: "GBBDVD95S23L219N", piva: "11044930011", tipo: "IMPIANTO", email: "annamariacianfaglia@libero.it", comuneIstat: "001296", operazione: "R13", tipoAut: "AIA" },
   { nome: "Game.Fer S.r.l.", indirizzo: "VIALE PALMIRO TOGLIATTI 1009, 00155 ROMA (RM)", cf: "09291501006", tipo: "IMPIANTO", email: "contabilitagamefer@gmail.com", comuneIstat: "058091", operazione: "R13", tipoAut: "AIA" },
   { nome: "Gargano Giuseppe", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@giuseppegargano.it" },
   { nome: "Gemafer S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "gemafersrl@gmail.com" },
@@ -150,11 +151,11 @@ export const IMPIANTI: Soggetto[] = [
   { nome: "Legnosfera Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info.legnosfera@gmail.com" },
   { nome: "Libra S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "serena@librasoluzioni.com" },
   { nome: "Lollini Ferrometalli Di Alessandro Lollini", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "lolliniferrometalli@gmail.com" },
-  { nome: "Lombafer", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "zeudigaratti@gmail.com" },
+  { nome: "Lombafer S.r.l.", indirizzo: "VIA GERBOLINA 56/A, VIADANA (MN)", cf: "02260220209", piva: "02260220209", tipo: "IMPIANTO", email: "zeudigaratti@gmail.com", comuneIstat: "020066", operazione: "R13", tipoAut: "AIA" },
   { nome: "Luraschi Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@luraschisrl.it" },
 
   // === M ===
-  { nome: "Mai Rottami Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "amministrazione@mairottami.it" },
+  { nome: "Mai Rottami S.r.l.", indirizzo: "VIA DEL DONATORE 41, 37139 CASTELNUOVO DEL GARDA (VR)", cf: "04218670232", piva: "04218670232", tipo: "IMPIANTO", email: "amministrazione@mairottami.it", comuneIstat: "023021", operazione: "R13", tipoAut: "AIA" },
   { nome: "Mantova Rottami Srl", indirizzo: "VIA GEROLE 26, REDONDESCO (MN)", cf: "02611510203", tipo: "IMPIANTO", email: "mantovarottami@gmail.com", comuneIstat: "020047", operazione: "R13", tipoAut: "AIA" },
   { nome: "Marocco Sergio", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "sergioviaroma59@gmail.com" },
   { nome: "Masterporte Srl", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "info@masterporte.com" },
@@ -208,7 +209,7 @@ export const IMPIANTI: Soggetto[] = [
   { nome: "Rota Fer-Metal S.r.l.", indirizzo: "VIA STEZZANO 33, ZANICA (BG)", cf: "00971530167", tipo: "IMPIANTO", email: "info@rotafermetal.it", comuneIstat: "016244", operazione: "R13", tipoAut: "AIA" },
   { nome: "Rottam Ferrara Di Cavicchi S.a.s.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "rottam@libero.it" },
   { nome: "Rottam Ittica S.r.l.", indirizzo: "VIA MONTALBANO 1419/A, 47842 SAN GIOVANNI IN MARIGNANO (RN)", cf: "01278430408", tipo: "IMPIANTO", email: "info@rottamittica.it", tel: "0541 955219", comuneIstat: "099015", operazione: "R13", tipoAut: "AIA" },
-  { nome: "Rottami Italia S.r.l.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "rottamiitalia@gmail.com" },
+  { nome: "Rottami Italia S.r.l.", indirizzo: "VIA ROMA 215, 17038 VILLANOVA D'ALBENGA (SV)", cf: "01627000084", piva: "01627000084", tipo: "IMPIANTO", email: "ufficioinfo@rottamiitalia.it", tel: "0182 582483", comuneIstat: "009067", operazione: "R13", tipoAut: "AIA" },
   { nome: "RPF Di Riccardino Roberto S.a.s.", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "rpfambiente@gmail.com" },
 
   // === S ===
