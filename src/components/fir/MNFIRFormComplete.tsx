@@ -8,7 +8,7 @@ import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
-import { toRentriImageSrc } from "@/lib/rentriMedia";
+import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI } from "@/data/anagrafiche";
 
@@ -162,6 +162,7 @@ export function MNFIRFormComplete() {
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const u = store.updateField;
@@ -386,6 +387,11 @@ export function MNFIRFormComplete() {
               setQrCodeData(qrSrc);
               await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
             }
+
+            const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+            if (pdfSrc) {
+              setPdfBlobUrl(pdfSrc);
+            }
           } catch (e: any) {
             console.warn("[RENTRI] Auto-fetch PDF/QR failed:", e.message);
           }
@@ -410,6 +416,10 @@ export function MNFIRFormComplete() {
           );
           if (qrSrc) {
             setQrCodeData(qrSrc);
+          }
+          const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+          if (pdfSrc) {
+            setPdfBlobUrl(pdfSrc);
           }
         } catch (pdfErr: any) {
           console.warn("[RENTRI] get-pdf error, falling back to local QR:", pdfErr.message);
@@ -598,6 +608,15 @@ export function MNFIRFormComplete() {
               <div className="bg-card/60 p-3 flex gap-2">
                 <button onClick={handleDownloadSummaryPdf} className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
                   <Download className="h-4 w-4" /> Scarica Riepilogo
+                </button>
+                <button
+                  onClick={() => {
+                    if (pdfBlobUrl) window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
+                    else toast.error("PDF ufficiale non ancora disponibile");
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
+                >
+                  <FileText className="h-4 w-4" /> Apri PDF RENTRI
                 </button>
                 <button onClick={() => setShowControlloStrada(false)} className="py-3 px-4 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground font-display text-sm hover:bg-muted/30 transition-colors">Chiudi</button>
               </div>

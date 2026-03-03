@@ -413,6 +413,31 @@ export async function getRentriPdf(
     normalized.pdfUrl = absolutize(root.pdf_url || root.pdfUrl || root.url || "");
   }
 
+  // Fallback dedicated QR endpoint if get-pdf does not carry qr bytes
+  if (!normalized.qrCode) {
+    try {
+      const qrRes = await fetch(`${NGROK_BASE}/api/rentri/action/get-qr?firId=${encodeURIComponent(firId)}`, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+      });
+      if (qrRes.ok) {
+        const contentType = qrRes.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const qrData = await qrRes.json();
+          normalized.qrCode =
+            qrData?.qr_code || qrData?.qrCode || qrData?.qrCodeBytes || qrData?.content || "";
+        } else {
+          const buffer = await qrRes.arrayBuffer();
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          normalized.qrCode = btoa(binary);
+        }
+      }
+    } catch (err) {
+      console.warn("[RENTRI] get-qr fallback failed:", err);
+    }
+  }
+
   return normalized;
 }
 
