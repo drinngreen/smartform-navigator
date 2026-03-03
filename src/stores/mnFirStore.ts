@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { FIRDataStore, FIR_FIELD_LABELS, DatabaseFIRData } from './firStore';
+import { safeLocalStorage } from '@/lib/safeStorage';
 
 // ALL fields start empty — NO Global Reco / Multyproget presets
 export const mnInitialFIRData: FIRDataStore = {
@@ -300,6 +301,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
       },
     }),
     {
+      storage: createJSONStorage(() => safeLocalStorage),
       name: 'mn-fir-store',
       version: 2,
       migrate: (persistedState: unknown): any => {

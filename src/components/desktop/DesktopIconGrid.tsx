@@ -64,7 +64,11 @@ function loadPositions(storageKey: string): Record<string, { x: number; y: numbe
 function savePositions(icons: DesktopIcon[], storageKey: string) {
   const map: Record<string, { x: number; y: number }> = {};
   icons.forEach(ic => { if (ic) map[ic.id] = { x: ic.x, y: ic.y }; });
-  localStorage.setItem(storageKey, JSON.stringify(map));
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(map));
+  } catch (error) {
+    console.warn("[DesktopIconGrid] localStorage quota exceeded, skipping save", error);
+  }
 }
 
 /** Find nearest free cell for an icon, avoiding occupied cells */

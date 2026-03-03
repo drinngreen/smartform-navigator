@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+import { safeLocalStorage } from '@/lib/safeStorage';
 
 let _client: SupabaseClient<Database> | null = null;
 
@@ -11,7 +12,7 @@ function getSupabaseClient(): SupabaseClient<Database> {
 
   _client = createClient<Database>(url, key, {
     auth: {
-      storage: localStorage,
+      storage: safeLocalStorage,
       persistSession: true,
       autoRefreshToken: true,
     },
