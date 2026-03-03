@@ -368,6 +368,26 @@ export function MNFIRFormComplete() {
       useMNFIRStore.setState({ workflowStatus: 'inviato' });
       if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
       toast.success("✅ FIR firmato e inviato con successo!");
+
+      // Auto-fetch QR/PDF from get-pdf endpoint if not already available
+      if (!qrCodeData) {
+        const firIdForPdf = rentriFirId || d.selectedFirNumber;
+        if (firIdForPdf) {
+          try {
+            console.log("[RENTRI] Auto-fetching PDF/QR for", firIdForPdf);
+            const pdfResult = await getRentriPdf(societaId, firIdForPdf);
+            console.log("[RENTRI] get-pdf response keys:", Object.keys(pdfResult));
+            const qr = pdfResult.qrCode || pdfResult.qr_code || (pdfResult as any).qrCodeBytes || "";
+            if (qr) {
+              const qrUri = String(qr).startsWith("data:") ? String(qr) : `data:image/png;base64,${qr}`;
+              setQrCodeData(qrUri);
+              await supabase.from("fir_number_pool").update({ qr_code_data: qrUri } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
+            }
+          } catch (e: any) {
+            console.warn("[RENTRI] Auto-fetch PDF/QR failed:", e.message);
+          }
+        }
+      }
     } catch (error: any) {
       toast.error(`Errore firma RENTRI: ${error.message}`);
     } finally {
