@@ -84,10 +84,63 @@ const COMPANY_CONFIG: Record<string, { unitId: string }> = {
   NIYOL: { unitId: "OP2501SXW021767-TO0001" },
 };
 
+// ─── Expanded ISTAT comuni dictionary ───────────────────────
 const COMUNE_ID_BY_NAME: Record<string, string> = {
-  roma: "058091",
-  moncalieri: "001156",
-  torino: "001272",
+  // Piemonte
+  torino: "001272", moncalieri: "001156", carmagnola: "001059", settimo: "001270",
+  "settimo torinese": "001270", alpignano: "001007", front: "001108",
+  santena: "001252", lombardore: "001134", frossasco: "001111",
+  piscina: "001194", villafranca: "001296", "villafranca piemonte": "001296",
+  mappano: "001308", volvera: "001303", centallo: "004062",
+  "costigliole saluzzo": "004077", "costigliole d'asti": "005046",
+  "borgo san dalmazzo": "004029", clavesana: "004072", masserano: "096033",
+  gaglianico: "096023", asti: "005005", tortona: "006175",
+  // Lombardia
+  milano: "015146", monza: "108033", desio: "108015", vimercate: "108050",
+  vernate: "015234", uboldo: "012129", zanica: "016244",
+  "romano di lombardia": "016182", "cassago brianza": "097015",
+  "annone brianza": "097003", dorno: "018059", mortara: "018100",
+  // Veneto
+  cerea: "023022", "valeggio sul mincio": "023089", "albaredo d'adige": "023002",
+  arzignano: "024008",
+  // Trentino
+  lavis: "022098", "rive del garda": "022155",
+  // Friuli / Alto Adige
+  bolzano: "021008",
+  // Liguria
+  genova: "010025", "serra ricco'": "010058", "pietra ligure": "009047",
+  toirano: "009062", "la spezia": "011015", "santo stefano magra": "011027",
+  sarzana: "011028",
+  // Emilia-Romagna
+  bologna: "037006", piacenza: "033032", cortemaggiore: "033015",
+  parma: "034027", "reggio nell'emilia": "035033", "reggio emilia": "035033",
+  scandiano: "035038", "castelnovo di sotto": "035012",
+  rimini: "099014", "san giovanni in marignano": "099015",
+  gambettola: "040013", "anzola dell'emilia": "037002",
+  valsamoggia: "037059", redondesco: "020047",
+  // Toscana
+  pisa: "050026", firenze: "048017", livorno: "049009",
+  montemurlo: "100003", camaiore: "046005", massa: "045010",
+  "monte san savino": "051024",
+  // Umbria
+  foligno: "054018", torgiano: "054050", "torchiagina di assisi": "054001",
+  assisi: "054001", montecastrilli: "055020", terni: "055032",
+  // Marche
+  treia: "043053", pesaro: "041044", jesi: "042021",
+  // Lazio
+  roma: "058091", pomezia: "058077",
+  // Abruzzo
+  rosciano: "068033", montesilvano: "068028",
+  // Puglia
+  trani: "110009",
+  // Campania / Sud
+  ravenna: "039014",
+  // Mantova
+  mantova: "020030", motteggiana: "020034",
+  // Padova
+  "ponte san nicolo'": "028066", "ponte san nicolò": "028066",
+  // Brescia
+  capriano: "017037",
 };
 
 function normalizeNumeroIscrizioneAlbo(raw: string): string | undefined {
@@ -100,36 +153,24 @@ function normalizeNumeroIscrizioneAlbo(raw: string): string | undefined {
     .replace(/^([A-Z]{2})(\d{3,})$/, "$1/$2");
 
   if (!v) return undefined;
-  // RENTRI accetta il formato tipo MI/58420
   if (/^[A-Z]{2}\/\d{3,}$/.test(v)) return v;
-
-  // Se non è valido, meglio ometterlo del tutto anziché inviare un valore invalido
   return undefined;
 }
 
 /**
  * Parse a flat Italian address string into the RENTRI structured format.
+ * CONSERVATIVE FALLBACK: never substitutes city with arbitrary values.
  */
-function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string; comune_id: string } } {
-  const empty = {
-    indirizzo: "Via non specificata",
-    civico: "",
-    cap: "00000",
-    nazione_id: "IT",
-    citta: { nome_citta: "Roma", nazione_id: "IT", comune_id: "058091" },
-  };
-
-  if (!raw) return empty;
-
-  // Se arriva già strutturato, forziamo comunque comune_id
-  if (typeof raw === "object") {
+function parseIndirizzo(raw: unknown, comuneIstatOverride?: string): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string; comune_id: string } } {
+  // If structured object is passed
+  if (raw && typeof raw === "object") {
     const source = raw as any;
-    const city = source?.citta?.nome_citta || source?.citta?.nome || "Roma";
-    const comuneId = source?.citta?.comune_id || COMUNE_ID_BY_NAME[String(city).trim().toLowerCase()] || "058091";
+    const city = source?.citta?.nome_citta || source?.citta?.nome || "";
+    const comuneId = comuneIstatOverride || source?.citta?.comune_id || lookupComuneId(city) || "";
     return {
-      indirizzo: source?.indirizzo || empty.indirizzo,
+      indirizzo: source?.indirizzo || "",
       civico: source?.civico || "",
-      cap: source?.cap || empty.cap,
+      cap: source?.cap || "00000",
       nazione_id: "IT",
       citta: {
         nome_citta: city,
@@ -139,9 +180,19 @@ function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap
     };
   }
 
-  const cleaned = String(raw).trim();
-  const pickComuneId = (city: string) => COMUNE_ID_BY_NAME[city.trim().toLowerCase()] || "058091";
+  if (!raw || typeof raw !== "string" || !raw.trim()) {
+    return {
+      indirizzo: "",
+      civico: "",
+      cap: "00000",
+      nazione_id: "IT",
+      citta: { nome_citta: "", nazione_id: "IT", comune_id: comuneIstatOverride || "" },
+    };
+  }
 
+  const cleaned = String(raw).trim();
+
+  // Pattern: "VIA X 123, 10022 CARMAGNOLA (TO)"
   const match = cleaned.match(/^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match) {
     const city = match[4].trim();
@@ -150,10 +201,11 @@ function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap
       civico: match[2].trim(),
       cap: match[3].trim(),
       nazione_id: "IT",
-      citta: { nome_citta: city, nazione_id: "IT", comune_id: pickComuneId(city) },
+      citta: { nome_citta: city, nazione_id: "IT", comune_id: comuneIstatOverride || lookupComuneId(city) || "" },
     };
   }
 
+  // Pattern: "VIA X, 10022 CARMAGNOLA (TO)"
   const match2 = cleaned.match(/^(.+?)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match2) {
     const city = match2[3].trim();
@@ -162,60 +214,77 @@ function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap
       civico: "",
       cap: match2[2].trim(),
       nazione_id: "IT",
-      citta: { nome_citta: city, nazione_id: "IT", comune_id: pickComuneId(city) },
+      citta: { nome_citta: city, nazione_id: "IT", comune_id: comuneIstatOverride || lookupComuneId(city) || "" },
     };
   }
 
-  // Se non riusciamo a parsare, manteniamo comunque la strada originale
+  // Pattern without CAP: "VIA X, CARMAGNOLA (TO)" or "VIA X, CITY"
+  const match3 = cleaned.match(/^(.+?)\s*[-,]\s+([A-Z][A-Za-z\s']+?)(?:\s*\([A-Z]{2}\))?\s*$/);
+  if (match3) {
+    const city = match3[2].trim();
+    return {
+      indirizzo: match3[1].trim(),
+      civico: "",
+      cap: "00000",
+      nazione_id: "IT",
+      citta: { nome_citta: city, nazione_id: "IT", comune_id: comuneIstatOverride || lookupComuneId(city) || "" },
+    };
+  }
+
+  // Last resort: keep original string as indirizzo, try to extract city from parentheses
+  const cityFromParens = cleaned.match(/([A-Z][A-Za-z\s']+?)\s*\([A-Z]{2}\)\s*$/);
+  const cityName = cityFromParens ? cityFromParens[1].trim() : "";
+
   return {
-    ...empty,
-    indirizzo: cleaned || empty.indirizzo,
+    indirizzo: cleaned,
+    civico: "",
+    cap: "00000",
+    nazione_id: "IT",
+    citta: { nome_citta: cityName, nazione_id: "IT", comune_id: comuneIstatOverride || lookupComuneId(cityName) || "" },
   };
 }
 
+/** Lookup ISTAT code by city name (case-insensitive) */
+function lookupComuneId(city: string): string | undefined {
+  if (!city) return undefined;
+  return COMUNE_ID_BY_NAME[city.trim().toLowerCase()];
+}
+
 /**
- * Map stato fisico to RENTRI codes.
+ * Map stato fisico to RENTRI numeric codes.
+ * RENTRI accepts ONLY "1"-"5".
  */
 const STATO_FISICO_TO_CODE: Record<string, string> = {
-  "1": "SP",
-  "2": "SP",
-  "3": "F",
-  "4": "L",
-  "5": "A",
-  "6": "SP",
-  "s": "SP",
-  "sp": "SP",
-  "solido pulverulento": "SP",
-  "solido non pulverulento": "SP",
-  "fangoso palabile": "F",
-  "liquido": "L",
-  "aeriforme": "A",
-  "altro": "SP",
+  "1": "1",
+  "2": "2",
+  "3": "3",
+  "4": "4",
+  "5": "5",
+  "6": "2", // "Altro" → fallback solido non pulverulento
+  "s": "2",
+  "sp": "1",
+  "solido pulverulento": "1",
+  "solido non pulverulento": "2",
+  "fangoso palabile": "3",
+  "fangoso": "3",
+  "liquido": "4",
+  "l": "4",
+  "aeriforme": "5",
+  "a": "5",
+  "f": "3",
+  "altro": "2",
 };
 
-function getStatoFisicoCandidates(raw: unknown): string[] {
+function resolveStatoFisico(raw: unknown): string {
   const v = String(raw ?? "").trim().toLowerCase();
-  const preferred = STATO_FISICO_TO_CODE[v] || "SP";
-
-  const alternativesByPreferred: Record<string, string[]> = {
-    SP: ["SP", "S", "1", "2", "6"],
-    F: ["F", "3"],
-    L: ["L", "4"],
-    A: ["A", "5"],
-  };
-
-  const base = alternativesByPreferred[preferred] || [preferred];
-  return Array.from(new Set(base));
+  return STATO_FISICO_TO_CODE[v] || "2"; // Default: solido non pulverulento
 }
 
 /**
- * Build payload in full RENTRI schema:
- * {
- *   num_iscr_sito,
- *   dati_partenza: { ... }
- * }
+ * Build payload in full RENTRI schema.
+ * Single call, no brute-force retry.
  */
-function buildEmissionePayload(flat: Record<string, unknown>, societaId: string, statoFisicoOverride?: string): Record<string, unknown> {
+function buildEmissionePayload(flat: Record<string, unknown>, societaId: string): Record<string, unknown> {
   const str = (key: string) => (flat[key] as string) || "";
   const num = (key: string) => {
     const v = flat[key];
@@ -232,8 +301,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string,
     (formData.destinatario_operazione_D as string) ||
     "R13";
 
-  const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
-  const statoFisicoCode = statoFisicoOverride || STATO_FISICO_TO_CODE[rawStatoFisico] || "SP";
+  const statoFisicoCode = resolveStatoFisico(flat.stato_fisico || str("stato_fisico"));
 
   const unitId = COMPANY_CONFIG[societaId]?.unitId || COMPANY_CONFIG.GLOBAL.unitId;
   const unitaMisura = str("unita_misura") || "kg";
@@ -241,7 +309,17 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string,
   const produttoreCf = str("produttore_codice_fiscale");
   const destinatarioCf = str("destinatario_codice_fiscale") || produttoreCf;
 
-  return {
+  // Get comuneIstat override from form_data if available
+  const destComuneIstat = (formData.destinatario_comune_istat as string) || undefined;
+  const prodComuneIstat = (formData.produttore_comune_istat as string) || undefined;
+
+  // Build intermediario block if present
+  const intermediarioDenom = str("intermediario_denominazione");
+  const intermediarioCf = str("intermediario_codice_fiscale");
+  const intermediarioAlbo = normalizeNumeroIscrizioneAlbo(str("intermediario_iscrizione_albo"));
+  const hasIntermediario = !!(intermediarioDenom || intermediarioCf);
+
+  const payload: Record<string, unknown> = {
     num_iscr_sito: unitId,
     dati_partenza: {
       numero_fir: str("numero_fir"),
@@ -249,18 +327,18 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string,
         denominazione: str("produttore_denominazione"),
         codice_fiscale: produttoreCf,
         nazione_id: "IT",
-        indirizzo: parseIndirizzo(flat["produttore_indirizzo"]),
+        indirizzo: parseIndirizzo(flat["produttore_indirizzo"], prodComuneIstat),
       },
       destinatario: {
         denominazione: str("destinatario_denominazione"),
         codice_fiscale: destinatarioCf,
         nazione_id: "IT",
         autorizzazione: {
-          tipo: str("destinatario_tipo_aut") || "AIA",
+          tipo: str("destinatario_tipo_aut") || (formData.destinatario_tipo as string) || "AIA",
           numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "N/D",
         },
         attivita: destinatarioAttivita,
-        indirizzo: parseIndirizzo(flat["destinatario_indirizzo"]),
+        indirizzo: parseIndirizzo(flat["destinatario_indirizzo"], destComuneIstat),
       },
       trasportatori: [
         {
@@ -268,7 +346,8 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string,
           codice_fiscale: str("trasportatore_codice_fiscale") || produttoreCf,
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
-          indirizzo: parseIndirizzo(flat["produttore_indirizzo"]),
+          numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("trasportatore_iscrizione_albo")),
+          indirizzo: parseIndirizzo(flat["produttore_indirizzo"], prodComuneIstat),
         },
       ],
       rifiuto: {
@@ -290,6 +369,18 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string,
       annotazioni: str("note") || undefined,
     },
   };
+
+  // Add intermediario block if data is present
+  if (hasIntermediario) {
+    (payload.dati_partenza as any).intermediario = {
+      denominazione: intermediarioDenom,
+      codice_fiscale: intermediarioCf,
+      nazione_id: "IT",
+      ...(intermediarioAlbo ? { numero_iscrizione_albo: intermediarioAlbo } : {}),
+    };
+  }
+
+  return payload;
 }
 
 // ─── API Functions ───────────────────────────────────────────
@@ -309,71 +400,80 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 /**
  * 1. EMISSIONE — Send FIR data for signature (BOZZA → IN VIAGGIO).
  * POST /api/rentri/action/emissione
+ * Single call — no brute-force retry on stato_fisico.
  */
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
-  const statoCandidates = getStatoFisicoCandidates(payload.payloadFir?.stato_fisico);
+  const structuredPayload = buildEmissionePayload(payload.payloadFir, payload.societaId);
 
-  let lastError: Error | null = null;
+  const body = {
+    company: payload.societaId,
+    payload: structuredPayload,
+  };
 
-  for (const statoCandidate of statoCandidates) {
-    const structuredPayload = buildEmissionePayload(payload.payloadFir, payload.societaId, statoCandidate);
+  console.log("[RENTRI] Emissione payload:", JSON.stringify(body, null, 2).substring(0, 2000));
 
-    const body = {
-      company: payload.societaId,
-      payload: structuredPayload,
-    };
+  const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
+    body: JSON.stringify(body),
+  });
 
-    const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      },
-      body: JSON.stringify(body),
-    });
+  const data = await res.json();
+  const root = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data || {};
 
-    const data = await res.json();
-    const root = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data || {};
+  console.log("[RENTRI] Emissione response:", {
+    status: res.status,
+    keys: Object.keys(data || {}),
+    rootKeys: Object.keys(root || {}),
+    hasPdfContent: Boolean(root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64),
+    hasFirId: Boolean(root.firId || root.numero_fir || root.fir_id),
+  });
 
-    console.log("[RENTRI] Emissione response:", {
-      status: res.status,
-      keys: Object.keys(data || {}),
-      rootKeys: Object.keys(root || {}),
-      hasPdfContent: Boolean(root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64),
-      hasFirId: Boolean(root.firId || root.numero_fir || root.fir_id),
-    });
-
-    if (res.ok) {
-      const firId = root.firId || root.numero_fir || root.fir_id || "";
-      return {
-        ...(data as Record<string, unknown>),
-        ...(root as Record<string, unknown>),
-        numero_fir: firId,
-        firId,
-        pdf_content: root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64 || undefined,
-        qr_code: root.qr_code || root.qrCodeBytes || root.qrCode || root.qr_base64 || root.qrBase64 || undefined,
-      } as RentriFirmaResponse;
-    }
-
-    const modelState = (data as any)?.model_state || {};
-    const statoFisicoInvalid = Boolean(modelState?.["dati_partenza.rifiuto.stato_fisico"]);
-
-    const errMsg =
-      (data as RentriErrorResponse).error ||
-      (data as RentriErrorResponse).details ||
-      `Errore server (${res.status})`;
-
-    lastError = new Error(errMsg);
-
-    // Retry only for the known schema mismatch on stato_fisico
-    if (!(res.status === 400 && statoFisicoInvalid)) {
-      throw lastError;
-    }
+  if (res.ok) {
+    const firId = root.firId || root.numero_fir || root.fir_id || "";
+    return {
+      ...(data as Record<string, unknown>),
+      ...(root as Record<string, unknown>),
+      numero_fir: firId,
+      firId,
+      pdf_content: root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64 || undefined,
+      qr_code: root.qr_code || root.qrCodeBytes || root.qrCode || root.qr_base64 || root.qrBase64 || undefined,
+    } as RentriFirmaResponse;
   }
 
-  throw lastError || new Error("Errore invio RENTRI");
+  // Build meaningful error message from model_state if available
+  const modelState = (data as any)?.model_state || {};
+  const modelErrors = Object.entries(modelState)
+    .map(([field, msgs]) => `${translateFieldName(field)}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`)
+    .join("; ");
+
+  const errMsg =
+    modelErrors ||
+    (data as RentriErrorResponse).error ||
+    (data as RentriErrorResponse).details ||
+    `Errore server (${res.status})`;
+
+  throw new Error(errMsg);
+}
+
+/** Translate RENTRI model_state field names to Italian for user-friendly errors */
+function translateFieldName(field: string): string {
+  const map: Record<string, string> = {
+    "dati_partenza.rifiuto.stato_fisico": "Stato fisico rifiuto",
+    "dati_partenza.produttore.indirizzo": "Indirizzo produttore",
+    "dati_partenza.produttore.codice_fiscale": "CF produttore",
+    "dati_partenza.destinatario.indirizzo": "Indirizzo destinatario",
+    "dati_partenza.destinatario.codice_fiscale": "CF destinatario",
+    "dati_partenza.destinatario.attivita": "Operazione destinatario (R/D)",
+    "dati_partenza.trasportatori[0].numero_iscrizione_albo": "Iscrizione albo trasportatore",
+    "num_iscr_sito": "Numero iscrizione sito",
+  };
+  return map[field] || field;
 }
 
 /**
@@ -384,7 +484,6 @@ export async function getRentriPdf(
   company: string,
   firId: string
 ): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; qrUrl?: string; [key: string]: unknown }> {
-  // Use edge function proxy to bypass CORS restrictions on ngrok
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -441,7 +540,7 @@ export async function chiudiFirRentri(
   payload: RentriChiusuraPayload
 ): Promise<Record<string, unknown>> {
   const body = {
-    company: "MULTY", // Chi firma l'arrivo (Destinatario / Impianto)
+    company: "MULTY",
     firId: payload.numero_fir,
     payload: {
       dati_arrivo: {

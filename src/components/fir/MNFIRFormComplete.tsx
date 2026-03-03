@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
-import { DESTINATARI } from "@/data/anagrafiche";
+import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -82,7 +82,7 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-3">{children}</div>;
 }
 
-function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo: string, cf: string) => void }) {
+function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => void }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -109,15 +109,16 @@ function DestinatarioSelector({ onSelect }: { onSelect: (nome: string, indirizzo
       {isOpen && filtered.length > 0 && (
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.map((d, i) => (
-            <button key={i} onClick={() => { onSelect(d.nome, d.indirizzo, d.cf); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
+            <button key={i} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome}</span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
+              {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
             </button>
           ))}
         </div>
       )}
       {search.trim().length > 1 && (
-        <button onClick={() => { onSelect(search.trim(), "", ""); setIsOpen(false); }} className="w-full mt-1 text-left px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors">
+        <button onClick={() => { onSelect({ nome: search.trim(), indirizzo: "", cf: "", tipo: "IMPIANTO" }); setIsOpen(false); }} className="w-full mt-1 text-left px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-colors">
           <span className="text-xs text-primary font-medium">✏️ Usa "{search.trim()}" come nuovo impianto</span>
         </button>
       )}
@@ -496,10 +497,21 @@ export function MNFIRFormComplete() {
     }
   };
 
-  const handleDestinatarioSelect = (nome: string, indirizzo: string, cf: string) => {
-    u("destinatarioDenominazione", nome);
-    u("destinatarioUnitaLocale", indirizzo);
-    u("destinatarioCF", cf);
+  const handleDestinatarioSelect = (soggetto: Soggetto) => {
+    u("destinatarioDenominazione", soggetto.nome);
+    u("destinatarioUnitaLocale", soggetto.indirizzo);
+    u("destinatarioCF", soggetto.cf);
+    if (soggetto.autorizzazione) u("destinatarioNumeroAut", soggetto.autorizzazione);
+    if (soggetto.tipoAut) u("destinatarioTipoAut", soggetto.tipoAut);
+    if (soggetto.operazione) {
+      const isR = soggetto.operazione.startsWith("R");
+      u("destinatarioOperazione", isR ? "R" : "D");
+      u("destinatarioCodiceOperazione", soggetto.operazione);
+      store.updateMultipleFields({
+        destinatarioOperazione: isR ? "R" : "D",
+        destinatarioCodiceOperazione: soggetto.operazione,
+      });
+    }
   };
 
   const tabs = [{ label: "PRINCIPALE" }, { label: "TRASBORDO" }, { label: "INTERMODALE" }];
