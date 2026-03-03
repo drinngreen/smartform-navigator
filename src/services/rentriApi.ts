@@ -90,29 +90,55 @@ const COMUNE_ID_BY_NAME: Record<string, string> = {
 };
 
 function normalizeNumeroIscrizioneAlbo(raw: string): string | undefined {
-  const v = (raw || "").trim().toUpperCase();
+  const v = (raw || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .replace(/\./g, "")
+    .replace(/^([A-Z]{2})(\d{3,})$/, "$1/$2");
+
   if (!v) return undefined;
-  // Transform MI58420 -> MI/58420
-  const m = v.match(/^([A-Z]{2})(\d{3,})$/);
-  if (m) return `${m[1]}/${m[2]}`;
-  return v;
+  // RENTRI accetta il formato tipo MI/58420
+  if (/^[A-Z]{2}\/\d{3,}$/.test(v)) return v;
+
+  // Se non è valido, meglio ometterlo del tutto anziché inviare un valore invalido
+  return undefined;
 }
 
 /**
  * Parse a flat Italian address string into the RENTRI structured format.
  */
-function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string; comune_id: string } } {
+function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string; comune_id: string } } {
   const empty = {
-    indirizzo: "",
+    indirizzo: "Via non specificata",
     civico: "",
-    cap: "",
+    cap: "00000",
     nazione_id: "IT",
     citta: { nome_citta: "Roma", nazione_id: "IT", comune_id: "058091" },
   };
 
   if (!raw) return empty;
 
-  const cleaned = raw.trim();
+  // Se arriva già strutturato, forziamo comunque comune_id
+  if (typeof raw === "object") {
+    const source = raw as any;
+    const city = source?.citta?.nome_citta || source?.citta?.nome || "Roma";
+    const comuneId = source?.citta?.comune_id || COMUNE_ID_BY_NAME[String(city).trim().toLowerCase()] || "058091";
+    return {
+      indirizzo: source?.indirizzo || empty.indirizzo,
+      civico: source?.civico || "",
+      cap: source?.cap || empty.cap,
+      nazione_id: "IT",
+      citta: {
+        nome_citta: city,
+        nazione_id: "IT",
+        comune_id: comuneId,
+      },
+    };
+  }
+
+  const cleaned = String(raw).trim();
   const pickComuneId = (city: string) => COMUNE_ID_BY_NAME[city.trim().toLowerCase()] || "058091";
 
   const match = cleaned.match(/^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
@@ -139,7 +165,11 @@ function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap:
     };
   }
 
-  return empty;
+  // Se non riusciamo a parsare, manteniamo comunque la strada originale
+  return {
+    ...empty,
+    indirizzo: cleaned || empty.indirizzo,
+  };
 }
 
 /**
@@ -199,7 +229,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
         denominazione: str("produttore_denominazione"),
         codice_fiscale: produttoreCf,
         nazione_id: "IT",
-        indirizzo: parseIndirizzo(str("produttore_indirizzo")),
+        indirizzo: parseIndirizzo(flat["produttore_indirizzo"]),
       },
       destinatario: {
         denominazione: str("destinatario_denominazione"),
@@ -209,7 +239,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
           tipo: str("destinatario_tipo_aut") || "AIA",
           numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "N/D",
         },
-        indirizzo: parseIndirizzo(str("destinatario_indirizzo")),
+        indirizzo: parseIndirizzo(flat["destinatario_indirizzo"]),
       },
       trasportatori: [
         {
@@ -218,7 +248,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
           numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("trasportatore_iscrizione_albo")),
-          indirizzo: parseIndirizzo(str("produttore_indirizzo")),
+          indirizzo: parseIndirizzo(flat["produttore_indirizzo"]),
         },
       ],
       rifiuto: {
