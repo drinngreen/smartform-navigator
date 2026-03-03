@@ -7,6 +7,11 @@ import { toast } from "sonner";
 
 const QUANTITIES = [5, 10, 50, 100, 500];
 
+const FIR_NUMBER_REGEX = /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/;
+
+const normalizeFirNumber = (value: string) =>
+  value.trim().replace(/\s+/g, " ").toUpperCase();
+
 export function FIRPoolSection({ tenant }: { tenant: string }) {
   const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -16,26 +21,44 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
     setLoading(true);
     const company = tenant.toUpperCase() === "MULTYPROGET" ? "MULTY" : tenant.toUpperCase();
     const result = await richiestaVidimazioneNgrok(company, qty);
-    if (result.ok && result.data?.numeri) {
-      const numbers: string[] = result.data.numeri;
-      setLastNumbers(numbers);
 
-      // Insert into fir_number_pool
-      const rows = numbers.map((n: string) => ({
+    if (result.ok && result.data?.numeri) {
+      const rawNumbers: string[] = Array.isArray(result.data.numeri) ? result.data.numeri : [];
+      const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
+      const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
+      const invalidCount = normalized.length - validNumbers.length;
+
+      setLastNumbers(validNumbers);
+
+      if (validNumbers.length === 0) {
+        toast.error("Nessun numero FIR valido ricevuto dalla vidimazione");
+        if (invalidCount > 0) {
+          toast.warning(`${invalidCount} numeri scartati per formato non valido`);
+        }
+        setLoading(false);
+        return;
+      }
+
+      const rows = validNumbers.map((n: string) => ({
         fir_number: n,
         user_id: "00000000-0000-0000-0000-000000000000", // pool placeholder
         societa_id: tenant,
         status: "available",
       }));
+
       const { error } = await supabase.from("fir_number_pool").insert(rows);
       if (error) {
         toast.error("Numeri ricevuti ma errore nel salvataggio: " + error.message);
       } else {
-        toast.success(`${numbers.length} numeri FIR caricati nel pool ${tenant}`);
+        toast.success(`${validNumbers.length} numeri FIR validi caricati nel pool ${tenant}`);
+        if (invalidCount > 0) {
+          toast.warning(`${invalidCount} numeri scartati per formato non valido`);
+        }
       }
     } else {
       toast.error("Errore vidimazione: " + JSON.stringify(result.data));
     }
+
     setLoading(false);
   };
 
