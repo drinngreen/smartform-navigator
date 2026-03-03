@@ -213,6 +213,7 @@ export function FIRFormComplete() {
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [hasPersistedRentriPdf, setHasPersistedRentriPdf] = useState(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -264,8 +265,9 @@ export function FIRFormComplete() {
           }
           // Load persisted PDF URL if available
           const formData = persistedFir.form_data as Record<string, any> | null;
-          if (formData?.rentri_pdf_url && !pdfBlobUrl) {
+          if (formData?.rentri_pdf_url) {
             setPdfBlobUrl(formData.rentri_pdf_url);
+            setHasPersistedRentriPdf(true);
             console.log("[FIR] Loaded persisted RENTRI PDF URL from form_data");
           }
           return;
@@ -298,8 +300,9 @@ export function FIRFormComplete() {
           console.log("[FIR] Auto-restored active FIR:", fir.numero_fir, "status:", fir.status);
           // Load persisted PDF URL if available
           const fd = fir.form_data as Record<string, any> | null;
-          if (fd?.rentri_pdf_url && !pdfBlobUrl) {
+          if (fd?.rentri_pdf_url) {
             setPdfBlobUrl(fd.rentri_pdf_url);
+            setHasPersistedRentriPdf(true);
             console.log("[FIR] Loaded persisted RENTRI PDF URL from form_data (restore)");
           }
         } else if (isTestFirNumber(store.data.selectedFirNumber)) {
@@ -370,6 +373,7 @@ export function FIRFormComplete() {
       toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
       // Reset local state so user is free to leave - delay to ensure save completes
       setPdfBlobUrl(null);
+      setHasPersistedRentriPdf(false);
       setTimeout(() => { store.resetForm(); }, 300);
     } catch {
       toast.error("Errore nel salvataggio");
@@ -388,6 +392,7 @@ export function FIRFormComplete() {
     // Reset form
     store.resetForm();
     setPdfBlobUrl(null);
+    setHasPersistedRentriPdf(false);
     // Auto-assign a new number and start
     if (!availableNumbers || availableNumbers.length === 0) {
       toast.error("🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!");
@@ -511,7 +516,11 @@ export function FIRFormComplete() {
     try {
       const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
       const firId = d.selectedFirNumber;
-      if (firId) {
+
+      // Se abbiamo un PDF manualmente persistito su storage, NON chiamare RENTRI
+      if (hasPersistedRentriPdf && pdfBlobUrl) {
+        console.log("[RENTRI] Skipping get-pdf: using persisted rentri_pdf_url from form_data");
+      } else if (firId) {
         try {
           toast.info("Recupero documenti RENTRI...");
           const pdfResult = await getRentriPdf(societaId, firId);
@@ -531,6 +540,7 @@ export function FIRFormComplete() {
           toast.error("Errore recupero documenti: " + pdfErr.message);
         }
       }
+
       // Fallback: load QR from DB
       let qr = qrCodeData;
       if (!qr && firId) {
