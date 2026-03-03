@@ -176,21 +176,36 @@ function parseIndirizzo(raw: unknown): { indirizzo: string; civico?: string; cap
  * Map stato fisico to RENTRI codes.
  */
 const STATO_FISICO_TO_CODE: Record<string, string> = {
-  "1": "S",
-  "2": "S",
+  "1": "SP",
+  "2": "SP",
   "3": "F",
   "4": "L",
   "5": "A",
-  "6": "S",
-  "s": "S",
-  "sp": "S",
-  "solido pulverulento": "S",
-  "solido non pulverulento": "S",
+  "6": "SP",
+  "s": "SP",
+  "sp": "SP",
+  "solido pulverulento": "SP",
+  "solido non pulverulento": "SP",
   "fangoso palabile": "F",
   "liquido": "L",
   "aeriforme": "A",
-  "altro": "S",
+  "altro": "SP",
 };
+
+function getStatoFisicoCandidates(raw: unknown): string[] {
+  const v = String(raw ?? "").trim().toLowerCase();
+  const preferred = STATO_FISICO_TO_CODE[v] || "SP";
+
+  const alternativesByPreferred: Record<string, string[]> = {
+    SP: ["SP", "S", "1", "2", "6"],
+    F: ["F", "3"],
+    L: ["L", "4"],
+    A: ["A", "5"],
+  };
+
+  const base = alternativesByPreferred[preferred] || [preferred];
+  return Array.from(new Set(base));
+}
 
 /**
  * Build payload in full RENTRI schema:
@@ -199,7 +214,7 @@ const STATO_FISICO_TO_CODE: Record<string, string> = {
  *   dati_partenza: { ... }
  * }
  */
-function buildEmissionePayload(flat: Record<string, unknown>, societaId: string): Record<string, unknown> {
+function buildEmissionePayload(flat: Record<string, unknown>, societaId: string, statoFisicoOverride?: string): Record<string, unknown> {
   const str = (key: string) => (flat[key] as string) || "";
   const num = (key: string) => {
     const v = flat[key];
@@ -217,7 +232,7 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
     "R13";
 
   const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
-  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "S";
+  const statoFisicoCode = statoFisicoOverride || STATO_FISICO_TO_CODE[rawStatoFisico] || "SP";
 
   const unitId = COMPANY_CONFIG[societaId]?.unitId || COMPANY_CONFIG.GLOBAL.unitId;
   const unitaMisura = str("unita_misura") || "kg";
@@ -297,36 +312,51 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
-  const structuredPayload = buildEmissionePayload(payload.payloadFir, payload.societaId);
+  const statoCandidates = getStatoFisicoCandidates(payload.payloadFir?.stato_fisico);
 
-  const body = {
-    company: payload.societaId,
-    payload: structuredPayload,
-  };
+  let lastError: Error | null = null;
 
-  const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: JSON.stringify(body),
-  });
+  for (const statoCandidate of statoCandidates) {
+    const structuredPayload = buildEmissionePayload(payload.payloadFir, payload.societaId, statoCandidate);
 
-  const data = await res.json();
+    const body = {
+      company: payload.societaId,
+      payload: structuredPayload,
+    };
 
-  if (!res.ok) {
+    const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const firId = data.firId || data.numero_fir || data.fir_id || "";
+      return { ...data, numero_fir: firId, firId } as RentriFirmaResponse;
+    }
+
+    const modelState = (data as any)?.model_state || {};
+    const statoFisicoInvalid = Boolean(modelState?.["dati_partenza.rifiuto.stato_fisico"]);
+
     const errMsg =
       (data as RentriErrorResponse).error ||
       (data as RentriErrorResponse).details ||
       `Errore server (${res.status})`;
-    throw new Error(errMsg);
+
+    lastError = new Error(errMsg);
+
+    // Retry only for the known schema mismatch on stato_fisico
+    if (!(res.status === 400 && statoFisicoInvalid)) {
+      throw lastError;
+    }
   }
 
-  // Normalize the firId from the response
-  const firId = data.firId || data.numero_fir || data.fir_id || "";
-
-  return { ...data, numero_fir: firId, firId } as RentriFirmaResponse;
+  throw lastError || new Error("Errore invio RENTRI");
 }
 
 /**
