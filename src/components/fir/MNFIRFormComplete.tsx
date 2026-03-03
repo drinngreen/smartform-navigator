@@ -611,8 +611,15 @@ export function MNFIRFormComplete() {
                 </button>
                 <button
                   onClick={() => {
-                    if (pdfBlobUrl) window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
-                    else toast.error("PDF ufficiale non ancora disponibile");
+                    if (pdfBlobUrl) {
+                      window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    if (d.selectedFirNumber) {
+                      window.open(getRentriPdfUrl(d.selectedFirNumber), "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    toast.error("PDF ufficiale non disponibile");
                   }}
                   className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
                 >
