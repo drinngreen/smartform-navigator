@@ -75,71 +75,86 @@ export interface RentriChiusuraPayload {
 // ─── Helpers ─────────────────────────────────────────────────
 
 /**
- * Parse a flat Italian address string into the RENTRI structured format.
- * Handles patterns like:
- *   "Via Roma 1 - 00100 Roma (RM)"
- *   "Via Alba 11 - 10024 Moncalieri (TO)"
- *   "Strada Provinciale 28, 15033 Casale Monferrato (AL)"
+ * Resolve company-specific static config required by RENTRI schema.
  */
-function parseIndirizzo(raw: string): { indirizzo: string; civico: string; cap: string; citta: { comune: string } } {
-  if (!raw) return { indirizzo: "", civico: "", cap: "", citta: { comune: "" } };
+const COMPANY_CONFIG: Record<string, { unitId: string }> = {
+  GLOBAL: { unitId: "OP2501RMK022692-TO0001" },
+  MULTY: { unitId: "OP2501XMQ021914-TO0001" },
+  NIYOL: { unitId: "OP2501SXW021767-TO0001" },
+};
+
+/**
+ * Parse a flat Italian address string into the RENTRI structured format.
+ */
+function parseIndirizzo(raw: string): { indirizzo: string; civico?: string; cap: string; nazione_id: string; citta: { nome_citta: string; nazione_id: string } } {
+  if (!raw) {
+    return {
+      indirizzo: "",
+      civico: "",
+      cap: "",
+      nazione_id: "IT",
+      citta: { nome_citta: "", nazione_id: "IT" },
+    };
+  }
 
   const cleaned = raw.trim();
-
-  // Try pattern: "Via/Strada ... N - CAP Comune (PROV)"
-  const match = cleaned.match(
-    /^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/
-  );
+  const match = cleaned.match(/^(.+?)\s+(\d+[a-zA-Z\/]*)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match) {
     return {
       indirizzo: match[1].trim(),
       civico: match[2].trim(),
       cap: match[3].trim(),
-      citta: { comune: match[4].trim() },
+      nazione_id: "IT",
+      citta: { nome_citta: match[4].trim(), nazione_id: "IT" },
     };
   }
 
-  // Try pattern without civico: "Via Roma - 00100 Roma (RM)"
-  const match2 = cleaned.match(
-    /^(.+?)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/
-  );
+  const match2 = cleaned.match(/^(.+?)\s*[-,]\s*(\d{5})\s+(.+?)(?:\s*\([A-Z]{2}\))?$/);
   if (match2) {
     return {
       indirizzo: match2[1].trim(),
       civico: "",
       cap: match2[2].trim(),
-      citta: { comune: match2[3].trim() },
+      nazione_id: "IT",
+      citta: { nome_citta: match2[3].trim(), nazione_id: "IT" },
     };
   }
 
-  // Fallback: put everything in indirizzo
-  return { indirizzo: cleaned, civico: "", cap: "", citta: { comune: "" } };
+  return {
+    indirizzo: cleaned,
+    civico: "",
+    cap: "",
+    nazione_id: "IT",
+    citta: { nome_citta: "", nazione_id: "IT" },
+  };
 }
 
 /**
- * Map stato fisico to RENTRI letter codes.
- * RENTRI expects symbolic values (e.g. S/F/L/A), not numeric labels.
+ * Map stato fisico to RENTRI codes.
  */
 const STATO_FISICO_TO_CODE: Record<string, string> = {
-  "1": "S",
-  "2": "S",
+  "1": "SP",
+  "2": "SNP",
   "3": "F",
   "4": "L",
   "5": "A",
-  "6": "S",
-  "solido pulverulento": "S",
-  "solido non pulverulento": "S",
+  "6": "SNP",
+  "solido pulverulento": "SP",
+  "solido non pulverulento": "SNP",
   "fangoso palabile": "F",
   "liquido": "L",
   "aeriforme": "A",
-  "altro": "S",
+  "altro": "SNP",
 };
 
 /**
- * Build the structured emissione payload from flat DB fields.
- * Maps flat fields → nested JSON as expected by the C# Bridge / RENTRI API.
+ * Build payload in full RENTRI schema:
+ * {
+ *   num_iscr_sito,
+ *   dati_partenza: { ... }
+ * }
  */
-function buildEmissionePayload(flat: Record<string, unknown>): Record<string, unknown> {
+function buildEmissionePayload(flat: Record<string, unknown>, societaId: string): Record<string, unknown> {
   const str = (key: string) => (flat[key] as string) || "";
   const num = (key: string) => {
     const v = flat[key];
@@ -148,62 +163,68 @@ function buildEmissionePayload(flat: Record<string, unknown>): Record<string, un
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // Resolve stato_fisico to RENTRI enum code (S/F/L/A)
-  const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
-  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "S";
+  const formData = (flat.form_data as Record<string, unknown> | null) || {};
+  const isUrbano = Boolean(formData.provenienza_urbano);
+  const provenienza = isUrbano ? "U" : "S";
 
+  const rawStatoFisico = str("stato_fisico").trim().toLowerCase();
+  const statoFisicoCode = STATO_FISICO_TO_CODE[rawStatoFisico] || "SNP";
+
+  const unitId = COMPANY_CONFIG[societaId]?.unitId || COMPANY_CONFIG.GLOBAL.unitId;
   const unitaMisura = str("unita_misura") || "kg";
 
-  const payload: Record<string, unknown> = {
-    numero_fir: str("numero_fir"),
-    produttore: {
-      denominazione: str("produttore_denominazione"),
-      codice_fiscale: str("produttore_codice_fiscale"),
-      indirizzo: parseIndirizzo(str("produttore_indirizzo")),
-    },
-    destinatario: {
-      denominazione: str("destinatario_denominazione"),
-      codice_fiscale: str("destinatario_codice_fiscale"),
-      indirizzo: parseIndirizzo(str("destinatario_indirizzo")),
-      autorizzazione: {
-        tipo: str("destinatario_tipo_aut") || "AIA",
-        numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "",
+  const produttoreCf = str("produttore_codice_fiscale");
+  const destinatarioCf = str("destinatario_codice_fiscale") || produttoreCf;
+
+  return {
+    num_iscr_sito: unitId,
+    dati_partenza: {
+      numero_fir: str("numero_fir"),
+      produttore: {
+        denominazione: str("produttore_denominazione"),
+        codice_fiscale: produttoreCf,
+        nazione_id: "IT",
+        indirizzo: parseIndirizzo(str("produttore_indirizzo")),
       },
-    },
-    trasportatore: {
-      denominazione: str("trasportatore_denominazione"),
-      codice_fiscale: str("trasportatore_codice_fiscale"),
-      iscrizione_albo: str("trasportatore_iscrizione_albo"),
-      targa_automezzo: str("trasportatore_targa_automezzo"),
-      targa_rimorchio: str("trasportatore_targa_rimorchio"),
-      conducente: str("trasportatore_conducente"),
-    },
-    rifiuto: {
-      codice_eer: str("codice_eer"),
-      descrizione: str("descrizione_rifiuto"),
-      stato_fisico: statoFisicoCode,
-      quantita: {
-        valore: num("quantita"),
-        unita_misura: unitaMisura,
+      destinatario: {
+        denominazione: str("destinatario_denominazione"),
+        codice_fiscale: destinatarioCf,
+        nazione_id: "IT",
+        autorizzazione: {
+          tipo: str("destinatario_tipo_aut") || "AIA",
+          numero: str("destinatario_autorizzazione") || str("destinatario_numero_aut") || "N/D",
+        },
+        indirizzo: parseIndirizzo(str("destinatario_indirizzo")),
       },
-      caratteristiche_hp: flat["caratteristiche_hp"] || [],
+      trasportatori: [
+        {
+          denominazione: str("trasportatore_denominazione") || str("produttore_denominazione"),
+          codice_fiscale: str("trasportatore_codice_fiscale") || produttoreCf,
+          nazione_id: "IT",
+          tipo_trasporto: "Terrestre",
+          numero_iscrizione_albo: str("trasportatore_iscrizione_albo") || undefined,
+          indirizzo: parseIndirizzo(str("produttore_indirizzo")),
+        },
+      ],
+      rifiuto: {
+        codice_eer: str("codice_eer"),
+        descrizione: str("descrizione_rifiuto"),
+        provenienza,
+        stato_fisico: statoFisicoCode,
+        quantita: {
+          valore: num("quantita"),
+          unita_misura: unitaMisura,
+        },
+        caratteristiche_pericolo: flat["caratteristiche_hp"] || [],
+      },
+      dati_trasporto_partenza: {
+        targa_automezzo: str("trasportatore_targa_automezzo"),
+        targa_rimorchio: str("trasportatore_targa_rimorchio"),
+        data_ora_inizio_trasporto: str("data_partenza") || new Date().toISOString(),
+      },
+      annotazioni: str("note") || undefined,
     },
   };
-
-  // Intermediario (optional)
-  if (str("intermediario_denominazione")) {
-    payload.intermediario = {
-      denominazione: str("intermediario_denominazione"),
-      codice_fiscale: str("intermediario_codice_fiscale"),
-      iscrizione_albo: str("intermediario_iscrizione_albo"),
-    };
-  }
-
-  // Date trasporto
-  if (str("data_partenza")) payload.data_partenza = str("data_partenza");
-  if (str("note")) payload.note = str("note");
-
-  return payload;
 }
 
 // ─── API Functions ───────────────────────────────────────────
@@ -227,7 +248,7 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
-  const structuredPayload = buildEmissionePayload(payload.payloadFir);
+  const structuredPayload = buildEmissionePayload(payload.payloadFir, payload.societaId);
 
   const body = {
     company: payload.societaId,
