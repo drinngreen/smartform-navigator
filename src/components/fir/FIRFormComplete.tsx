@@ -7,6 +7,7 @@ import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
+import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI } from "@/data/anagrafiche";
@@ -442,17 +443,15 @@ export function FIRFormComplete() {
         });
       }
 
-      // Save official RENTRI QR code (extract from qr_code or qrCodeBytes)
-      const rawQr = result.qr_code || (result as any).qrCodeBytes || "";
-      if (rawQr && d.selectedFirNumber) {
-        // Ensure proper data-uri prefix for display
-        const qrDataUri = rawQr.startsWith("data:")
-          ? rawQr
-          : `data:image/png;base64,${rawQr}`;
-        setQrCodeData(qrDataUri);
+      // Save official RENTRI QR code (extract from qr fields)
+      const qrFromFirma = toRentriImageSrc(
+        result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
+      );
+      if (qrFromFirma && d.selectedFirNumber) {
+        setQrCodeData(qrFromFirma);
         await supabase
           .from("fir_number_pool")
-          .update({ qr_code_data: qrDataUri } as any)
+          .update({ qr_code_data: qrFromFirma } as any)
           .eq("fir_number", d.selectedFirNumber);
       }
 
@@ -476,15 +475,18 @@ export function FIRFormComplete() {
             console.log("[RENTRI] Auto-fetching PDF/QR for", firIdForPdf);
             const pdfResult = await getRentriPdf(societaId, firIdForPdf);
             console.log("[RENTRI] get-pdf response keys:", Object.keys(pdfResult));
-            const qr = pdfResult.qrCode || pdfResult.qr_code || (pdfResult as any).qrCodeBytes || "";
-            if (qr) {
-              const qrUri = String(qr).startsWith("data:") ? String(qr) : `data:image/png;base64,${qr}`;
-              setQrCodeData(qrUri);
-              await supabase.from("fir_number_pool").update({ qr_code_data: qrUri } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
+
+            const qrSrc = toRentriImageSrc(
+              pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
+            );
+            if (qrSrc) {
+              setQrCodeData(qrSrc);
+              await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
             }
-            if (pdfResult.pdfBase64) {
-              const blob = new Blob([Uint8Array.from(atob(pdfResult.pdfBase64 as string), c => c.charCodeAt(0))], { type: "application/pdf" });
-              setPdfBlobUrl(URL.createObjectURL(blob));
+
+            const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+            if (pdfSrc) {
+              setPdfBlobUrl(pdfSrc);
             }
           } catch (e: any) {
             console.warn("[RENTRI] Auto-fetch PDF/QR failed:", e.message);
@@ -508,13 +510,17 @@ export function FIRFormComplete() {
       if (firId) {
         try {
           const pdfResult = await getRentriPdf(societaId, firId);
-          if (pdfResult.qrCode) {
-            const qr = (pdfResult.qrCode as string).startsWith("data:") ? pdfResult.qrCode as string : `data:image/png;base64,${pdfResult.qrCode}`;
-            setQrCodeData(qr);
+
+          const qrSrc = toRentriImageSrc(
+            pdfResult.qrCode || (pdfResult as any).qr_code || (pdfResult as any).qrCodeBytes || (pdfResult as any).qrUrl
+          );
+          if (qrSrc) {
+            setQrCodeData(qrSrc);
           }
-          if (pdfResult.pdfBase64) {
-            const blob = new Blob([Uint8Array.from(atob(pdfResult.pdfBase64 as string), c => c.charCodeAt(0))], { type: "application/pdf" });
-            setPdfBlobUrl(URL.createObjectURL(blob));
+
+          const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
+          if (pdfSrc) {
+            setPdfBlobUrl(pdfSrc);
           }
         } catch (pdfErr: any) {
           console.warn("[RENTRI] get-pdf error, falling back to local QR:", pdfErr.message);

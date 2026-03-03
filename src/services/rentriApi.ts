@@ -366,7 +366,7 @@ export async function inviaFirmaRentri(
 export async function getRentriPdf(
   company: string,
   firId: string
-): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; [key: string]: unknown }> {
+): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; qrUrl?: string; [key: string]: unknown }> {
   const res = await fetch(`${NGROK_BASE}/api/rentri/action/get-pdf`, {
     method: "POST",
     headers: {
@@ -387,13 +387,30 @@ export async function getRentriPdf(
     throw new Error(errMsg);
   }
 
-  // Normalize response keys - backend may return qr_code, qrCode, qrCodeBytes, content etc.
-  const normalized: any = { ...data };
+  const root: any = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data;
+  const absolutize = (value: unknown): string => {
+    const v = String(value || "").trim();
+    if (!v) return "";
+    if (v.startsWith("http://") || v.startsWith("https://")) return v;
+    if (v.startsWith("/")) return `${NGROK_BASE}${v}`;
+    return "";
+  };
+
+  // Normalize response keys - backend may return nested payload and URL fields
+  const normalized: any = { ...data, ...root };
   if (!normalized.qrCode) {
-    normalized.qrCode = data.qr_code || data.qrCodeBytes || data.qr_code_bytes || "";
+    normalized.qrCode =
+      root.qr_code || root.qrCodeBytes || root.qr_code_bytes || root.qr_base64 || root.qrBase64 || "";
+  }
+  if (!normalized.qrUrl) {
+    normalized.qrUrl = absolutize(root.qr_url || root.qrUrl || root.qrcode_url || root.qrcodeUrl || "");
   }
   if (!normalized.pdfBase64) {
-    normalized.pdfBase64 = data.pdf_base64 || data.pdfContent || data.content || "";
+    normalized.pdfBase64 =
+      root.pdf_base64 || root.pdfContent || root.content || root.pdf_base_64 || "";
+  }
+  if (!normalized.pdfUrl) {
+    normalized.pdfUrl = absolutize(root.pdf_url || root.pdfUrl || root.url || "");
   }
 
   return normalized;
