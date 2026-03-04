@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const sendgridKey = Deno.env.get("SENDGRID_API_KEY_ZOLI");
+    const rawSendgridKey = Deno.env.get("SENDGRID_API_KEY_ZOLI");
+    const sendgridKey = rawSendgridKey?.replace(/^['\"]|['\"]$/g, "").trim();
     if (!sendgridKey) {
       return new Response(JSON.stringify({ error: "SENDGRID_API_KEY_ZOLI non configurata" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
