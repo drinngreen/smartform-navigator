@@ -16,16 +16,22 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, payload } = await req.json();
+    const body = await req.json();
+    const { endpoint, payload } = body;
+
+    console.log("[rentri-proxy] endpoint:", endpoint, "NGROK_BASE:", NGROK_BASE);
 
     if (!endpoint || !ALLOWED_ENDPOINTS.has(endpoint)) {
       return new Response(
-        JSON.stringify({ error: "endpoint non consentito" }),
+        JSON.stringify({ error: "endpoint non consentito", requested: endpoint }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const upstream = await fetch(`${NGROK_BASE}${endpoint}`, {
+    const url = `${NGROK_BASE}${endpoint}`;
+    console.log("[rentri-proxy] calling:", url);
+
+    const upstream = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -33,6 +39,8 @@ serve(async (req) => {
       },
       body: JSON.stringify(payload ?? {}),
     });
+
+    console.log("[rentri-proxy] upstream status:", upstream.status);
 
     const text = await upstream.text();
     let data: unknown = {};
@@ -47,8 +55,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[rentri-proxy] ERROR:", message, stack);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "proxy error" }),
+      JSON.stringify({ error: message, detail: stack }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
