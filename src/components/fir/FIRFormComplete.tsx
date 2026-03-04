@@ -697,14 +697,53 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       setShowPesoPopup(false);
       toast.success("🏁 FIR chiuso definitivamente!");
 
-      // ── AUTO EMAIL to impianto ──
+      // ── AUTO EMAIL to impianto (PDF RENTRI ufficiale) ──
       const emailDest = demoMode && demoEmailOverride ? demoEmailOverride : d.destinatarioEmail;
       if (emailDest) {
         try {
           const nomeConducente = d.conducenteNomeCognome || d.trasportatoreNomeAutista || profile?.nome || "Autista";
-          const pdfBlob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
-          const arrayBuf = await pdfBlob.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+
+          // 1. Try to get RENTRI official PDF as base64
+          let pdfBase64: string | null = null;
+          let pdfFilename = `FIR_${d.selectedFirNumber || "riepilogo"}.pdf`;
+
+          // 1a. If we have a blob URL, fetch and convert
+          if (pdfBlobUrl) {
+            try {
+              const blobRes = await fetch(pdfBlobUrl);
+              const blob = await blobRes.blob();
+              const arrayBuf = await blob.arrayBuffer();
+              pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+              console.log("[AUTO-EMAIL] PDF RENTRI ufficiale recuperato da blob URL");
+            } catch (blobErr) {
+              console.warn("[AUTO-EMAIL] Errore lettura blob URL:", blobErr);
+            }
+          }
+
+          // 1b. Fallback: fetch from RENTRI backend via proxy
+          if (!pdfBase64) {
+            try {
+              const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+              const firIdForPdf = d.selectedFirNumber;
+              if (firIdForPdf) {
+                const pdfResult = await getRentriPdf(societaId, firIdForPdf);
+                if (pdfResult.pdfBase64) {
+                  pdfBase64 = pdfResult.pdfBase64.replace(/^data:application\/pdf;base64,/, "");
+                  console.log("[AUTO-EMAIL] PDF RENTRI ufficiale recuperato via get-pdf proxy");
+                }
+              }
+            } catch (proxyErr) {
+              console.warn("[AUTO-EMAIL] Fallback get-pdf proxy fallito:", proxyErr);
+            }
+          }
+
+          // 1c. Last fallback: generate local summary PDF
+          if (!pdfBase64) {
+            console.warn("[AUTO-EMAIL] PDF RENTRI non disponibile, uso summary locale");
+            const pdfBlob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
+            const arrayBuf = await pdfBlob.arrayBuffer();
+            pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+          }
           
           const htmlBody = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -730,13 +769,13 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
               firId: store.editingFirId,
               category: "automatica",
               attachments: [{
-                content: base64,
-                filename: `FIR_${d.selectedFirNumber || "riepilogo"}.pdf`,
+                content: pdfBase64,
+                filename: pdfFilename,
                 type: "application/pdf",
               }],
             },
           });
-          toast.success("📧 Email con PDF inviata a " + d.destinatarioDenominazione);
+          toast.success("📧 Email con PDF RENTRI inviata a " + d.destinatarioDenominazione);
         } catch (emailErr: any) {
           console.error("[AUTO-EMAIL] Errore invio:", emailErr);
           toast.error("Email non inviata: " + emailErr.message);
