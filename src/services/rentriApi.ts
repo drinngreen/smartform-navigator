@@ -3,7 +3,7 @@
  * Payload structures match the C# Bridge exactly.
  */
 
-const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
+const NGROK_BASE = "https://pleasing-glorious-skunk.ngrok-free.app";
 
 // ─── Tenant → company mapping ─────────────────────────────
 const TENANT_MAP: Record<string, string> = {
