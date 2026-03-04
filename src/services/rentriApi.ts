@@ -244,10 +244,21 @@ function parseIndirizzo(raw: unknown, comuneIstatOverride?: string): { indirizzo
   };
 }
 
-/** Lookup ISTAT code by city name (case-insensitive) */
+/** Lookup ISTAT code by city name (case-insensitive), with conservative fuzzy fallback */
 function lookupComuneId(city: string): string | undefined {
   if (!city) return undefined;
-  return COMUNE_ID_BY_NAME[city.trim().toLowerCase()];
+
+  const normalized = city.trim().toLowerCase();
+  if (COMUNE_ID_BY_NAME[normalized]) return COMUNE_ID_BY_NAME[normalized];
+
+  // Fuzzy fallback: try last token (e.g. "Santerno Ravenna" -> "ravenna")
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if (tokens.length > 1) {
+    const lastToken = tokens[tokens.length - 1];
+    if (COMUNE_ID_BY_NAME[lastToken]) return COMUNE_ID_BY_NAME[lastToken];
+  }
+
+  return undefined;
 }
 
 /**
@@ -280,6 +291,15 @@ function resolveStatoFisico(raw: unknown): string {
   return STATO_FISICO_TO_CODE[v] || "2"; // Default: solido non pulverulento
 }
 
+/** RENTRI richiede codici attività tipo R13 / D15, mai solo R o D */
+function normalizeDestinatarioAttivita(raw: unknown): string {
+  const value = String(raw ?? "").trim().toUpperCase();
+  if (/^[RD]\d{1,2}$/.test(value)) return value;
+  if (value === "R") return "R13";
+  if (value === "D") return "D15";
+  return "R13";
+}
+
 /**
  * Build payload in full RENTRI schema.
  * Single call, no brute-force retry.
@@ -296,10 +316,12 @@ function buildEmissionePayload(flat: Record<string, unknown>, societaId: string)
   const formData = (flat.form_data as Record<string, unknown> | null) || {};
   const isUrbano = Boolean(formData.provenienza_urbano);
   const provenienza = isUrbano ? "U" : "S";
-  const destinatarioAttivita =
+  const destinatarioAttivita = normalizeDestinatarioAttivita(
     (formData.destinatario_operazione_R as string) ||
     (formData.destinatario_operazione_D as string) ||
-    "R13";
+    formData.destinatario_attivita ||
+    flat.destinatario_attivita
+  );
 
   const statoFisicoCode = resolveStatoFisico(flat.stato_fisico || str("stato_fisico"));
 
