@@ -342,8 +342,26 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
     return () => { if (autosaveRef.current) clearInterval(autosaveRef.current); };
   }, [store.editingFirId, store.workflowStatus, doAutosave]);
 
+  // Generate a demo FIR number with correct format: XXXXX NNNNNN XX
+  const generateDemoFirNumber = () => {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const randL = (n: number) => Array.from({ length: n }, () => letters[Math.floor(Math.random() * 26)]).join("");
+    const randN = (n: number) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join("");
+    return `${randL(5)} ${randN(6)} ${randL(2)}`;
+  };
+
   const ensureAndLoadDraft = async () => {
     if (!user?.id) throw new Error("Utente non autenticato");
+
+    // Demo mode: create a local-only draft with a fake FIR number (no pool interaction)
+    if (demoMode) {
+      const demoNum = generateDemoFirNumber();
+      const demoId = crypto.randomUUID();
+      store.resetForm();
+      store.updateMultipleFields({ selectedFirNumber: demoNum, numeroRegistro: demoNum });
+      useFIRStore.setState({ editingFirId: demoId, workflowStatus: 'bozza' });
+      return demoNum;
+    }
 
     const { data: draftId, error: ensureErr } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
       p_user_id: user.id,
