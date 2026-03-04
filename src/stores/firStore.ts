@@ -37,6 +37,7 @@ export interface FIRDataStore {
   destinatarioDenominazione: string;
   destinatarioUnitaLocale: string;
   destinatarioCF: string;
+  destinatarioEmail: string;
   destinatarioOperazione: string;
   destinatarioCodiceOperazione: string;
   destinatarioNumeroAut: string;
@@ -195,6 +196,7 @@ export const initialFIRData: FIRDataStore = {
   destinatarioDenominazione: "",
   destinatarioUnitaLocale: "",
   destinatarioCF: "",
+  destinatarioEmail: "",
   destinatarioOperazione: "R",
   destinatarioCodiceOperazione: "",
   destinatarioNumeroAut: "",
@@ -333,6 +335,7 @@ export const FIR_FIELD_LABELS: Record<keyof FIRDataStore, string> = {
   destinatarioDenominazione: "Destinatario - Ragione sociale",
   destinatarioUnitaLocale: "Destinatario - Unità locale/Indirizzo",
   destinatarioCF: "Destinatario - Codice fiscale",
+  destinatarioEmail: "Destinatario - Email impianto",
   destinatarioOperazione: "Destinatario - Tipo operazione (R/D)",
   destinatarioCodiceOperazione: "Destinatario - Codice operazione (R1-R13 o D1-D15)",
   destinatarioNumeroAut: "Destinatario - Numero autorizzazione",

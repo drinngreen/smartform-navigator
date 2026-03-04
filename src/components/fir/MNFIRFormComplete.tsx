@@ -492,6 +492,36 @@ export function MNFIRFormComplete() {
       useMNFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
       toast.success("🏁 FIR chiuso definitivamente!");
+
+      // ── AUTO EMAIL to impianto ──
+      const emailDest = d.destinatarioEmail;
+      if (emailDest) {
+        try {
+          const nomeConducente = d.conducenteNomeCognome || d.trasportatoreNomeAutista || profile?.nome || "Autista";
+          const pdfBlob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
+          const arrayBuf = await pdfBlob.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+          
+          await supabase.functions.invoke("send-global-email", {
+            body: {
+              to: emailDest,
+              subject: `FIR ${d.selectedFirNumber || ""} - Formulario da ${nomeConducente}`,
+              html: `<div style="font-family: Arial, sans-serif;"><p>Buongiorno,</p><p>in allegato il pdf del formulario scaricato da <strong>${nomeConducente}</strong>.</p><p style="margin-top: 24px; color: #666; font-size: 12px;">Email automatica — globalreco@zoli.live</p></div>`,
+              firId: store.editingFirId,
+              category: "automatica",
+              attachments: [{
+                content: base64,
+                filename: `FIR_${d.selectedFirNumber || "riepilogo"}.pdf`,
+                type: "application/pdf",
+              }],
+            },
+          });
+          toast.success("📧 Email con PDF inviata a " + d.destinatarioDenominazione);
+        } catch (emailErr: any) {
+          console.error("[AUTO-EMAIL] Errore invio:", emailErr);
+          toast.error("Email non inviata: " + emailErr.message);
+        }
+      }
     } catch (error: any) {
       toast.error("Errore chiusura: " + error.message);
     }
@@ -501,6 +531,7 @@ export function MNFIRFormComplete() {
     u("destinatarioDenominazione", soggetto.nome);
     u("destinatarioUnitaLocale", soggetto.indirizzo);
     u("destinatarioCF", soggetto.cf);
+    if (soggetto.email) u("destinatarioEmail", soggetto.email);
     if (soggetto.autorizzazione) u("destinatarioNumeroAut", soggetto.autorizzazione);
     if (soggetto.tipoAut) u("destinatarioTipoAut", soggetto.tipoAut);
     if (soggetto.operazione) {

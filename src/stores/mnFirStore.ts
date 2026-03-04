@@ -29,6 +29,7 @@ export const mnInitialFIRData: FIRDataStore = {
   destinatarioDenominazione: "",
   destinatarioUnitaLocale: "",
   destinatarioCF: "",
+  destinatarioEmail: "",
   destinatarioOperazione: "R",
   destinatarioCodiceOperazione: "",
   destinatarioNumeroAut: "",

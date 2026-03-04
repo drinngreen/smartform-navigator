@@ -580,6 +580,22 @@ export function FIRFormComplete() {
     }
   };
 
+  const handleDownloadMinisterialPdf = async () => {
+    try {
+      const blob = await generateFIRPdf(store.data);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `FIR_Ministeriale_${d.selectedFirNumber || "bozza"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("PDF ministeriale scaricato!");
+    } catch (error: any) {
+      console.error("[PDF] Errore generazione ministeriale:", error);
+      toast.error("Errore generazione PDF ministeriale: " + error.message);
+    }
+  };
+
   // ── ARRIVATO → Show peso popup ─────────────────────────
   const handleArrivato = () => {
     if (navigator.geolocation) {
@@ -625,6 +641,54 @@ export function FIRFormComplete() {
       useFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
       toast.success("🏁 FIR chiuso definitivamente!");
+
+      // ── AUTO EMAIL to impianto ──
+      const emailDest = d.destinatarioEmail;
+      if (emailDest) {
+        try {
+          const nomeConducente = d.conducenteNomeCognome || d.trasportatoreNomeAutista || profile?.nome || "Autista";
+          const pdfBlob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
+          const arrayBuf = await pdfBlob.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuf)));
+          
+          const htmlBody = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <p>Buongiorno,</p>
+              <p>in allegato il pdf del formulario scaricato da <strong>${nomeConducente}</strong>.</p>
+              <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">N° FIR</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${d.selectedFirNumber || "—"}</td></tr>
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">CER</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${d.codiceEER || "—"}</td></tr>
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Quantità</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${d.quantita || "—"} ${d.unitaMisura || "kg"}</td></tr>
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Peso a destino</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${peso} kg</td></tr>
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Produttore</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${d.produttoreDenominazione || "—"}</td></tr>
+                <tr><td style="padding: 6px; border-bottom: 1px solid #eee; font-weight: bold;">Destinatario</td><td style="padding: 6px; border-bottom: 1px solid #eee;">${d.destinatarioDenominazione || "—"}</td></tr>
+              </table>
+              <p style="margin-top: 24px; color: #666; font-size: 12px;">Email automatica inviata da Global Reco — globalreco@zoli.live</p>
+            </div>
+          `;
+
+          await supabase.functions.invoke("send-global-email", {
+            body: {
+              to: emailDest,
+              subject: `FIR ${d.selectedFirNumber || ""} - Formulario da ${nomeConducente}`,
+              html: htmlBody,
+              firId: store.editingFirId,
+              category: "automatica",
+              attachments: [{
+                content: base64,
+                filename: `FIR_${d.selectedFirNumber || "riepilogo"}.pdf`,
+                type: "application/pdf",
+              }],
+            },
+          });
+          toast.success("📧 Email con PDF inviata a " + d.destinatarioDenominazione);
+        } catch (emailErr: any) {
+          console.error("[AUTO-EMAIL] Errore invio:", emailErr);
+          toast.error("Email non inviata: " + emailErr.message);
+        }
+      } else {
+        console.warn("[AUTO-EMAIL] Nessuna email impianto per", d.destinatarioDenominazione);
+      }
     } catch (error: any) {
       toast.error("Errore chiusura: " + error.message);
     }
@@ -635,13 +699,13 @@ export function FIRFormComplete() {
     u("destinatarioDenominazione", soggetto.nome);
     u("destinatarioUnitaLocale", soggetto.indirizzo);
     u("destinatarioCF", soggetto.cf);
+    if (soggetto.email) u("destinatarioEmail", soggetto.email);
     if (soggetto.autorizzazione) u("destinatarioNumeroAut", soggetto.autorizzazione);
     if (soggetto.tipoAut) u("destinatarioTipoAut", soggetto.tipoAut);
     if (soggetto.operazione) {
       const isR = soggetto.operazione.startsWith("R");
       u("destinatarioOperazione", isR ? "R" : "D");
       u("destinatarioCodiceOperazione", soggetto.operazione);
-      // Also store in form_data via updateMultipleFields
       store.updateMultipleFields({
         destinatarioOperazione: isR ? "R" : "D",
         destinatarioCodiceOperazione: soggetto.operazione,
@@ -768,6 +832,12 @@ export function FIRFormComplete() {
                     className="w-full py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-display text-sm flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors"
                   >
                     <FileText className="h-4 w-4" /> Scarica Riepilogo Viaggio
+                  </button>
+                  <button
+                    onClick={handleDownloadMinisterialPdf}
+                    className="w-full py-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 font-display text-sm flex items-center justify-center gap-2 hover:bg-purple-500/20 transition-colors"
+                  >
+                    <FileText className="h-4 w-4" /> PDF Ministeriale (3 pagine)
                   </button>
                 </div>
               )}
