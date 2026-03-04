@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NGROK_BASE = (Deno.env.get("RENTRI_API_URL") || "https://pleasing-glorious-skunk.ngrok-free.app").replace(/\/$/, "");
+const NGROK_BASE = (Deno.env.get("RENTRI_API_URL") || "https://hierurgical-undefinable-magdalene.ngrok-free.dev").replace(/\/$/, "");
 const ALLOWED_ENDPOINTS = new Set([
   "/api/rentri/action/emissione",
 ]);
