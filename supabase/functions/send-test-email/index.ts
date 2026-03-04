@@ -12,7 +12,8 @@ serve(async (req) => {
 
   try {
     const { to, subject, html } = await req.json();
-    const apiKey = Deno.env.get("SENDGRID_API_KEY_ZOLI");
+    const rawApiKey = Deno.env.get("SENDGRID_API_KEY_ZOLI");
+    const apiKey = rawApiKey?.replace(/^['\"]|['\"]$/g, "").trim();
 
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "SENDGRID_API_KEY_ZOLI not configured" }), {
@@ -29,7 +30,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
-        from: { email: "noreply@dragonrifiutiapp.sbs", name: "Dragon Rifiuti" },
+        from: { email: "globalreco@zoli.live", name: "Global Reco" },
         subject,
         content: [{ type: "text/html", value: html }],
       }),
