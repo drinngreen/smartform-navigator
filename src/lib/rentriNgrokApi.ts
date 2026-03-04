@@ -4,7 +4,7 @@
 
 import { type RENTRILogEntry } from "./rentriSuperApi";
 
-const NGROK_BASE = "https://pleasing-glorious-skunk.ngrok-free.app";
+const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
 
 /* ── shared log ── */
 
