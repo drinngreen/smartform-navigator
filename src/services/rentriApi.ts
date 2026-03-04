@@ -430,12 +430,8 @@ export async function inviaFirmaRentri(
   } catch (networkErr) {
     console.warn("[RENTRI] Direct emissione failed, using proxy fallback:", networkErr);
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Configurazione backend mancante per il fallback RENTRI");
-    }
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zungtspcixpxjpjlcwzy.supabase.co';
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1bmd0c3BjaXhweGpwamxjd3p5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3Nzk0NDQsImV4cCI6MjA4NDM1NTQ0NH0.eNLT478rWBxK-G9sOhiHaWC3j-u_KzPWu07wEC4BQxA';
 
     res = await fetch(`${supabaseUrl}/functions/v1/rentri-action-proxy`, {
       method: "POST",
