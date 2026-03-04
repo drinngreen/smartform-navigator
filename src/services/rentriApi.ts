@@ -414,16 +414,45 @@ export async function inviaFirmaRentri(
 
   console.log("[RENTRI] Emissione payload:", JSON.stringify(body, null, 2).substring(0, 2000));
 
-  const res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  let data: any;
 
-  const data = await res.json();
+  try {
+    res = await fetch(`${NGROK_BASE}/api/rentri/action/emissione`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
+      },
+      body: JSON.stringify(body),
+    });
+    data = await res.json();
+  } catch (networkErr) {
+    console.warn("[RENTRI] Direct emissione failed, using proxy fallback:", networkErr);
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Configurazione backend mancante per il fallback RENTRI");
+    }
+
+    res = await fetch(`${supabaseUrl}/functions/v1/rentri-action-proxy`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey,
+      },
+      body: JSON.stringify({
+        endpoint: "/api/rentri/action/emissione",
+        payload: body,
+      }),
+    });
+
+    data = await res.json().catch(() => ({}));
+  }
+
   const root = (data as any)?.data || (data as any)?.result || (data as any)?.payload || data || {};
 
   console.log("[RENTRI] Emissione response:", {
