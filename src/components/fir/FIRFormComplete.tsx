@@ -204,7 +204,12 @@ const isTestFirNumber = (value?: string | null) => {
   return /^(test[\s-]?|skkzr)/i.test(value.trim());
 };
 
-export function FIRFormComplete() {
+interface FIRFormCompleteProps {
+  demoMode?: boolean;
+  demoEmailOverride?: string;
+}
+
+export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRFormCompleteProps = {}) {
   const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useFIRForms();
   const store = useFIRStore();
   const { user, profile } = useAuth();
@@ -643,7 +648,7 @@ export function FIRFormComplete() {
       toast.success("🏁 FIR chiuso definitivamente!");
 
       // ── AUTO EMAIL to impianto ──
-      const emailDest = d.destinatarioEmail;
+      const emailDest = demoMode && demoEmailOverride ? demoEmailOverride : d.destinatarioEmail;
       if (emailDest) {
         try {
           const nomeConducente = d.conducenteNomeCognome || d.trasportatoreNomeAutista || profile?.nome || "Autista";
