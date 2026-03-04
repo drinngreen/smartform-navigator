@@ -1,4 +1,5 @@
 // Edge function: invio email via SendGrid per il tenant Global Reco
+// Supporta allegati PDF in base64
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -11,17 +12,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Verifica autenticazione e tenant
     const authHeader = req.headers.get("authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Decodifica JWT per ottenere user_id
     const token = authHeader.replace("Bearer ", "");
     let userId: string | null = null;
 
     if (token && token !== serviceKey) {
-      // Verifica utente via Supabase auth
       const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
         headers: { Authorization: `Bearer ${token}`, apikey: serviceKey },
       });
@@ -31,7 +29,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Verifica tenant Global Reco
     if (userId) {
       const profileRes = await fetch(
         `${supabaseUrl}/rest/v1/profiles?user_id=eq.${userId}&select=tenant_id`,
@@ -45,7 +42,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { to, subject, html, firId, impiantoId, category } = await req.json();
+    const { to, subject, html, firId, impiantoId, category, attachments } = await req.json();
     if (!to) {
       return new Response(JSON.stringify({ error: "Campo 'to' obbligatorio" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,7 +56,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Invio via SendGrid REST API
+    // Build SendGrid payload
+    const sgPayload: Record<string, unknown> = {
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: FROM_EMAIL, name: "Global Reco" },
+      subject: subject || "(nessun oggetto)",
+      content: [{ type: "text/html", value: html || "<p>—</p>" }],
+    };
+
+    // Add attachments if provided (array of { content: base64, filename, type })
+    if (attachments && Array.isArray(attachments) && attachments.length > 0) {
+      sgPayload.attachments = attachments.map((att: { content: string; filename: string; type?: string }) => ({
+        content: att.content,
+        filename: att.filename,
+        type: att.type || "application/pdf",
+        disposition: "attachment",
+      }));
+    }
+
     let status = "sent";
     let errorMessage: string | null = null;
 
@@ -70,12 +84,7 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${sendgridKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to }] }],
-          from: { email: FROM_EMAIL, name: "Global Reco" },
-          subject: subject || "(nessun oggetto)",
-          content: [{ type: "text/html", value: html || "<p>—</p>" }],
-        }),
+        body: JSON.stringify(sgPayload),
       });
 
       if (!sgRes.ok) {
