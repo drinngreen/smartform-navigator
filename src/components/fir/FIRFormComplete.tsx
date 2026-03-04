@@ -353,10 +353,42 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
   const ensureAndLoadDraft = async () => {
     if (!user?.id) throw new Error("Utente non autenticato");
 
-    // Demo mode: create a local-only draft with a fake FIR number (no pool interaction)
+    // Demo mode: create a REAL draft in DB with a fake FIR number (no pool interaction)
     if (demoMode) {
+      // Check if there's already an active demo draft for this user
+      const { data: existingDemo } = await supabase
+        .from("fir_forms")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("deleted_by_user", false)
+        .in("status", ["bozza", "inviato"])
+        .like("note", "%[DEMO]%")
+        .maybeSingle();
+
+      if (existingDemo) {
+        // Restore existing demo draft
+        store.loadFromDatabase({
+          ...existingDemo,
+          form_data: existingDemo.form_data as Record<string, any> | null,
+        });
+        useFIRStore.setState({ editingFirId: existingDemo.id, workflowStatus: existingDemo.status as any || 'bozza' });
+        return existingDemo.numero_fir;
+      }
+
       const demoNum = generateDemoFirNumber();
       const demoId = crypto.randomUUID();
+      // Insert a real row so autosave works
+      const { error: insertErr } = await supabase.from("fir_forms").insert({
+        id: demoId,
+        user_id: user.id,
+        tenant_id: "167d07ad-9184-484e-85a6-da5ceafa42a3",
+        numero_fir: demoNum,
+        status: "bozza",
+        note: "[DEMO] Test FIR — non di produzione",
+      });
+      if (insertErr) {
+        console.warn("[DEMO] Insert draft failed, falling back to local-only:", insertErr);
+      }
       store.resetForm();
       store.updateMultipleFields({ selectedFirNumber: demoNum, numeroRegistro: demoNum });
       useFIRStore.setState({ editingFirId: demoId, workflowStatus: 'bozza' });
