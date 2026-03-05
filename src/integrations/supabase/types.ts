@@ -1438,6 +1438,30 @@ export type Database = {
           },
         ]
       }
+      fir_form_templates: {
+        Row: {
+          created_at: string
+          fields: Json
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fields?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fields?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fir_forms: {
         Row: {
           allegati: Json | null

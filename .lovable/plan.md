@@ -1,87 +1,109 @@
-## Piano: Editor Visuale Formulario FIR per Super Admin
 
-### Obiettivo
 
-Creare una pagina `/super/form-editor` accessibile solo dal Super Admin che permetta di:
+## Piano di correzione FIR — Autocompilazione, Indirizzo, Intermediario, Stato Fisico
 
-- Visualizzare le 3 pagine del formulario FIR (le immagini caricate) in colonna a destra
-- Avere a sinistra una palette di campi trascinabili (data/ora, testo lungo, testo corto)
-- Drag & drop dei campi sulle immagini del formulario con posizionamento preciso
-- Ridimensionamento, rinomina, blocco (lock) di ogni campo
-- Salvataggio completo del layout nel database per uso futuro
+Ho analizzato a fondo il codice e ho trovato **6 problemi strutturali** che causano i malfunzionamenti che descrivi.
 
-### Struttura tecnica
+---
 
-**1. Nuova pagina e routing**
+### Problema 1: DestinatarioSelector non compila tutti i campi
 
-- Creare `src/pages/SuperAdminFormEditor.tsx`
-- Aggiungere route `/super/form-editor` in `App.tsx` (protetta da `ProtectedRoute`)
-- Aggiungere link dalla dashboard Super Admin
+**Dove**: `FIRFormComplete.tsx` riga 633-637, `MNFIRFormComplete.tsx` riga 499-502
 
-**2. Copiare le 3 immagini del formulario**
+Il `DestinatarioSelector` chiama `onSelect(nome, indirizzo, cf)` ma il `handleDestinatarioSelect` imposta solo 3 campi:
+- `destinatarioDenominazione`
+- `destinatarioUnitaLocale` (indirizzo)
+- `destinatarioCF`
 
-- Copiare `formulario_pag_1.png`, `formulario_pag_2.png`, `formulario_pag_3.png` in `src/assets/`
+**Mancano completamente**: `destinatarioNumeroAut`, `destinatarioTipoAut`, `destinatarioOperazione`, `destinatarioCodiceOperazione`
 
-**3. Componente Editor (`FormFieldEditor`)**
+**Fix**: Estendere il tipo `Soggetto` in `anagrafiche.ts` con campi `autorizzazione`, `tipoAut`, `operazione`, `codiceOperazione`. Aggiornare il `DestinatarioSelector` per passare tutti i campi e il `handleDestinatarioSelect` per impostarli.
 
-Layout a 2 colonne:
+---
 
-- **Sinistra** : Palette campi trascinabili (DatePicker, TimePicker, Short Text, Long Text)
-- **Destra**: Le 3 pagine del formulario impilate verticalmente, ciascuna come contenitore relativo dove i campi possono essere posizionati
+### Problema 2: Anagrafica impianti incompleta
 
-Ogni campo posizionato avrà:
+**Dove**: `src/data/anagrafiche.ts`
 
-- Posizione (x, y in % relativa all'immagine)
-- Dimensione (width, height ridimensionabili)
-- Nome campo (editabile inline)
-- Stato: locked/unlocked
-- Tipo: `date` | `time` | `short_text` | `long_text`
-- Pagina di appartenenza (1, 2 o 3)
+Molti impianti hanno `indirizzo: ""` e `cf: ""`. Quando l'operatore seleziona uno di questi, il campo resta vuoto e `parseIndirizzo` riceve stringa vuota, generando il fallback su Roma.
 
-Implementazione drag & drop con eventi nativi HTML5 (dragstart, dragover, drop) senza librerie esterne, dato che il posizionamento è libero su coordinate assolute.
+**Fix**: Aggiungere campi estesi al tipo `Soggetto` (`autorizzazione`, `tipoAut`, `operazione`, `comuneIstat`). Per gli impianti piu usati (quelli con indirizzo gia presente), aggiungere i codici ISTAT del comune. Per quelli senza dati, mostrare un avviso nel selettore.
 
-**4. Database**
+---
 
-- Creare tabella `fir_form_templates` con colonne: `id`, `name`, `fields` (JSONB con array di campi e relative posizioni), `created_at`, `updated_at`
-- RLS: accessibile solo via service_role (nessuna policy pubblica)
+### Problema 3: parseIndirizzo fallback su Roma (il problema principale)
 
-Il campo `fields` JSONB conterrà:
+**Dove**: `src/services/rentriApi.ts` righe 113-174
 
-```json
-[
-  {
-    "id": "uuid",
-    "name": "codice_eer",
-    "type": "short_text",
-    "page": 1,
-    "x": 12.5,
-    "y": 45.2,
-    "width": 15,
-    "height": 3,
-    "locked": true
-  }
-]
+Quando l'indirizzo non matcha la regex, il sistema mette `Roma / 058091` come default. Questo e il motivo per cui l'impianto riceve un indirizzo sbagliato.
+
+**Fix**: 
+- Il fallback non deve MAI sostituire la citta. Se il parse fallisce, usare la stringa originale come `indirizzo` e lasciare `comune_id` vuoto piuttosto che inventare Roma.
+- Espandere `COMUNE_ID_BY_NAME` da 3 a 100+ comuni (tutti quelli presenti negli impianti in anagrafica).
+- Estrarre la citta dalla stringa del tipo `"VIA X, 10022 CARMAGNOLA (TO)"` con regex migliore.
+
+---
+
+### Problema 4: Intermediario ignorato nella chiamata RENTRI
+
+**Dove**: `src/services/rentriApi.ts` funzione `buildEmissionePayload` righe 218-293
+
+Il payload costruito **non include MAI** il blocco `intermediario`. Il campo esiste nello store (`intermediarioDenominazione`, `intermediarioCF`, `intermediarioNumeroAlbo`) e viene salvato nel DB, ma `buildEmissionePayload` semplicemente lo ignora.
+
+**Fix**: Aggiungere il blocco `intermediario` nel payload RENTRI:
+```
+intermediario: {
+  denominazione: str("intermediario_denominazione"),
+  codice_fiscale: str("intermediario_codice_fiscale"),
+  numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("intermediario_iscrizione_albo")),
+  nazione_id: "IT",
+}
 ```
 
-**5. Funzionalità dell'editor**
+---
 
-- Drag da palette → drop su foglio → crea campo con posizione
-- Click su campo → mostra pannello proprietà (nome, tipo, dimensioni)
-- Drag su foglio → riposiziona (se non locked)
-- Bordi ridimensionabili (resize handles)
-- Toggle lock/unlock per campo
-- Pulsante "Salva Template" → salva tutto nel DB via Edge Function o direttamente
-- Pulsante "Carica Template" → ripristina layout salvato
+### Problema 5: stato_fisico mapping sbagliato + brute-force
 
-**6. File da creare/modificare**
+**Dove**: `src/services/rentriApi.ts` righe 179-209
 
-- `src/assets/formulario_pag_1.png` (copia)
-- `src/assets/formulario_pag_2.png` (copia)
-- `src/assets/formulario_pag_3.png` (copia)
-- `src/pages/SuperAdminFormEditor.tsx` (nuovo)
-- `src/components/superadmin/FormFieldPalette.tsx` (palette campi)
-- `src/components/superadmin/FormPageCanvas.tsx` (canvas per ogni pagina)
-- `src/components/superadmin/FormFieldOverlay.tsx` (campo singolo posizionato)
-- `src/App.tsx` (aggiunta route)
-- `src/pages/SuperAdminDashboard.tsx` (link alla nuova pagina)
-- Migrazione SQL per `fir_form_templates`
+`STATO_FISICO_TO_CODE` mappa `"1" -> "SP"`, `"2" -> "SP"`, ecc. Ma dal log, il primo successo (riga 45) ha usato il codice numerico `"2"`. Il RENTRI accetta **codici numerici** ("1"-"5"), non le sigle testuali.
+
+Il loop `getStatoFisicoCandidates` prova SP, S, 1, 2, 6 in sequenza, sprecando 3-4 chiamate API per FIR.
+
+**Fix**: Mappare direttamente ai codici numerici RENTRI:
+```
+"1" -> "1", "solido pulverulento" -> "1"
+"2" -> "2", "solido non pulverulento" -> "2"  
+"3" -> "3", "fangoso palabile" -> "3"
+"4" -> "4", "liquido" -> "4"
+"5" -> "5", "aeriforme" -> "5"
+"6" -> "2"  (Altro -> fallback solido non pulv.)
+```
+Eliminare `getStatoFisicoCandidates` e il loop `for..of`.
+
+---
+
+### Problema 6: numero_iscrizione_albo trasportatore non incluso
+
+**Dove**: `buildEmissionePayload` riga 265-273
+
+Il blocco `trasportatori` non include `numero_iscrizione_albo`. RENTRI lo richiede.
+
+**Fix**: Aggiungere al blocco trasportatori:
+```
+numero_iscrizione_albo: normalizeNumeroIscrizioneAlbo(str("trasportatore_iscrizione_albo")),
+```
+
+---
+
+### Riepilogo file da modificare
+
+| File | Intervento |
+|------|-----------|
+| `src/data/anagrafiche.ts` | Estendere `Soggetto` con autorizzazione/tipoAut/operazione/comuneIstat. Popolare dati mancanti per impianti principali |
+| `src/services/rentriApi.ts` | Fix stato_fisico (codici numerici), aggiungere intermediario al payload, fix parseIndirizzo (no fallback Roma), aggiungere albo trasportatore, rimuovere brute-force loop |
+| `src/components/fir/FIRFormComplete.tsx` | Aggiornare `handleDestinatarioSelect` per impostare tutti i campi, aggiornare `DestinatarioSelector` per mostrare dati estesi |
+| `src/components/fir/MNFIRFormComplete.tsx` | Stessa modifica del DestinatarioSelector |
+| `src/stores/firStore.ts` | Nessuna modifica necessaria (i campi ci sono gia) |
+| `src/hooks/useFIRForms.ts` | Nessuna modifica necessaria (il mapping e corretto) |
+

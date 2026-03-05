@@ -18,6 +18,7 @@ const MNAdminAuthPage = React.lazy(() => import("./pages/MNAdminAuthPage"));
 const SuperAdminAuthPage = React.lazy(() => import("./pages/SuperAdminAuthPage"));
 
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
+const SuperAdminFormEditor = React.lazy(() => import("./pages/SuperAdminFormEditor"));
 const SocialPage = React.lazy(() => import("./pages/SocialPage"));
 const SocialGuestAuthPage = React.lazy(() => import("./pages/SocialGuestAuthPage"));
 const SocialAIPage = React.lazy(() => import("./pages/SocialAIPage"));
@@ -147,6 +148,7 @@ const App = () => (
 
                 {/* Super Admin Dashboard */}
                 <Route path="/super" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
+                <Route path="/super/form-editor" element={<ProtectedRoute><SuperAdminFormEditor /></ProtectedRoute>} />
 
                 {/* Social Network */}
                 <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
