@@ -1,7 +1,7 @@
 import React from "react";
-import { Calendar, Clock, Type, AlignLeft } from "lucide-react";
+import { Calendar, Clock, Type, AlignLeft, CheckSquare } from "lucide-react";
 
-export type FieldType = "date" | "time" | "short_text" | "long_text";
+export type FieldType = "date" | "time" | "short_text" | "long_text" | "checkbox";
 
 interface PaletteItem {
   type: FieldType;
@@ -14,6 +14,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
   { type: "time", label: "Ora", icon: <Clock size={16} /> },
   { type: "short_text", label: "Testo Breve", icon: <Type size={16} /> },
   { type: "long_text", label: "Testo Lungo", icon: <AlignLeft size={16} /> },
+  { type: "checkbox", label: "Checker (X)", icon: <CheckSquare size={16} /> },
 ];
 
 export function FormFieldPalette() {
