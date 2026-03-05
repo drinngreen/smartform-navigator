@@ -1,9 +1,33 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useLocation } from "react-router-dom";
+import { toast } from "sonner";
+
+// Emails authorized for each admin area
+const GLOBAL_ADMIN_EMAILS = [
+  "globalreco@zolisoftware.cloud",
+  "globalreco@zolisoftware.space",
+  "admin@zoli.live",
+  "direzioneglobalreco@zoli.live",
+  "formulariglobalreco@zoli.live",
+  "amministrazioneglobalreco@zoli.live",
+  "amministrazioneglobal@zoli.live",
+  "segreteriaglobalreco@zoli.live",
+  "superadmin@zoli.live",
+];
+
+const MN_ADMIN_EMAILS = [
+  "multyniyol@zoli.live",
+  "superadmin@zoli.live",
+];
+
+const SUPER_ADMIN_EMAILS = [
+  "superadmin@zoli.live",
+];
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, profile } = useAuth() as any;
+  const { user, isLoading, isAdmin, profile } = useAuth() as any;
   const location = useLocation();
+  const path = location.pathname;
 
   if (isLoading) {
     return (
@@ -15,7 +39,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     // Context-aware redirect: MN admin routes go to MN admin auth
-    const path = location.pathname;
     if (path.startsWith("/mn/admin")) {
       return <Navigate to="/adminmn" state={{ from: location }} replace />;
     }
@@ -34,9 +57,34 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  const email = user.email?.toLowerCase() ?? "";
+
+  // ── SUPER ADMIN: only superadmin@zoli.live ──
+  if (path.startsWith("/super")) {
+    if (!isAdmin || !SUPER_ADMIN_EMAILS.includes(email)) {
+      toast.error("Accesso non autorizzato: area Super Admin");
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // ── MN ADMIN: only multyniyol@zoli.live and superadmin ──
+  if (path.startsWith("/mn/admin")) {
+    if (!isAdmin || !MN_ADMIN_EMAILS.includes(email)) {
+      toast.error("Accesso non autorizzato: area Admin Multy Niyol");
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // ── GLOBAL ADMIN: only authorized admin emails ──
+  if (path.startsWith("/admin")) {
+    if (!isAdmin || !GLOBAL_ADMIN_EMAILS.includes(email)) {
+      toast.error("Accesso non autorizzato: area Admin");
+      return <Navigate to="/" replace />;
+    }
+  }
+
   // Social-only users can ONLY access /social and /social/ai routes
   if (profile?.is_social_only) {
-    const path = location.pathname;
     if (!path.startsWith("/social")) {
       return <Navigate to="/social" replace />;
     }
