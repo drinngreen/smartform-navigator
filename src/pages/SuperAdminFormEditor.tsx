@@ -23,6 +23,7 @@ const DEFAULT_SIZES: Record<FieldType, { w: number; h: number }> = {
   time: { w: 8, h: 2.5 },
   short_text: { w: 15, h: 2.5 },
   long_text: { w: 25, h: 4 },
+  checkbox: { w: 2.5, h: 2.5 },
 };
 
 const ALLOWED_EMAIL = "superadmin@zoli.live";

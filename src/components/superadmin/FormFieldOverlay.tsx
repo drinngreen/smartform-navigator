@@ -28,6 +28,7 @@ const TYPE_COLORS: Record<FieldType, string> = {
   time: "border-cyan-500/70 bg-cyan-500/15",
   short_text: "border-emerald-500/70 bg-emerald-500/15",
   long_text: "border-amber-500/70 bg-amber-500/15",
+  checkbox: "border-purple-500/70 bg-purple-500/15",
 };
 
 export function FormFieldOverlay({ field, selected, onSelect, onUpdate, onDelete, containerRect }: Props) {
