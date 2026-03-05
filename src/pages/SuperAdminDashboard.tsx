@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Shield, LogOut, ChevronDown, AlertTriangle, ExternalLink } from "lucide-react";
+import { Shield, LogOut, ChevronDown, AlertTriangle, ExternalLink, FileEdit } from "lucide-react";
 import { FIRPoolSection } from "@/components/superadmin/FIRPoolSection";
 import { DigitalSignatureSection } from "@/components/superadmin/DigitalSignatureSection";
 import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarSection";
@@ -123,6 +123,15 @@ export default function SuperAdminDashboard() {
 
       {/* Content */}
       <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Editor Formulario link */}
+        <button onClick={() => navigate("/super/form-editor")}
+          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-border bg-card hover:bg-secondary/50 transition-all text-left">
+          <FileEdit size={20} className="text-primary" />
+          <div>
+            <div className="font-semibold text-sm">Editor Formulario FIR</div>
+            <div className="text-xs text-muted-foreground">Posiziona i campi sul formulario ufficiale</div>
+          </div>
+        </button>
         <DemoAppSection />
         <SocialModerationSection />
         <RENTRIActionsPanel tenant={activeTenant.id} />
