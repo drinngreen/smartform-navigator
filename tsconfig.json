@@ -1,22 +1,36 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "esModuleInterop": true,
+    "isolatedModules": true,
     "jsx": "react-jsx",
-    "strict": false,
-    "types": ["node", "vite/client"],
-    "baseUrl": ".",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "node",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "target": "ES2020",
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "useDefineForClassFields": true
   },
-  "include": ["src"],
-  "exclude": ["server", "drizzle", "node_modules"]
+  "exclude": [
+    "server",
+    "drizzle",
+    "node_modules"
+  ],
+  "include": [
+    "src"
+  ]
 }
