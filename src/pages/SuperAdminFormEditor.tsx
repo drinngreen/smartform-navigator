@@ -49,8 +49,8 @@ export default function SuperAdminFormEditor() {
 
   // Load template list
   useEffect(() => {
-    supabase.from("fir_form_templates").select("id, name").order("created_at", { ascending: false })
-      .then(({ data }) => { if (data) setTemplates(data); });
+    (supabase as any).from("fir_form_templates").select("id, name").order("created_at", { ascending: false })
+      .then(({ data }: any) => { if (data) setTemplates(data); });
   }, []);
 
   const addField = useCallback((type: FieldType, page: number, x: number, y: number) => {
@@ -76,21 +76,21 @@ export default function SuperAdminFormEditor() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const client = supabase as any;
       if (templateId) {
-        const { error } = await supabase.from("fir_form_templates")
-          .update({ name: templateName, fields: fields as any, updated_at: new Date().toISOString() })
+        const { error } = await client.from("fir_form_templates")
+          .update({ name: templateName, fields, updated_at: new Date().toISOString() })
           .eq("id", templateId);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("fir_form_templates")
-          .insert({ name: templateName, fields: fields as any })
+        const { data, error } = await client.from("fir_form_templates")
+          .insert({ name: templateName, fields })
           .select("id").single();
         if (error) throw error;
         setTemplateId(data.id);
       }
       toast.success("Template salvato!");
-      // Refresh list
-      const { data } = await supabase.from("fir_form_templates").select("id, name").order("created_at", { ascending: false });
+      const { data } = await client.from("fir_form_templates").select("id, name").order("created_at", { ascending: false });
       if (data) setTemplates(data);
     } catch (err: any) {
       toast.error("Errore salvataggio: " + err.message);
@@ -100,11 +100,11 @@ export default function SuperAdminFormEditor() {
   };
 
   const handleLoad = async (id: string) => {
-    const { data, error } = await supabase.from("fir_form_templates").select("*").eq("id", id).single();
+    const { data, error } = await (supabase as any).from("fir_form_templates").select("*").eq("id", id).single();
     if (error || !data) { toast.error("Errore caricamento"); return; }
     setTemplateId(data.id);
     setTemplateName(data.name);
-    setFields((data.fields as any) || []);
+    setFields(data.fields || []);
     setSelectedFieldId(null);
     toast.success("Template caricato");
   };
