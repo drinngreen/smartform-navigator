@@ -152,9 +152,9 @@ export default function SuperAdminFormEditor() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0">
         {/* Left sidebar: palette + templates + field props */}
-        <aside className="w-64 border-r border-border bg-card p-4 overflow-y-auto shrink-0 space-y-6 sticky top-0 h-[calc(100vh-49px)] self-start">
+        <aside className="w-64 border-r border-border bg-card p-4 overflow-y-auto shrink-0 space-y-6">
           <FormFieldPalette />
 
           {/* Field properties */}
