@@ -96,6 +96,8 @@ const MNAppComunicazioniPage = React.lazy(() => import("./pages/multynijol/MNApp
 const MNAppPhonePage = React.lazy(() => import("./pages/multynijol/MNAppPhonePage"));
 const MNAppProfiloPage = React.lazy(() => import("./pages/multynijol/MNAppProfiloPage"));
 const MNAppGuidaPage = React.lazy(() => import("./pages/multynijol/MNAppGuidaPage"));
+const MNAppModuloAlternativoPage = React.lazy(() => import("./pages/multynijol/MNAppModuloAlternativoPage"));
+const ModuloAlternativoPage = React.lazy(() => import("./pages/ModuloAlternativoPage"));
 
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
@@ -149,6 +151,7 @@ const App = () => (
                 {/* Super Admin Dashboard */}
                 <Route path="/super" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
                 <Route path="/super/form-editor" element={<ProtectedRoute><SuperAdminFormEditor /></ProtectedRoute>} />
+                <Route path="/super/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
 
                 {/* Social Network */}
                 <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
@@ -193,6 +196,7 @@ const App = () => (
                 <Route path="/admin/rubrica" element={<ProtectedRoute><RubricaPage /></ProtectedRoute>} />
                 <Route path="/admin/system-prompt" element={<ProtectedRoute><SystemPromptPage /></ProtectedRoute>} />
                 <Route path="/admin/social-guests" element={<ProtectedRoute><SocialGuestsPage /></ProtectedRoute>} />
+                <Route path="/admin/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Admin Routes - PROTECTED */}
                 <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
@@ -229,6 +233,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/anagrafica/privati" element={<ProtectedRoute><MNAnagraficaPrivatiPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/storico-ricevute" element={<ProtectedRoute><MNStoricoRicevutePage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/system-prompt" element={<ProtectedRoute><MNSystemPromptPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
                 <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
@@ -239,6 +244,7 @@ const App = () => (
                 <Route path="/mn/app/multyproget/comunicazioni" element={<MNAppComunicazioniPage />} />
                 <Route path="/mn/app/multyproget/profilo" element={<MNAppProfiloPage />} />
                 <Route path="/mn/app/multyproget/guida" element={<MNAppGuidaPage />} />
+                <Route path="/mn/app/multyproget/modulo-alternativo" element={<MNAppModuloAlternativoPage />} />
 
                 <Route path="/mn/app/niyol" element={<MNNiyolAppPage />} />
                 <Route path="/mn/app/niyol/cronologia" element={<MNAppCronologiaPage />} />
@@ -248,6 +254,7 @@ const App = () => (
                 <Route path="/mn/app/niyol/comunicazioni" element={<MNAppComunicazioniPage />} />
                 <Route path="/mn/app/niyol/profilo" element={<MNAppProfiloPage />} />
                 <Route path="/mn/app/niyol/guida" element={<MNAppGuidaPage />} />
+                <Route path="/mn/app/niyol/modulo-alternativo" element={<MNAppModuloAlternativoPage />} />
 
                 <Route path="/mn/app/messages" element={<ZoliMessagesPage />} />
 
