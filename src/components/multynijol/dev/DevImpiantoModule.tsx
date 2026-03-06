@@ -17,8 +17,9 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
-  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle,
+  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard,
 } from "lucide-react";
+import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
 import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok } from "@/lib/rentriNgrokApi";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
