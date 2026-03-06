@@ -1,0 +1,1 @@
+UPDATE fir_number_pool SET status = 'consumed', consumed_at = now() WHERE id = '0294a38a-f132-48eb-a93c-82908ab0ea4d' AND status = 'available';
