@@ -26,6 +26,8 @@ const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 const SOCIETA_ID = "multy";
 
 export function DevImpiantoModule() {
+  const { profile } = useAuth();
+
   return (
     <Tabs defaultValue="nuovo-fir" className="space-y-4">
       <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
@@ -40,6 +42,9 @@ export function DevImpiantoModule() {
         </TabsTrigger>
         <TabsTrigger value="gestione-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <Database className="h-4 w-4" /> Gestione FIR
+        </TabsTrigger>
+        <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <CreditCard className="h-4 w-4" /> Fatturazione
         </TabsTrigger>
       </TabsList>
 
@@ -56,6 +61,11 @@ export function DevImpiantoModule() {
       </TabsContent>
       <TabsContent value="gestione-fir">
         <ImpiantoGestioneFIR />
+      </TabsContent>
+      <TabsContent value="fatturazione">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
+        </div>
       </TabsContent>
     </Tabs>
   );
