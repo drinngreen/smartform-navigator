@@ -1,5 +1,6 @@
 import { useLocation, Navigate } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,10 +9,12 @@ export default function MNAppModuloAlternativoPage() {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Derive basePath from current pathname
-  const basePath = location.pathname.includes("/mn/app/niyol")
-    ? "/mn/app/niyol"
-    : "/mn/app/multyproget";
+  const isGlobalReco = location.pathname.startsWith("/app/");
+  const basePath = isGlobalReco
+    ? "/app"
+    : location.pathname.includes("/mn/app/niyol")
+      ? "/mn/app/niyol"
+      : "/mn/app/multyproget";
 
   if (isLoading) {
     return (
@@ -22,6 +25,7 @@ export default function MNAppModuloAlternativoPage() {
   }
 
   if (!user) {
+    if (isGlobalReco) return <Navigate to="/login" replace />;
     return <Navigate to={basePath.includes("niyol") ? "/ni" : "/mn"} replace />;
   }
 
@@ -30,7 +34,7 @@ export default function MNAppModuloAlternativoPage() {
       <div className="flex-1 overflow-y-auto p-4 pb-24">
         <FIRAlternativeForm />
       </div>
-      <MNBottomNav basePath={basePath} />
+      {isGlobalReco ? <BottomNav /> : <MNBottomNav basePath={basePath} />}
     </MobileShell>
   );
 }
