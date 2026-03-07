@@ -132,8 +132,7 @@ export function FIRAlternativeForm() {
                 key={field.id}
                 value={(values[field.id] as string) || ""}
                 onChange={(e) => handleChange(field.id, e.target.value)}
-                placeholder={field.name}
-                style={{
+              style={{
                   ...style,
                   background: "transparent",
                   border: "1px solid rgba(120, 120, 140, 0.35)",
@@ -156,7 +155,6 @@ export function FIRAlternativeForm() {
               type={field.type === "date" ? "date" : field.type === "time" ? "time" : "text"}
               value={(values[field.id] as string) || ""}
               onChange={(e) => handleChange(field.id, e.target.value)}
-              placeholder={field.name}
               style={{
                 ...style,
                 background: "transparent",
