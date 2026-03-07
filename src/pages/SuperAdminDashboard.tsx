@@ -132,6 +132,14 @@ export default function SuperAdminDashboard() {
             <div className="text-xs text-muted-foreground">Posiziona i campi sul formulario ufficiale</div>
           </div>
         </button>
+        <button onClick={() => navigate("/super/modulo-alternativo")}
+          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left">
+          <FileEdit size={20} className="text-amber-400" />
+          <div>
+            <div className="font-semibold text-sm text-amber-300">Modulo Alternativo FIR</div>
+            <div className="text-xs text-muted-foreground">Vista sperimentale del formulario con campi trasparenti</div>
+          </div>
+        </button>
         <DemoAppSection />
         <SocialModerationSection />
         <RENTRIActionsPanel tenant={activeTenant.id} />
