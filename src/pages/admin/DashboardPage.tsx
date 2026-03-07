@@ -42,6 +42,7 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "notifiche", label: "Notifiche", iconImage: iconNotifiche, href: "/admin/notifiche", color: "239, 68, 68" },
   { id: "system-prompt", label: "System Prompt", iconImage: systemPromptIcon, href: "/admin/system-prompt", color: "251, 191, 36" },
   { id: "social-guests", label: "Ospiti Social", iconImage: iconPersonale, href: "/admin/social-guests", color: "139, 92, 246" },
+  { id: "modulo-alt", label: "Modulo Alternativo", iconImage: iconGestioneFormulari, href: "/admin/modulo-alternativo", color: "245, 158, 11" },
 ];
 
 export default function DashboardPage() {

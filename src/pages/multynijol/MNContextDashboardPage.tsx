@@ -58,6 +58,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
       { label: "Privati Cittadini", iconImage: iconPrivati, href: `${prefix}/anagrafica/privati`, color: "168, 85, 247" },
     ] },
     { id: "system-prompt", label: "System Prompt", iconImage: systemPromptIcon, href: `${prefix}/system-prompt`, color: "251, 191, 36" },
+    { id: "modulo-alt", label: "Modulo Alternativo", iconImage: iconGestioneFormulari, href: `${prefix}/modulo-alternativo`, color: "245, 158, 11" },
   ];
 }
 

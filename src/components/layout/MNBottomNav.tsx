@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, History, MapPin, Phone, MessageCircle, Bot, User, HelpCircle } from "lucide-react";
+import { Home, History, MapPin, Phone, MessageCircle, Bot, User, HelpCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MNBottomNavProps {
@@ -17,6 +17,7 @@ export function MNBottomNav({ basePath }: MNBottomNavProps) {
     { icon: MessageCircle, label: "MSG", href: `${basePath}/comunicazioni`, color: "34, 197, 94" },
     { icon: Bot, label: "AI", href: `${basePath}/ai`, color: "59, 130, 246" },
     { icon: User, label: "PROFILO", href: `${basePath}/profilo`, color: "236, 72, 153" },
+    { icon: FileText, label: "MOD.ALT", href: `${basePath}/modulo-alternativo`, color: "245, 158, 11" },
     { icon: HelpCircle, label: "GUIDA", href: `${basePath}/guida`, color: "168, 85, 247" },
   ];
 
