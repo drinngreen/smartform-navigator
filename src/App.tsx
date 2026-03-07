@@ -173,6 +173,7 @@ const App = () => (
                 <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
                 <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
                 <Route path="/app/guida" element={<ProtectedRoute><GuidaPage /></ProtectedRoute>} />
+                <Route path="/app/modulo-alternativo" element={<ProtectedRoute><MNAppModuloAlternativoPage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -67,9 +67,14 @@ export function FIRAlternativeForm() {
       {/* Banner */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
         <Zap className="h-4 w-4 text-amber-400" />
-        <span className="text-xs font-mono font-semibold text-amber-300 tracking-wider">
-          MODULO ALTERNATIVO — Sperimentale
-        </span>
+        <div className="flex flex-col">
+          <span className="text-xs font-mono font-semibold text-amber-300 tracking-wider">
+            MODULO ALTERNATIVO — Sperimentale
+          </span>
+          <span className="text-[10px] font-mono text-amber-400/70">
+            In uso da mercoledì 18 marzo 2026
+          </span>
+        </div>
       </div>
 
       {/* Page tabs */}
