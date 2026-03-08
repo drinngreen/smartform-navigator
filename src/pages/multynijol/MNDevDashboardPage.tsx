@@ -14,7 +14,7 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
       {/* Link Modulo Alternativo */}
-      <button onClick={() => navigate("/mn/admin/dev/modulo-alternativo")}
+      <button onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
         className="w-full flex items-center gap-3 px-5 py-4 mb-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left">
         <FileText size={20} className="text-amber-400" />
         <div>
