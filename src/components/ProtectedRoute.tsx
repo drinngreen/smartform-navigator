@@ -59,8 +59,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   const email = user.email?.toLowerCase() ?? "";
 
-  // ── SUPER ADMIN: only superadmin@zoli.live ──
-  if (path.startsWith("/super")) {
+  // ── SUPER ADMIN: only superadmin@zoli.live (except shared Modulo Alternativo route) ──
+  const isSharedModuloAlternativoRoute = path === "/super/modulo-alternativo";
+  if (path.startsWith("/super") && !isSharedModuloAlternativoRoute) {
     if (!isAdmin || !SUPER_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Super Admin");
       return <Navigate to="/" replace />;
