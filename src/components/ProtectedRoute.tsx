@@ -59,9 +59,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   const email = user.email?.toLowerCase() ?? "";
 
-  // ── SUPER ADMIN: only superadmin@zoli.live (except shared Modulo Alternativo route) ──
-  const isSharedModuloAlternativoRoute = path.startsWith("/super/modulo-alternativo");
-  if (path.startsWith("/super") && !isSharedModuloAlternativoRoute) {
+  // Shared experimental module: accessible to any authenticated user
+  // (all tenants and app users can test it)
+  const isModuloAlternativoRoute = path.includes("/modulo-alternativo");
+  if (isModuloAlternativoRoute) {
+    return <>{children}</>;
+  }
+
+  // ── SUPER ADMIN: only superadmin@zoli.live ──
+  if (path.startsWith("/super")) {
     if (!isAdmin || !SUPER_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Super Admin");
       return <Navigate to="/" replace />;
