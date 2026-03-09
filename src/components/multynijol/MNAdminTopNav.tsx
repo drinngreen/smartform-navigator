@@ -60,10 +60,18 @@ const navItems: NavItem[] = [
   { label: "System Prompt", iconImage: systemPromptIcon, path: "/system-prompt", color: "251, 191, 36" },
 ];
 
-const contexts = [
+const allContexts = [
   { id: "multyproget", label: "Multyproget", color: "249, 115, 22" },
+  { id: "dev-multyproget", label: "🧪 Dev Multy", color: "34, 197, 94" },
   { id: "niyol", label: "Niyol", color: "6, 182, 212" },
 ];
+
+// Which contexts are switchable from each context
+const contextSwitchMap: Record<string, string[]> = {
+  "multyproget": ["dev-multyproget"],
+  "dev-multyproget": ["multyproget", "niyol"],
+  "niyol": ["dev-multyproget"],
+};
 
 export function MNAdminTopNav() {
   const navigate = useNavigate();
