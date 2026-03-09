@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer,
+  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer, ListChecks,
 } from "lucide-react";
+import { AnagraficaCompletaMP } from "./AnagraficaCompletaMP";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
@@ -40,6 +41,9 @@ export function DevContattiModule() {
         <TabsTrigger value="chiamate" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <PhoneCall className="h-4 w-4" /> Report Chiamate
         </TabsTrigger>
+        <TabsTrigger value="anagrafica-completa" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <ListChecks className="h-4 w-4" /> Anagrafica Completa
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="rubrica">
@@ -62,6 +66,11 @@ export function DevContattiModule() {
       </TabsContent>
       <TabsContent value="chiamate">
         <ReportChiamateView />
+      </TabsContent>
+      <TabsContent value="anagrafica-completa">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <AnagraficaCompletaMP />
+        </div>
       </TabsContent>
     </Tabs>
   );
