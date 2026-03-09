@@ -9,6 +9,7 @@ import {
   BookUser,
   FileText,
   Receipt,
+  Factory,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
@@ -16,6 +17,7 @@ import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermedi
 import { DevContattiModule } from "@/components/multynijol/dev/DevContattiModule";
 import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
+import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
