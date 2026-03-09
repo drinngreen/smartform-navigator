@@ -201,6 +201,7 @@ export function DevPrivatiModule() {
         { p_impianto_id: impiantoId, p_anno: anno } as any
       );
       await supabase.from("ricevute_privati" as any).insert({
+        tenant_id: MULTY_TENANT_ID,
         impianto_id: impiantoId,
         conferimento_id: conf.id,
         privato_id: targetPrivatoId,
@@ -226,6 +227,7 @@ export function DevPrivatiModule() {
     setLimitWarning(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handleSaveRicevutaManuale = async () => {
@@ -247,6 +249,7 @@ export function DevPrivatiModule() {
       { p_impianto_id: impiantoId, p_anno: anno } as any
     );
     const { error } = await supabase.from("ricevute_privati" as any).insert({
+      tenant_id: MULTY_TENANT_ID,
       impianto_id: impiantoId,
       privato_id: targetPrivatoId,
       numero_ricevuta: (numData as any) || `${Date.now()}`,
@@ -265,6 +268,7 @@ export function DevPrivatiModule() {
     setRicevutaPrivatoId(null);
     setRicevutaForm({ importo: "", note: "" });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handleDeleteRicevuta = async (ricevutaId: string) => {
@@ -277,6 +281,7 @@ export function DevPrivatiModule() {
     }
     toast.success("Ricevuta eliminata");
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handlePrintRicevute = () => {
