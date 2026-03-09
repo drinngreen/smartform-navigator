@@ -275,8 +275,12 @@ export function AnagraficaCompletaMP() {
         </Button>
         <Button variant="outline" size="sm" onClick={handleImportExcel} disabled={importing}
           className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
-          <Upload className="h-3 w-3" /> {importing ? "Importazione..." : "Importa Excel"}
+          <Upload className="h-3 w-3" /> {importing ? "Importazione..." : "Importa da server"}
         </Button>
+        <label className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer text-sm">
+          <Upload className="h-3 w-3" /> Carica Excel
+          <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" disabled={importing} />
+        </label>
         <Button variant="outline" size="sm" onClick={() => {
           if (!filtered.length) return toast.error("Nessun dato");
           exportToExcel(filtered, exportCols, "anagrafica-aziende-mp", "Aziende MP");
