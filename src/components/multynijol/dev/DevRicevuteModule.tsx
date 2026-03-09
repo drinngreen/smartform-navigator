@@ -257,36 +257,36 @@ export function DevRicevuteModule() {
                         </td>
                         <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8 bg-card/30 backdrop-blur border-neon-cyan/70 text-neon-cyan ring-1 ring-neon-cyan/20 shadow-[0_0_18px_hsl(var(--neon-cyan)/0.14)] hover:bg-neon-cyan/15 hover:ring-neon-cyan/40 hover:shadow-[0_0_22px_hsl(var(--neon-cyan)/0.22)]"
+                              className="h-9 w-9 border-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/25"
                               onClick={() => printSingle(r)}
                               title="Stampa"
                             >
-                              <Printer className="h-4 w-4" />
+                              <Printer className="h-5 w-5" color="hsl(var(--neon-cyan))" strokeWidth={2.5} />
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8 bg-card/30 backdrop-blur border-neon-green/70 text-neon-green ring-1 ring-neon-green/20 shadow-[0_0_18px_hsl(var(--neon-green)/0.14)] hover:bg-neon-green/15 hover:ring-neon-green/40 hover:shadow-[0_0_22px_hsl(var(--neon-green)/0.22)]"
+                              className="h-9 w-9 border-neon-green bg-neon-green/10 hover:bg-neon-green/25"
                               onClick={() => openEdit(r)}
                               title="Modifica"
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-5 w-5" color="hsl(var(--neon-green))" strokeWidth={2.5} />
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8 bg-card/30 backdrop-blur border-destructive/70 text-destructive ring-1 ring-destructive/20 shadow-[0_0_18px_hsl(var(--destructive)/0.14)] hover:bg-destructive/15 hover:ring-destructive/40 hover:shadow-[0_0_22px_hsl(var(--destructive)/0.22)]"
+                              className="h-9 w-9 border-destructive bg-destructive/10 hover:bg-destructive/25"
                               onClick={() => {
                                 if (!window.confirm("Eliminare questa ricevuta?")) return;
                                 deleteMutation.mutate(r.id);
                               }}
                               title="Elimina"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" color="hsl(var(--destructive))" strokeWidth={2.5} />
                             </Button>
                           </div>
                         </td>
