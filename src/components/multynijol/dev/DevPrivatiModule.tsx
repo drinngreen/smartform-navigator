@@ -122,13 +122,13 @@ export function DevPrivatiModule() {
     return usage;
   };
 
-  const checkLimits = async (cer: string, kgNew: number): Promise<string | null> => {
-    if (!selectedPrivatoId || !impiantoId) return null;
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+  const checkLimits = async (privatoId: string, cer: string, kgNew: number): Promise<string | null> => {
+    if (!privatoId || !impiantoId) return null;
+    const privato = privati?.find(p => p.id === privatoId);
     if (!privato) return null;
     const critico = CER_CRITICI[cer];
     if (!critico) return null;
-    const usage = getCerUsage(selectedPrivatoId);
+    const usage = getCerUsage(privatoId);
     const totalAnnuo = (usage[cer] || 0) + kgNew;
     if (totalAnnuo > critico.limite_annuo_kg) {
       return `⚠️ LIMITE SUPERATO per CER ${cer}: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui`;
