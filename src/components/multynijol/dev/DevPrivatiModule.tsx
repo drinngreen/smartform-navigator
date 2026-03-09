@@ -268,6 +268,7 @@ export function DevPrivatiModule() {
     setRicevutaPrivatoId(null);
     setRicevutaForm({ importo: "", note: "" });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handleDeleteRicevuta = async (ricevutaId: string) => {
