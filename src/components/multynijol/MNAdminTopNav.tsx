@@ -60,10 +60,18 @@ const navItems: NavItem[] = [
   { label: "System Prompt", iconImage: systemPromptIcon, path: "/system-prompt", color: "251, 191, 36" },
 ];
 
-const contexts = [
+const allContexts = [
   { id: "multyproget", label: "Multyproget", color: "249, 115, 22" },
+  { id: "dev-multyproget", label: "🧪 Dev Multy", color: "34, 197, 94" },
   { id: "niyol", label: "Niyol", color: "6, 182, 212" },
 ];
+
+// Which contexts are switchable from each context
+const contextSwitchMap: Record<string, string[]> = {
+  "multyproget": ["dev-multyproget"],
+  "dev-multyproget": ["multyproget", "niyol"],
+  "niyol": ["dev-multyproget"],
+};
 
 export function MNAdminTopNav() {
   const navigate = useNavigate();
@@ -78,11 +86,14 @@ export function MNAdminTopNav() {
   const subMenuRef = useRef<HTMLDivElement>(null);
 
   // Detect current context from URL
-  const currentContext = location.pathname.includes("/mn/admin/niyol") ? "niyol"
+  const currentContext = location.pathname.includes("/mn/admin/dev-multyproget") ? "dev-multyproget"
+    : location.pathname.includes("/mn/admin/niyol") ? "niyol"
     : location.pathname.includes("/mn/admin/multyproget") ? "multyproget"
     : null;
 
-  const activeCtx = contexts.find(c => c.id === currentContext);
+  const activeCtx = allContexts.find(c => c.id === currentContext);
+  const availableSwitchTargets = currentContext ? (contextSwitchMap[currentContext] || []) : [];
+  const switchableContexts = allContexts.filter(c => availableSwitchTargets.includes(c.id));
   const isContextPage = !!currentContext;
   const prefix = currentContext ? `/mn/admin/${currentContext}` : "/mn/admin";
 
@@ -149,7 +160,7 @@ export function MNAdminTopNav() {
                       top: (switcherRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
                     }}
                   >
-                    {contexts.map((ctx) => (
+                    {switchableContexts.map((ctx) => (
                       <button
                         key={ctx.id}
                         onClick={() => {
