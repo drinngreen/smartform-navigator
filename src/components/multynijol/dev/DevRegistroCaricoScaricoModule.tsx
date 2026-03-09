@@ -381,7 +381,7 @@ export function DevRegistroCaricoScaricoModule() {
                       <td className="p-3 font-mono text-xs text-emerald-400">{m.numero_fir || "—"}</td>
                       <td className="p-3">
                         {m.esito_accettazione && (
-                          <Badge variant={m.esito_accettazione === "ACCETTATO" ? "default" : "destructive"} className="text-[10px]">
+                          <Badge variant={m.esito_accettazione === "accettato" ? "default" : "destructive"} className="text-[10px]">
                             {m.esito_accettazione}
                           </Badge>
                         )}
