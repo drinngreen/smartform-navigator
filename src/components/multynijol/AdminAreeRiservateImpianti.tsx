@@ -46,17 +46,13 @@ export function AdminAreeRiservateImpianti({ tenantFilter }: Props) {
       const token = session.data.session?.access_token;
       
       const { data, error } = await supabase.functions.invoke("impianto-auth", {
-        body: { action: "admin_list" },
+        body: { action: "admin_list", tenant_id: tenantFilter || undefined },
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error);
 
-      let filtered = data.accounts || [];
-      if (tenantFilter) {
-        filtered = filtered.filter((a: ImpiantoAccount) => a.tenant_id === tenantFilter);
-      }
-      setAccounts(filtered);
+      setAccounts(data.accounts || []);
     } catch (err: any) {
       toast.error("Errore caricamento: " + err.message);
     } finally {
