@@ -63,12 +63,12 @@ export function DevRicevuteModule() {
   const { data: ricevute = [], isLoading } = useQuery({
     queryKey: ["dev-ricevute-registro", MULTY_TENANT_ID],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ricevute_privati" as any)
+      const { data, error } = (await (supabase as any)
+        .from("ricevute_privati")
         .select("id, numero_ricevuta, anno, importo, note, created_at, privato_id")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
       return (data ?? []) as RicevutaRow[];
     },
