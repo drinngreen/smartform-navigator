@@ -475,6 +475,72 @@ export function DevPrivatiModule() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Ricevute */}
+              <Card className="bg-card/60 border-border/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Receipt className="h-4 w-4" /> Ricevute ({ricevute?.length ?? 0})
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={handlePrintRicevute} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <Printer className="h-3 w-3" /> Stampa
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        if (!ricevute?.length) return toast.error("Nessuna ricevuta");
+                        const cols = [
+                          { header: "Numero", key: "numero_ricevuta", width: 16 },
+                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+                          { header: "Note", key: "note", width: 30 },
+                        ];
+                        exportToExcel(ricevute, cols, `ricevute-${selectedPrivato?.cognome || "privato"}`, "Ricevute");
+                      }} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <FileSpreadsheet className="h-3 w-3" /> Excel
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        if (!ricevute?.length) return toast.error("Nessuna ricevuta");
+                        const cols = [
+                          { header: "Numero", key: "numero_ricevuta", width: 16 },
+                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+                          { header: "Note", key: "note", width: 30 },
+                        ];
+                        exportToPdf(ricevute, cols, `ricevute-${selectedPrivato?.cognome || "privato"}`, `Ricevute — ${selectedPrivato?.cognome || ""} ${selectedPrivato?.nome || ""}`);
+                      }} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <Printer className="h-3 w-3" /> PDF
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!ricevute?.length ? (
+                    <p className="text-muted-foreground text-xs">Nessuna ricevuta registrata</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {ricevute.map((r) => (
+                        <div key={r.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30">
+                          <div>
+                            <p className="font-medium">{r.numero_ricevuta || "-"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(r.created_at).toLocaleDateString("it-IT")} · € {Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-auto h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteRicevuta(r.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </>
           ) : (
             <Card className="bg-card/60 border-border/30">
