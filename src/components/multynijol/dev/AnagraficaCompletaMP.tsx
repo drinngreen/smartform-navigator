@@ -366,7 +366,7 @@ export function AnagraficaCompletaMP() {
                   ["urbano", "Urbano"],
                 ] as const).map(([key, label]) => (
                   <label key={key} className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={(form as any)[key]} onCheckedChange={v => setForm(f => ({ ...f, [key]: !!v }))} />
+                    <input type="checkbox" checked={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))} className="rounded border-border" />
                     {label}
                   </label>
                 ))}

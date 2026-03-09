@@ -67,6 +67,11 @@ export function DevContattiModule() {
       <TabsContent value="chiamate">
         <ReportChiamateView />
       </TabsContent>
+      <TabsContent value="anagrafica-completa">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <AnagraficaCompletaMP />
+        </div>
+      </TabsContent>
     </Tabs>
   );
 }
