@@ -253,8 +253,14 @@ export function DevRicevuteModule() {
     });
   }, [filtered, privatiMap]);
 
+  const aziendaHeaderLines = [
+    AZIENDA.nome,
+    AZIENDA.indirizzo,
+    `ISTAT: ${AZIENDA.istat} | CF: ${AZIENDA.cf} | Cod.RS: ${AZIENDA.codRS}`,
+  ];
+
   const exportSingleExcel = (row: RicevutaEnriched) => {
-    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta", aziendaHeaderLines);
   };
 
   const exportSinglePdf = (row: RicevutaEnriched) => {
