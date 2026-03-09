@@ -156,6 +156,146 @@ export type Database = {
         }
         Relationships: []
       }
+      anagrafica_aziende_mp: {
+        Row: {
+          alias: string | null
+          attivo: boolean | null
+          cap: string | null
+          cellulare: string | null
+          citta: string | null
+          cliente: boolean | null
+          cliente_fatturazione: string | null
+          cod_cliente: string | null
+          cod_tipologia: string | null
+          codice: string | null
+          codice_cat_eco: string | null
+          codice_cdc: string | null
+          codice_destinatario: string | null
+          codice_fiscale: string | null
+          created_at: string
+          destinatario: boolean | null
+          email: string | null
+          fax: string | null
+          fornitore: boolean | null
+          id: string
+          indirizzo: string | null
+          intermediario: boolean | null
+          latitudine: string | null
+          longitudine: string | null
+          nazione: string | null
+          note: string | null
+          p_sl: boolean | null
+          p_ul: boolean | null
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          ragione_sociale: string
+          stato: string | null
+          stato_amm: string | null
+          telefono: string | null
+          tenant_id: string | null
+          tipologia: string | null
+          trasportatore: boolean | null
+          updated_at: string
+          urbano: boolean | null
+          zona_gruppo_cliente: string | null
+        }
+        Insert: {
+          alias?: string | null
+          attivo?: boolean | null
+          cap?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          cliente?: boolean | null
+          cliente_fatturazione?: string | null
+          cod_cliente?: string | null
+          cod_tipologia?: string | null
+          codice?: string | null
+          codice_cat_eco?: string | null
+          codice_cdc?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          created_at?: string
+          destinatario?: boolean | null
+          email?: string | null
+          fax?: string | null
+          fornitore?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          intermediario?: boolean | null
+          latitudine?: string | null
+          longitudine?: string | null
+          nazione?: string | null
+          note?: string | null
+          p_sl?: boolean | null
+          p_ul?: boolean | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale: string
+          stato?: string | null
+          stato_amm?: string | null
+          telefono?: string | null
+          tenant_id?: string | null
+          tipologia?: string | null
+          trasportatore?: boolean | null
+          updated_at?: string
+          urbano?: boolean | null
+          zona_gruppo_cliente?: string | null
+        }
+        Update: {
+          alias?: string | null
+          attivo?: boolean | null
+          cap?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          cliente?: boolean | null
+          cliente_fatturazione?: string | null
+          cod_cliente?: string | null
+          cod_tipologia?: string | null
+          codice?: string | null
+          codice_cat_eco?: string | null
+          codice_cdc?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          created_at?: string
+          destinatario?: boolean | null
+          email?: string | null
+          fax?: string | null
+          fornitore?: boolean | null
+          id?: string
+          indirizzo?: string | null
+          intermediario?: boolean | null
+          latitudine?: string | null
+          longitudine?: string | null
+          nazione?: string | null
+          note?: string | null
+          p_sl?: boolean | null
+          p_ul?: boolean | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string
+          stato?: string | null
+          stato_amm?: string | null
+          telefono?: string | null
+          tenant_id?: string | null
+          tipologia?: string | null
+          trasportatore?: boolean | null
+          updated_at?: string
+          urbano?: boolean | null
+          zona_gruppo_cliente?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anagrafica_aziende_mp_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anagrafica_privati: {
         Row: {
           attivo: boolean
