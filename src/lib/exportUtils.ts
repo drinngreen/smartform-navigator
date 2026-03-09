@@ -15,7 +15,8 @@ export function exportToExcel(
   data: Record<string, any>[],
   columns: ExportColumn[],
   filename: string,
-  sheetName = "Dati"
+  sheetName = "Dati",
+  headerLines?: string[]
 ) {
   const rows = data.map((row) =>
     columns.reduce((acc, col) => {
@@ -24,7 +25,18 @@ export function exportToExcel(
     }, {} as Record<string, any>)
   );
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ws = XLSX.utils.json_to_sheet([]);
+
+  // Add optional header lines (company info etc.)
+  let startRow = 0;
+  if (headerLines && headerLines.length > 0) {
+    const headerData = headerLines.map((line) => [line]);
+    XLSX.utils.sheet_add_aoa(ws, headerData, { origin: "A1" });
+    startRow = headerLines.length + 1; // blank row after header
+  }
+
+  // Add data with column headers
+  XLSX.utils.sheet_add_json(ws, rows, { origin: `A${startRow + 1}` });
 
   // Set column widths
   ws["!cols"] = columns.map((col) => ({ wch: col.width || 18 }));
