@@ -86,11 +86,14 @@ export function MNAdminTopNav() {
   const subMenuRef = useRef<HTMLDivElement>(null);
 
   // Detect current context from URL
-  const currentContext = location.pathname.includes("/mn/admin/niyol") ? "niyol"
+  const currentContext = location.pathname.includes("/mn/admin/dev-multyproget") ? "dev-multyproget"
+    : location.pathname.includes("/mn/admin/niyol") ? "niyol"
     : location.pathname.includes("/mn/admin/multyproget") ? "multyproget"
     : null;
 
-  const activeCtx = contexts.find(c => c.id === currentContext);
+  const activeCtx = allContexts.find(c => c.id === currentContext);
+  const availableSwitchTargets = currentContext ? (contextSwitchMap[currentContext] || []) : [];
+  const switchableContexts = allContexts.filter(c => availableSwitchTargets.includes(c.id));
   const isContextPage = !!currentContext;
   const prefix = currentContext ? `/mn/admin/${currentContext}` : "/mn/admin";
 
