@@ -3944,6 +3944,14 @@ export type Database = {
         Args: { p_fir_number_id: string; p_suspend: boolean }
         Returns: undefined
       }
+      update_impianto_password: {
+        Args: { p_account_id: string; p_new_password: string }
+        Returns: undefined
+      }
+      verify_impianto_password: {
+        Args: { p_email: string; p_password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
