@@ -43,6 +43,7 @@ const desktopIcons: DesktopIconDef[] = [
   { id: "system-prompt", label: "System Prompt", iconImage: systemPromptIcon, href: "/admin/system-prompt", color: "251, 191, 36" },
   { id: "social-guests", label: "Ospiti Social", iconImage: iconPersonale, href: "/admin/social-guests", color: "139, 92, 246" },
   { id: "modulo-alt", label: "Modulo Alternativo", iconImage: iconGestioneFormulari, href: "/admin/modulo-alternativo", color: "245, 158, 11" },
+  { id: "aree-riservate", label: "Aree Riservate Impianti", iconImage: iconGpsFlotta, href: "/admin/aree-riservate-impianti", color: "59, 130, 246" },
 ];
 
 export default function DashboardPage() {

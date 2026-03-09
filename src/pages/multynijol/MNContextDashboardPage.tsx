@@ -59,6 +59,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
     ] },
     { id: "system-prompt", label: "System Prompt", iconImage: systemPromptIcon, href: `${prefix}/system-prompt`, color: "251, 191, 36" },
     { id: "modulo-alt", label: "Modulo Alternativo", iconImage: iconGestioneFormulari, href: `${prefix}/modulo-alternativo`, color: "245, 158, 11" },
+    { id: "aree-riservate", label: "Aree Riservate Impianti", iconImage: iconDestinatario, href: `${prefix}/aree-riservate-impianti`, color: "59, 130, 246" },
   ];
 }
 
