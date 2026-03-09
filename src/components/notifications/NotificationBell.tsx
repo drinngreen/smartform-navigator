@@ -6,10 +6,14 @@ import { NotificationPanel } from "./NotificationPanel";
 interface NotificationBellProps {
   className?: string;
   iconClassName?: string;
+  /** Filter notifications by app context */
+  appContext?: string;
+  /** Filter notifications by tenant_id */
+  tenantId?: string;
 }
 
-export function NotificationBell({ className, iconClassName }: NotificationBellProps) {
-  const { unreadCount } = useNotifications();
+export function NotificationBell({ className, iconClassName, appContext, tenantId }: NotificationBellProps) {
+  const { unreadCount } = useNotifications({ appContext, tenantId });
   const [open, setOpen] = useState(false);
 
   return (
@@ -26,7 +30,7 @@ export function NotificationBell({ className, iconClassName }: NotificationBellP
           </span>
         )}
       </button>
-      <NotificationPanel open={open} onClose={() => setOpen(false)} />
+      <NotificationPanel open={open} onClose={() => setOpen(false)} appContext={appContext} tenantId={tenantId} />
     </>
   );
 }

@@ -7,6 +7,8 @@ import { it } from "date-fns/locale";
 interface NotificationPanelProps {
   open: boolean;
   onClose: () => void;
+  appContext?: string;
+  tenantId?: string;
 }
 
 const typeIcon: Record<string, React.ReactNode> = {
@@ -78,8 +80,8 @@ function NotificationItem({
   );
 }
 
-export function NotificationPanel({ open, onClose }: NotificationPanelProps) {
-  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+export function NotificationPanel({ open, onClose, appContext, tenantId }: NotificationPanelProps) {
+  const { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ appContext, tenantId });
 
   if (!open) return null;
 

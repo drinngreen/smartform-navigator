@@ -2785,34 +2785,40 @@ export type Database = {
       }
       notifications: {
         Row: {
+          app_context: string | null
           body: string | null
           created_at: string
           id: string
           is_read: boolean
           reference_id: string | null
           reference_type: string | null
+          tenant_id: string | null
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          app_context?: string | null
           body?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
           reference_id?: string | null
           reference_type?: string | null
+          tenant_id?: string | null
           title: string
           type: string
           user_id: string
         }
         Update: {
+          app_context?: string | null
           body?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
           reference_id?: string | null
           reference_type?: string | null
+          tenant_id?: string | null
           title?: string
           type?: string
           user_id?: string
