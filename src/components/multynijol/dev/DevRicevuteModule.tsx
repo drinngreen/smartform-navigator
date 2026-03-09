@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { FileSpreadsheet, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
+import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 
@@ -26,6 +26,11 @@ type RicevutaRow = {
   note: string | null;
   created_at: string;
   privato_id: string | null;
+};
+
+type RicevutaEnriched = RicevutaRow & {
+  privato_display: string;
+  privato_cf: string;
 };
 
 type PrivatoLite = {
@@ -132,47 +137,92 @@ export function DevRicevuteModule() {
     });
   };
 
+  const escHtml = (v: string) =>
+    v
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\"", "&quot;")
+      .replaceAll("'", "&#039;");
+
+  const safeFileBase = (r: RicevutaRow) => (r.numero_ricevuta ?? r.id).replaceAll("/", "-");
+
   const printSingle = (r: RicevutaRow) => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
     const w = window.open("", "_blank");
     if (!w) return;
+
+    const title = `Ricevuta ${r.numero_ricevuta ?? ""}`;
+    const privato = p ? `${p.cognome} ${p.nome}` : "—";
+    const cf = p?.codice_fiscale ?? "—";
+    const noteHtml = escHtml(r.note ?? "").replaceAll("\n", "<br />");
+
+    w.document.open();
     w.document.write(`
-      <html><head><title>Ricevuta ${r.numero_ricevuta ?? ""}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 24px; }
-        h1 { margin: 0 0 12px; }
-        .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
-        .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
-        .row { display: flex; gap: 16px; margin: 10px 0; }
-        .label { width: 140px; color: #444; font-size: 12px; }
-        .val { flex: 1; font-weight: 600; }
-        .note { margin-top: 14px; white-space: pre-wrap; }
-      </style></head><body>
-        <h1>Ricevuta ${r.numero_ricevuta ?? ""}</h1>
-        <div class="meta">Data: ${new Date(r.created_at).toLocaleString("it-IT")}</div>
-        <div class="box">
-          <div class="row"><div class="label">Privato</div><div class="val">${p ? `${p.cognome} ${p.nome}` : "—"}</div></div>
-          <div class="row"><div class="label">Codice fiscale</div><div class="val">${p?.codice_fiscale ?? "—"}</div></div>
-          <div class="row"><div class="label">Importo</div><div class="val">€ ${Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</div></div>
-          <div class="row"><div class="label">Anno</div><div class="val">${r.anno ?? "—"}</div></div>
-          <div class="note"><div class="label">Note</div><div>${r.note ?? ""}</div></div>
-        </div>
-      </body></html>
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="color-scheme" content="only light" />
+          <title>${escHtml(title)}</title>
+          <style>
+            html, body { background: #fff; color: #111; }
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            h1 { margin: 0 0 12px; font-size: 32px; }
+            .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
+            .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
+            .row { display: flex; gap: 16px; margin: 10px 0; }
+            .label { width: 140px; color: #444; font-size: 12px; }
+            .val { flex: 1; font-weight: 700; }
+            .note { margin-top: 14px; white-space: pre-wrap; }
+            @media print {
+              input, button, select, textarea { display: none !important; }
+              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${escHtml(title)}</h1>
+          <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
+          <div class="box">
+            <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
+            <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+            <div class="row"><div class="label">Importo</div><div class="val">€ ${escHtml(
+              Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+            )}</div></div>
+            <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
+            <div class="note"><div class="label">Note</div><div>${noteHtml}</div></div>
+          </div>
+        </body>
+      </html>
     `);
     w.document.close();
+
+    w.onafterprint = () => w.close();
+    w.focus();
     w.print();
   };
 
   const exportCols = [
     { header: "Numero", key: "numero_ricevuta", width: 16 },
-    { header: "Data", key: "created_at", width: 14, format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-") },
+    {
+      header: "Data",
+      key: "created_at",
+      width: 14,
+      format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-"),
+    },
     { header: "Privato", key: "privato_display", width: 22 },
     { header: "CF", key: "privato_cf", width: 18 },
-    { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+    {
+      header: "Importo",
+      key: "importo",
+      width: 12,
+      format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+    },
     { header: "Note", key: "note", width: 30 },
   ];
 
-  const enriched = useMemo(() => {
+  const enriched = useMemo((): RicevutaEnriched[] => {
     return filtered.map((r) => {
       const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
       return {
