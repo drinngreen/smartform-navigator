@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { FileSpreadsheet, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
+import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 
@@ -26,6 +26,11 @@ type RicevutaRow = {
   note: string | null;
   created_at: string;
   privato_id: string | null;
+};
+
+type RicevutaEnriched = RicevutaRow & {
+  privato_display: string;
+  privato_cf: string;
 };
 
 type PrivatoLite = {
@@ -132,47 +137,92 @@ export function DevRicevuteModule() {
     });
   };
 
+  const escHtml = (v: string) =>
+    v
+      .split("&").join("&amp;")
+      .split("<").join("&lt;")
+      .split(">").join("&gt;")
+      .split("\"").join("&quot;")
+      .split("'").join("&#039;");
+
+  const safeFileBase = (r: RicevutaRow) => (r.numero_ricevuta ?? r.id).split("/").join("-");
+
   const printSingle = (r: RicevutaRow) => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
-    const w = window.open("", "_blank");
+    const w = window.open("", "_blank", "noopener,noreferrer");
     if (!w) return;
+
+    const title = `Ricevuta ${r.numero_ricevuta ?? ""}`;
+    const privato = p ? `${p.cognome} ${p.nome}` : "—";
+    const cf = p?.codice_fiscale ?? "—";
+    const noteHtml = escHtml(r.note ?? "").split("\n").join("<br />");
+
+    w.document.open();
     w.document.write(`
-      <html><head><title>Ricevuta ${r.numero_ricevuta ?? ""}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 24px; }
-        h1 { margin: 0 0 12px; }
-        .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
-        .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
-        .row { display: flex; gap: 16px; margin: 10px 0; }
-        .label { width: 140px; color: #444; font-size: 12px; }
-        .val { flex: 1; font-weight: 600; }
-        .note { margin-top: 14px; white-space: pre-wrap; }
-      </style></head><body>
-        <h1>Ricevuta ${r.numero_ricevuta ?? ""}</h1>
-        <div class="meta">Data: ${new Date(r.created_at).toLocaleString("it-IT")}</div>
-        <div class="box">
-          <div class="row"><div class="label">Privato</div><div class="val">${p ? `${p.cognome} ${p.nome}` : "—"}</div></div>
-          <div class="row"><div class="label">Codice fiscale</div><div class="val">${p?.codice_fiscale ?? "—"}</div></div>
-          <div class="row"><div class="label">Importo</div><div class="val">€ ${Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</div></div>
-          <div class="row"><div class="label">Anno</div><div class="val">${r.anno ?? "—"}</div></div>
-          <div class="note"><div class="label">Note</div><div>${r.note ?? ""}</div></div>
-        </div>
-      </body></html>
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="color-scheme" content="only light" />
+          <title>${escHtml(title)}</title>
+          <style>
+            html, body { background: #fff; color: #111; }
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            h1 { margin: 0 0 12px; font-size: 32px; }
+            .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
+            .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
+            .row { display: flex; gap: 16px; margin: 10px 0; }
+            .label { width: 140px; color: #444; font-size: 12px; }
+            .val { flex: 1; font-weight: 700; }
+            .note { margin-top: 14px; white-space: pre-wrap; }
+            @media print {
+              input, button, select, textarea { display: none !important; }
+              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${escHtml(title)}</h1>
+          <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
+          <div class="box">
+            <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
+            <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+            <div class="row"><div class="label">Importo</div><div class="val">€ ${escHtml(
+              Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+            )}</div></div>
+            <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
+            <div class="note"><div class="label">Note</div><div>${noteHtml}</div></div>
+          </div>
+          <script>
+            window.addEventListener('afterprint', () => window.close());
+            setTimeout(() => window.print(), 120);
+          </script>
+        </body>
+      </html>
     `);
     w.document.close();
-    w.print();
   };
 
   const exportCols = [
     { header: "Numero", key: "numero_ricevuta", width: 16 },
-    { header: "Data", key: "created_at", width: 14, format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-") },
+    {
+      header: "Data",
+      key: "created_at",
+      width: 14,
+      format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-"),
+    },
     { header: "Privato", key: "privato_display", width: 22 },
     { header: "CF", key: "privato_cf", width: 18 },
-    { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+    {
+      header: "Importo",
+      key: "importo",
+      width: 12,
+      format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+    },
     { header: "Note", key: "note", width: 30 },
   ];
 
-  const enriched = useMemo(() => {
+  const enriched = useMemo((): RicevutaEnriched[] => {
     return filtered.map((r) => {
       const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
       return {
@@ -182,6 +232,14 @@ export function DevRicevuteModule() {
       };
     });
   }, [filtered, privatiMap]);
+
+  const exportSingleExcel = (row: RicevutaEnriched) => {
+    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+  };
+
+  const exportSinglePdf = (row: RicevutaEnriched) => {
+    exportToPdf([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+  };
 
   return (
     <div className="space-y-4">
@@ -245,6 +303,12 @@ export function DevRicevuteModule() {
                 <tbody>
                   {filtered.map((r) => {
                     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+                    const row: RicevutaEnriched = {
+                      ...r,
+                      privato_display: p ? `${p.cognome} ${p.nome}` : "—",
+                      privato_cf: p?.codice_fiscale ?? "—",
+                    };
+
                     return (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
                         <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
@@ -257,36 +321,63 @@ export function DevRicevuteModule() {
                         </td>
                         <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-cyan/70 text-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/20"
                               onClick={() => printSingle(r)}
-                              title="Stampa"
+                              title="Stampa ricevuta"
                             >
-                              <Printer className="h-5 w-5" color="hsl(var(--neon-cyan))" strokeWidth={2.5} />
+                              <Printer className="h-4 w-4" color="hsl(var(--neon-cyan))" strokeWidth={2.6} />
+                              <span>Stampa</span>
                             </Button>
+
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-neon-green bg-neon-green/10 hover:bg-neon-green/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-purple/70 text-neon-purple bg-neon-purple/10 hover:bg-neon-purple/20"
+                              onClick={() => exportSinglePdf(row)}
+                              title="Esporta PDF"
+                            >
+                              <FileText className="h-4 w-4" color="hsl(var(--neon-purple))" strokeWidth={2.4} />
+                              <span>PDF</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-green/70 text-neon-green bg-neon-green/10 hover:bg-neon-green/20"
+                              onClick={() => exportSingleExcel(row)}
+                              title="Esporta Excel"
+                            >
+                              <FileSpreadsheet className="h-4 w-4" color="hsl(var(--neon-green))" strokeWidth={2.4} />
+                              <span>Excel</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-border text-foreground bg-card/40 hover:bg-muted/40"
                               onClick={() => openEdit(r)}
                               title="Modifica"
                             >
-                              <Pencil className="h-5 w-5" color="hsl(var(--neon-green))" strokeWidth={2.5} />
+                              <Pencil className="h-4 w-4" strokeWidth={2.6} />
+                              <span>Modifica</span>
                             </Button>
+
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-destructive bg-destructive/10 hover:bg-destructive/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-destructive/70 text-destructive bg-destructive/10 hover:bg-destructive/20"
                               onClick={() => {
                                 if (!window.confirm("Eliminare questa ricevuta?")) return;
                                 deleteMutation.mutate(r.id);
                               }}
                               title="Elimina"
                             >
-                              <Trash2 className="h-5 w-5" color="hsl(var(--destructive))" strokeWidth={2.5} />
+                              <Trash2 className="h-4 w-4" color="hsl(var(--destructive))" strokeWidth={2.6} />
+                              <span>Elimina</span>
                             </Button>
                           </div>
                         </td>
