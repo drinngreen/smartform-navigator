@@ -500,9 +500,9 @@ export function DevRegistroCaricoScaricoModule() {
               <Select value={form.esito_accettazione} onValueChange={(v) => setForm((f) => ({ ...f, esito_accettazione: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACCETTATO">Accettato</SelectItem>
-                  <SelectItem value="RESPINTO">Respinto</SelectItem>
-                  <SelectItem value="PARZIALE">Parziale</SelectItem>
+                  <SelectItem value="accettato">Accettato</SelectItem>
+                  <SelectItem value="respinto">Respinto</SelectItem>
+                  <SelectItem value="parziale">Parziale</SelectItem>
                 </SelectContent>
               </Select>
             </div>
