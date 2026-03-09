@@ -69,6 +69,22 @@ export function DevPrivatiModule() {
     },
   });
 
+  const { data: ricevute } = useQuery({
+    queryKey: ["dev-ricevute", MULTY_TENANT_ID, selectedPrivatoId],
+    queryFn: async () => {
+      if (!selectedPrivatoId) return [];
+      const { data, error } = await supabase
+        .from("ricevute_privati" as any)
+        .select("id, numero_ricevuta, anno, importo, note, created_at")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("privato_id", selectedPrivatoId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedPrivatoId,
+  });
+
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
