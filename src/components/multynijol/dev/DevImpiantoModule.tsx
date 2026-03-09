@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
+import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
   Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
+  ClipboardList,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
@@ -47,6 +49,9 @@ export function DevImpiantoModule() {
         <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <CreditCard className="h-4 w-4" /> Fatturazione
         </TabsTrigger>
+        <TabsTrigger value="registro" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <ClipboardList className="h-4 w-4" /> Registro C/S
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="nuovo-fir">
@@ -66,6 +71,11 @@ export function DevImpiantoModule() {
       <TabsContent value="fatturazione">
         <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
           <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
+        </div>
+      </TabsContent>
+      <TabsContent value="registro">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <DevRegistroCaricoScaricoModule />
         </div>
       </TabsContent>
     </Tabs>
