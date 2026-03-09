@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe, Eye, FileText, TrendingUp } from "lucide-react";
+import { Globe, Eye, FileText, TrendingUp, FileSpreadsheet, Printer } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const GLOBAL_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
