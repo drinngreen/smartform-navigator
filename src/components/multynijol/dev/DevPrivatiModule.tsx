@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2, FileSpreadsheet, Printer } from "lucide-react";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2, FileSpreadsheet, Printer, Trash2 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
@@ -26,6 +26,8 @@ export function DevPrivatiModule() {
   const queryClient = useQueryClient();
   const [searchPrivato, setSearchPrivato] = useState("");
   const [selectedPrivatoId, setSelectedPrivatoId] = useState<string | null>(null);
+  const [conferimentoPrivatoId, setConferimentoPrivatoId] = useState<string | null>(null);
+  const [ricevutaPrivatoId, setRicevutaPrivatoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showNewConferimento, setShowNewConferimento] = useState(false);
   const [showNewRicevuta, setShowNewRicevuta] = useState(false);
