@@ -10,8 +10,9 @@ export function GlobalNotificationBell() {
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin") || location.pathname.startsWith("/super");
   const isAuthRoute = location.pathname.startsWith("/auth") || location.pathname === "/mn" || location.pathname === "/ni" || location.pathname.startsWith("/adminmn") || location.pathname.startsWith("/superadmin") || location.pathname.startsWith("/social/guest");
   const isSocialRoute = location.pathname === "/social";
+  const isImpiantoRoute = location.pathname.startsWith("/area-impianto");
 
-  if (!user || isAdminRoute || isAuthRoute || isSocialRoute) return null;
+  if (!user || isAdminRoute || isAuthRoute || isSocialRoute || isImpiantoRoute) return null;
 
   return (
     <div className="fixed top-4 right-4 z-[9990]">
