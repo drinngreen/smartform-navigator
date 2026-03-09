@@ -2,17 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Factory, LogOut, Search, Package, CheckCircle, AlertTriangle,
-  Scale, FileText, Eye, Check, XCircle,
+  FileText, Eye, Check, XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import logoDragon from "@/assets/dragon-logo-gold.png";
 
 interface ImpiantoSession {
   account: { id: string; ragione_sociale: string; email: string; tenant_id: string };
@@ -44,6 +43,8 @@ interface FirInboxItem {
   } | null;
 }
 
+const ACCENT = "59, 130, 246";
+
 export default function ImpiantoDashboardPage() {
   const navigate = useNavigate();
   const [session, setSession] = useState<ImpiantoSession | null>(null);
@@ -59,7 +60,6 @@ export default function ImpiantoDashboardPage() {
     if (!raw) { navigate("/area-impianto"); return; }
     try {
       const s = JSON.parse(raw);
-      // Check token expiry
       const payload = JSON.parse(atob(s.token));
       if (payload.exp < Date.now()) {
         localStorage.removeItem("impianto_session");
@@ -138,97 +138,121 @@ export default function ImpiantoDashboardPage() {
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+    <div className="flex flex-col h-screen bg-background overflow-hidden relative">
+      {/* Background glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse at 50% 30%, rgba(${ACCENT}, 0.22) 0%, rgba(${ACCENT}, 0.12) 25%, rgba(${ACCENT}, 0.04) 55%, transparent 80%),
+            radial-gradient(ellipse at 85% 15%, rgba(${ACCENT}, 0.17) 0%, rgba(${ACCENT}, 0.07) 25%, transparent 55%),
+            radial-gradient(ellipse at 15% 75%, rgba(${ACCENT}, 0.05) 0%, transparent 50%)
+          `,
+        }}
+      />
+
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[1]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
+          `,
+          backgroundSize: '30px 30px',
+        }}
+      />
+
       {/* Header */}
-      <header className="border-b border-border/30 bg-card/40 backdrop-blur-xl px-4 py-3">
+      <header className="relative z-20 border-b border-border/30 bg-card/40 backdrop-blur-xl px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Factory className="h-6 w-6 text-blue-400" />
+            <img src={logoDragon} alt="Logo" className="h-10 w-10" style={{ filter: "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" }} />
             <div>
-              <h1 className="font-bold text-white text-lg">{session.account.ragione_sociale}</h1>
+              <h1 className="font-display font-bold text-foreground text-lg tracking-wider">{session.account.ragione_sociale}</h1>
               <p className="text-xs text-muted-foreground">{session.account.email}</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleLogout} className="border-border/50">
-            <LogOut className="h-4 w-4 mr-1" /> Esci
-          </Button>
+          <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground border border-border/50 hover:border-border transition-colors">
+            <LogOut className="h-4 w-4" /> Esci
+          </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 space-y-4">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard icon={Package} label="Totale FIR" value={inbox.length} color="59, 130, 246" />
-          <StatCard icon={FileText} label="Da confermare" value={ricevuti} color="249, 115, 22" />
-          <StatCard icon={CheckCircle} label="Confermati" value={confermati} color="34, 197, 94" />
-          <StatCard icon={AlertTriangle} label="Contestati" value={contestati} color="239, 68, 68" />
-        </div>
+      <main className="flex-1 overflow-y-auto p-4 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-4">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard icon={Package} label="Totale FIR" value={inbox.length} color={ACCENT} />
+            <StatCard icon={FileText} label="Da confermare" value={ricevuti} color="249, 115, 22" />
+            <StatCard icon={CheckCircle} label="Confermati" value={confermati} color="34, 197, 94" />
+            <StatCard icon={AlertTriangle} label="Contestati" value={contestati} color="239, 68, 68" />
+          </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cerca FIR, CER, produttore, trasportatore..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-card/60 border-border/30"
-          />
-        </div>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              placeholder="Cerca FIR, CER, produttore, trasportatore..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-3 rounded-lg bg-card/60 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-        {/* Table */}
-        <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/30 text-muted-foreground text-xs uppercase">
-                  <th className="p-3 text-left">Data Ricezione</th>
-                  <th className="p-3 text-left">N° FIR</th>
-                  <th className="p-3 text-left">CER</th>
-                  <th className="p-3 text-left">Produttore</th>
-                  <th className="p-3 text-left">Trasportatore</th>
-                  <th className="p-3 text-right">Quantità</th>
-                  <th className="p-3 text-center">Stato</th>
-                  <th className="p-3 text-center">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Caricamento...</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nessun FIR ricevuto</td></tr>
-                ) : (
-                  filtered.map((item) => {
-                    const f = item.fir_forms;
-                    return (
-                      <tr key={item.id} className="border-b border-border/10 hover:bg-accent/5">
-                        <td className="p-3 font-mono text-xs">
-                          {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: it })}
-                        </td>
-                        <td className="p-3 font-mono text-xs font-bold text-blue-300">{f?.numero_fir || "—"}</td>
-                        <td className="p-3 font-mono">{f?.codice_eer || "—"}</td>
-                        <td className="p-3 text-xs max-w-[150px] truncate">{f?.produttore_denominazione || "—"}</td>
-                        <td className="p-3 text-xs max-w-[150px] truncate">{f?.trasportatore_denominazione || "—"}</td>
-                        <td className="p-3 text-right font-bold">
-                          {f?.quantita ? Number(f.quantita).toLocaleString("it-IT") : "—"}
-                          {f?.unita_misura ? ` ${f.unita_misura}` : ""}
-                        </td>
-                        <td className="p-3 text-center"><StatoBadge stato={item.stato} /></td>
-                        <td className="p-3 text-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setDetailItem(item); setConfirmForm({ peso: "", note: "" }); }}
-                            className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10"
-                          >
-                            <Eye className="h-3 w-3 mr-1" /> Dettagli
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+          {/* Table */}
+          <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden" style={{ boxShadow: `0 0 1px rgba(${ACCENT}, 0.3), 0 0 8px rgba(${ACCENT}, 0.1)` }}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/30 text-muted-foreground text-xs uppercase">
+                    <th className="p-3 text-left">Data Ricezione</th>
+                    <th className="p-3 text-left">N° FIR</th>
+                    <th className="p-3 text-left">CER</th>
+                    <th className="p-3 text-left">Produttore</th>
+                    <th className="p-3 text-left">Trasportatore</th>
+                    <th className="p-3 text-right">Quantità</th>
+                    <th className="p-3 text-center">Stato</th>
+                    <th className="p-3 text-center">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Caricamento...</td></tr>
+                  ) : filtered.length === 0 ? (
+                    <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nessun FIR ricevuto</td></tr>
+                  ) : (
+                    filtered.map((item) => {
+                      const f = item.fir_forms;
+                      return (
+                        <tr key={item.id} className="border-b border-border/10 hover:bg-accent/5">
+                          <td className="p-3 font-mono text-xs">
+                            {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: it })}
+                          </td>
+                          <td className="p-3 font-mono text-xs font-bold text-blue-400">{f?.numero_fir || "—"}</td>
+                          <td className="p-3 font-mono">{f?.codice_eer || "—"}</td>
+                          <td className="p-3 text-xs max-w-[150px] truncate">{f?.produttore_denominazione || "—"}</td>
+                          <td className="p-3 text-xs max-w-[150px] truncate">{f?.trasportatore_denominazione || "—"}</td>
+                          <td className="p-3 text-right font-bold">
+                            {f?.quantita ? Number(f.quantita).toLocaleString("it-IT") : "—"}
+                            {f?.unita_misura ? ` ${f.unita_misura}` : ""}
+                          </td>
+                          <td className="p-3 text-center"><StatoBadge stato={item.stato} /></td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => { setDetailItem(item); setConfirmForm({ peso: "", note: "" }); }}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            >
+                              <Eye className="h-3 w-3" /> Dettagli
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </main>
@@ -237,7 +261,7 @@ export default function ImpiantoDashboardPage() {
       <Dialog open={!!detailItem} onOpenChange={(open) => { if (!open) setDetailItem(null); }}>
         <DialogContent className="max-w-lg bg-card border-border/50">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
               <FileText className="h-5 w-5 text-blue-400" />
               Dettaglio FIR — {detailItem?.fir_forms?.numero_fir || "N/A"}
             </DialogTitle>
@@ -261,15 +285,15 @@ export default function ImpiantoDashboardPage() {
 
               {detailItem.stato === "ricevuto" && (
                 <div className="space-y-3 mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                  <p className="text-sm text-blue-200 font-semibold">Conferma ricezione</p>
+                  <p className="text-sm text-blue-300 font-display font-semibold tracking-wider">Conferma ricezione</p>
                   <div>
                     <label className="text-xs text-muted-foreground">Peso verificato (kg)</label>
-                    <Input
+                    <input
                       type="number"
                       value={confirmForm.peso}
                       onChange={(e) => setConfirmForm(prev => ({ ...prev, peso: e.target.value }))}
                       placeholder="Peso effettivo alla bilancia"
-                      className="bg-secondary/50 border-border"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
@@ -283,21 +307,20 @@ export default function ImpiantoDashboardPage() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button
+                    <button
                       onClick={() => handleConfirm("confermato")}
                       disabled={saving}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      className="flex-1 py-2.5 rounded-lg font-display font-semibold tracking-wider bg-emerald-600 text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
-                      <Check className="h-4 w-4 mr-1" /> Conferma Ricezione
-                    </Button>
-                    <Button
+                      <Check className="h-4 w-4" /> Conferma
+                    </button>
+                    <button
                       onClick={() => handleConfirm("contestato")}
                       disabled={saving}
-                      variant="outline"
-                      className="flex-1 border-red-500/50 text-red-300 hover:bg-red-500/10"
+                      className="flex-1 py-2.5 rounded-lg font-display font-semibold tracking-wider border border-red-500/50 text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
-                      <XCircle className="h-4 w-4 mr-1" /> Contesta
-                    </Button>
+                      <XCircle className="h-4 w-4" /> Contesta
+                    </button>
                   </div>
                 </div>
               )}
@@ -335,7 +358,7 @@ function StatoBadge({ stato }: { stato: string }) {
 
 function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+    <div className="flex items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl" style={{ boxShadow: `0 0 1px rgba(${color}, 0.3), 0 0 6px rgba(${color}, 0.1)` }}>
       <div className="p-2 rounded-xl" style={{ background: `rgba(${color}, 0.15)` }}>
         <Icon className="h-5 w-5" style={{ color: `rgb(${color})` }} />
       </div>
