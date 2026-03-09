@@ -204,9 +204,9 @@ const App = () => (
                 <Route path="/admin/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
                 <Route path="/admin/aree-riservate-impianti" element={<ProtectedRoute><AdminAreeRiservateGlobalPage /></ProtectedRoute>} />
 
-                {/* Area Riservata Impianti (login separato, no auth) */}
-                <Route path="/area-impianto" element={<ImpiantoLoginPage />} />
-                <Route path="/area-impianto/dashboard" element={<ImpiantoDashboardPage />} />
+                {/* Area Riservata Impianti per tenant (login separato, no auth) */}
+                <Route path="/area-impianto/:tenant" element={<ImpiantoLoginPage />} />
+                <Route path="/area-impianto/:tenant/dashboard" element={<ImpiantoDashboardPage />} />
 
                 {/* MultyNijol Admin Routes - PROTECTED */}
                 <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />

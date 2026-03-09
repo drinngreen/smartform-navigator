@@ -1,17 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Factory, LogOut, Search, Package, CheckCircle, AlertTriangle,
+  LogOut, Search, Package, CheckCircle, AlertTriangle,
   FileText, Eye, Check, XCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import logoDragon from "@/assets/dragon-logo-gold.png";
+
+const TENANT_MAP: Record<string, { id: string; label: string; color: string }> = {
+  global: { id: "167d07ad-9184-484e-85a6-da5ceafa42a3", label: "GLOBAL RECO", color: "59, 130, 246" },
+  multyproget: { id: "77ec9a3d-a6d4-4235-8e68-1a6f345de57a", label: "MULTYPROGET", color: "249, 115, 22" },
+  niyol: { id: "819c783e-4ecf-4774-85b7-7e7a1c5848fa", label: "NIYOL", color: "6, 182, 212" },
+};
 
 interface ImpiantoSession {
   account: { id: string; ragione_sociale: string; email: string; tenant_id: string };
@@ -43,10 +48,12 @@ interface FirInboxItem {
   } | null;
 }
 
-const ACCENT = "59, 130, 246";
-
 export default function ImpiantoDashboardPage() {
   const navigate = useNavigate();
+  const { tenant } = useParams<{ tenant: string }>();
+  const ctx = TENANT_MAP[tenant || "global"] || TENANT_MAP.global;
+  const sessionKey = `impianto_session_${tenant || "global"}`;
+
   const [session, setSession] = useState<ImpiantoSession | null>(null);
   const [inbox, setInbox] = useState<FirInboxItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,21 +63,21 @@ export default function ImpiantoDashboardPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem("impianto_session");
-    if (!raw) { navigate("/area-impianto"); return; }
+    const raw = localStorage.getItem(sessionKey);
+    if (!raw) { navigate(`/area-impianto/${tenant || "global"}`); return; }
     try {
       const s = JSON.parse(raw);
       const payload = JSON.parse(atob(s.token));
       if (payload.exp < Date.now()) {
-        localStorage.removeItem("impianto_session");
-        navigate("/area-impianto");
+        localStorage.removeItem(sessionKey);
+        navigate(`/area-impianto/${tenant || "global"}`);
         return;
       }
       setSession(s);
     } catch {
-      navigate("/area-impianto");
+      navigate(`/area-impianto/${tenant || "global"}`);
     }
-  }, [navigate]);
+  }, [navigate, tenant, sessionKey]);
 
   const loadInbox = useCallback(async () => {
     if (!session) return;
@@ -91,8 +98,8 @@ export default function ImpiantoDashboardPage() {
   useEffect(() => { loadInbox(); }, [loadInbox]);
 
   const handleLogout = () => {
-    localStorage.removeItem("impianto_session");
-    navigate("/area-impianto");
+    localStorage.removeItem(sessionKey);
+    navigate(`/area-impianto/${tenant || "global"}`);
   };
 
   const handleConfirm = async (stato: "confermato" | "contestato") => {
@@ -144,9 +151,9 @@ export default function ImpiantoDashboardPage() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse at 50% 30%, rgba(${ACCENT}, 0.22) 0%, rgba(${ACCENT}, 0.12) 25%, rgba(${ACCENT}, 0.04) 55%, transparent 80%),
-            radial-gradient(ellipse at 85% 15%, rgba(${ACCENT}, 0.17) 0%, rgba(${ACCENT}, 0.07) 25%, transparent 55%),
-            radial-gradient(ellipse at 15% 75%, rgba(${ACCENT}, 0.05) 0%, transparent 50%)
+            radial-gradient(ellipse at 50% 30%, rgba(${ctx.color}, 0.22) 0%, rgba(${ctx.color}, 0.12) 25%, rgba(${ctx.color}, 0.04) 55%, transparent 80%),
+            radial-gradient(ellipse at 85% 15%, rgba(${ctx.color}, 0.17) 0%, rgba(${ctx.color}, 0.07) 25%, transparent 55%),
+            radial-gradient(ellipse at 15% 75%, rgba(${ctx.color}, 0.05) 0%, transparent 50%)
           `,
         }}
       />
@@ -167,10 +174,10 @@ export default function ImpiantoDashboardPage() {
       <header className="relative z-20 border-b border-border/30 bg-card/40 backdrop-blur-xl px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logoDragon} alt="Logo" className="h-10 w-10" style={{ filter: "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))" }} />
+            <img src={logoDragon} alt="Logo" className="h-10 w-10" style={{ filter: `drop-shadow(0 0 8px rgba(${ctx.color}, 0.5))` }} />
             <div>
               <h1 className="font-display font-bold text-foreground text-lg tracking-wider">{session.account.ragione_sociale}</h1>
-              <p className="text-xs text-muted-foreground">{session.account.email}</p>
+              <p className="text-xs text-muted-foreground">{session.account.email} · <span style={{ color: `rgb(${ctx.color})` }}>{ctx.label}</span></p>
             </div>
           </div>
           <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground border border-border/50 hover:border-border transition-colors">
@@ -183,7 +190,7 @@ export default function ImpiantoDashboardPage() {
         <div className="max-w-7xl mx-auto space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={Package} label="Totale FIR" value={inbox.length} color={ACCENT} />
+            <StatCard icon={Package} label="Totale FIR" value={inbox.length} color={ctx.color} />
             <StatCard icon={FileText} label="Da confermare" value={ricevuti} color="249, 115, 22" />
             <StatCard icon={CheckCircle} label="Confermati" value={confermati} color="34, 197, 94" />
             <StatCard icon={AlertTriangle} label="Contestati" value={contestati} color="239, 68, 68" />
@@ -196,12 +203,13 @@ export default function ImpiantoDashboardPage() {
               placeholder="Cerca FIR, CER, produttore, trasportatore..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-3 rounded-lg bg-card/60 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-3 rounded-lg bg-card/60 border border-border/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2"
+              style={{ ["--tw-ring-color" as any]: `rgba(${ctx.color}, 0.5)` }}
             />
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden" style={{ boxShadow: `0 0 1px rgba(${ACCENT}, 0.3), 0 0 8px rgba(${ACCENT}, 0.1)` }}>
+          <div className="rounded-2xl bg-card/60 border border-border/30 overflow-hidden" style={{ boxShadow: `0 0 1px rgba(${ctx.color}, 0.3), 0 0 8px rgba(${ctx.color}, 0.1)` }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -229,7 +237,7 @@ export default function ImpiantoDashboardPage() {
                           <td className="p-3 font-mono text-xs">
                             {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: it })}
                           </td>
-                          <td className="p-3 font-mono text-xs font-bold text-blue-400">{f?.numero_fir || "—"}</td>
+                          <td className="p-3 font-mono text-xs font-bold" style={{ color: `rgb(${ctx.color})` }}>{f?.numero_fir || "—"}</td>
                           <td className="p-3 font-mono">{f?.codice_eer || "—"}</td>
                           <td className="p-3 text-xs max-w-[150px] truncate">{f?.produttore_denominazione || "—"}</td>
                           <td className="p-3 text-xs max-w-[150px] truncate">{f?.trasportatore_denominazione || "—"}</td>
@@ -241,7 +249,8 @@ export default function ImpiantoDashboardPage() {
                           <td className="p-3 text-center">
                             <button
                               onClick={() => { setDetailItem(item); setConfirmForm({ peso: "", note: "" }); }}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+                              style={{ borderColor: `rgba(${ctx.color}, 0.3)`, color: `rgb(${ctx.color})` }}
                             >
                               <Eye className="h-3 w-3" /> Dettagli
                             </button>
@@ -262,7 +271,7 @@ export default function ImpiantoDashboardPage() {
         <DialogContent className="max-w-lg bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
-              <FileText className="h-5 w-5 text-blue-400" />
+              <FileText className="h-5 w-5" style={{ color: `rgb(${ctx.color})` }} />
               Dettaglio FIR — {detailItem?.fir_forms?.numero_fir || "N/A"}
             </DialogTitle>
           </DialogHeader>
@@ -284,8 +293,8 @@ export default function ImpiantoDashboardPage() {
               </div>
 
               {detailItem.stato === "ricevuto" && (
-                <div className="space-y-3 mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                  <p className="text-sm text-blue-300 font-display font-semibold tracking-wider">Conferma ricezione</p>
+                <div className="space-y-3 mt-4 p-3 rounded-lg border" style={{ backgroundColor: `rgba(${ctx.color}, 0.1)`, borderColor: `rgba(${ctx.color}, 0.3)` }}>
+                  <p className="text-sm font-display font-semibold tracking-wider" style={{ color: `rgb(${ctx.color})` }}>Conferma ricezione</p>
                   <div>
                     <label className="text-xs text-muted-foreground">Peso verificato (kg)</label>
                     <input
@@ -293,7 +302,7 @@ export default function ImpiantoDashboardPage() {
                       value={confirmForm.peso}
                       onChange={(e) => setConfirmForm(prev => ({ ...prev, peso: e.target.value }))}
                       placeholder="Peso effettivo alla bilancia"
-                      className="w-full mt-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full mt-1 px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2"
                     />
                   </div>
                   <div>
