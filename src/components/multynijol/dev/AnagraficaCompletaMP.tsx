@@ -73,38 +73,12 @@ const emptyForm = (): Omit<AziendaMP, "id" | "attivo"> => ({
 });
 
 export function AnagraficaCompletaMP() {
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [importing, setImporting] = useState(false);
-  const [tenantId, setTenantId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadTenant = async () => {
-      const { data, error } = await supabase
-        .from("tenants" as any)
-        .select("id,name")
-        .ilike("name", "%multyproget%")
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        toast.error(`Errore caricamento tenant: ${error.message}`);
-        return;
-      }
-
-      if (data?.id) {
-        setTenantId(data.id);
-        return;
-      }
-
-      setTenantId(MULTY_TENANT_CANDIDATES[0]);
-    };
-
-    loadTenant();
-  }, []);
+  const tenantId = MULTY_TENANT_CANDIDATES[0];
 
   const { data: aziende, isLoading, refetch } = useQuery({
     queryKey: ["anagrafica-aziende-mp", tenantId],
