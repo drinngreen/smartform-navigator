@@ -89,6 +89,10 @@ const MNAnagraficaPrivatiPage = React.lazy(() => import("./pages/multynijol/MNAn
 const MNStoricoRicevutePage = React.lazy(() => import("./pages/multynijol/MNStoricoRicevutePage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
+const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
+const ImpiantoLoginPage = React.lazy(() => import("./pages/ImpiantoLoginPage"));
+const ImpiantoDashboardPage = React.lazy(() => import("./pages/ImpiantoDashboardPage"));
+const AdminAreeRiservateGlobalPage = React.lazy(() => import("./pages/admin/AdminAreeRiservateGlobalPage"));
 const MNAppCronologiaPage = React.lazy(() => import("./pages/multynijol/MNAppCronologiaPage"));
 const MNAppGPSPage = React.lazy(() => import("./pages/multynijol/MNAppGPSPage"));
 const MNAppAIPage = React.lazy(() => import("./pages/multynijol/MNAppAIPage"));
@@ -198,6 +202,11 @@ const App = () => (
                 <Route path="/admin/system-prompt" element={<ProtectedRoute><SystemPromptPage /></ProtectedRoute>} />
                 <Route path="/admin/social-guests" element={<ProtectedRoute><SocialGuestsPage /></ProtectedRoute>} />
                 <Route path="/admin/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
+                <Route path="/admin/aree-riservate-impianti" element={<ProtectedRoute><AdminAreeRiservateGlobalPage /></ProtectedRoute>} />
+
+                {/* Area Riservata Impianti (login separato, no auth) */}
+                <Route path="/area-impianto" element={<ImpiantoLoginPage />} />
+                <Route path="/area-impianto/dashboard" element={<ImpiantoDashboardPage />} />
 
                 {/* MultyNijol Admin Routes - PROTECTED */}
                 <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
@@ -235,6 +244,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/storico-ricevute" element={<ProtectedRoute><MNStoricoRicevutePage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/system-prompt" element={<ProtectedRoute><MNSystemPromptPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/aree-riservate-impianti" element={<ProtectedRoute><MNAreeRiservateImpiantiPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
                 <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />

@@ -9,6 +9,7 @@ import {
   BookUser,
   FileText,
   Receipt,
+  Factory,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
@@ -16,6 +17,7 @@ import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermedi
 import { DevContattiModule } from "@/components/multynijol/dev/DevContattiModule";
 import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
+import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -78,6 +80,13 @@ export default function MNDevDashboardPage() {
             <Receipt className="h-4 w-4" />
             Ricevute
           </TabsTrigger>
+          <TabsTrigger
+            value="aree-riservate"
+            className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400"
+          >
+            <Factory className="h-4 w-4" />
+            Aree Riservate
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -97,6 +106,9 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="ricevute">
           <DevRicevuteModule />
+        </TabsContent>
+        <TabsContent value="aree-riservate">
+          <AdminAreeRiservateImpianti tenantFilter="77ec9a3d-a6d4-4235-8e68-1a6f345de57a" />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
