@@ -89,6 +89,10 @@ const MNAnagraficaPrivatiPage = React.lazy(() => import("./pages/multynijol/MNAn
 const MNStoricoRicevutePage = React.lazy(() => import("./pages/multynijol/MNStoricoRicevutePage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
+const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
+const ImpiantoLoginPage = React.lazy(() => import("./pages/ImpiantoLoginPage"));
+const ImpiantoDashboardPage = React.lazy(() => import("./pages/ImpiantoDashboardPage"));
+const AdminAreeRiservateGlobalPage = React.lazy(() => import("./pages/admin/AdminAreeRiservateGlobalPage"));
 const MNAppCronologiaPage = React.lazy(() => import("./pages/multynijol/MNAppCronologiaPage"));
 const MNAppGPSPage = React.lazy(() => import("./pages/multynijol/MNAppGPSPage"));
 const MNAppAIPage = React.lazy(() => import("./pages/multynijol/MNAppAIPage"));
