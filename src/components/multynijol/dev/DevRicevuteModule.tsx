@@ -258,16 +258,16 @@ export function DevRicevuteModule() {
                         <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1">
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => printSingle(r)} title="Stampa">
+                            <Button variant="outline" size="icon" className="h-8 w-8 border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/20" onClick={() => printSingle(r)} title="Stampa">
                               <Printer className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(r)} title="Modifica">
+                            <Button variant="outline" size="icon" className="h-8 w-8 border-amber-400/40 text-amber-400 hover:bg-amber-400/20" onClick={() => openEdit(r)} title="Modifica">
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-8 w-8 border-destructive/40 text-destructive hover:bg-destructive/20"
                               onClick={() => {
                                 if (!window.confirm("Eliminare questa ricevuta?")) return;
                                 deleteMutation.mutate(r.id);
