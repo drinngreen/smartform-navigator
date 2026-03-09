@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
+const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 
 const CER_CRITICI: Record<string, { label: string; limite_annuo_kg: number }> = {
   "200140": { label: "Metalli", limite_annuo_kg: 200 },
