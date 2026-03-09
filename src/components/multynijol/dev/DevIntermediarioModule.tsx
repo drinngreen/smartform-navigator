@@ -195,10 +195,44 @@ export function DevIntermediarioModule() {
       {/* Intermediazioni Multy */}
       <Card className="bg-card/60 border-border/30">
         <CardHeader>
-          <CardTitle className="text-amber-400 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Intermediazioni Multyproget ({intermediazioni?.length ?? 0})
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-amber-400 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Intermediazioni Multyproget ({intermediazioni?.length ?? 0})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!intermediazioni?.length) return;
+                const cols = [
+                  { header: "Intermediario", key: "intermediario_nome", width: 22 },
+                  { header: "CER", key: "cer", width: 12 },
+                  { header: "Q.tà (kg)", key: "quantita_effettiva_kg", width: 14 },
+                  { header: "Provvigione", key: "importo_provvigione", width: 14, format: (v: any) => `€${Number(v || 0).toFixed(2)}` },
+                  { header: "Stato", key: "stato", width: 12 },
+                  { header: "Fatturata", key: "fatturata", width: 10, format: (v: any) => v ? "Sì" : "No" },
+                ];
+                const rows = intermediazioni.map(i => ({ ...i, intermediario_nome: (i as any).intermediario?.ragione_sociale || "-" }));
+                exportToExcel(rows, cols, "intermediazioni-multy-dev", "Intermediazioni");
+              }} className="gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+                <FileSpreadsheet className="h-3 w-3" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!intermediazioni?.length) return;
+                const cols = [
+                  { header: "Intermediario", key: "intermediario_nome", width: 22 },
+                  { header: "CER", key: "cer", width: 12 },
+                  { header: "Q.tà (kg)", key: "quantita_effettiva_kg", width: 14 },
+                  { header: "Provvigione", key: "importo_provvigione", width: 14, format: (v: any) => `€${Number(v || 0).toFixed(2)}` },
+                  { header: "Stato", key: "stato", width: 12 },
+                  { header: "Fatturata", key: "fatturata", width: 10, format: (v: any) => v ? "Sì" : "No" },
+                ];
+                const rows = intermediazioni.map(i => ({ ...i, intermediario_nome: (i as any).intermediario?.ragione_sociale || "-" }));
+                exportToPdf(rows, cols, "intermediazioni-multy-dev", "Intermediazioni Multyproget");
+              }} className="gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+                <Printer className="h-3 w-3" /> PDF
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {!intermediazioni?.length ? (

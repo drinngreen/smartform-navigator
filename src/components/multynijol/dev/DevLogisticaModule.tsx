@@ -201,10 +201,40 @@ export function DevLogisticaModule() {
       {/* Fatturazione from closed FIR */}
       <Card className="bg-card/60 border-border/30">
         <CardHeader>
-          <CardTitle className="text-emerald-400 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            FIR Chiusi — Pronti per Fatturazione ({closedFirs?.length ?? 0})
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-emerald-400 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              FIR Chiusi — Pronti per Fatturazione ({closedFirs?.length ?? 0})
+            </CardTitle>
+            {closedFirs && closedFirs.length > 0 && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  const cols = [
+                    { header: "N° FIR", key: "numero_fir", width: 16 },
+                    { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                    { header: "CER", key: "codice_eer", width: 12 },
+                    { header: "Peso (kg)", key: "quantita", width: 14 },
+                    { header: "Completato", key: "completed_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                  ];
+                  exportToExcel(closedFirs, cols, "fir-chiusi-dev", "FIR Chiusi");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                  <FileSpreadsheet className="h-3 w-3" /> Excel
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const cols = [
+                    { header: "N° FIR", key: "numero_fir", width: 16 },
+                    { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                    { header: "CER", key: "codice_eer", width: 12 },
+                    { header: "Peso (kg)", key: "quantita", width: 14 },
+                    { header: "Completato", key: "completed_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                  ];
+                  exportToPdf(closedFirs, cols, "fir-chiusi-dev", "FIR Chiusi — Pronti per Fatturazione");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                  <Printer className="h-3 w-3" /> PDF
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {!closedFirs?.length ? (

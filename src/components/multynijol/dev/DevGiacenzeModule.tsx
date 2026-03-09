@@ -159,6 +159,32 @@ export function DevGiacenzeModule() {
           <Printer className="h-4 w-4" />
           Stampa Giacenze
         </Button>
+        <Button variant="outline" onClick={() => {
+          if (!filteredGiacenze?.length) return toast.error("Nessuna giacenza");
+          const cols = [
+            { header: "CER", key: "cer", width: 14 },
+            { header: "Impianto", key: "impianto_nome", width: 22 },
+            { header: "Quantità (kg)", key: "quantita_kg", width: 16, format: (v: any) => Number(v).toLocaleString("it-IT") },
+            { header: "Aggiornamento", key: "updated_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+          ];
+          const rows = filteredGiacenze.map(g => ({ ...g, impianto_nome: (g as any).impianto?.nome || "-" }));
+          exportToExcel(rows, cols, "giacenze-multyproget-dev", "Giacenze");
+        }} className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <FileSpreadsheet className="h-4 w-4" /> Excel
+        </Button>
+        <Button variant="outline" onClick={() => {
+          if (!filteredGiacenze?.length) return toast.error("Nessuna giacenza");
+          const cols = [
+            { header: "CER", key: "cer", width: 14 },
+            { header: "Impianto", key: "impianto_nome", width: 22 },
+            { header: "Quantità (kg)", key: "quantita_kg", width: 16, format: (v: any) => Number(v).toLocaleString("it-IT") },
+            { header: "Aggiornamento", key: "updated_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+          ];
+          const rows = filteredGiacenze.map(g => ({ ...g, impianto_nome: (g as any).impianto?.nome || "-" }));
+          exportToPdf(rows, cols, "giacenze-multyproget-dev", "Giacenze Magazzino — Multyproget Dev");
+        }} className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <Printer className="h-4 w-4" /> PDF
+        </Button>
       </div>
 
       {/* Table */}

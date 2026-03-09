@@ -181,6 +181,34 @@ function ImpiantoFormulari() {
         <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading} className="border-emerald-500/30 text-emerald-400">
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          if (!filtered.length) return toast.error("Nessun formulario");
+          const cols = [
+            { header: "Stato", key: "status", width: 12 },
+            { header: "N° FIR", key: "numero_fir", width: 16 },
+            { header: "CER", key: "codice_eer", width: 12 },
+            { header: "Produttore", key: "produttore_denominazione", width: 24 },
+            { header: "Quantità", key: "quantita", width: 12, format: (v: any, r: any) => v ? `${v} ${r.unita_misura || "kg"}` : "-" },
+            { header: "Data", key: "updated_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+          ];
+          exportToExcel(filtered, cols, "formulari-impianto-dev", "Formulari");
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <FileSpreadsheet className="h-3 w-3" /> Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          if (!filtered.length) return toast.error("Nessun formulario");
+          const cols = [
+            { header: "Stato", key: "status", width: 12 },
+            { header: "N° FIR", key: "numero_fir", width: 16 },
+            { header: "CER", key: "codice_eer", width: 12 },
+            { header: "Produttore", key: "produttore_denominazione", width: 24 },
+            { header: "Quantità", key: "quantita", width: 12, format: (v: any, r: any) => v ? `${v} ${r.unita_misura || "kg"}` : "-" },
+            { header: "Data", key: "updated_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+          ];
+          exportToPdf(filtered, cols, "formulari-impianto-dev", "Formulari Impianto — Multyproget Dev");
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <Printer className="h-3 w-3" /> PDF
+        </Button>
       </div>
 
       <div className="flex gap-2 flex-wrap">
