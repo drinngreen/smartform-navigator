@@ -80,14 +80,25 @@ export function AnagraficaCompletaMP() {
   const { data: aziende, isLoading, refetch } = useQuery({
     queryKey: ["anagrafica-aziende-mp", MULTY_TENANT_ID],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("anagrafica_aziende_mp" as any)
-        .select("*")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .eq("attivo", true)
-        .order("ragione_sociale");
-      if (error) throw error;
-      return data as unknown as AziendaMP[];
+      // Fetch all records paginated (Supabase default limit is 1000)
+      const allRecords: AziendaMP[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("anagrafica_aziende_mp" as any)
+          .select("*")
+          .eq("tenant_id", MULTY_TENANT_ID)
+          .eq("attivo", true)
+          .order("ragione_sociale")
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = (data || []) as unknown as AziendaMP[];
+        allRecords.push(...rows);
+        if (rows.length < pageSize) break;
+        from += pageSize;
+      }
+      return allRecords;
     },
   });
 
