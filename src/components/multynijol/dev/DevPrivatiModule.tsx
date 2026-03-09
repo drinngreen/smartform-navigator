@@ -141,10 +141,19 @@ export function DevPrivatiModule() {
 
   const handleSaveConferimento = async () => {
     const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
-    if (!targetPrivatoId || !confForm.cer || !confForm.kg_pesati) {
-      toast.error("Seleziona un privato, CER e kg obbligatori");
+    if (!targetPrivatoId) {
+      toast.error("Seleziona un privato");
       return;
     }
+    if (!impiantoId) {
+      toast.error("Nessun impianto configurato");
+      return;
+    }
+    if (!confForm.cer || !confForm.kg_pesati) {
+      toast.error("CER e kg obbligatori");
+      return;
+    }
+
     const kg = parseFloat(confForm.kg_pesati);
 
     // Check limits - BLOCK if exceeded
@@ -156,29 +165,47 @@ export function DevPrivatiModule() {
     }
     if (warning) setLimitWarning(warning);
 
-    const privato = privati?.find(p => p.id === targetPrivatoId);
+    const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
 
-    const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
-      impianto_id: impiantoId, cer: confForm.cer, kg_pesati: kg,
-      nome_privato: nomeFinale, cf_pi: privato?.codice_fiscale || null,
-      importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
-      metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
-      privato_id: targetPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
-      targa_automezzo: confForm.targa_automezzo || null,
-      modello_automezzo: confForm.modello_automezzo || null,
-    } as any).select().single();
+    const { data: confData, error } = await supabase
+      .from("privati_conferimenti")
+      .insert({
+        impianto_id: impiantoId,
+        cer: confForm.cer,
+        kg_pesati: kg,
+        nome_privato: nomeFinale,
+        cf_pi: privato?.codice_fiscale || null,
+        importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
+        metodo_pag: confForm.metodo_pag || null,
+        note: confForm.note || null,
+        privato_id: targetPrivatoId,
+        tipo_utenza: privato?.tipo_utenza || "domestica",
+        targa_automezzo: confForm.targa_automezzo || null,
+        modello_automezzo: confForm.modello_automezzo || null,
+      } as any)
+      .select()
+      .single();
 
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
 
     // Auto-generate receipt
     const conf = confData as any;
-    if (conf && impiantoId) {
+    if (conf) {
       const anno = new Date().getFullYear();
-      const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+      const { data: numData } = await supabase.rpc(
+        "next_ricevuta_number",
+        { p_impianto_id: impiantoId, p_anno: anno } as any
+      );
       await supabase.from("ricevute_privati" as any).insert({
-        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: targetPrivatoId,
-        numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+        impianto_id: impiantoId,
+        conferimento_id: conf.id,
+        privato_id: targetPrivatoId,
+        numero_ricevuta: (numData as any) || `${Date.now()}`,
+        anno,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
@@ -187,7 +214,15 @@ export function DevPrivatiModule() {
     toast.success("✅ Conferimento e ricevuta registrati!");
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
-    setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+    setConfForm({
+      cer: "",
+      kg_pesati: "",
+      importo_pagato: "",
+      metodo_pag: "contanti",
+      note: "",
+      targa_automezzo: "",
+      modello_automezzo: "",
+    });
     setLimitWarning(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
@@ -195,18 +230,36 @@ export function DevPrivatiModule() {
 
   const handleSaveRicevutaManuale = async () => {
     const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
-    if (!targetPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
-    const privato = privati?.find(p => p.id === targetPrivatoId);
+    if (!targetPrivatoId) {
+      toast.error("Seleziona un privato");
+      return;
+    }
+    if (!impiantoId) {
+      toast.error("Nessun impianto configurato");
+      return;
+    }
+
+    const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
     const anno = new Date().getFullYear();
-    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+    const { data: numData } = await supabase.rpc(
+      "next_ricevuta_number",
+      { p_impianto_id: impiantoId, p_anno: anno } as any
+    );
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      impianto_id: impiantoId, privato_id: targetPrivatoId,
-      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+      impianto_id: impiantoId,
+      privato_id: targetPrivatoId,
+      numero_ricevuta: (numData as any) || `${Date.now()}`,
+      anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
       note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
     } as any);
-    if (error) { toast.error(error.message); return; }
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
     toast.success("✅ Ricevuta manuale generata!");
     setShowNewRicevuta(false);
     setRicevutaPrivatoId(null);
