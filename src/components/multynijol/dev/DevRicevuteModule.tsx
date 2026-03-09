@@ -147,9 +147,27 @@ export function DevRicevuteModule() {
 
   const safeFileBase = (r: RicevutaRow) => (r.numero_ricevuta ?? r.id).split("/").join("-");
 
+  const AZIENDA = {
+    nome: "MULTYPROGET S.R.L.",
+    indirizzo: "Via Rivarossa 18/20 - 10060 Piscina (TO)",
+    istat: "001195",
+    cf: "12347770013",
+    codRS: "205.213",
+  };
+
+  const aziendaHtml = `
+    <div style="margin-bottom:24px;border-bottom:2px solid #111;padding-bottom:14px;">
+      <div style="font-size:22px;font-weight:800;letter-spacing:1px;">${AZIENDA.nome}</div>
+      <div style="font-size:12px;color:#333;margin-top:4px;">${AZIENDA.indirizzo}</div>
+      <div style="font-size:11px;color:#555;margin-top:2px;">
+        ISTAT: ${AZIENDA.istat} &nbsp;|&nbsp; CF: ${AZIENDA.cf} &nbsp;|&nbsp; Cod.RS: ${AZIENDA.codRS}
+      </div>
+    </div>
+  `;
+
   const printSingle = (r: RicevutaRow) => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
-    const w = window.open("", "_blank", "noopener,noreferrer");
+    const w = window.open("", "_blank");
     if (!w) return;
 
     const title = `Ricevuta ${r.numero_ricevuta ?? ""}`;
@@ -157,50 +175,52 @@ export function DevRicevuteModule() {
     const cf = p?.codice_fiscale ?? "—";
     const noteHtml = escHtml(r.note ?? "").split("\n").join("<br />");
 
+    const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="color-scheme" content="only light" />
+  <title>${escHtml(title)}</title>
+  <style>
+    html, body { background: #fff !important; color: #111 !important; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; padding: 32px; }
+    h1 { margin: 0 0 6px; font-size: 26px; }
+    .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
+    .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
+    .row { display: flex; gap: 16px; margin: 10px 0; }
+    .label { width: 140px; color: #555; font-size: 12px; }
+    .val { flex: 1; font-weight: 700; font-size: 14px; }
+    .note-section { margin-top: 14px; white-space: pre-wrap; }
+    @media print {
+      html, body { background: #fff !important; color: #111 !important; }
+      input, button, select, textarea, [type="color"] { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  ${aziendaHtml}
+  <h1>${escHtml(title)}</h1>
+  <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
+  <div class="box">
+    <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
+    <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+    <div class="row"><div class="label">Importo</div><div class="val">&euro; ${escHtml(
+      Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
+    )}</div></div>
+    <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
+    <div class="note-section"><div class="label">Note</div><div>${noteHtml || "—"}</div></div>
+  </div>
+</body>
+</html>`;
+
     w.document.open();
-    w.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="color-scheme" content="only light" />
-          <title>${escHtml(title)}</title>
-          <style>
-            html, body { background: #fff; color: #111; }
-            body { font-family: Arial, sans-serif; padding: 24px; }
-            h1 { margin: 0 0 12px; font-size: 32px; }
-            .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
-            .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
-            .row { display: flex; gap: 16px; margin: 10px 0; }
-            .label { width: 140px; color: #444; font-size: 12px; }
-            .val { flex: 1; font-weight: 700; }
-            .note { margin-top: 14px; white-space: pre-wrap; }
-            @media print {
-              input, button, select, textarea { display: none !important; }
-              * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${escHtml(title)}</h1>
-          <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
-          <div class="box">
-            <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
-            <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
-            <div class="row"><div class="label">Importo</div><div class="val">€ ${escHtml(
-              Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
-            )}</div></div>
-            <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
-            <div class="note"><div class="label">Note</div><div>${noteHtml}</div></div>
-          </div>
-          <script>
-            window.addEventListener('afterprint', () => window.close());
-            setTimeout(() => window.print(), 120);
-          </script>
-        </body>
-      </html>
-    `);
+    w.document.write(html);
     w.document.close();
+
+    // Aspetta il rendering, poi stampa
+    setTimeout(() => {
+      try { w.focus(); w.print(); } catch (_) { /* popup blocked */ }
+    }, 300);
   };
 
   const exportCols = [
@@ -233,12 +253,23 @@ export function DevRicevuteModule() {
     });
   }, [filtered, privatiMap]);
 
+  const aziendaHeaderLines = [
+    AZIENDA.nome,
+    AZIENDA.indirizzo,
+    `ISTAT: ${AZIENDA.istat} | CF: ${AZIENDA.cf} | Cod.RS: ${AZIENDA.codRS}`,
+  ];
+
   const exportSingleExcel = (row: RicevutaEnriched) => {
-    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta", aziendaHeaderLines);
   };
 
   const exportSinglePdf = (row: RicevutaEnriched) => {
-    exportToPdf([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+    exportToPdf(
+      [row] as any[],
+      exportCols as any,
+      `ricevuta-${safeFileBase(row)}`,
+      `${AZIENDA.nome}\n${AZIENDA.indirizzo}\nISTAT: ${AZIENDA.istat} | CF: ${AZIENDA.cf} | Cod.RS: ${AZIENDA.codRS}\n\nRicevuta`
+    );
   };
 
   return (
@@ -255,7 +286,7 @@ export function DevRicevuteModule() {
                 size="sm"
                 onClick={() => {
                   if (!enriched.length) return toast.error("Nessuna ricevuta");
-                  exportToExcel(enriched as any[], exportCols as any, "registro-ricevute", "Ricevute");
+                  exportToExcel(enriched as any[], exportCols as any, "registro-ricevute", "Ricevute", aziendaHeaderLines);
                 }}
                 className="gap-1 h-7 text-xs"
               >
@@ -266,7 +297,7 @@ export function DevRicevuteModule() {
                 size="sm"
                 onClick={() => {
                   if (!enriched.length) return toast.error("Nessuna ricevuta");
-                  exportToPdf(enriched as any[], exportCols as any, "registro-ricevute", "Registro Ricevute");
+                  exportToPdf(enriched as any[], exportCols as any, "registro-ricevute", `${AZIENDA.nome}\n${AZIENDA.indirizzo}\nISTAT: ${AZIENDA.istat} | CF: ${AZIENDA.cf} | Cod.RS: ${AZIENDA.codRS}\n\nRegistro Ricevute`);
                 }}
                 className="gap-1 h-7 text-xs"
               >
