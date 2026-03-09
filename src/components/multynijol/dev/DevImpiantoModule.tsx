@@ -49,6 +49,9 @@ export function DevImpiantoModule() {
         <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <CreditCard className="h-4 w-4" /> Fatturazione
         </TabsTrigger>
+        <TabsTrigger value="registro" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <ClipboardList className="h-4 w-4" /> Registro C/S
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="nuovo-fir">
