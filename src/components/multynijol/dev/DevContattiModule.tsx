@@ -14,8 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer,
+  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer, ListChecks,
 } from "lucide-react";
+import { AnagraficaCompletaMP } from "./AnagraficaCompletaMP";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
