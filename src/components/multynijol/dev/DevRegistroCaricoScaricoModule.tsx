@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 // CER preferiti from Excel – same dataset used in DevCERPreferitiModule
 const CER_PREFERITI = [
@@ -114,7 +114,7 @@ const emptyForm = {
   destinatario_denominazione: "",
   numero_fir: "",
   origine: "",
-  esito_accettazione: "ACCETTATO",
+  esito_accettazione: "accettato",
   note: "",
   data_movimento: new Date().toISOString().slice(0, 10),
 };
@@ -138,7 +138,7 @@ export function DevRegistroCaricoScaricoModule() {
         .select("id, nome")
         .eq("tenant_id", MULTY_TENANT_ID)
         .limit(1)
-        .single();
+        .maybeSingle();
       return data;
     },
   });
@@ -381,7 +381,7 @@ export function DevRegistroCaricoScaricoModule() {
                       <td className="p-3 font-mono text-xs text-emerald-400">{m.numero_fir || "—"}</td>
                       <td className="p-3">
                         {m.esito_accettazione && (
-                          <Badge variant={m.esito_accettazione === "ACCETTATO" ? "default" : "destructive"} className="text-[10px]">
+                          <Badge variant={m.esito_accettazione === "accettato" ? "default" : "destructive"} className="text-[10px]">
                             {m.esito_accettazione}
                           </Badge>
                         )}
@@ -500,9 +500,9 @@ export function DevRegistroCaricoScaricoModule() {
               <Select value={form.esito_accettazione} onValueChange={(v) => setForm((f) => ({ ...f, esito_accettazione: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACCETTATO">Accettato</SelectItem>
-                  <SelectItem value="RESPINTO">Respinto</SelectItem>
-                  <SelectItem value="PARZIALE">Parziale</SelectItem>
+                  <SelectItem value="accettato">Accettato</SelectItem>
+                  <SelectItem value="respinto">Respinto</SelectItem>
+                  <SelectItem value="parziale">Parziale</SelectItem>
                 </SelectContent>
               </Select>
             </div>
