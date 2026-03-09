@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
+import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
