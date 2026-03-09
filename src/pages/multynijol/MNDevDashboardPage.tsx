@@ -18,6 +18,7 @@ import { DevContattiModule } from "@/components/multynijol/dev/DevContattiModule
 import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
 import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
+import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferitiModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
