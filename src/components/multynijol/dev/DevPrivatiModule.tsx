@@ -308,11 +308,19 @@ export function DevPrivatiModule() {
         <Button onClick={() => setShowNewPrivato(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="h-4 w-4" /> Nuovo Privato
         </Button>
-        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewConferimento(true); }}
+        <Button onClick={() => {
+          if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
+          setConferimentoPrivatoId(selectedPrivatoId);
+          setShowNewConferimento(true);
+        }}
           variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
           <Scale className="h-4 w-4" /> Nuovo Conferimento
         </Button>
-        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewRicevuta(true); }}
+        <Button onClick={() => {
+          if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
+          setRicevutaPrivatoId(selectedPrivatoId);
+          setShowNewRicevuta(true);
+        }}
           variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
           <Receipt className="h-4 w-4" /> Ricevuta Manuale
         </Button>
