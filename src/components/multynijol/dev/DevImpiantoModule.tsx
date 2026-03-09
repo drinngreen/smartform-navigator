@@ -17,8 +17,9 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
-  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard,
+  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
 } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
 import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok } from "@/lib/rentriNgrokApi";
 
