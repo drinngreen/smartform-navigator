@@ -39,10 +39,7 @@ export default function ImpiantoLoginPage() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="relative inline-block mb-4">
-            <img src={logoDragon} alt="Logo" className="h-20 w-20 mx-auto" style={{ filter: "drop-shadow(0 0 16px rgba(59, 130, 246, 0.6))" }} />
-            <Factory className="absolute -top-2 -right-2 text-blue-400" size={28} />
-          </div>
+          <img src={logoDragon} alt="Logo" className="h-20 w-20 mx-auto mb-4" style={{ filter: "drop-shadow(0 0 16px rgba(59, 130, 246, 0.6))" }} />
           <h1 className="font-display text-3xl text-foreground tracking-wider mb-2" style={{ textShadow: "0 0 20px rgba(59, 130, 246, 0.5)" }}>
             AREA IMPIANTO
           </h1>
