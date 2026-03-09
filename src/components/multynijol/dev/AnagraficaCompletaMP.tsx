@@ -79,11 +79,38 @@ export function AnagraficaCompletaMP() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [importing, setImporting] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadTenant = async () => {
+      const { data, error } = await supabase
+        .from("tenants" as any)
+        .select("id,name")
+        .ilike("name", "%multyproget%")
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        toast.error(`Errore caricamento tenant: ${error.message}`);
+        return;
+      }
+
+      if (data?.id) {
+        setTenantId(data.id);
+        return;
+      }
+
+      setTenantId(MULTY_TENANT_CANDIDATES[0]);
+    };
+
+    loadTenant();
+  }, []);
 
   const { data: aziende, isLoading, refetch } = useQuery({
-    queryKey: ["anagrafica-aziende-mp", MULTY_TENANT_ID],
+    queryKey: ["anagrafica-aziende-mp", tenantId],
+    enabled: !!tenantId,
     queryFn: async () => {
-      // Fetch all records paginated (Supabase default limit is 1000)
+      if (!tenantId) return [];
       const allRecords: AziendaMP[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -91,11 +118,13 @@ export function AnagraficaCompletaMP() {
         const { data, error } = await supabase
           .from("anagrafica_aziende_mp" as any)
           .select("*")
-          .eq("tenant_id", MULTY_TENANT_ID)
+          .eq("tenant_id", tenantId)
           .eq("attivo", true)
           .order("ragione_sociale")
           .range(from, from + pageSize - 1);
+
         if (error) throw error;
+
         const rows = (data || []) as unknown as AziendaMP[];
         allRecords.push(...rows);
         if (rows.length < pageSize) break;
@@ -133,8 +162,9 @@ export function AnagraficaCompletaMP() {
   };
 
   const handleSave = async () => {
+    if (!tenantId) { toast.error("Tenant Multyproget non trovato"); return; }
     if (!form.ragione_sociale.trim()) { toast.error("Ragione sociale obbligatoria"); return; }
-    const payload = { ...form, tenant_id: MULTY_TENANT_ID };
+    const payload = { ...form, tenant_id: tenantId };
     if (editId) {
       const { error } = await supabase.from("anagrafica_aziende_mp" as any).update(payload as any).eq("id", editId);
       if (error) { toast.error(error.message); return; }
@@ -154,49 +184,89 @@ export function AnagraficaCompletaMP() {
     toast.success("Azienda disattivata"); refetch();
   };
 
-  const parseBool = (v: any): boolean => v === true || v === "TRUE" || v === "VERO" || v === 1 || v === "1";
+  const normalizeKey = (value: string) => value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
-  const mapExcelRows = (rows: any[]) => rows.map(r => ({
-    tenant_id: MULTY_TENANT_ID,
-    codice: String(r["Codice"] ?? "").trim(),
-    ragione_sociale: String(r["Ragione"] ?? r["Ragione Sociale"] ?? "").trim(),
-    indirizzo: String(r["Indirizzo"] ?? "").trim(),
-    citta: String(r["Città"] ?? r["Citta"] ?? "").trim(),
-    provincia: String(r["Prov."] ?? r["Provincia"] ?? "").trim(),
-    cap: String(r["CAP"] ?? "").trim(),
-    codice_fiscale: String(r["Codice Fiscale"] ?? "").trim(),
-    p_sl: parseBool(r["P. SL"]),
-    p_ul: parseBool(r["P. UL"]),
-    trasportatore: parseBool(r["Trasp."]),
-    destinatario: parseBool(r["Dest."]),
-    intermediario: parseBool(r["Inter."]),
-    fornitore: parseBool(r["Forn."]),
-    cliente: parseBool(r["Cli."]),
-    alias: String(r["Alias"] ?? "").trim(),
-    cod_tipologia: String(r["Cod. Tipol."] ?? "1").trim(),
-    tipologia: String(r["Tipologia"] ?? "Azienda Privata").trim(),
-    fax: String(r["Fax"] ?? "").trim(),
-    email: String(r["Email"] ?? "").trim(),
-    nazione: String(r["Nazione"] ?? "IT").trim(),
-    partita_iva: String(r["P. Iva"] ?? r["P.Iva"] ?? r["Partita IVA"] ?? "").trim(),
-    telefono: String(r["Telefono"] ?? "").trim(),
-    zona_gruppo_cliente: String(r["Zona/Gruppo Cliente"] ?? "").trim(),
-    stato: String(r["Stato"] ?? "0").trim(),
-    cellulare: String(r["Cellulare"] ?? "").trim(),
-    cod_cliente: String(r["Cod. Cliente"] ?? "").trim(),
-    cliente_fatturazione: String(r["Cliente fatt."] ?? "").trim(),
-    codice_destinatario: String(r["Codice Destinatario"] ?? "").trim(),
-    pec: String(r["PEC"] ?? "").trim(),
-    latitudine: String(r["Latitudine"] ?? "").trim(),
-    longitudine: String(r["Longitudine"] ?? "").trim(),
-    codice_cat_eco: String(r["Codice Cat. Eco."] ?? "").trim(),
-    note: String(r["Note"] ?? "").trim(),
-    stato_amm: String(r["Stato Amm."] ?? "").trim(),
-    codice_cdc: String(r["Codice CDC"] ?? "").trim(),
-    urbano: parseBool(r["Urbano"]),
-  })).filter(r => r.ragione_sociale);
+  const parseBool = (value: unknown): boolean => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return ["1", "true", "vero", "si", "sì", "x"].includes(normalized);
+  };
+
+  const pickValue = (row: Record<string, unknown>, aliases: string[]) => {
+    const entries = Object.entries(row);
+    const normalizedAliases = aliases.map(normalizeKey);
+
+    for (const alias of normalizedAliases) {
+      const exact = entries.find(([key]) => normalizeKey(key) === alias);
+      if (exact) return exact[1];
+    }
+
+    for (const alias of normalizedAliases) {
+      const startsWith = entries.find(([key]) => normalizeKey(key).startsWith(alias));
+      if (startsWith) return startsWith[1];
+    }
+
+    for (const alias of normalizedAliases) {
+      const contains = entries.find(([key]) => normalizeKey(key).includes(alias));
+      if (contains) return contains[1];
+    }
+
+    return "";
+  };
+
+  const asText = (value: unknown, fallback = "") => {
+    const str = String(value ?? "").trim();
+    return str || fallback;
+  };
+
+  const mapExcelRows = (rows: Record<string, unknown>[]) => rows.map((row) => ({
+    tenant_id: tenantId,
+    codice: asText(pickValue(row, ["codice"])),
+    ragione_sociale: asText(pickValue(row, ["ragione", "ragione sociale", "denominazione"])),
+    indirizzo: asText(pickValue(row, ["indirizzo"])),
+    citta: asText(pickValue(row, ["citta", "città", "comune"])),
+    provincia: asText(pickValue(row, ["prov", "provincia"])),
+    cap: asText(pickValue(row, ["cap"])),
+    codice_fiscale: asText(pickValue(row, ["codice fiscale", "cf"])),
+    p_sl: parseBool(pickValue(row, ["p sl"])),
+    p_ul: parseBool(pickValue(row, ["p ul"])),
+    trasportatore: parseBool(pickValue(row, ["trasp", "trasportatore"])),
+    destinatario: parseBool(pickValue(row, ["dest", "destinatario"])),
+    intermediario: parseBool(pickValue(row, ["inter", "intermediario"])),
+    fornitore: parseBool(pickValue(row, ["forn", "fornitore"])),
+    cliente: parseBool(pickValue(row, ["cli", "cliente"])),
+    alias: asText(pickValue(row, ["alias"])),
+    cod_tipologia: asText(pickValue(row, ["cod tipol", "cod tipologia"]), "1"),
+    tipologia: asText(pickValue(row, ["tipologia"]), "Azienda Privata"),
+    fax: asText(pickValue(row, ["fax"])),
+    email: asText(pickValue(row, ["email"])),
+    nazione: asText(pickValue(row, ["nazione"]), "IT"),
+    partita_iva: asText(pickValue(row, ["p iva", "partita iva", "piva"])),
+    telefono: asText(pickValue(row, ["telefono"])),
+    zona_gruppo_cliente: asText(pickValue(row, ["zona gruppo cliente"])),
+    stato: asText(pickValue(row, ["stato"]), "0"),
+    cellulare: asText(pickValue(row, ["cellulare"])),
+    cod_cliente: asText(pickValue(row, ["cod cliente"])),
+    cliente_fatturazione: asText(pickValue(row, ["cliente fatt"])),
+    codice_destinatario: asText(pickValue(row, ["codice destinatario"])),
+    pec: asText(pickValue(row, ["pec"])),
+    latitudine: asText(pickValue(row, ["latitudine"])),
+    longitudine: asText(pickValue(row, ["longitudine"])),
+    codice_cat_eco: asText(pickValue(row, ["codice cat eco"])),
+    note: asText(pickValue(row, ["note"])),
+    stato_amm: asText(pickValue(row, ["stato amm"]), "0"),
+    codice_cdc: asText(pickValue(row, ["codice cdc"])),
+    urbano: parseBool(pickValue(row, ["urbano"])),
+  })).filter((r) => r.tenant_id && r.ragione_sociale);
 
   const insertBatches = async (mapped: any[]) => {
+    if (!tenantId) throw new Error("Tenant Multyproget non trovato");
     let inserted = 0;
     for (let i = 0; i < mapped.length; i += 50) {
       const batch = mapped.slice(i, i + 50);
