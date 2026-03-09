@@ -1733,6 +1733,111 @@ export type Database = {
           },
         ]
       }
+      impianti_accounts: {
+        Row: {
+          attivo: boolean
+          created_at: string
+          email: string
+          id: string
+          password_hash: string
+          ragione_sociale: string
+          tenant_id: string | null
+          ultimo_accesso: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          password_hash: string
+          ragione_sociale: string
+          tenant_id?: string | null
+          ultimo_accesso?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          password_hash?: string
+          ragione_sociale?: string
+          tenant_id?: string | null
+          ultimo_accesso?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impianti_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impianto_fir_inbox: {
+        Row: {
+          created_at: string
+          data_conferma: string | null
+          fir_form_id: string
+          id: string
+          impianto_account_id: string
+          note_impianto: string | null
+          peso_verificato: number | null
+          stato: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_conferma?: string | null
+          fir_form_id: string
+          id?: string
+          impianto_account_id: string
+          note_impianto?: string | null
+          peso_verificato?: number | null
+          stato?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_conferma?: string | null
+          fir_form_id?: string
+          id?: string
+          impianto_account_id?: string
+          note_impianto?: string | null
+          peso_verificato?: number | null
+          stato?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impianto_fir_inbox_fir_form_id_fkey"
+            columns: ["fir_form_id"]
+            isOneToOne: false
+            referencedRelation: "fir_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impianto_fir_inbox_impianto_account_id_fkey"
+            columns: ["impianto_account_id"]
+            isOneToOne: false
+            referencedRelation: "impianti_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impianto_fir_inbox_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intermediari: {
         Row: {
           attivo: boolean
