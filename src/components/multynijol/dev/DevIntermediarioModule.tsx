@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Globe, Eye, FileText, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Globe, Eye, FileText, TrendingUp, FileSpreadsheet, Printer } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const GLOBAL_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
@@ -106,10 +108,44 @@ export function DevIntermediarioModule() {
       {/* Global Reco read-only view */}
       <Card className="bg-card/60 border-blue-500/30">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Vista Global Reco (Sola Lettura)
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-blue-400 flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Vista Global Reco (Sola Lettura)
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!globalFirs?.length) return;
+                const cols = [
+                  { header: "N° FIR", key: "numero_fir", width: 16 },
+                  { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                  { header: "Destinatario", key: "destinatario_denominazione", width: 24 },
+                  { header: "CER", key: "codice_eer", width: 12 },
+                  { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                  { header: "Stato", key: "status", width: 12 },
+                  { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                ];
+                exportToExcel(globalFirs, cols, "global-reco-fir", "FIR Global Reco");
+              }} className="gap-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                <FileSpreadsheet className="h-3 w-3" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!globalFirs?.length) return;
+                const cols = [
+                  { header: "N° FIR", key: "numero_fir", width: 16 },
+                  { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                  { header: "Destinatario", key: "destinatario_denominazione", width: 24 },
+                  { header: "CER", key: "codice_eer", width: 12 },
+                  { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                  { header: "Stato", key: "status", width: 12 },
+                  { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                ];
+                exportToPdf(globalFirs, cols, "global-reco-fir", "FIR Global Reco");
+              }} className="gap-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                <Printer className="h-3 w-3" /> PDF
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -160,10 +196,44 @@ export function DevIntermediarioModule() {
       {/* Intermediazioni Multy */}
       <Card className="bg-card/60 border-border/30">
         <CardHeader>
-          <CardTitle className="text-amber-400 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Intermediazioni Multyproget ({intermediazioni?.length ?? 0})
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-amber-400 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Intermediazioni Multyproget ({intermediazioni?.length ?? 0})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!intermediazioni?.length) return;
+                const cols = [
+                  { header: "Intermediario", key: "intermediario_nome", width: 22 },
+                  { header: "CER", key: "cer", width: 12 },
+                  { header: "Q.tà (kg)", key: "quantita_effettiva_kg", width: 14 },
+                  { header: "Provvigione", key: "importo_provvigione", width: 14, format: (v: any) => `€${Number(v || 0).toFixed(2)}` },
+                  { header: "Stato", key: "stato", width: 12 },
+                  { header: "Fatturata", key: "fatturata", width: 10, format: (v: any) => v ? "Sì" : "No" },
+                ];
+                const rows = intermediazioni.map(i => ({ ...i, intermediario_nome: (i as any).intermediario?.ragione_sociale || "-" }));
+                exportToExcel(rows, cols, "intermediazioni-multy-dev", "Intermediazioni");
+              }} className="gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+                <FileSpreadsheet className="h-3 w-3" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!intermediazioni?.length) return;
+                const cols = [
+                  { header: "Intermediario", key: "intermediario_nome", width: 22 },
+                  { header: "CER", key: "cer", width: 12 },
+                  { header: "Q.tà (kg)", key: "quantita_effettiva_kg", width: 14 },
+                  { header: "Provvigione", key: "importo_provvigione", width: 14, format: (v: any) => `€${Number(v || 0).toFixed(2)}` },
+                  { header: "Stato", key: "stato", width: 12 },
+                  { header: "Fatturata", key: "fatturata", width: 10, format: (v: any) => v ? "Sì" : "No" },
+                ];
+                const rows = intermediazioni.map(i => ({ ...i, intermediario_nome: (i as any).intermediario?.ragione_sociale || "-" }));
+                exportToPdf(rows, cols, "intermediazioni-multy-dev", "Intermediazioni Multyproget");
+              }} className="gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+                <Printer className="h-3 w-3" /> PDF
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {!intermediazioni?.length ? (

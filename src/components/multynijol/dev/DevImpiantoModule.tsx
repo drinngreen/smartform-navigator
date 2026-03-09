@@ -17,8 +17,9 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
-  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard,
+  Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
 } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
 import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok } from "@/lib/rentriNgrokApi";
 
@@ -180,9 +181,37 @@ function ImpiantoFormulari() {
         <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading} className="border-emerald-500/30 text-emerald-400">
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          if (!filtered.length) return toast.error("Nessun formulario");
+          const cols = [
+            { header: "Stato", key: "status", width: 12 },
+            { header: "N° FIR", key: "numero_fir", width: 16 },
+            { header: "CER", key: "codice_eer", width: 12 },
+            { header: "Produttore", key: "produttore_denominazione", width: 24 },
+            { header: "Quantità", key: "quantita", width: 12, format: (v: any, r: any) => v ? `${v} ${r.unita_misura || "kg"}` : "-" },
+            { header: "Data", key: "updated_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+          ];
+          exportToExcel(filtered, cols, "formulari-impianto-dev", "Formulari");
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <FileSpreadsheet className="h-3 w-3" /> Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          if (!filtered.length) return toast.error("Nessun formulario");
+          const cols = [
+            { header: "Stato", key: "status", width: 12 },
+            { header: "N° FIR", key: "numero_fir", width: 16 },
+            { header: "CER", key: "codice_eer", width: 12 },
+            { header: "Produttore", key: "produttore_denominazione", width: 24 },
+            { header: "Quantità", key: "quantita", width: 12, format: (v: any, r: any) => v ? `${v} ${r.unita_misura || "kg"}` : "-" },
+            { header: "Data", key: "updated_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+          ];
+          exportToPdf(filtered, cols, "formulari-impianto-dev", "Formulari Impianto — Multyproget Dev");
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <Printer className="h-3 w-3" /> PDF
+        </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {["all", "draft", "submitted", "completed"].map((t) => (
           <Button key={t} variant={tab === t ? "default" : "outline"} size="sm" onClick={() => setTab(t)}
             className={tab === t ? "bg-emerald-600 hover:bg-emerald-700" : "border-emerald-500/30 text-emerald-400"}>

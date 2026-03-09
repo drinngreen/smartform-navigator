@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2 } from "lucide-react";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2, FileSpreadsheet, Printer } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
@@ -261,9 +262,41 @@ export function DevPrivatiModule() {
         {/* Lista Privati */}
         <Card className="bg-card/60 border-border/30">
           <CardHeader>
-            <CardTitle className="text-emerald-400 flex items-center gap-2">
-              <Users className="h-5 w-5" /> Anagrafica Privati ({filteredPrivati?.length ?? 0})
-            </CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="text-emerald-400 flex items-center gap-2">
+                <Users className="h-5 w-5" /> Anagrafica Privati ({filteredPrivati?.length ?? 0})
+              </CardTitle>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (!filteredPrivati?.length) return;
+                  const cols = [
+                    { header: "Cognome", key: "cognome", width: 16 },
+                    { header: "Nome", key: "nome", width: 16 },
+                    { header: "CF", key: "codice_fiscale", width: 18 },
+                    { header: "Comune", key: "comune_residenza", width: 16 },
+                    { header: "Tipo", key: "tipo_utenza", width: 12 },
+                    { header: "Tessera", key: "numero_tessera", width: 12 },
+                  ];
+                  exportToExcel(filteredPrivati, cols, "privati-dev", "Privati");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
+                  <FileSpreadsheet className="h-3 w-3" /> Excel
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (!filteredPrivati?.length) return;
+                  const cols = [
+                    { header: "Cognome", key: "cognome", width: 16 },
+                    { header: "Nome", key: "nome", width: 16 },
+                    { header: "CF", key: "codice_fiscale", width: 18 },
+                    { header: "Comune", key: "comune_residenza", width: 16 },
+                    { header: "Tipo", key: "tipo_utenza", width: 12 },
+                    { header: "Tessera", key: "numero_tessera", width: 12 },
+                  ];
+                  exportToPdf(filteredPrivati, cols, "privati-dev", "Anagrafica Privati — Multyproget Dev");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
+                  <Printer className="h-3 w-3" /> PDF
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
             {filteredPrivati?.map((p) => {

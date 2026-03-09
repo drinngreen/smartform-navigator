@@ -14,9 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2,
+  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 
@@ -157,6 +158,48 @@ function AnagraficheView() {
         </div>
         <Button onClick={() => { resetForm(); setShowNewPrivato(true); }} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="h-4 w-4" /> Nuovo Privato
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          const data = tab === "privati" ? filteredPrivati : filteredAziende;
+          if (!data.length) return toast.error("Nessun dato da esportare");
+          const cols = tab === "privati" ? [
+            { header: "Nome", key: "_nome", width: 20, format: (_: any, r: any) => `${r.cognome} ${r.nome}` },
+            { header: "CF", key: "codice_fiscale", width: 18 },
+            { header: "Comune", key: "comune_residenza", width: 16 },
+            { header: "Tipo", key: "tipo_utenza", width: 12 },
+            { header: "Telefono", key: "_tel", width: 14, format: (_: any, r: any) => r.telefono || r.cellulare || "-" },
+            { header: "Email", key: "email", width: 22 },
+          ] : [
+            { header: "Denominazione", key: "name", width: 24 },
+            { header: "P.IVA", key: "piva", width: 14 },
+            { header: "CF", key: "codice_fiscale", width: 18 },
+            { header: "Comune", key: "comune", width: 16 },
+            { header: "Indirizzo", key: "indirizzo", width: 22 },
+          ];
+          exportToExcel(data, cols, `anagrafiche-${tab}-dev`, tab === "privati" ? "Privati" : "Aziende");
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <FileSpreadsheet className="h-3 w-3" /> Excel
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => {
+          const data = tab === "privati" ? filteredPrivati : filteredAziende;
+          if (!data.length) return toast.error("Nessun dato da esportare");
+          const cols = tab === "privati" ? [
+            { header: "Nome", key: "_nome", width: 20, format: (_: any, r: any) => `${r.cognome} ${r.nome}` },
+            { header: "CF", key: "codice_fiscale", width: 18 },
+            { header: "Comune", key: "comune_residenza", width: 16 },
+            { header: "Tipo", key: "tipo_utenza", width: 12 },
+            { header: "Telefono", key: "_tel", width: 14, format: (_: any, r: any) => r.telefono || r.cellulare || "-" },
+            { header: "Email", key: "email", width: 22 },
+          ] : [
+            { header: "Denominazione", key: "name", width: 24 },
+            { header: "P.IVA", key: "piva", width: 14 },
+            { header: "CF", key: "codice_fiscale", width: 18 },
+            { header: "Comune", key: "comune", width: 16 },
+            { header: "Indirizzo", key: "indirizzo", width: 22 },
+          ];
+          exportToPdf(data, cols, `anagrafiche-${tab}-dev`, `Anagrafiche ${tab === "privati" ? "Privati" : "Aziende"}`);
+        }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <Printer className="h-3 w-3" /> PDF
         </Button>
         <div className="flex gap-1">
           <button onClick={() => setTab("privati")}

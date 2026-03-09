@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Truck, FileText, Printer } from "lucide-react";
+import { Search, Truck, FileText, Printer, FileSpreadsheet } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 
@@ -115,10 +116,42 @@ export function DevLogisticaModule() {
       {searchTrigger && (
         <Card className="bg-card/60 border-border/30">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Truck className="h-4 w-4 text-emerald-400" />
-              Risultati per "{searchTrigger}" — {firResults?.length ?? 0} FIR trovati
-            </CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Truck className="h-4 w-4 text-emerald-400" />
+                Risultati per "{searchTrigger}" — {firResults?.length ?? 0} FIR trovati
+              </CardTitle>
+              {firResults && firResults.length > 0 && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const cols = [
+                      { header: "N° FIR", key: "numero_fir", width: 16 },
+                      { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                      { header: "CER", key: "codice_eer", width: 12 },
+                      { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                      { header: "Stato", key: "status", width: 12 },
+                      { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                    ];
+                    exportToExcel(firResults, cols, `fir-targa-${searchTrigger}`, "Ricerca Targa");
+                  }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                    <FileSpreadsheet className="h-3 w-3" /> Excel
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const cols = [
+                      { header: "N° FIR", key: "numero_fir", width: 16 },
+                      { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                      { header: "CER", key: "codice_eer", width: 12 },
+                      { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                      { header: "Stato", key: "status", width: 12 },
+                      { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                    ];
+                    exportToPdf(firResults, cols, `fir-targa-${searchTrigger}`, `FIR per Targa ${searchTrigger}`);
+                  }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                    <Printer className="h-3 w-3" /> PDF
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -168,10 +201,40 @@ export function DevLogisticaModule() {
       {/* Fatturazione from closed FIR */}
       <Card className="bg-card/60 border-border/30">
         <CardHeader>
-          <CardTitle className="text-emerald-400 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            FIR Chiusi — Pronti per Fatturazione ({closedFirs?.length ?? 0})
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-emerald-400 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              FIR Chiusi — Pronti per Fatturazione ({closedFirs?.length ?? 0})
+            </CardTitle>
+            {closedFirs && closedFirs.length > 0 && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => {
+                  const cols = [
+                    { header: "N° FIR", key: "numero_fir", width: 16 },
+                    { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                    { header: "CER", key: "codice_eer", width: 12 },
+                    { header: "Peso (kg)", key: "quantita", width: 14 },
+                    { header: "Completato", key: "completed_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                  ];
+                  exportToExcel(closedFirs, cols, "fir-chiusi-dev", "FIR Chiusi");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                  <FileSpreadsheet className="h-3 w-3" /> Excel
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const cols = [
+                    { header: "N° FIR", key: "numero_fir", width: 16 },
+                    { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                    { header: "CER", key: "codice_eer", width: 12 },
+                    { header: "Peso (kg)", key: "quantita", width: 14 },
+                    { header: "Completato", key: "completed_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                  ];
+                  exportToPdf(closedFirs, cols, "fir-chiusi-dev", "FIR Chiusi — Pronti per Fatturazione");
+                }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                  <Printer className="h-3 w-3" /> PDF
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {!closedFirs?.length ? (
