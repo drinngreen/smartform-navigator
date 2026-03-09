@@ -277,6 +277,8 @@ export function DevPrivatiModule() {
   );
 
   const selectedPrivato = privati?.find(p => p.id === selectedPrivatoId);
+  const activeConferimentoPrivato = privati?.find(p => p.id === (conferimentoPrivatoId ?? selectedPrivatoId));
+  const activeRicevutaPrivato = privati?.find(p => p.id === (ricevutaPrivatoId ?? selectedPrivatoId));
   const selectedUsage = selectedPrivatoId ? getCerUsage(selectedPrivatoId) : {};
 
   return (
