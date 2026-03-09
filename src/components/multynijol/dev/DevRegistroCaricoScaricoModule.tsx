@@ -138,7 +138,7 @@ export function DevRegistroCaricoScaricoModule() {
         .select("id, nome")
         .eq("tenant_id", MULTY_TENANT_ID)
         .limit(1)
-        .single();
+        .maybeSingle();
       return data;
     },
   });
