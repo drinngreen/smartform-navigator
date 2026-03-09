@@ -116,10 +116,42 @@ export function DevLogisticaModule() {
       {searchTrigger && (
         <Card className="bg-card/60 border-border/30">
           <CardHeader>
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Truck className="h-4 w-4 text-emerald-400" />
-              Risultati per "{searchTrigger}" — {firResults?.length ?? 0} FIR trovati
-            </CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Truck className="h-4 w-4 text-emerald-400" />
+                Risultati per "{searchTrigger}" — {firResults?.length ?? 0} FIR trovati
+              </CardTitle>
+              {firResults && firResults.length > 0 && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const cols = [
+                      { header: "N° FIR", key: "numero_fir", width: 16 },
+                      { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                      { header: "CER", key: "codice_eer", width: 12 },
+                      { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                      { header: "Stato", key: "status", width: 12 },
+                      { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                    ];
+                    exportToExcel(firResults, cols, `fir-targa-${searchTrigger}`, "Ricerca Targa");
+                  }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                    <FileSpreadsheet className="h-3 w-3" /> Excel
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const cols = [
+                      { header: "N° FIR", key: "numero_fir", width: 16 },
+                      { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                      { header: "CER", key: "codice_eer", width: 12 },
+                      { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                      { header: "Stato", key: "status", width: 12 },
+                      { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                    ];
+                    exportToPdf(firResults, cols, `fir-targa-${searchTrigger}`, `FIR per Targa ${searchTrigger}`);
+                  }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+                    <Printer className="h-3 w-3" /> PDF
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
