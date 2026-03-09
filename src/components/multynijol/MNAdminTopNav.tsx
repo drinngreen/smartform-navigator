@@ -160,7 +160,7 @@ export function MNAdminTopNav() {
                       top: (switcherRef.current?.getBoundingClientRect().bottom ?? 0) + 4,
                     }}
                   >
-                    {contexts.map((ctx) => (
+                    {switchableContexts.map((ctx) => (
                       <button
                         key={ctx.id}
                         onClick={() => {
