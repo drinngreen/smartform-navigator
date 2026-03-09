@@ -88,6 +88,13 @@ export default function MNDevDashboardPage() {
             <Factory className="h-4 w-4" />
             Aree Riservate
           </TabsTrigger>
+          <TabsTrigger
+            value="cer-preferiti"
+            className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400"
+          >
+            <FileText className="h-4 w-4" />
+            CER Preferiti
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
