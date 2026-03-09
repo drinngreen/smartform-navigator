@@ -228,6 +228,7 @@ export function DevPrivatiModule() {
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
+  };
 
   const handleSaveRicevutaManuale = async () => {
     const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
