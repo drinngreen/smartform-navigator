@@ -1,0 +1,337 @@
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabaseClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { toast } from "sonner";
+import { FileSpreadsheet, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
+
+const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
+
+type RicevutaRow = {
+  id: string;
+  numero_ricevuta: string | null;
+  anno: number | null;
+  importo: number | null;
+  note: string | null;
+  created_at: string;
+  privato_id: string | null;
+};
+
+type PrivatoLite = {
+  id: string;
+  nome: string;
+  cognome: string;
+  codice_fiscale: string;
+};
+
+export function DevRicevuteModule() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [editing, setEditing] = useState<RicevutaRow | null>(null);
+  const [editForm, setEditForm] = useState({ importo: "", note: "" });
+
+  const { data: privati = [] } = useQuery({
+    queryKey: ["dev-privati-lite", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("anagrafica_privati")
+        .select("id, nome, cognome, codice_fiscale")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("attivo", true);
+      if (error) throw error;
+      return (data ?? []) as PrivatoLite[];
+    },
+  });
+
+  const privatiMap = useMemo(() => {
+    const m = new Map<string, PrivatoLite>();
+    for (const p of privati) m.set(p.id, p);
+    return m;
+  }, [privati]);
+
+  const { data: ricevute = [], isLoading } = useQuery({
+    queryKey: ["dev-ricevute-registro", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ricevute_privati" as any)
+        .select("id, numero_ricevuta, anno, importo, note, created_at, privato_id")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return (data ?? []) as RicevutaRow[];
+    },
+  });
+
+  const filtered = useMemo(() => {
+    if (!search) return ricevute;
+    const s = search.toLowerCase();
+    return ricevute.filter((r) => {
+      const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+      const hay = [
+        r.numero_ricevuta ?? "",
+        r.note ?? "",
+        p ? `${p.cognome} ${p.nome}` : "",
+        p?.codice_fiscale ?? "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(s);
+    });
+  }, [ricevute, search, privatiMap]);
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("ricevute_privati" as any)
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Ricevuta eliminata");
+      qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
+      qc.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? String(e)),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: { id: string; importo: number; note: string | null }) => {
+      const { error } = await supabase
+        .from("ricevute_privati" as any)
+        .update({ importo: payload.importo, note: payload.note })
+        .eq("id", payload.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Ricevuta aggiornata");
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
+      qc.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? String(e)),
+  });
+
+  const openEdit = (r: RicevutaRow) => {
+    setEditing(r);
+    setEditForm({
+      importo: String(r.importo ?? 0),
+      note: r.note ?? "",
+    });
+  };
+
+  const printSingle = (r: RicevutaRow) => {
+    const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`
+      <html><head><title>Ricevuta ${r.numero_ricevuta ?? ""}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 24px; }
+        h1 { margin: 0 0 12px; }
+        .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
+        .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
+        .row { display: flex; gap: 16px; margin: 10px 0; }
+        .label { width: 140px; color: #444; font-size: 12px; }
+        .val { flex: 1; font-weight: 600; }
+        .note { margin-top: 14px; white-space: pre-wrap; }
+      </style></head><body>
+        <h1>Ricevuta ${r.numero_ricevuta ?? ""}</h1>
+        <div class="meta">Data: ${new Date(r.created_at).toLocaleString("it-IT")}</div>
+        <div class="box">
+          <div class="row"><div class="label">Privato</div><div class="val">${p ? `${p.cognome} ${p.nome}` : "—"}</div></div>
+          <div class="row"><div class="label">Codice fiscale</div><div class="val">${p?.codice_fiscale ?? "—"}</div></div>
+          <div class="row"><div class="label">Importo</div><div class="val">€ ${Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</div></div>
+          <div class="row"><div class="label">Anno</div><div class="val">${r.anno ?? "—"}</div></div>
+          <div class="note"><div class="label">Note</div><div>${r.note ?? ""}</div></div>
+        </div>
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
+  };
+
+  const exportCols = [
+    { header: "Numero", key: "numero_ricevuta", width: 16 },
+    { header: "Data", key: "created_at", width: 14, format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-") },
+    { header: "Privato", key: "privato_display", width: 22 },
+    { header: "CF", key: "privato_cf", width: 18 },
+    { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+    { header: "Note", key: "note", width: 30 },
+  ];
+
+  const enriched = useMemo(() => {
+    return filtered.map((r) => {
+      const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+      return {
+        ...r,
+        privato_display: p ? `${p.cognome} ${p.nome}` : "—",
+        privato_cf: p?.codice_fiscale ?? "—",
+      };
+    });
+  }, [filtered, privatiMap]);
+
+  return (
+    <div className="space-y-4">
+      <Card className="bg-card/60 border-border/30">
+        <CardHeader className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Receipt className="h-4 w-4" /> Registro Ricevute ({filtered.length})
+            </CardTitle>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!enriched.length) return toast.error("Nessuna ricevuta");
+                  exportToExcel(enriched as any[], exportCols as any, "registro-ricevute", "Ricevute");
+                }}
+                className="gap-1 h-7 text-xs"
+              >
+                <FileSpreadsheet className="h-3 w-3" /> Excel
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!enriched.length) return toast.error("Nessuna ricevuta");
+                  exportToPdf(enriched as any[], exportCols as any, "registro-ricevute", "Registro Ricevute");
+                }}
+                className="gap-1 h-7 text-xs"
+              >
+                <Printer className="h-3 w-3" /> PDF
+              </Button>
+            </div>
+          </div>
+
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cerca per numero, nome, CF, note..."
+            className="bg-background/60"
+          />
+        </CardHeader>
+
+        <CardContent>
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Caricamento...</div>
+          ) : !filtered.length ? (
+            <div className="text-sm text-muted-foreground">Nessuna ricevuta trovata</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/30 text-left">
+                    <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Numero</th>
+                    <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Data</th>
+                    <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Privato</th>
+                    <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Importo</th>
+                    <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r) => {
+                    const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+                    return (
+                      <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                        <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {new Date(r.created_at).toLocaleDateString("it-IT")}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="font-medium">{p ? `${p.cognome} ${p.nome}` : "—"}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{p?.codice_fiscale ?? ""}</div>
+                        </td>
+                        <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => printSingle(r)} title="Stampa">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(r)} title="Modifica">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                if (!window.confirm("Eliminare questa ricevuta?")) return;
+                                deleteMutation.mutate(r.id);
+                              }}
+                              title="Elimina"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifica Ricevuta</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">Importo (€)</div>
+              <Input
+                value={editForm.importo}
+                onChange={(e) => setEditForm((s) => ({ ...s, importo: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">Note</div>
+              <Textarea
+                value={editForm.note}
+                onChange={(e) => setEditForm((s) => ({ ...s, note: e.target.value }))}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              Annulla
+            </Button>
+            <Button
+              onClick={() => {
+                if (!editing) return;
+                const imp = Number(String(editForm.importo).replace(",", ".")) || 0;
+                updateMutation.mutate({
+                  id: editing.id,
+                  importo: imp,
+                  note: editForm.note?.trim() ? editForm.note.trim() : null,
+                });
+              }}
+            >
+              Salva
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
