@@ -139,23 +139,23 @@ export function DevRicevuteModule() {
 
   const escHtml = (v: string) =>
     v
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll("\"", "&quot;")
-      .replaceAll("'", "&#039;");
+      .split("&").join("&amp;")
+      .split("<").join("&lt;")
+      .split(">").join("&gt;")
+      .split("\"").join("&quot;")
+      .split("'").join("&#039;");
 
-  const safeFileBase = (r: RicevutaRow) => (r.numero_ricevuta ?? r.id).replaceAll("/", "-");
+  const safeFileBase = (r: RicevutaRow) => (r.numero_ricevuta ?? r.id).split("/").join("-");
 
   const printSingle = (r: RicevutaRow) => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
-    const w = window.open("", "_blank");
+    const w = window.open("", "_blank", "noopener,noreferrer");
     if (!w) return;
 
     const title = `Ricevuta ${r.numero_ricevuta ?? ""}`;
     const privato = p ? `${p.cognome} ${p.nome}` : "—";
     const cf = p?.codice_fiscale ?? "—";
-    const noteHtml = escHtml(r.note ?? "").replaceAll("\n", "<br />");
+    const noteHtml = escHtml(r.note ?? "").split("\n").join("<br />");
 
     w.document.open();
     w.document.write(`
@@ -193,14 +193,14 @@ export function DevRicevuteModule() {
             <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
             <div class="note"><div class="label">Note</div><div>${noteHtml}</div></div>
           </div>
+          <script>
+            window.addEventListener('afterprint', () => window.close());
+            setTimeout(() => window.print(), 120);
+          </script>
         </body>
       </html>
     `);
     w.document.close();
-
-    w.onafterprint = () => w.close();
-    w.focus();
-    w.print();
   };
 
   const exportCols = [
@@ -232,6 +232,14 @@ export function DevRicevuteModule() {
       };
     });
   }, [filtered, privatiMap]);
+
+  const exportSingleExcel = (row: RicevutaEnriched) => {
+    exportToExcel([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+  };
+
+  const exportSinglePdf = (row: RicevutaEnriched) => {
+    exportToPdf([row] as any[], exportCols as any, `ricevuta-${safeFileBase(row)}`, "Ricevuta");
+  };
 
   return (
     <div className="space-y-4">
