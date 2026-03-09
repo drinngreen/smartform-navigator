@@ -16,23 +16,25 @@ serve(async (req) => {
   );
 
   try {
-    const { action, email, password, impianto_account_id, fir_inbox_id, peso_verificato, note_impianto, stato, new_password } = await req.json();
+    const { action, email, password, tenant_id, impianto_account_id, fir_inbox_id, peso_verificato, note_impianto, stato, new_password } = await req.json();
 
     // ─── LOGIN ───
     if (action === "login") {
       if (!email || !password) throw new Error("Email e password obbligatori");
+      if (!tenant_id) throw new Error("Tenant non specificato");
 
+      // Find account matching email AND tenant
       const { data: account, error } = await supabase
         .from("impianti_accounts")
         .select("id, ragione_sociale, email, password_hash, tenant_id, attivo")
         .eq("email", email.toLowerCase().trim())
+        .eq("tenant_id", tenant_id)
         .maybeSingle();
 
       if (error) throw error;
-      if (!account) throw new Error("Account non trovato");
+      if (!account) throw new Error("Account non trovato per questo tenant");
       if (!account.attivo) throw new Error("Account disabilitato");
 
-      // Verify password using pgcrypto
       const { data: match } = await supabase.rpc("verify_impianto_password" as any, {
         p_email: email.toLowerCase().trim(),
         p_password: password,
@@ -40,11 +42,9 @@ serve(async (req) => {
 
       if (!match) throw new Error("Password errata");
 
-      // Update ultimo_accesso
       await supabase.from("impianti_accounts").update({ ultimo_accesso: new Date().toISOString() }).eq("id", account.id);
 
-      // Generate a simple session token (hash of id + timestamp)
-      const sessionToken = btoa(JSON.stringify({ id: account.id, ts: Date.now(), exp: Date.now() + 24 * 60 * 60 * 1000 }));
+      const sessionToken = btoa(JSON.stringify({ id: account.id, tenant_id: account.tenant_id, ts: Date.now(), exp: Date.now() + 24 * 60 * 60 * 1000 }));
 
       return new Response(JSON.stringify({
         success: true,
@@ -102,9 +102,8 @@ serve(async (req) => {
       });
     }
 
-    // ─── ADMIN: list accounts ───
+    // ─── ADMIN: list accounts (optionally filtered by tenant) ───
     if (action === "admin_list") {
-      // Verify admin via auth header
       const authHeader = req.headers.get("Authorization");
       if (!authHeader) throw new Error("Non autorizzato");
       
@@ -114,10 +113,16 @@ serve(async (req) => {
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       if (!isAdmin) throw new Error("Non autorizzato");
 
-      const { data: accounts, error } = await supabase
+      let query = supabase
         .from("impianti_accounts")
         .select("id, ragione_sociale, email, tenant_id, attivo, ultimo_accesso, created_at")
         .order("ragione_sociale");
+
+      if (tenant_id) {
+        query = query.eq("tenant_id", tenant_id);
+      }
+
+      const { data: accounts, error } = await query;
 
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, accounts: accounts || [] }), {
@@ -154,7 +159,6 @@ serve(async (req) => {
 
       if (!new_password || new_password.length < 4) throw new Error("Password troppo corta");
 
-      // Use SQL to hash with pgcrypto
       const { error } = await supabase.rpc("update_impianto_password" as any, {
         p_account_id: impianto_account_id,
         p_new_password: new_password,

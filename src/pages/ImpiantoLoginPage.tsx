@@ -1,12 +1,21 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, Factory } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import logoDragon from "@/assets/dragon-logo-gold.png";
+
+const TENANT_MAP: Record<string, { id: string; label: string; color: string }> = {
+  global: { id: "167d07ad-9184-484e-85a6-da5ceafa42a3", label: "GLOBAL RECO", color: "59, 130, 246" },
+  multyproget: { id: "77ec9a3d-a6d4-4235-8e68-1a6f345de57a", label: "MULTYPROGET", color: "249, 115, 22" },
+  niyol: { id: "819c783e-4ecf-4774-85b7-7e7a1c5848fa", label: "NIYOL", color: "6, 182, 212" },
+};
 
 export default function ImpiantoLoginPage() {
   const navigate = useNavigate();
+  const { tenant } = useParams<{ tenant: string }>();
+  const ctx = TENANT_MAP[tenant || "global"] || TENANT_MAP.global;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -19,14 +28,14 @@ export default function ImpiantoLoginPage() {
 
     try {
       const { data, error } = await supabase.functions.invoke("impianto-auth", {
-        body: { action: "login", email: email.trim().toLowerCase(), password },
+        body: { action: "login", email: email.trim().toLowerCase(), password, tenant_id: ctx.id },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Login fallito");
 
-      localStorage.setItem("impianto_session", JSON.stringify(data));
+      localStorage.setItem(`impianto_session_${tenant || "global"}`, JSON.stringify(data));
       toast.success(`Benvenuto, ${data.account.ragione_sociale}`);
-      navigate("/area-impianto/dashboard");
+      navigate(`/area-impianto/${tenant || "global"}/dashboard`);
     } catch (err: any) {
       toast.error(err.message || "Errore di login");
     } finally {
@@ -37,17 +46,17 @@ export default function ImpiantoLoginPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo / Header */}
         <div className="text-center mb-8">
-          <img src={logoDragon} alt="Logo" className="h-20 w-20 mx-auto mb-4" style={{ filter: "drop-shadow(0 0 16px rgba(59, 130, 246, 0.6))" }} />
-          <h1 className="font-display text-3xl text-foreground tracking-wider mb-2" style={{ textShadow: "0 0 20px rgba(59, 130, 246, 0.5)" }}>
+          <img src={logoDragon} alt="Logo" className="h-20 w-20 mx-auto mb-4" style={{ filter: `drop-shadow(0 0 16px rgba(${ctx.color}, 0.6))` }} />
+          <h1 className="font-display text-3xl text-foreground tracking-wider mb-2" style={{ textShadow: `0 0 20px rgba(${ctx.color}, 0.5)` }}>
             AREA IMPIANTO
           </h1>
-          <p className="text-blue-400 text-sm uppercase tracking-widest font-bold">Accesso Riservato Destinatari</p>
+          <p className="text-sm uppercase tracking-widest font-bold" style={{ color: `rgb(${ctx.color})` }}>
+            {ctx.label} — Accesso Riservato
+          </p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-card rounded-2xl p-6" style={{ boxShadow: "0 0 2px hsl(217, 91%, 60%), 0 0 12px rgba(59, 130, 246, 0.3)", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+        <div className="bg-card rounded-2xl p-6" style={{ boxShadow: `0 0 2px rgba(${ctx.color}, 0.6), 0 0 12px rgba(${ctx.color}, 0.3)`, border: `1px solid rgba(${ctx.color}, 0.3)` }}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">Email Impianto</label>
@@ -59,7 +68,8 @@ export default function ImpiantoLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@impianto.it"
                   autoFocus
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2"
+                  style={{ ["--tw-ring-color" as any]: `rgba(${ctx.color}, 0.6)` }}
                 />
               </div>
             </div>
@@ -73,7 +83,8 @@ export default function ImpiantoLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-12 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2"
+                  style={{ ["--tw-ring-color" as any]: `rgba(${ctx.color}, 0.6)` }}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -81,13 +92,18 @@ export default function ImpiantoLoginPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={isSubmitting} className="w-full py-3 rounded-lg font-display font-semibold tracking-wider bg-blue-600 text-white hover:bg-blue-500 transition-all disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3 rounded-lg font-display font-semibold tracking-wider text-white transition-all disabled:opacity-50"
+              style={{ backgroundColor: `rgb(${ctx.color})` }}
+            >
               {isSubmitting ? "CARICAMENTO..." : "ACCEDI"}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">Area Impianto • ZOLI DRAGON</p>
+        <p className="text-center text-xs text-muted-foreground mt-6">Area Impianto {ctx.label} • ZOLI DRAGON</p>
       </div>
     </div>
   );
