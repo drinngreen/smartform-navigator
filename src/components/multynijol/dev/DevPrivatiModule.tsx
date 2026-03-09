@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, Loader2, FileSpreadsheet, Printer } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 
@@ -26,6 +25,8 @@ export function DevPrivatiModule() {
   const queryClient = useQueryClient();
   const [searchPrivato, setSearchPrivato] = useState("");
   const [selectedPrivatoId, setSelectedPrivatoId] = useState<string | null>(null);
+  const [conferimentoPrivatoId, setConferimentoPrivatoId] = useState<string | null>(null);
+  const [ricevutaPrivatoId, setRicevutaPrivatoId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showNewConferimento, setShowNewConferimento] = useState(false);
   const [showNewRicevuta, setShowNewRicevuta] = useState(false);
@@ -67,6 +68,22 @@ export function DevPrivatiModule() {
     },
   });
 
+  const { data: ricevute } = useQuery({
+    queryKey: ["dev-ricevute", MULTY_TENANT_ID, selectedPrivatoId],
+    queryFn: async () => {
+      if (!selectedPrivatoId) return [];
+      const { data, error } = await supabase
+        .from("ricevute_privati" as any)
+        .select("id, numero_ricevuta, anno, importo, note, created_at")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("privato_id", selectedPrivatoId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedPrivatoId,
+  });
+
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
@@ -105,13 +122,13 @@ export function DevPrivatiModule() {
     return usage;
   };
 
-  const checkLimits = async (cer: string, kgNew: number): Promise<string | null> => {
-    if (!selectedPrivatoId || !impiantoId) return null;
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+  const checkLimits = async (privatoId: string, cer: string, kgNew: number): Promise<string | null> => {
+    if (!privatoId || !impiantoId) return null;
+    const privato = privati?.find(p => p.id === privatoId);
     if (!privato) return null;
     const critico = CER_CRITICI[cer];
     if (!critico) return null;
-    const usage = getCerUsage(selectedPrivatoId);
+    const usage = getCerUsage(privatoId);
     const totalAnnuo = (usage[cer] || 0) + kgNew;
     if (totalAnnuo > critico.limite_annuo_kg) {
       return `⚠️ LIMITE SUPERATO per CER ${cer}: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui`;
@@ -123,14 +140,15 @@ export function DevPrivatiModule() {
   };
 
   const handleSaveConferimento = async () => {
-    if (!selectedPrivatoId || !confForm.cer || !confForm.kg_pesati) {
+    const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
+    if (!targetPrivatoId || !confForm.cer || !confForm.kg_pesati) {
       toast.error("Seleziona un privato, CER e kg obbligatori");
       return;
     }
     const kg = parseFloat(confForm.kg_pesati);
 
     // Check limits - BLOCK if exceeded
-    const warning = await checkLimits(confForm.cer, kg);
+    const warning = await checkLimits(targetPrivatoId, confForm.cer, kg);
     if (warning && warning.includes("LIMITE SUPERATO")) {
       setLimitWarning(warning);
       toast.error("Conferimento BLOCCATO: limite annuo superato");
@@ -138,7 +156,7 @@ export function DevPrivatiModule() {
     }
     if (warning) setLimitWarning(warning);
 
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const privato = privati?.find(p => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
 
     const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
@@ -146,7 +164,7 @@ export function DevPrivatiModule() {
       nome_privato: nomeFinale, cf_pi: privato?.codice_fiscale || null,
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
       metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
-      privato_id: selectedPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
+      privato_id: targetPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
       targa_automezzo: confForm.targa_automezzo || null,
       modello_automezzo: confForm.modello_automezzo || null,
     } as any).select().single();
@@ -159,7 +177,7 @@ export function DevPrivatiModule() {
       const anno = new Date().getFullYear();
       const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
-        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: selectedPrivatoId,
+        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: targetPrivatoId,
         numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
@@ -168,19 +186,22 @@ export function DevPrivatiModule() {
 
     toast.success("✅ Conferimento e ricevuta registrati!");
     setShowNewConferimento(false);
+    setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
     setLimitWarning(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
   };
 
   const handleSaveRicevutaManuale = async () => {
-    if (!selectedPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
+    if (!targetPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
+    const privato = privati?.find(p => p.id === targetPrivatoId);
     const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
     const anno = new Date().getFullYear();
     const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      impianto_id: impiantoId, privato_id: selectedPrivatoId,
+      impianto_id: impiantoId, privato_id: targetPrivatoId,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
       note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
@@ -188,7 +209,50 @@ export function DevPrivatiModule() {
     if (error) { toast.error(error.message); return; }
     toast.success("✅ Ricevuta manuale generata!");
     setShowNewRicevuta(false);
+    setRicevutaPrivatoId(null);
     setRicevutaForm({ importo: "", note: "" });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+  };
+
+  const handleDeleteRicevuta = async (ricevutaId: string) => {
+    const ok = window.confirm("Eliminare questa ricevuta?");
+    if (!ok) return;
+    const { error } = await supabase.from("ricevute_privati" as any).delete().eq("id", ricevutaId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Ricevuta eliminata");
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+  };
+
+  const handlePrintRicevute = () => {
+    if (!ricevute?.length) {
+      toast.error("Nessuna ricevuta da stampare");
+      return;
+    }
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`
+      <html><head><title>Ricevute Privati</title>
+      <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #16a34a; color: white; }
+        h1 { color: #16a34a; }
+      </style></head><body>
+      <h1>Ricevute — ${selectedPrivato?.cognome || ""} ${selectedPrivato?.nome || ""}</h1>
+      <table>
+        <thead><tr><th>Numero</th><th>Data</th><th>Importo</th><th>Note</th></tr></thead>
+        <tbody>
+          ${ricevute.map(r => `<tr><td>${r.numero_ricevuta || "-"}</td><td>${new Date(r.created_at).toLocaleDateString("it-IT")}</td><td>€ ${Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td><td>${r.note || "-"}</td></tr>`).join("")}
+        </tbody>
+      </table>
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
   };
 
   const handleSavePrivato = async () => {
@@ -212,6 +276,8 @@ export function DevPrivatiModule() {
   );
 
   const selectedPrivato = privati?.find(p => p.id === selectedPrivatoId);
+  const activeConferimentoPrivato = privati?.find(p => p.id === (conferimentoPrivatoId ?? selectedPrivatoId));
+  const activeRicevutaPrivato = privati?.find(p => p.id === (ricevutaPrivatoId ?? selectedPrivatoId));
   const selectedUsage = selectedPrivatoId ? getCerUsage(selectedPrivatoId) : {};
 
   return (
@@ -241,11 +307,19 @@ export function DevPrivatiModule() {
         <Button onClick={() => setShowNewPrivato(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="h-4 w-4" /> Nuovo Privato
         </Button>
-        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewConferimento(true); }}
+        <Button onClick={() => {
+          if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
+          setConferimentoPrivatoId(selectedPrivatoId);
+          setShowNewConferimento(true);
+        }}
           variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
           <Scale className="h-4 w-4" /> Nuovo Conferimento
         </Button>
-        <Button onClick={() => { if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; } setShowNewRicevuta(true); }}
+        <Button onClick={() => {
+          if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
+          setRicevutaPrivatoId(selectedPrivatoId);
+          setShowNewRicevuta(true);
+        }}
           variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
           <Receipt className="h-4 w-4" /> Ricevuta Manuale
         </Button>
@@ -400,6 +474,72 @@ export function DevPrivatiModule() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Ricevute */}
+              <Card className="bg-card/60 border-border/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Receipt className="h-4 w-4" /> Ricevute ({ricevute?.length ?? 0})
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={handlePrintRicevute} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <Printer className="h-3 w-3" /> Stampa
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        if (!ricevute?.length) return toast.error("Nessuna ricevuta");
+                        const cols = [
+                          { header: "Numero", key: "numero_ricevuta", width: 16 },
+                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+                          { header: "Note", key: "note", width: 30 },
+                        ];
+                        exportToExcel(ricevute, cols, `ricevute-${selectedPrivato?.cognome || "privato"}`, "Ricevute");
+                      }} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <FileSpreadsheet className="h-3 w-3" /> Excel
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        if (!ricevute?.length) return toast.error("Nessuna ricevuta");
+                        const cols = [
+                          { header: "Numero", key: "numero_ricevuta", width: 16 },
+                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+                          { header: "Note", key: "note", width: 30 },
+                        ];
+                        exportToPdf(ricevute, cols, `ricevute-${selectedPrivato?.cognome || "privato"}`, `Ricevute — ${selectedPrivato?.cognome || ""} ${selectedPrivato?.nome || ""}`);
+                      }} className="gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs">
+                        <Printer className="h-3 w-3" /> PDF
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!ricevute?.length ? (
+                    <p className="text-muted-foreground text-xs">Nessuna ricevuta registrata</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {ricevute.map((r) => (
+                        <div key={r.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30">
+                          <div>
+                            <p className="font-medium">{r.numero_ricevuta || "-"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(r.created_at).toLocaleDateString("it-IT")} · € {Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-auto h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteRicevuta(r.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </>
           ) : (
             <Card className="bg-card/60 border-border/30">
@@ -442,12 +582,19 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); }}>
+      <Dialog
+        open={showNewConferimento}
+        onOpenChange={(o) => {
+          setShowNewConferimento(o);
+          setLimitWarning(null);
+          if (!o) setConferimentoPrivatoId(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-emerald-400" />
-              Nuovo Conferimento — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+              Nuovo Conferimento — {activeConferimentoPrivato?.cognome} {activeConferimentoPrivato?.nome}
             </DialogTitle>
           </DialogHeader>
           {limitWarning && (
@@ -477,7 +624,7 @@ export function DevPrivatiModule() {
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewConferimento(false)}>Annulla</Button>
+            <Button variant="outline" onClick={() => { setShowNewConferimento(false); setConferimentoPrivatoId(null); }}>Annulla</Button>
             <Button onClick={handleSaveConferimento} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
               <Scale className="h-4 w-4" /> Registra Conferimento + Ricevuta
             </Button>
@@ -486,12 +633,18 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── Manual Ricevuta Dialog ─── */}
-      <Dialog open={showNewRicevuta} onOpenChange={setShowNewRicevuta}>
+      <Dialog
+        open={showNewRicevuta}
+        onOpenChange={(o) => {
+          setShowNewRicevuta(o);
+          if (!o) setRicevutaPrivatoId(null);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-emerald-400" />
-              Ricevuta Manuale — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+              Ricevuta Manuale — {activeRicevutaPrivato?.cognome} {activeRicevutaPrivato?.nome}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -499,7 +652,7 @@ export function DevPrivatiModule() {
             <div><Label>Note</Label><Textarea value={ricevutaForm.note} onChange={(e) => setRicevutaForm(p => ({ ...p, note: e.target.value }))} rows={3} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewRicevuta(false)}>Annulla</Button>
+            <Button variant="outline" onClick={() => { setShowNewRicevuta(false); setRicevutaPrivatoId(null); }}>Annulla</Button>
             <Button onClick={handleSaveRicevutaManuale} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
               <Receipt className="h-4 w-4" /> Genera Ricevuta
             </Button>
