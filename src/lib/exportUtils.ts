@@ -50,15 +50,24 @@ export function exportToPdf(
   const marginY = 10;
   let y = marginY;
 
-  // Title
+  // Title (supports multiline with \n)
   if (title) {
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(title, marginX, y + 5);
+    const lines = title.split("\n");
+    lines.forEach((line, idx) => {
+      if (idx === 0) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+      } else {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+      }
+      doc.text(line, marginX, y + 5);
+      y += idx === 0 ? 6 : 4;
+    });
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(`Esportato il ${new Date().toLocaleDateString("it-IT")} — ${data.length} record`, marginX, y + 10);
-    y += 16;
+    doc.text(`Esportato il ${new Date().toLocaleDateString("it-IT")} — ${data.length} record`, marginX, y + 4);
+    y += 8;
   }
 
   // Column widths
