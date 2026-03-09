@@ -41,6 +41,9 @@ export function DevContattiModule() {
         <TabsTrigger value="chiamate" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <PhoneCall className="h-4 w-4" /> Report Chiamate
         </TabsTrigger>
+        <TabsTrigger value="anagrafica-completa" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <ListChecks className="h-4 w-4" /> Anagrafica Completa
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="rubrica">
