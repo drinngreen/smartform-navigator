@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Printer, RefreshCw, Package, ArrowDown, ArrowUp } from "lucide-react";
+import { Printer, RefreshCw, Package, ArrowDown, ArrowUp, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 
