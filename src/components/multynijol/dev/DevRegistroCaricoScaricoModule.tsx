@@ -114,7 +114,7 @@ const emptyForm = {
   destinatario_denominazione: "",
   numero_fir: "",
   origine: "",
-  esito_accettazione: "ACCETTATO",
+  esito_accettazione: "accettato",
   note: "",
   data_movimento: new Date().toISOString().slice(0, 10),
 };
