@@ -18,6 +18,7 @@ import { DevContattiModule } from "@/components/multynijol/dev/DevContattiModule
 import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
 import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
+import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferitiModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -87,6 +88,13 @@ export default function MNDevDashboardPage() {
             <Factory className="h-4 w-4" />
             Aree Riservate
           </TabsTrigger>
+          <TabsTrigger
+            value="cer-preferiti"
+            className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400"
+          >
+            <FileText className="h-4 w-4" />
+            CER Preferiti
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -109,6 +117,9 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="aree-riservate">
           <AdminAreeRiservateImpianti tenantFilter="77ec9a3d-a6d4-4235-8e68-1a6f345de57a" />
+        </TabsContent>
+        <TabsContent value="cer-preferiti">
+          <DevCERPreferitiModule />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
