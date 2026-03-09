@@ -103,7 +103,7 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         </button>
 
         {/* Notifications */}
-        <NotificationBell />
+        <NotificationBell appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"} />
       </div>
     </div>
   );
