@@ -583,12 +583,19 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); }}>
+      <Dialog
+        open={showNewConferimento}
+        onOpenChange={(o) => {
+          setShowNewConferimento(o);
+          setLimitWarning(null);
+          if (!o) setConferimentoPrivatoId(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-emerald-400" />
-              Nuovo Conferimento — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+              Nuovo Conferimento — {activeConferimentoPrivato?.cognome} {activeConferimentoPrivato?.nome}
             </DialogTitle>
           </DialogHeader>
           {limitWarning && (
@@ -618,7 +625,7 @@ export function DevPrivatiModule() {
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewConferimento(false)}>Annulla</Button>
+            <Button variant="outline" onClick={() => { setShowNewConferimento(false); setConferimentoPrivatoId(null); }}>Annulla</Button>
             <Button onClick={handleSaveConferimento} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
               <Scale className="h-4 w-4" /> Registra Conferimento + Ricevuta
             </Button>
@@ -627,12 +634,18 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── Manual Ricevuta Dialog ─── */}
-      <Dialog open={showNewRicevuta} onOpenChange={setShowNewRicevuta}>
+      <Dialog
+        open={showNewRicevuta}
+        onOpenChange={(o) => {
+          setShowNewRicevuta(o);
+          if (!o) setRicevutaPrivatoId(null);
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5 text-emerald-400" />
-              Ricevuta Manuale — {selectedPrivato?.cognome} {selectedPrivato?.nome}
+              Ricevuta Manuale — {activeRicevutaPrivato?.cognome} {activeRicevutaPrivato?.nome}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -640,7 +653,7 @@ export function DevPrivatiModule() {
             <div><Label>Note</Label><Textarea value={ricevutaForm.note} onChange={(e) => setRicevutaForm(p => ({ ...p, note: e.target.value }))} rows={3} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewRicevuta(false)}>Annulla</Button>
+            <Button variant="outline" onClick={() => { setShowNewRicevuta(false); setRicevutaPrivatoId(null); }}>Annulla</Button>
             <Button onClick={handleSaveRicevutaManuale} className="bg-emerald-600 hover:bg-emerald-700 gap-2">
               <Receipt className="h-4 w-4" /> Genera Ricevuta
             </Button>
