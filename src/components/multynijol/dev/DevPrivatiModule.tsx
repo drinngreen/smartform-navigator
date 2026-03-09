@@ -281,6 +281,7 @@ export function DevPrivatiModule() {
     }
     toast.success("Ricevuta eliminata");
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handlePrintRicevute = () => {
