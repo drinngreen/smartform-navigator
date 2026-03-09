@@ -107,10 +107,44 @@ export function DevIntermediarioModule() {
       {/* Global Reco read-only view */}
       <Card className="bg-card/60 border-blue-500/30">
         <CardHeader>
-          <CardTitle className="text-blue-400 flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Vista Global Reco (Sola Lettura)
-          </CardTitle>
+          <div className="flex items-center justify-between w-full">
+            <CardTitle className="text-blue-400 flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Vista Global Reco (Sola Lettura)
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!globalFirs?.length) return;
+                const cols = [
+                  { header: "N° FIR", key: "numero_fir", width: 16 },
+                  { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                  { header: "Destinatario", key: "destinatario_denominazione", width: 24 },
+                  { header: "CER", key: "codice_eer", width: 12 },
+                  { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                  { header: "Stato", key: "status", width: 12 },
+                  { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                ];
+                exportToExcel(globalFirs, cols, "global-reco-fir", "FIR Global Reco");
+              }} className="gap-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                <FileSpreadsheet className="h-3 w-3" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                if (!globalFirs?.length) return;
+                const cols = [
+                  { header: "N° FIR", key: "numero_fir", width: 16 },
+                  { header: "Produttore", key: "produttore_denominazione", width: 24 },
+                  { header: "Destinatario", key: "destinatario_denominazione", width: 24 },
+                  { header: "CER", key: "codice_eer", width: 12 },
+                  { header: "Targa", key: "trasportatore_targa_automezzo", width: 14 },
+                  { header: "Stato", key: "status", width: 12 },
+                  { header: "Data", key: "created_at", width: 12, format: (v: any) => new Date(v).toLocaleDateString("it-IT") },
+                ];
+                exportToPdf(globalFirs, cols, "global-reco-fir", "FIR Global Reco");
+              }} className="gap-1 border-blue-500/30 text-blue-400 hover:bg-blue-500/10">
+                <Printer className="h-3 w-3" /> PDF
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
