@@ -140,69 +140,98 @@ export function AnagraficaCompletaMP() {
     toast.success("Azienda disattivata"); refetch();
   };
 
+  const parseBool = (v: any): boolean => v === true || v === "TRUE" || v === "VERO" || v === 1 || v === "1";
+
+  const mapExcelRows = (rows: any[]) => rows.map(r => ({
+    tenant_id: MULTY_TENANT_ID,
+    codice: String(r["Codice"] ?? "").trim(),
+    ragione_sociale: String(r["Ragione"] ?? r["Ragione Sociale"] ?? "").trim(),
+    indirizzo: String(r["Indirizzo"] ?? "").trim(),
+    citta: String(r["Città"] ?? r["Citta"] ?? "").trim(),
+    provincia: String(r["Prov."] ?? r["Provincia"] ?? "").trim(),
+    cap: String(r["CAP"] ?? "").trim(),
+    codice_fiscale: String(r["Codice Fiscale"] ?? "").trim(),
+    p_sl: parseBool(r["P. SL"]),
+    p_ul: parseBool(r["P. UL"]),
+    trasportatore: parseBool(r["Trasp."]),
+    destinatario: parseBool(r["Dest."]),
+    intermediario: parseBool(r["Inter."]),
+    fornitore: parseBool(r["Forn."]),
+    cliente: parseBool(r["Cli."]),
+    alias: String(r["Alias"] ?? "").trim(),
+    cod_tipologia: String(r["Cod. Tipol."] ?? "1").trim(),
+    tipologia: String(r["Tipologia"] ?? "Azienda Privata").trim(),
+    fax: String(r["Fax"] ?? "").trim(),
+    email: String(r["Email"] ?? "").trim(),
+    nazione: String(r["Nazione"] ?? "IT").trim(),
+    partita_iva: String(r["P. Iva"] ?? r["P.Iva"] ?? r["Partita IVA"] ?? "").trim(),
+    telefono: String(r["Telefono"] ?? "").trim(),
+    zona_gruppo_cliente: String(r["Zona/Gruppo Cliente"] ?? "").trim(),
+    stato: String(r["Stato"] ?? "0").trim(),
+    cellulare: String(r["Cellulare"] ?? "").trim(),
+    cod_cliente: String(r["Cod. Cliente"] ?? "").trim(),
+    cliente_fatturazione: String(r["Cliente fatt."] ?? "").trim(),
+    codice_destinatario: String(r["Codice Destinatario"] ?? "").trim(),
+    pec: String(r["PEC"] ?? "").trim(),
+    latitudine: String(r["Latitudine"] ?? "").trim(),
+    longitudine: String(r["Longitudine"] ?? "").trim(),
+    codice_cat_eco: String(r["Codice Cat. Eco."] ?? "").trim(),
+    note: String(r["Note"] ?? "").trim(),
+    stato_amm: String(r["Stato Amm."] ?? "").trim(),
+    codice_cdc: String(r["Codice CDC"] ?? "").trim(),
+    urbano: parseBool(r["Urbano"]),
+  })).filter(r => r.ragione_sociale);
+
+  const insertBatches = async (mapped: any[]) => {
+    let inserted = 0;
+    for (let i = 0; i < mapped.length; i += 50) {
+      const batch = mapped.slice(i, i + 50);
+      const { error } = await supabase.from("anagrafica_aziende_mp" as any).insert(batch as any);
+      if (error) { toast.error(`Errore batch ${i}: ${error.message}`); return inserted; }
+      inserted += batch.length;
+    }
+    return inserted;
+  };
+
   const handleImportExcel = async () => {
     setImporting(true);
     try {
       const resp = await fetch("/data/anagrafica_completa_multi_proget_2.xlsx");
+      if (!resp.ok) throw new Error("File non trovato");
       const buf = await resp.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-      const mapped = rows.map(r => ({
-        tenant_id: MULTY_TENANT_ID,
-        codice: String(r["Codice"] || "").trim(),
-        ragione_sociale: String(r["Ragione"] || "").trim(),
-        indirizzo: String(r["Indirizzo"] || "").trim(),
-        citta: String(r["Città"] || "").trim(),
-        provincia: String(r["Prov."] || "").trim(),
-        cap: String(r["CAP"] || "").trim(),
-        codice_fiscale: String(r["Codice Fiscale"] || "").trim(),
-        p_sl: r["P. SL"] === true || r["P. SL"] === "TRUE",
-        p_ul: r["P. UL"] === true || r["P. UL"] === "TRUE",
-        trasportatore: r["Trasp."] === true || r["Trasp."] === "TRUE",
-        destinatario: r["Dest."] === true || r["Dest."] === "TRUE",
-        intermediario: r["Inter."] === true || r["Inter."] === "TRUE",
-        fornitore: r["Forn."] === true || r["Forn."] === "TRUE",
-        cliente: r["Cli."] === true || r["Cli."] === "TRUE",
-        alias: String(r["Alias"] || "").trim(),
-        cod_tipologia: String(r["Cod. Tipol."] || "1").trim(),
-        tipologia: String(r["Tipologia"] || "Azienda Privata").trim(),
-        fax: String(r["Fax"] || "").trim(),
-        email: String(r["Email"] || "").trim(),
-        nazione: String(r["Nazione"] || "IT").trim(),
-        partita_iva: String(r["P. Iva"] || "").trim(),
-        telefono: String(r["Telefono"] || "").trim(),
-        zona_gruppo_cliente: String(r["Zona/Gruppo Cliente"] || "").trim(),
-        stato: String(r["Stato"] || "0").trim(),
-        cellulare: String(r["Cellulare"] || "").trim(),
-        cod_cliente: String(r["Cod. Cliente"] || "").trim(),
-        cliente_fatturazione: String(r["Cliente fatt."] || "").trim(),
-        codice_destinatario: String(r["Codice Destinatario"] || "").trim(),
-        pec: String(r["PEC"] || "").trim(),
-        latitudine: String(r["Latitudine"] || "").trim(),
-        longitudine: String(r["Longitudine"] || "").trim(),
-        codice_cat_eco: String(r["Codice Cat. Eco."] || "").trim(),
-        note: String(r["Note"] || "").trim(),
-        stato_amm: String(r["Stato Amm."] || "").trim(),
-        codice_cdc: String(r["Codice CDC"] || "").trim(),
-        urbano: r["Urbano"] === true || r["Urbano"] === "TRUE",
-      })).filter(r => r.ragione_sociale);
-
-      // Insert in batches of 50
-      let inserted = 0;
-      for (let i = 0; i < mapped.length; i += 50) {
-        const batch = mapped.slice(i, i + 50);
-        const { error } = await supabase.from("anagrafica_aziende_mp" as any).insert(batch as any);
-        if (error) { toast.error(`Errore batch ${i}: ${error.message}`); break; }
-        inserted += batch.length;
-      }
-      toast.success(`Importati ${inserted} record`);
+      const mapped = mapExcelRows(rows);
+      const inserted = await insertBatches(mapped);
+      toast.success(`Importati ${inserted} record su ${mapped.length}`);
       refetch();
     } catch (err: any) {
       toast.error(`Errore importazione: ${err.message}`);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      const mapped = mapExcelRows(rows);
+      if (!mapped.length) { toast.error("Nessun record valido trovato nel file"); return; }
+      const inserted = await insertBatches(mapped);
+      toast.success(`Importati ${inserted} record su ${mapped.length}`);
+      refetch();
+    } catch (err: any) {
+      toast.error(`Errore: ${err.message}`);
+    } finally {
+      setImporting(false);
+      e.target.value = "";
     }
   };
 
@@ -246,8 +275,12 @@ export function AnagraficaCompletaMP() {
         </Button>
         <Button variant="outline" size="sm" onClick={handleImportExcel} disabled={importing}
           className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
-          <Upload className="h-3 w-3" /> {importing ? "Importazione..." : "Importa Excel"}
+          <Upload className="h-3 w-3" /> {importing ? "Importazione..." : "Importa da server"}
         </Button>
+        <label className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer text-sm">
+          <Upload className="h-3 w-3" /> Carica Excel
+          <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" disabled={importing} />
+        </label>
         <Button variant="outline" size="sm" onClick={() => {
           if (!filtered.length) return toast.error("Nessun dato");
           exportToExcel(filtered, exportCols, "anagrafica-aziende-mp", "Aziende MP");
