@@ -201,6 +201,7 @@ export function DevPrivatiModule() {
         { p_impianto_id: impiantoId, p_anno: anno } as any
       );
       await supabase.from("ricevute_privati" as any).insert({
+        tenant_id: MULTY_TENANT_ID,
         impianto_id: impiantoId,
         conferimento_id: conf.id,
         privato_id: targetPrivatoId,
