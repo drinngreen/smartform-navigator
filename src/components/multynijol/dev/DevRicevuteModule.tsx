@@ -286,7 +286,7 @@ export function DevRicevuteModule() {
                 size="sm"
                 onClick={() => {
                   if (!enriched.length) return toast.error("Nessuna ricevuta");
-                  exportToExcel(enriched as any[], exportCols as any, "registro-ricevute", "Ricevute");
+                  exportToExcel(enriched as any[], exportCols as any, "registro-ricevute", "Ricevute", aziendaHeaderLines);
                 }}
                 className="gap-1 h-7 text-xs"
               >
@@ -297,7 +297,7 @@ export function DevRicevuteModule() {
                 size="sm"
                 onClick={() => {
                   if (!enriched.length) return toast.error("Nessuna ricevuta");
-                  exportToPdf(enriched as any[], exportCols as any, "registro-ricevute", "Registro Ricevute");
+                  exportToPdf(enriched as any[], exportCols as any, "registro-ricevute", `${AZIENDA.nome}\n${AZIENDA.indirizzo}\nISTAT: ${AZIENDA.istat} | CF: ${AZIENDA.cf} | Cod.RS: ${AZIENDA.codRS}\n\nRegistro Ricevute`);
                 }}
                 className="gap-1 h-7 text-xs"
               >
