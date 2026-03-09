@@ -244,6 +244,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/storico-ricevute" element={<ProtectedRoute><MNStoricoRicevutePage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/system-prompt" element={<ProtectedRoute><MNSystemPromptPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/aree-riservate-impianti" element={<ProtectedRoute><MNAreeRiservateImpiantiPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
                 <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />
