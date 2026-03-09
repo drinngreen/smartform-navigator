@@ -303,6 +303,12 @@ export function DevRicevuteModule() {
                 <tbody>
                   {filtered.map((r) => {
                     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
+                    const row: RicevutaEnriched = {
+                      ...r,
+                      privato_display: p ? `${p.cognome} ${p.nome}` : "—",
+                      privato_cf: p?.codice_fiscale ?? "—",
+                    };
+
                     return (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
                         <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
@@ -315,36 +321,63 @@ export function DevRicevuteModule() {
                         </td>
                         <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-cyan/70 text-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/20"
                               onClick={() => printSingle(r)}
-                              title="Stampa"
+                              title="Stampa ricevuta"
                             >
-                              <Printer className="h-5 w-5" color="hsl(var(--neon-cyan))" strokeWidth={2.5} />
+                              <Printer className="h-4 w-4" color="hsl(var(--neon-cyan))" strokeWidth={2.6} />
+                              <span>Stampa</span>
                             </Button>
+
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-neon-green bg-neon-green/10 hover:bg-neon-green/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-purple/70 text-neon-purple bg-neon-purple/10 hover:bg-neon-purple/20"
+                              onClick={() => exportSinglePdf(row)}
+                              title="Esporta PDF"
+                            >
+                              <FileText className="h-4 w-4" color="hsl(var(--neon-purple))" strokeWidth={2.4} />
+                              <span>PDF</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-green/70 text-neon-green bg-neon-green/10 hover:bg-neon-green/20"
+                              onClick={() => exportSingleExcel(row)}
+                              title="Esporta Excel"
+                            >
+                              <FileSpreadsheet className="h-4 w-4" color="hsl(var(--neon-green))" strokeWidth={2.4} />
+                              <span>Excel</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-border text-foreground bg-card/40 hover:bg-muted/40"
                               onClick={() => openEdit(r)}
                               title="Modifica"
                             >
-                              <Pencil className="h-5 w-5" color="hsl(var(--neon-green))" strokeWidth={2.5} />
+                              <Pencil className="h-4 w-4" strokeWidth={2.6} />
+                              <span>Modifica</span>
                             </Button>
+
                             <Button
                               variant="outline"
-                              size="icon"
-                              className="h-9 w-9 border-destructive bg-destructive/10 hover:bg-destructive/25"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-destructive/70 text-destructive bg-destructive/10 hover:bg-destructive/20"
                               onClick={() => {
                                 if (!window.confirm("Eliminare questa ricevuta?")) return;
                                 deleteMutation.mutate(r.id);
                               }}
                               title="Elimina"
                             >
-                              <Trash2 className="h-5 w-5" color="hsl(var(--destructive))" strokeWidth={2.5} />
+                              <Trash2 className="h-4 w-4" color="hsl(var(--destructive))" strokeWidth={2.6} />
+                              <span>Elimina</span>
                             </Button>
                           </div>
                         </td>
