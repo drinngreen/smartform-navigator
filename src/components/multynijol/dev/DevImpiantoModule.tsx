@@ -73,6 +73,11 @@ export function DevImpiantoModule() {
           <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
         </div>
       </TabsContent>
+      <TabsContent value="registro">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <DevRegistroCaricoScaricoModule />
+        </div>
+      </TabsContent>
     </Tabs>
   );
 }
