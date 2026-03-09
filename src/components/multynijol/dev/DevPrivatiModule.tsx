@@ -248,6 +248,7 @@ export function DevPrivatiModule() {
       { p_impianto_id: impiantoId, p_anno: anno } as any
     );
     const { error } = await supabase.from("ricevute_privati" as any).insert({
+      tenant_id: MULTY_TENANT_ID,
       impianto_id: impiantoId,
       privato_id: targetPrivatoId,
       numero_ricevuta: (numData as any) || `${Date.now()}`,
