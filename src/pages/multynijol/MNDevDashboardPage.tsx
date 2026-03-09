@@ -118,6 +118,9 @@ export default function MNDevDashboardPage() {
         <TabsContent value="aree-riservate">
           <AdminAreeRiservateImpianti tenantFilter="77ec9a3d-a6d4-4235-8e68-1a6f345de57a" />
         </TabsContent>
+        <TabsContent value="cer-preferiti">
+          <DevCERPreferitiModule />
+        </TabsContent>
       </Tabs>
     </MNAdminLayout>
   );
