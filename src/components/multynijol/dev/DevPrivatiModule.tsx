@@ -141,7 +141,8 @@ export function DevPrivatiModule() {
   };
 
   const handleSaveConferimento = async () => {
-    if (!selectedPrivatoId || !confForm.cer || !confForm.kg_pesati) {
+    const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
+    if (!targetPrivatoId || !confForm.cer || !confForm.kg_pesati) {
       toast.error("Seleziona un privato, CER e kg obbligatori");
       return;
     }
@@ -156,7 +157,7 @@ export function DevPrivatiModule() {
     }
     if (warning) setLimitWarning(warning);
 
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const privato = privati?.find(p => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
 
     const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
@@ -164,7 +165,7 @@ export function DevPrivatiModule() {
       nome_privato: nomeFinale, cf_pi: privato?.codice_fiscale || null,
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
       metodo_pag: confForm.metodo_pag || null, note: confForm.note || null,
-      privato_id: selectedPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
+      privato_id: targetPrivatoId, tipo_utenza: privato?.tipo_utenza || "domestica",
       targa_automezzo: confForm.targa_automezzo || null,
       modello_automezzo: confForm.modello_automezzo || null,
     } as any).select().single();
@@ -177,7 +178,7 @@ export function DevPrivatiModule() {
       const anno = new Date().getFullYear();
       const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
-        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: selectedPrivatoId,
+        impianto_id: impiantoId, conferimento_id: conf.id, privato_id: targetPrivatoId,
         numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
@@ -186,19 +187,22 @@ export function DevPrivatiModule() {
 
     toast.success("✅ Conferimento e ricevuta registrati!");
     setShowNewConferimento(false);
+    setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
     setLimitWarning(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
   };
 
   const handleSaveRicevutaManuale = async () => {
-    if (!selectedPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
-    const privato = privati?.find(p => p.id === selectedPrivatoId);
+    const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
+    if (!targetPrivatoId || !impiantoId) { toast.error("Seleziona un privato"); return; }
+    const privato = privati?.find(p => p.id === targetPrivatoId);
     const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
     const anno = new Date().getFullYear();
     const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      impianto_id: impiantoId, privato_id: selectedPrivatoId,
+      impianto_id: impiantoId, privato_id: targetPrivatoId,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
       note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
@@ -206,7 +210,50 @@ export function DevPrivatiModule() {
     if (error) { toast.error(error.message); return; }
     toast.success("✅ Ricevuta manuale generata!");
     setShowNewRicevuta(false);
+    setRicevutaPrivatoId(null);
     setRicevutaForm({ importo: "", note: "" });
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+  };
+
+  const handleDeleteRicevuta = async (ricevutaId: string) => {
+    const ok = window.confirm("Eliminare questa ricevuta?");
+    if (!ok) return;
+    const { error } = await supabase.from("ricevute_privati" as any).delete().eq("id", ricevutaId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Ricevuta eliminata");
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
+  };
+
+  const handlePrintRicevute = () => {
+    if (!ricevute?.length) {
+      toast.error("Nessuna ricevuta da stampare");
+      return;
+    }
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`
+      <html><head><title>Ricevute Privati</title>
+      <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #16a34a; color: white; }
+        h1 { color: #16a34a; }
+      </style></head><body>
+      <h1>Ricevute — ${selectedPrivato?.cognome || ""} ${selectedPrivato?.nome || ""}</h1>
+      <table>
+        <thead><tr><th>Numero</th><th>Data</th><th>Importo</th><th>Note</th></tr></thead>
+        <tbody>
+          ${ricevute.map(r => `<tr><td>${r.numero_ricevuta || "-"}</td><td>${new Date(r.created_at).toLocaleDateString("it-IT")}</td><td>€ ${Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td><td>${r.note || "-"}</td></tr>`).join("")}
+        </tbody>
+      </table>
+      </body></html>
+    `);
+    w.document.close();
+    w.print();
   };
 
   const handleSavePrivato = async () => {
