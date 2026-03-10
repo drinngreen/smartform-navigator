@@ -331,10 +331,14 @@ export function DevPrivatiModule() {
       if (error) { toast.error(error.message); return; }
       toast.success("✅ Privato aggiornato");
     } else {
-      const { error } = await supabase.from("anagrafica_privati").insert({
-        ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId,
-      } as any);
+      const { data: created, error } = await supabase
+        .from("anagrafica_privati")
+        .insert({ ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId } as any)
+        .select("id")
+        .single();
       if (error) { toast.error(error.message); return; }
+      setSelectedPrivatoId(created?.id ?? null);
+      setSearchPrivato("");
       toast.success("✅ Privato registrato");
     }
 
