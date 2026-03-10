@@ -658,11 +658,9 @@ export function DevPrivatiModule() {
             <div>
               <Label>Scadenza Documento</Label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !scadenzaDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
-                  </Button>
+                <PopoverTrigger className={cn("w-full inline-flex items-center rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-left text-sm", !scadenzaDate && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={scadenzaDate} onSelect={setScadenzaDate} locale={it} initialFocus className="p-3 pointer-events-auto" />
