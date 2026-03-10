@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2, Edit2, CalendarIcon } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { CER_DATA } from "./DevCERPreferitiModule";
 
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 
@@ -19,6 +25,11 @@ const CER_CRITICI: Record<string, { label: string; limite_annuo_kg: number }> = 
   "200307": { label: "Rifiuti ingombranti", limite_annuo_kg: 300 },
   "200101": { label: "Carta e cartone", limite_annuo_kg: 500 },
   "200110": { label: "Abbigliamento", limite_annuo_kg: 200 },
+};
+
+const EMPTY_PRIVATO_FORM = {
+  nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
+  numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
 };
 
 export function DevPrivatiModule() {
@@ -32,11 +43,15 @@ export function DevPrivatiModule() {
   const [showNewRicevuta, setShowNewRicevuta] = useState(false);
   const [showNewPrivato, setShowNewPrivato] = useState(false);
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
+  const [editPrivatoId, setEditPrivatoId] = useState<string | null>(null);
+  const [cerSearch, setCerSearch] = useState("");
+  const [showCerDropdown, setShowCerDropdown] = useState(false);
 
   // Forms
   const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
   const [ricevutaForm, setRicevutaForm] = useState({ importo: "", note: "" });
-  const [privatoForm, setPrivatoForm] = useState({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
+  const [privatoForm, setPrivatoForm] = useState({ ...EMPTY_PRIVATO_FORM });
+  const [scadenzaDate, setScadenzaDate] = useState<Date | undefined>();
 
   // Fetch impianti for the tenant
   const { data: impianti } = useQuery({
@@ -139,24 +154,20 @@ export function DevPrivatiModule() {
     return null;
   };
 
+  // CER filtered list for combobox
+  const filteredCER = useMemo(() => {
+    if (!cerSearch) return CER_DATA.slice(0, 20);
+    const s = cerSearch.toLowerCase();
+    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
+  }, [cerSearch]);
+
   const handleSaveConferimento = async () => {
     const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
-    if (!targetPrivatoId) {
-      toast.error("Seleziona un privato");
-      return;
-    }
-    if (!impiantoId) {
-      toast.error("Nessun impianto configurato");
-      return;
-    }
-    if (!confForm.cer || !confForm.kg_pesati) {
-      toast.error("CER e kg obbligatori");
-      return;
-    }
+    if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
+    if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
+    if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
 
     const kg = parseFloat(confForm.kg_pesati);
-
-    // Check limits - BLOCK if exceeded
     const warning = await checkLimits(targetPrivatoId, confForm.cer, kg);
     if (warning && warning.includes("LIMITE SUPERATO")) {
       setLimitWarning(warning);
@@ -187,26 +198,15 @@ export function DevPrivatiModule() {
       .select()
       .single();
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
 
-    // Auto-generate receipt
     const conf = confData as any;
     if (conf) {
       const anno = new Date().getFullYear();
-      const { data: numData } = await supabase.rpc(
-        "next_ricevuta_number",
-        { p_impianto_id: impiantoId, p_anno: anno } as any
-      );
+      const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
-        tenant_id: MULTY_TENANT_ID,
-        impianto_id: impiantoId,
-        conferimento_id: conf.id,
-        privato_id: targetPrivatoId,
-        numero_ricevuta: (numData as any) || `${Date.now()}`,
-        anno,
+        tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: conf.id,
+        privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
@@ -215,15 +215,8 @@ export function DevPrivatiModule() {
     toast.success("✅ Conferimento e ricevuta registrati!");
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
-    setConfForm({
-      cer: "",
-      kg_pesati: "",
-      importo_pagato: "",
-      metodo_pag: "contanti",
-      note: "",
-      targa_automezzo: "",
-      modello_automezzo: "",
-    });
+    setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+    setCerSearch("");
     setLimitWarning(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
@@ -232,37 +225,21 @@ export function DevPrivatiModule() {
 
   const handleSaveRicevutaManuale = async () => {
     const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
-    if (!targetPrivatoId) {
-      toast.error("Seleziona un privato");
-      return;
-    }
-    if (!impiantoId) {
-      toast.error("Nessun impianto configurato");
-      return;
-    }
+    if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
+    if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
 
     const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
     const anno = new Date().getFullYear();
-    const { data: numData } = await supabase.rpc(
-      "next_ricevuta_number",
-      { p_impianto_id: impiantoId, p_anno: anno } as any
-    );
+    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      tenant_id: MULTY_TENANT_ID,
-      impianto_id: impiantoId,
-      privato_id: targetPrivatoId,
-      numero_ricevuta: (numData as any) || `${Date.now()}`,
-      anno,
+      tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, privato_id: targetPrivatoId,
+      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
       note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
     } as any);
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
+    if (error) { toast.error(error.message); return; }
     toast.success("✅ Ricevuta manuale generata!");
     setShowNewRicevuta(false);
     setRicevutaPrivatoId(null);
@@ -275,20 +252,14 @@ export function DevPrivatiModule() {
     const ok = window.confirm("Eliminare questa ricevuta?");
     if (!ok) return;
     const { error } = await supabase.from("ricevute_privati" as any).delete().eq("id", ricevutaId);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     toast.success("Ricevuta eliminata");
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
   const handlePrintRicevute = () => {
-    if (!ricevute?.length) {
-      toast.error("Nessuna ricevuta da stampare");
-      return;
-    }
+    if (!ricevute?.length) { toast.error("Nessuna ricevuta da stampare"); return; }
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`
@@ -313,18 +284,54 @@ export function DevPrivatiModule() {
     w.print();
   };
 
+  const openEditPrivato = (p: any) => {
+    setEditPrivatoId(p.id);
+    setPrivatoForm({
+      nome: p.nome || "",
+      cognome: p.cognome || "",
+      codice_fiscale: p.codice_fiscale || "",
+      comune_residenza: p.comune_residenza || "",
+      numero_documento: p.numero_documento || "",
+      scadenza_documento: p.scadenza_documento || "",
+      modello_automezzo: p.modello_automezzo || "",
+      targa_automezzo: p.targa_automezzo || "",
+    });
+    setScadenzaDate(p.scadenza_documento ? new Date(p.scadenza_documento) : undefined);
+    setShowNewPrivato(true);
+  };
+
   const handleSavePrivato = async () => {
     if (!privatoForm.nome || !privatoForm.cognome || !privatoForm.codice_fiscale) {
       toast.error("Nome, cognome e CF obbligatori");
       return;
     }
-    const { error } = await supabase.from("anagrafica_privati").insert({
-      ...privatoForm, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId,
-    } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("✅ Privato registrato");
+    const payload = {
+      nome: privatoForm.nome,
+      cognome: privatoForm.cognome,
+      codice_fiscale: privatoForm.codice_fiscale,
+      comune_residenza: privatoForm.comune_residenza || null,
+      numero_documento: privatoForm.numero_documento || null,
+      scadenza_documento: scadenzaDate ? format(scadenzaDate, "yyyy-MM-dd") : null,
+      modello_automezzo: privatoForm.modello_automezzo || null,
+      targa_automezzo: privatoForm.targa_automezzo || null,
+    };
+
+    if (editPrivatoId) {
+      const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
+      if (error) { toast.error(error.message); return; }
+      toast.success("✅ Privato aggiornato");
+    } else {
+      const { error } = await supabase.from("anagrafica_privati").insert({
+        ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId,
+      } as any);
+      if (error) { toast.error(error.message); return; }
+      toast.success("✅ Privato registrato");
+    }
+
     setShowNewPrivato(false);
-    setPrivatoForm({ nome: "", cognome: "", codice_fiscale: "", comune_residenza: "", numero_tessera: "", tipo_utenza: "domestica", note: "" });
+    setEditPrivatoId(null);
+    setPrivatoForm({ ...EMPTY_PRIVATO_FORM });
+    setScadenzaDate(undefined);
     queryClient.invalidateQueries({ queryKey: ["dev-privati"] });
   };
 
@@ -337,6 +344,20 @@ export function DevPrivatiModule() {
   const activeConferimentoPrivato = privati?.find(p => p.id === (conferimentoPrivatoId ?? selectedPrivatoId));
   const activeRicevutaPrivato = privati?.find(p => p.id === (ricevutaPrivatoId ?? selectedPrivatoId));
   const selectedUsage = selectedPrivatoId ? getCerUsage(selectedPrivatoId) : {};
+
+  // Auto-fill targa/modello when opening conferimento
+  const handleOpenConferimento = () => {
+    if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
+    const p = privati?.find(x => x.id === selectedPrivatoId);
+    setConferimentoPrivatoId(selectedPrivatoId);
+    setConfForm({
+      cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "",
+      targa_automezzo: (p as any)?.targa_automezzo || "",
+      modello_automezzo: (p as any)?.modello_automezzo || "",
+    });
+    setCerSearch("");
+    setShowNewConferimento(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -362,15 +383,10 @@ export function DevPrivatiModule() {
 
       {/* Action Buttons */}
       <div className="flex gap-2 flex-wrap">
-        <Button onClick={() => setShowNewPrivato(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+        <Button onClick={() => { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); setShowNewPrivato(true); }} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
           <Plus className="h-4 w-4" /> Nuovo Privato
         </Button>
-        <Button onClick={() => {
-          if (!selectedPrivatoId) { toast.error("Seleziona un privato"); return; }
-          setConferimentoPrivatoId(selectedPrivatoId);
-          setShowNewConferimento(true);
-        }}
-          variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
+        <Button onClick={handleOpenConferimento} variant="outline" className="gap-2 border-emerald-500/30 text-emerald-400">
           <Scale className="h-4 w-4" /> Nuovo Conferimento
         </Button>
         <Button onClick={() => {
@@ -406,8 +422,8 @@ export function DevPrivatiModule() {
                     { header: "Nome", key: "nome", width: 16 },
                     { header: "CF", key: "codice_fiscale", width: 18 },
                     { header: "Comune", key: "comune_residenza", width: 16 },
-                    { header: "Tipo", key: "tipo_utenza", width: 12 },
-                    { header: "Tessera", key: "numero_tessera", width: 12 },
+                    { header: "Documento", key: "numero_documento", width: 14 },
+                    { header: "Targa", key: "targa_automezzo", width: 12 },
                   ];
                   exportToExcel(filteredPrivati, cols, "privati-dev", "Privati");
                 }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
@@ -420,8 +436,8 @@ export function DevPrivatiModule() {
                     { header: "Nome", key: "nome", width: 16 },
                     { header: "CF", key: "codice_fiscale", width: 18 },
                     { header: "Comune", key: "comune_residenza", width: 16 },
-                    { header: "Tipo", key: "tipo_utenza", width: 12 },
-                    { header: "Tessera", key: "numero_tessera", width: 12 },
+                    { header: "Documento", key: "numero_documento", width: 14 },
+                    { header: "Targa", key: "targa_automezzo", width: 12 },
                   ];
                   exportToPdf(filteredPrivati, cols, "privati-dev", "Anagrafica Privati — Multyproget Dev");
                 }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
@@ -446,10 +462,16 @@ export function DevPrivatiModule() {
                       <span className="font-medium">{p.cognome} {p.nome}</span>
                       <span className="ml-2 text-xs text-muted-foreground font-mono">{p.codice_fiscale}</span>
                     </div>
-                    {hasWarning && <AlertTriangle className="h-4 w-4 text-amber-400" />}
+                    <div className="flex items-center gap-1">
+                      {hasWarning && <AlertTriangle className="h-4 w-4 text-amber-400" />}
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-emerald-400"
+                        onClick={(e) => { e.stopPropagation(); openEditPrivato(p); }}>
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {p.tipo_utenza} · {p.comune_residenza || "-"}
+                    {p.comune_residenza || "-"}{(p as any).targa_automezzo ? ` · ${(p as any).targa_automezzo}` : ""}
                   </div>
                 </div>
               );
@@ -584,12 +606,8 @@ export function DevPrivatiModule() {
                               {new Date(r.created_at).toLocaleDateString("it-IT")} · € {Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
                             </p>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-auto h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteRicevuta(r.id)}
-                          >
+                          <Button variant="outline" size="sm" className="ml-auto h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteRicevuta(r.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -609,45 +627,42 @@ export function DevPrivatiModule() {
         </div>
       </div>
 
-      {/* ─── New Privato Dialog ─── */}
-      <Dialog open={showNewPrivato} onOpenChange={setShowNewPrivato}>
+      {/* ─── New/Edit Privato Dialog ─── */}
+      <Dialog open={showNewPrivato} onOpenChange={(o) => { setShowNewPrivato(o); if (!o) { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); } }}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Nuovo Privato</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editPrivatoId ? "Modifica Privato" : "Nuovo Privato"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div><Label>Cognome *</Label><Input value={privatoForm.cognome} onChange={(e) => setPrivatoForm(p => ({ ...p, cognome: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Codice Fiscale *</Label><Input value={privatoForm.codice_fiscale} onChange={(e) => setPrivatoForm(p => ({ ...p, codice_fiscale: e.target.value.toUpperCase() }))} className="font-mono" /></div>
             <div><Label>Comune</Label><Input value={privatoForm.comune_residenza} onChange={(e) => setPrivatoForm(p => ({ ...p, comune_residenza: e.target.value }))} /></div>
-            <div><Label>N° Tessera</Label><Input value={privatoForm.numero_tessera} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_tessera: e.target.value }))} /></div>
+            <div><Label>N° Documento</Label><Input value={privatoForm.numero_documento} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_documento: e.target.value }))} /></div>
             <div>
-              <Label>Tipo Utenza</Label>
-              <Select value={privatoForm.tipo_utenza} onValueChange={(v) => setPrivatoForm(p => ({ ...p, tipo_utenza: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="domestica">Domestica</SelectItem>
-                  <SelectItem value="non_domestica">Non Domestica</SelectItem>
-                  <SelectItem value="produttore_speciali">Produttore Speciali</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Scadenza Documento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !scadenzaDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={scadenzaDate} onSelect={setScadenzaDate} locale={it} initialFocus className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
             </div>
-            <div><Label>Note</Label><Input value={privatoForm.note} onChange={(e) => setPrivatoForm(p => ({ ...p, note: e.target.value }))} /></div>
+            <div><Label>Modello Automezzo</Label><Input value={privatoForm.modello_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
+            <div className="col-span-2"><Label>Targa Automezzo</Label><Input value={privatoForm.targa_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewPrivato(false)}>Annulla</Button>
-            <Button onClick={handleSavePrivato} className="bg-emerald-600 hover:bg-emerald-700">Registra</Button>
+            <Button onClick={handleSavePrivato} className="bg-emerald-600 hover:bg-emerald-700">{editPrivatoId ? "Salva" : "Registra"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog
-        open={showNewConferimento}
-        onOpenChange={(o) => {
-          setShowNewConferimento(o);
-          setLimitWarning(null);
-          if (!o) setConferimentoPrivatoId(null);
-        }}
-      >
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -662,7 +677,39 @@ export function DevPrivatiModule() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Codice CER *</Label><Input value={confForm.cer} onChange={(e) => setConfForm(p => ({ ...p, cer: e.target.value }))} placeholder="es. 200140" className="font-mono" /></div>
+            {/* CER Combobox */}
+            <div className="col-span-2 relative">
+              <Label>Codice CER *</Label>
+              <Input
+                value={confForm.cer || cerSearch}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCerSearch(v);
+                  setConfForm(p => ({ ...p, cer: v }));
+                  setShowCerDropdown(true);
+                }}
+                onFocus={() => setShowCerDropdown(true)}
+                placeholder="Cerca o digita CER (es. 200140)"
+                className="font-mono"
+              />
+              {showCerDropdown && filteredCER.length > 0 && (
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                  {filteredCER.map(c => (
+                    <button key={c.codice} type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent/50 flex items-center gap-2"
+                      onClick={() => {
+                        setConfForm(p => ({ ...p, cer: c.codice }));
+                        setCerSearch(c.codice);
+                        setShowCerDropdown(false);
+                      }}>
+                      <span className="font-mono text-emerald-400 shrink-0">{c.codice}</span>
+                      <span className="text-muted-foreground truncate text-xs">{c.descrizione}</span>
+                      {c.pericoloso && <span className="text-red-400 text-xs shrink-0">⚠️</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
             <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
             <div>
@@ -691,13 +738,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── Manual Ricevuta Dialog ─── */}
-      <Dialog
-        open={showNewRicevuta}
-        onOpenChange={(o) => {
-          setShowNewRicevuta(o);
-          if (!o) setRicevutaPrivatoId(null);
-        }}
-      >
+      <Dialog open={showNewRicevuta} onOpenChange={(o) => { setShowNewRicevuta(o); if (!o) setRicevutaPrivatoId(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

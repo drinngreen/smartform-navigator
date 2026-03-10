@@ -315,13 +315,16 @@ export type Database = {
           import_batch_id: string | null
           import_source: string | null
           indirizzo: string | null
+          modello_automezzo: string | null
           nazione: string | null
           nome: string
           note: string | null
+          numero_documento: string | null
           numero_tessera: string | null
           partita_iva: string | null
           pec: string | null
           provincia: string | null
+          scadenza_documento: string | null
           targa_automezzo: string | null
           telefono: string | null
           tenant_id: string | null
@@ -346,13 +349,16 @@ export type Database = {
           import_batch_id?: string | null
           import_source?: string | null
           indirizzo?: string | null
+          modello_automezzo?: string | null
           nazione?: string | null
           nome: string
           note?: string | null
+          numero_documento?: string | null
           numero_tessera?: string | null
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
+          scadenza_documento?: string | null
           targa_automezzo?: string | null
           telefono?: string | null
           tenant_id?: string | null
@@ -377,13 +383,16 @@ export type Database = {
           import_batch_id?: string | null
           import_source?: string | null
           indirizzo?: string | null
+          modello_automezzo?: string | null
           nazione?: string | null
           nome?: string
           note?: string | null
+          numero_documento?: string | null
           numero_tessera?: string | null
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
+          scadenza_documento?: string | null
           targa_automezzo?: string | null
           telefono?: string | null
           tenant_id?: string | null
