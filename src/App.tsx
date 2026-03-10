@@ -162,6 +162,7 @@ const App = () => (
                 <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
                 <Route path="/social/ai" element={<ProtectedRoute><SocialAIPage /></ProtectedRoute>} />
                 <Route path="/social/guest" element={<SocialGuestAuthPage />} />
+                <Route path="/appuntamento-personale" element={<AppuntamentoPersonalePage />} />
 
                 {/* Root redirect based on role */}
                 <Route path="/" element={<RoleBasedRedirect />} />
