@@ -14,7 +14,7 @@ import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Sca
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
 
@@ -296,7 +296,12 @@ export function DevPrivatiModule() {
       modello_automezzo: p.modello_automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
     });
-    setScadenzaDate(p.scadenza_documento ? new Date(p.scadenza_documento) : undefined);
+    if (p.scadenza_documento) {
+      const [y, m, d] = p.scadenza_documento.split("-").map(Number);
+      setScadenzaDate(new Date(y, m - 1, d));
+    } else {
+      setScadenzaDate(undefined);
+    }
     setShowNewPrivato(true);
   };
 
@@ -305,15 +310,19 @@ export function DevPrivatiModule() {
       toast.error("Nome, cognome e CF obbligatori");
       return;
     }
+    const scadenzaStr = scadenzaDate
+      ? `${scadenzaDate.getFullYear()}-${String(scadenzaDate.getMonth() + 1).padStart(2, "0")}-${String(scadenzaDate.getDate()).padStart(2, "0")}`
+      : null;
     const payload = {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
       codice_fiscale: privatoForm.codice_fiscale,
       comune_residenza: privatoForm.comune_residenza || null,
       numero_documento: privatoForm.numero_documento || null,
-      scadenza_documento: scadenzaDate ? format(scadenzaDate, "yyyy-MM-dd") : null,
+      scadenza_documento: scadenzaStr,
       modello_automezzo: privatoForm.modello_automezzo || null,
       targa_automezzo: privatoForm.targa_automezzo || null,
+      tipo_utenza: "domestica",
     };
 
     if (editPrivatoId) {
@@ -462,12 +471,15 @@ export function DevPrivatiModule() {
                       <span className="font-medium">{p.cognome} {p.nome}</span>
                       <span className="ml-2 text-xs text-muted-foreground font-mono">{p.codice_fiscale}</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       {hasWarning && <AlertTriangle className="h-4 w-4 text-amber-400" />}
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-emerald-400"
-                        onClick={(e) => { e.stopPropagation(); openEditPrivato(p); }}>
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <button
+                        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-emerald-500/20 text-emerald-400"
+                        onClick={(e) => { e.stopPropagation(); openEditPrivato(p); }}
+                        title="Modifica privato"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
