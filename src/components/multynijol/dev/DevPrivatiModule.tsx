@@ -293,7 +293,7 @@ export function DevPrivatiModule() {
       comune_residenza: p.comune_residenza || "",
       numero_documento: p.numero_documento || "",
       scadenza_documento: p.scadenza_documento || "",
-      modello_automezzo: p.modello_automezzo || "",
+      modello_automezzo: p.modello_automezzo || p.automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
     });
     if (p.scadenza_documento) {
@@ -321,8 +321,10 @@ export function DevPrivatiModule() {
       numero_documento: privatoForm.numero_documento || null,
       scadenza_documento: scadenzaStr,
       modello_automezzo: privatoForm.modello_automezzo || null,
+      automezzo: privatoForm.modello_automezzo || null,
       targa_automezzo: privatoForm.targa_automezzo || null,
       tipo_utenza: "domestica",
+      attivo: true,
     };
 
     if (editPrivatoId) {
@@ -330,10 +332,14 @@ export function DevPrivatiModule() {
       if (error) { toast.error(error.message); return; }
       toast.success("✅ Privato aggiornato");
     } else {
-      const { error } = await supabase.from("anagrafica_privati").insert({
-        ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId,
-      } as any);
+      const { data: created, error } = await supabase
+        .from("anagrafica_privati")
+        .insert({ ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId } as any)
+        .select("id")
+        .single();
       if (error) { toast.error(error.message); return; }
+      setSelectedPrivatoId(created?.id ?? null);
+      setSearchPrivato(payload.cognome);
       toast.success("✅ Privato registrato");
     }
 
@@ -362,7 +368,7 @@ export function DevPrivatiModule() {
     setConfForm({
       cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "",
       targa_automezzo: (p as any)?.targa_automezzo || "",
-      modello_automezzo: (p as any)?.modello_automezzo || "",
+      modello_automezzo: (p as any)?.modello_automezzo || (p as any)?.automezzo || "",
     });
     setCerSearch("");
     setShowNewConferimento(true);
@@ -471,14 +477,15 @@ export function DevPrivatiModule() {
                       <span className="font-medium">{p.cognome} {p.nome}</span>
                       <span className="ml-2 text-xs text-muted-foreground font-mono">{p.codice_fiscale}</span>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {hasWarning && <AlertTriangle className="h-4 w-4 text-amber-400" />}
                       <button
-                        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-emerald-500/20 text-emerald-400"
+                        className="h-7 px-2 inline-flex items-center gap-1 rounded-md border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium"
                         onClick={(e) => { e.stopPropagation(); openEditPrivato(p); }}
                         title="Modifica privato"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-3.5 w-3.5" />
+                        Modifica
                       </button>
                     </div>
                   </div>
@@ -652,11 +659,9 @@ export function DevPrivatiModule() {
             <div>
               <Label>Scadenza Documento</Label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !scadenzaDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
-                  </Button>
+                <PopoverTrigger className={cn("w-full inline-flex items-center rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-left text-sm", !scadenzaDate && "text-muted-foreground")}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar mode="single" selected={scadenzaDate} onSelect={setScadenzaDate} locale={it} initialFocus className="p-3 pointer-events-auto" />
