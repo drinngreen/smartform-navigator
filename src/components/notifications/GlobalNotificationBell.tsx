@@ -8,7 +8,7 @@ export function GlobalNotificationBell() {
 
   // Hide on admin pages (bell already in header) and auth pages
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin") || location.pathname.startsWith("/super");
-  const isAuthRoute = location.pathname.startsWith("/auth") || location.pathname === "/mn" || location.pathname === "/ni" || location.pathname.startsWith("/adminmn") || location.pathname.startsWith("/superadmin") || location.pathname.startsWith("/social/guest");
+  const isAuthRoute = location.pathname.startsWith("/auth") || location.pathname === "/mn" || location.pathname === "/ni" || location.pathname.startsWith("/adminmn") || location.pathname.startsWith("/superadmin") || location.pathname.startsWith("/social/guest") || location.pathname.startsWith("/appuntamento-personale");
   const isSocialRoute = location.pathname === "/social";
   const isImpiantoRoute = location.pathname.startsWith("/area-impianto");
 
