@@ -18,7 +18,7 @@ interface CEREntry {
   sCarico: string;
 }
 
-const CER_DATA: CEREntry[] = [
+export const CER_DATA: CEREntry[] = [
   { codice: "010408", descrizione: "scarti di ghiaia e pietrisco, diversi da quelli di cui alla voce 01 04 07", descrAggiuntiva: "", stato: "Solido non pulverulento", pericoloso: false, classiPericolo: "", um: "Kg", rScarico: "R13", sScarico: "", origine: "Rifiuto", rCarico: "R13", sCarico: "" },
   { codice: "030105", descrizione: "segatura, trucioli, residui di taglio, legno, pannelli di truciolare e piallacci diversi da quelli di cui alla voce 03 01 04", descrAggiuntiva: "", stato: "Solido non pulverulento", pericoloso: false, classiPericolo: "", um: "Kg", rScarico: "R13", sScarico: "", origine: "Rifiuto", rCarico: "R13", sCarico: "" },
   { codice: "070213", descrizione: "rifiuti plastici", descrAggiuntiva: "", stato: "Solido non pulverulento", pericoloso: false, classiPericolo: "", um: "Kg", rScarico: "R13", sScarico: "", origine: "Rifiuto", rCarico: "R13", sCarico: "" },
