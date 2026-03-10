@@ -310,15 +310,19 @@ export function DevPrivatiModule() {
       toast.error("Nome, cognome e CF obbligatori");
       return;
     }
+    const scadenzaStr = scadenzaDate
+      ? `${scadenzaDate.getFullYear()}-${String(scadenzaDate.getMonth() + 1).padStart(2, "0")}-${String(scadenzaDate.getDate()).padStart(2, "0")}`
+      : null;
     const payload = {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
       codice_fiscale: privatoForm.codice_fiscale,
       comune_residenza: privatoForm.comune_residenza || null,
       numero_documento: privatoForm.numero_documento || null,
-      scadenza_documento: scadenzaDate ? format(scadenzaDate, "yyyy-MM-dd") : null,
+      scadenza_documento: scadenzaStr,
       modello_automezzo: privatoForm.modello_automezzo || null,
       targa_automezzo: privatoForm.targa_automezzo || null,
+      tipo_utenza: "domestica",
     };
 
     if (editPrivatoId) {
