@@ -14,7 +14,7 @@ import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Sca
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { it } from "date-fns/locale";
+import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
 
