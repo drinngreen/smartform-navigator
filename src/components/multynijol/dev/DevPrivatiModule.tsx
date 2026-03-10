@@ -325,6 +325,7 @@ export function DevPrivatiModule() {
       targa_automezzo: privatoForm.targa_automezzo || null,
       tipo_utenza: "domestica",
       attivo: true,
+    };
 
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
