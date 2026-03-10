@@ -1,14 +1,11 @@
 import React from "react";
-import { Card as BaseCard } from "../../ui/Card";
 
 export const Card = React.forwardRef<HTMLDivElement, { children: React.ReactNode; className?: string }>(
-  ({ children, className }, ref) => {
-    return (
-      <div ref={ref}>
-        <BaseCard className={className}>{children}</BaseCard>
-      </div>
-    );
-  }
+  ({ children, className }, ref) => (
+    <div ref={ref} className={`card ${className ?? ""}`}>
+      {children}
+    </div>
+  )
 );
 Card.displayName = "Card";
 
