@@ -102,6 +102,7 @@ const MNAppProfiloPage = React.lazy(() => import("./pages/multynijol/MNAppProfil
 const MNAppGuidaPage = React.lazy(() => import("./pages/multynijol/MNAppGuidaPage"));
 const MNAppModuloAlternativoPage = React.lazy(() => import("./pages/multynijol/MNAppModuloAlternativoPage"));
 const ModuloAlternativoPage = React.lazy(() => import("./pages/ModuloAlternativoPage"));
+const AppuntamentoPersonalePage = React.lazy(() => import("./pages/AppuntamentoPersonalePage"));
 
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
