@@ -296,7 +296,12 @@ export function DevPrivatiModule() {
       modello_automezzo: p.modello_automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
     });
-    setScadenzaDate(p.scadenza_documento ? new Date(p.scadenza_documento) : undefined);
+    if (p.scadenza_documento) {
+      const [y, m, d] = p.scadenza_documento.split("-").map(Number);
+      setScadenzaDate(new Date(y, m - 1, d));
+    } else {
+      setScadenzaDate(undefined);
+    }
     setShowNewPrivato(true);
   };
 
