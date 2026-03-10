@@ -321,9 +321,10 @@ export function DevPrivatiModule() {
       numero_documento: privatoForm.numero_documento || null,
       scadenza_documento: scadenzaStr,
       modello_automezzo: privatoForm.modello_automezzo || null,
+      automezzo: privatoForm.modello_automezzo || null,
       targa_automezzo: privatoForm.targa_automezzo || null,
       tipo_utenza: "domestica",
-    };
+      attivo: true,
 
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
