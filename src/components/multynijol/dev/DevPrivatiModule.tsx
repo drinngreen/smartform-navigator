@@ -367,7 +367,7 @@ export function DevPrivatiModule() {
     setConfForm({
       cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "",
       targa_automezzo: (p as any)?.targa_automezzo || "",
-      modello_automezzo: (p as any)?.modello_automezzo || "",
+      modello_automezzo: (p as any)?.modello_automezzo || (p as any)?.automezzo || "",
     });
     setCerSearch("");
     setShowNewConferimento(true);
