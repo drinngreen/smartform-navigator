@@ -663,7 +663,7 @@ export function DevPrivatiModule() {
 
       {/* ─── New Conferimento Dialog ─── */}
       <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Scale className="h-5 w-5 text-emerald-400" />
@@ -689,14 +689,16 @@ export function DevPrivatiModule() {
                   setShowCerDropdown(true);
                 }}
                 onFocus={() => setShowCerDropdown(true)}
+                onBlur={() => setTimeout(() => setShowCerDropdown(false), 200)}
                 placeholder="Cerca o digita CER (es. 200140)"
                 className="font-mono"
               />
               {showCerDropdown && filteredCER.length > 0 && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
                   {filteredCER.map(c => (
                     <button key={c.codice} type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-accent/50 flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setConfForm(p => ({ ...p, cer: c.codice }));
                         setCerSearch(c.codice);
