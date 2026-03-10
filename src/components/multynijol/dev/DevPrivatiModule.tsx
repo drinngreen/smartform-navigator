@@ -339,7 +339,7 @@ export function DevPrivatiModule() {
         .single();
       if (error) { toast.error(error.message); return; }
       setSelectedPrivatoId(created?.id ?? null);
-      setSearchPrivato("");
+      setSearchPrivato(payload.cognome);
       toast.success("✅ Privato registrato");
     }
 
