@@ -476,14 +476,15 @@ export function DevPrivatiModule() {
                       <span className="font-medium">{p.cognome} {p.nome}</span>
                       <span className="ml-2 text-xs text-muted-foreground font-mono">{p.codice_fiscale}</span>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       {hasWarning && <AlertTriangle className="h-4 w-4 text-amber-400" />}
                       <button
-                        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-emerald-500/20 text-emerald-400"
+                        className="h-7 px-2 inline-flex items-center gap-1 rounded-md border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium"
                         onClick={(e) => { e.stopPropagation(); openEditPrivato(p); }}
                         title="Modifica privato"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-3.5 w-3.5" />
+                        Modifica
                       </button>
                     </div>
                   </div>
