@@ -407,6 +407,33 @@ export type Database = {
           },
         ]
       }
+      appuntamenti_personale: {
+        Row: {
+          created_at: string
+          id: string
+          messaggio_disponibilita: string | null
+          nome: string
+          risposta_riccardo: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messaggio_disponibilita?: string | null
+          nome: string
+          risposta_riccardo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messaggio_disponibilita?: string | null
+          nome?: string
+          risposta_riccardo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       call_cost_adjustments: {
         Row: {
           amount: number
