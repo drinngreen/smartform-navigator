@@ -293,7 +293,7 @@ export function DevPrivatiModule() {
       comune_residenza: p.comune_residenza || "",
       numero_documento: p.numero_documento || "",
       scadenza_documento: p.scadenza_documento || "",
-      modello_automezzo: p.modello_automezzo || "",
+      modello_automezzo: p.modello_automezzo || p.automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
     });
     if (p.scadenza_documento) {
