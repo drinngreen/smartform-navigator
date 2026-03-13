@@ -3389,6 +3389,39 @@ export type Database = {
           },
         ]
       }
+      rentri_logs: {
+        Row: {
+          cliente: string | null
+          created_at: string
+          dati_inviati: Json | null
+          id: string
+          messaggio: string | null
+          risposta_rentri: Json | null
+          ruolo: string | null
+          stato: string | null
+        }
+        Insert: {
+          cliente?: string | null
+          created_at?: string
+          dati_inviati?: Json | null
+          id?: string
+          messaggio?: string | null
+          risposta_rentri?: Json | null
+          ruolo?: string | null
+          stato?: string | null
+        }
+        Update: {
+          cliente?: string | null
+          created_at?: string
+          dati_inviati?: Json | null
+          id?: string
+          messaggio?: string | null
+          risposta_rentri?: Json | null
+          ruolo?: string | null
+          stato?: string | null
+        }
+        Relationships: []
+      }
       ricevute_privati: {
         Row: {
           anno: number
