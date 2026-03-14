@@ -52,14 +52,22 @@ serve(async (req) => {
     const body = await req.json();
     const { cliente, tipo_operazione, payload } = body;
 
-    if (!cliente || !tipo_operazione) {
+    if (
+      typeof cliente !== "string" ||
+      typeof tipo_operazione !== "string" ||
+      !cliente.trim() ||
+      !tipo_operazione.trim()
+    ) {
       return new Response(
         JSON.stringify({ success: false, error: "cliente e tipo_operazione sono obbligatori" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const upstreamBody = buildUpstreamBody(cliente, tipo_operazione, payload);
+    const normalizedCliente = cliente.trim();
+    const normalizedTipoOperazione = tipo_operazione.trim().toUpperCase();
+
+    const upstreamBody = buildUpstreamBody(normalizedCliente, normalizedTipoOperazione, payload);
 
     console.log(
       `[rentri-vps] Invio a VPS: cliente=${cliente}, tipo=${tipo_operazione}, keys=${Object.keys(upstreamBody).join(",")}`
