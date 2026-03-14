@@ -8,6 +8,7 @@ import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarS
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
 import { SystemPromptReviewSection } from "@/components/superadmin/SystemPromptReviewSection";
 import { RENTRIActionsPanel } from "@/components/superadmin/RENTRIActionsPanel";
+import { RENTRIDemoTestHub } from "@/components/superadmin/RENTRIDemoTestHub";
 import { SocialModerationSection } from "@/components/superadmin/SocialModerationSection";
 import { DemoAppSection } from "@/components/superadmin/DemoAppSection";
 import { ngrokHealthCheck } from "@/lib/rentriNgrokApi";
