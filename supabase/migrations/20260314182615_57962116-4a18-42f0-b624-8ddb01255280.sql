@@ -1,0 +1,1 @@
+ALTER TABLE public.fir_number_pool ADD COLUMN is_demo boolean NOT NULL DEFAULT false;
