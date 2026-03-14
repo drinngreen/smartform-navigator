@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.sync-global-inbox]
 verify_jwt = false
+
+[functions.rentri-vps-proxy]
+verify_jwt = false
