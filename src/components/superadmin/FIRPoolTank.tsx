@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Copy, Check, Loader2, Fuel, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { emissioneFirNgrok, firmaRicezioneNgrok } from "@/lib/rentriNgrokApi";
 import { toast } from "sonner";
 
