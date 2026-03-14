@@ -141,6 +141,10 @@ serve(async (req) => {
 
       lastStatus = upstream.status;
       lastData = data;
+      if (i === 0) {
+        primaryStatus = upstream.status;
+        primaryData = data;
+      }
 
       console.log(`[rentri-vps] Risposta VPS: status=${upstream.status}, cliente=${upstreamBody.cliente}`);
 
