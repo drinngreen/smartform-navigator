@@ -59,12 +59,16 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[rentri-vps] Invio a VPS: cliente=${cliente}, tipo=${tipo_operazione}`);
+    const upstreamBody = buildUpstreamBody(cliente, tipo_operazione, payload);
+
+    console.log(
+      `[rentri-vps] Invio a VPS: cliente=${cliente}, tipo=${tipo_operazione}, keys=${Object.keys(upstreamBody).join(",")}`
+    );
 
     const upstream = await fetch(VPS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, tipo_operazione, payload: payload ?? {} }),
+      body: JSON.stringify(upstreamBody),
     });
 
     const text = await upstream.text();
