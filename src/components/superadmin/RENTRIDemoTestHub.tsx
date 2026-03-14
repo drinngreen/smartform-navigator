@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import { Loader2, FlaskConical, Truck, Factory, FileSignature, Package, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { Loader2, FlaskConical, Truck, Factory, FileSignature, Package, CheckCircle, XCircle, RefreshCw, Copy, Check, Fuel } from "lucide-react";
 import { inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-
-const FIR_NUMBER_REGEX = /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/;
-const normalizeFirNumber = (v: string) => v.trim().replace(/\s+/g, " ").toUpperCase();
 
 const QUANTITIES = [5, 10, 50, 100];
 
@@ -24,6 +21,11 @@ const TENANT_MAP: Record<string, TenantConfig> = {
   niyol: { id: "niyol", label: "Niyol", cliente: "niyol", canProduttore: false, canTrasportatore: true, canImpianto: false },
 };
 
+interface DemoPoolNumber {
+  id: string;
+  fir_number: string;
+}
+
 interface OpResult {
   id: string;
   operation: string;
@@ -33,25 +35,38 @@ interface OpResult {
   timestamp: Date;
 }
 
+type FirmaType = "produttore" | "trasportatore" | "impianto";
+
+const FIR_NUMBER_REGEX = /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/;
+const normalizeFirNumber = (v: string) => v.trim().replace(/\s+/g, " ").toUpperCase();
+
 export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
   const cfg = TENANT_MAP[tenant] ?? TENANT_MAP.global;
   const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<OpResult[]>([]);
-  const [demoCount, setDemoCount] = useState(0);
-  const [firNumberInput, setFirNumberInput] = useState("");
+  const [demoNumbers, setDemoNumbers] = useState<DemoPoolNumber[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [signingId, setSigningId] = useState<string | null>(null);
+  const [signingType, setSigningType] = useState<FirmaType | null>(null);
 
-  const fetchDemoCount = async () => {
-    const { count } = await supabase
+  const fetchDemoPool = async () => {
+    const { data, error } = await supabase
       .from("fir_number_pool")
-      .select("*", { count: "exact", head: true })
+      .select("id, fir_number")
       .eq("societa_id", cfg.id)
       .eq("is_demo", true)
-      .eq("status", "available");
-    setDemoCount(count ?? 0);
+      .eq("status", "available")
+      .eq("suspended", false)
+      .order("created_at", { ascending: true });
+    if (error) {
+      toast.error("Errore caricamento pool demo: " + error.message);
+    } else {
+      setDemoNumbers(data ?? []);
+    }
   };
 
-  useEffect(() => { fetchDemoCount(); }, [cfg.id]);
+  useEffect(() => { fetchDemoPool(); }, [cfg.id]);
 
   const addResult = (operation: string, res: { success: boolean; status: number; data: unknown }) => {
     setResults(prev => [{
@@ -94,7 +109,7 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
           toast.error("Errore salvataggio pool demo: " + error.message);
         } else {
           toast.success(`${valid.length} numeri FIR demo caricati per ${cfg.label}`);
-          fetchDemoCount();
+          fetchDemoPool();
         }
       } else {
         toast.warning("Nessun numero FIR valido ricevuto");
@@ -105,49 +120,48 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
     setLoading(null);
   };
 
-  // --- FIRMA PRODUTTORE ---
-  const handleFirmaProduttore = async () => {
-    if (!firNumberInput.trim()) { toast.error("Inserisci numero FIR"); return; }
-    setLoading("produttore");
-    const res = await inviaOperazioneRentri({
-      cliente: cfg.cliente,
-      tipo_operazione: "FIR_EMISSIONE",
-      payload: { firNumber: firNumberInput.trim(), ruolo: "produttore" },
-    });
-    addResult("FIRMA PRODUTTORE", res);
-    if (res.success) toast.success("Firma produttore completata!");
-    else toast.error("Errore firma produttore");
-    setLoading(null);
+  // --- COPY ---
+  const handleCopy = async (firNumber: string, id: string) => {
+    await navigator.clipboard.writeText(firNumber);
+    setCopiedId(id);
+    toast.success("Numero FIR demo copiato!");
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // --- FIRMA TRASPORTATORE ---
-  const handleFirmaTrasportatore = async () => {
-    if (!firNumberInput.trim()) { toast.error("Inserisci numero FIR"); return; }
-    setLoading("trasportatore");
-    const res = await inviaOperazioneRentri({
-      cliente: cfg.cliente,
-      tipo_operazione: "FIR_EMISSIONE",
-      payload: { firNumber: firNumberInput.trim(), ruolo: "trasportatore" },
-    });
-    addResult("FIRMA TRASPORTATORE", res);
-    if (res.success) toast.success("Firma trasportatore completata!");
-    else toast.error("Errore firma trasportatore");
-    setLoading(null);
-  };
+  // --- FIRMA DA SERBATOIO ---
+  const handleFirmaFromPool = async (pool: DemoPoolNumber, tipo: FirmaType) => {
+    setSigningId(pool.id);
+    setSigningType(tipo);
 
-  // --- FIRMA IMPIANTO ---
-  const handleFirmaImpianto = async () => {
-    if (!firNumberInput.trim()) { toast.error("Inserisci numero FIR"); return; }
-    setLoading("impianto");
-    const res = await inviaOperazioneRentri({
-      cliente: cfg.cliente,
-      tipo_operazione: "REGISTRO",
-      payload: { firNumber: firNumberInput.trim(), ruolo: "impianto" },
-    });
-    addResult("REGISTRO IMPIANTO", res);
-    if (res.success) toast.success("Registrazione impianto completata!");
-    else toast.error("Errore registrazione impianto");
-    setLoading(null);
+    try {
+      const tipoOperazione = tipo === "impianto" ? "REGISTRO" : "FIR_EMISSIONE";
+      const res = await inviaOperazioneRentri({
+        cliente: cfg.cliente,
+        tipo_operazione: tipoOperazione,
+        payload: { firNumber: pool.fir_number, ruolo: tipo },
+      });
+
+      const label = tipo === "impianto" ? "REGISTRO IMPIANTO" : `FIRMA ${tipo.toUpperCase()}`;
+      addResult(label, res);
+
+      if (res.success) {
+        toast.success(`${label} completata per ${pool.fir_number}!`);
+        // Mark as consumed
+        await supabase
+          .from("fir_number_pool")
+          .update({ status: "consumed", consumed_at: new Date().toISOString() })
+          .eq("id", pool.id);
+        // Remove from local list
+        setDemoNumbers(prev => prev.filter(n => n.id !== pool.id));
+      } else {
+        toast.error(`Errore ${label}: ${JSON.stringify(res.data)}`);
+      }
+    } catch (err: any) {
+      toast.error(`Errore firma ${tipo}: ${err.message}`);
+    }
+
+    setSigningId(null);
+    setSigningType(null);
   };
 
   const isLoading = !!loading;
@@ -165,9 +179,9 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <Package size={16} className="text-amber-400" />
-          <span className="text-amber-300 font-semibold">{demoCount}</span>
+          <span className="text-amber-300 font-semibold">{demoNumbers.length}</span>
           <span className="text-muted-foreground">FIR demo disponibili</span>
-          <button onClick={fetchDemoCount} className="ml-1 p-1 rounded hover:bg-secondary/50"><RefreshCw size={14} /></button>
+          <button onClick={fetchDemoPool} className="ml-1 p-1 rounded hover:bg-secondary/50"><RefreshCw size={14} /></button>
         </div>
       </div>
 
@@ -194,46 +208,67 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
           </div>
         </section>
 
-        {/* FIRME */}
+        {/* SERBATOIO DEMO */}
         <section>
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-            <FileSignature size={16} className="text-amber-400" /> Firme Digitali Demo
+            <Fuel size={16} className="text-amber-400" /> Serbatoio Demo — {cfg.label.toUpperCase()}
           </h4>
-          <div className="mb-3">
-            <label className="text-xs text-muted-foreground mb-1 block">Numero FIR per le firme</label>
-            <input type="text" value={firNumberInput} onChange={e => setFirNumberInput(e.target.value)}
-              placeholder="es. FMGWB 123456 AB"
-              className="w-full max-w-md px-4 py-2.5 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
-            />
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            {cfg.canProduttore && (
-              <button onClick={handleFirmaProduttore} disabled={isLoading}
-                className="px-4 py-2.5 rounded-lg font-semibold bg-yellow-600 text-black hover:bg-yellow-500 disabled:opacity-50 flex items-center gap-2 text-sm"
-              >
-                {loading === "produttore" ? <Loader2 className="animate-spin" size={16} /> : <FileSignature size={16} />}
-                Firma Produttore
-              </button>
-            )}
-            {cfg.canTrasportatore && (
-              <button onClick={handleFirmaTrasportatore} disabled={isLoading}
-                className="px-4 py-2.5 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 flex items-center gap-2 text-sm"
-              >
-                {loading === "trasportatore" ? <Loader2 className="animate-spin" size={16} /> : <Truck size={16} />}
-                Firma Trasportatore
-              </button>
-            )}
-            {cfg.canImpianto && (
-              <button onClick={handleFirmaImpianto} disabled={isLoading}
-                className="px-4 py-2.5 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 flex items-center gap-2 text-sm"
-              >
-                {loading === "impianto" ? <Loader2 className="animate-spin" size={16} /> : <Factory size={16} />}
-                Registro Impianto
-              </button>
-            )}
-          </div>
-          {!cfg.canProduttore && <p className="text-xs text-muted-foreground mt-2 italic">{cfg.label} non ha ruolo Produttore</p>}
-          {!cfg.canImpianto && <p className="text-xs text-muted-foreground mt-1 italic">{cfg.label} non ha ruolo Impianto</p>}
+          {demoNumbers.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
+              Nessun FIR demo disponibile. Usa "Rifornimento" sopra per richiederne.
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+              {demoNumbers.map(pool => {
+                const isActive = signingId === pool.id;
+                const btnBase = "px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-40 flex items-center gap-1 transition-all";
+                return (
+                  <div key={pool.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 hover:bg-amber-500/10 transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        onClick={() => handleCopy(pool.fir_number, pool.id)}
+                        className="shrink-0 p-2 rounded-md bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+                        title="Copia numero FIR"
+                      >
+                        {copiedId === pool.id ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                      </button>
+                      <code className="text-sm font-mono text-foreground truncate select-all">
+                        {pool.fir_number}
+                      </code>
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {cfg.canProduttore && (
+                        <button onClick={() => handleFirmaFromPool(pool, "produttore")} disabled={isActive}
+                          className={`${btnBase} bg-yellow-600/80 text-yellow-100 hover:bg-yellow-500`}
+                        >
+                          {isActive && signingType === "produttore" ? <Loader2 className="animate-spin" size={12} /> : <FileSignature size={12} />}
+                          Produttore
+                        </button>
+                      )}
+                      {cfg.canTrasportatore && (
+                        <button onClick={() => handleFirmaFromPool(pool, "trasportatore")} disabled={isActive}
+                          className={`${btnBase} bg-blue-600/80 text-blue-100 hover:bg-blue-500`}
+                        >
+                          {isActive && signingType === "trasportatore" ? <Loader2 className="animate-spin" size={12} /> : <Truck size={12} />}
+                          Trasportatore
+                        </button>
+                      )}
+                      {cfg.canImpianto && (
+                        <button onClick={() => handleFirmaFromPool(pool, "impianto")} disabled={isActive}
+                          className={`${btnBase} bg-green-600/80 text-green-100 hover:bg-green-500`}
+                        >
+                          {isActive && signingType === "impianto" ? <Loader2 className="animate-spin" size={12} /> : <Factory size={12} />}
+                          Impianto
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* RISULTATI */}
