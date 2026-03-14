@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, FlaskConical, Truck, Factory, FileSignature, Package, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
 const FIR_NUMBER_REGEX = /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/;
