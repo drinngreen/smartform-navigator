@@ -6,7 +6,42 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VPS_URL = "http://178.104.22.197:3000/invia-operazione";
+const VPS_URL = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:3000/invia-operazione";
+
+const COMPANY_ALIAS: Record<string, string> = {
+  global: "GLOBAL",
+  multy: "MULTY",
+  niyol: "NIYOL",
+};
+
+function normalizePayload(payload: unknown): Record<string, unknown> {
+  return payload && typeof payload === "object" && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : {};
+}
+
+function buildUpstreamBody(cliente: string, tipoOperazione: string, payload: unknown) {
+  const normalizedCliente = cliente.trim().toLowerCase();
+  const company = COMPANY_ALIAS[normalizedCliente] ?? normalizedCliente;
+  const safePayload = normalizePayload(payload);
+
+  const quantityRaw = safePayload.quantita ?? safePayload.quantity ?? safePayload.qty;
+  const quantity = typeof quantityRaw === "number" ? quantityRaw : Number(quantityRaw);
+  const vidimazioneFields = Number.isFinite(quantity) && quantity > 0
+    ? { quantita: quantity, quantity }
+    : {};
+
+  return {
+    cliente: normalizedCliente,
+    company,
+    tipo_operazione: tipoOperazione,
+    tipoOperazione: tipoOperazione,
+    operation: tipoOperazione,
+    payload: safePayload,
+    dati_inviati: safePayload,
+    ...vidimazioneFields,
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
