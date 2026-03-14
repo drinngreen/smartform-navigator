@@ -70,7 +70,7 @@ serve(async (req) => {
     const upstreamBody = buildUpstreamBody(normalizedCliente, normalizedTipoOperazione, payload);
 
     console.log(
-      `[rentri-vps] Invio a VPS: cliente=${cliente}, tipo=${tipo_operazione}, keys=${Object.keys(upstreamBody).join(",")}`
+      `[rentri-vps] Invio a VPS: cliente=${normalizedCliente}, tipo=${normalizedTipoOperazione}, keys=${Object.keys(upstreamBody).join(",")}`
     );
 
     const upstream = await fetch(VPS_URL, {
