@@ -38,6 +38,13 @@ function parseResponseBody(text: string): unknown {
   }
 }
 
+function extractErrorMessage(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const record = data as Record<string, unknown>;
+  const message = record.messaggio ?? record.message ?? record.error;
+  return typeof message === "string" ? message : "";
+}
+
 function getClientCandidates(cliente: string): string[] {
   const normalized = cliente.trim().toLowerCase();
   const mapped = CLIENTE_RETRY_MAP[normalized] ?? [normalized];
