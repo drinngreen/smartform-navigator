@@ -98,12 +98,21 @@ serve(async (req) => {
     const normalizedCliente = cliente.trim().toLowerCase();
     const normalizedTipoOperazione = tipo_operazione.trim().toUpperCase();
     const candidates = getClientCandidates(normalizedCliente);
+    const allowFallback = normalizedTipoOperazione === "VIDIMAZIONE" && candidates.length > 1;
 
-    const attempts: Array<{ cliente: string; company: string; status: number; success: boolean }> = [];
+    const attempts: Array<{
+      cliente: string;
+      company: string;
+      status: number;
+      success: boolean;
+      message?: string;
+    }> = [];
+
     let lastStatus = 500;
     let lastData: unknown = { error: "Nessuna risposta dal VPS" };
 
-    for (const currentCliente of candidates) {
+    for (let i = 0; i < candidates.length; i += 1) {
+      const currentCliente = candidates[i];
       const upstreamBody = buildUpstreamBody(currentCliente, normalizedTipoOperazione, payload);
 
       console.log(
@@ -118,12 +127,14 @@ serve(async (req) => {
 
       const text = await upstream.text();
       const data = parseResponseBody(text);
+      const message = extractErrorMessage(data);
 
       attempts.push({
         cliente: String(upstreamBody.cliente),
         company: String(upstreamBody.company),
         status: upstream.status,
         success: upstream.ok,
+        ...(message ? { message } : {}),
       });
 
       lastStatus = upstream.status;
@@ -138,9 +149,14 @@ serve(async (req) => {
         );
       }
 
-      if (upstream.status !== 500) {
+      const isLastCandidate = i === candidates.length - 1;
+      if (upstream.status !== 500 || !allowFallback || isLastCandidate) {
         break;
       }
+
+      console.warn(
+        `[rentri-vps] fallback candidato successivo dopo errore 500: cliente=${upstreamBody.cliente}, message=${message || "n/a"}`
+      );
     }
 
     return new Response(
