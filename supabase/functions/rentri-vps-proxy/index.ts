@@ -166,7 +166,14 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: false, status: lastStatus, data: lastData, attempts }),
+      JSON.stringify({
+        success: false,
+        status: primaryStatus,
+        data: primaryData,
+        attempts,
+        fallback_last_status: lastStatus,
+        fallback_last_data: lastData,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
