@@ -143,6 +143,7 @@ export default function SuperAdminDashboard() {
         </button>
         <DemoAppSection />
         <SocialModerationSection />
+        <RENTRIDemoTestHub tenant={activeTenant.id} />
         <RENTRIActionsPanel tenant={activeTenant.id} />
         <SystemPromptReviewSection />
         <FIRPoolSection tenant={activeTenant.id} />

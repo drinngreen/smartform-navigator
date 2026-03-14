@@ -40,6 +40,7 @@ export function useFIRNumberPool() {
         .from("fir_number_pool")
         .select("*")
         .eq("user_id", user!.id)
+        .eq("is_demo", false)
         .order("fir_number", { ascending: true });
 
       if (error) throw error;
