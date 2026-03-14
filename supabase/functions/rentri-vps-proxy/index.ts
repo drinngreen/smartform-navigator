@@ -89,9 +89,11 @@ serve(async (req) => {
 
     console.log(`[rentri-vps] Risposta VPS: status=${upstream.status}`);
 
+    const proxyHttpStatus = upstream.ok ? upstream.status : 200;
+
     return new Response(
       JSON.stringify({ success: upstream.ok, status: upstream.status, data }),
-      { status: upstream.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: proxyHttpStatus, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
