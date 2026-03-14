@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Shield, LogOut, ChevronDown, AlertTriangle, ExternalLink, FileEdit } from "lucide-react";
 import { FIRPoolSection } from "@/components/superadmin/FIRPoolSection";
+import { FIRPoolTank } from "@/components/superadmin/FIRPoolTank";
 import { DigitalSignatureSection } from "@/components/superadmin/DigitalSignatureSection";
 import { RegistroCarScarSection } from "@/components/superadmin/RegistroCarScarSection";
 import { RENTRILogConsole } from "@/components/superadmin/RENTRILogConsole";
@@ -146,6 +147,7 @@ export default function SuperAdminDashboard() {
         <RENTRIDemoTestHub tenant={activeTenant.id} />
         <RENTRIActionsPanel tenant={activeTenant.id} />
         <SystemPromptReviewSection />
+        <FIRPoolTank tenant={activeTenant.id} />
         <FIRPoolSection tenant={activeTenant.id} />
         <DigitalSignatureSection tenant={activeTenant.id} />
         <RegistroCarScarSection tenant={activeTenant.id} />
