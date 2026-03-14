@@ -24,6 +24,7 @@ export function useFIRNumberPool() {
         .select("*")
         .eq("user_id", user!.id)
         .eq("status", "available")
+        .eq("is_demo", false)
         .order("fir_number", { ascending: true });
 
       if (error) throw error;
