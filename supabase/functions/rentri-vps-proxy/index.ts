@@ -10,8 +10,18 @@ const VPS_URL = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:3000/in
 
 const COMPANY_ALIAS: Record<string, string> = {
   global: "GLOBAL",
+  globalreco: "GLOBALRECO",
   multy: "MULTY",
+  multyproget: "MULTYPROGET",
   niyol: "NIYOL",
+};
+
+const CLIENTE_RETRY_MAP: Record<string, string[]> = {
+  global: ["global", "globalreco"],
+  globalreco: ["globalreco", "global"],
+  multy: ["multy", "multyproget"],
+  multyproget: ["multyproget", "multy"],
+  niyol: ["niyol"],
 };
 
 function normalizePayload(payload: unknown): Record<string, unknown> {
@@ -20,9 +30,30 @@ function normalizePayload(payload: unknown): Record<string, unknown> {
     : {};
 }
 
+function parseResponseBody(text: string): unknown {
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { raw: text };
+  }
+}
+
+function extractErrorMessage(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const record = data as Record<string, unknown>;
+  const message = record.messaggio ?? record.message ?? record.error;
+  return typeof message === "string" ? message : "";
+}
+
+function getClientCandidates(cliente: string): string[] {
+  const normalized = cliente.trim().toLowerCase();
+  const mapped = CLIENTE_RETRY_MAP[normalized] ?? [normalized];
+  return [...new Set(mapped.map((v) => v.trim().toLowerCase()).filter(Boolean))];
+}
+
 function buildUpstreamBody(cliente: string, tipoOperazione: string, payload: unknown) {
   const normalizedCliente = cliente.trim().toLowerCase();
-  const company = COMPANY_ALIAS[normalizedCliente] ?? normalizedCliente;
+  const company = COMPANY_ALIAS[normalizedCliente] ?? normalizedCliente.toUpperCase();
   const safePayload = normalizePayload(payload);
 
   const quantityRaw = safePayload.quantita ?? safePayload.quantity ?? safePayload.qty;
@@ -64,36 +95,86 @@ serve(async (req) => {
       );
     }
 
-    const normalizedCliente = cliente.trim();
+    const normalizedCliente = cliente.trim().toLowerCase();
     const normalizedTipoOperazione = tipo_operazione.trim().toUpperCase();
+    const candidates = getClientCandidates(normalizedCliente);
+    const allowFallback = normalizedTipoOperazione === "VIDIMAZIONE" && candidates.length > 1;
 
-    const upstreamBody = buildUpstreamBody(normalizedCliente, normalizedTipoOperazione, payload);
+    const attempts: Array<{
+      cliente: string;
+      company: string;
+      status: number;
+      success: boolean;
+      message?: string;
+    }> = [];
 
-    console.log(
-      `[rentri-vps] Invio a VPS: cliente=${normalizedCliente}, tipo=${normalizedTipoOperazione}, keys=${Object.keys(upstreamBody).join(",")}`
-    );
+    let primaryStatus = 500;
+    let primaryData: unknown = { error: "Nessuna risposta dal VPS" };
+    let lastStatus = 500;
+    let lastData: unknown = { error: "Nessuna risposta dal VPS" };
 
-    const upstream = await fetch(VPS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(upstreamBody),
-    });
+    for (let i = 0; i < candidates.length; i += 1) {
+      const currentCliente = candidates[i];
+      const upstreamBody = buildUpstreamBody(currentCliente, normalizedTipoOperazione, payload);
 
-    const text = await upstream.text();
-    let data: unknown;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      data = { raw: text };
+      console.log(
+        `[rentri-vps] Invio a VPS: cliente=${upstreamBody.cliente}, company=${upstreamBody.company}, tipo=${normalizedTipoOperazione}, keys=${Object.keys(upstreamBody).join(",")}`
+      );
+
+      const upstream = await fetch(VPS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(upstreamBody),
+      });
+
+      const text = await upstream.text();
+      const data = parseResponseBody(text);
+      const message = extractErrorMessage(data);
+
+      attempts.push({
+        cliente: String(upstreamBody.cliente),
+        company: String(upstreamBody.company),
+        status: upstream.status,
+        success: upstream.ok,
+        ...(message ? { message } : {}),
+      });
+
+      lastStatus = upstream.status;
+      lastData = data;
+      if (i === 0) {
+        primaryStatus = upstream.status;
+        primaryData = data;
+      }
+
+      console.log(`[rentri-vps] Risposta VPS: status=${upstream.status}, cliente=${upstreamBody.cliente}`);
+
+      if (upstream.ok) {
+        return new Response(
+          JSON.stringify({ success: true, status: upstream.status, data, attempts }),
+          { status: upstream.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const isLastCandidate = i === candidates.length - 1;
+      if (upstream.status !== 500 || !allowFallback || isLastCandidate) {
+        break;
+      }
+
+      console.warn(
+        `[rentri-vps] fallback candidato successivo dopo errore 500: cliente=${upstreamBody.cliente}, message=${message || "n/a"}`
+      );
     }
 
-    console.log(`[rentri-vps] Risposta VPS: status=${upstream.status}`);
-
-    const proxyHttpStatus = upstream.ok ? upstream.status : 200;
-
     return new Response(
-      JSON.stringify({ success: upstream.ok, status: upstream.status, data }),
-      { status: proxyHttpStatus, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        success: false,
+        status: primaryStatus,
+        data: primaryData,
+        attempts,
+        fallback_last_status: lastStatus,
+        fallback_last_data: lastData,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
