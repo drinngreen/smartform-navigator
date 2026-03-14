@@ -108,6 +108,8 @@ serve(async (req) => {
       message?: string;
     }> = [];
 
+    let primaryStatus = 500;
+    let primaryData: unknown = { error: "Nessuna risposta dal VPS" };
     let lastStatus = 500;
     let lastData: unknown = { error: "Nessuna risposta dal VPS" };
 
