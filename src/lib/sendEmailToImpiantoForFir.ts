@@ -1,6 +1,6 @@
 // Helper: invio automatico email all'impianto dopo completamento FIR
 // Da chiamare dopo firma digitale e invio RENTRI
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 
 /**
  * Invia email automatica all'impianto di destinazione con riepilogo FIR.

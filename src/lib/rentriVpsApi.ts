@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 
 export type RentriCliente = "multy" | "niyol" | "global";
 export type RentriTipoOperazione = "REGISTRO" | "FIR_EMISSIONE" | "VIDIMAZIONE";
