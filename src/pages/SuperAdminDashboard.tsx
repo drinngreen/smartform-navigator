@@ -147,6 +147,7 @@ export default function SuperAdminDashboard() {
         <RENTRIDemoTestHub tenant={activeTenant.id} />
         <RENTRIActionsPanel tenant={activeTenant.id} />
         <SystemPromptReviewSection />
+        <FIRPoolTank tenant={activeTenant.id} />
         <FIRPoolSection tenant={activeTenant.id} />
         <DigitalSignatureSection tenant={activeTenant.id} />
         <RegistroCarScarSection tenant={activeTenant.id} />
