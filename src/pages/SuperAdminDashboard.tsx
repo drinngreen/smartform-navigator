@@ -144,12 +144,12 @@ export default function SuperAdminDashboard() {
         </button>
         <DemoAppSection />
         <SocialModerationSection />
+        <FIRPoolTank tenant={activeTenant.id} />
         <RENTRIDemoTestHub tenant={activeTenant.id} />
         <RENTRIActionsPanel tenant={activeTenant.id} />
-        <SystemPromptReviewSection />
-        <FIRPoolTank tenant={activeTenant.id} />
         <FIRPoolSection tenant={activeTenant.id} />
         <DigitalSignatureSection tenant={activeTenant.id} />
+        <SystemPromptReviewSection />
         <RegistroCarScarSection tenant={activeTenant.id} />
         <RENTRILogConsole />
       </main>
