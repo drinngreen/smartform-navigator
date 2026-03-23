@@ -21,26 +21,34 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate JWT using anon client
-    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+    // Use service role client with the user's JWT to get user info
+    const userClient = createClient(supabaseUrl, supabaseServiceKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub as string;
-    const { status } = await req.json();
+    const userId = user.id;
 
+    let body: { status?: string };
+    try {
+      body = await req.json();
+    } catch {
+      body = { status: "online" };
+    }
+
+    const status = body.status;
     if (!status || !["online", "offline", "busy", "away"].includes(status)) {
       return new Response(JSON.stringify({ error: "Invalid status" }), {
         status: 400,
@@ -48,7 +56,6 @@ serve(async (req) => {
       });
     }
 
-    // Use service role to bypass RLS
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     const { error } = await adminClient
       .from("online_status")
