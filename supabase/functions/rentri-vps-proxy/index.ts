@@ -31,9 +31,9 @@ const COMPANY_ALIAS: Record<string, string> = {
 const ISSUER_MAP: Record<string, string> = {
   global: "08934760961",
   globalreco: "08934760961",
-  multy: "08934760961", // Stessa azienda, aggiornare se diverso
-  multyproget: "08934760961",
-  niyol: "08934760961",
+  multy: "12347770013",
+  multyproget: "12347770013",
+  niyol: "09879800010",
 };
 
 const CLIENTE_RETRY_MAP: Record<string, string[]> = {
