@@ -70,7 +70,7 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
       <h3 className="text-lg font-display text-foreground flex items-center gap-2 mb-4">
         <Package size={20} /> Rifornimento FIR — {tenant.toUpperCase()}
       </h3>
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-4 flex-wrap">
         <label className="text-sm text-muted-foreground">Quantità:</label>
         <div className="flex gap-2">
           {QUANTITIES.map((q) => (
@@ -79,6 +79,19 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
             >{q}</button>
           ))}
         </div>
+        {blocks.length > 0 && (
+          <select
+            value={selectedBlock}
+            onChange={e => setSelectedBlock(e.target.value)}
+            className="px-3 py-2 rounded-lg text-sm bg-secondary/50 border border-border text-foreground"
+          >
+            {blocks.map(b => (
+              <option key={b.code} value={b.code}>
+                {b.code} — {b.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="flex gap-3">
         <button onClick={handleRequest} disabled={loading}

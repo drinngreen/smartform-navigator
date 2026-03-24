@@ -199,7 +199,7 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
             <Package size={16} className="text-amber-400" /> Rifornimento Serbatoio Demo (Vidimazione)
           </h4>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex gap-2">
               {QUANTITIES.map(q => (
                 <button key={q} onClick={() => setQty(q)}
@@ -207,6 +207,19 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
                 >{q}</button>
               ))}
             </div>
+            {blocks.length > 0 && (
+              <select
+                value={selectedBlock}
+                onChange={e => setSelectedBlock(e.target.value)}
+                className="px-3 py-1.5 rounded-lg text-sm bg-secondary/50 border border-border text-foreground"
+              >
+                {blocks.map(b => (
+                  <option key={b.code} value={b.code}>
+                    {b.code} — {b.label}
+                  </option>
+                ))}
+              </select>
+            )}
             <button onClick={handleVidimazione} disabled={isLoading}
               className="px-5 py-2 rounded-lg font-semibold bg-amber-600 text-black hover:bg-amber-500 disabled:opacity-50 flex items-center gap-2 text-sm"
             >
