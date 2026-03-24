@@ -37,7 +37,7 @@ const UNIT_ID_MAP: Record<string, string> = {
 };
 
 const REGISTRY_ID_MAP: Record<string, string | null> = {
-  global: null, // TODO: da determinare
+  global: "R6QSWHZ6HJV",
   multy: "RQEL39R7NS0",
   niyol: "01-250210-00079463",
 };

@@ -22,7 +22,7 @@ export const CONFIG = {
     global: {
       issuer: '08934760961',
       unitId: 'OP2501RMK022692-TO0001',
-      registryId: null as string | null, // TODO: da determinare
+      registryId: 'R6QSWHZ6HJV',
       p12Path: path.join(process.cwd(), 'bridge-service', 'certificato.p12'),
       p12Password: '2$i5)*-H',
       blocks: [
