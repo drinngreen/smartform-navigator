@@ -44,6 +44,24 @@ const CLIENTE_RETRY_MAP: Record<string, string[]> = {
   niyol: ["niyol"],
 };
 
+// Codici blocco per azienda — il primo è il primario (con sito TO0001)
+const BLOCK_CODES: Record<string, { code: string; sito: string | null }[]> = {
+  global: [
+    { code: "FMGWB", sito: "TO0001" },
+    { code: "SKKZR", sito: "TO0001" },
+    { code: "XNQLK", sito: "MI0001" },
+    { code: "GPFMK", sito: null },
+  ],
+  multy: [
+    { code: "ZRZXR", sito: "TO0001" },
+    { code: "FRVKM", sito: null },
+  ],
+  niyol: [
+    { code: "BPJMG", sito: "TO0001" },
+    { code: "DGXYQ", sito: null },
+  ],
+};
+
 function normalizePayload(payload: unknown): Record<string, unknown> {
   return payload && typeof payload === "object" && !Array.isArray(payload)
     ? (payload as Record<string, unknown>)
@@ -101,6 +119,19 @@ function buildUpstreamBody(
   const vidimazioneFields =
     Number.isFinite(quantity) && quantity > 0 ? { quantita: quantity, quantity } : {};
 
+  // Auto-inject codice_blocco if missing for VIDIMAZIONE/LOTTO
+  let codiceBlocco = safePayload.codice_blocco ?? safePayload.blocco ?? null;
+  let numIscrSito = safePayload.num_iscr_sito ?? null;
+
+  if (!codiceBlocco && (tipoOperazione === "VIDIMAZIONE" || tipoOperazione === "LOTTO")) {
+    const blocks = BLOCK_CODES[normalizedCliente] ?? BLOCK_CODES[normalizedCliente.replace("reco", "")] ?? [];
+    if (blocks.length > 0) {
+      codiceBlocco = blocks[0].code;
+      numIscrSito = numIscrSito ?? blocks[0].sito;
+      console.log(`[rentri-vps] Auto-injected codice_blocco=${codiceBlocco}, sito=${numIscrSito} for ${normalizedCliente}`);
+    }
+  }
+
   return {
     cliente: normalizedCliente,
     company,
@@ -108,9 +139,8 @@ function buildUpstreamBody(
     tipo_operazione: tipoOperazione,
     tipoOperazione: tipoOperazione,
     operation: tipoOperazione,
-    // Campi specifici vidimazione dalla guida
-    codice_blocco: safePayload.codice_blocco ?? safePayload.blocco ?? null,
-    num_iscr_sito: safePayload.num_iscr_sito ?? null,
+    codice_blocco: codiceBlocco,
+    num_iscr_sito: numIscrSito,
     progressivo: safePayload.progressivo ?? null,
     identificativo: safePayload.identificativo ?? issuer,
     payload: safePayload,
