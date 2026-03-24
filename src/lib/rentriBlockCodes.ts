@@ -17,7 +17,7 @@ export const TENANT_RENTRI: Record<string, TenantRentriConfig> = {
   global: {
     issuer: "08934760961",
     unitId: "OP2501RMK022692-TO0001",
-    registryId: null, // TODO: da determinare
+    registryId: "R6QSWHZ6HJV",
     primaryBlock: "FMGWB",
     blocks: [
       { code: "FMGWB", sito: "TO0001", label: "Principale TO (71k FIR)" },
