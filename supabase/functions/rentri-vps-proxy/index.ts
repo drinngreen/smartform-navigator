@@ -81,17 +81,9 @@ function getVpsRoute(_tipoOperazione: string): string {
   return "/invia-operazione";
 }
 
-/**
- * Determina il metodo HTTP in base al tipo di operazione.
- */
-function getHttpMethod(tipoOperazione: string): string {
-  switch (tipoOperazione) {
-    case "LISTA_BLOCCHI":
-    case "DETTAGLIO_FIR":
-      return "GET";
-    default:
-      return "POST";
-  }
+function getHttpMethod(_tipoOperazione: string): string {
+  // Tutto POST verso /invia-operazione
+  return "POST";
 }
 
 function buildUpstreamBody(
