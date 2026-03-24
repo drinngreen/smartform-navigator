@@ -6,7 +6,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VPS_URL = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:3000/invia-operazione";
+const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:3000";
+
+// Strip trailing slash and /invia-operazione if present (legacy env values)
+function normalizeBaseUrl(raw: string): string {
+  let url = raw.replace(/\/+$/, "");
+  if (url.endsWith("/invia-operazione")) {
+    url = url.replace(/\/invia-operazione$/, "");
+  }
+  return url;
+}
+
+const VPS_URL = normalizeBaseUrl(VPS_BASE);
 
 const COMPANY_ALIAS: Record<string, string> = {
   global: "GLOBAL",
@@ -14,6 +25,15 @@ const COMPANY_ALIAS: Record<string, string> = {
   multy: "MULTY",
   multyproget: "MULTYPROGET",
   niyol: "NIYOL",
+};
+
+// Issuer (Codice Fiscale) per azienda — critico per JWT mTLS
+const ISSUER_MAP: Record<string, string> = {
+  global: "08934760961",
+  globalreco: "08934760961",
+  multy: "08934760961", // Stessa azienda, aggiornare se diverso
+  multyproget: "08934760961",
+  niyol: "08934760961",
 };
 
 const CLIENTE_RETRY_MAP: Record<string, string[]> = {
@@ -51,23 +71,71 @@ function getClientCandidates(cliente: string): string[] {
   return [...new Set(mapped.map((v) => v.trim().toLowerCase()).filter(Boolean))];
 }
 
-function buildUpstreamBody(cliente: string, tipoOperazione: string, payload: unknown) {
+/**
+ * Determina la rotta VPS in base al tipo di operazione.
+ * La VPS deve esporre endpoint specifici che corrispondono
+ * agli endpoint RENTRI reali documentati nella guida.
+ */
+function getVpsRoute(tipoOperazione: string): string {
+  switch (tipoOperazione) {
+    case "VIDIMAZIONE":
+    case "LOTTO":
+      return "/vidimazione";
+    case "LISTA_BLOCCHI":
+      return "/vidimazione/blocchi";
+    case "DETTAGLIO_FIR":
+      return "/vidimazione/dettaglio";
+    case "FIR_EMISSIONE":
+      return "/fir/emissione";
+    case "FIRMA_RICEZIONE":
+      return "/fir/ricezione";
+    case "REGISTRO":
+      return "/invia-operazione";
+    default:
+      return "/invia-operazione";
+  }
+}
+
+/**
+ * Determina il metodo HTTP in base al tipo di operazione.
+ */
+function getHttpMethod(tipoOperazione: string): string {
+  switch (tipoOperazione) {
+    case "LISTA_BLOCCHI":
+    case "DETTAGLIO_FIR":
+      return "GET";
+    default:
+      return "POST";
+  }
+}
+
+function buildUpstreamBody(
+  cliente: string,
+  tipoOperazione: string,
+  payload: unknown
+) {
   const normalizedCliente = cliente.trim().toLowerCase();
   const company = COMPANY_ALIAS[normalizedCliente] ?? normalizedCliente.toUpperCase();
+  const issuer = ISSUER_MAP[normalizedCliente] ?? "";
   const safePayload = normalizePayload(payload);
 
   const quantityRaw = safePayload.quantita ?? safePayload.quantity ?? safePayload.qty;
   const quantity = typeof quantityRaw === "number" ? quantityRaw : Number(quantityRaw);
-  const vidimazioneFields = Number.isFinite(quantity) && quantity > 0
-    ? { quantita: quantity, quantity }
-    : {};
+  const vidimazioneFields =
+    Number.isFinite(quantity) && quantity > 0 ? { quantita: quantity, quantity } : {};
 
   return {
     cliente: normalizedCliente,
     company,
+    issuer, // Codice Fiscale per firma JWT
     tipo_operazione: tipoOperazione,
     tipoOperazione: tipoOperazione,
     operation: tipoOperazione,
+    // Campi specifici vidimazione dalla guida
+    codice_blocco: safePayload.codice_blocco ?? safePayload.blocco ?? null,
+    num_iscr_sito: safePayload.num_iscr_sito ?? null,
+    progressivo: safePayload.progressivo ?? null,
+    identificativo: safePayload.identificativo ?? issuer,
     payload: safePayload,
     dati_inviati: safePayload,
     ...vidimazioneFields,
@@ -98,7 +166,12 @@ serve(async (req) => {
     const normalizedCliente = cliente.trim().toLowerCase();
     const normalizedTipoOperazione = tipo_operazione.trim().toUpperCase();
     const candidates = getClientCandidates(normalizedCliente);
-    const allowFallback = normalizedTipoOperazione === "VIDIMAZIONE" && candidates.length > 1;
+    const allowFallback =
+      (normalizedTipoOperazione === "VIDIMAZIONE" || normalizedTipoOperazione === "LOTTO") &&
+      candidates.length > 1;
+
+    const vpsRoute = getVpsRoute(normalizedTipoOperazione);
+    const httpMethod = getHttpMethod(normalizedTipoOperazione);
 
     const attempts: Array<{
       cliente: string;
@@ -106,6 +179,7 @@ serve(async (req) => {
       status: number;
       success: boolean;
       message?: string;
+      route?: string;
     }> = [];
 
     let primaryStatus = 500;
@@ -116,16 +190,35 @@ serve(async (req) => {
     for (let i = 0; i < candidates.length; i += 1) {
       const currentCliente = candidates[i];
       const upstreamBody = buildUpstreamBody(currentCliente, normalizedTipoOperazione, payload);
+      const targetUrl = `${VPS_URL}${vpsRoute}`;
 
       console.log(
-        `[rentri-vps] Invio a VPS: cliente=${upstreamBody.cliente}, company=${upstreamBody.company}, tipo=${normalizedTipoOperazione}, keys=${Object.keys(upstreamBody).join(",")}`
+        `[rentri-vps] ${httpMethod} ${vpsRoute} — cliente=${upstreamBody.cliente}, company=${upstreamBody.company}, issuer=${upstreamBody.issuer}, tipo=${normalizedTipoOperazione}, codice_blocco=${upstreamBody.codice_blocco || "N/A"}`
       );
 
-      const upstream = await fetch(VPS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(upstreamBody),
-      });
+      let upstream: Response;
+
+      if (httpMethod === "GET") {
+        // Per GET, passa i parametri come query string
+        const params = new URLSearchParams();
+        params.set("cliente", upstreamBody.cliente);
+        params.set("company", upstreamBody.company);
+        params.set("issuer", upstreamBody.issuer);
+        if (upstreamBody.codice_blocco) params.set("codice_blocco", String(upstreamBody.codice_blocco));
+        if (upstreamBody.progressivo) params.set("progressivo", String(upstreamBody.progressivo));
+        if (upstreamBody.identificativo) params.set("identificativo", String(upstreamBody.identificativo));
+
+        upstream = await fetch(`${targetUrl}?${params.toString()}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+      } else {
+        upstream = await fetch(targetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(upstreamBody),
+        });
+      }
 
       const text = await upstream.text();
       const data = parseResponseBody(text);
@@ -136,6 +229,7 @@ serve(async (req) => {
         company: String(upstreamBody.company),
         status: upstream.status,
         success: upstream.ok,
+        route: vpsRoute,
         ...(message ? { message } : {}),
       });
 
@@ -146,7 +240,9 @@ serve(async (req) => {
         primaryData = data;
       }
 
-      console.log(`[rentri-vps] Risposta VPS: status=${upstream.status}, cliente=${upstreamBody.cliente}`);
+      console.log(
+        `[rentri-vps] Risposta VPS: status=${upstream.status}, cliente=${upstreamBody.cliente}, route=${vpsRoute}`
+      );
 
       if (upstream.ok) {
         return new Response(
