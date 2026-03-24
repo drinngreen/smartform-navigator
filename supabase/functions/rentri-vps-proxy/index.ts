@@ -44,6 +44,24 @@ const CLIENTE_RETRY_MAP: Record<string, string[]> = {
   niyol: ["niyol"],
 };
 
+// Codici blocco per azienda — il primo è il primario (con sito TO0001)
+const BLOCK_CODES: Record<string, { code: string; sito: string | null }[]> = {
+  global: [
+    { code: "FMGWB", sito: "TO0001" },
+    { code: "SKKZR", sito: "TO0001" },
+    { code: "XNQLK", sito: "MI0001" },
+    { code: "GPFMK", sito: null },
+  ],
+  multy: [
+    { code: "ZRZXR", sito: "TO0001" },
+    { code: "FRVKM", sito: null },
+  ],
+  niyol: [
+    { code: "BPJMG", sito: "TO0001" },
+    { code: "DGXYQ", sito: null },
+  ],
+};
+
 function normalizePayload(payload: unknown): Record<string, unknown> {
   return payload && typeof payload === "object" && !Array.isArray(payload)
     ? (payload as Record<string, unknown>)
