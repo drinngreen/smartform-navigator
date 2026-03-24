@@ -28,6 +28,10 @@ const TIPO_OPTIONS: { value: RentriTipoOperazione; label: string; icon: React.Re
   { value: "REGISTRO", label: "Registro", icon: <ClipboardList size={14} /> },
   { value: "FIR_EMISSIONE", label: "Emissione FIR", icon: <Truck size={14} /> },
   { value: "VIDIMAZIONE", label: "Vidimazione", icon: <FileText size={14} /> },
+  { value: "LOTTO", label: "Lotto FIR", icon: <FileText size={14} /> },
+  { value: "LISTA_BLOCCHI", label: "Lista Blocchi", icon: <ClipboardList size={14} /> },
+  { value: "DETTAGLIO_FIR", label: "Dettaglio FIR", icon: <FileText size={14} /> },
+  { value: "FIRMA_RICEZIONE", label: "Firma Ricezione", icon: <Truck size={14} /> },
 ];
 
 function ResultBanner({ result }: { result: RentriVpsResponse | null }) {
