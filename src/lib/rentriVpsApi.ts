@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
 export type RentriCliente = "multy" | "niyol" | "global";
-export type RentriTipoOperazione = "REGISTRO" | "FIR_EMISSIONE" | "VIDIMAZIONE";
+export type RentriTipoOperazione = "REGISTRO" | "FIR_EMISSIONE" | "VIDIMAZIONE" | "LOTTO" | "LISTA_BLOCCHI" | "DETTAGLIO_FIR" | "FIRMA_RICEZIONE";
 
 export interface RentriVpsRequest {
   cliente: RentriCliente;
