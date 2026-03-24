@@ -3,6 +3,7 @@ import { Loader2, FlaskConical, Truck, Factory, FileSignature, Package, CheckCir
 import { inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { getBlocksForTenant, type BlockCode } from "@/lib/rentriBlockCodes";
 
 const QUANTITIES = [5, 10, 50, 100];
 
