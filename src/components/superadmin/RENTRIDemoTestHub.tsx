@@ -85,10 +85,15 @@ export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
   // --- VIDIMAZIONE DEMO ---
   const handleVidimazione = async () => {
     setLoading("vidimazione");
+    const blockInfo = blocks.find(b => b.code === selectedBlock);
     const res = await inviaOperazioneRentri({
       cliente: cfg.cliente,
       tipo_operazione: "VIDIMAZIONE",
-      payload: { quantita: qty },
+      payload: {
+        quantita: qty,
+        codice_blocco: selectedBlock || undefined,
+        num_iscr_sito: blockInfo?.sito || undefined,
+      },
     });
 
     addResult(`VIDIMAZIONE (${qty})`, res);
