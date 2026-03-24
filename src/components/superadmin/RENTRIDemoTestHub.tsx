@@ -43,6 +43,8 @@ const normalizeFirNumber = (v: string) => v.trim().replace(/\s+/g, " ").toUpperC
 
 export function RENTRIDemoTestHub({ tenant }: { tenant: string }) {
   const cfg = TENANT_MAP[tenant] ?? TENANT_MAP.global;
+  const blocks = getBlocksForTenant(cfg.id);
+  const [selectedBlock, setSelectedBlock] = useState(blocks[0]?.code ?? "");
   const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<OpResult[]>([]);
