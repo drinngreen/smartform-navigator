@@ -76,37 +76,14 @@ function getClientCandidates(cliente: string): string[] {
  * La VPS deve esporre endpoint specifici che corrispondono
  * agli endpoint RENTRI reali documentati nella guida.
  */
-function getVpsRoute(tipoOperazione: string): string {
-  switch (tipoOperazione) {
-    case "VIDIMAZIONE":
-    case "LOTTO":
-      return "/vidimazione";
-    case "LISTA_BLOCCHI":
-      return "/vidimazione/blocchi";
-    case "DETTAGLIO_FIR":
-      return "/vidimazione/dettaglio";
-    case "FIR_EMISSIONE":
-      return "/fir/emissione";
-    case "FIRMA_RICEZIONE":
-      return "/fir/ricezione";
-    case "REGISTRO":
-      return "/invia-operazione";
-    default:
-      return "/invia-operazione";
-  }
+function getVpsRoute(_tipoOperazione: string): string {
+  // La VPS accetta solo /invia-operazione — il tipo è differenziato nel body
+  return "/invia-operazione";
 }
 
-/**
- * Determina il metodo HTTP in base al tipo di operazione.
- */
-function getHttpMethod(tipoOperazione: string): string {
-  switch (tipoOperazione) {
-    case "LISTA_BLOCCHI":
-    case "DETTAGLIO_FIR":
-      return "GET";
-    default:
-      return "POST";
-  }
+function getHttpMethod(_tipoOperazione: string): string {
+  // Tutto POST verso /invia-operazione
+  return "POST";
 }
 
 function buildUpstreamBody(
