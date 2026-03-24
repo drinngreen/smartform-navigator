@@ -119,6 +119,19 @@ function buildUpstreamBody(
   const vidimazioneFields =
     Number.isFinite(quantity) && quantity > 0 ? { quantita: quantity, quantity } : {};
 
+  // Auto-inject codice_blocco if missing for VIDIMAZIONE/LOTTO
+  let codiceBlocco = safePayload.codice_blocco ?? safePayload.blocco ?? null;
+  let numIscrSito = safePayload.num_iscr_sito ?? null;
+
+  if (!codiceBlocco && (tipoOperazione === "VIDIMAZIONE" || tipoOperazione === "LOTTO")) {
+    const blocks = BLOCK_CODES[normalizedCliente] ?? BLOCK_CODES[normalizedCliente.replace("reco", "")] ?? [];
+    if (blocks.length > 0) {
+      codiceBlocco = blocks[0].code;
+      numIscrSito = numIscrSito ?? blocks[0].sito;
+      console.log(`[rentri-vps] Auto-injected codice_blocco=${codiceBlocco}, sito=${numIscrSito} for ${normalizedCliente}`);
+    }
+  }
+
   return {
     cliente: normalizedCliente,
     company,
@@ -126,9 +139,8 @@ function buildUpstreamBody(
     tipo_operazione: tipoOperazione,
     tipoOperazione: tipoOperazione,
     operation: tipoOperazione,
-    // Campi specifici vidimazione dalla guida
-    codice_blocco: safePayload.codice_blocco ?? safePayload.blocco ?? null,
-    num_iscr_sito: safePayload.num_iscr_sito ?? null,
+    codice_blocco: codiceBlocco,
+    num_iscr_sito: numIscrSito,
     progressivo: safePayload.progressivo ?? null,
     identificativo: safePayload.identificativo ?? issuer,
     payload: safePayload,
