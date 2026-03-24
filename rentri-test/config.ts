@@ -1,12 +1,28 @@
 import path from 'path';
 import fs from 'fs';
 
+/** RENTRI API endpoint templates (produzione) */
+export const RENTRI_ENDPOINTS = {
+  LISTA_BLOCCHI:        'GET  /vidimazione-formulari/v1.0?identificativo={CF}',
+  VIDIMAZIONE:          'POST /vidimazione-formulari/v1.0/{CODICE_BLOCCO}',
+  LOTTO:                'GET  /vidimazione-formulari/v1.0/{CODICE_BLOCCO}/{PROGRESSIVO}',
+  LOTTO_PDF:            'GET  /vidimazione-formulari/v1.0/{CODICE_BLOCCO}/{PROGRESSIVO}/pdf',
+  FIR_EMISSIONE:        'POST /formulari/v1.0',
+  DETTAGLIO_FIR:        'GET  /formulari/v1.0/{UUID_FIR}',
+  RICERCA_FIR:          'GET  /formulari/v1.0?numeroFir={NUM}&identificativo_soggetto={CF}',
+  REGISTRO:             'POST /dati-registri/v1.0/operatore/{ID_REGISTRO}/movimenti',
+  RICERCA_MOVIMENTI:    'GET  /dati-registri/v1.0/operatore/{ID_REGISTRO}/movimenti?...',
+  TRANSAZIONE_REGISTRO: 'GET  /dati-registri/v1.0/operatore/{ID_REGISTRO}/transazioni/{TXN_ID}',
+  TRANSAZIONE_FIR:      'GET  /formulari/v1.0/transazioni/{TXN_ID}',
+} as const;
+
 export const CONFIG = {
   companies: {
     // Global Reco S.R.L.
     global: {
       issuer: '08934760961',
       unitId: 'OP2501RMK022692-TO0001',
+      registryId: null as string | null, // TODO: da determinare
       p12Path: path.join(process.cwd(), 'bridge-service', 'certificato.p12'),
       p12Password: '2$i5)*-H',
       blocks: [
