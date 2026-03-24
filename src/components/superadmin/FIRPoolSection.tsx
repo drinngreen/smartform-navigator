@@ -4,6 +4,7 @@ import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { getBlocksForTenant } from "@/lib/rentriBlockCodes";
 
 const QUANTITIES = [5, 10, 50, 100, 500];
 
@@ -13,6 +14,8 @@ const normalizeFirNumber = (value: string) =>
   value.trim().replace(/\s+/g, " ").toUpperCase();
 
 export function FIRPoolSection({ tenant }: { tenant: string }) {
+  const blocks = getBlocksForTenant(tenant);
+  const [selectedBlock, setSelectedBlock] = useState(blocks[0]?.code ?? "");
   const [qty, setQty] = useState(5);
   const [loading, setLoading] = useState(false);
   const [lastNumbers, setLastNumbers] = useState<string[]>([]);
