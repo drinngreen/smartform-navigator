@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:3000";
+const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://178.104.22.197:4000";
 
 function normalizeBaseUrl(raw: string): string {
   let url = raw.replace(/\/+$/, "");
