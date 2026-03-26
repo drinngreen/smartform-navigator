@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.rentri-vps-proxy]
 verify_jwt = false
+
+[functions.db-backup]
+verify_jwt = false
