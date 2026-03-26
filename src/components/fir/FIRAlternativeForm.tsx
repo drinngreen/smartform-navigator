@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Zap, ZoomIn, ZoomOut, RotateCcw, ChevronDown } from "lucide-react";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { FIRRentriActions } from "./FIRRentriActions";
+import type { RentriCliente } from "@/lib/rentriVpsApi";
 
 interface TemplateField {
   id: string;
@@ -58,6 +61,14 @@ export function FIRAlternativeForm() {
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
+  const location = useLocation();
+
+  // Determine RENTRI client from route
+  const getRentriCliente = (): RentriCliente => {
+    if (location.pathname.includes("niyol")) return "niyol";
+    if (location.pathname.includes("multy") || location.pathname.includes("/mn/")) return "multy";
+    return "global";
+  };
 
   // Zoom state
   const [scale, setScale] = useState(1);
@@ -423,6 +434,15 @@ export function FIRAlternativeForm() {
           </div>
         </div>
       </div>
+
+      {/* RENTRI Actions: Firma, QR Code, Emissione */}
+      <FIRRentriActions
+        cliente={getRentriCliente()}
+        formData={values as Record<string, string | boolean>}
+        onEmissioneSuccess={(res) => {
+          console.log("[FIR] Emissione success:", res);
+        }}
+      />
     </div>
   );
 }

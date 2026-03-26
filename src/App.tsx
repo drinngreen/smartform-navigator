@@ -102,6 +102,7 @@ const MNAppProfiloPage = React.lazy(() => import("./pages/multynijol/MNAppProfil
 const MNAppGuidaPage = React.lazy(() => import("./pages/multynijol/MNAppGuidaPage"));
 const MNAppModuloAlternativoPage = React.lazy(() => import("./pages/multynijol/MNAppModuloAlternativoPage"));
 const ModuloAlternativoPage = React.lazy(() => import("./pages/ModuloAlternativoPage"));
+const GuidaCompletaPage = React.lazy(() => import("./pages/GuidaCompletaPage"));
 const AppuntamentoPersonalePage = React.lazy(() => import("./pages/AppuntamentoPersonalePage"));
 
 const NotFound = React.lazy(() => import("./pages/NotFound"));
@@ -178,8 +179,9 @@ const App = () => (
                 <Route path="/app/telefono" element={<ProtectedRoute><AppPhonePage /></ProtectedRoute>} />
                 <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
                 <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
-                <Route path="/app/guida" element={<ProtectedRoute><GuidaPage /></ProtectedRoute>} />
+                <Route path="/app/guida" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
                 <Route path="/app/modulo-alternativo" element={<ProtectedRoute><MNAppModuloAlternativoPage /></ProtectedRoute>} />
+                <Route path="/guida-completa" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
