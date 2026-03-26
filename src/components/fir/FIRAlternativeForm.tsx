@@ -61,6 +61,14 @@ export function FIRAlternativeForm() {
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
+  const location = useLocation();
+
+  // Determine RENTRI client from route
+  const getRentriCliente = (): RentriCliente => {
+    if (location.pathname.includes("niyol")) return "niyol";
+    if (location.pathname.includes("multy") || location.pathname.includes("/mn/")) return "multy";
+    return "global";
+  };
 
   // Zoom state
   const [scale, setScale] = useState(1);
