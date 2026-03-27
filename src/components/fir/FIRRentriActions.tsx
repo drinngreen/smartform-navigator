@@ -28,8 +28,11 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
     setQrCodeUrl(null);
 
     try {
-      const payload: Record<string, unknown> = { ...formData };
-      if (numeroFir) payload.numero_fir = numeroFir;
+      const payload: Record<string, unknown> = {
+        ...formData,
+        firma_produttore: firmaComeProduttore,
+        firma_trasportatore: true,
+      };
 
       const res = await emissioneFir(cliente, payload);
       setResult(res);
