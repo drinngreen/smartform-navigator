@@ -28,8 +28,23 @@ export const GLOBAL_RECO: Soggetto = {
   comuneIstat: "001156",
 };
 
-// ── INTERMEDIARIO FISSO ────────────────────────────────────────
+// ── MULTYPROGET ────────────────────────────────────────────────
 export const MULTYPROGET: Soggetto = {
+  nome: "Multyproget S.r.l.",
+  indirizzo: "Via Rivarossa 18/20 - 10060 Piscina (TO)",
+  cf: "12347770013",
+  tipo: "PRODUTTORE",
+  comuneIstat: "001194",
+};
+
+// ── NIYOL ──────────────────────────────────────────────────────
+export const NIYOL: Soggetto = {
+  nome: "Niyol S.r.l.",
+  indirizzo: "Via Rivarossa 18/20 - 10060 Piscina (TO)",
+  cf: "09879800010",
+  tipo: "PRODUTTORE",
+  comuneIstat: "001194",
+};
   nome: "Multyproget S.r.l.",
   indirizzo: "Via Rivarossa 18/20 - 10060 Piscina (TO)",
   cf: "12347770013",

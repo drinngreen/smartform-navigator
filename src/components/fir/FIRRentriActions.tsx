@@ -10,6 +10,8 @@ interface FIRRentriActionsProps {
   formData: Record<string, string | boolean>;
   /** Numero FIR se disponibile */
   numeroFir?: string;
+  /** true = firma come produttore + trasportatore, false = solo trasportatore */
+  firmaComeProduttore?: boolean;
   /** Callback quando l'emissione ha successo */
   onEmissioneSuccess?: (response: RentriVpsResponse) => void;
 }
