@@ -284,17 +284,33 @@ export function FIRAlternativeForm() {
             <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
           </button>
           {showProdDropdown && (
-            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-              {PRODUTTORI_PRESET.map((p) => (
+            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+              {/* Tenant preset first */}
+              <button
+                onClick={() => { fillProduttore(tenantPreset); setSelectedProduttore(tenantPreset); }}
+                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 bg-primary/5"
+              >
+                <div className="font-semibold text-primary">{tenantPreset.nome} ⭐</div>
+                <div className="text-muted-foreground text-[10px]">{tenantPreset.cf} — {tenantPreset.indirizzo}</div>
+              </button>
+              {/* Other producers */}
+              {ALL_PRODUTTORI.filter(p => p.cf !== tenantPreset.cf).map((p) => (
                 <button
                   key={p.cf}
-                  onClick={() => fillProduttore(p)}
+                  onClick={() => { fillProduttore(p); setSelectedProduttore(p); }}
                   className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 last:border-0"
                 >
                   <div className="font-semibold text-foreground">{p.nome}</div>
                   <div className="text-muted-foreground text-[10px]">{p.cf} — {p.indirizzo}</div>
                 </button>
               ))}
+              {/* Free input option */}
+              <button
+                onClick={() => { setSelectedProduttore({ nome: "", cf: "", indirizzo: "", tipo: "PRODUTTORE" }); setShowProdDropdown(false); }}
+                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-amber-500/10 transition-colors text-amber-300"
+              >
+                ✏️ Altro produttore (inserimento libero)
+              </button>
             </div>
           )}
         </div>
