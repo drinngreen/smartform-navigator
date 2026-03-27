@@ -10,11 +10,13 @@ interface FIRRentriActionsProps {
   formData: Record<string, string | boolean>;
   /** Numero FIR se disponibile */
   numeroFir?: string;
+  /** true = firma come produttore + trasportatore, false = solo trasportatore */
+  firmaComeProduttore?: boolean;
   /** Callback quando l'emissione ha successo */
   onEmissioneSuccess?: (response: RentriVpsResponse) => void;
 }
 
-export function FIRRentriActions({ cliente, formData, numeroFir, onEmissioneSuccess }: FIRRentriActionsProps) {
+export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess }: FIRRentriActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
@@ -26,8 +28,11 @@ export function FIRRentriActions({ cliente, formData, numeroFir, onEmissioneSucc
     setQrCodeUrl(null);
 
     try {
-      const payload: Record<string, unknown> = { ...formData };
-      if (numeroFir) payload.numero_fir = numeroFir;
+      const payload: Record<string, unknown> = {
+        ...formData,
+        firma_produttore: firmaComeProduttore,
+        firma_trasportatore: true,
+      };
 
       const res = await emissioneFir(cliente, payload);
       setResult(res);
@@ -130,7 +135,14 @@ export function FIRRentriActions({ cliente, formData, numeroFir, onEmissioneSucc
 
   return (
     <div className="space-y-3 mt-4">
-      {/* Action buttons */}
+      {/* Firma mode badge */}
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono font-semibold ${
+        firmaComeProduttore
+          ? "bg-primary/10 border-primary/30 text-primary"
+          : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+      }`}>
+        {firmaComeProduttore ? "✍️ FIRMA: PRODUTTORE + TRASPORTATORE" : "🚛 FIRMA: SOLO TRASPORTATORE"}
+      </div>
       <div className="flex flex-wrap gap-2">
         <ActionButton
           icon={<Send size={14} />}

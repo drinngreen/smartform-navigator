@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Zap, ZoomIn, ZoomOut, RotateCcw, ChevronDown } from "lucide-react";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
-import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { GLOBAL_RECO, MULTYPROGET, NIYOL, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 
@@ -22,9 +22,17 @@ interface TemplateField {
 
 const PAGE_IMAGES = [pag1, pag2, pag3];
 
-// Produttori preset
-const PRODUTTORI_PRESET: Soggetto[] = [GLOBAL_RECO, MULTYPROGET];
+// Tenant → RENTRI client + preset mapping
+const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> = {
+  global: { cliente: "global", preset: GLOBAL_RECO },
+  multyproget: { cliente: "multy", preset: MULTYPROGET },
+  "multyproget-intermediario": { cliente: "multy", preset: MULTYPROGET },
+  "multyproget-impianto": { cliente: "multy", preset: MULTYPROGET },
+  niyol: { cliente: "niyol", preset: NIYOL },
+};
 
+// All producers for dropdown
+const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
 // Field name patterns for auto-detecting produttore/destinatario fields
 const PRODUTTORE_PATTERNS = [
   "produttore_denominazione", "produttore_denom", "produttore_nome", "produttore",
@@ -61,14 +69,32 @@ export function FIRAlternativeForm() {
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
+  const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
   const location = useLocation();
+  const params = useParams<{ context?: string }>();
 
-  // Determine RENTRI client from route
-  const getRentriCliente = (): RentriCliente => {
-    if (location.pathname.includes("niyol")) return "niyol";
-    if (location.pathname.includes("multy") || location.pathname.includes("/mn/")) return "multy";
+  // Determine tenant context from route
+  const tenantContext = useMemo((): string => {
+    // Admin MN routes: /mn/admin/:context/...
+    if (params.context) {
+      if (params.context.includes("niyol")) return "niyol";
+      if (params.context.includes("multy")) return "multyproget";
+    }
+    // App routes
+    if (location.pathname.includes("/mn/app/niyol")) return "niyol";
+    if (location.pathname.includes("/mn/app/multyproget") || location.pathname.includes("/mn/")) return "multyproget";
     return "global";
-  };
+  }, [location.pathname, params.context]);
+
+  const tenantInfo = TENANT_MAP[tenantContext] || TENANT_MAP.global;
+  const rentriCliente = tenantInfo.cliente;
+  const tenantPreset = tenantInfo.preset;
+
+  // isOwnProduction: true when producer matches tenant
+  const isOwnProduction = useMemo(() => {
+    if (!selectedProduttore) return true; // default = own production
+    return selectedProduttore.cf === tenantPreset.cf;
+  }, [selectedProduttore, tenantPreset]);
 
   // Zoom state
   const [scale, setScale] = useState(1);
@@ -258,17 +284,33 @@ export function FIRAlternativeForm() {
             <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
           </button>
           {showProdDropdown && (
-            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-              {PRODUTTORI_PRESET.map((p) => (
+            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+              {/* Tenant preset first */}
+              <button
+                onClick={() => { fillProduttore(tenantPreset); setSelectedProduttore(tenantPreset); }}
+                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 bg-primary/5"
+              >
+                <div className="font-semibold text-primary">{tenantPreset.nome} ⭐</div>
+                <div className="text-muted-foreground text-[10px]">{tenantPreset.cf} — {tenantPreset.indirizzo}</div>
+              </button>
+              {/* Other producers */}
+              {ALL_PRODUTTORI.filter(p => p.cf !== tenantPreset.cf).map((p) => (
                 <button
                   key={p.cf}
-                  onClick={() => fillProduttore(p)}
+                  onClick={() => { fillProduttore(p); setSelectedProduttore(p); }}
                   className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 last:border-0"
                 >
                   <div className="font-semibold text-foreground">{p.nome}</div>
                   <div className="text-muted-foreground text-[10px]">{p.cf} — {p.indirizzo}</div>
                 </button>
               ))}
+              {/* Free input option */}
+              <button
+                onClick={() => { setSelectedProduttore({ nome: "", cf: "", indirizzo: "", tipo: "PRODUTTORE" }); setShowProdDropdown(false); }}
+                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-amber-500/10 transition-colors text-amber-300"
+              >
+                ✏️ Altro produttore (inserimento libero)
+              </button>
             </div>
           )}
         </div>
@@ -437,8 +479,9 @@ export function FIRAlternativeForm() {
 
       {/* RENTRI Actions: Firma, QR Code, Emissione */}
       <FIRRentriActions
-        cliente={getRentriCliente()}
+        cliente={rentriCliente}
         formData={values as Record<string, string | boolean>}
+        firmaComeProduttore={isOwnProduction}
         onEmissioneSuccess={(res) => {
           console.log("[FIR] Emissione success:", res);
         }}
