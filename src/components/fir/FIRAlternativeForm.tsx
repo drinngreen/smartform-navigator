@@ -456,7 +456,7 @@ export function FIRAlternativeForm() {
                 : isDestinatarioAutocomplete
                   ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
                   : [];
-              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && suggestions.length > 0;
+              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && userIsTyping && rawValue.length >= 1 && suggestions.length > 0;
 
               if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
                 return (
@@ -467,6 +467,7 @@ export function FIRAlternativeForm() {
                       onChange={(e) => {
                         handleChange(field.id, e.target.value);
                         setActiveAutocompleteFieldId(field.id);
+                        setUserIsTyping(true);
                       }}
                       onFocus={() => setActiveAutocompleteFieldId(field.id)}
                       onBlur={() => {
