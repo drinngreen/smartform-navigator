@@ -31,60 +31,68 @@ const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> =
 };
 
 const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
-const PRODUTTORE_PATTERNS = [
-  "produttore_denominazione", "produttore_denom", "produttore_nome", "produttore",
-  "prod_denom", "prod_nome", "denominazione_produttore",
-];
-const PRODUTTORE_CF_PATTERNS = [
-  "produttore_cf", "produttore_codice_fiscale", "cf_produttore", "prod_cf",
-];
-const PRODUTTORE_INDIRIZZO_PATTERNS = [
-  "produttore_indirizzo", "produttore_ind", "ind_produttore", "prod_indirizzo",
-];
-const DESTINATARIO_PATTERNS = [
-  "destinatario_denominazione", "destinatario_denom", "destinatario_nome", "destinatario",
-  "dest_denom", "dest_nome", "denominazione_destinatario",
-];
-const DESTINATARIO_CF_PATTERNS = [
-  "destinatario_cf", "destinatario_codice_fiscale", "cf_destinatario", "dest_cf",
-];
-const DESTINATARIO_INDIRIZZO_PATTERNS = [
-  "destinatario_indirizzo", "destinatario_ind", "ind_destinatario", "dest_indirizzo",
-];
-const PRODUTTORE_AUT_PATTERNS = [
-  "numero_aut", "aut_comunicazione_produttore", "autorizzazione_produttore",
-];
-const PRODUTTORE_TIPO_AUT_PATTERNS = [
-  "tipologia_autorizzazione_ambientale_produttore", "tipo_autorizzazione_produttore",
-];
-const DESTINATARIO_AUT_PATTERNS = [
-  "numero_aut", "aut_comunicazione_destinatario", "autorizzazione_destinatario",
-];
-const DESTINATARIO_TIPO_AUT_PATTERNS = [
-  "tipologia_autorizzazione_ambientale_destinatario", "tipo_autorizzazione_destinatario",
-];
-
-function matchesPattern(fieldName: string, patterns: string[]): boolean {
-  const lower = fieldName.toLowerCase().replace(/[\s-]/g, "_");
-  return patterns.some((p) => lower.includes(p));
-}
-
 function normalizeFieldName(fieldName: string): string {
-  return fieldName.toLowerCase().replace(/[\s-]/g, "_");
+  return fieldName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
-function findFieldByPattern(fields: TemplateField[], patterns: string[]): TemplateField | undefined {
-  return fields.find((f) => matchesPattern(f.name, patterns));
+function hasTokens(fieldName: string, tokens: string[]): boolean {
+  const normalized = normalizeFieldName(fieldName);
+  const parts = normalized.split("_").filter(Boolean);
+  return tokens.every((token) => parts.includes(token));
+}
+
+function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateField | undefined {
+  return fields.find((field) => hasTokens(field.name, tokens));
 }
 
 function isProduttoreDenominationField(fieldName: string): boolean {
-  const normalized = normalizeFieldName(fieldName);
-  return normalized === "denominazione_produttore";
+  return hasTokens(fieldName, ["denominazione", "produttore"]);
 }
 
 function isDestinatarioDenominationField(fieldName: string): boolean {
-  const normalized = normalizeFieldName(fieldName);
-  return normalized === "denominazione_destinatario";
+  return hasTokens(fieldName, ["denominazione", "destinatario"])
+    && !hasTokens(fieldName, ["secondo", "destinatario"]);
+}
+
+function isProduttoreCfField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["codice", "fiscale", "produttore"]);
+}
+
+function isDestinatarioCfField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["codice", "fiscale", "destinatario"])
+    && !hasTokens(fieldName, ["secondo", "destinatario"]);
+}
+
+function isProduttoreAddressField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["unita", "locale", "produttore"]);
+}
+
+function isDestinatarioAddressField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["unita", "locale", "destinatario"])
+    && !hasTokens(fieldName, ["secondo", "destinatario"]);
+}
+
+function isProduttoreAuthorizationField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["numero", "aut", "comunicazione", "produttore"]);
+}
+
+function isDestinatarioAuthorizationField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["numero", "aut", "comunicazione", "destinatario"])
+    && !hasTokens(fieldName, ["secondo", "destinatario"]);
+}
+
+function isProduttoreAuthorizationTypeField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["tipologia", "autorizzazione", "ambientale", "produttore"]);
+}
+
+function isDestinatarioAuthorizationTypeField(fieldName: string): boolean {
+  return hasTokens(fieldName, ["tipologia", "autorizzazione", "ambientale", "destinatario"])
+    && !hasTokens(fieldName, ["secondo", "destinatario"]);
 }
 
 function matchesSoggettoSearch(soggetto: Soggetto, query: string): boolean {
@@ -106,20 +114,20 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
       if (normalizedName.includes("nuovo_trasportatore") || normalizedName.includes("originale")) return;
 
       if (isProduttoreDenominationField(field.name)) updates[field.id] = soggetto.nome;
-      else if (matchesPattern(field.name, PRODUTTORE_CF_PATTERNS)) updates[field.id] = soggetto.cf;
-      else if (matchesPattern(field.name, PRODUTTORE_INDIRIZZO_PATTERNS) || normalizedName.includes("unita_locale_produttore")) updates[field.id] = soggetto.indirizzo;
-      else if (matchesPattern(field.name, PRODUTTORE_AUT_PATTERNS)) updates[field.id] = soggetto.autorizzazione ?? "";
-      else if (matchesPattern(field.name, PRODUTTORE_TIPO_AUT_PATTERNS)) updates[field.id] = soggetto.tipoAut ?? "";
+      else if (isProduttoreCfField(field.name)) updates[field.id] = soggetto.cf;
+      else if (isProduttoreAddressField(field.name)) updates[field.id] = soggetto.indirizzo;
+      else if (isProduttoreAuthorizationField(field.name)) updates[field.id] = soggetto.autorizzazione ?? "";
+      else if (isProduttoreAuthorizationTypeField(field.name)) updates[field.id] = soggetto.tipoAut ?? "";
     }
 
     if (target === "destinatario") {
       if (normalizedName.includes("secondo_destinatario")) return;
 
       if (isDestinatarioDenominationField(field.name)) updates[field.id] = soggetto.nome;
-      else if (matchesPattern(field.name, DESTINATARIO_CF_PATTERNS)) updates[field.id] = soggetto.cf;
-      else if (matchesPattern(field.name, DESTINATARIO_INDIRIZZO_PATTERNS) || normalizedName.includes("unita_locale_destinatario")) updates[field.id] = soggetto.indirizzo;
-      else if (matchesPattern(field.name, DESTINATARIO_AUT_PATTERNS)) updates[field.id] = soggetto.autorizzazione ?? "";
-      else if (matchesPattern(field.name, DESTINATARIO_TIPO_AUT_PATTERNS)) updates[field.id] = soggetto.tipoAut ?? "";
+      else if (isDestinatarioCfField(field.name)) updates[field.id] = soggetto.cf;
+      else if (isDestinatarioAddressField(field.name)) updates[field.id] = soggetto.indirizzo;
+      else if (isDestinatarioAuthorizationField(field.name)) updates[field.id] = soggetto.autorizzazione ?? "";
+      else if (isDestinatarioAuthorizationTypeField(field.name)) updates[field.id] = soggetto.tipoAut ?? "";
     }
   });
 
@@ -162,7 +170,7 @@ export function FIRAlternativeForm() {
     [fields]
   );
   const produttoreCfField = useMemo(
-    () => findFieldByPattern(fields, PRODUTTORE_CF_PATTERNS),
+    () => findFieldByTokens(fields, ["codice", "fiscale", "produttore"]),
     [fields]
   );
   const currentProduttoreNome = produttoreDenomField ? String(values[produttoreDenomField.id] ?? "").trim() : "";
