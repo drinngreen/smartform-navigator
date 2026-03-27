@@ -194,7 +194,7 @@ export function FIRAlternativeForm() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
-  const [userIsTyping, setUserIsTyping] = useState(false);
+  const [confirmedFieldIds, setConfirmedFieldIds] = useState<Set<string>>(new Set());
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
@@ -240,14 +240,22 @@ export function FIRAlternativeForm() {
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(soggetto);
     setActiveAutocompleteFieldId(null);
-    setUserIsTyping(false);
+    setConfirmedFieldIds((prev) => {
+      const next = new Set(prev);
+      Object.keys(updates).forEach((k) => next.add(k));
+      return next;
+    });
   }, [fields]);
 
   const fillDestinatario = useCallback((soggetto: Soggetto) => {
     const updates = buildSoggettoUpdates(fields, soggetto, "destinatario");
     setValues((prev) => ({ ...prev, ...updates }));
     setActiveAutocompleteFieldId(null);
-    setUserIsTyping(false);
+    setConfirmedFieldIds((prev) => {
+      const next = new Set(prev);
+      Object.keys(updates).forEach((k) => next.add(k));
+      return next;
+    });
   }, [fields]);
 
   const zoomIn = () => setScale((s) => Math.min(s + 0.3, 4));
@@ -458,7 +466,8 @@ export function FIRAlternativeForm() {
                 : isDestinatarioAutocomplete
                   ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
                   : [];
-              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && userIsTyping && rawValue.length >= 1 && suggestions.length > 0;
+              const isConfirmed = confirmedFieldIds.has(field.id);
+              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && !isConfirmed && suggestions.length > 0;
 
               if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
                 return (
@@ -469,16 +478,12 @@ export function FIRAlternativeForm() {
                       onChange={(e) => {
                         handleChange(field.id, e.target.value);
                         setActiveAutocompleteFieldId(field.id);
-                        setUserIsTyping(true);
+                        setConfirmedFieldIds((prev) => { const next = new Set(prev); next.delete(field.id); return next; });
                       }}
-                      onFocus={() => {
-                        setActiveAutocompleteFieldId(field.id);
-                        setUserIsTyping(false);
-                      }}
+                      onFocus={() => setActiveAutocompleteFieldId(field.id)}
                       onBlur={() => {
                         window.setTimeout(() => {
                           setActiveAutocompleteFieldId((current) => (current === field.id ? null : current));
-                          setUserIsTyping(false);
                         }, 150);
                       }}
                       style={{
