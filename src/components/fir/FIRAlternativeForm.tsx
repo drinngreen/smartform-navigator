@@ -469,10 +469,14 @@ export function FIRAlternativeForm() {
                         setActiveAutocompleteFieldId(field.id);
                         setUserIsTyping(true);
                       }}
-                      onFocus={() => setActiveAutocompleteFieldId(field.id)}
+                      onFocus={() => {
+                        setActiveAutocompleteFieldId(field.id);
+                        setUserIsTyping(false);
+                      }}
                       onBlur={() => {
                         window.setTimeout(() => {
                           setActiveAutocompleteFieldId((current) => (current === field.id ? null : current));
+                          setUserIsTyping(false);
                         }, 150);
                       }}
                       style={{
