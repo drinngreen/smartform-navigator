@@ -22,7 +22,6 @@ interface TemplateField {
 
 const PAGE_IMAGES = [pag1, pag2, pag3];
 
-// Tenant → RENTRI client + preset mapping
 const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> = {
   global: { cliente: "global", preset: GLOBAL_RECO },
   multyproget: { cliente: "multy", preset: MULTYPROGET },
@@ -31,9 +30,7 @@ const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> =
   niyol: { cliente: "niyol", preset: NIYOL },
 };
 
-// All producers for dropdown
 const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
-// Field name patterns for auto-detecting produttore/destinatario fields
 const PRODUTTORE_PATTERNS = [
   "produttore_denominazione", "produttore_denom", "produttore_nome", "produttore",
   "prod_denom", "prod_nome", "denominazione_produttore",
@@ -57,11 +54,32 @@ const DESTINATARIO_INDIRIZZO_PATTERNS = [
 
 function matchesPattern(fieldName: string, patterns: string[]): boolean {
   const lower = fieldName.toLowerCase().replace(/[\s-]/g, "_");
-  return patterns.some(p => lower.includes(p));
+  return patterns.some((p) => lower.includes(p));
 }
 
 function findFieldByPattern(fields: TemplateField[], patterns: string[]): TemplateField | undefined {
-  return fields.find(f => matchesPattern(f.name, patterns));
+  return fields.find((f) => matchesPattern(f.name, patterns));
+}
+
+function isProduttoreDenominationField(fieldName: string): boolean {
+  return matchesPattern(fieldName, PRODUTTORE_PATTERNS)
+    && !matchesPattern(fieldName, PRODUTTORE_CF_PATTERNS)
+    && !matchesPattern(fieldName, PRODUTTORE_INDIRIZZO_PATTERNS);
+}
+
+function isDestinatarioDenominationField(fieldName: string): boolean {
+  return matchesPattern(fieldName, DESTINATARIO_PATTERNS)
+    && !matchesPattern(fieldName, DESTINATARIO_CF_PATTERNS)
+    && !matchesPattern(fieldName, DESTINATARIO_INDIRIZZO_PATTERNS);
+}
+
+function matchesSoggettoSearch(soggetto: Soggetto, query: string): boolean {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return true;
+
+  return [soggetto.nome, soggetto.cf, soggetto.indirizzo]
+    .filter(Boolean)
+    .some((value) => value.toLowerCase().includes(normalizedQuery));
 }
 
 export function FIRAlternativeForm() {
@@ -73,30 +91,54 @@ export function FIRAlternativeForm() {
   const location = useLocation();
   const params = useParams<{ context?: string }>();
 
-  // Determine tenant context from route
   const tenantContext = useMemo((): string => {
-    // Admin MN routes: /mn/admin/:context/...
     if (params.context) {
       if (params.context.includes("niyol")) return "niyol";
       if (params.context.includes("multy")) return "multyproget";
+      if (params.context.includes("global")) return "global";
     }
-    // App routes
+
     if (location.pathname.includes("/mn/app/niyol")) return "niyol";
-    if (location.pathname.includes("/mn/app/multyproget") || location.pathname.includes("/mn/")) return "multyproget";
+    if (location.pathname.includes("/mn/app/multyproget")) return "multyproget";
+    if (location.pathname.includes("/app/")) return "global";
+    if (location.pathname.includes("/mn/")) return "multyproget";
     return "global";
   }, [location.pathname, params.context]);
 
   const tenantInfo = TENANT_MAP[tenantContext] || TENANT_MAP.global;
   const rentriCliente = tenantInfo.cliente;
   const tenantPreset = tenantInfo.preset;
+  const orderedProduttori = useMemo(
+    () => [tenantPreset, ...ALL_PRODUTTORI.filter((p) => p.cf !== tenantPreset.cf)],
+    [tenantPreset]
+  );
 
-  // isOwnProduction: true when producer matches tenant
+  const produttoreDenomField = useMemo(
+    () => fields.find((field) => isProduttoreDenominationField(field.name)),
+    [fields]
+  );
+  const produttoreCfField = useMemo(
+    () => findFieldByPattern(fields, PRODUTTORE_CF_PATTERNS),
+    [fields]
+  );
+  const destinatarioDenomField = useMemo(
+    () => fields.find((field) => isDestinatarioDenominationField(field.name)),
+    [fields]
+  );
+
+  const currentProduttoreNome = produttoreDenomField ? String(values[produttoreDenomField.id] ?? "").trim() : "";
+  const currentProduttoreCf = produttoreCfField ? String(values[produttoreCfField.id] ?? "").trim() : "";
+
   const isOwnProduction = useMemo(() => {
-    if (!selectedProduttore) return true; // default = own production
-    return selectedProduttore.cf === tenantPreset.cf;
-  }, [selectedProduttore, tenantPreset]);
+    if (!currentProduttoreNome && !currentProduttoreCf && !selectedProduttore) return true;
 
-  // Zoom state
+    const referenceCf = selectedProduttore?.cf?.trim() || currentProduttoreCf;
+    const referenceName = selectedProduttore?.nome?.trim() || currentProduttoreNome;
+
+    if (referenceCf) return referenceCf === tenantPreset.cf;
+    return referenceName.toLowerCase() === tenantPreset.nome.toLowerCase();
+  }, [currentProduttoreCf, currentProduttoreNome, selectedProduttore, tenantPreset]);
+
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -104,10 +146,10 @@ export function FIRAlternativeForm() {
   const [lastTouchDist, setLastTouchDist] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Dropdown state
   const [showProdDropdown, setShowProdDropdown] = useState(false);
   const [showDestDropdown, setShowDestDropdown] = useState(false);
   const [destSearch, setDestSearch] = useState("");
+  const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -125,61 +167,73 @@ export function FIRAlternativeForm() {
       });
   }, []);
 
-  // Reset zoom on page change
   useEffect(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
   }, [activePage]);
 
   const handleChange = (id: string, val: string | boolean) => {
+    const isProducerField = produttoreDenomField?.id === id || produttoreCfField?.id === id;
+
     setValues((prev) => ({ ...prev, [id]: val }));
+
+    if (isProducerField && typeof val === "string") {
+      setSelectedProduttore(null);
+    }
   };
 
-  // Fill produttore fields from preset
   const fillProduttore = useCallback((soggetto: Soggetto) => {
     const updates: Record<string, string> = {};
-    const denomField = findFieldByPattern(fields, PRODUTTORE_PATTERNS);
+    const denomField = fields.find((field) => isProduttoreDenominationField(field.name));
     const cfField = findFieldByPattern(fields, PRODUTTORE_CF_PATTERNS);
     const indField = findFieldByPattern(fields, PRODUTTORE_INDIRIZZO_PATTERNS);
+
     if (denomField) updates[denomField.id] = soggetto.nome;
     if (cfField) updates[cfField.id] = soggetto.cf;
     if (indField) updates[indField.id] = soggetto.indirizzo;
-    setValues(prev => ({ ...prev, ...updates }));
+
+    setValues((prev) => ({ ...prev, ...updates }));
+    setSelectedProduttore(soggetto);
     setShowProdDropdown(false);
+    setActiveAutocompleteFieldId(null);
   }, [fields]);
 
-  // Fill destinatario fields from preset
   const fillDestinatario = useCallback((soggetto: Soggetto) => {
     const updates: Record<string, string> = {};
-    const denomField = findFieldByPattern(fields, DESTINATARIO_PATTERNS);
+    const denomField = fields.find((field) => isDestinatarioDenominationField(field.name));
     const cfField = findFieldByPattern(fields, DESTINATARIO_CF_PATTERNS);
     const indField = findFieldByPattern(fields, DESTINATARIO_INDIRIZZO_PATTERNS);
+
     if (denomField) updates[denomField.id] = soggetto.nome;
     if (cfField) updates[cfField.id] = soggetto.cf;
     if (indField) updates[indField.id] = soggetto.indirizzo;
-    setValues(prev => ({ ...prev, ...updates }));
+
+    setValues((prev) => ({ ...prev, ...updates }));
     setShowDestDropdown(false);
     setDestSearch("");
+    setActiveAutocompleteFieldId(null);
   }, [fields]);
 
-  // Zoom controls
-  const zoomIn = () => setScale(s => Math.min(s + 0.3, 4));
-  const zoomOut = () => setScale(s => Math.max(s - 0.3, 0.5));
-  const resetZoom = () => { setScale(1); setTranslate({ x: 0, y: 0 }); };
+  const zoomIn = () => setScale((s) => Math.min(s + 0.3, 4));
+  const zoomOut = () => setScale((s) => Math.max(s - 0.3, 0.5));
+  const resetZoom = () => {
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+  };
 
-  // Mouse drag for panning
   const handleMouseDown = (e: React.MouseEvent) => {
     if (scale <= 1) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - translate.x, y: e.clientY - translate.y });
   };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     setTranslate({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
   };
+
   const handleMouseUp = () => setIsDragging(false);
 
-  // Touch pinch-to-zoom
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const dist = Math.hypot(
@@ -192,6 +246,7 @@ export function FIRAlternativeForm() {
       setDragStart({ x: e.touches[0].clientX - translate.x, y: e.touches[0].clientY - translate.y });
     }
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2 && lastTouchDist !== null) {
       const dist = Math.hypot(
@@ -199,29 +254,27 @@ export function FIRAlternativeForm() {
         e.touches[0].clientY - e.touches[1].clientY
       );
       const delta = (dist - lastTouchDist) * 0.008;
-      setScale(s => Math.max(0.5, Math.min(4, s + delta)));
+      setScale((s) => Math.max(0.5, Math.min(4, s + delta)));
       setLastTouchDist(dist);
     } else if (e.touches.length === 1 && isDragging) {
       setTranslate({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y });
     }
   };
-  const handleTouchEnd = () => { setLastTouchDist(null); setIsDragging(false); };
 
-  // Wheel zoom
+  const handleTouchEnd = () => {
+    setLastTouchDist(null);
+    setIsDragging(false);
+  };
+
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.15 : 0.15;
-    setScale(s => Math.max(0.5, Math.min(4, s + delta)));
+    setScale((s) => Math.max(0.5, Math.min(4, s + delta)));
   };
 
   const pageFields = fields.filter((f) => f.page === activePage);
-
-  // Check if current page has produttore/destinatario fields
-  const hasProdField = pageFields.some(f => matchesPattern(f.name, PRODUTTORE_PATTERNS));
-  const hasDestField = pageFields.some(f => matchesPattern(f.name, DESTINATARIO_PATTERNS));
-
   const filteredDest = destSearch
-    ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(destSearch.toLowerCase()))
+    ? DESTINATARI.filter((d) => d.nome.toLowerCase().includes(destSearch.toLowerCase()))
     : DESTINATARI;
 
   if (loading) {
@@ -242,7 +295,6 @@ export function FIRAlternativeForm() {
 
   return (
     <div className="space-y-3">
-      {/* Banner */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
         <Zap className="h-4 w-4 text-amber-400" />
         <div className="flex flex-col">
@@ -255,7 +307,6 @@ export function FIRAlternativeForm() {
         </div>
       </div>
 
-      {/* Page tabs */}
       <div className="flex gap-2">
         {[1, 2, 3].map((p) => (
           <button
@@ -272,12 +323,13 @@ export function FIRAlternativeForm() {
         ))}
       </div>
 
-      {/* Preset selectors */}
       <div className="flex gap-2">
-        {/* Produttore selector */}
         <div className="relative flex-1">
           <button
-            onClick={() => { setShowProdDropdown(!showProdDropdown); setShowDestDropdown(false); }}
+            onClick={() => {
+              setShowProdDropdown(!showProdDropdown);
+              setShowDestDropdown(false);
+            }}
             className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md border border-border/40 bg-card/60 text-[11px] font-mono text-foreground hover:bg-card/80 transition-all"
           >
             <span className="truncate">👷 Produttore</span>
@@ -285,28 +337,23 @@ export function FIRAlternativeForm() {
           </button>
           {showProdDropdown && (
             <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-              {/* Tenant preset first */}
-              <button
-                onClick={() => { fillProduttore(tenantPreset); setSelectedProduttore(tenantPreset); }}
-                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 bg-primary/5"
-              >
-                <div className="font-semibold text-primary">{tenantPreset.nome} ⭐</div>
-                <div className="text-muted-foreground text-[10px]">{tenantPreset.cf} — {tenantPreset.indirizzo}</div>
-              </button>
-              {/* Other producers */}
-              {ALL_PRODUTTORI.filter(p => p.cf !== tenantPreset.cf).map((p) => (
+              {orderedProduttori.map((p, index) => (
                 <button
                   key={p.cf}
-                  onClick={() => { fillProduttore(p); setSelectedProduttore(p); }}
-                  className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/20 last:border-0"
+                  onClick={() => fillProduttore(p)}
+                  className={`w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors ${index < orderedProduttori.length - 1 ? "border-b border-border/20" : ""} ${p.cf === tenantPreset.cf ? "bg-primary/5" : ""}`}
                 >
-                  <div className="font-semibold text-foreground">{p.nome}</div>
+                  <div className={p.cf === tenantPreset.cf ? "font-semibold text-primary" : "font-semibold text-foreground"}>
+                    {p.nome} {p.cf === tenantPreset.cf ? "⭐" : ""}
+                  </div>
                   <div className="text-muted-foreground text-[10px]">{p.cf} — {p.indirizzo}</div>
                 </button>
               ))}
-              {/* Free input option */}
               <button
-                onClick={() => { setSelectedProduttore({ nome: "", cf: "", indirizzo: "", tipo: "PRODUTTORE" }); setShowProdDropdown(false); }}
+                onClick={() => {
+                  setSelectedProduttore(null);
+                  setShowProdDropdown(false);
+                }}
                 className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-amber-500/10 transition-colors text-amber-300"
               >
                 ✏️ Altro produttore (inserimento libero)
@@ -315,10 +362,12 @@ export function FIRAlternativeForm() {
           )}
         </div>
 
-        {/* Destinatario selector */}
         <div className="relative flex-1">
           <button
-            onClick={() => { setShowDestDropdown(!showDestDropdown); setShowProdDropdown(false); }}
+            onClick={() => {
+              setShowDestDropdown(!showDestDropdown);
+              setShowProdDropdown(false);
+            }}
             className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md border border-border/40 bg-card/60 text-[11px] font-mono text-foreground hover:bg-card/80 transition-all"
           >
             <span className="truncate">🏭 Destinatario</span>
@@ -356,7 +405,6 @@ export function FIRAlternativeForm() {
         </div>
       </div>
 
-      {/* Zoom controls */}
       <div className="flex items-center justify-center gap-2">
         <button onClick={zoomOut} className="p-1.5 rounded-md border border-border/40 bg-card/60 hover:bg-card/80 transition-all">
           <ZoomOut className="h-4 w-4 text-muted-foreground" />
@@ -372,7 +420,6 @@ export function FIRAlternativeForm() {
         </button>
       </div>
 
-      {/* Page canvas with zoom */}
       <div
         ref={containerRef}
         className="relative w-full rounded-lg overflow-hidden border border-border/20"
@@ -402,7 +449,6 @@ export function FIRAlternativeForm() {
               draggable={false}
             />
 
-            {/* Overlaid fields */}
             {pageFields.map((field) => {
               const style: React.CSSProperties = {
                 position: "absolute",
@@ -453,6 +499,72 @@ export function FIRAlternativeForm() {
                 );
               }
 
+              const isProduttoreAutocomplete = isProduttoreDenominationField(field.name);
+              const isDestinatarioAutocomplete = isDestinatarioDenominationField(field.name);
+              const rawValue = String(values[field.id] || "");
+              const suggestions = isProduttoreAutocomplete
+                ? orderedProduttori.filter((item) => matchesSoggettoSearch(item, rawValue))
+                : isDestinatarioAutocomplete
+                  ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
+                  : [];
+              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && suggestions.length > 0;
+
+              if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
+                return (
+                  <div key={field.id} style={style} className="overflow-visible">
+                    <input
+                      type="text"
+                      value={rawValue}
+                      onChange={(e) => {
+                        handleChange(field.id, e.target.value);
+                        setActiveAutocompleteFieldId(field.id);
+                      }}
+                      onFocus={() => setActiveAutocompleteFieldId(field.id)}
+                      onBlur={() => {
+                        window.setTimeout(() => {
+                          setActiveAutocompleteFieldId((current) => (current === field.id ? null : current));
+                        }, 150);
+                      }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "transparent",
+                        border: "1px solid rgba(120, 120, 140, 0.35)",
+                        borderRadius: "2px",
+                        color: "#1a1a2e",
+                        fontSize: "clamp(7px, 1.8vw, 11px)",
+                        fontFamily: "monospace",
+                        padding: "1px 3px",
+                        outline: "none",
+                      }}
+                    />
+
+                    {shouldShowAutocomplete && (
+                      <div className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-28 overflow-y-auto rounded-md border border-border/40 bg-popover shadow-lg">
+                        {suggestions.map((suggestion) => (
+                          <button
+                            key={`${field.id}-${suggestion.cf}-${suggestion.nome}`}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              if (isProduttoreAutocomplete) {
+                                fillProduttore(suggestion);
+                              } else {
+                                fillDestinatario(suggestion);
+                              }
+                            }}
+                            className="block w-full border-b border-border/20 px-2 py-1 text-left font-mono text-[10px] text-foreground transition-colors hover:bg-accent/50 last:border-b-0"
+                          >
+                            <div className="truncate font-semibold">{suggestion.nome}</div>
+                            <div className="truncate text-[9px] text-muted-foreground">{suggestion.cf} — {suggestion.indirizzo}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <input
                   key={field.id}
@@ -477,7 +589,6 @@ export function FIRAlternativeForm() {
         </div>
       </div>
 
-      {/* RENTRI Actions: Firma, QR Code, Emissione */}
       <FIRRentriActions
         cliente={rentriCliente}
         formData={values as Record<string, string | boolean>}
