@@ -194,7 +194,7 @@ export function FIRAlternativeForm() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
-  const [userIsTyping, setUserIsTyping] = useState(false);
+  const [confirmedFieldIds, setConfirmedFieldIds] = useState<Set<string>>(new Set());
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
