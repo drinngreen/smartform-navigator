@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Zap, ZoomIn, ZoomOut, RotateCcw, ChevronDown } from "lucide-react";
+import { Zap, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
@@ -51,6 +51,18 @@ const DESTINATARIO_CF_PATTERNS = [
 const DESTINATARIO_INDIRIZZO_PATTERNS = [
   "destinatario_indirizzo", "destinatario_ind", "ind_destinatario", "dest_indirizzo",
 ];
+const PRODUTTORE_AUT_PATTERNS = [
+  "numero_aut", "aut_comunicazione_produttore", "autorizzazione_produttore",
+];
+const PRODUTTORE_TIPO_AUT_PATTERNS = [
+  "tipologia_autorizzazione_ambientale_produttore", "tipo_autorizzazione_produttore",
+];
+const DESTINATARIO_AUT_PATTERNS = [
+  "numero_aut", "aut_comunicazione_destinatario", "autorizzazione_destinatario",
+];
+const DESTINATARIO_TIPO_AUT_PATTERNS = [
+  "tipologia_autorizzazione_ambientale_destinatario", "tipo_autorizzazione_destinatario",
+];
 
 function matchesPattern(fieldName: string, patterns: string[]): boolean {
   const lower = fieldName.toLowerCase().replace(/[\s-]/g, "_");
@@ -77,9 +89,39 @@ function matchesSoggettoSearch(soggetto: Soggetto, query: string): boolean {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
 
-  return [soggetto.nome, soggetto.cf, soggetto.indirizzo]
+  return [soggetto.nome, soggetto.cf, soggetto.indirizzo, soggetto.piva, soggetto.autorizzazione]
     .filter(Boolean)
-    .some((value) => value.toLowerCase().includes(normalizedQuery));
+    .some((value) => value!.toLowerCase().includes(normalizedQuery));
+}
+
+function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, target: "produttore" | "destinatario") {
+  const updates: Record<string, string> = {};
+
+  fields.forEach((field) => {
+    const normalizedName = field.name.toLowerCase().replace(/[\s-]/g, "_");
+
+    if (target === "produttore") {
+      if (normalizedName.includes("nuovo_trasportatore") || normalizedName.includes("originale")) return;
+
+      if (isProduttoreDenominationField(field.name)) updates[field.id] = soggetto.nome;
+      else if (matchesPattern(field.name, PRODUTTORE_CF_PATTERNS)) updates[field.id] = soggetto.cf;
+      else if (matchesPattern(field.name, PRODUTTORE_INDIRIZZO_PATTERNS) || normalizedName.includes("unita_locale_produttore")) updates[field.id] = soggetto.indirizzo;
+      else if (matchesPattern(field.name, PRODUTTORE_AUT_PATTERNS)) updates[field.id] = soggetto.autorizzazione ?? "";
+      else if (matchesPattern(field.name, PRODUTTORE_TIPO_AUT_PATTERNS)) updates[field.id] = soggetto.tipoAut ?? "";
+    }
+
+    if (target === "destinatario") {
+      if (normalizedName.includes("secondo_destinatario")) return;
+
+      if (isDestinatarioDenominationField(field.name)) updates[field.id] = soggetto.nome;
+      else if (matchesPattern(field.name, DESTINATARIO_CF_PATTERNS)) updates[field.id] = soggetto.cf;
+      else if (matchesPattern(field.name, DESTINATARIO_INDIRIZZO_PATTERNS) || normalizedName.includes("unita_locale_destinatario")) updates[field.id] = soggetto.indirizzo;
+      else if (matchesPattern(field.name, DESTINATARIO_AUT_PATTERNS)) updates[field.id] = soggetto.autorizzazione ?? "";
+      else if (matchesPattern(field.name, DESTINATARIO_TIPO_AUT_PATTERNS)) updates[field.id] = soggetto.tipoAut ?? "";
+    }
+  });
+
+  return updates;
 }
 
 export function FIRAlternativeForm() {
@@ -121,11 +163,6 @@ export function FIRAlternativeForm() {
     () => findFieldByPattern(fields, PRODUTTORE_CF_PATTERNS),
     [fields]
   );
-  const destinatarioDenomField = useMemo(
-    () => fields.find((field) => isDestinatarioDenominationField(field.name)),
-    [fields]
-  );
-
   const currentProduttoreNome = produttoreDenomField ? String(values[produttoreDenomField.id] ?? "").trim() : "";
   const currentProduttoreCf = produttoreCfField ? String(values[produttoreCfField.id] ?? "").trim() : "";
 
@@ -146,9 +183,6 @@ export function FIRAlternativeForm() {
   const [lastTouchDist, setLastTouchDist] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [showProdDropdown, setShowProdDropdown] = useState(false);
-  const [showDestDropdown, setShowDestDropdown] = useState(false);
-  const [destSearch, setDestSearch] = useState("");
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,34 +217,15 @@ export function FIRAlternativeForm() {
   };
 
   const fillProduttore = useCallback((soggetto: Soggetto) => {
-    const updates: Record<string, string> = {};
-    const denomField = fields.find((field) => isProduttoreDenominationField(field.name));
-    const cfField = findFieldByPattern(fields, PRODUTTORE_CF_PATTERNS);
-    const indField = findFieldByPattern(fields, PRODUTTORE_INDIRIZZO_PATTERNS);
-
-    if (denomField) updates[denomField.id] = soggetto.nome;
-    if (cfField) updates[cfField.id] = soggetto.cf;
-    if (indField) updates[indField.id] = soggetto.indirizzo;
-
+    const updates = buildSoggettoUpdates(fields, soggetto, "produttore");
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(soggetto);
-    setShowProdDropdown(false);
     setActiveAutocompleteFieldId(null);
   }, [fields]);
 
   const fillDestinatario = useCallback((soggetto: Soggetto) => {
-    const updates: Record<string, string> = {};
-    const denomField = fields.find((field) => isDestinatarioDenominationField(field.name));
-    const cfField = findFieldByPattern(fields, DESTINATARIO_CF_PATTERNS);
-    const indField = findFieldByPattern(fields, DESTINATARIO_INDIRIZZO_PATTERNS);
-
-    if (denomField) updates[denomField.id] = soggetto.nome;
-    if (cfField) updates[cfField.id] = soggetto.cf;
-    if (indField) updates[indField.id] = soggetto.indirizzo;
-
+    const updates = buildSoggettoUpdates(fields, soggetto, "destinatario");
     setValues((prev) => ({ ...prev, ...updates }));
-    setShowDestDropdown(false);
-    setDestSearch("");
     setActiveAutocompleteFieldId(null);
   }, [fields]);
 
@@ -273,9 +288,6 @@ export function FIRAlternativeForm() {
   };
 
   const pageFields = fields.filter((f) => f.page === activePage);
-  const filteredDest = destSearch
-    ? DESTINATARI.filter((d) => d.nome.toLowerCase().includes(destSearch.toLowerCase()))
-    : DESTINATARI;
 
   if (loading) {
     return (
@@ -321,88 +333,6 @@ export function FIRAlternativeForm() {
             PAG {p}
           </button>
         ))}
-      </div>
-
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <button
-            onClick={() => {
-              setShowProdDropdown(!showProdDropdown);
-              setShowDestDropdown(false);
-            }}
-            className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md border border-border/40 bg-card/60 text-[11px] font-mono text-foreground hover:bg-card/80 transition-all"
-          >
-            <span className="truncate">👷 Produttore</span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          </button>
-          {showProdDropdown && (
-            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-              {orderedProduttori.map((p, index) => (
-                <button
-                  key={p.cf}
-                  onClick={() => fillProduttore(p)}
-                  className={`w-full px-3 py-2 text-left text-xs font-mono hover:bg-primary/10 transition-colors ${index < orderedProduttori.length - 1 ? "border-b border-border/20" : ""} ${p.cf === tenantPreset.cf ? "bg-primary/5" : ""}`}
-                >
-                  <div className={p.cf === tenantPreset.cf ? "font-semibold text-primary" : "font-semibold text-foreground"}>
-                    {p.nome} {p.cf === tenantPreset.cf ? "⭐" : ""}
-                  </div>
-                  <div className="text-muted-foreground text-[10px]">{p.cf} — {p.indirizzo}</div>
-                </button>
-              ))}
-              <button
-                onClick={() => {
-                  setSelectedProduttore(null);
-                  setShowProdDropdown(false);
-                }}
-                className="w-full px-3 py-2 text-left text-xs font-mono hover:bg-amber-500/10 transition-colors text-amber-300"
-              >
-                ✏️ Altro produttore (inserimento libero)
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="relative flex-1">
-          <button
-            onClick={() => {
-              setShowDestDropdown(!showDestDropdown);
-              setShowProdDropdown(false);
-            }}
-            className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md border border-border/40 bg-card/60 text-[11px] font-mono text-foreground hover:bg-card/80 transition-all"
-          >
-            <span className="truncate">🏭 Destinatario</span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          </button>
-          {showDestDropdown && (
-            <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-card border border-border rounded-lg shadow-xl overflow-hidden max-h-60">
-              <div className="sticky top-0 bg-card p-1.5 border-b border-border/30">
-                <input
-                  type="text"
-                  value={destSearch}
-                  onChange={(e) => setDestSearch(e.target.value)}
-                  placeholder="Cerca impianto..."
-                  className="w-full px-2 py-1 text-xs font-mono bg-background/60 border border-border/40 rounded-md text-foreground outline-none"
-                  autoFocus
-                />
-              </div>
-              <div className="overflow-y-auto max-h-48">
-                {filteredDest.map((d, i) => (
-                  <button
-                    key={`${d.cf}-${i}`}
-                    onClick={() => fillDestinatario(d)}
-                    className="w-full px-3 py-1.5 text-left text-xs font-mono hover:bg-primary/10 transition-colors border-b border-border/10 last:border-0"
-                  >
-                    <div className="font-semibold text-foreground truncate">{d.nome}</div>
-                    {d.indirizzo && <div className="text-muted-foreground text-[9px] truncate">{d.indirizzo}</div>}
-                  </button>
-                ))}
-                {filteredDest.length === 0 && (
-                  <div className="px-3 py-2 text-[10px] text-muted-foreground font-mono">Nessun risultato</div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="flex items-center justify-center gap-2">
@@ -511,7 +441,7 @@ export function FIRAlternativeForm() {
 
               if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
                 return (
-                  <div key={field.id} style={style} className="overflow-visible">
+                  <div key={field.id} style={style} className="relative overflow-visible">
                     <input
                       type="text"
                       value={rawValue}
@@ -540,7 +470,7 @@ export function FIRAlternativeForm() {
                     />
 
                     {shouldShowAutocomplete && (
-                      <div className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-28 overflow-y-auto rounded-md border border-border/40 bg-popover shadow-lg">
+                      <div className="absolute left-0 right-0 top-full z-[80] mt-0.5 max-h-32 overflow-y-auto rounded-md border border-border/40 bg-popover shadow-lg">
                         {suggestions.map((suggestion) => (
                           <button
                             key={`${field.id}-${suggestion.cf}-${suggestion.nome}`}
@@ -556,9 +486,26 @@ export function FIRAlternativeForm() {
                             className="block w-full border-b border-border/20 px-2 py-1 text-left font-mono text-[10px] text-foreground transition-colors hover:bg-accent/50 last:border-b-0"
                           >
                             <div className="truncate font-semibold">{suggestion.nome}</div>
-                            <div className="truncate text-[9px] text-muted-foreground">{suggestion.cf} — {suggestion.indirizzo}</div>
+                            <div className="truncate text-[9px] text-muted-foreground">
+                              {suggestion.indirizzo || "Indirizzo non disponibile"}
+                              {suggestion.cf ? ` · CF ${suggestion.cf}` : ""}
+                              {suggestion.piva ? ` · P.IVA ${suggestion.piva}` : ""}
+                            </div>
                           </button>
                         ))}
+                        {isProduttoreAutocomplete && (
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setSelectedProduttore(null);
+                              setActiveAutocompleteFieldId(null);
+                            }}
+                            className="block w-full px-2 py-1 text-left font-mono text-[10px] text-accent-foreground transition-colors hover:bg-accent/50"
+                          >
+                            ✏️ Altro produttore (inserimento libero)
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
