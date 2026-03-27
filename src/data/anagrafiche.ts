@@ -50,7 +50,7 @@ export const NIYOL: Soggetto = {
 // Cross-referenced con Excel per email
 export const IMPIANTI: Soggetto[] = [
   // === A ===
-  { nome: "\"Thermo Service Srl\"", indirizzo: "", cf: "", tipo: "IMPIANTO", email: "amministrazione@thermoserviceplus.it" },
+  { nome: "Thermo Service Srl", indirizzo: "VIA TURATI 28, 27028 SAN MARTINO SICCOMARIO (PV)", cf: "02247770122", piva: "02247770122", tipo: "IMPIANTO", email: "amministrazione@thermoserviceplus.it" },
   { nome: "A.G. Gas Srl", indirizzo: "VIA CISE SUD 563, 19035 SANTO STEFANO MAGRA (SP)", cf: "01215840115", piva: "01215840115", tipo: "IMPIANTO", email: "info@ag-gas.com", comuneIstat: "011027" },
   { nome: "Abbondanzia Francesco S.r.l.", indirizzo: "STRADA PROV. 44, 65020 ROSCIANO (PE)", cf: "01494110685", tipo: "IMPIANTO", email: "abbondanzia@virgilio.it", tel: "328 410 8164", comuneIstat: "068033", operazione: "R13", tipoAut: "AIA" },
   { nome: "Adriatica Rottami Srl", indirizzo: "VIA SANTERNO AMMONITE 425X, SANTERNO RAVENNA (RA)", cf: "02496490398", tipo: "IMPIANTO", email: "info@adriaticarottami.it", comuneIstat: "039014", operazione: "R13", tipoAut: "AIA" },
