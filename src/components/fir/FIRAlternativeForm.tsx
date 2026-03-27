@@ -466,7 +466,8 @@ export function FIRAlternativeForm() {
                 : isDestinatarioAutocomplete
                   ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
                   : [];
-              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && userIsTyping && rawValue.length >= 1 && suggestions.length > 0;
+              const isConfirmed = confirmedFieldIds.has(field.id);
+              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && !isConfirmed && suggestions.length > 0;
 
               if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
                 return (
