@@ -135,7 +135,14 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
 
   return (
     <div className="space-y-3 mt-4">
-      {/* Action buttons */}
+      {/* Firma mode badge */}
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-mono font-semibold ${
+        firmaComeProduttore
+          ? "bg-primary/10 border-primary/30 text-primary"
+          : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+      }`}>
+        {firmaComeProduttore ? "✍️ FIRMA: PRODUTTORE + TRASPORTATORE" : "🚛 FIRMA: SOLO TRASPORTATORE"}
+      </div>
       <div className="flex flex-wrap gap-2">
         <ActionButton
           icon={<Send size={14} />}
