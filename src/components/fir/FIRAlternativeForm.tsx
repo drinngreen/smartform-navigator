@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Zap, ZoomIn, ZoomOut, RotateCcw, ChevronDown } from "lucide-react";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
-import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { GLOBAL_RECO, MULTYPROGET, NIYOL, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 
@@ -22,53 +22,17 @@ interface TemplateField {
 
 const PAGE_IMAGES = [pag1, pag2, pag3];
 
-// Produttori preset
-const PRODUTTORI_PRESET: Soggetto[] = [GLOBAL_RECO, MULTYPROGET];
+// Tenant → RENTRI client + preset mapping
+const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> = {
+  global: { cliente: "global", preset: GLOBAL_RECO },
+  multyproget: { cliente: "multy", preset: MULTYPROGET },
+  "multyproget-intermediario": { cliente: "multy", preset: MULTYPROGET },
+  "multyproget-impianto": { cliente: "multy", preset: MULTYPROGET },
+  niyol: { cliente: "niyol", preset: NIYOL },
+};
 
-// Field name patterns for auto-detecting produttore/destinatario fields
-const PRODUTTORE_PATTERNS = [
-  "produttore_denominazione", "produttore_denom", "produttore_nome", "produttore",
-  "prod_denom", "prod_nome", "denominazione_produttore",
-];
-const PRODUTTORE_CF_PATTERNS = [
-  "produttore_cf", "produttore_codice_fiscale", "cf_produttore", "prod_cf",
-];
-const PRODUTTORE_INDIRIZZO_PATTERNS = [
-  "produttore_indirizzo", "produttore_ind", "ind_produttore", "prod_indirizzo",
-];
-const DESTINATARIO_PATTERNS = [
-  "destinatario_denominazione", "destinatario_denom", "destinatario_nome", "destinatario",
-  "dest_denom", "dest_nome", "denominazione_destinatario",
-];
-const DESTINATARIO_CF_PATTERNS = [
-  "destinatario_cf", "destinatario_codice_fiscale", "cf_destinatario", "dest_cf",
-];
-const DESTINATARIO_INDIRIZZO_PATTERNS = [
-  "destinatario_indirizzo", "destinatario_ind", "ind_destinatario", "dest_indirizzo",
-];
-
-function matchesPattern(fieldName: string, patterns: string[]): boolean {
-  const lower = fieldName.toLowerCase().replace(/[\s-]/g, "_");
-  return patterns.some(p => lower.includes(p));
-}
-
-function findFieldByPattern(fields: TemplateField[], patterns: string[]): TemplateField | undefined {
-  return fields.find(f => matchesPattern(f.name, patterns));
-}
-
-export function FIRAlternativeForm() {
-  const [fields, setFields] = useState<TemplateField[]>([]);
-  const [values, setValues] = useState<Record<string, string | boolean>>({});
-  const [loading, setLoading] = useState(true);
-  const [activePage, setActivePage] = useState(1);
-  const location = useLocation();
-
-  // Determine RENTRI client from route
-  const getRentriCliente = (): RentriCliente => {
-    if (location.pathname.includes("niyol")) return "niyol";
-    if (location.pathname.includes("multy") || location.pathname.includes("/mn/")) return "multy";
-    return "global";
-  };
+// All producers for dropdown
+const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
 
   // Zoom state
   const [scale, setScale] = useState(1);
