@@ -478,16 +478,12 @@ export function FIRAlternativeForm() {
                       onChange={(e) => {
                         handleChange(field.id, e.target.value);
                         setActiveAutocompleteFieldId(field.id);
-                        setUserIsTyping(true);
+                        setConfirmedFieldIds((prev) => { const next = new Set(prev); next.delete(field.id); return next; });
                       }}
-                      onFocus={() => {
-                        setActiveAutocompleteFieldId(field.id);
-                        setUserIsTyping(false);
-                      }}
+                      onFocus={() => setActiveAutocompleteFieldId(field.id)}
                       onBlur={() => {
                         window.setTimeout(() => {
                           setActiveAutocompleteFieldId((current) => (current === field.id ? null : current));
-                          setUserIsTyping(false);
                         }, 150);
                       }}
                       style={{
