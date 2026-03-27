@@ -194,6 +194,15 @@ export function FIRAlternativeForm() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
+  const [userIsTyping, setUserIsTyping] = useState(false);
+
+  const dynamicFontSize = (text: string, baseMax = 11) => {
+    const len = text.length;
+    if (len <= 20) return `clamp(7px, 1.8vw, ${baseMax}px)`;
+    if (len <= 40) return `clamp(6px, 1.4vw, 9px)`;
+    if (len <= 60) return `clamp(5px, 1.2vw, 8px)`;
+    return `clamp(4px, 1vw, 7px)`;
+  };
 
   useEffect(() => {
     supabase
