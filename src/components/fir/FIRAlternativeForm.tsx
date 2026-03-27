@@ -69,20 +69,22 @@ function matchesPattern(fieldName: string, patterns: string[]): boolean {
   return patterns.some((p) => lower.includes(p));
 }
 
+function normalizeFieldName(fieldName: string): string {
+  return fieldName.toLowerCase().replace(/[\s-]/g, "_");
+}
+
 function findFieldByPattern(fields: TemplateField[], patterns: string[]): TemplateField | undefined {
   return fields.find((f) => matchesPattern(f.name, patterns));
 }
 
 function isProduttoreDenominationField(fieldName: string): boolean {
-  return matchesPattern(fieldName, PRODUTTORE_PATTERNS)
-    && !matchesPattern(fieldName, PRODUTTORE_CF_PATTERNS)
-    && !matchesPattern(fieldName, PRODUTTORE_INDIRIZZO_PATTERNS);
+  const normalized = normalizeFieldName(fieldName);
+  return normalized === "denominazione_produttore";
 }
 
 function isDestinatarioDenominationField(fieldName: string): boolean {
-  return matchesPattern(fieldName, DESTINATARIO_PATTERNS)
-    && !matchesPattern(fieldName, DESTINATARIO_CF_PATTERNS)
-    && !matchesPattern(fieldName, DESTINATARIO_INDIRIZZO_PATTERNS);
+  const normalized = normalizeFieldName(fieldName);
+  return normalized === "denominazione_destinatario";
 }
 
 function matchesSoggettoSearch(soggetto: Soggetto, query: string): boolean {
@@ -98,7 +100,7 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
   const updates: Record<string, string> = {};
 
   fields.forEach((field) => {
-    const normalizedName = field.name.toLowerCase().replace(/[\s-]/g, "_");
+    const normalizedName = normalizeFieldName(field.name);
 
     if (target === "produttore") {
       if (normalizedName.includes("nuovo_trasportatore") || normalizedName.includes("originale")) return;
