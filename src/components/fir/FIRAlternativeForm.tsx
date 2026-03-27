@@ -33,6 +33,68 @@ const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> =
 
 // All producers for dropdown
 const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
+// Field name patterns for auto-detecting produttore/destinatario fields
+const PRODUTTORE_PATTERNS = [
+  "produttore_denominazione", "produttore_denom", "produttore_nome", "produttore",
+  "prod_denom", "prod_nome", "denominazione_produttore",
+];
+const PRODUTTORE_CF_PATTERNS = [
+  "produttore_cf", "produttore_codice_fiscale", "cf_produttore", "prod_cf",
+];
+const PRODUTTORE_INDIRIZZO_PATTERNS = [
+  "produttore_indirizzo", "produttore_ind", "ind_produttore", "prod_indirizzo",
+];
+const DESTINATARIO_PATTERNS = [
+  "destinatario_denominazione", "destinatario_denom", "destinatario_nome", "destinatario",
+  "dest_denom", "dest_nome", "denominazione_destinatario",
+];
+const DESTINATARIO_CF_PATTERNS = [
+  "destinatario_cf", "destinatario_codice_fiscale", "cf_destinatario", "dest_cf",
+];
+const DESTINATARIO_INDIRIZZO_PATTERNS = [
+  "destinatario_indirizzo", "destinatario_ind", "ind_destinatario", "dest_indirizzo",
+];
+
+function matchesPattern(fieldName: string, patterns: string[]): boolean {
+  const lower = fieldName.toLowerCase().replace(/[\s-]/g, "_");
+  return patterns.some(p => lower.includes(p));
+}
+
+function findFieldByPattern(fields: TemplateField[], patterns: string[]): TemplateField | undefined {
+  return fields.find(f => matchesPattern(f.name, patterns));
+}
+
+export function FIRAlternativeForm() {
+  const [fields, setFields] = useState<TemplateField[]>([]);
+  const [values, setValues] = useState<Record<string, string | boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [activePage, setActivePage] = useState(1);
+  const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
+  const location = useLocation();
+  const params = useParams<{ context?: string }>();
+
+  // Determine tenant context from route
+  const tenantContext = useMemo((): string => {
+    // Admin MN routes: /mn/admin/:context/...
+    if (params.context) {
+      if (params.context.includes("niyol")) return "niyol";
+      if (params.context.includes("multy")) return "multyproget";
+    }
+    // App routes
+    if (location.pathname.includes("/mn/app/niyol")) return "niyol";
+    if (location.pathname.includes("/mn/app/multyproget") || location.pathname.includes("/mn/")) return "multyproget";
+    return "global";
+  }, [location.pathname, params.context]);
+
+  const tenantInfo = TENANT_MAP[tenantContext] || TENANT_MAP.global;
+  const rentriCliente = tenantInfo.cliente;
+  const tenantPreset = tenantInfo.preset;
+
+  // isOwnProduction: true when producer matches tenant
+  const isOwnProduction = useMemo(() => {
+    if (!selectedProduttore) return true; // default = own production
+    return selectedProduttore.cf === tenantPreset.cf;
+  }, [selectedProduttore, tenantPreset]);
 
   // Zoom state
   const [scale, setScale] = useState(1);
