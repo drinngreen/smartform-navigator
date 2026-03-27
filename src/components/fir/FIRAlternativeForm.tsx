@@ -486,7 +486,7 @@ export function FIRAlternativeForm() {
                         border: "1px solid rgba(120, 120, 140, 0.35)",
                         borderRadius: "2px",
                         color: "#1a1a2e",
-                        fontSize: "clamp(7px, 1.8vw, 11px)",
+                        fontSize: dynamicFontSize(rawValue),
                         fontFamily: "monospace",
                         padding: "1px 3px",
                         outline: "none",
