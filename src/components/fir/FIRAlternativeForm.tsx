@@ -194,6 +194,15 @@ export function FIRAlternativeForm() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
+  const [userIsTyping, setUserIsTyping] = useState(false);
+
+  const dynamicFontSize = (text: string, baseMax = 11) => {
+    const len = text.length;
+    if (len <= 20) return `clamp(7px, 1.8vw, ${baseMax}px)`;
+    if (len <= 40) return `clamp(6px, 1.4vw, 9px)`;
+    if (len <= 60) return `clamp(5px, 1.2vw, 8px)`;
+    return `clamp(4px, 1vw, 7px)`;
+  };
 
   useEffect(() => {
     supabase
@@ -231,12 +240,14 @@ export function FIRAlternativeForm() {
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(soggetto);
     setActiveAutocompleteFieldId(null);
+    setUserIsTyping(false);
   }, [fields]);
 
   const fillDestinatario = useCallback((soggetto: Soggetto) => {
     const updates = buildSoggettoUpdates(fields, soggetto, "destinatario");
     setValues((prev) => ({ ...prev, ...updates }));
     setActiveAutocompleteFieldId(null);
+    setUserIsTyping(false);
   }, [fields]);
 
   const zoomIn = () => setScale((s) => Math.min(s + 0.3, 4));
@@ -447,7 +458,7 @@ export function FIRAlternativeForm() {
                 : isDestinatarioAutocomplete
                   ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
                   : [];
-              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && suggestions.length > 0;
+              const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && userIsTyping && rawValue.length >= 1 && suggestions.length > 0;
 
               if (isProduttoreAutocomplete || isDestinatarioAutocomplete) {
                 return (
@@ -458,11 +469,16 @@ export function FIRAlternativeForm() {
                       onChange={(e) => {
                         handleChange(field.id, e.target.value);
                         setActiveAutocompleteFieldId(field.id);
+                        setUserIsTyping(true);
                       }}
-                      onFocus={() => setActiveAutocompleteFieldId(field.id)}
+                      onFocus={() => {
+                        setActiveAutocompleteFieldId(field.id);
+                        setUserIsTyping(false);
+                      }}
                       onBlur={() => {
                         window.setTimeout(() => {
                           setActiveAutocompleteFieldId((current) => (current === field.id ? null : current));
+                          setUserIsTyping(false);
                         }, 150);
                       }}
                       style={{
@@ -472,7 +488,7 @@ export function FIRAlternativeForm() {
                         border: "1px solid rgba(120, 120, 140, 0.35)",
                         borderRadius: "2px",
                         color: "#1a1a2e",
-                        fontSize: "clamp(7px, 1.8vw, 11px)",
+                        fontSize: dynamicFontSize(rawValue),
                         fontFamily: "monospace",
                         padding: "1px 3px",
                         outline: "none",
@@ -534,7 +550,7 @@ export function FIRAlternativeForm() {
                     border: "1px solid rgba(120, 120, 140, 0.35)",
                     borderRadius: "2px",
                     color: "#1a1a2e",
-                    fontSize: "clamp(7px, 1.8vw, 11px)",
+                    fontSize: dynamicFontSize(String(values[field.id] || "")),
                     fontFamily: "monospace",
                     padding: "1px 3px",
                     outline: "none",
