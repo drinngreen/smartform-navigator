@@ -45,12 +45,6 @@ export const NIYOL: Soggetto = {
   tipo: "PRODUTTORE",
   comuneIstat: "001194",
 };
-  nome: "Multyproget S.r.l.",
-  indirizzo: "Via Rivarossa 18/20 - 10060 Piscina (TO)",
-  cf: "12347770013",
-  tipo: "PRODUTTORE",
-  comuneIstat: "001194",
-};
 
 // ── IMPIANTI / DESTINATARI ─────────────────────────────────────
 // Cross-referenced con Excel per email

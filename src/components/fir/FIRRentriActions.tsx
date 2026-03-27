@@ -16,7 +16,7 @@ interface FIRRentriActionsProps {
   onEmissioneSuccess?: (response: RentriVpsResponse) => void;
 }
 
-export function FIRRentriActions({ cliente, formData, numeroFir, onEmissioneSuccess }: FIRRentriActionsProps) {
+export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess }: FIRRentriActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
