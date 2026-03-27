@@ -240,14 +240,22 @@ export function FIRAlternativeForm() {
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(soggetto);
     setActiveAutocompleteFieldId(null);
-    setUserIsTyping(false);
+    setConfirmedFieldIds((prev) => {
+      const next = new Set(prev);
+      Object.keys(updates).forEach((k) => next.add(k));
+      return next;
+    });
   }, [fields]);
 
   const fillDestinatario = useCallback((soggetto: Soggetto) => {
     const updates = buildSoggettoUpdates(fields, soggetto, "destinatario");
     setValues((prev) => ({ ...prev, ...updates }));
     setActiveAutocompleteFieldId(null);
-    setUserIsTyping(false);
+    setConfirmedFieldIds((prev) => {
+      const next = new Set(prev);
+      Object.keys(updates).forEach((k) => next.add(k));
+      return next;
+    });
   }, [fields]);
 
   const zoomIn = () => setScale((s) => Math.min(s + 0.3, 4));
