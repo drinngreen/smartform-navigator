@@ -479,8 +479,9 @@ export function FIRAlternativeForm() {
 
       {/* RENTRI Actions: Firma, QR Code, Emissione */}
       <FIRRentriActions
-        cliente={getRentriCliente()}
+        cliente={rentriCliente}
         formData={values as Record<string, string | boolean>}
+        firmaComeProduttore={isOwnProduction}
         onEmissioneSuccess={(res) => {
           console.log("[FIR] Emissione success:", res);
         }}
