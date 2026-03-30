@@ -227,7 +227,7 @@ export default function GestioneFIRPage() {
       console.log("[RENTRI VIDIMAZIONE] result.success:", result.success, "result.data:", JSON.stringify(result.data));
       
       // Parse numbers from ANY response shape, regardless of result.ok
-      const raw = result.data || {};
+      const raw = (result.data ?? {}) as Record<string, any>;
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
@@ -401,9 +401,10 @@ export default function GestioneFIRPage() {
                   rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                const numeroFir = result.data?.numero_fir || result.data?.firNumber || "";
-                const rentriId = result.data?.rentriId || "";
-                const qrCode = result.data?.qr_code || result.data?.qrCodeBytes || result.data?.qrCode || "";
+                const responseData = (result.data ?? {}) as Record<string, any>;
+                const numeroFir = responseData.numero_fir || responseData.firNumber || "";
+                const rentriId = responseData.rentriId || "";
+                const qrCode = responseData.qr_code || responseData.qrCodeBytes || responseData.qrCode || "";
                 setTestResult({
                   success: result.success,
                   message: result.success ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,

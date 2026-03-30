@@ -114,7 +114,7 @@ export default function MNGestioneFIRPage() {
       const result = await richiestaVidimazione(company, requestQty);
       console.log("[RENTRI VIDIMAZIONE MN] Full result:", JSON.stringify(result));
       
-      const raw = result.data || {};
+      const raw = (result.data ?? {}) as Record<string, any>;
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
@@ -243,12 +243,13 @@ export default function MNGestioneFIRPage() {
                 rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
               });
               const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+              const responseData = (result.data ?? {}) as Record<string, any>;
               setTestResult({
                 success: result.success,
                 message: result.success ? `✅ TEST SUPERATO (${elapsed}s)` : `❌ TEST FALLITO (${elapsed}s)`,
                 details: JSON.stringify(result.data, null, 2),
-                qrCode: result.data?.qr_code || result.data?.qrCodeBytes || "",
-                numeroFir: result.data?.numero_fir || result.data?.firNumber || "",
+                qrCode: responseData.qr_code || responseData.qrCodeBytes || "",
+                numeroFir: responseData.numero_fir || responseData.firNumber || "",
               });
               if (result.success) toast.success("Test RENTRI superato!");
               else toast.error(`Test fallito: ${result.error ?? "verifica log tecnico"}`);
