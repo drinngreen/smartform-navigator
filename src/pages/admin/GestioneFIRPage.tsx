@@ -4,8 +4,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok, getPdfNgrok } from "@/lib/rentriNgrokApi";
-import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, Download, FileText, XCircle, ChevronLeft, ChevronRight, Search, Filter, UserPlus, Users } from "lucide-react";
+import { richiestaVidimazione, emissioneFir } from "@/lib/rentriVpsApi";
+import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
 type PoolFilter = "all" | "available" | "reserved" | "consumed";
@@ -222,12 +222,12 @@ export default function GestioneFIRPage() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazioneNgrok("GLOBAL", requestQty);
+      const result = await richiestaVidimazione("global", requestQty);
       console.log("[RENTRI VIDIMAZIONE] Full result:", JSON.stringify(result));
-      console.log("[RENTRI VIDIMAZIONE] result.ok:", result.ok, "result.data:", JSON.stringify(result.data));
+      console.log("[RENTRI VIDIMAZIONE] result.success:", result.success, "result.data:", JSON.stringify(result.data));
       
       // Parse numbers from ANY response shape, regardless of result.ok
-      const raw = result.data || {};
+      const raw = (result.data ?? {}) as Record<string, any>;
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
@@ -376,23 +376,7 @@ export default function GestioneFIRPage() {
               setTestResult(null);
               const startTime = Date.now();
               try {
-                // Step 1: Health check
-                console.log("[RENTRI TEST] Running health check...");
-                const health = await ngrokHealthCheck();
-                console.log("[RENTRI TEST] Health:", JSON.stringify(health));
-                if (!health.ok) {
-                  setTestResult({
-                    success: false,
-                    message: `❌ Server Ngrok non raggiungibile`,
-                    details: `Controlla che il tunnel Ngrok sia attivo.`,
-                  });
-                  toast.error("Server RENTRI (Ngrok) non raggiungibile");
-                  setIsTesting(false);
-                  return;
-                }
-
-                // Step 2: Actual test via emissione
-                console.log("[RENTRI TEST] Calling emissione via Ngrok...");
+                console.log("[RENTRI TEST] Calling emissione via VPS...");
                 const { data: poolNum, error: poolErr } = await supabase
                   .from("fir_number_pool")
                   .select("fir_number")
@@ -409,7 +393,7 @@ export default function GestioneFIRPage() {
                 }
                 const testFirNumber = poolNum.fir_number;
 
-                const result = await emissioneFirNgrok("GLOBAL", {
+                const result = await emissioneFir("global", {
                   numero_fir: testFirNumber,
                   produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                   destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
@@ -417,18 +401,19 @@ export default function GestioneFIRPage() {
                   rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
                 });
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                const numeroFir = result.data?.numero_fir || result.data?.firNumber || "";
-                const rentriId = result.data?.rentriId || "";
-                const qrCode = result.data?.qr_code || result.data?.qrCodeBytes || result.data?.qrCode || "";
+                const responseData = (result.data ?? {}) as Record<string, any>;
+                const numeroFir = responseData.numero_fir || responseData.firNumber || "";
+                const rentriId = responseData.rentriId || "";
+                const qrCode = responseData.qr_code || responseData.qrCodeBytes || responseData.qrCode || "";
                 setTestResult({
-                  success: result.ok,
-                  message: result.ok ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,
+                  success: result.success,
+                  message: result.success ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,
                   details: JSON.stringify(result.data, null, 2),
                   qrCode: qrCode,
                   numeroFir: numeroFir,
                 });
-                if (result.ok) toast.success("Test RENTRI superato!");
-                else toast.error("Test fallito");
+                if (result.success) toast.success("Test RENTRI superato!");
+                else toast.error(`Test fallito: ${result.error ?? "verifica log tecnico"}`);
 
               } catch (err: any) {
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

@@ -6,7 +6,7 @@ import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok, getPdfNgrok } from "@/lib/rentriNgrokApi";
+import { richiestaVidimazione, emissioneFir } from "@/lib/rentriVpsApi";
 import {
   Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle,
   Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users
@@ -109,12 +109,12 @@ export default function MNGestioneFIRPage() {
 
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
-    const company = context === "multyproget" ? "MULTY" : "NIYOL";
+    const company = context === "multyproget" ? "multy" : "niyol";
     try {
-      const result = await richiestaVidimazioneNgrok(company, requestQty);
+      const result = await richiestaVidimazione(company, requestQty);
       console.log("[RENTRI VIDIMAZIONE MN] Full result:", JSON.stringify(result));
       
-      const raw = result.data || {};
+      const raw = (result.data ?? {}) as Record<string, any>;
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
@@ -226,8 +226,6 @@ export default function MNGestioneFIRPage() {
             setIsTesting(true); setTestResult(null);
             const startTime = Date.now();
             try {
-              const health = await ngrokHealthCheck();
-              if (!health.ok) { setTestResult({ success: false, message: "❌ Server Ngrok non raggiungibile", details: "Controlla che il tunnel Ngrok sia attivo." }); setIsTesting(false); return; }
               const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", societaId).eq("status", "available").limit(1).maybeSingle();
               if (!poolNum?.fir_number) {
                 setTestResult({ success: false, message: "❌ NESSUN NUMERO FIR REALE DISPONIBILE", details: "Richiedere nuovi numeri tramite vidimazione RENTRI." });
@@ -236,8 +234,8 @@ export default function MNGestioneFIRPage() {
                 return;
               }
               const testFirNumber = poolNum.fir_number;
-              const company = context === "multyproget" ? "MULTY" : "NIYOL";
-              const result = await emissioneFirNgrok(company, {
+              const company = context === "multyproget" ? "multy" : "niyol";
+              const result = await emissioneFir(company, {
                 numero_fir: testFirNumber,
                 produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                 destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
@@ -245,15 +243,16 @@ export default function MNGestioneFIRPage() {
                 rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
               });
               const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+              const responseData = (result.data ?? {}) as Record<string, any>;
               setTestResult({
-                success: result.ok,
-                message: result.ok ? `✅ TEST SUPERATO (${elapsed}s)` : `❌ TEST FALLITO (${elapsed}s)`,
+                success: result.success,
+                message: result.success ? `✅ TEST SUPERATO (${elapsed}s)` : `❌ TEST FALLITO (${elapsed}s)`,
                 details: JSON.stringify(result.data, null, 2),
-                qrCode: result.data?.qr_code || result.data?.qrCodeBytes || "",
-                numeroFir: result.data?.numero_fir || result.data?.firNumber || "",
+                qrCode: responseData.qr_code || responseData.qrCodeBytes || "",
+                numeroFir: responseData.numero_fir || responseData.firNumber || "",
               });
-              if (result.ok) toast.success("Test RENTRI superato!");
-              else toast.error("Test fallito");
+              if (result.success) toast.success("Test RENTRI superato!");
+              else toast.error(`Test fallito: ${result.error ?? "verifica log tecnico"}`);
             } catch (err: any) {
               setTestResult({ success: false, message: `❌ TEST FALLITO`, details: err.message });
               toast.error("Test fallito: " + err.message);
