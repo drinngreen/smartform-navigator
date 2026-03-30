@@ -1,1 +1,1 @@
-export { FIRPoolSection } from "./FIRPoolSection.tsx";
+export * from "./FIRPoolSection.tsx";
