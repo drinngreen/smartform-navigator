@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
-import { richiestaVidimazione, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
+import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 const SOCIETA_ID = "multy";
