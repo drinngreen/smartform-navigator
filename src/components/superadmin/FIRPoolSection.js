@@ -21,7 +21,7 @@ export function FIRPoolSection({ tenant }) {
         const block = blocks.find(b => b.code === selectedBlock);
         const numIscrSito = block?.sito ? (TENANT_RENTRI[tenant]?.unitId || "") : undefined;
         const result = await richiestaVidimazione(cliente, qty, selectedBlock || undefined, numIscrSito);
-        if (result.ok && result.data?.numeri) {
+        if (result.success && (result.data)?.numeri) {
             const rawNumbers = Array.isArray(result.data.numeri) ? result.data.numeri : [];
             const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
             const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
