@@ -22,8 +22,8 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
 
   const handleRequest = async () => {
     setLoading(true);
-    const company = tenant.toUpperCase() === "MULTYPROGET" ? "MULTY" : tenant.toUpperCase();
-    const result = await richiestaVidimazioneNgrok(company, qty);
+    const cliente = (tenant.toLowerCase()) as RentriCliente;
+    const result = await richiestaVidimazione(cliente, qty);
 
     if (result.ok && result.data?.numeri) {
       const rawNumbers: string[] = Array.isArray(result.data.numeri) ? result.data.numeri : [];
