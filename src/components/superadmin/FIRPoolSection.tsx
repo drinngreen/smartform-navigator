@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
 import { richiestaVidimazione, type RentriCliente } from "@/lib/rentriVpsApi";
+import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -23,7 +24,9 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
   const handleRequest = async () => {
     setLoading(true);
     const cliente = (tenant.toLowerCase()) as RentriCliente;
-    const result = await richiestaVidimazione(cliente, qty);
+    const block = blocks.find(b => b.code === selectedBlock);
+    const numIscrSito = block?.sito ? `${TENANT_RENTRI[tenant]?.unitId || ""}` : undefined;
+    const result = await richiestaVidimazione(cliente, qty, selectedBlock || undefined, numIscrSito);
 
     if (result.success && (result.data as any)?.numeri) {
       const rawNumbers: string[] = Array.isArray((result.data as any).numeri) ? (result.data as any).numeri : [];

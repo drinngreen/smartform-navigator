@@ -1,11 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
+import { richiestaVidimazione } from "@/lib/rentriVpsApi";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { getBlocksForTenant } from "@/lib/rentriBlockCodes";
+import { getBlocksForTenant, TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 const QUANTITIES = [5, 10, 50, 100, 500];
 const FIR_NUMBER_REGEX = /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/;
 const normalizeFirNumber = (value) => value.trim().replace(/\s+/g, " ").toUpperCase();
@@ -17,9 +17,11 @@ export function FIRPoolSection({ tenant }) {
     const [lastNumbers, setLastNumbers] = useState([]);
     const handleRequest = async () => {
         setLoading(true);
-        const company = tenant.toUpperCase() === "MULTYPROGET" ? "MULTY" : tenant.toUpperCase();
-        const result = await richiestaVidimazioneNgrok(company, qty);
-        if (result.ok && result.data?.numeri) {
+        const cliente = tenant.toLowerCase();
+        const block = blocks.find(b => b.code === selectedBlock);
+        const numIscrSito = block?.sito ? (TENANT_RENTRI[tenant]?.unitId || "") : undefined;
+        const result = await richiestaVidimazione(cliente, qty, selectedBlock || undefined, numIscrSito);
+        if (result.success && (result.data)?.numeri) {
             const rawNumbers = Array.isArray(result.data.numeri) ? result.data.numeri : [];
             const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
             const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
