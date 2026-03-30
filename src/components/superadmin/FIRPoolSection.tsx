@@ -25,7 +25,7 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
     const cliente = (tenant.toLowerCase()) as RentriCliente;
     const result = await richiestaVidimazione(cliente, qty);
 
-    if (result.ok && result.data?.numeri) {
+    if (result.success && (result.data as any)?.numeri) {
       const rawNumbers: string[] = Array.isArray(result.data.numeri) ? result.data.numeri : [];
       const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
       const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
