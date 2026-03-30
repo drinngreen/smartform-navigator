@@ -45,7 +45,7 @@ export default function SuperAdminDashboard() {
   }, [user, isAdmin, isLoading, navigate]);
 
   useEffect(() => {
-    ngrokHealthCheck().then((r) => setNgrokUp(r.ok));
+    vpsHealthCheck().then((r) => setNgrokUp(r.ok));
   }, []);
 
   const handleLogout = async () => {

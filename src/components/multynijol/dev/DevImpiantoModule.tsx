@@ -459,7 +459,7 @@ function ImpiantoGestioneFIR() {
                 trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
                 rifiuto: { codice_eer: "150101", descrizione: "Test impianto", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
               });
-              setTestResult({ success: result.ok, message: result.ok ? "✅ Test superato" : "❌ Test fallito", details: JSON.stringify(result.data, null, 2) });
+              setTestResult({ success: result.success, message: result.success ? "✅ Test superato" : "❌ Test fallito", details: JSON.stringify(result.data, null, 2) });
             } catch (err: any) {
               setTestResult({ success: false, message: "❌ " + err.message });
             } finally { setIsTesting(false); }
