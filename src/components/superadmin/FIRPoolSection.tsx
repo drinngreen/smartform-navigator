@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
+import { richiestaVidimazione, type RentriCliente } from "@/lib/rentriVpsApi";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";

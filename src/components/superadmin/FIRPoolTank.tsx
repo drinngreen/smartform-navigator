@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Copy, Check, Loader2, Fuel, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { emissioneFirNgrok, firmaRicezioneNgrok } from "@/lib/rentriNgrokApi";
+import { emissioneFir, firmaRicezione, type RentriCliente } from "@/lib/rentriVpsApi";
 import { toast } from "sonner";
 
 interface PoolNumber {

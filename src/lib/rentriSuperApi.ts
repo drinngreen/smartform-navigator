@@ -1,8 +1,8 @@
 /**
- * RENTRI Super Admin API — now routes through Ngrok backend.
+ * RENTRI Super Admin API — routes through VPS proxy.
  */
 
-const NGROK_BASE = "https://hierurgical-undefinable-magdalene.ngrok-free.dev";
+import { inviaOperazioneRentri, emissioneFir, firmaRicezione, type RentriCliente } from "@/lib/rentriVpsApi";
 
 export interface RENTRILogEntry {
   id: string;
@@ -36,54 +36,85 @@ export function subscribeToLogs(fn: () => void) {
 
 export function getLogs() { return logEntries; }
 
-async function callNgrok(endpoint: string, tenant: string, body: any) {
-  const url = `${NGROK_BASE}${endpoint}`;
+async function callVps(operazione: string, tenant: string, body: any) {
+  const cliente = tenant.toLowerCase() as RentriCliente;
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      },
-      body: JSON.stringify(body),
+    const res = await inviaOperazioneRentri({
+      cliente,
+      tipo_operazione: operazione as any,
+      payload: body,
     });
-    let data: any;
-    try { data = await res.json(); } catch { data = { raw: "non-json response" }; }
-    const entry = addLog({ endpoint, tenant, status: res.status, success: data?.success ?? res.ok, response: data, request: body });
-    return { ok: data?.success ?? res.ok, status: res.status, data, logEntry: entry };
+    const entry = addLog({
+      endpoint: `[VPS] ${operazione}`,
+      tenant,
+      status: res.status,
+      success: res.success,
+      response: res.data,
+      request: body,
+    });
+    return { ok: res.success, status: res.status, data: res.data, logEntry: entry };
   } catch (err: any) {
-    const entry = addLog({ endpoint, tenant, status: 0, success: false, response: { error: err.message }, request: body });
+    const entry = addLog({
+      endpoint: `[VPS] ${operazione}`,
+      tenant,
+      status: 0,
+      success: false,
+      response: { error: err.message },
+      request: body,
+    });
     return { ok: false, status: 0, data: { error: err.message }, logEntry: entry };
   }
 }
 
 export async function healthCheck() {
   try {
-    const res = await fetch(`${NGROK_BASE}/api/rentri/health`, {
-      headers: { "ngrok-skip-browser-warning": "true" },
+    const res = await inviaOperazioneRentri({
+      cliente: "global",
+      tipo_operazione: "LISTA_BLOCCHI",
+      payload: {},
     });
-    return { ok: res.ok, status: res.status };
+    return { ok: res.success, status: res.status };
   } catch { return { ok: false, status: 0 }; }
 }
 
 export async function richiestaVidimazione(societaId: string, quantita: number) {
-  return callNgrok("/api/rentri/action/vidimazione", societaId, { company: societaId, quantity: quantita });
+  return callVps("VIDIMAZIONE", societaId, { quantita });
 }
 
 export async function firmaFirProduttore(societaId: string, firData: any) {
-  return callNgrok("/api/rentri/action/emissione", societaId, { company: societaId, payload: firData });
+  const cliente = societaId.toLowerCase() as RentriCliente;
+  const res = await emissioneFir(cliente, firData);
+  const entry = addLog({
+    endpoint: "[VPS] FIR_EMISSIONE",
+    tenant: societaId,
+    status: res.status,
+    success: res.success,
+    response: res.data,
+    request: firData,
+  });
+  return { ok: res.success, status: res.status, data: res.data, logEntry: entry };
 }
 
 export async function firmaFirDestinatario(societaId: string, firData: any) {
-  return callNgrok("/api/rentri/action/firma-ricezione", societaId, { company: societaId, payload: firData });
+  const cliente = societaId.toLowerCase() as RentriCliente;
+  const res = await firmaRicezione(cliente, firData);
+  const entry = addLog({
+    endpoint: "[VPS] FIRMA_RICEZIONE",
+    tenant: societaId,
+    status: res.status,
+    success: res.success,
+    response: res.data,
+    request: firData,
+  });
+  return { ok: res.success, status: res.status, data: res.data, logEntry: entry };
 }
 
 export async function registroCarico(societaId: string, payload: any) {
-  return callNgrok("/api/rentri/action/emissione", societaId, { company: societaId, payload });
+  return callVps("REGISTRO", societaId, { movimenti: [{ tipo: "carico", ...payload }] });
 }
 
 export async function registroScarico(societaId: string, payload: any) {
-  return callNgrok("/api/rentri/action/firma-ricezione", societaId, { company: societaId, payload });
+  return callVps("REGISTRO", societaId, { movimenti: [{ tipo: "scarico", ...payload }] });
 }
 
 export function downloadCSV(numbers: string[], filename: string) {
