@@ -343,7 +343,7 @@ function ImpiantoGestioneFIR() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazioneNgrok("MULTY", requestQty);
+      const result = await richiestaVidimazione("multy" as RentriCliente, requestQty);
       const raw = result.data || {};
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
