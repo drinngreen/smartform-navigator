@@ -56,6 +56,7 @@ interface RentriErrorResponse {
 }
 
 export interface RentriChiusuraPayload {
+  societaId?: string;
   numero_fir: string;
   data_arrivo?: string;
   destinatario_denominazione?: string;
@@ -85,6 +86,16 @@ function parseIndirizzo(raw: string) {
     };
   }
   return { via: raw, cap: "", comune: "", provincia: "", nazione_id: "IT" };
+}
+
+function parseLottoReference(raw: string): { codiceBlocco: string; progressivo: string } | null {
+  const normalized = raw.trim().replace(/\s+/g, " ").toUpperCase();
+  const match = normalized.match(/^([A-Z]{5})\s*(\d{1,6})(?:\s+[A-Z]{2})?$/);
+  if (!match) return null;
+  return {
+    codiceBlocco: match[1],
+    progressivo: match[2].padStart(6, "0"),
+  };
 }
 
 // ─── API Functions ───────────────────────────────────────────
@@ -159,7 +170,12 @@ export async function getRentriPdf(
   firId: string
 ): Promise<{ pdfBase64?: string; pdfUrl?: string; qrCode?: string; qrUrl?: string; [key: string]: unknown }> {
   const cliente = (company.toLowerCase()) as RentriCliente;
-  const res = await scaricaPdfLotto(cliente, firId, "1");
+  const lottoRef = parseLottoReference(firId);
+  if (!lottoRef) {
+    throw new Error("Numero FIR non valido per il recupero PDF/QR");
+  }
+
+  const res = await scaricaPdfLotto(cliente, lottoRef.codiceBlocco, lottoRef.progressivo);
 
   const root = (res.data as any) || {};
   const normalized = {
@@ -206,7 +222,8 @@ export async function chiudiFirRentri(
     },
   };
 
-  const res = await firmaRicezione("multy" as RentriCliente, firPayload);
+  const cliente = ((payload.societaId || "global").toLowerCase()) as RentriCliente;
+  const res = await firmaRicezione(cliente, firPayload);
 
   if (!res.success) {
     const errMsg = res.error || `Errore server (${res.status})`;

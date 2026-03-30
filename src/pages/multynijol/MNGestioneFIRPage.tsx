@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 50;
+const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 type PoolFilter = "all" | "available" | "reserved" | "consumed";
 type ProfileInfo = { user_id: string; nome: string; cognome: string };
 const validContexts = ["multyproget", "niyol"];
@@ -98,7 +99,7 @@ export default function MNGestioneFIRPage() {
     const numbers = bulkInput.split(/[,\n\r]+/).map(n => n.trim()).filter(n => n.length > 0);
     if (numbers.length === 0) { toast.error("Inserisci almeno un numero FIR"); return; }
     const unique = [...new Set(numbers)];
-    const rows = unique.map(n => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: societaId }));
+    const rows = unique.map(n => ({ fir_number: n, user_id: SHARED_POOL_USER_ID, status: "available" as const, societa_id: societaId }));
     supabase.from("fir_number_pool").insert(rows).then(({ error }) => {
       if (error) { toast.error("Errore: " + error.message); return; }
       queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
@@ -127,7 +128,7 @@ export default function MNGestioneFIRPage() {
           (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
         );
         if (realNumbers.length > 0) {
-          const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: societaId }));
+          const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: SHARED_POOL_USER_ID, status: "available" as const, societa_id: societaId }));
           const { error } = await supabase.from("fir_number_pool").insert(rows);
           if (error) throw error;
           queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
@@ -153,7 +154,7 @@ export default function MNGestioneFIRPage() {
     setIsAssigning(true);
     try {
       const { data: available, error: fetchErr } = await supabase.from("fir_number_pool")
-        .select("id").eq("societa_id", societaId).eq("status", "available").limit(assignQty);
+        .select("id").eq("societa_id", societaId).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
       if (fetchErr) throw fetchErr;
       if (!available || available.length === 0) { toast.error("Nessun numero disponibile"); setIsAssigning(false); return; }
       const ids = available.map(r => r.id);

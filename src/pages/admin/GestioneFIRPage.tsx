@@ -9,6 +9,7 @@ import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
+const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 type PoolFilter = "all" | "available" | "reserved" | "consumed";
 type ProfileInfo = { user_id: string; nome: string; cognome: string };
 
@@ -59,7 +60,9 @@ export default function GestioneFIRPage() {
           .eq("societa_id", "global")
           .range(page * batchSize, (page + 1) * batchSize - 1);
         if (!data || data.length === 0) break;
-        data.forEach((r: any) => distinctUsers.add(r.user_id));
+        data.forEach((r: any) => {
+          if (r.user_id && r.user_id !== SHARED_POOL_USER_ID) distinctUsers.add(r.user_id);
+        });
         if (data.length < batchSize) break;
         page++;
       }
@@ -144,6 +147,7 @@ export default function GestioneFIRPage() {
         .select("id")
         .eq("societa_id", "global")
         .eq("status", "available")
+        .eq("user_id", SHARED_POOL_USER_ID)
         .limit(assignQty);
 
       if (fetchErr) throw fetchErr;
@@ -179,7 +183,7 @@ export default function GestioneFIRPage() {
     mutationFn: async (numbers: string[]) => {
       const rows = numbers.map((n) => ({
         fir_number: n.trim(),
-        user_id: user!.id,
+        user_id: SHARED_POOL_USER_ID,
         status: "available" as const,
         societa_id: "global",
       }));
@@ -240,7 +244,7 @@ export default function GestioneFIRPage() {
         if (realNumbers.length > 0) {
           const rows = realNumbers.map((n: string) => ({
             fir_number: n,
-            user_id: user!.id,
+            user_id: SHARED_POOL_USER_ID,
             status: "available" as const,
             societa_id: "global",
           }));

@@ -92,6 +92,12 @@ interface RouteInfo {
   path: string;
 }
 
+function formatProgressivo(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  return /^\d+$/.test(raw) ? raw.padStart(6, "0") : raw;
+}
+
 function resolveRoute(
   tipo: string,
   cliente: string,
@@ -101,7 +107,7 @@ function resolveRoute(
   const registryId = REGISTRY_ID_MAP[norm(cliente)] ?? "";
   const blocks = BLOCK_CODES[norm(cliente)] ?? [];
   const codiceBlocco = String(payload.codice_blocco ?? payload.blocco ?? blocks[0]?.code ?? "");
-  const progressivo = String(payload.progressivo ?? "");
+  const progressivo = formatProgressivo(payload.progressivo);
   const uuidFir = String(payload.uuid_fir ?? "");
   const txnId = String(payload.transazione_id ?? "");
   const numeroFir = String(payload.numero_fir ?? "");

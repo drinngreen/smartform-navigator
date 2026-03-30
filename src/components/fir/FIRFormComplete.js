@@ -1,16 +1,4 @@
-import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Lock, Search, Download } from "lucide-react";
-import { useFIRForms, mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
-import { useFIRStore } from "@/stores/firStore";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
-import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
-import { generateFIRPdf } from "@/lib/firPdfExport";
-import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
-import { GLOBAL_RECO, DESTINATARI } from "@/data/anagrafiche";
+export { FIRFormComplete as default, FIRFormComplete } from "./FIRFormComplete.tsx";
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON = {
     "1. Produttore": { border: "border-neon-cyan/40", text: "text-neon-cyan", glow: "shadow-[0_0_12px_hsl(187_92%_43%/0.3)]", bg: "bg-neon-cyan/5" },
