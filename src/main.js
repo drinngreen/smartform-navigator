@@ -1,6 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import App from "./App.tsx";
 import "./index.css";
 import { preloadMenuIcons } from "./lib/preloadIcons";
 import { ErrorBoundary } from "./components/ErrorBoundary";
