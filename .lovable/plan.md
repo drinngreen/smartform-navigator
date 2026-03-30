@@ -1,47 +1,56 @@
 
+Obiettivo: correggere il flusso di vidimazione FIR perché oggi alcune schermate trattano come errore una risposta valida asincrona del backend.
 
-# Piano: Integrazione RENTRI Completa nel Modulo Alternativo FIR
+1. Diagnosi confermata
+- Il problema non è più la VPS: nei log recenti `rentri-vps-proxy` risponde `status=200` sulla `VIDIMAZIONE`.
+- Il problema attuale è applicativo: la UI si aspetta `data.numeri`, ma il backend può restituire solo `{"transazione_id":"..."}`.
+- Quindi la richiesta parte correttamente, ma il frontend conclude erroneamente “Nessun numero trovato”.
 
-## Problemi Identificati
+2. Correzione da implementare
+- Creare un helper unico per la vidimazione asincrona in `src/lib/rentriVpsApi.ts` o `src/services/rentriApi.ts`.
+- Flusso del nuovo helper:
+  1. leggere `LISTA_BLOCCHI` per il blocco selezionato e salvare `numero_fir_vidimati` corrente
+  2. inviare `VIDIMAZIONE`
+  3. se arrivano numeri subito, usarli
+  4. se arriva solo `transazione_id`, trattare la risposta come “richiesta accettata”
+  5. recuperare i nuovi FIR leggendo `LOTTO` sul blocco selezionato, partendo dal progressivo successivo al contatore precedente
+  6. ripetere per la quantità richiesta, con retry breve e tolleranza ai 404 iniziali
+  7. restituire un risultato uniforme: `numeri`, `transazione_id`, `pending/partial`, eventuali errori
 
-1. **Mapping tenant errato**: `getRentriCliente()` restituisce `"multy"` per tutti i percorsi `/mn/` incluso niyol se il path non contiene esplicitamente "niyol" — potenziale bug su route `/mn/admin/:context/modulo-alternativo` dove il context è un parametro
-2. **Preset produttore incompleti**: Mancano NIYOL come preset e i preset destinatario/trasportatore della versione principale
-3. **Logica firma mancante**: Il modulo alternativo non distingue tra:
-   - Produttore = Global/Multy/Niyol → firma come **produttore E trasportatore**
-   - Produttore diverso (esterno) → firma come **solo trasportatore**
-4. **Preset a tendina assenti**: La versione principale (FIRFormComplete) ha preset ricercabili per ~200 destinatari/impianti — il modulo alternativo li ha ma senza la stessa ricchezza di informazioni e senza il trasportatore come preset
+3. Punti del codice da aggiornare
+- `src/components/superadmin/FIRPoolSection.tsx`
+- `src/pages/admin/GestioneFIRPage.tsx`
+- `src/pages/multynijol/MNGestioneFIRPage.tsx`
+- `src/components/multynijol/dev/DevImpiantoModule.tsx`
+- eventuali file `.js` gemelli che replicano la stessa logica
+- opzionalmente `src/components/superadmin/RENTRIActionsPanel.tsx` per mostrare anche lì l’esito corretto della vidimazione asincrona
 
-## Modifiche Previste
+4. Hardening importante
+- Uniformare il passaggio di `num_iscr_sito`: alcuni punti passano il codice sito corto (`TO0001`), altri l’`unitId` completo. Va centralizzato per evitare richieste incoerenti.
+- Aggiungere fallback nel proxy `rentri-vps-proxy` così un valore corto non sovrascriva l’`unitId` corretto.
+- Centralizzare anche l’estrazione/normalizzazione dei numeri FIR, invece di duplicarla in più schermate.
 
-### File 1: `src/data/anagrafiche.ts`
-- Aggiungere export `NIYOL` come `Soggetto` con CF `09879800010` e indirizzo corretto
+5. Comportamento UI atteso dopo la fix
+- Se la vidimazione è asincrona, mostrare stato tipo: “Richiesta inviata, recupero numeri in corso…”
+- Se arrivano tutti i numeri: salvarli nel serbatoio e mostrare successo
+- Se ne arrivano solo alcuni: salvare quelli validi e mostrare avviso parziale
+- Se entro il timeout non arrivano numeri: mostrare messaggio chiaro con `transazione_id` e blocco/progressivo atteso, non “Nessun numero trovato”
 
-### File 2: `src/components/fir/FIRAlternativeForm.tsx`
-- **Tenant detection migliorata**: usare `useParams()` per leggere `:context` dalle route admin MN, oltre al pathname
-- **Preset produttore dinamici**: mostrare solo il preset del tenant corrente come default (Global→GLOBAL_RECO, Multy→MULTYPROGET, Niyol→NIYOL) + opzione "Altro produttore" per inserimento libero
-- **Logica firma automatica**: aggiungere stato `isOwnProduction` che si attiva quando il produttore selezionato corrisponde al tenant corrente. Passare questa info a `FIRRentriActions`
-- **Tutti i preset destinatario**: mantenere il selettore ricercabile esistente con l'intera anagrafica DESTINATARI (~200 impianti)
+6. Nessuna modifica backend dati
+- Non servono nuove tabelle o cambi schema database
+- Non servono nuove policy
+- Non servono nuovi secret
 
-### File 3: `src/components/fir/FIRRentriActions.tsx`
-- Aggiungere prop `firmaComeProduttore: boolean`
-- Quando `firmaComeProduttore = true`: emissione FIR firmata come produttore+trasportatore (il payload include i flag `firma_produttore: true, firma_trasportatore: true`)
-- Quando `firmaComeProduttore = false`: emissione FIR firmata solo come trasportatore (`firma_trasportatore: true, firma_produttore: false`)
-- Il componente mostra un badge visivo "FIRMA: PRODUTTORE + TRASPORTATORE" o "FIRMA: SOLO TRASPORTATORE" per chiarezza operativa
+Dettagli tecnici
+- Base tecnica già presente:
+  - `richiestaVidimazione(...)`
+  - `listaBlocchi(...)`
+  - `leggiLotto(...)`
+- Evidenza già nel repo:
+  - `rentri-test/full-cycle-others.ts` usa esattamente questo pattern: legge il conteggio corrente, invia la vidimazione, poi recupera il FIR con `LOTTO`
+- Questo indica che il fix corretto è orchestrare il flusso asincrono, non cambiare infrastruttura.
 
-### File 4: `src/pages/multynijol/MNAppModuloAlternativoPage.tsx`
-- Passare il context corretto al form usando `useParams()` per le route admin
-
-## Logica firma riassunta
-
-```text
-Produttore selezionato == tenant corrente?
-  SÌ → firma_produttore: true + firma_trasportatore: true
-  NO → firma_produttore: false + firma_trasportatore: true
-```
-
-## File coinvolti
-1. `src/data/anagrafiche.ts` — aggiunta NIYOL
-2. `src/components/fir/FIRAlternativeForm.tsx` — preset dinamici + logica firma
-3. `src/components/fir/FIRRentriActions.tsx` — prop firma + badge visivo
-4. `src/pages/multynijol/MNAppModuloAlternativoPage.tsx` — context routing
-
+Risultato finale previsto
+- La richiesta dal “serbatoio” Global non fallirà più quando il backend restituisce solo `transazione_id`
+- I nuovi FIR verranno recuperati automaticamente dal blocco giusto e inseriti nel pool
+- Tutte le schermate FIR useranno lo stesso comportamento coerente
