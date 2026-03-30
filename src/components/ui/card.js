@@ -1,12 +1,1 @@
-import { jsx as _jsx } from "react/jsx-runtime";
-import React from "react";
-export const Card = React.forwardRef(({ children, className }, ref) => (_jsx("div", { ref: ref, className: `card ${className ?? ""}`, children: children })));
-Card.displayName = "Card";
-export const CardHeader = React.forwardRef(({ children, className }, ref) => (_jsx("div", { ref: ref, className: `p-4 border-b border-slate-800 ${className ?? ""}`, children: children })));
-CardHeader.displayName = "CardHeader";
-export const CardTitle = React.forwardRef(({ children, className }, ref) => (_jsx("div", { ref: ref, className: `text-lg font-semibold ${className ?? ""}`, children: children })));
-CardTitle.displayName = "CardTitle";
-export const CardDescription = React.forwardRef(({ children, className }, ref) => (_jsx("div", { ref: ref, className: `text-sm text-slate-400 ${className ?? ""}`, children: children })));
-CardDescription.displayName = "CardDescription";
-export const CardContent = React.forwardRef(({ children, className }, ref) => (_jsx("div", { ref: ref, className: `p-4 ${className ?? ""}`, children: children })));
-CardContent.displayName = "CardContent";
+export * from "./card.tsx";
