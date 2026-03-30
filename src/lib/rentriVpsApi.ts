@@ -163,25 +163,24 @@ export async function vidimaFIRAsync(
     return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: false };
   }
 
-  if (immediati.length > 0) {
-    return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: immediati.length < quantita };
-  }
-
-  // Step 4: Async — poll LOTTO for new numbers
+  // Step 4: Async — poll LOTTO for remaining numbers (even if we got some immediate ones)
   if (!transazioneId && !vidRes.success) {
     // Real error, not async
+    if (immediati.length > 0) {
+      return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: true };
+    }
     return { numeri: [], transazione_id: undefined, pending: false, partial: false };
   }
 
   onProgress?.("Richiesta accettata, recupero numeri in corso…");
-  const numeri: string[] = [];
-  const maxRetries = 15;
+  const numeri: string[] = [...immediati]; // Start with any immediate numbers
+  const maxRetries = 20;
 
   for (let attempt = 0; attempt < maxRetries && numeri.length < quantita; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 2500));
     }
-    onProgress?.(`Recupero numeri… (tentativo ${attempt + 1}/${maxRetries})`);
+    onProgress?.(`Recupero numeri… ${numeri.length}/${quantita} (tentativo ${attempt + 1}/${maxRetries})`);
 
     for (let p = startProgressivo + numeri.length + 1; p <= startProgressivo + quantita; p++) {
       if (numeri.length >= quantita) break;
