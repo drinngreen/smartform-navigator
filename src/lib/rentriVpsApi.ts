@@ -118,10 +118,60 @@ export interface VidimazioneAsyncResult {
   partial: boolean;
 }
 
+const FIR_NUMBER_REGEX = /^[A-Z]{5}\s+\d{6}\s+[A-Z]{2}$/;
+
 function formatProgressivo(value: number | string): string {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
   return /^\d+$/.test(raw) ? raw.padStart(6, "0") : raw;
+}
+
+function normalizeFirNumber(value: unknown): string {
+  const normalized = String(value ?? "").trim().replace(/\s+/g, " ").toUpperCase();
+  return FIR_NUMBER_REGEX.test(normalized) ? normalized : "";
+}
+
+function readBlockProgressivo(blocchiRes: RentriVpsResponse, codiceBlocco: string): number {
+  const payload = blocchiRes.data as any;
+  const blocchi = Array.isArray(payload?.blocchi)
+    ? payload.blocchi
+    : Array.isArray(payload)
+      ? payload
+      : [];
+
+  const blocco = blocchi.find((b: any) => b?.codice_blocco === codiceBlocco);
+  const progressivo = Number(blocco?.numero_fir_vidimati ?? blocco?.progressivo ?? 0);
+  return Number.isFinite(progressivo) ? progressivo : 0;
+}
+
+function collectFirNumbers(value: unknown, found = new Set<string>()): Set<string> {
+  if (value == null) return found;
+
+  if (typeof value === "string") {
+    const normalized = normalizeFirNumber(value);
+    if (normalized) found.add(normalized);
+    return found;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectFirNumbers(item, found);
+    return found;
+  }
+
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+
+    for (const key of ["numero_fir", "numeroFir", "firNumber", "numero"]) {
+      const normalized = normalizeFirNumber(record[key]);
+      if (normalized) found.add(normalized);
+    }
+
+    for (const nested of Object.values(record)) {
+      collectFirNumbers(nested, found);
+    }
+  }
+
+  return found;
 }
 
 /**
@@ -129,7 +179,7 @@ function formatProgressivo(value: number | string): string {
  * 1. Read LISTA_BLOCCHI to get current count
  * 2. Send VIDIMAZIONE request
  * 3. If numbers returned immediately → use them
- * 4. Otherwise poll LOTTO for new numbers
+ * 4. Otherwise poll transaction + LOTTO until RENTRI really exposes all requested numbers
  */
 export async function vidimaFIRAsync(
   cliente: RentriCliente,
@@ -138,78 +188,112 @@ export async function vidimaFIRAsync(
   numIscrSito?: string,
   onProgress?: (msg: string) => void,
 ): Promise<VidimazioneAsyncResult> {
-  // Step 1: Get current block state
   onProgress?.("Lettura stato blocco…");
   const blocchiRes = await listaBlocchi(cliente);
-  let startProgressivo = 0;
+  const startProgressivo = readBlockProgressivo(blocchiRes, codiceBlocco);
 
-  if (blocchiRes.success && Array.isArray((blocchiRes.data as any)?.blocchi)) {
-    const blocchi = (blocchiRes.data as any).blocchi as any[];
-    const blocco = blocchi.find((b: any) => b.codice_blocco === codiceBlocco);
-    if (blocco) {
-      startProgressivo = Number(blocco.numero_fir_vidimati || blocco.progressivo || 0);
-    }
-  } else if (blocchiRes.success && Array.isArray(blocchiRes.data)) {
-    const blocco = (blocchiRes.data as any[]).find((b: any) => b.codice_blocco === codiceBlocco);
-    if (blocco) {
-      startProgressivo = Number(blocco.numero_fir_vidimati || blocco.progressivo || 0);
-    }
-  }
-
-  // Step 2: Send VIDIMAZIONE
   onProgress?.("Invio richiesta vidimazione…");
   const vidRes = await richiestaVidimazione(cliente, quantita, codiceBlocco, numIscrSito);
   const vidData = (vidRes.data as any) || {};
-
-  // Step 3: Check for immediate numbers
-  const immediati = extractFirNumbers(vidData);
   const transazioneId = vidData.transazione_id || vidData.transazioneId || vidData.id_transazione || undefined;
 
-  if (immediati.length >= quantita) {
-    return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: false };
+  const numeri = extractFirNumbers(vidData);
+  const knownNumbers = new Set(numeri);
+  const retrievedProgressivi = new Set<number>();
+  let maxProgressivoToRead = startProgressivo;
+
+  if (numeri.length >= quantita) {
+    return {
+      numeri: numeri.slice(0, quantita),
+      transazione_id: transazioneId,
+      pending: false,
+      partial: false,
+    };
   }
 
-  // Step 4: Async — poll LOTTO for remaining numbers (even if we got some immediate ones)
-  if (!transazioneId && !vidRes.success) {
-    // Real error, not async
-    if (immediati.length > 0) {
-      return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: true };
-    }
+  if (!transazioneId && !vidRes.success && numeri.length === 0) {
     return { numeri: [], transazione_id: undefined, pending: false, partial: false };
   }
 
   onProgress?.("Richiesta accettata, recupero numeri in corso…");
-  const numeri: string[] = [...immediati]; // Start with any immediate numbers
-  const maxRetries = 60; // RENTRI può rendere disponibili i numeri con diversi minuti di ritardo
+  const maxRetries = 60;
 
   for (let attempt = 0; attempt < maxRetries && numeri.length < quantita; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 4000));
     }
-    onProgress?.(`Recupero numeri… ${numeri.length}/${quantita} (tentativo ${attempt + 1}/${maxRetries})`);
 
-    for (let p = startProgressivo + numeri.length + 1; p <= startProgressivo + quantita; p++) {
-      if (numeri.length >= quantita) break;
+    try {
+      const blocchiPollRes = await listaBlocchi(cliente);
+      const currentProgressivo = readBlockProgressivo(blocchiPollRes, codiceBlocco);
+      maxProgressivoToRead = Math.max(maxProgressivoToRead, currentProgressivo);
+    } catch {
+      // keep last known progressivo window
+    }
+
+    if (transazioneId) {
       try {
-        const lottoRes = await leggiLotto(cliente, codiceBlocco, formatProgressivo(p));
-        if (lottoRes.success) {
-          const lottoData = (lottoRes.data as any) || {};
-          const firNum = lottoData.numero_fir || lottoData.numero || lottoData.firNumber || "";
-          if (firNum && typeof firNum === "string" && firNum.trim().length > 0) {
-            const normalized = firNum.trim().replace(/\s+/g, " ").toUpperCase();
-            if (!numeri.includes(normalized)) {
-              numeri.push(normalized);
+        const txRes = await statoTransazioneFir(cliente, transazioneId);
+        if (txRes.success) {
+          for (const firNum of extractFirNumbers(txRes.data)) {
+            if (!knownNumbers.has(firNum)) {
+              knownNumbers.add(firNum);
+              numeri.push(firNum);
             }
+          }
+
+          const txData = (txRes.data as any) || {};
+          const txProgressivo = Number(
+            txData.numero_fir_vidimati ??
+            txData.progressivo ??
+            txData.ultimo_progressivo ??
+            txData.progressivo_finale ??
+            txData.max_progressivo ??
+            0,
+          );
+
+          if (Number.isFinite(txProgressivo) && txProgressivo > 0) {
+            maxProgressivoToRead = Math.max(maxProgressivoToRead, txProgressivo);
           }
         }
       } catch {
-        // LOTTO not ready yet, will retry
+        // transaction endpoint may lag behind LOTTO exposure
+      }
+    }
+
+    const releasedCount = Math.max(0, maxProgressivoToRead - startProgressivo);
+    const cappedMaxProgressivo = Math.min(startProgressivo + quantita, maxProgressivoToRead);
+
+    onProgress?.(
+      `Recupero numeri… ${numeri.length}/${quantita} (rilasciati ${Math.min(releasedCount, quantita)}/${quantita}, tentativo ${attempt + 1}/${maxRetries})`,
+    );
+
+    for (let p = startProgressivo + 1; p <= cappedMaxProgressivo && numeri.length < quantita; p++) {
+      if (retrievedProgressivi.has(p)) continue;
+
+      try {
+        const lottoRes = await leggiLotto(cliente, codiceBlocco, formatProgressivo(p));
+        if (!lottoRes.success) continue;
+
+        const lottoNumbers = extractFirNumbers(lottoRes.data);
+        if (lottoNumbers.length === 0) continue;
+
+        retrievedProgressivi.add(p);
+
+        for (const firNum of lottoNumbers) {
+          if (!knownNumbers.has(firNum)) {
+            knownNumbers.add(firNum);
+            numeri.push(firNum);
+          }
+        }
+      } catch {
+        // specific progressivo not ready yet, retry on next cycle
       }
     }
   }
 
   return {
-    numeri,
+    numeri: numeri.slice(0, quantita),
     transazione_id: transazioneId,
     pending: numeri.length === 0,
     partial: numeri.length > 0 && numeri.length < quantita,
@@ -217,17 +301,6 @@ export async function vidimaFIRAsync(
 }
 
 /** Extract FIR numbers from any response shape */
-function extractFirNumbers(data: any): string[] {
-  if (!data || typeof data !== "object") return [];
-  for (const key of ["numeri", "firNumbers", "numbers", "formulari"]) {
-    if (Array.isArray(data[key])) return data[key].map((n: any) => String(n));
-    if (data.data && Array.isArray(data.data[key])) return data.data[key].map((n: any) => String(n));
-  }
-  if (typeof data.numero === "string") return [data.numero];
-  if (typeof data.firNumber === "string") return [data.firNumber];
-  // Deep search for string arrays
-  for (const v of Object.values(data)) {
-    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v as string[];
-  }
-  return [];
+function extractFirNumbers(data: unknown): string[] {
+  return Array.from(collectFirNumbers(data));
 }
