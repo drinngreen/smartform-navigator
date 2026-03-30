@@ -344,7 +344,7 @@ function ImpiantoGestioneFIR() {
     setIsRequesting(true);
     try {
       const result = await richiestaVidimazione("multy" as RentriCliente, requestQty);
-      const raw = result.data || {};
+      const raw = (result.data as any) || {};
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
