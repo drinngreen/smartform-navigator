@@ -108,3 +108,121 @@ export function statoTransazioneFir(cliente: RentriCliente, transazioneId: strin
 export function firmaRicezione(cliente: RentriCliente, firPayload: Record<string, unknown>) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "FIRMA_RICEZIONE", payload: firPayload });
 }
+
+/* ── Async Vidimazione orchestrator ── */
+
+export interface VidimazioneAsyncResult {
+  numeri: string[];
+  transazione_id?: string;
+  pending: boolean;
+  partial: boolean;
+}
+
+/**
+ * Orchestrates the full async vidimazione flow:
+ * 1. Read LISTA_BLOCCHI to get current count
+ * 2. Send VIDIMAZIONE request
+ * 3. If numbers returned immediately → use them
+ * 4. Otherwise poll LOTTO for new numbers
+ */
+export async function vidimaFIRAsync(
+  cliente: RentriCliente,
+  quantita: number,
+  codiceBlocco: string,
+  numIscrSito?: string,
+  onProgress?: (msg: string) => void,
+): Promise<VidimazioneAsyncResult> {
+  // Step 1: Get current block state
+  onProgress?.("Lettura stato blocco…");
+  const blocchiRes = await listaBlocchi(cliente);
+  let startProgressivo = 0;
+
+  if (blocchiRes.success && Array.isArray((blocchiRes.data as any)?.blocchi)) {
+    const blocchi = (blocchiRes.data as any).blocchi as any[];
+    const blocco = blocchi.find((b: any) => b.codice_blocco === codiceBlocco);
+    if (blocco) {
+      startProgressivo = Number(blocco.numero_fir_vidimati || blocco.progressivo || 0);
+    }
+  } else if (blocchiRes.success && Array.isArray(blocchiRes.data)) {
+    const blocco = (blocchiRes.data as any[]).find((b: any) => b.codice_blocco === codiceBlocco);
+    if (blocco) {
+      startProgressivo = Number(blocco.numero_fir_vidimati || blocco.progressivo || 0);
+    }
+  }
+
+  // Step 2: Send VIDIMAZIONE
+  onProgress?.("Invio richiesta vidimazione…");
+  const vidRes = await richiestaVidimazione(cliente, quantita, codiceBlocco, numIscrSito);
+  const vidData = (vidRes.data as any) || {};
+
+  // Step 3: Check for immediate numbers
+  const immediati = extractFirNumbers(vidData);
+  const transazioneId = vidData.transazione_id || vidData.transazioneId || vidData.id_transazione || undefined;
+
+  if (immediati.length >= quantita) {
+    return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: false };
+  }
+
+  if (immediati.length > 0) {
+    return { numeri: immediati, transazione_id: transazioneId, pending: false, partial: immediati.length < quantita };
+  }
+
+  // Step 4: Async — poll LOTTO for new numbers
+  if (!transazioneId && !vidRes.success) {
+    // Real error, not async
+    return { numeri: [], transazione_id: undefined, pending: false, partial: false };
+  }
+
+  onProgress?.("Richiesta accettata, recupero numeri in corso…");
+  const numeri: string[] = [];
+  const maxRetries = 15;
+
+  for (let attempt = 0; attempt < maxRetries && numeri.length < quantita; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    onProgress?.(`Recupero numeri… (tentativo ${attempt + 1}/${maxRetries})`);
+
+    for (let p = startProgressivo + numeri.length + 1; p <= startProgressivo + quantita; p++) {
+      if (numeri.length >= quantita) break;
+      try {
+        const lottoRes = await leggiLotto(cliente, codiceBlocco, p);
+        if (lottoRes.success) {
+          const lottoData = (lottoRes.data as any) || {};
+          const firNum = lottoData.numero_fir || lottoData.numero || lottoData.firNumber || "";
+          if (firNum && typeof firNum === "string" && firNum.trim().length > 0) {
+            const normalized = firNum.trim().replace(/\s+/g, " ").toUpperCase();
+            if (!numeri.includes(normalized)) {
+              numeri.push(normalized);
+            }
+          }
+        }
+      } catch {
+        // LOTTO not ready yet, will retry
+      }
+    }
+  }
+
+  return {
+    numeri,
+    transazione_id: transazioneId,
+    pending: numeri.length === 0,
+    partial: numeri.length > 0 && numeri.length < quantita,
+  };
+}
+
+/** Extract FIR numbers from any response shape */
+function extractFirNumbers(data: any): string[] {
+  if (!data || typeof data !== "object") return [];
+  for (const key of ["numeri", "firNumbers", "numbers", "formulari"]) {
+    if (Array.isArray(data[key])) return data[key].map((n: any) => String(n));
+    if (data.data && Array.isArray(data.data[key])) return data.data[key].map((n: any) => String(n));
+  }
+  if (typeof data.numero === "string") return [data.numero];
+  if (typeof data.firNumber === "string") return [data.firNumber];
+  // Deep search for string arrays
+  for (const v of Object.values(data)) {
+    if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v as string[];
+  }
+  return [];
+}

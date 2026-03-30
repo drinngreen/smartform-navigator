@@ -4,7 +4,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiestaVidimazione, emissioneFir } from "@/lib/rentriVpsApi";
+import { vidimaFIRAsync, emissioneFir } from "@/lib/rentriVpsApi";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users } from "lucide-react";
 
 const PAGE_SIZE = 50;
@@ -222,51 +223,40 @@ export default function GestioneFIRPage() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazione("global", requestQty);
-      console.log("[RENTRI VIDIMAZIONE] Full result:", JSON.stringify(result));
-      console.log("[RENTRI VIDIMAZIONE] result.success:", result.success, "result.data:", JSON.stringify(result.data));
-      
-      // Parse numbers from ANY response shape, regardless of result.ok
-      const raw = (result.data ?? {}) as Record<string, any>;
-      let numeri: string[] = [];
-      for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
-        if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
-        if (raw.data && Array.isArray(raw.data[key])) { numeri = raw.data[key]; break; }
-      }
-      if (numeri.length === 0) {
-        const findStrArr = (obj: any): string[] => {
-          if (!obj || typeof obj !== 'object') return [];
-          for (const v of Object.values(obj)) {
-            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v as string[];
-            const sub = findStrArr(v);
-            if (sub.length > 0) return sub;
+      const cfg = getTenantConfig("global");
+      const blockCode = cfg?.primaryBlock || "FMGWB";
+      const numIscrSito = cfg?.unitId;
+
+      const result = await vidimaFIRAsync("global", requestQty, blockCode, numIscrSito, (msg) => {
+        toast.info(msg, { id: "vidimazione-progress" });
+      });
+
+      console.log("[RENTRI VIDIMAZIONE] Async result:", JSON.stringify(result));
+
+      if (result.numeri.length > 0) {
+        const realNumbers = result.numeri.filter(
+          (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
+        );
+        if (realNumbers.length > 0) {
+          const rows = realNumbers.map((n: string) => ({
+            fir_number: n,
+            user_id: user!.id,
+            status: "available" as const,
+            societa_id: "global",
+          }));
+          const { error } = await supabase.from("fir_number_pool").insert(rows);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+          toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+          if (result.partial) {
+            toast.warning(`Ricevuti solo ${realNumbers.length}/${requestQty} numeri (parziale)`);
           }
-          return [];
-        };
-        numeri = findStrArr(raw);
-      }
-      if (numeri.length === 0 && typeof raw.numero === 'string') numeri = [raw.numero];
-      if (numeri.length === 0 && typeof raw.firNumber === 'string') numeri = [raw.firNumber];
-      
-      console.log("[RENTRI VIDIMAZIONE] Extracted numeri:", numeri);
-      const realNumbers = numeri.filter(
-        (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
-      );
-      if (realNumbers.length > 0) {
-        const rows = realNumbers.map((n: string) => ({
-          fir_number: n,
-          user_id: user!.id,
-          status: "available" as const,
-          societa_id: "global",
-        }));
-        const { error } = await supabase.from("fir_number_pool").insert(rows);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
-        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+        }
+      } else if (result.pending) {
+        toast.warning(`Richiesta accettata (transazione: ${result.transazione_id || "N/A"}) ma i numeri non sono ancora pronti. Riprova tra qualche minuto.`);
       } else {
-        console.warn("[RENTRI VIDIMAZIONE] No numbers found. Full raw:", JSON.stringify(raw));
-        toast.error(`Nessun numero trovato. Risposta backend: ${JSON.stringify(raw).slice(0, 200)}`);
+        toast.error("Nessun numero ricevuto dalla vidimazione");
       }
     } catch (err: any) {
       toast.error(`Errore richiesta RENTRI: ${err.message}`);

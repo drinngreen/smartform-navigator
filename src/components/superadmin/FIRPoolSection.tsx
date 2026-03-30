@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazione, type RentriCliente } from "@/lib/rentriVpsApi";
+import { vidimaFIRAsync, type RentriCliente } from "@/lib/rentriVpsApi";
 import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
@@ -24,47 +24,48 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
   const handleRequest = async () => {
     setLoading(true);
     const cliente = (tenant.toLowerCase()) as RentriCliente;
-    const block = blocks.find(b => b.code === selectedBlock);
-    const numIscrSito = block?.sito ? `${TENANT_RENTRI[tenant]?.unitId || ""}` : undefined;
-    const result = await richiestaVidimazione(cliente, qty, selectedBlock || undefined, numIscrSito);
+    const numIscrSito = TENANT_RENTRI[tenant]?.unitId || undefined;
 
-    if (result.success && (result.data as any)?.numeri) {
-      const rawNumbers: string[] = Array.isArray((result.data as any).numeri) ? (result.data as any).numeri : [];
-      const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
-      const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
-      const invalidCount = normalized.length - validNumbers.length;
+    try {
+      const result = await vidimaFIRAsync(cliente, qty, selectedBlock, numIscrSito, (msg) => {
+        toast.info(msg, { id: "vidimazione-progress" });
+      });
 
-      setLastNumbers(validNumbers);
+      if (result.numeri.length > 0) {
+        const normalized = result.numeri.map((n) => normalizeFirNumber(String(n)));
+        const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
+        const invalidCount = normalized.length - validNumbers.length;
+        setLastNumbers(validNumbers);
 
-      if (validNumbers.length === 0) {
-        toast.error("Nessun numero FIR valido ricevuto dalla vidimazione");
-        if (invalidCount > 0) {
-          toast.warning(`${invalidCount} numeri scartati per formato non valido`);
+        if (validNumbers.length === 0) {
+          toast.error("Nessun numero FIR valido ricevuto dalla vidimazione");
+          if (invalidCount > 0) toast.warning(`${invalidCount} numeri scartati per formato non valido`);
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return;
-      }
 
-      const rows = validNumbers.map((n: string) => ({
-        fir_number: n,
-        user_id: "00000000-0000-0000-0000-000000000000", // pool placeholder
-        societa_id: tenant,
-        status: "available",
-      }));
-
-      const { error } = await supabase.from("fir_number_pool").insert(rows);
-      if (error) {
-        toast.error("Numeri ricevuti ma errore nel salvataggio: " + error.message);
+        const rows = validNumbers.map((n: string) => ({
+          fir_number: n,
+          user_id: "00000000-0000-0000-0000-000000000000",
+          societa_id: tenant,
+          status: "available",
+        }));
+        const { error } = await supabase.from("fir_number_pool").insert(rows);
+        if (error) {
+          toast.error("Numeri ricevuti ma errore nel salvataggio: " + error.message);
+        } else {
+          toast.success(`${validNumbers.length} numeri FIR validi caricati nel pool ${tenant}`);
+          if (invalidCount > 0) toast.warning(`${invalidCount} numeri scartati per formato non valido`);
+          if (result.partial) toast.warning(`Ricevuti solo ${validNumbers.length}/${qty} numeri (parziale)`);
+        }
+      } else if (result.pending) {
+        toast.warning(`Richiesta accettata (transazione: ${result.transazione_id || "N/A"}) ma numeri non ancora pronti. Riprova tra qualche minuto.`);
       } else {
-        toast.success(`${validNumbers.length} numeri FIR validi caricati nel pool ${tenant}`);
-        if (invalidCount > 0) {
-          toast.warning(`${invalidCount} numeri scartati per formato non valido`);
-        }
+        toast.error("Nessun numero ricevuto dalla vidimazione");
       }
-    } else {
-      toast.error("Errore vidimazione: " + JSON.stringify(result.data));
+    } catch (err: any) {
+      toast.error("Errore vidimazione: " + err.message);
     }
-
     setLoading(false);
   };
 
