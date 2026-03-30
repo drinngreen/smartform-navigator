@@ -677,7 +677,6 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       try {
         const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
         await chiudiFirRentri({
-          societaId,
           numero_fir: d.selectedFirNumber,
           peso_accettato: parseFloat(peso),
           data_arrivo: new Date().toISOString(),

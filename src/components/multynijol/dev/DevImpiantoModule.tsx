@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
-import { richiestaVidimazioneNgrok, ngrokHealthCheck, emissioneFirNgrok } from "@/lib/rentriNgrokApi";
+import { richiestaVidimazione, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 
 const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
 const SOCIETA_ID = "multy";
@@ -343,8 +343,8 @@ function ImpiantoGestioneFIR() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazioneNgrok("MULTY", requestQty);
-      const raw = result.data || {};
+      const result = await richiestaVidimazione("multy" as RentriCliente, requestQty);
+      const raw = (result.data as any) || {};
       let numeri: string[] = [];
       for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
         if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
@@ -448,18 +448,18 @@ function ImpiantoGestioneFIR() {
           <Button onClick={async () => {
             setIsTesting(true); setTestResult(null);
             try {
-              const health = await ngrokHealthCheck();
-              if (!health.ok) { setTestResult({ success: false, message: "❌ Server non raggiungibile" }); setIsTesting(false); return; }
+              const health = await inviaOperazioneRentri({ cliente: "multy", tipo_operazione: "LISTA_BLOCCHI", payload: {} });
+              if (!health.success) { setTestResult({ success: false, message: "❌ Server non raggiungibile" }); setIsTesting(false); return; }
               const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", SOCIETA_ID).eq("status", "available").limit(1).maybeSingle();
               if (!poolNum?.fir_number) { setTestResult({ success: false, message: "❌ Nessun numero FIR reale disponibile nel pool" }); setIsTesting(false); return; }
-              const result = await emissioneFirNgrok("MULTY", {
+              const result = await emissioneFir("multy" as RentriCliente, {
                 numero_fir: poolNum.fir_number,
                 produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                 destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
                 trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
                 rifiuto: { codice_eer: "150101", descrizione: "Test impianto", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
               });
-              setTestResult({ success: result.ok, message: result.ok ? "✅ Test superato" : "❌ Test fallito", details: JSON.stringify(result.data, null, 2) });
+              setTestResult({ success: result.success, message: result.success ? "✅ Test superato" : "❌ Test fallito", details: JSON.stringify(result.data, null, 2) });
             } catch (err: any) {
               setTestResult({ success: false, message: "❌ " + err.message });
             } finally { setIsTesting(false); }

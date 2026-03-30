@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazioneNgrok } from "@/lib/rentriNgrokApi";
+import { richiestaVidimazione, type RentriCliente } from "@/lib/rentriVpsApi";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -22,11 +22,11 @@ export function FIRPoolSection({ tenant }: { tenant: string }) {
 
   const handleRequest = async () => {
     setLoading(true);
-    const company = tenant.toUpperCase() === "MULTYPROGET" ? "MULTY" : tenant.toUpperCase();
-    const result = await richiestaVidimazioneNgrok(company, qty);
+    const cliente = (tenant.toLowerCase()) as RentriCliente;
+    const result = await richiestaVidimazione(cliente, qty);
 
-    if (result.ok && result.data?.numeri) {
-      const rawNumbers: string[] = Array.isArray(result.data.numeri) ? result.data.numeri : [];
+    if (result.success && (result.data as any)?.numeri) {
+      const rawNumbers: string[] = Array.isArray((result.data as any).numeri) ? (result.data as any).numeri : [];
       const normalized = rawNumbers.map((n) => normalizeFirNumber(String(n)));
       const validNumbers = normalized.filter((n) => FIR_NUMBER_REGEX.test(n));
       const invalidCount = normalized.length - validNumbers.length;

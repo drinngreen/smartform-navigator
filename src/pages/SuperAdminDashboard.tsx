@@ -12,7 +12,7 @@ import { RENTRIActionsPanel } from "@/components/superadmin/RENTRIActionsPanel";
 import { RENTRIDemoTestHub } from "@/components/superadmin/RENTRIDemoTestHub";
 import { SocialModerationSection } from "@/components/superadmin/SocialModerationSection";
 import { DemoAppSection } from "@/components/superadmin/DemoAppSection";
-import { ngrokHealthCheck } from "@/lib/rentriNgrokApi";
+import { healthCheck as vpsHealthCheck } from "@/lib/rentriSuperApi";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const TENANTS = [
@@ -45,7 +45,7 @@ export default function SuperAdminDashboard() {
   }, [user, isAdmin, isLoading, navigate]);
 
   useEffect(() => {
-    ngrokHealthCheck().then((r) => setNgrokUp(r.ok));
+    vpsHealthCheck().then((r) => setNgrokUp(r.ok));
   }, []);
 
   const handleLogout = async () => {
