@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Loader2, Package } from "lucide-react";
-import { richiestaVidimazione, type RentriCliente } from "@/lib/rentriVpsApi";
+import { vidimaFIRAsync, type RentriCliente } from "@/lib/rentriVpsApi";
 import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { downloadCSV } from "@/lib/rentriSuperApi";
 import { supabase } from "@/lib/supabaseClient";
