@@ -2,7 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect } from "react";
 import { Copy, Check, Loader2, Fuel } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { emissioneFirNgrok, firmaRicezioneNgrok } from "@/lib/rentriNgrokApi";
+import { emissioneFir, firmaRicezione } from "@/lib/rentriVpsApi";
 import { toast } from "sonner";
 const TENANT_MAP = {
     global: "global",
