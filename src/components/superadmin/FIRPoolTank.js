@@ -55,15 +55,18 @@ export function FIRPoolTank({ tenant }) {
         try {
             let result;
             const payload = { firNumber: pool.fir_number };
+            const cliente = tenant.toLowerCase();
             if (tipo === "produttore") {
-                result = await emissioneFirNgrok(company, payload);
+                const r = await emissioneFir(cliente, payload);
+                result = { ok: r.success, data: r.data };
             }
             else if (tipo === "trasportatore") {
-                // Trasportatore uses emissione with transport flag
-                result = await emissioneFirNgrok(company, { ...payload, tipo: "trasportatore" });
+                const r = await emissioneFir(cliente, { ...payload, tipo: "trasportatore" });
+                result = { ok: r.success, data: r.data };
             }
             else {
-                result = await firmaRicezioneNgrok(company, payload);
+                const r = await firmaRicezione(cliente, payload);
+                result = { ok: r.success, data: r.data };
             }
             if (result.ok) {
                 toast.success(`Firma ${tipo} completata per ${pool.fir_number}!`);
