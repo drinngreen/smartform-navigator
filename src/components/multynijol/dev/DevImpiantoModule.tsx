@@ -344,32 +344,25 @@ function ImpiantoGestioneFIR() {
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
-      const result = await richiestaVidimazione("multy" as RentriCliente, requestQty);
-      const raw = (result.data as any) || {};
-      let numeri: string[] = [];
-      for (const key of ['numeri', 'firNumbers', 'numbers', 'formulari']) {
-        if (Array.isArray(raw[key])) { numeri = raw[key]; break; }
-        if (raw.data && Array.isArray(raw.data[key])) { numeri = raw.data[key]; break; }
-      }
-      if (numeri.length === 0) {
-        const findStrArr = (obj: any): string[] => {
-          if (!obj || typeof obj !== 'object') return [];
-          for (const v of Object.values(obj)) {
-            if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v as string[];
-            const sub = findStrArr(v);
-            if (sub.length > 0) return sub;
-          }
-          return [];
-        };
-        numeri = findStrArr(raw);
-      }
-      const realNumbers = numeri.filter((n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-"));
-      if (realNumbers.length > 0) {
-        const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: SOCIETA_ID }));
-        const { error } = await supabase.from("fir_number_pool").insert(rows);
-        if (error) throw error;
-        queryClient.invalidateQueries({ queryKey: ["dev-fir-pool-stats-impianto"] });
-        toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+      const cfg = getTenantConfig("multy");
+      const blockCode = cfg?.primaryBlock || "ZRZXR";
+      const numIscrSito = cfg?.unitId;
+
+      const result = await vidimaFIRAsync("multy" as RentriCliente, requestQty, blockCode, numIscrSito, (msg) => {
+        toast.info(msg, { id: "vidimazione-progress" });
+      });
+
+      if (result.numeri.length > 0) {
+        const realNumbers = result.numeri.filter((n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-"));
+        if (realNumbers.length > 0) {
+          const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: user!.id, status: "available" as const, societa_id: SOCIETA_ID }));
+          const { error } = await supabase.from("fir_number_pool").insert(rows);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["dev-fir-pool-stats-impianto"] });
+          toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
+        }
+      } else if (result.pending) {
+        toast.warning(`Richiesta accettata ma numeri non ancora pronti. Riprova tra qualche minuto.`);
       } else {
         toast.error("Nessun numero trovato nella risposta");
       }
