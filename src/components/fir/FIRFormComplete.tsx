@@ -508,13 +508,14 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
         payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber },
       });
 
-      // Save the firId returned by RENTRI
-      const rentriFirId = result.firId || result.numero_fir || d.selectedFirNumber;
-      if (rentriFirId) {
-        store.updateField("selectedFirNumber", rentriFirId);
+      const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
+      const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
+      if (officialNumeroFir) {
+        store.updateField("selectedFirNumber", officialNumeroFir);
         await silentSaveFIR.mutateAsync({
           id: store.editingFirId,
-          numero_fir: rentriFirId,
+          numero_fir: officialNumeroFir,
+          form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null },
           status: "inviato",
           submitted_at: new Date().toISOString(),
         });
@@ -542,7 +543,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
 
       // Fallback: if no PDF/QR from emissione, try get-pdf proxy
       if (!pdfFromEmissione || !qrFromFirma) {
-        const firIdForPdf = rentriFirId || d.selectedFirNumber;
+        const firIdForPdf = officialNumeroFir || d.selectedFirNumber;
         if (firIdForPdf) {
           try {
             console.log("[RENTRI] Fallback: fetching via get-pdf proxy for", firIdForPdf);
@@ -677,6 +678,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       try {
         const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
         await chiudiFirRentri({
+          societaId,
           numero_fir: d.selectedFirNumber,
           peso_accettato: parseFloat(peso),
           data_arrivo: new Date().toISOString(),

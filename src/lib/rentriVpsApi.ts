@@ -118,6 +118,12 @@ export interface VidimazioneAsyncResult {
   partial: boolean;
 }
 
+function formatProgressivo(value: number | string): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  return /^\d+$/.test(raw) ? raw.padStart(6, "0") : raw;
+}
+
 /**
  * Orchestrates the full async vidimazione flow:
  * 1. Read LISTA_BLOCCHI to get current count
@@ -185,7 +191,7 @@ export async function vidimaFIRAsync(
     for (let p = startProgressivo + numeri.length + 1; p <= startProgressivo + quantita; p++) {
       if (numeri.length >= quantita) break;
       try {
-        const lottoRes = await leggiLotto(cliente, codiceBlocco, p);
+        const lottoRes = await leggiLotto(cliente, codiceBlocco, formatProgressivo(p));
         if (lottoRes.success) {
           const lottoData = (lottoRes.data as any) || {};
           const firNum = lottoData.numero_fir || lottoData.numero || lottoData.firNumber || "";

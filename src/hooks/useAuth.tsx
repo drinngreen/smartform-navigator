@@ -127,6 +127,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole("user");
       }
 
+      if (profileData?.tenant_id) {
+        try {
+          await supabase.rpc("ensure_user_has_fir_draft" as any, {
+            p_user_id: userId,
+          });
+        } catch (ensureErr) {
+          console.warn("ensure_user_has_fir_draft failed:", ensureErr);
+        }
+      }
+
       await markPresence(userId, "online");
     } catch (error) {
       console.error("Error fetching user data:", error);
