@@ -6,7 +6,8 @@ import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { richiestaVidimazione, emissioneFir } from "@/lib/rentriVpsApi";
+import { vidimaFIRAsync, emissioneFir } from "@/lib/rentriVpsApi";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import {
   Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle,
   Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users
