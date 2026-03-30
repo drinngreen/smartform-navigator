@@ -448,11 +448,11 @@ function ImpiantoGestioneFIR() {
           <Button onClick={async () => {
             setIsTesting(true); setTestResult(null);
             try {
-              const health = await ngrokHealthCheck();
-              if (!health.ok) { setTestResult({ success: false, message: "❌ Server non raggiungibile" }); setIsTesting(false); return; }
+              const health = await inviaOperazioneRentri({ cliente: "multy", tipo_operazione: "LISTA_BLOCCHI", payload: {} });
+              if (!health.success) { setTestResult({ success: false, message: "❌ Server non raggiungibile" }); setIsTesting(false); return; }
               const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", SOCIETA_ID).eq("status", "available").limit(1).maybeSingle();
               if (!poolNum?.fir_number) { setTestResult({ success: false, message: "❌ Nessun numero FIR reale disponibile nel pool" }); setIsTesting(false); return; }
-              const result = await emissioneFirNgrok("MULTY", {
+              const result = await emissioneFir("multy" as RentriCliente, {
                 numero_fir: poolNum.fir_number,
                 produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
                 destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
