@@ -174,11 +174,11 @@ export async function vidimaFIRAsync(
 
   onProgress?.("Richiesta accettata, recupero numeri in corso…");
   const numeri: string[] = [...immediati]; // Start with any immediate numbers
-  const maxRetries = 20;
+  const maxRetries = 60; // RENTRI può rendere disponibili i numeri con diversi minuti di ritardo
 
   for (let attempt = 0; attempt < maxRetries && numeri.length < quantita; attempt++) {
     if (attempt > 0) {
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(r => setTimeout(r, 4000));
     }
     onProgress?.(`Recupero numeri… ${numeri.length}/${quantita} (tentativo ${attempt + 1}/${maxRetries})`);
 
