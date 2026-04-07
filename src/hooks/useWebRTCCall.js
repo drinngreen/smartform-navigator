@@ -1,1 +1,4 @@
-export * from "./useWebRTCCall.ts";
+// Stub - useWebRTCCall hook
+export function useWebRTCCall() {
+    return { callState: "idle", startCall: async () => { }, endCall: async () => { } };
+}
