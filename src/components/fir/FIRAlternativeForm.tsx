@@ -134,7 +134,13 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
   return updates;
 }
 
-export function FIRAlternativeForm() {
+interface FIRAlternativeFormProps {
+  presetNumeroFir?: string;
+  printOnly?: boolean;
+  onPrinted?: () => void;
+}
+
+export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [loading, setLoading] = useState(true);
