@@ -7,8 +7,9 @@ import { vidimaFIRAsync, emissioneFir } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import {
   Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle,
-  Zap, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users
+  Zap, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users, Printer
 } from "lucide-react";
+import { DevStampaFIREditor } from "./DevStampaFIREditor";
 
 const PAGE_SIZE = 50;
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
@@ -32,6 +33,7 @@ export function DevGestioneFIRModule() {
   const [assignQty, setAssignQty] = useState(1);
   const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
+  const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats", SOCIETA_ID],
@@ -276,18 +278,25 @@ export function DevGestioneFIRModule() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-border/30 text-muted-foreground font-mono text-xs uppercase">
-              <th className="text-left py-2 px-3">Numero FIR</th><th className="text-left py-2 px-3">Stato</th><th className="text-left py-2 px-3">Assegnato a</th><th className="text-left py-2 px-3 hidden md:table-cell">Creato il</th>
+             <thead><tr className="border-b border-border/30 text-muted-foreground font-mono text-xs uppercase">
+              <th className="text-left py-2 px-3">Numero FIR</th><th className="text-left py-2 px-3">Stato</th><th className="text-left py-2 px-3">Assegnato a</th><th className="text-left py-2 px-3 hidden md:table-cell">Creato il</th><th className="text-center py-2 px-3">Azioni</th>
             </tr></thead>
             <tbody>
-              {poolLoading ? <tr><td colSpan={4} className="py-8 text-center text-muted-foreground">Caricamento...</td></tr>
-              : (poolData?.rows.length ?? 0) === 0 ? <tr><td colSpan={4} className="py-8 text-center text-muted-foreground">Nessun numero trovato</td></tr>
+              {poolLoading ? <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Caricamento...</td></tr>
+              : (poolData?.rows.length ?? 0) === 0 ? <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Nessun numero trovato</td></tr>
               : poolData!.rows.map((row: any) => (
                 <tr key={row.id} className="border-b border-border/10 hover:bg-primary/5 transition-colors">
                   <td className="py-2 px-3 font-mono text-foreground">{row.fir_number}</td>
                   <td className="py-2 px-3"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${row.status === "available" ? "bg-emerald-500/15 text-emerald-400" : row.status === "reserved" ? "bg-cyan-500/15 text-cyan-400" : "bg-orange-500/15 text-orange-400"}`}>{row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : "Usato"}</span></td>
                   <td className="py-2 px-3 text-foreground text-xs">{row.status !== "available" ? (profileMap[row.user_id] || "—") : "—"}</td>
                   <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">{new Date(row.created_at).toLocaleDateString("it-IT")}</td>
+                  <td className="py-2 px-3 text-center">
+                    {row.status === "available" && (
+                      <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
+                        <Printer className="h-3 w-3" /> Stampa
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -303,6 +312,11 @@ export function DevGestioneFIRModule() {
           </div>
         )}
       </div>
+
+      {/* Stampa FIR Editor Dialog */}
+      {printFirNumber && (
+        <DevStampaFIREditor firNumber={printFirNumber} open={!!printFirNumber} onClose={() => setPrintFirNumber(null)} />
+      )}
     </div>
   );
 }
