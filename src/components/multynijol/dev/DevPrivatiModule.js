@@ -19,6 +19,7 @@ import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
+const LIMITE_ANNUO_GLOBALE_KG = 1500;
 const CER_CRITICI = {
     "200140": { label: "Metalli", limite_annuo_kg: 200 },
     "200307": { label: "Rifiuti ingombranti", limite_annuo_kg: 300 },
@@ -136,12 +137,26 @@ export function DevPrivatiModule() {
         }
         return usage;
     };
+    const getTotalKgAnnui = (privatoId) => {
+        if (!conferimenti)
+            return 0;
+        return conferimenti.filter(c => c.privato_id === privatoId).reduce((sum, c) => sum + Number(c.kg_pesati), 0);
+    };
     const checkLimits = async (privatoId, cer, kgNew) => {
         if (!privatoId || !impiantoId)
             return null;
         const privato = privati?.find(p => p.id === privatoId);
         if (!privato)
             return null;
+        // Global 1500kg annual limit
+        const totalGlobale = getTotalKgAnnui(privatoId) + kgNew;
+        if (totalGlobale > LIMITE_ANNUO_GLOBALE_KG) {
+            return `🚫 LIMITE ANNUO GLOBALE SUPERATO: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg`;
+        }
+        if (totalGlobale >= LIMITE_ANNUO_GLOBALE_KG * 0.8) {
+            // Warning but don't block
+        }
+        // CER-specific limits
         const critico = CER_CRITICI[cer];
         if (!critico)
             return null;
@@ -178,9 +193,9 @@ export function DevPrivatiModule() {
         }
         const kg = parseFloat(confForm.kg_pesati);
         const warning = await checkLimits(targetPrivatoId, confForm.cer, kg);
-        if (warning && warning.includes("LIMITE SUPERATO")) {
+        if (warning && (warning.includes("LIMITE SUPERATO") || warning.includes("LIMITE ANNUO GLOBALE"))) {
             setLimitWarning(warning);
-            toast.error("Conferimento BLOCCATO: limite annuo superato");
+            toast.error("Conferimento BLOCCATO: limite superato");
             return;
         }
         if (warning)

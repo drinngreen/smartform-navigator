@@ -4,34 +4,56 @@ import { useAuth } from "@/hooks/useAuth";
 export function useFIRNumberPool() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
     const { data: availableNumbers, isLoading, refetch } = useQuery({
         queryKey: ["fir-number-pool", "available", user?.id],
         queryFn: async () => {
-            const { data, error } = await supabase
+            // Query user's own numbers first
+            const { data: userNums, error: e1 } = await supabase
                 .from("fir_number_pool")
                 .select("*")
                 .eq("user_id", user.id)
                 .eq("status", "available")
                 .eq("is_demo", false)
                 .order("fir_number", { ascending: true });
-            if (error)
-                throw error;
-            return data;
+            if (e1)
+                throw e1;
+            // Also query shared pool numbers
+            const { data: sharedNums, error: e2 } = await supabase
+                .from("fir_number_pool")
+                .select("*")
+                .eq("user_id", SHARED_POOL_USER_ID)
+                .eq("status", "available")
+                .eq("is_demo", false)
+                .order("fir_number", { ascending: true });
+            if (e2)
+                throw e2;
+            // User's own numbers first, then shared pool
+            return [...(userNums ?? []), ...(sharedNums ?? [])];
         },
         enabled: !!user,
     });
     const { data: allNumbers } = useQuery({
         queryKey: ["fir-number-pool", "all", user?.id],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data: userNums, error: e1 } = await supabase
                 .from("fir_number_pool")
                 .select("*")
                 .eq("user_id", user.id)
                 .eq("is_demo", false)
                 .order("fir_number", { ascending: true });
-            if (error)
-                throw error;
-            return data;
+            if (e1)
+                throw e1;
+            const { data: sharedNums, error: e2 } = await supabase
+                .from("fir_number_pool")
+                .select("*")
+                .eq("user_id", SHARED_POOL_USER_ID)
+                .eq("status", "available")
+                .eq("is_demo", false)
+                .order("fir_number", { ascending: true });
+            if (e2)
+                throw e2;
+            return [...(userNums ?? []), ...(sharedNums ?? [])];
         },
         enabled: !!user,
     });
