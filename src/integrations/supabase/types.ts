@@ -529,6 +529,101 @@ export type Database = {
         }
         Relationships: []
       }
+      cernita_output: {
+        Row: {
+          cer_output: string
+          cernita_id: string
+          created_at: string | null
+          descrizione_output: string | null
+          id: string
+          quantita: number
+          tipo_output: string | null
+        }
+        Insert: {
+          cer_output: string
+          cernita_id: string
+          created_at?: string | null
+          descrizione_output?: string | null
+          id?: string
+          quantita: number
+          tipo_output?: string | null
+        }
+        Update: {
+          cer_output?: string
+          cernita_id?: string
+          created_at?: string | null
+          descrizione_output?: string | null
+          id?: string
+          quantita?: number
+          tipo_output?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cernita_output_cernita_id_fkey"
+            columns: ["cernita_id"]
+            isOneToOne: false
+            referencedRelation: "cernite"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cernite: {
+        Row: {
+          cer_input: string
+          created_at: string | null
+          created_by: string | null
+          descrizione_input: string | null
+          id: string
+          impianto_id: string | null
+          note: string | null
+          quantita_input: number
+          stato: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cer_input: string
+          created_at?: string | null
+          created_by?: string | null
+          descrizione_input?: string | null
+          id?: string
+          impianto_id?: string | null
+          note?: string | null
+          quantita_input: number
+          stato?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cer_input?: string
+          created_at?: string | null
+          created_by?: string | null
+          descrizione_input?: string | null
+          id?: string
+          impianto_id?: string | null
+          note?: string | null
+          quantita_input?: number
+          stato?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cernite_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cernite_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comunicazioni_log: {
         Row: {
           canale: string
@@ -2445,37 +2540,46 @@ export type Database = {
       }
       magazzino_giacenze: {
         Row: {
+          area_stoccaggio: string | null
           cer: string
           created_at: string
           descrizione_cer: string | null
           id: string
           impianto_id: string | null
           quantita_kg: number
+          stato: string | null
           tenant_id: string | null
+          tipo_conferente: string | null
           ultimo_carico_at: string | null
           ultimo_scarico_at: string | null
           updated_at: string
         }
         Insert: {
+          area_stoccaggio?: string | null
           cer: string
           created_at?: string
           descrizione_cer?: string | null
           id?: string
           impianto_id?: string | null
           quantita_kg?: number
+          stato?: string | null
           tenant_id?: string | null
+          tipo_conferente?: string | null
           ultimo_carico_at?: string | null
           ultimo_scarico_at?: string | null
           updated_at?: string
         }
         Update: {
+          area_stoccaggio?: string | null
           cer?: string
           created_at?: string
           descrizione_cer?: string | null
           id?: string
           impianto_id?: string | null
           quantita_kg?: number
+          stato?: string | null
           tenant_id?: string | null
+          tipo_conferente?: string | null
           ultimo_carico_at?: string | null
           ultimo_scarico_at?: string | null
           updated_at?: string
