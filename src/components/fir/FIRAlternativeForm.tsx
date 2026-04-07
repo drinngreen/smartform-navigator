@@ -219,12 +219,20 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted }: FI
       .single()
       .then(({ data, error }) => {
         if (data?.fields) {
-          setFields(data.fields as unknown as TemplateField[]);
+          const loadedFields = data.fields as unknown as TemplateField[];
+          setFields(loadedFields);
+          // Pre-fill numero FIR if provided
+          if (presetNumeroFir) {
+            const numeroField = loadedFields.find(f => hasTokens(f.name, ["numero", "formulario"]));
+            if (numeroField) {
+              setValues(prev => ({ ...prev, [numeroField.id]: presetNumeroFir }));
+            }
+          }
         }
         if (error) console.warn("[FIRAlternativeForm]", error.message);
         setLoading(false);
       });
-  }, []);
+  }, [presetNumeroFir]);
 
   useEffect(() => {
     setScale(1);
