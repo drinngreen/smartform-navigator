@@ -317,7 +317,26 @@ export function DevGestioneFIRModule() {
 
       {/* Stampa FIR Editor Dialog */}
       {printFirNumber && (
-        <DevStampaFIREditor firNumber={printFirNumber} open={!!printFirNumber} onClose={() => setPrintFirNumber(null)} />
+        <DevStampaFIREditor
+          firNumber={printFirNumber}
+          open={!!printFirNumber}
+          onClose={() => setPrintFirNumber(null)}
+          onPrinted={async () => {
+            // Mark as cartaceo
+            const { error } = await supabase
+              .from("fir_number_pool")
+              .update({ status: "cartaceo", consumed_at: new Date().toISOString() })
+              .eq("fir_number", printFirNumber)
+              .eq("societa_id", SOCIETA_ID);
+            if (error) {
+              toast.error("Errore aggiornamento stato: " + error.message);
+            } else {
+              toast.success(`FIR ${printFirNumber} spostato in Cartacei`);
+              invalidatePool();
+            }
+            setPrintFirNumber(null);
+          }}
+        />
       )}
     </div>
   );
