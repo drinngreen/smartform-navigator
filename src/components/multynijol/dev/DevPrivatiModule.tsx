@@ -186,9 +186,9 @@ export function DevPrivatiModule() {
 
     const kg = parseFloat(confForm.kg_pesati);
     const warning = await checkLimits(targetPrivatoId, confForm.cer, kg);
-    if (warning && warning.includes("LIMITE SUPERATO")) {
+    if (warning && (warning.includes("LIMITE SUPERATO") || warning.includes("LIMITE ANNUO GLOBALE"))) {
       setLimitWarning(warning);
-      toast.error("Conferimento BLOCCATO: limite annuo superato");
+      toast.error("Conferimento BLOCCATO: limite superato");
       return;
     }
     if (warning) setLimitWarning(warning);
