@@ -1,1 +1,4 @@
-export * from "./CallManager.tsx";
+// CallManager - stub
+export function CallManager() {
+    return null;
+}

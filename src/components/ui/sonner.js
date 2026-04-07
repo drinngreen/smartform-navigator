@@ -1,1 +1,1 @@
-export * from "./sonner.tsx";
+export { Toaster } from 'sonner';

@@ -1,1 +1,5 @@
-export * from "./AdminCallDialog.tsx";
+export function AdminCallDialog({ open, onOpenChange }) {
+    if (!open)
+        return null;
+    return null;
+}
