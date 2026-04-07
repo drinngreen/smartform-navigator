@@ -271,9 +271,9 @@ export function DevGestioneFIRModule() {
             <input value={poolSearch} onChange={e => { setPoolSearch(e.target.value); setPoolPage(0); }} placeholder="Cerca numero FIR..." className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <div className="flex gap-1">
-            {(["all", "available", "reserved", "consumed"] as PoolFilter[]).map(f => (
+            {(["all", "available", "reserved", "consumed", "cartaceo"] as PoolFilter[]).map(f => (
               <button key={f} onClick={() => { setPoolFilter(f); setPoolPage(0); }} className={`px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${poolFilter === f ? "bg-primary/20 text-primary border border-primary/30" : "bg-background/50 text-muted-foreground border border-border/20 hover:bg-primary/10"}`}>
-                {f === "all" ? "Tutti" : f === "available" ? "Disponibili" : f === "reserved" ? "Assegnati" : "Usati"}
+                {f === "all" ? "Tutti" : f === "available" ? "Disponibili" : f === "reserved" ? "Assegnati" : f === "consumed" ? "Usati" : "Cartacei"}
               </button>
             ))}
           </div>
