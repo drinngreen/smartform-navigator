@@ -10,6 +10,9 @@ import {
   FileText,
   Receipt,
   Factory,
+  Database,
+  PenTool,
+  Package,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
@@ -19,6 +22,9 @@ import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
 import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
 import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferitiModule";
+import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIRModule";
+import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
+import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
