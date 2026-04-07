@@ -2,7 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Zap, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Zap, ZoomIn, ZoomOut, RotateCcw, Printer } from "lucide-react";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
@@ -111,7 +111,7 @@ function buildSoggettoUpdates(fields, soggetto, target) {
     });
     return updates;
 }
-export function FIRAlternativeForm() {
+export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {}) {
     const [fields, setFields] = useState([]);
     const [values, setValues] = useState({});
     const [loading, setLoading] = useState(true);
@@ -182,13 +182,21 @@ export function FIRAlternativeForm() {
             .single()
             .then(({ data, error }) => {
             if (data?.fields) {
-                setFields(data.fields);
+                const loadedFields = data.fields;
+                setFields(loadedFields);
+                // Pre-fill numero FIR if provided
+                if (presetNumeroFir) {
+                    const numeroField = loadedFields.find(f => hasTokens(f.name, ["numero", "formulario"]));
+                    if (numeroField) {
+                        setValues(prev => ({ ...prev, [numeroField.id]: presetNumeroFir }));
+                    }
+                }
             }
             if (error)
                 console.warn("[FIRAlternativeForm]", error.message);
             setLoading(false);
         });
-    }, []);
+    }, [presetNumeroFir]);
     useEffect(() => {
         setScale(1);
         setTranslate({ x: 0, y: 0 });
@@ -362,7 +370,58 @@ export function FIRAlternativeForm() {
                                         padding: "1px 3px",
                                         outline: "none",
                                     } }, field.id));
-                            })] }) }) }), _jsx(FIRRentriActions, { cliente: rentriCliente, formData: values, firmaComeProduttore: isOwnProduction, onEmissioneSuccess: (res) => {
+                            })] }) }) }), printOnly ? (_jsx("div", { className: "flex justify-end gap-3 pt-2", children: _jsxs("button", { onClick: () => {
+                        const printWindow = window.open("", "_blank");
+                        if (!printWindow)
+                            return;
+                        const container = containerRef.current;
+                        if (!container)
+                            return;
+                        const cloned = container.cloneNode(true);
+                        // Remove borders from inputs and make them look printed
+                        cloned.querySelectorAll("input, textarea").forEach((el) => {
+                            const htmlEl = el;
+                            htmlEl.style.border = "none";
+                            htmlEl.style.outline = "none";
+                            htmlEl.style.background = "transparent";
+                            // Replace inputs with spans for print
+                            const span = document.createElement("span");
+                            span.textContent = htmlEl.value;
+                            span.style.cssText = htmlEl.style.cssText;
+                            span.style.position = "absolute";
+                            span.style.left = htmlEl.style.left;
+                            span.style.top = htmlEl.style.top;
+                            span.style.width = htmlEl.style.width;
+                            span.style.height = htmlEl.style.height;
+                            htmlEl.parentNode?.replaceChild(span, htmlEl);
+                        });
+                        // Build all 3 pages for print
+                        const allPagesHtml = [1, 2, 3].map(pageNum => {
+                            const pageContainer = document.createElement("div");
+                            pageContainer.style.cssText = "position:relative;page-break-after:always;";
+                            const img = document.createElement("img");
+                            img.src = PAGE_IMAGES[pageNum - 1];
+                            img.style.cssText = "width:100%;height:auto;display:block;";
+                            pageContainer.appendChild(img);
+                            // Render fields for this page
+                            fields.filter(f => f.page === pageNum).forEach(field => {
+                                const val = String(values[field.id] || "");
+                                if (!val)
+                                    return;
+                                const span = document.createElement("span");
+                                span.textContent = val;
+                                span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
+                                pageContainer.appendChild(span);
+                            });
+                            return pageContainer.outerHTML;
+                        }).join("");
+                        printWindow.document.write(`<html><head><title>FIR ${presetNumeroFir || ""}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}</body></html>`);
+                        printWindow.document.close();
+                        setTimeout(() => {
+                            printWindow.print();
+                            onPrinted?.();
+                        }, 600);
+                    }, className: "px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2", children: [_jsx(Printer, { className: "h-4 w-4" }), " STAMPA TUTTE LE PAGINE"] }) })) : (_jsx(FIRRentriActions, { cliente: rentriCliente, formData: values, firmaComeProduttore: isOwnProduction, onEmissioneSuccess: (res) => {
                     console.log("[FIR] Emissione success:", res);
-                } })] }));
+                } }))] }));
 }
