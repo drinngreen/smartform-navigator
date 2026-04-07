@@ -14,7 +14,7 @@ import { DevStampaFIREditor } from "./DevStampaFIREditor";
 const PAGE_SIZE = 50;
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 const SOCIETA_ID = "multy";
-type PoolFilter = "all" | "available" | "reserved" | "consumed";
+type PoolFilter = "all" | "available" | "reserved" | "consumed" | "cartaceo";
 type ProfileInfo = { user_id: string; nome: string; cognome: string };
 
 export function DevGestioneFIRModule() {
