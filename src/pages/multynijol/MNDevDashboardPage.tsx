@@ -101,6 +101,27 @@ export default function MNDevDashboardPage() {
             <FileText className="h-4 w-4" />
             CER Preferiti
           </TabsTrigger>
+          <TabsTrigger
+            value="gestione-fir"
+            className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+          >
+            <Database className="h-4 w-4" />
+            Gestione FIR
+          </TabsTrigger>
+          <TabsTrigger
+            value="firma-digitale"
+            className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400"
+          >
+            <PenTool className="h-4 w-4" />
+            Firma Digitale
+          </TabsTrigger>
+          <TabsTrigger
+            value="magazzino"
+            className="gap-2 data-[state=active]:bg-teal-500/20 data-[state=active]:text-teal-400"
+          >
+            <Package className="h-4 w-4" />
+            Magazzino
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -126,6 +147,15 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="cer-preferiti">
           <DevCERPreferitiModule />
+        </TabsContent>
+        <TabsContent value="gestione-fir">
+          <DevGestioneFIRModule />
+        </TabsContent>
+        <TabsContent value="firma-digitale">
+          <DevFirmaDigitaleModule />
+        </TabsContent>
+        <TabsContent value="magazzino">
+          <DevMagazzinoModule />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
