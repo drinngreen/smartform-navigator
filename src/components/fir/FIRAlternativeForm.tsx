@@ -581,14 +581,73 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted }: FI
         </div>
       </div>
 
-      <FIRRentriActions
-        cliente={rentriCliente}
-        formData={values as Record<string, string | boolean>}
-        firmaComeProduttore={isOwnProduction}
-        onEmissioneSuccess={(res) => {
-          console.log("[FIR] Emissione success:", res);
-        }}
-      />
+      {printOnly ? (
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            onClick={() => {
+              const printWindow = window.open("", "_blank");
+              if (!printWindow) return;
+              const container = containerRef.current;
+              if (!container) return;
+              const cloned = container.cloneNode(true) as HTMLElement;
+              // Remove borders from inputs and make them look printed
+              cloned.querySelectorAll("input, textarea").forEach((el) => {
+                const htmlEl = el as HTMLInputElement | HTMLTextAreaElement;
+                htmlEl.style.border = "none";
+                htmlEl.style.outline = "none";
+                htmlEl.style.background = "transparent";
+                // Replace inputs with spans for print
+                const span = document.createElement("span");
+                span.textContent = htmlEl.value;
+                span.style.cssText = htmlEl.style.cssText;
+                span.style.position = "absolute";
+                span.style.left = htmlEl.style.left;
+                span.style.top = htmlEl.style.top;
+                span.style.width = htmlEl.style.width;
+                span.style.height = htmlEl.style.height;
+                htmlEl.parentNode?.replaceChild(span, htmlEl);
+              });
+              // Build all 3 pages for print
+              const allPagesHtml = [1, 2, 3].map(pageNum => {
+                const pageContainer = document.createElement("div");
+                pageContainer.style.cssText = "position:relative;page-break-after:always;";
+                const img = document.createElement("img");
+                img.src = PAGE_IMAGES[pageNum - 1];
+                img.style.cssText = "width:100%;height:auto;display:block;";
+                pageContainer.appendChild(img);
+                // Render fields for this page
+                fields.filter(f => f.page === pageNum).forEach(field => {
+                  const val = String(values[field.id] || "");
+                  if (!val) return;
+                  const span = document.createElement("span");
+                  span.textContent = val;
+                  span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
+                  pageContainer.appendChild(span);
+                });
+                return pageContainer.outerHTML;
+              }).join("");
+              printWindow.document.write(`<html><head><title>FIR ${presetNumeroFir || ""}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}</body></html>`);
+              printWindow.document.close();
+              setTimeout(() => {
+                printWindow.print();
+                onPrinted?.();
+              }, 600);
+            }}
+            className="px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" /> STAMPA TUTTE LE PAGINE
+          </button>
+        </div>
+      ) : (
+        <FIRRentriActions
+          cliente={rentriCliente}
+          formData={values as Record<string, string | boolean>}
+          firmaComeProduttore={isOwnProduction}
+          onEmissioneSuccess={(res) => {
+            console.log("[FIR] Emissione success:", res);
+          }}
+        />
+      )}
     </div>
   );
 }
