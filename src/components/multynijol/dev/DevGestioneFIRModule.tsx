@@ -181,11 +181,12 @@ export function DevGestioneFIRModule() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard icon={<Database className="h-5 w-5" />} label="Totale" value={stats?.total ?? 0} color="text-primary" loading={statsLoading} />
         <StatCard icon={<CheckCircle className="h-5 w-5" />} label="Disponibili" value={stats?.disponibili ?? 0} color="text-emerald-400" loading={statsLoading} />
         <StatCard icon={<Clock className="h-5 w-5" />} label="In Uso" value={stats?.inUso ?? 0} color="text-cyan-400" loading={statsLoading} />
         <StatCard icon={<Package className="h-5 w-5" />} label="Consumati" value={stats?.usati ?? 0} color="text-orange-400" loading={statsLoading} />
+        <StatCard icon={<Printer className="h-5 w-5" />} label="Cartacei" value={stats?.cartacei ?? 0} color="text-violet-400" loading={statsLoading} />
       </div>
 
       {/* Bulk Import */}
