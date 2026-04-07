@@ -38,13 +38,14 @@ export function DevGestioneFIRModule() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats", SOCIETA_ID],
     queryFn: async () => {
-      const [totalRes, disponibiliRes, inUsoRes, usatiRes] = await Promise.all([
+      const [totalRes, disponibiliRes, inUsoRes, usatiRes, cartaceiRes] = await Promise.all([
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "available"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "reserved"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "consumed"),
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "cartaceo"),
       ]);
-      return { total: totalRes.count ?? 0, disponibili: disponibiliRes.count ?? 0, inUso: inUsoRes.count ?? 0, usati: usatiRes.count ?? 0 };
+      return { total: totalRes.count ?? 0, disponibili: disponibiliRes.count ?? 0, inUso: inUsoRes.count ?? 0, usati: usatiRes.count ?? 0, cartacei: cartaceiRes.count ?? 0 };
     },
     refetchInterval: 10000,
   });
