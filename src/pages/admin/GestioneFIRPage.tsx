@@ -6,11 +6,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { vidimaFIRAsync, emissioneFir } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
-import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users } from "lucide-react";
+import { Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle, Zap, FileText, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users, Printer } from "lucide-react";
+import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 
 const PAGE_SIZE = 50;
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
-type PoolFilter = "all" | "available" | "reserved" | "consumed";
+type PoolFilter = "all" | "available" | "reserved" | "consumed" | "cartaceo";
 type ProfileInfo = { user_id: string; nome: string; cognome: string };
 
 export default function GestioneFIRPage() {
@@ -27,6 +28,7 @@ export default function GestioneFIRPage() {
   const [assignUserId, setAssignUserId] = useState<string | null>(null);
   const [assignQty, setAssignQty] = useState(1);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{
     success: boolean;
     message: string;
@@ -35,21 +37,24 @@ export default function GestioneFIRPage() {
     numeroFir?: string;
   } | null>(null);
 
-  // ── Pool stats query ──────────────────────────────────
+  const invalidatePool = () => {
+    queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["fir-pool-list"] });
+    queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+  };
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["fir-pool-stats"],
     queryFn: async () => {
-      // Use separate count queries to avoid the 1000-row limit
-      const [totalRes, disponibiliRes, inUsoRes, usatiRes, totalProfilesRes] = await Promise.all([
+      const [totalRes, disponibiliRes, inUsoRes, usatiRes, cartaceiRes, totalProfilesRes] = await Promise.all([
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "available"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "reserved"),
         supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "consumed"),
+        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", "global").eq("status", "cartaceo"),
         supabase.from("profiles").select("user_id", { count: "exact", head: true }),
       ]);
 
-      // Count distinct users that have at least one FIR number
-      // We paginate user_ids to get distinct count
       let distinctUsers = new Set<string>();
       let page = 0;
       const batchSize = 1000;
@@ -72,6 +77,7 @@ export default function GestioneFIRPage() {
         disponibili: disponibiliRes.count ?? 0,
         inUso: inUsoRes.count ?? 0,
         usati: usatiRes.count ?? 0,
+        cartacei: cartaceiRes.count ?? 0,
         utentiAssegnati: distinctUsers.size,
         utentiTotali: totalProfilesRes.count ?? 0,
       };
@@ -79,7 +85,6 @@ export default function GestioneFIRPage() {
     refetchInterval: 10000,
   });
 
-  // ── Pool list query (paginated) ───────────────────────
   const { data: poolData, isLoading: poolLoading } = useQuery({
     queryKey: ["fir-pool-list", poolFilter, poolPage, poolSearch],
     queryFn: async () => {
@@ -100,11 +105,9 @@ export default function GestioneFIRPage() {
     refetchInterval: 15000,
   });
 
-  // ── Profiles for user name mapping ────────────────────
   const { data: profiles } = useQuery({
     queryKey: ["all-profiles"],
     queryFn: async () => {
-      // Fetch all profiles (may exceed 1000 row default limit)
       let all: ProfileInfo[] = [];
       let page = 0;
       const batchSize = 1000;
@@ -136,12 +139,10 @@ export default function GestioneFIRPage() {
     return p.cognome.toLowerCase().includes(q) || p.nome.toLowerCase().includes(q);
   }).slice(0, 10);
 
-  // ── Assign FIR numbers to user ────────────────────────
   const handleAssign = async () => {
     if (!assignUserId || assignQty < 1) return;
     setIsAssigning(true);
     try {
-      // Get available unassigned FIR numbers (user_id = admin who imported them)
       const { data: available, error: fetchErr } = await supabase
         .from("fir_number_pool")
         .select("id")
@@ -165,8 +166,7 @@ export default function GestioneFIRPage() {
 
       if (updateErr) throw updateErr;
 
-      queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["fir-pool-list"] });
+      invalidatePool();
       toast.success(`✅ ${ids.length} numeri assegnati a ${profileMap[assignUserId] || "utente"}`);
       setAssignUserId(null);
       setAssignSearch("");
@@ -178,7 +178,6 @@ export default function GestioneFIRPage() {
     }
   };
 
-  // ── Bulk import mutation ──────────────────────────────
   const importMutation = useMutation({
     mutationFn: async (numbers: string[]) => {
       const rows = numbers.map((n) => ({
@@ -187,14 +186,12 @@ export default function GestioneFIRPage() {
         status: "available" as const,
         societa_id: "global",
       }));
-
       const { error } = await supabase.from("fir_number_pool").insert(rows);
       if (error) throw error;
       return rows.length;
     },
     onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+      invalidatePool();
       toast.success(`✅ ${count} numeri caricati nel serbatoio`);
       setBulkInput("");
     },
@@ -204,61 +201,34 @@ export default function GestioneFIRPage() {
   });
 
   const handleBulkImport = () => {
-    const numbers = bulkInput
-      .split(/[,\n\r]+/)
-      .map((n) => n.trim())
-      .filter((n) => n.length > 0);
-
-    if (numbers.length === 0) {
-      toast.error("Inserisci almeno un numero FIR");
-      return;
-    }
-
-    // Check for duplicates
+    const numbers = bulkInput.split(/[,\n\r]+/).map((n) => n.trim()).filter((n) => n.length > 0);
+    if (numbers.length === 0) { toast.error("Inserisci almeno un numero FIR"); return; }
     const unique = [...new Set(numbers)];
-    if (unique.length < numbers.length) {
-      toast.warning(`Rimossi ${numbers.length - unique.length} duplicati`);
-    }
-
+    if (unique.length < numbers.length) toast.warning(`Rimossi ${numbers.length - unique.length} duplicati`);
     importMutation.mutate(unique);
   };
 
-  // ── Request new numbers from RENTRI ──────────────────
   const handleRequestFromRentri = async () => {
     setIsRequesting(true);
     try {
       const cfg = getTenantConfig("global");
       const blockCode = cfg?.primaryBlock || "FMGWB";
       const numIscrSito = cfg?.unitId;
-
       const result = await vidimaFIRAsync("global", requestQty, blockCode, numIscrSito, (msg) => {
         toast.info(msg, { id: "vidimazione-progress" });
       });
-
-      console.log("[RENTRI VIDIMAZIONE] Async result:", JSON.stringify(result));
-
       if (result.numeri.length > 0) {
-        const realNumbers = result.numeri.filter(
-          (n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-")
-        );
+        const realNumbers = result.numeri.filter((n: string) => n && !n.startsWith("FIR-") && !n.startsWith("TEST-"));
         if (realNumbers.length > 0) {
-          const rows = realNumbers.map((n: string) => ({
-            fir_number: n,
-            user_id: SHARED_POOL_USER_ID,
-            status: "available" as const,
-            societa_id: "global",
-          }));
+          const rows = realNumbers.map((n: string) => ({ fir_number: n, user_id: SHARED_POOL_USER_ID, status: "available" as const, societa_id: "global" }));
           const { error } = await supabase.from("fir_number_pool").insert(rows);
           if (error) throw error;
-          queryClient.invalidateQueries({ queryKey: ["fir-pool-stats"] });
-          queryClient.invalidateQueries({ queryKey: ["fir-number-pool"] });
+          invalidatePool();
           toast.success(`✅ ${realNumbers.length} nuovi numeri ricevuti da RENTRI`);
-          if (result.partial) {
-            toast.warning(`Ricevuti solo ${realNumbers.length}/${requestQty} numeri (parziale)`);
-          }
+          if (result.partial) toast.warning(`Ricevuti solo ${realNumbers.length}/${requestQty} numeri (parziale)`);
         }
       } else if (result.pending) {
-        toast.warning(`Richiesta accettata (transazione: ${result.transazione_id || "N/A"}) ma i numeri non sono ancora pronti. Riprova tra qualche minuto.`);
+        toast.warning(`Richiesta accettata (transazione: ${result.transazione_id || "N/A"}) ma i numeri non sono ancora pronti.`);
       } else {
         toast.error("Nessun numero ricevuto dalla vidimazione");
       }
@@ -272,256 +242,141 @@ export default function GestioneFIRPage() {
   return (
     <AdminLayout title="Gestione FIR" subtitle="Serbatoio Numeri Formulario">
       <div className="space-y-6">
-        {/* ── Stats Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
           <StatCard icon={<Database className="h-5 w-5" />} label="Totale Numeri" value={stats?.total ?? 0} color="text-primary" loading={statsLoading} />
           <StatCard icon={<Users className="h-5 w-5" />} label="Utenti Assegnati" value={`${stats?.utentiAssegnati ?? 0}/${stats?.utentiTotali ?? 0}`} color="text-blue-400" loading={statsLoading} />
           <StatCard icon={<CheckCircle className="h-5 w-5" />} label="Disponibili" value={stats?.disponibili ?? 0} color="text-neon-green" loading={statsLoading} />
           <StatCard icon={<Clock className="h-5 w-5" />} label="In Uso" value={stats?.inUso ?? 0} color="text-neon-cyan" loading={statsLoading} />
           <StatCard icon={<Package className="h-5 w-5" />} label="Consumati" value={stats?.usati ?? 0} color="text-orange-400" loading={statsLoading} />
+          <StatCard icon={<Printer className="h-5 w-5" />} label="Cartacei" value={stats?.cartacei ?? 0} color="text-violet-400" loading={statsLoading} />
         </div>
 
-        {/* ── Bulk Import ── */}
+        {/* Bulk Import */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
           <div className="flex items-center gap-2 text-primary">
             <Upload className="h-5 w-5" />
             <h3 className="font-display text-lg tracking-wider uppercase">Carica Numeri nel Serbatoio</h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Incolla i numeri FIR separati da virgola o su righe separate.
-          </p>
-          <textarea
-            value={bulkInput}
-            onChange={(e) => setBulkInput(e.target.value)}
-            placeholder={"FMGWB001234\nFMGWB001235\nXNQLK009876"}
-            rows={6}
-            className="w-full bg-background/80 border border-primary/15 rounded-xl px-4 py-3 text-foreground text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 transition-all resize-none"
-          />
+          <textarea value={bulkInput} onChange={(e) => setBulkInput(e.target.value)} placeholder={"FMGWB001234\nFMGWB001235\nXNQLK009876"} rows={6} className="w-full bg-background/80 border border-primary/15 rounded-xl px-4 py-3 text-foreground text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 transition-all resize-none" />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-mono">
-              {bulkInput.split(/[,\n\r]+/).filter((n) => n.trim()).length} numeri rilevati
-            </span>
-            <button
-              onClick={handleBulkImport}
-              disabled={importMutation.isPending || !bulkInput.trim()}
-              className="px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              {importMutation.isPending ? (
-                <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
+            <span className="text-xs text-muted-foreground font-mono">{bulkInput.split(/[,\n\r]+/).filter((n) => n.trim()).length} numeri rilevati</span>
+            <button onClick={handleBulkImport} disabled={importMutation.isPending || !bulkInput.trim()} className="px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2">
+              {importMutation.isPending ? <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" /> : <Upload className="h-4 w-4" />}
               CARICA NEL SERBATOIO
             </button>
           </div>
         </div>
 
-        {/* ── Request from RENTRI ── */}
+        {/* Request from RENTRI */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
           <div className="flex items-center gap-2 text-neon-cyan">
             <RefreshCw className="h-5 w-5" />
             <h3 className="font-display text-lg tracking-wider uppercase">Richiedi Nuovi Numeri a RENTRI</h3>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Se il serbatoio è vuoto, puoi richiedere nuovi numeri vidimati direttamente dal sistema RENTRI.
-          </p>
           {(stats?.disponibili ?? 0) === 0 && (
-            <div className="flex items-center gap-2 text-amber-400 text-xs font-mono">
-              <AlertTriangle className="h-4 w-4" />
-              ATTENZIONE: Serbatoio vuoto!
-            </div>
+            <div className="flex items-center gap-2 text-amber-400 text-xs font-mono"><AlertTriangle className="h-4 w-4" /> ATTENZIONE: Serbatoio vuoto!</div>
           )}
           <div className="flex items-center gap-3">
             <label className="text-sm text-muted-foreground">Quantità:</label>
             <div className="flex gap-2">
               {[5, 10, 50, 100].map((q) => (
-                <button key={q} onClick={() => setRequestQty(q)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${requestQty === q ? "bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-transparent"}`}
-                >{q}</button>
+                <button key={q} onClick={() => setRequestQty(q)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${requestQty === q ? "bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/50" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-transparent"}`}>{q}</button>
               ))}
             </div>
           </div>
-          <button
-            onClick={handleRequestFromRentri}
-            disabled={isRequesting}
-            className="px-6 py-3 rounded-xl bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan font-display text-sm tracking-wider hover:bg-neon-cyan/30 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {isRequesting ? (
-              <div className="w-4 h-4 border-2 border-neon-cyan/50 border-t-neon-cyan rounded-full animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
+          <button onClick={handleRequestFromRentri} disabled={isRequesting} className="px-6 py-3 rounded-xl bg-neon-cyan/20 border border-neon-cyan/30 text-neon-cyan font-display text-sm tracking-wider hover:bg-neon-cyan/30 transition-colors disabled:opacity-50 flex items-center gap-2">
+            {isRequesting ? <div className="w-4 h-4 border-2 border-neon-cyan/50 border-t-neon-cyan rounded-full animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             RICHIEDI NUOVI NUMERI A RENTRI
           </button>
         </div>
-        {/* ── Test Invio RENTRI (Sandbox) ── */}
+
+        {/* Test RENTRI */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-          <div className="flex items-center gap-2 text-amber-400">
-            <Zap className="h-5 w-5" />
-            <h3 className="font-display text-lg tracking-wider uppercase">Test Invio RENTRI (Sandbox)</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Esegui un invio di test con dati fittizi per verificare il collegamento mTLS con il server Render e RENTRI.
-          </p>
-
-          <button
-            onClick={async () => {
-              setIsTesting(true);
-              setTestResult(null);
-              const startTime = Date.now();
-              try {
-                console.log("[RENTRI TEST] Calling emissione via VPS...");
-                const { data: poolNum, error: poolErr } = await supabase
-                  .from("fir_number_pool")
-                  .select("fir_number")
-                  .eq("societa_id", "global")
-                  .eq("status", "available")
-                  .limit(1)
-                  .single();
-
-                if (!poolNum?.fir_number) {
-                  setTestResult({ success: false, message: "❌ NESSUN NUMERO FIR REALE DISPONIBILE", details: "Impossibile eseguire il test senza un numero FIR reale nel pool. Richiedere nuovi numeri tramite vidimazione RENTRI." });
-                  toast.error("Nessun numero FIR reale disponibile per il test");
-                  setIsTesting(false);
-                  return;
-                }
-                const testFirNumber = poolNum.fir_number;
-
-                const result = await emissioneFir("global", {
-                  numero_fir: testFirNumber,
-                  produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
-                  destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
-                  trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
-                  rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
-                });
-                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                const responseData = (result.data ?? {}) as Record<string, any>;
-                const numeroFir = responseData.numero_fir || responseData.firNumber || "";
-                const rentriId = responseData.rentriId || "";
-                const qrCode = responseData.qr_code || responseData.qrCodeBytes || responseData.qrCode || "";
-                setTestResult({
-                  success: result.success,
-                  message: result.success ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,
-                  details: JSON.stringify(result.data, null, 2),
-                  qrCode: qrCode,
-                  numeroFir: numeroFir,
-                });
-                if (result.success) toast.success("Test RENTRI superato!");
-                else toast.error(`Test fallito: ${result.error ?? "verifica log tecnico"}`);
-
-              } catch (err: any) {
-                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                setTestResult({
-                  success: false,
-                  message: `❌ TEST FALLITO (${elapsed}s)`,
-                  details: err.message || String(err),
-                });
-                toast.error("Test RENTRI fallito: " + err.message);
-              } finally {
-                setIsTesting(false);
+          <div className="flex items-center gap-2 text-amber-400"><Zap className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Test Invio RENTRI (Sandbox)</h3></div>
+          <button onClick={async () => {
+            setIsTesting(true); setTestResult(null);
+            const startTime = Date.now();
+            try {
+              const { data: poolNum } = await supabase.from("fir_number_pool").select("fir_number").eq("societa_id", "global").eq("status", "available").limit(1).single();
+              if (!poolNum?.fir_number) {
+                setTestResult({ success: false, message: "❌ NESSUN NUMERO FIR REALE DISPONIBILE", details: "Richiedere nuovi numeri tramite vidimazione RENTRI." });
+                setIsTesting(false); return;
               }
-            }}
-            disabled={isTesting}
-            className="px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {isTesting ? (
-              <div className="w-4 h-4 border-2 border-amber-500/50 border-t-amber-400 rounded-full animate-spin" />
-            ) : (
-              <Zap className="h-4 w-4" />
-            )}
+              const result = await emissioneFir("global", {
+                numero_fir: poolNum.fir_number,
+                produttore: { denominazione: "Test Srl", codice_fiscale: "00000000000", indirizzo: "Via Test 1, 10100 Torino (TO)" },
+                destinatario: { denominazione: "Impianto Test Srl", codice_fiscale: "11111111111", indirizzo: "Via Prova 2, 10100 Torino (TO)" },
+                trasportatore: { denominazione: "Trasporto Test Srl", codice_fiscale: "22222222222", albo: "TO/00001" },
+                rifiuto: { codice_eer: "150101", descrizione: "Imballaggi di carta e cartone", stato_fisico: "solido non pulverulento", quantita: 10, unita_misura: "kg" },
+              });
+              const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+              const responseData = (result.data ?? {}) as Record<string, any>;
+              setTestResult({
+                success: result.success,
+                message: result.success ? `✅ TEST SUPERATO (${elapsed}s) — RENTRI ID: ${responseData.rentriId || "N/A"}` : `❌ TEST FALLITO (${elapsed}s)`,
+                details: JSON.stringify(result.data, null, 2),
+                qrCode: responseData.qr_code || responseData.qrCodeBytes || responseData.qrCode || "",
+                numeroFir: responseData.numero_fir || responseData.firNumber || "",
+              });
+              if (result.success) toast.success("Test RENTRI superato!");
+              else toast.error(`Test fallito: ${result.error ?? "verifica log tecnico"}`);
+            } catch (err: any) {
+              setTestResult({ success: false, message: `❌ TEST FALLITO`, details: err.message });
+              toast.error("Test RENTRI fallito: " + err.message);
+            } finally { setIsTesting(false); }
+          }} disabled={isTesting} className="px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center gap-2">
+            {isTesting ? <div className="w-4 h-4 border-2 border-amber-500/50 border-t-amber-400 rounded-full animate-spin" /> : <Zap className="h-4 w-4" />}
             {isTesting ? "INVIO IN CORSO..." : "ESEGUI TEST INVIO RENTRI"}
           </button>
-
-          {/* Result panel */}
           {testResult && (
             <div className={`rounded-xl border p-4 space-y-3 ${testResult.success ? "bg-neon-green/5 border-neon-green/30" : "bg-destructive/5 border-destructive/30"}`}>
               <div className="flex items-center gap-2">
                 {testResult.success ? <CheckCircle className="h-5 w-5 text-neon-green" /> : <XCircle className="h-5 w-5 text-destructive" />}
-                <span className={`font-display text-sm ${testResult.success ? "text-neon-green" : "text-destructive"}`}>
-                  {testResult.message}
-                </span>
+                <span className={`font-display text-sm ${testResult.success ? "text-neon-green" : "text-destructive"}`}>{testResult.message}</span>
               </div>
-
               {testResult.success && testResult.qrCode && (
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-white rounded-lg">
-                    <img src={testResult.qrCode} alt="QR Code Test" className="h-20 w-20" />
-                  </div>
+                  <div className="p-2 bg-white rounded-lg"><img src={testResult.qrCode} alt="QR Code Test" className="h-20 w-20" /></div>
                   <div className="text-xs font-mono text-muted-foreground space-y-1">
                     <p><span className="text-primary">N. FIR:</span> {testResult.numeroFir}</p>
                     <p><span className="text-primary">QR:</span> Ricevuto ✓</p>
                   </div>
                 </div>
               )}
-
               {testResult.success && testResult.numeroFir && (
                 <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                   <FileText className="h-3.5 w-3.5 text-primary" />
                   <span>N. FIR: <span className="text-primary">{testResult.numeroFir}</span> — Connessione RENTRI verificata ✓</span>
                 </div>
               )}
-
-              {/* Technical log */}
-              <details className="text-xs">
-                <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-mono">Log tecnico</summary>
-                <pre className="mt-2 p-3 bg-background/80 rounded-lg overflow-x-auto text-muted-foreground font-mono text-[10px] leading-relaxed max-h-60 overflow-y-auto">
-                  {testResult.details}
-                </pre>
+              <details className="text-xs"><summary className="cursor-pointer text-muted-foreground hover:text-foreground font-mono">Log tecnico</summary>
+                <pre className="mt-2 p-3 bg-background/80 rounded-lg overflow-x-auto text-muted-foreground font-mono text-[10px] leading-relaxed max-h-60 overflow-y-auto">{testResult.details}</pre>
               </details>
             </div>
           )}
         </div>
 
-        {/* ── Assign FIR to User ── */}
+        {/* Assign FIR to User */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-          <div className="flex items-center gap-2 text-primary">
-            <UserPlus className="h-5 w-5" />
-            <h3 className="font-display text-lg tracking-wider uppercase">Assegna Numeri a Utente</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cerca un utente per cognome/nome e assegna una quantità di numeri FIR disponibili dal serbatoio.
-          </p>
+          <div className="flex items-center gap-2 text-primary"><UserPlus className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Assegna Numeri a Utente</h3></div>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                value={assignSearch}
-                onChange={(e) => { setAssignSearch(e.target.value); setAssignUserId(null); }}
-                placeholder="Cerca utente per cognome o nome..."
-                className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+              <input value={assignSearch} onChange={(e) => { setAssignSearch(e.target.value); setAssignUserId(null); }} placeholder="Cerca utente per cognome o nome..." className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary" />
               {filteredProfiles.length > 0 && !assignUserId && (
                 <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-card border border-border/30 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                   {filteredProfiles.map((p) => (
-                    <button
-                      key={p.user_id}
-                      onClick={() => { setAssignUserId(p.user_id); setAssignSearch(`${p.cognome} ${p.nome}`); }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 text-foreground transition-colors first:rounded-t-xl last:rounded-b-xl"
-                    >
+                    <button key={p.user_id} onClick={() => { setAssignUserId(p.user_id); setAssignSearch(`${p.cognome} ${p.nome}`); }} className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 text-foreground transition-colors first:rounded-t-xl last:rounded-b-xl">
                       <span className="font-medium">{p.cognome}</span> {p.nome}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <input
-              type="number"
-              min={1}
-              max={stats?.disponibili ?? 100}
-              value={assignQty}
-              onChange={(e) => setAssignQty(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-24 bg-background/80 border border-border/30 rounded-xl px-3 py-2 text-sm font-mono text-foreground text-center focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            <button
-              onClick={handleAssign}
-              disabled={!assignUserId || isAssigning || assignQty < 1}
-              className="px-6 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-            >
-              {isAssigning ? (
-                <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
-              ) : (
-                <UserPlus className="h-4 w-4" />
-              )}
+            <input type="number" min={1} max={stats?.disponibili ?? 100} value={assignQty} onChange={(e) => setAssignQty(Math.max(1, parseInt(e.target.value) || 1))} className="w-24 bg-background/80 border border-border/30 rounded-xl px-3 py-2 text-sm font-mono text-foreground text-center focus:outline-none focus:ring-1 focus:ring-primary" />
+            <button onClick={handleAssign} disabled={!assignUserId || isAssigning || assignQty < 1} className="px-6 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap">
+              {isAssigning ? <div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" /> : <UserPlus className="h-4 w-4" />}
               ASSEGNA
             </button>
           </div>
@@ -532,42 +387,22 @@ export default function GestioneFIRPage() {
           )}
         </div>
 
-        {/* ── Pool Number List ── */}
+        {/* Pool Number List */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Database className="h-5 w-5" />
-            <h3 className="font-display text-lg tracking-wider uppercase">Elenco Numeri nel Serbatoio</h3>
-          </div>
-
-          {/* Filters */}
+          <div className="flex items-center gap-2 text-primary"><Database className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Elenco Numeri nel Serbatoio</h3></div>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                value={poolSearch}
-                onChange={(e) => { setPoolSearch(e.target.value); setPoolPage(0); }}
-                placeholder="Cerca numero FIR..."
-                className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary"
-              />
+              <input value={poolSearch} onChange={(e) => { setPoolSearch(e.target.value); setPoolPage(0); }} placeholder="Cerca numero FIR..." className="w-full pl-9 pr-4 py-2 bg-background/80 border border-border/30 rounded-xl text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
             <div className="flex gap-1">
-              {(["all", "available", "reserved", "consumed"] as PoolFilter[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => { setPoolFilter(f); setPoolPage(0); }}
-                  className={`px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${
-                    poolFilter === f
-                      ? "bg-primary/20 text-primary border border-primary/30"
-                      : "bg-background/50 text-muted-foreground border border-border/20 hover:bg-primary/10"
-                  }`}
-                >
-                  {f === "all" ? "Tutti" : f === "available" ? "Disponibili" : f === "reserved" ? "Assegnati" : "Usati"}
+              {(["all", "available", "reserved", "consumed", "cartaceo"] as PoolFilter[]).map((f) => (
+                <button key={f} onClick={() => { setPoolFilter(f); setPoolPage(0); }} className={`px-3 py-2 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${poolFilter === f ? "bg-primary/20 text-primary border border-primary/30" : "bg-background/50 text-muted-foreground border border-border/20 hover:bg-primary/10"}`}>
+                  {f === "all" ? "Tutti" : f === "available" ? "Disponibili" : f === "reserved" ? "Assegnati" : f === "consumed" ? "Usati" : "Cartacei"}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -577,13 +412,14 @@ export default function GestioneFIRPage() {
                   <th className="text-left py-2 px-3">Assegnato a</th>
                   <th className="text-left py-2 px-3 hidden md:table-cell">Creato il</th>
                   <th className="text-left py-2 px-3 hidden lg:table-cell">Assegnato il</th>
+                  <th className="text-center py-2 px-3">Azioni</th>
                 </tr>
               </thead>
               <tbody>
                 {poolLoading ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-muted-foreground font-mono text-xs">Caricamento...</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground font-mono text-xs">Caricamento...</td></tr>
                 ) : (poolData?.rows.length ?? 0) === 0 ? (
-                  <tr><td colSpan={5} className="py-8 text-center text-muted-foreground font-mono text-xs">Nessun numero trovato</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-muted-foreground font-mono text-xs">Nessun numero trovato</td></tr>
                 ) : (
                   poolData!.rows.map((row: any) => (
                     <tr key={row.id} className="border-b border-border/10 hover:bg-primary/5 transition-colors">
@@ -592,19 +428,23 @@ export default function GestioneFIRPage() {
                         <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider ${
                           row.status === "available" ? "bg-green-500/15 text-green-400" :
                           row.status === "reserved" ? "bg-cyan-500/15 text-cyan-400" :
+                          row.status === "cartaceo" ? "bg-violet-500/15 text-violet-400" :
                           "bg-orange-500/15 text-orange-400"
                         }`}>
-                          {row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : "Usato"}
+                          {row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : row.status === "cartaceo" ? "Cartaceo" : "Usato"}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-foreground text-xs">
                         {row.status !== "available" ? (profileMap[row.user_id] || "—") : <span className="text-muted-foreground italic">—</span>}
                       </td>
-                      <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">
-                        {new Date(row.created_at).toLocaleDateString("it-IT")}
-                      </td>
-                      <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">
-                        {row.assigned_at ? new Date(row.assigned_at).toLocaleDateString("it-IT") : "—"}
+                      <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">{new Date(row.created_at).toLocaleDateString("it-IT")}</td>
+                      <td className="py-2 px-3 hidden lg:table-cell text-muted-foreground font-mono text-xs">{row.assigned_at ? new Date(row.assigned_at).toLocaleDateString("it-IT") : "—"}</td>
+                      <td className="py-2 px-3 text-center">
+                        {row.status === "available" && (
+                          <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
+                            <Printer className="h-3 w-3" /> Stampa
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -612,43 +452,49 @@ export default function GestioneFIRPage() {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination */}
           {(poolData?.total ?? 0) > PAGE_SIZE && (
             <div className="flex items-center justify-between pt-2">
-              <span className="text-xs font-mono text-muted-foreground">
-                {poolPage * PAGE_SIZE + 1}–{Math.min((poolPage + 1) * PAGE_SIZE, poolData!.total)} di {poolData!.total}
-              </span>
+              <span className="text-xs font-mono text-muted-foreground">{poolPage * PAGE_SIZE + 1}–{Math.min((poolPage + 1) * PAGE_SIZE, poolData!.total)} di {poolData!.total}</span>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setPoolPage((p) => Math.max(0, p - 1))}
-                  disabled={poolPage === 0}
-                  className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setPoolPage((p) => p + 1)}
-                  disabled={(poolPage + 1) * PAGE_SIZE >= (poolData?.total ?? 0)}
-                  className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+                <button onClick={() => setPoolPage((p) => Math.max(0, p - 1))} disabled={poolPage === 0} className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"><ChevronLeft className="h-4 w-4" /></button>
+                <button onClick={() => setPoolPage((p) => p + 1)} disabled={(poolPage + 1) * PAGE_SIZE >= (poolData?.total ?? 0)} className="p-2 rounded-lg bg-background/50 border border-border/20 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"><ChevronRight className="h-4 w-4" /></button>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Stampa FIR Editor Dialog */}
+      {printFirNumber && (
+        <DevStampaFIREditor
+          firNumber={printFirNumber}
+          open={!!printFirNumber}
+          onClose={() => setPrintFirNumber(null)}
+          onPrinted={async () => {
+            const { error } = await supabase
+              .from("fir_number_pool")
+              .update({ status: "cartaceo", consumed_at: new Date().toISOString() })
+              .eq("fir_number", printFirNumber)
+              .eq("societa_id", "global");
+            if (error) {
+              toast.error("Errore aggiornamento stato: " + error.message);
+            } else {
+              toast.success(`FIR ${printFirNumber} spostato in Cartacei`);
+              invalidatePool();
+            }
+            setPrintFirNumber(null);
+          }}
+        />
+      )}
     </AdminLayout>
   );
 }
+
 function StatCard({ icon, label, value, color, loading }: { icon: React.ReactNode; label: string; value: number | string; color: string; loading: boolean }) {
   return (
     <div className="rounded-2xl bg-card/60 border border-border/30 p-4 flex flex-col items-center gap-2">
       <div className={`${color} opacity-70`}>{icon}</div>
-      <span className={`text-2xl font-display font-bold ${color}`}>
-        {loading ? "—" : value}
-      </span>
+      <span className={`text-2xl font-display font-bold ${color}`}>{loading ? "—" : value}</span>
       <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">{label}</span>
     </div>
   );
