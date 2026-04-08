@@ -143,7 +143,7 @@ export async function vidimaFIRAsync(cliente, quantita, codiceBlocco, numIscrSit
         return { numeri: [], transazione_id: undefined, pending: false, partial: false };
     }
     onProgress?.("Richiesta accettata, recupero numeri in corso…");
-    const maxRetries = 60;
+    const maxRetries = 3;
     for (let attempt = 0; attempt < maxRetries && numeri.length < quantita; attempt++) {
         if (attempt > 0) {
             await new Promise((resolve) => setTimeout(resolve, 4000));
