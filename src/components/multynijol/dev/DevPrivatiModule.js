@@ -20,12 +20,6 @@ import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
-const CER_CRITICI = {
-    "200140": { label: "Metalli", limite_annuo_kg: 200 },
-    "200307": { label: "Rifiuti ingombranti", limite_annuo_kg: 300 },
-    "200101": { label: "Carta e cartone", limite_annuo_kg: 500 },
-    "200110": { label: "Abbigliamento", limite_annuo_kg: 200 },
-};
 const EMPTY_PRIVATO_FORM = {
     nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
     numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
@@ -148,25 +142,13 @@ export function DevPrivatiModule() {
         const privato = privati?.find(p => p.id === privatoId);
         if (!privato)
             return null;
-        // Global 1500kg annual limit
+        // Global 1500kg annual limit per privato
         const totalGlobale = getTotalKgAnnui(privatoId) + kgNew;
         if (totalGlobale > LIMITE_ANNUO_GLOBALE_KG) {
-            return `🚫 LIMITE ANNUO GLOBALE SUPERATO: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg`;
+            return `🚫 LIMITE ANNUO SUPERATO: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg`;
         }
         if (totalGlobale >= LIMITE_ANNUO_GLOBALE_KG * 0.8) {
-            // Warning but don't block
-        }
-        // CER-specific limits
-        const critico = CER_CRITICI[cer];
-        if (!critico)
-            return null;
-        const usage = getCerUsage(privatoId);
-        const totalAnnuo = (usage[cer] || 0) + kgNew;
-        if (totalAnnuo > critico.limite_annuo_kg) {
-            return `⚠️ LIMITE SUPERATO per CER ${cer}: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui`;
-        }
-        if (totalAnnuo >= critico.limite_annuo_kg * 0.8) {
-            return `⚠️ Attenzione: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui (${Math.round(totalAnnuo / critico.limite_annuo_kg * 100)}%)`;
+            return `⚠️ Attenzione: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg (${Math.round(totalGlobale / LIMITE_ANNUO_GLOBALE_KG * 100)}%)`;
         }
         return null;
     };
@@ -410,7 +392,7 @@ export function DevPrivatiModule() {
         setCerSearch("");
         setShowNewConferimento(true);
     };
-    return (_jsxs("div", { className: "space-y-4", children: [_jsxs(Card, { className: "bg-red-950/30 border-red-500/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-red-400 flex items-center gap-2", children: [_jsx(ShieldAlert, { className: "h-5 w-5" }), " Codici CER Critici \u2014 Limiti Normativi"] }) }), _jsx(CardContent, { children: _jsx("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-2", children: Object.entries(CER_CRITICI).map(([cer, info]) => (_jsxs("div", { className: "flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20", children: [_jsx("span", { className: "font-mono text-amber-300", children: cer }), _jsx("span", { className: "text-muted-foreground text-xs", children: info.label }), _jsxs("span", { className: "ml-auto text-red-400 font-bold text-xs", children: [info.limite_annuo_kg, "kg"] })] }, cer))) }) })] }), _jsxs("div", { className: "flex gap-2 flex-wrap", children: [_jsxs(Button, { onClick: () => { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); setShowNewPrivato(true); }, className: "gap-2 bg-emerald-600 hover:bg-emerald-700", children: [_jsx(Plus, { className: "h-4 w-4" }), " Nuovo Privato"] }), _jsxs(Button, { onClick: handleOpenConferimento, variant: "outline", className: "gap-2 border-emerald-500/30 text-emerald-400", children: [_jsx(Scale, { className: "h-4 w-4" }), " Nuovo Conferimento"] }), _jsxs(Button, { onClick: () => {
+    return (_jsxs("div", { className: "space-y-4", children: [_jsxs(Card, { className: "bg-red-950/30 border-red-500/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-red-400 flex items-center gap-2", children: [_jsx(ShieldAlert, { className: "h-5 w-5" }), " Limite Annuo per Privato: ", LIMITE_ANNUO_GLOBALE_KG, " kg"] }) }), _jsx(CardContent, { children: _jsxs("p", { className: "text-sm text-muted-foreground", children: ["Ogni privato pu\u00F2 conferire al massimo ", _jsxs("strong", { className: "text-red-400", children: [LIMITE_ANNUO_GLOBALE_KG, " kg"] }), " totali all'anno (tutti i CER sommati). Il sistema blocca automaticamente i conferimenti oltre soglia."] }) })] }), _jsxs("div", { className: "flex gap-2 flex-wrap", children: [_jsxs(Button, { onClick: () => { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); setShowNewPrivato(true); }, className: "gap-2 bg-emerald-600 hover:bg-emerald-700", children: [_jsx(Plus, { className: "h-4 w-4" }), " Nuovo Privato"] }), _jsxs(Button, { onClick: handleOpenConferimento, variant: "outline", className: "gap-2 border-emerald-500/30 text-emerald-400", children: [_jsx(Scale, { className: "h-4 w-4" }), " Nuovo Conferimento"] }), _jsxs(Button, { onClick: () => {
                             if (!selectedPrivatoId) {
                                 toast.error("Seleziona un privato");
                                 return;
@@ -442,16 +424,16 @@ export function DevPrivatiModule() {
                                                         ];
                                                         exportToPdf(filteredPrivati, cols, "privati-dev", "Anagrafica Privati — Multyproget Dev");
                                                     }, className: "gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs", children: [_jsx(Printer, { className: "h-3 w-3" }), " PDF"] })] })] }) }), _jsx(CardContent, { className: "max-h-96 overflow-y-auto", children: filteredPrivati?.map((p) => {
-                                    const usage = getCerUsage(p.id);
-                                    const hasWarning = Object.entries(usage).some(([cer, kg]) => CER_CRITICI[cer] && kg >= CER_CRITICI[cer].limite_annuo_kg * 0.8);
+                                    const totalKg = getTotalKgAnnui(p.id);
+                                    const hasWarning = totalKg >= LIMITE_ANNUO_GLOBALE_KG * 0.8;
                                     return (_jsxs("div", { onClick: () => setSelectedPrivatoId(p.id), className: `p-3 rounded cursor-pointer mb-1 border transition-all ${selectedPrivatoId === p.id ? "bg-emerald-500/10 border-emerald-500/30" : "bg-card/30 border-border/10 hover:bg-white/5"}`, children: [_jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("div", { children: [_jsxs("span", { className: "font-medium", children: [p.cognome, " ", p.nome] }), _jsx("span", { className: "ml-2 text-xs text-muted-foreground font-mono", children: p.codice_fiscale })] }), _jsxs("div", { className: "flex items-center gap-2 shrink-0", children: [hasWarning && _jsx(AlertTriangle, { className: "h-4 w-4 text-amber-400" }), _jsxs("button", { className: "h-7 px-2 inline-flex items-center gap-1 rounded-md border border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-400 text-xs font-medium", onClick: (e) => { e.stopPropagation(); openEditPrivato(p); }, title: "Modifica privato", children: [_jsx(Edit2, { className: "h-3.5 w-3.5" }), "Modifica"] })] })] }), _jsxs("div", { className: "text-xs text-muted-foreground mt-1", children: [p.comune_residenza || "-", p.targa_automezzo ? ` · ${p.targa_automezzo}` : ""] })] }, p.id));
-                                }) })] }), _jsx("div", { className: "space-y-4", children: selectedPrivato ? (_jsxs(_Fragment, { children: [_jsxs(Card, { className: "bg-card/60 border-border/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-sm", children: ["Consumi CER Anno \u2014 ", selectedPrivato.cognome, " ", selectedPrivato.nome] }) }), _jsx(CardContent, { children: Object.keys(selectedUsage).length === 0 ? (_jsx("p", { className: "text-muted-foreground text-sm", children: "Nessun conferimento quest'anno" })) : (_jsx("div", { className: "space-y-2", children: Object.entries(selectedUsage).map(([cer, kg]) => {
-                                                    const critico = CER_CRITICI[cer];
-                                                    const pct = critico ? (kg / critico.limite_annuo_kg) * 100 : 0;
-                                                    const isOver = critico && kg >= critico.limite_annuo_kg;
-                                                    const isWarn = critico && pct >= 80;
-                                                    return (_jsxs("div", { className: "space-y-1", children: [_jsxs("div", { className: "flex justify-between text-sm", children: [_jsxs("span", { className: "font-mono", children: [cer, " ", critico ? `(${critico.label})` : ""] }), _jsxs("span", { className: isOver ? "text-red-400 font-bold" : isWarn ? "text-amber-400" : "", children: [kg.toLocaleString("it-IT"), " kg ", critico ? `/ ${critico.limite_annuo_kg} kg` : ""] })] }), critico && (_jsx("div", { className: "h-2 bg-card/60 rounded-full overflow-hidden", children: _jsx("div", { className: `h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`, style: { width: `${Math.min(pct, 100)}%` } }) })), isOver && (_jsxs("div", { className: "flex items-center gap-1 text-red-400 text-xs", children: [_jsx(AlertTriangle, { className: "h-3 w-3" }), " LIMITE SUPERATO \u2014 Operazione bloccata"] }))] }, cer));
-                                                }) })) })] }), _jsxs(Card, { className: "bg-card/60 border-border/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-sm flex items-center gap-2", children: [_jsx(FileText, { className: "h-4 w-4" }), " Documenti Scansionati"] }) }), _jsxs(CardContent, { children: [_jsx("input", { type: "file", ref: fileInputRef, className: "hidden", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => { const f = e.target.files?.[0]; if (f)
+                                }) })] }), _jsx("div", { className: "space-y-4", children: selectedPrivato ? (_jsxs(_Fragment, { children: [_jsxs(Card, { className: "bg-card/60 border-border/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-sm", children: ["Consumi CER Anno \u2014 ", selectedPrivato.cognome, " ", selectedPrivato.nome] }) }), _jsx(CardContent, { children: (() => {
+                                                const totalKg = getTotalKgAnnui(selectedPrivatoId);
+                                                const pct = (totalKg / LIMITE_ANNUO_GLOBALE_KG) * 100;
+                                                const isOver = totalKg >= LIMITE_ANNUO_GLOBALE_KG;
+                                                const isWarn = pct >= 80;
+                                                return (_jsxs("div", { className: "space-y-3", children: [_jsxs("div", { className: "space-y-1", children: [_jsxs("div", { className: "flex justify-between text-sm", children: [_jsx("span", { className: "font-medium", children: "Totale Annuo" }), _jsxs("span", { className: isOver ? "text-red-400 font-bold" : isWarn ? "text-amber-400" : "", children: [totalKg.toLocaleString("it-IT"), " kg / ", LIMITE_ANNUO_GLOBALE_KG, " kg"] })] }), _jsx("div", { className: "h-2 bg-card/60 rounded-full overflow-hidden", children: _jsx("div", { className: `h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`, style: { width: `${Math.min(pct, 100)}%` } }) })] }), Object.keys(selectedUsage).length === 0 ? (_jsx("p", { className: "text-muted-foreground text-sm", children: "Nessun conferimento quest'anno" })) : (_jsx("div", { className: "space-y-1", children: Object.entries(selectedUsage).map(([cer, kg]) => (_jsxs("div", { className: "flex justify-between text-sm", children: [_jsx("span", { className: "font-mono", children: cer }), _jsxs("span", { children: [kg.toLocaleString("it-IT"), " kg"] })] }, cer))) })), isOver && (_jsxs("div", { className: "flex items-center gap-1 text-red-400 text-xs", children: [_jsx(AlertTriangle, { className: "h-3 w-3" }), " LIMITE SUPERATO \u2014 Operazione bloccata"] }))] }));
+                                            })() })] }), _jsxs(Card, { className: "bg-card/60 border-border/30", children: [_jsx(CardHeader, { children: _jsxs(CardTitle, { className: "text-sm flex items-center gap-2", children: [_jsx(FileText, { className: "h-4 w-4" }), " Documenti Scansionati"] }) }), _jsxs(CardContent, { children: [_jsx("input", { type: "file", ref: fileInputRef, className: "hidden", accept: ".pdf,.jpg,.jpeg,.png", onChange: (e) => { const f = e.target.files?.[0]; if (f)
                                                         uploadDoc.mutate(f); } }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => fileInputRef.current?.click(), disabled: uploadDoc.isPending, className: "gap-2 mb-3 border-emerald-500/30 text-emerald-400", children: [_jsx(Upload, { className: "h-4 w-4" }), " Carica Documento"] }), documenti?.length ? (_jsx("div", { className: "space-y-1", children: documenti.map((d) => (_jsxs("div", { className: "flex items-center gap-2 text-sm p-2 rounded bg-card/30", children: [_jsx(FileText, { className: "h-4 w-4 text-muted-foreground" }), _jsx("span", { children: d.nome_file }), _jsx("span", { className: "text-xs text-muted-foreground ml-auto", children: new Date(d.created_at).toLocaleDateString("it-IT") })] }, d.id))) })) : (_jsx("p", { className: "text-muted-foreground text-xs", children: "Nessun documento caricato" }))] })] }), _jsxs(Card, { className: "bg-card/60 border-border/30", children: [_jsx(CardHeader, { children: _jsxs("div", { className: "flex items-center justify-between gap-2", children: [_jsxs(CardTitle, { className: "text-sm flex items-center gap-2", children: [_jsx(Receipt, { className: "h-4 w-4" }), " Ricevute (", ricevute?.length ?? 0, ")"] }), _jsxs("div", { className: "flex gap-1", children: [_jsxs(Button, { variant: "outline", size: "sm", onClick: handlePrintRicevute, className: "gap-1 border-emerald-500/30 text-emerald-400 h-7 text-xs", children: [_jsx(Printer, { className: "h-3 w-3" }), " Stampa"] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => {
                                                                     if (!ricevute?.length)
                                                                         return toast.error("Nessuna ricevuta");
