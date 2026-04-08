@@ -21,12 +21,6 @@ import { CER_DATA } from "./DevCERPreferitiModule";
 const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
 
-const CER_CRITICI: Record<string, { label: string; limite_annuo_kg: number }> = {
-  "200140": { label: "Metalli", limite_annuo_kg: 200 },
-  "200307": { label: "Rifiuti ingombranti", limite_annuo_kg: 300 },
-  "200101": { label: "Carta e cartone", limite_annuo_kg: 500 },
-  "200110": { label: "Abbigliamento", limite_annuo_kg: 200 },
-};
 
 const EMPTY_PRIVATO_FORM = {
   nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
@@ -148,25 +142,13 @@ export function DevPrivatiModule() {
     const privato = privati?.find(p => p.id === privatoId);
     if (!privato) return null;
 
-    // Global 1500kg annual limit
+    // Global 1500kg annual limit per privato
     const totalGlobale = getTotalKgAnnui(privatoId) + kgNew;
     if (totalGlobale > LIMITE_ANNUO_GLOBALE_KG) {
-      return `🚫 LIMITE ANNUO GLOBALE SUPERATO: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg`;
+      return `🚫 LIMITE ANNUO SUPERATO: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg`;
     }
     if (totalGlobale >= LIMITE_ANNUO_GLOBALE_KG * 0.8) {
-      // Warning but don't block
-    }
-
-    // CER-specific limits
-    const critico = CER_CRITICI[cer];
-    if (!critico) return null;
-    const usage = getCerUsage(privatoId);
-    const totalAnnuo = (usage[cer] || 0) + kgNew;
-    if (totalAnnuo > critico.limite_annuo_kg) {
-      return `⚠️ LIMITE SUPERATO per CER ${cer}: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui`;
-    }
-    if (totalAnnuo >= critico.limite_annuo_kg * 0.8) {
-      return `⚠️ Attenzione: ${totalAnnuo} kg / ${critico.limite_annuo_kg} kg annui (${Math.round(totalAnnuo / critico.limite_annuo_kg * 100)}%)`;
+      return `⚠️ Attenzione: ${totalGlobale.toLocaleString("it-IT")} kg / ${LIMITE_ANNUO_GLOBALE_KG} kg (${Math.round(totalGlobale / LIMITE_ANNUO_GLOBALE_KG * 100)}%)`;
     }
     return null;
   };
@@ -393,23 +375,15 @@ export function DevPrivatiModule() {
 
   return (
     <div className="space-y-4">
-      {/* CER Limits Alert */}
+      {/* Global Limit Alert */}
       <Card className="bg-red-950/30 border-red-500/30">
         <CardHeader>
           <CardTitle className="text-red-400 flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" /> Codici CER Critici — Limiti Normativi
+            <ShieldAlert className="h-5 w-5" /> Limite Annuo per Privato: {LIMITE_ANNUO_GLOBALE_KG} kg
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {Object.entries(CER_CRITICI).map(([cer, info]) => (
-              <div key={cer} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20">
-                <span className="font-mono text-amber-300">{cer}</span>
-                <span className="text-muted-foreground text-xs">{info.label}</span>
-                <span className="ml-auto text-red-400 font-bold text-xs">{info.limite_annuo_kg}kg</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground">Ogni privato può conferire al massimo <strong className="text-red-400">{LIMITE_ANNUO_GLOBALE_KG} kg</strong> totali all'anno (tutti i CER sommati). Il sistema blocca automaticamente i conferimenti oltre soglia.</p>
         </CardContent>
       </Card>
 
@@ -480,10 +454,8 @@ export function DevPrivatiModule() {
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
             {filteredPrivati?.map((p) => {
-              const usage = getCerUsage(p.id);
-              const hasWarning = Object.entries(usage).some(([cer, kg]) =>
-                CER_CRITICI[cer] && kg >= CER_CRITICI[cer].limite_annuo_kg * 0.8
-              );
+              const totalKg = getTotalKgAnnui(p.id);
+              const hasWarning = totalKg >= LIMITE_ANNUO_GLOBALE_KG * 0.8;
               return (
                 <div key={p.id} onClick={() => setSelectedPrivatoId(p.id)}
                   className={`p-3 rounded cursor-pointer mb-1 border transition-all ${
@@ -525,29 +497,35 @@ export function DevPrivatiModule() {
                   <CardTitle className="text-sm">Consumi CER Anno — {selectedPrivato.cognome} {selectedPrivato.nome}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {Object.keys(selectedUsage).length === 0 ? (
-                    <p className="text-muted-foreground text-sm">Nessun conferimento quest'anno</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {Object.entries(selectedUsage).map(([cer, kg]) => {
-                        const critico = CER_CRITICI[cer];
-                        const pct = critico ? (kg / critico.limite_annuo_kg) * 100 : 0;
-                        const isOver = critico && kg >= critico.limite_annuo_kg;
-                        const isWarn = critico && pct >= 80;
-                        return (
-                          <div key={cer} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-mono">{cer} {critico ? `(${critico.label})` : ""}</span>
-                              <span className={isOver ? "text-red-400 font-bold" : isWarn ? "text-amber-400" : ""}>
-                                {kg.toLocaleString("it-IT")} kg {critico ? `/ ${critico.limite_annuo_kg} kg` : ""}
-                              </span>
-                            </div>
-                            {critico && (
-                              <div className="h-2 bg-card/60 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`}
-                                  style={{ width: `${Math.min(pct, 100)}%` }} />
+                  {(() => {
+                    const totalKg = getTotalKgAnnui(selectedPrivatoId!);
+                    const pct = (totalKg / LIMITE_ANNUO_GLOBALE_KG) * 100;
+                    const isOver = totalKg >= LIMITE_ANNUO_GLOBALE_KG;
+                    const isWarn = pct >= 80;
+                    return (
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">Totale Annuo</span>
+                            <span className={isOver ? "text-red-400 font-bold" : isWarn ? "text-amber-400" : ""}>
+                              {totalKg.toLocaleString("it-IT")} kg / {LIMITE_ANNUO_GLOBALE_KG} kg
+                            </span>
+                          </div>
+                          <div className="h-2 bg-card/60 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isWarn ? "bg-amber-500" : "bg-emerald-500"}`}
+                              style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                        </div>
+                        {Object.keys(selectedUsage).length === 0 ? (
+                          <p className="text-muted-foreground text-sm">Nessun conferimento quest'anno</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {Object.entries(selectedUsage).map(([cer, kg]) => (
+                              <div key={cer} className="flex justify-between text-sm">
+                                <span className="font-mono">{cer}</span>
+                                <span>{kg.toLocaleString("it-IT")} kg</span>
                               </div>
-                            )}
+                            ))}
                             {isOver && (
                               <div className="flex items-center gap-1 text-red-400 text-xs">
                                 <AlertTriangle className="h-3 w-3" /> LIMITE SUPERATO — Operazione bloccata
