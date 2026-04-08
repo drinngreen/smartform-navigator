@@ -526,16 +526,16 @@ export function DevPrivatiModule() {
                                 <span>{kg.toLocaleString("it-IT")} kg</span>
                               </div>
                             ))}
-                            {isOver && (
-                              <div className="flex items-center gap-1 text-red-400 text-xs">
-                                <AlertTriangle className="h-3 w-3" /> LIMITE SUPERATO — Operazione bloccata
-                              </div>
-                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        )}
+                        {isOver && (
+                          <div className="flex items-center gap-1 text-red-400 text-xs">
+                            <AlertTriangle className="h-3 w-3" /> LIMITE SUPERATO — Operazione bloccata
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
