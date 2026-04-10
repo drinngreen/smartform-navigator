@@ -69,9 +69,9 @@ export function DevGestioneFIRModule() {
   });
 
   const { data: profiles } = useQuery({
-    queryKey: ["dev-profiles-all"],
+    queryKey: ["dev-profiles-multy-transporters"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("user_id, nome, cognome").order("cognome");
+      const { data, error } = await supabase.from("profiles").select("user_id, nome, cognome").eq("mn_context", "multyproget").order("cognome");
       if (error) throw error;
       return data as ProfileInfo[];
     },
