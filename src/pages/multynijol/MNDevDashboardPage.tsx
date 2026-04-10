@@ -124,6 +124,13 @@ export default function MNDevDashboardPage() {
             <Package className="h-4 w-4" />
             Magazzino
           </TabsTrigger>
+          <TabsTrigger
+            value="personale"
+            className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400"
+          >
+            <Users className="h-4 w-4" />
+            Personale
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -158,6 +165,9 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="magazzino">
           <DevMagazzinoModule />
+        </TabsContent>
+        <TabsContent value="personale">
+          <DevPersonaleModule />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
