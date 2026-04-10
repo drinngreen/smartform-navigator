@@ -13,6 +13,7 @@ import {
   Database,
   PenTool,
   Package,
+  Users,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
@@ -25,6 +26,7 @@ import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferi
 import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIRModule";
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
+import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -122,6 +124,13 @@ export default function MNDevDashboardPage() {
             <Package className="h-4 w-4" />
             Magazzino
           </TabsTrigger>
+          <TabsTrigger
+            value="personale"
+            className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400"
+          >
+            <Users className="h-4 w-4" />
+            Personale
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -156,6 +165,9 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="magazzino">
           <DevMagazzinoModule />
+        </TabsContent>
+        <TabsContent value="personale">
+          <DevPersonaleModule />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
