@@ -34,7 +34,7 @@ export function DevImpiantoModule() {
   const { profile } = useAuth();
 
   return (
-    <Tabs defaultValue="nuovo-fir" className="space-y-4">
+    <Tabs defaultValue="formulari" className="space-y-4">
       <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
         <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <Plus className="h-4 w-4" /> Nuovo FIR
