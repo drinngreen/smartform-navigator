@@ -26,6 +26,7 @@ import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferi
 import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIRModule";
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
+import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
