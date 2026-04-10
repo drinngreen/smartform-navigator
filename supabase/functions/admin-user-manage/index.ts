@@ -223,6 +223,20 @@ serve(async (req) => {
 
       const email = `${codice_fiscale.toLowerCase()}@zoli.internal`;
 
+      // Check if user already exists
+      const { data: existingUsers } = await adminClient.auth.admin.listUsers({ perPage: 1 });
+      const { data: existingCheck } = await adminClient
+        .from("profiles")
+        .select("user_id")
+        .eq("codice_fiscale", codice_fiscale.toUpperCase())
+        .maybeSingle();
+
+      if (existingCheck) {
+        return new Response(JSON.stringify({ error: "exists", user_id: existingCheck.user_id, message: "Utente già registrato con questo codice fiscale" }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Create auth user
       const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
         email,
@@ -232,6 +246,12 @@ serve(async (req) => {
       });
 
       if (authError) {
+        // Double-check: if email already registered, return 409 not 400
+        if (authError.message?.includes("already been registered")) {
+          return new Response(JSON.stringify({ error: "exists", message: "Utente già registrato" }), {
+            status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         return new Response(JSON.stringify({ error: authError.message }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
