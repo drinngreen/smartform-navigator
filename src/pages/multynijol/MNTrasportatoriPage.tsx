@@ -97,7 +97,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     }
   };
 
-  useEffect(() => { fetchUsers(); }, [context]);
+  useEffect(() => { fetchUsers(); }, [contextKey]);
 
   const handleResetPassword = async () => {
     if (!passwordDialog.user || !newPassword) return;
