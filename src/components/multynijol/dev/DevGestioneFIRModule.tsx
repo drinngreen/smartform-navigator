@@ -34,6 +34,7 @@ export function DevGestioneFIRModule() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
+  const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats", SOCIETA_ID],
