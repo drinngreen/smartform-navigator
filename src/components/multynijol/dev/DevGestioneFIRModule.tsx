@@ -179,6 +179,21 @@ export function DevGestioneFIRModule() {
     } finally { setIsAssigning(false); }
   };
 
+  const handleInlineAssign = async (poolId: string, firNumber: string, targetUserId: string) => {
+    try {
+      const { error } = await supabase.from("fir_number_pool")
+        .update({ user_id: targetUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() })
+        .eq("id", poolId);
+      if (error) throw error;
+      const targetName = profileMap[targetUserId] || targetUserId;
+      toast.success(`✅ ${firNumber} assegnato a ${targetName}`);
+      invalidatePool();
+      setAssignDropdownId(null);
+    } catch (err: any) {
+      toast.error(`Errore: ${err.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
