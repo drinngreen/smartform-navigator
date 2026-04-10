@@ -314,6 +314,14 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <MNAdminLayout title={`Trasportatori ${tenant.label}`} subtitle={`Gestione trasportatori ${tenant.label}`}>
+      {content}
     </MNAdminLayout>
   );
 }
