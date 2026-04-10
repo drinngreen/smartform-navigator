@@ -37,7 +37,8 @@ interface FirForm {
   user_profile?: { nome: string; cognome: string; codice_fiscale: string } | null;
 }
 
-const validContexts = ["multyproget", "niyol"];
+const validContexts = ["multyproget", "dev-multyproget", "niyol"];
+const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 
 export default function MNFormulariPage() {
   const { context } = useParams<{ context: string }>();
@@ -62,18 +63,34 @@ export default function MNFormulariPage() {
     if (!mnCtx) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
-        body: { action: "list_fir_forms", tenant_id: mnCtx.tenantId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setForms(data.forms || []);
+      const loadForms = async (tenantId: string) => {
+        const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+          body: { action: "list_fir_forms", tenant_id: tenantId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return data.forms || [];
+      };
+
+      const scopedForms = await loadForms(mnCtx.tenantId);
+      if (scopedForms.length > 0) {
+        setForms(scopedForms);
+        return;
+      }
+
+      const shouldFallbackToGlobal = context === "multyproget" || context === "dev-multyproget";
+      if (shouldFallbackToGlobal && mnCtx.tenantId !== GLOBAL_FIR_TENANT_ID) {
+        setForms(await loadForms(GLOBAL_FIR_TENANT_ID));
+        return;
+      }
+
+      setForms(scopedForms);
     } catch (e: any) {
       toast.error("Errore caricamento formulari: " + e.message);
     } finally {
       setLoading(false);
     }
-  }, [mnCtx?.tenantId]);
+  }, [context, mnCtx?.tenantId]);
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
@@ -156,7 +173,7 @@ export default function MNFormulariPage() {
     }
   };
 
-  const contextLabel = context === "multyproget" ? "Multyproget" : "Niyol";
+  const contextLabel = context === "niyol" ? "Niyol" : "Multyproget";
 
   return (
     <MNAdminLayout title={`Formulari — ${contextLabel}`} subtitle="Gestione formulari FIR creati dagli autisti">

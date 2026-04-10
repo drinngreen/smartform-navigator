@@ -1,31 +1,4 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DevGiacenzeModule } from "./DevGiacenzeModule";
-import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
-import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer, ClipboardList, } from "lucide-react";
-import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
-import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
-import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri } from "@/lib/rentriVpsApi";
-import { getTenantConfig } from "@/lib/rentriBlockCodes";
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
-const SOCIETA_ID = "multy";
-export function DevImpiantoModule() {
-    const { profile } = useAuth();
-    return (_jsxs(Tabs, { defaultValue: "nuovo-fir", className: "space-y-4", children: [_jsxs(TabsList, { className: "bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1", children: [_jsxs(TabsTrigger, { value: "nuovo-fir", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(Plus, { className: "h-4 w-4" }), " Nuovo FIR"] }), _jsxs(TabsTrigger, { value: "giacenze", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(Package, { className: "h-4 w-4" }), " Giacenze"] }), _jsxs(TabsTrigger, { value: "formulari", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(FileText, { className: "h-4 w-4" }), " Formulari"] }), _jsxs(TabsTrigger, { value: "gestione-fir", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(Database, { className: "h-4 w-4" }), " Gestione FIR"] }), _jsxs(TabsTrigger, { value: "fatturazione", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(CreditCard, { className: "h-4 w-4" }), " Fatturazione"] }), _jsxs(TabsTrigger, { value: "registro", className: "gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400", children: [_jsx(ClipboardList, { className: "h-4 w-4" }), " Registro C/S"] })] }), _jsx(TabsContent, { value: "nuovo-fir", children: _jsx("div", { className: "p-4 rounded-2xl bg-card/60 border border-emerald-500/20", children: _jsx(MNFIRFormComplete, {}) }) }), _jsx(TabsContent, { value: "giacenze", children: _jsx(DevGiacenzeModule, {}) }), _jsx(TabsContent, { value: "formulari", children: _jsx(ImpiantoFormulari, {}) }), _jsx(TabsContent, { value: "gestione-fir", children: _jsx(ImpiantoGestioneFIR, {}) }), _jsx(TabsContent, { value: "fatturazione", children: _jsx("div", { className: "p-4 rounded-2xl bg-card/60 border border-emerald-500/20", children: _jsx(FatturazioneModule, { tenantId: profile?.tenant_id || undefined }) }) }), _jsx(TabsContent, { value: "registro", children: _jsx("div", { className: "p-4 rounded-2xl bg-card/60 border border-emerald-500/20", children: _jsx(DevRegistroCaricoScaricoModule, {}) }) })] }));
-}
+export * from "./DevImpiantoModule.tsx";
 // ─── Formulari sub-module ───
 function ImpiantoFormulari() {
     const { user } = useAuth();

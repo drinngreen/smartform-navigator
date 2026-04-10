@@ -26,7 +26,8 @@ import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
 import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const SOCIETA_ID = "multy";
 
 export function DevImpiantoModule() {
@@ -94,14 +95,21 @@ function ImpiantoFormulari() {
   const [saving, setSaving] = useState(false);
 
   const { data: forms = [], isLoading, refetch } = useQuery({
-    queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID],
+    queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
-        body: { action: "list_fir_forms", tenant_id: MULTY_TENANT_ID },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data.forms || [];
+      const loadForms = async (tenantId: string) => {
+        const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+          body: { action: "list_fir_forms", tenant_id: tenantId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return data.forms || [];
+      };
+
+      const multyForms = await loadForms(MULTY_TENANT_ID);
+      if (multyForms.length > 0) return multyForms;
+
+      return await loadForms(GLOBAL_FIR_TENANT_ID);
     },
   });
 
