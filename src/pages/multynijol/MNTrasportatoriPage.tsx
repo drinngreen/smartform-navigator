@@ -99,6 +99,30 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
 
   useEffect(() => { fetchUsers(); }, [contextKey]);
 
+  const handleCreateFir = async (user: UserEntry) => {
+    setActionLoading(true);
+    try {
+      const { data: draftId, error } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
+        p_user_id: user.id,
+      });
+      if (error) throw error;
+      if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
+      
+      // Get the draft details
+      const { data: draft } = await supabase
+        .from("fir_forms")
+        .select("numero_fir")
+        .eq("id", draftId)
+        .maybeSingle();
+      
+      toast.success(`✅ Bozza FIR ${draft?.numero_fir || ""} creata per ${user.profile?.nome} ${user.profile?.cognome}`);
+    } catch (e: any) {
+      toast.error("Errore creazione FIR: " + e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!passwordDialog.user || !newPassword) return;
     setActionLoading(true);
