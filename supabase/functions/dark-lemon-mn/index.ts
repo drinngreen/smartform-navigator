@@ -6,7 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6"; // Multy Niyol
+const TENANT_MAP: Record<string, string> = {
+  multyproget: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+};
+const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6"; // Multy Niyol fallback
+
+function resolveTenantId(context?: string): string {
+  if (context && TENANT_MAP[context]) return TENANT_MAP[context];
+  return DEFAULT_TENANT_ID;
+}
 
 const DB_SCHEMA = `
 ## Database Schema — Tenant MultyNiyol (dc2a6046-d9a8-4549-8e45-82367d695ac6)
