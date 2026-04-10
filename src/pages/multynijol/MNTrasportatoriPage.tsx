@@ -154,8 +154,9 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     away: "bg-yellow-500",
   };
 
-  return (
-    <MNAdminLayout title={`Trasportatori ${tenant.label}`} subtitle={`Gestione trasportatori ${tenant.label}`}>
+  const content = (
+    <>
+      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Trasportatori {tenant.label}</h2></div>}
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
