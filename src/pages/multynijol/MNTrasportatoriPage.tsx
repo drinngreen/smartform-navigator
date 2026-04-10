@@ -255,6 +255,16 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                         <Button
                           size="sm"
                           variant="outline"
+                          className="gap-1.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => handleCreateFir(user)}
+                          disabled={actionLoading}
+                        >
+                          <FilePlus className="h-3.5 w-3.5" />
+                          Crea FIR
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="gap-1.5 text-xs"
                           onClick={() => { setPasswordDialog({ open: true, user }); setNewPassword(""); }}
                         >
