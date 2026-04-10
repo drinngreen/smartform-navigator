@@ -6,7 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6"; // Multy Niyol
+const TENANT_MAP: Record<string, string> = {
+  multyproget: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+};
+const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6"; // Multy Niyol fallback
+
+function resolveTenantId(context?: string): string {
+  if (context && TENANT_MAP[context]) return TENANT_MAP[context];
+  return DEFAULT_TENANT_ID;
+}
 
 const DB_SCHEMA = `
 ## Database Schema — Tenant MultyNiyol (dc2a6046-d9a8-4549-8e45-82367d695ac6)
@@ -51,27 +60,33 @@ Colonne: id, moderator_id, target_type, target_id, action, reason, created_at.
 (vedi schema completo nella knowledge base)
 `;
 
-function buildSystemPrompt(adminName: string, contextNote: string, memories: any[]) {
+function buildSystemPrompt(adminName: string, contextNote: string, memories: any[], tenantId: string, contextLabel: string) {
   const memoryBlock = memories.length > 0
     ? `\n\n### Memoria admin (fatti appresi dalle conversazioni precedenti):\n${memories.map(m => `- ${m.fact_key}: ${m.fact_value}`).join("\n")}`
     : "";
 
-  return `Sei DARK LEMON AI, l'assistente intelligente avanzato per il tenant Multy Niyol, personalizzato per ${adminName}.
-Multy Niyol è il tenant consolidato che gestisce due società gemelle:
-- **Multyproget S.r.l.** — società di trasporto e intermediazione rifiuti
-- **Niyol S.r.l.** — società gemella con funzioni analoghe
+  return `Sei DARK LEMON AI, l'assistente intelligente avanzato per ${contextLabel}, personalizzato per ${adminName}.
 
-Il tenant_id di Multy Niyol è: ${TENANT_ID}
+Il tenant_id attivo è: ${tenantId}
 ${contextNote}
+
+**REGOLA CRITICA DI ISOLAMENTO**: Devi SEMPRE filtrare per tenant_id = '${tenantId}' in OGNI query. Non accedere MAI a dati di altri tenant. Questo è fondamentale per la sicurezza e l'isolamento dei dati.
 
 Hai PIENO accesso al database e puoi:
 1. **Leggere dati** — interrogare qualsiasi tabella
-2. **Scrivere dati** — inserire nuovi record
-3. **Aggiornare dati** — modificare record esistenti
-4. **Eliminare dati** — rimuovere record (con conferma)
+2. **Scrivere dati** — inserire nuovi record (sempre con tenant_id = '${tenantId}')
+3. **Aggiornare dati** — modificare record esistenti (solo del tenant attivo)
+4. **Eliminare dati** — rimuovere record (con conferma, solo del tenant attivo)
 5. **Social** — leggere feed, moderare post, inviare messaggi
 6. **Messaggi** — inviare e leggere messaggi con trasportatori
 7. **Memoria** — salvare fatti per ricordarli in futuro
+8. **Magazzino** — gestire giacenze, movimenti carico/scarico, cernite
+
+### Tabelle magazzino (aggiuntive):
+- **magazzino_giacenze**: id, tenant_id, impianto_id, cer, quantita_kg, ultimo_carico_at, created_at, updated_at
+- **movimenti_impianto**: id, tenant_id, impianto_id, cer, tipo_movimento (CARICO/SCARICO), quantita_kg, ruolo_impianto, descrizione, data_movimento, note, created_at
+- **cernite**: id, tenant_id, impianto_id, cer_input, quantita_input, descrizione_input, stato, note, created_at
+- **cernita_output**: id, cernita_id, cer_output, quantita, tipo_output, descrizione_output
 
 ${DB_SCHEMA}
 
@@ -79,7 +94,8 @@ ${DB_SCHEMA}
 - Rispondi SEMPRE in italiano, in modo chiaro e professionale.
 - Quando l'utente chiede dati, usa query_database.
 - Quando chiede di scrivere, usa write_database.
-- Per le query, filtra SEMPRE per tenant_id = '${TENANT_ID}' dove la colonna esiste.
+- Per le query, filtra SEMPRE per tenant_id = '${tenantId}' dove la colonna esiste.
+- Quando inserisci dati, includi SEMPRE tenant_id = '${tenantId}'.
 - Formatta i dati tabellari in modo leggibile.
 - Per operazioni distruttive, chiedi conferma.
 - Limita le SELECT a max 50 righe.
@@ -248,8 +264,10 @@ serve(async (req) => {
       memories = data || [];
     }
 
-    const contextNote = context ? `\nContesto attivo: ${context === "multyproget" ? "Multyproget S.r.l." : "Niyol S.r.l."}` : "";
-    const systemPrompt = buildSystemPrompt(adminName, contextNote, memories);
+    const tenantId = resolveTenantId(context);
+    const contextLabel = context === "multyproget" ? "Multyproget S.r.l." : context === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
+    const contextNote = context ? `\nContesto attivo: ${contextLabel} (tenant_id: ${tenantId})` : "";
+    const systemPrompt = buildSystemPrompt(adminName, contextNote, memories, tenantId, contextLabel);
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
@@ -333,7 +351,7 @@ serve(async (req) => {
             }
             case "count_records": {
               const table = args.table.replace(/[^a-zA-Z0-9_]/g, "");
-              let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${TENANT_ID}'`;
+              let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${tenantId}'`;
               if (args.filter) countQuery += ` AND (${args.filter})`;
               const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: countQuery }).maybeSingle();
               result = error ? { error: error.message } : rows;
