@@ -30,57 +30,119 @@ const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const SOCIETA_ID = "multy";
 
+async function loadImpiantoPoolStats() {
+  const [totalRes, disponibiliRes, inUsoRes, usatiRes] = await Promise.all([
+    supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID),
+    supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "available"),
+    supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "reserved"),
+    supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "consumed"),
+  ]);
+
+  return {
+    total: totalRes.count ?? 0,
+    disponibili: disponibiliRes.count ?? 0,
+    inUso: inUsoRes.count ?? 0,
+    usati: usatiRes.count ?? 0,
+  };
+}
+
+function DevSerbatoioOverview() {
+  const { data: stats } = useQuery({
+    queryKey: ["dev-fir-pool-stats-impianto", SOCIETA_ID],
+    queryFn: loadImpiantoPoolStats,
+    refetchInterval: 10000,
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-emerald-400">
+        <Database className="h-4 w-4" />
+        <span className="text-sm font-medium">Serbatoio FIR Multy</span>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/60 border-emerald-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Database className="h-6 w-6 text-emerald-400" />
+            <div><p className="text-xs text-muted-foreground">Totale</p><p className="text-xl font-bold text-emerald-400">{stats?.total ?? 0}</p></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/60 border-emerald-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <CheckCircle className="h-6 w-6 text-green-400" />
+            <div><p className="text-xs text-muted-foreground">Disponibili</p><p className="text-xl font-bold text-green-400">{stats?.disponibili ?? 0}</p></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/60 border-emerald-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Clock className="h-6 w-6 text-cyan-400" />
+            <div><p className="text-xs text-muted-foreground">In Uso</p><p className="text-xl font-bold text-cyan-400">{stats?.inUso ?? 0}</p></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/60 border-emerald-500/30">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Package className="h-6 w-6 text-amber-400" />
+            <div><p className="text-xs text-muted-foreground">Consumati</p><p className="text-xl font-bold text-amber-400">{stats?.usati ?? 0}</p></div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export function DevImpiantoModule() {
   const { profile } = useAuth();
 
   return (
-    <Tabs defaultValue="formulari" className="space-y-4">
-      <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
-        <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <Plus className="h-4 w-4" /> Nuovo FIR
-        </TabsTrigger>
-        <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <Package className="h-4 w-4" /> Giacenze
-        </TabsTrigger>
-        <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <FileText className="h-4 w-4" /> Formulari
-        </TabsTrigger>
-        <TabsTrigger value="gestione-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <Database className="h-4 w-4" /> Gestione FIR
-        </TabsTrigger>
-        <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <CreditCard className="h-4 w-4" /> Fatturazione
-        </TabsTrigger>
-        <TabsTrigger value="registro" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-          <ClipboardList className="h-4 w-4" /> Registro C/S
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <DevSerbatoioOverview />
+      <Tabs defaultValue="formulari" className="space-y-4">
+        <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
+          <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Plus className="h-4 w-4" /> Nuovo FIR
+          </TabsTrigger>
+          <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Package className="h-4 w-4" /> Giacenze
+          </TabsTrigger>
+          <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <FileText className="h-4 w-4" /> Formulari
+          </TabsTrigger>
+          <TabsTrigger value="gestione-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Database className="h-4 w-4" /> Gestione FIR
+          </TabsTrigger>
+          <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <CreditCard className="h-4 w-4" /> Fatturazione
+          </TabsTrigger>
+          <TabsTrigger value="registro" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <ClipboardList className="h-4 w-4" /> Registro C/S
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="nuovo-fir">
-        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-          <MNFIRFormComplete />
-        </div>
-      </TabsContent>
-      <TabsContent value="giacenze">
-        <DevGiacenzeModule />
-      </TabsContent>
-      <TabsContent value="formulari">
-        <ImpiantoFormulari />
-      </TabsContent>
-      <TabsContent value="gestione-fir">
-        <ImpiantoGestioneFIR />
-      </TabsContent>
-      <TabsContent value="fatturazione">
-        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-          <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
-        </div>
-      </TabsContent>
-      <TabsContent value="registro">
-        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-          <DevRegistroCaricoScaricoModule />
-        </div>
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="nuovo-fir">
+          <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+            <MNFIRFormComplete />
+          </div>
+        </TabsContent>
+        <TabsContent value="giacenze">
+          <DevGiacenzeModule />
+        </TabsContent>
+        <TabsContent value="formulari">
+          <ImpiantoFormulari />
+        </TabsContent>
+        <TabsContent value="gestione-fir">
+          <ImpiantoGestioneFIR />
+        </TabsContent>
+        <TabsContent value="fatturazione">
+          <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+            <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
+          </div>
+        </TabsContent>
+        <TabsContent value="registro">
+          <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+            <DevRegistroCaricoScaricoModule />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
@@ -324,15 +386,7 @@ function ImpiantoGestioneFIR() {
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats-impianto", SOCIETA_ID],
-    queryFn: async () => {
-      const [totalRes, disponibiliRes, inUsoRes, usatiRes] = await Promise.all([
-        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID),
-        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "available"),
-        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "reserved"),
-        supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID).eq("status", "consumed"),
-      ]);
-      return { total: totalRes.count ?? 0, disponibili: disponibiliRes.count ?? 0, inUso: inUsoRes.count ?? 0, usati: usatiRes.count ?? 0 };
-    },
+    queryFn: loadImpiantoPoolStats,
     refetchInterval: 10000,
   });
 
