@@ -34,6 +34,7 @@ export function DevGestioneFIRModule() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
+  const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats", SOCIETA_ID],
@@ -178,6 +179,21 @@ export function DevGestioneFIRModule() {
     } finally { setIsAssigning(false); }
   };
 
+  const handleInlineAssign = async (poolId: string, firNumber: string, targetUserId: string) => {
+    try {
+      const { error } = await supabase.from("fir_number_pool")
+        .update({ user_id: targetUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() })
+        .eq("id", poolId);
+      if (error) throw error;
+      const targetName = profileMap[targetUserId] || targetUserId;
+      toast.success(`✅ ${firNumber} assegnato a ${targetName}`);
+      invalidatePool();
+      setAssignDropdownId(null);
+    } catch (err: any) {
+      toast.error(`Errore: ${err.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -292,13 +308,29 @@ export function DevGestioneFIRModule() {
                   <td className="py-2 px-3"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono uppercase ${row.status === "available" ? "bg-emerald-500/15 text-emerald-400" : row.status === "reserved" ? "bg-cyan-500/15 text-cyan-400" : row.status === "cartaceo" ? "bg-violet-500/15 text-violet-400" : "bg-orange-500/15 text-orange-400"}`}>{row.status === "available" ? "Disponibile" : row.status === "reserved" ? "Assegnato" : row.status === "cartaceo" ? "Cartaceo" : "Usato"}</span></td>
                   <td className="py-2 px-3 text-foreground text-xs">{row.status !== "available" ? (profileMap[row.user_id] || "—") : "—"}</td>
                   <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">{new Date(row.created_at).toLocaleDateString("it-IT")}</td>
-                  <td className="py-2 px-3 text-center">
-                    {row.status === "available" && (
-                      <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
-                        <Printer className="h-3 w-3" /> Stampa
-                      </button>
-                    )}
-                  </td>
+                   <td className="py-2 px-3 text-center">
+                     <div className="flex items-center justify-center gap-1 relative">
+                       {row.status === "available" && (
+                         <>
+                           <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
+                             <Printer className="h-3 w-3" /> Stampa
+                           </button>
+                           <button onClick={() => setAssignDropdownId(assignDropdownId === row.id ? null : row.id)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors">
+                             <UserPlus className="h-3 w-3" /> Assegna
+                           </button>
+                           {assignDropdownId === row.id && (
+                             <div className="absolute z-30 top-full mt-1 right-0 bg-card border border-border/30 rounded-xl shadow-lg max-h-48 overflow-y-auto w-48">
+                               {(profiles ?? []).map(p => (
+                                 <button key={p.user_id} onClick={() => handleInlineAssign(row.id, row.fir_number, p.user_id)} className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/10 text-foreground transition-colors">
+                                   {p.cognome} {p.nome}
+                                 </button>
+                               ))}
+                             </div>
+                           )}
+                         </>
+                       )}
+                     </div>
+                   </td>
                 </tr>
               ))}
             </tbody>
