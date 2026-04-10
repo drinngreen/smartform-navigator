@@ -264,8 +264,10 @@ serve(async (req) => {
       memories = data || [];
     }
 
-    const contextNote = context ? `\nContesto attivo: ${context === "multyproget" ? "Multyproget S.r.l." : "Niyol S.r.l."}` : "";
-    const systemPrompt = buildSystemPrompt(adminName, contextNote, memories);
+    const tenantId = resolveTenantId(context);
+    const contextLabel = context === "multyproget" ? "Multyproget S.r.l." : context === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
+    const contextNote = context ? `\nContesto attivo: ${contextLabel} (tenant_id: ${tenantId})` : "";
+    const systemPrompt = buildSystemPrompt(adminName, contextNote, memories, tenantId, contextLabel);
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
