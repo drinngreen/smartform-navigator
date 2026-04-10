@@ -18,7 +18,7 @@ import * as XLSX from "xlsx";
 
 const MULTY_TENANT_CANDIDATES = [
   "77ec9a3d-602e-438f-97bf-1c69abd8f691",
-  "77ec9a3d-a6d4-4235-8e68-1a6f345de57a",
+  "77ec9a3d-602e-438f-97bf-1c69abd8f691",
 ];
 
 interface AziendaMP {

@@ -8,6 +8,8 @@ import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazio
 const TENANT_MAP: Record<string, RentriCliente> = {
   "167d07ad-9184-484e-85a6-da5ceafa42a3": "global",
   "dc2a6046-d9a8-4549-8e45-82367d695ac6": "multy",
+  "77ec9a3d-602e-438f-97bf-1c69abd8f691": "multy",
+  "819c783e-78dd-4080-8265-802e75b0d813": "niyol",
 };
 
 const MN_CONTEXT_MAP: Record<string, RentriCliente> = {

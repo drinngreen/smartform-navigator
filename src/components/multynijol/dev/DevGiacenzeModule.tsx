@@ -8,7 +8,7 @@ import { Printer, RefreshCw, Package, ArrowDown, ArrowUp, FileSpreadsheet } from
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();

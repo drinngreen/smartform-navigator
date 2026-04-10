@@ -3,9 +3,9 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { AdminAreeRiservateImpianti } from "@/components/multynijol/AdminAreeRiservateImpianti";
 import { useParams } from "react-router-dom";
 const CONTEXT_TENANT_MAP = {
-    "multyproget": "77ec9a3d-a6d4-4235-8e68-1a6f345de57a",
-    "dev-multyproget": "77ec9a3d-a6d4-4235-8e68-1a6f345de57a",
-    "niyol": "819c783e-4ecf-4774-85b7-7e7a1c5848fa",
+    "multyproget": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+    "dev-multyproget": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+    "niyol": "819c783e-78dd-4080-8265-802e75b0d813",
 };
 export default function MNAreeRiservateImpiantiPage() {
     const { context } = useParams();
