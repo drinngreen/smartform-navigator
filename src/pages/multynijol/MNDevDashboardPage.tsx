@@ -13,6 +13,7 @@ import {
   Database,
   PenTool,
   Package,
+  Users,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
