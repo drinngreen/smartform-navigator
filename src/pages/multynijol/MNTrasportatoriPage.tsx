@@ -30,13 +30,19 @@ import {
 const CONTEXT_MAP: Record<string, TenantConfig> = {
   multyproget: {
     label: "Multyproget",
-    tenantId: "dc2a6046-d9a8-4549-8e45-82367d695ac6",
+    tenantId: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+    mnContext: "multyproget",
+    orgId: "0d9cd11c-4ca8-4e5f-90ab-1529899124b5",
+  },
+  "dev-multyproget": {
+    label: "Multyproget",
+    tenantId: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
     mnContext: "multyproget",
     orgId: "0d9cd11c-4ca8-4e5f-90ab-1529899124b5",
   },
   niyol: {
     label: "Niyol",
-    tenantId: "dc2a6046-d9a8-4549-8e45-82367d695ac6",
+    tenantId: "819c783e-78dd-4080-8265-802e75b0d813",
     mnContext: "niyol",
     orgId: "b3eae77a-e973-425d-b7fb-283007583e72",
   },
@@ -102,13 +108,12 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   const handleCreateFir = async (user: UserEntry) => {
     setActionLoading(true);
     try {
-      const { data: draftId, error } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
+      const { data: draftId, error } = await supabase.rpc("create_extra_fir_draft" as any, {
         p_user_id: user.id,
       });
       if (error) throw error;
-      if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
+      if (!draftId) throw new Error("Nessun numero FIR disponibile nel serbatoio");
       
-      // Get the draft details
       const { data: draft } = await supabase
         .from("fir_forms")
         .select("numero_fir")
