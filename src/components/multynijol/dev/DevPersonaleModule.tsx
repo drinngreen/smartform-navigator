@@ -145,8 +145,8 @@ export function DevPersonaleModule() {
           },
         });
         if (error || data?.error) {
-          const msg = data?.error || error?.message || "";
-          if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("exists")) {
+          const msg = String(data?.error || data?.message || error?.message || error?.context?.body || JSON.stringify(error) || "");
+          if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("exists") || msg.toLowerCase().includes("già registrato")) {
             skipped++;
           } else {
             toast.error(`Errore per ${person.nome} ${person.cognome}: ${msg}`);
