@@ -58,9 +58,15 @@ interface UserEntry {
   online_status: string;
 }
 
-export default function MNTrasportatoriPage() {
-  const { context } = useParams<{ context: string }>();
-  const tenant = CONTEXT_MAP[context || "multyproget"] || CONTEXT_MAP.multyproget;
+interface MNTrasportatoriPageProps {
+  embedded?: boolean;
+  context?: string;
+}
+
+export default function MNTrasportatoriPage({ embedded, context: contextProp }: MNTrasportatoriPageProps = {}) {
+  const params = useParams<{ context: string }>();
+  const contextKey = contextProp || params.context || "multyproget";
+  const tenant = CONTEXT_MAP[contextKey] || CONTEXT_MAP.multyproget;
 
   const [users, setUsers] = useState<UserEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +97,7 @@ export default function MNTrasportatoriPage() {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, [context]);
+  useEffect(() => { fetchUsers(); }, [contextKey]);
 
   const handleResetPassword = async () => {
     if (!passwordDialog.user || !newPassword) return;
@@ -148,8 +154,9 @@ export default function MNTrasportatoriPage() {
     away: "bg-yellow-500",
   };
 
-  return (
-    <MNAdminLayout title={`Trasportatori ${tenant.label}`} subtitle={`Gestione trasportatori ${tenant.label}`}>
+  const content = (
+    <>
+      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Trasportatori {tenant.label}</h2></div>}
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
@@ -307,6 +314,14 @@ export default function MNTrasportatoriPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <MNAdminLayout title={`Trasportatori ${tenant.label}`} subtitle={`Gestione trasportatori ${tenant.label}`}>
+      {content}
     </MNAdminLayout>
   );
 }
