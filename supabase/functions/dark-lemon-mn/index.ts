@@ -351,7 +351,7 @@ serve(async (req) => {
             }
             case "count_records": {
               const table = args.table.replace(/[^a-zA-Z0-9_]/g, "");
-              let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${TENANT_ID}'`;
+              let countQuery = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${tenantId}'`;
               if (args.filter) countQuery += ` AND (${args.filter})`;
               const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: countQuery }).maybeSingle();
               result = error ? { error: error.message } : rows;
