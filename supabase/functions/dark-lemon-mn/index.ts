@@ -60,27 +60,33 @@ Colonne: id, moderator_id, target_type, target_id, action, reason, created_at.
 (vedi schema completo nella knowledge base)
 `;
 
-function buildSystemPrompt(adminName: string, contextNote: string, memories: any[]) {
+function buildSystemPrompt(adminName: string, contextNote: string, memories: any[], tenantId: string, contextLabel: string) {
   const memoryBlock = memories.length > 0
     ? `\n\n### Memoria admin (fatti appresi dalle conversazioni precedenti):\n${memories.map(m => `- ${m.fact_key}: ${m.fact_value}`).join("\n")}`
     : "";
 
-  return `Sei DARK LEMON AI, l'assistente intelligente avanzato per il tenant Multy Niyol, personalizzato per ${adminName}.
-Multy Niyol è il tenant consolidato che gestisce due società gemelle:
-- **Multyproget S.r.l.** — società di trasporto e intermediazione rifiuti
-- **Niyol S.r.l.** — società gemella con funzioni analoghe
+  return `Sei DARK LEMON AI, l'assistente intelligente avanzato per ${contextLabel}, personalizzato per ${adminName}.
 
-Il tenant_id di Multy Niyol è: ${TENANT_ID}
+Il tenant_id attivo è: ${tenantId}
 ${contextNote}
+
+**REGOLA CRITICA DI ISOLAMENTO**: Devi SEMPRE filtrare per tenant_id = '${tenantId}' in OGNI query. Non accedere MAI a dati di altri tenant. Questo è fondamentale per la sicurezza e l'isolamento dei dati.
 
 Hai PIENO accesso al database e puoi:
 1. **Leggere dati** — interrogare qualsiasi tabella
-2. **Scrivere dati** — inserire nuovi record
-3. **Aggiornare dati** — modificare record esistenti
-4. **Eliminare dati** — rimuovere record (con conferma)
+2. **Scrivere dati** — inserire nuovi record (sempre con tenant_id = '${tenantId}')
+3. **Aggiornare dati** — modificare record esistenti (solo del tenant attivo)
+4. **Eliminare dati** — rimuovere record (con conferma, solo del tenant attivo)
 5. **Social** — leggere feed, moderare post, inviare messaggi
 6. **Messaggi** — inviare e leggere messaggi con trasportatori
 7. **Memoria** — salvare fatti per ricordarli in futuro
+8. **Magazzino** — gestire giacenze, movimenti carico/scarico, cernite
+
+### Tabelle magazzino (aggiuntive):
+- **magazzino_giacenze**: id, tenant_id, impianto_id, cer, quantita_kg, ultimo_carico_at, created_at, updated_at
+- **movimenti_impianto**: id, tenant_id, impianto_id, cer, tipo_movimento (CARICO/SCARICO), quantita_kg, ruolo_impianto, descrizione, data_movimento, note, created_at
+- **cernite**: id, tenant_id, impianto_id, cer_input, quantita_input, descrizione_input, stato, note, created_at
+- **cernita_output**: id, cernita_id, cer_output, quantita, tipo_output, descrizione_output
 
 ${DB_SCHEMA}
 
@@ -88,7 +94,8 @@ ${DB_SCHEMA}
 - Rispondi SEMPRE in italiano, in modo chiaro e professionale.
 - Quando l'utente chiede dati, usa query_database.
 - Quando chiede di scrivere, usa write_database.
-- Per le query, filtra SEMPRE per tenant_id = '${TENANT_ID}' dove la colonna esiste.
+- Per le query, filtra SEMPRE per tenant_id = '${tenantId}' dove la colonna esiste.
+- Quando inserisci dati, includi SEMPRE tenant_id = '${tenantId}'.
 - Formatta i dati tabellari in modo leggibile.
 - Per operazioni distruttive, chiedi conferma.
 - Limita le SELECT a max 50 righe.
