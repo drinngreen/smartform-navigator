@@ -58,9 +58,15 @@ interface UserEntry {
   online_status: string;
 }
 
-export default function MNTrasportatoriPage() {
-  const { context } = useParams<{ context: string }>();
-  const tenant = CONTEXT_MAP[context || "multyproget"] || CONTEXT_MAP.multyproget;
+interface MNTrasportatoriPageProps {
+  embedded?: boolean;
+  context?: string;
+}
+
+export default function MNTrasportatoriPage({ embedded, context: contextProp }: MNTrasportatoriPageProps = {}) {
+  const params = useParams<{ context: string }>();
+  const contextKey = contextProp || params.context || "multyproget";
+  const tenant = CONTEXT_MAP[contextKey] || CONTEXT_MAP.multyproget;
 
   const [users, setUsers] = useState<UserEntry[]>([]);
   const [loading, setLoading] = useState(true);
