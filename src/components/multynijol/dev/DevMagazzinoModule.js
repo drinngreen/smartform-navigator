@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, ArrowDown, ArrowUp, Plus, Minus, RefreshCw, Scissors, History } from "lucide-react";
 import { toast } from "sonner";
 import { CER_DATA } from "./DevCERPreferitiModule";
-const MULTY_TENANT_ID = "77ec9a3d-a6d4-4235-8e68-1a6f345de57a";
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 export function DevMagazzinoModule() {
     const { user } = useAuth();
     const queryClient = useQueryClient();
