@@ -21,8 +21,8 @@ interface ImpiantoAccount {
 
 const TENANT_LABELS: Record<string, string> = {
   "167d07ad-9184-484e-85a6-da5ceafa42a3": "Global Reco",
-  "77ec9a3d-a6d4-4235-8e68-1a6f345de57a": "Multyproget",
-  "819c783e-4ecf-4774-85b7-7e7a1c5848fa": "Niyol",
+  "77ec9a3d-602e-438f-97bf-1c69abd8f691": "Multyproget",
+  "819c783e-78dd-4080-8265-802e75b0d813": "Niyol",
 };
 
 interface Props {
