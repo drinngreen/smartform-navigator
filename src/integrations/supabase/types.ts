@@ -4202,6 +4202,7 @@ export type Database = {
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
+      create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
       ensure_user_has_fir_draft: {
         Args: { p_user_id: string }
         Returns: string
