@@ -155,17 +155,22 @@ export function ZoliDarkLemonWidget() {
       ref={widgetRef}
       onMouseDown={handleMouseDown}
       className="fixed z-[9999] select-none"
-      style={{ left: position.x, top: position.y, width: size.width, height: size.height }}
+      style={isFullscreen
+        ? { left: 0, top: 0, width: "100vw", height: "100vh" }
+        : { left: position.x, top: position.y, width: size.width, height: size.height }
+      }
     >
-      {/* Resize handles */}
-      <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
-      <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
-      <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
-      <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
-      <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
-      <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
-      <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
-      <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
+      {/* Resize handles - hidden in fullscreen */}
+      {!isFullscreen && <>
+        <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
+        <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
+        <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
+        <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
+        <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
+        <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
+        <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
+        <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
+      </>}
 
       <div className="relative rounded-2xl p-[3px] overflow-hidden h-full">
         <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
