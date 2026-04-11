@@ -24,6 +24,7 @@ export function ZoliDarkLemonWidget() {
   const dragOffset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const location = useLocation();
 
   // Determine context from URL
@@ -110,16 +111,17 @@ export function ZoliDarkLemonWidget() {
     sendMessage(userMsg);
   };
 
-  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const toggleFullscreen = () => {
     if (isFullscreen) {
-      setPosition({ x: savedPos.current.x, y: savedPos.current.y });
-      setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      // Restore saved position
+      if (savedPos.current.w > 0) {
+        setPosition({ x: savedPos.current.x, y: savedPos.current.y });
+        setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      }
       setIsFullscreen(false);
     } else {
+      // Save current position before fullscreen
       savedPos.current = { x: position.x, y: position.y, w: size.width, h: size.height };
-      setPosition({ x: 0, y: 0 });
-      setSize({ width: window.innerWidth, height: window.innerHeight });
       setIsFullscreen(true);
     }
   };
@@ -184,7 +186,7 @@ export function ZoliDarkLemonWidget() {
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
-            <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
+            <button onClick={() => { setIsFullscreen(false); setMinimized(true); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
             </button>
             <button onClick={() => { newChat(); setOpen(false); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
