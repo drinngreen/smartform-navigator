@@ -109,11 +109,17 @@ export function ZoliDarkLemonWidget() {
     sendMessage(userMsg);
   };
 
-  const openFullChat = () => {
-    if (isMN) {
-      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
+  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const toggleFullscreen = () => {
+    if (isFullscreen) {
+      setPosition({ x: savedPos.current.x, y: savedPos.current.y });
+      setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      setIsFullscreen(false);
     } else {
-      navigate("/admin/zoli-dark-lemon");
+      savedPos.current = { x: position.x, y: position.y, w: size.width, h: size.height };
+      setPosition({ x: 0, y: 0 });
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+      setIsFullscreen(true);
     }
   };
 
