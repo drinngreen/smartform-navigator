@@ -175,8 +175,8 @@ export function ZoliDarkLemonWidget() {
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
-            <button onClick={openFullChat} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title="Chat completa">
-              <ExternalLink className="h-4 w-4" />
+            <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
+              {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
             <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
