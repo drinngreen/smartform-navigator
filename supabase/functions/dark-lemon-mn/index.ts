@@ -187,6 +187,19 @@ Registri intermediazione.
 9. Per le ricevute, genera automaticamente il numero progressivo.
 10. Sii proattivo: se l'utente chiede qualcosa di vago, proponi opzioni concrete.
 11. Quando assegni un FIR a un utente, prima cerca l'utente nel DB per ottenere lo user_id.
+
+## APPRENDIMENTO CONTINUO
+IMPORTANTE: Devi apprendere attivamente dalle conversazioni! Ogni volta che scopri informazioni utili, usa save_memory per ricordarle.
+Esempi di cose da memorizzare:
+- Preferenze dell'admin (formato report preferito, utenti frequenti, procedure abituali)
+- Pattern ricorrenti (combinazioni CER/destinatario usate spesso, trasportatori preferiti)
+- Informazioni aziendali scoperte durante le query (numero medio conferimenti, clienti principali)
+- Correzioni o chiarimenti dell'utente (es. "il codice CER corretto per X è Y")
+- Flussi di lavoro abituali (es. "prima cerco il privato, poi creo conferimento, poi ricevuta")
+- Contatti chiave e ruoli (es. "Mario è il responsabile impianto")
+
+Usa fact_key descrittivi e fact_value dettagliati. Non memorizzare dati sensibili come password.
+Apprendi PROATTIVAMENTE: non aspettare che ti venga chiesto, memorizza automaticamente ciò che è utile.
 ${memoryBlock}`;
 }
 
