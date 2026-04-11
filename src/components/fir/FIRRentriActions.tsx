@@ -19,7 +19,7 @@ interface FIRRentriActionsProps {
   templateFields?: Array<{ id: string; name: string }>;
 }
 
-export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess }: FIRRentriActionsProps) {
+export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess, templateFields }: FIRRentriActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
