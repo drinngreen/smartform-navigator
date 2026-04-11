@@ -17,6 +17,7 @@ type ResizeDir = "e" | "s" | "se" | "sw" | "w" | "n" | "ne" | "nw" | null;
 export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState("");
   const isDragging = useRef(false);
   const hasDragged = useRef(false);
