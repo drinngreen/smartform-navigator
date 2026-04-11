@@ -113,13 +113,15 @@ export function ZoliDarkLemonWidget() {
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
-      setPosition({ x: savedPos.current.x, y: savedPos.current.y });
-      setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      // Restore saved position
+      if (savedPos.current.w > 0) {
+        setPosition({ x: savedPos.current.x, y: savedPos.current.y });
+        setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      }
       setIsFullscreen(false);
     } else {
+      // Save current position before fullscreen
       savedPos.current = { x: position.x, y: position.y, w: size.width, h: size.height };
-      setPosition({ x: 0, y: 0 });
-      setSize({ width: window.innerWidth, height: window.innerHeight });
       setIsFullscreen(true);
     }
   };
