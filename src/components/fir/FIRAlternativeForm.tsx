@@ -136,13 +136,16 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
 
 interface FIRAlternativeFormProps {
   presetNumeroFir?: string;
+  firFormId?: string;
   printOnly?: boolean;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
+  const [activeDraftNumero, setActiveDraftNumero] = useState<string | null>(presetNumeroFir || null);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
