@@ -24,6 +24,7 @@ export function ZoliDarkLemonWidget() {
   const dragOffset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const location = useLocation();
 
   // Determine context from URL
