@@ -4199,6 +4199,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      auto_distribute_baseline_fir: {
+        Args: { p_societa?: string }
+        Returns: number
+      }
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
