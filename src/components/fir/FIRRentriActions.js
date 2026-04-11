@@ -2,8 +2,9 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck } from "lucide-react";
 import { emissioneFir, dettaglioFir, ricercaFir, statoTransazioneFir, firmaRicezione } from "@/lib/rentriVpsApi";
+import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { toast } from "sonner";
-export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess }) {
+export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess, templateFields }) {
     const [loading, setLoading] = useState(null);
     const [result, setResult] = useState(null);
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -13,11 +14,12 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
         setResult(null);
         setQrCodeUrl(null);
         try {
-            const payload = {
-                ...formData,
-                firma_produttore: firmaComeProduttore,
-                firma_trasportatore: true,
-            };
+            // Map form fields to RENTRI-structured payload
+            const payload = mapFormToRentriPayload(cliente, formData, {
+                firmaComeProduttore,
+                templateFields,
+            });
+            console.log("[RENTRI] Payload emissione:", JSON.stringify(payload, null, 2));
             const res = await emissioneFir(cliente, payload);
             setResult(res);
             if (res.success && res.data) {

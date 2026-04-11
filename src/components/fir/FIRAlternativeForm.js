@@ -111,9 +111,11 @@ function buildSoggettoUpdates(fields, soggetto, target) {
     });
     return updates;
 }
-export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPrinted } = {}) {
     const [fields, setFields] = useState([]);
     const [values, setValues] = useState({});
+    const [activeDraftId, setActiveDraftId] = useState(firFormId || null);
+    const [activeDraftNumero, setActiveDraftNumero] = useState(presetNumeroFir || null);
     const [loading, setLoading] = useState(true);
     const [activePage, setActivePage] = useState(1);
     const [selectedProduttore, setSelectedProduttore] = useState(null);
@@ -173,7 +175,32 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {
             return `clamp(5px, 1.2vw, 8px)`;
         return `clamp(4px, 1vw, 7px)`;
     };
+    // Auto-load user's active FIR draft if no preset provided
     useEffect(() => {
+        if (presetNumeroFir || firFormId)
+            return;
+        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+            if (!authUser)
+                return;
+            supabase
+                .from("fir_forms")
+                .select("id, numero_fir")
+                .eq("user_id", authUser.id)
+                .eq("status", "bozza")
+                .eq("deleted_by_user", false)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle()
+                .then(({ data: draft }) => {
+                if (draft) {
+                    setActiveDraftId(draft.id);
+                    setActiveDraftNumero(draft.numero_fir);
+                }
+            });
+        });
+    }, [presetNumeroFir, firFormId]);
+    useEffect(() => {
+        const effectiveNumero = presetNumeroFir || activeDraftNumero;
         supabase
             .from("fir_form_templates")
             .select("fields")
@@ -184,11 +211,10 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {
             if (data?.fields) {
                 const loadedFields = data.fields;
                 setFields(loadedFields);
-                // Pre-fill numero FIR if provided
-                if (presetNumeroFir) {
+                if (effectiveNumero) {
                     const numeroField = loadedFields.find(f => hasTokens(f.name, ["numero", "formulario"]));
                     if (numeroField) {
-                        setValues(prev => ({ ...prev, [numeroField.id]: presetNumeroFir }));
+                        setValues(prev => ({ ...prev, [numeroField.id]: effectiveNumero }));
                     }
                 }
             }
@@ -196,7 +222,7 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {
                 console.warn("[FIRAlternativeForm]", error.message);
             setLoading(false);
         });
-    }, [presetNumeroFir]);
+    }, [presetNumeroFir, activeDraftNumero]);
     useEffect(() => {
         setScale(1);
         setTranslate({ x: 0, y: 0 });
@@ -421,7 +447,7 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted } = {
                             printWindow.print();
                             onPrinted?.();
                         }, 600);
-                    }, className: "px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2", children: [_jsx(Printer, { className: "h-4 w-4" }), " STAMPA TUTTE LE PAGINE"] }) })) : (_jsx(FIRRentriActions, { cliente: rentriCliente, formData: values, firmaComeProduttore: isOwnProduction, onEmissioneSuccess: (res) => {
+                    }, className: "px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2", children: [_jsx(Printer, { className: "h-4 w-4" }), " STAMPA TUTTE LE PAGINE"] }) })) : (_jsx(FIRRentriActions, { cliente: rentriCliente, formData: values, firmaComeProduttore: isOwnProduction, templateFields: fields.map(f => ({ id: f.id, name: f.name })), onEmissioneSuccess: (res) => {
                     console.log("[FIR] Emissione success:", res);
                 } }))] }));
 }
