@@ -186,7 +186,7 @@ export function ZoliDarkLemonWidget() {
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
-            <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
+            <button onClick={() => { setIsFullscreen(false); setMinimized(true); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
             </button>
             <button onClick={() => { newChat(); setOpen(false); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-red-400 transition-colors" title="Chiudi">
