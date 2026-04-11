@@ -643,6 +643,7 @@ export function FIRAlternativeForm({ presetNumeroFir, printOnly, onPrinted }: FI
           cliente={rentriCliente}
           formData={values as Record<string, string | boolean>}
           firmaComeProduttore={isOwnProduction}
+          templateFields={fields.map(f => ({ id: f.id, name: f.name }))}
           onEmissioneSuccess={(res) => {
             console.log("[FIR] Emissione success:", res);
           }}
