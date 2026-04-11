@@ -111,7 +111,6 @@ export function ZoliDarkLemonWidget() {
     sendMessage(userMsg);
   };
 
-  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const toggleFullscreen = () => {
     if (isFullscreen) {
       setPosition({ x: savedPos.current.x, y: savedPos.current.y });
