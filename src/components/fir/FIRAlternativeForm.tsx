@@ -213,7 +213,32 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPr
     return `clamp(4px, 1vw, 7px)`;
   };
 
+  // Auto-load user's active FIR draft if no preset provided
   useEffect(() => {
+    if (presetNumeroFir || firFormId) return;
+    
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (!authUser) return;
+      supabase
+        .from("fir_forms")
+        .select("id, numero_fir")
+        .eq("user_id", authUser.id)
+        .eq("status", "bozza")
+        .eq("deleted_by_user", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: draft }) => {
+          if (draft) {
+            setActiveDraftId(draft.id);
+            setActiveDraftNumero(draft.numero_fir);
+          }
+        });
+    });
+  }, [presetNumeroFir, firFormId]);
+
+  useEffect(() => {
+    const effectiveNumero = presetNumeroFir || activeDraftNumero;
     supabase
       .from("fir_form_templates")
       .select("fields")
@@ -224,18 +249,17 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPr
         if (data?.fields) {
           const loadedFields = data.fields as unknown as TemplateField[];
           setFields(loadedFields);
-          // Pre-fill numero FIR if provided
-          if (presetNumeroFir) {
+          if (effectiveNumero) {
             const numeroField = loadedFields.find(f => hasTokens(f.name, ["numero", "formulario"]));
             if (numeroField) {
-              setValues(prev => ({ ...prev, [numeroField.id]: presetNumeroFir }));
+              setValues(prev => ({ ...prev, [numeroField.id]: effectiveNumero }));
             }
           }
         }
         if (error) console.warn("[FIRAlternativeForm]", error.message);
         setLoading(false);
       });
-  }, [presetNumeroFir]);
+  }, [presetNumeroFir, activeDraftNumero]);
 
   useEffect(() => {
     setScale(1);
