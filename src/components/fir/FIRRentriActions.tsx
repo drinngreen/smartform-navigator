@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck } from "lucide-react";
 import { emissioneFir, dettaglioFir, ricercaFir, statoTransazioneFir, firmaRicezione, type RentriCliente, type RentriVpsResponse } from "@/lib/rentriVpsApi";
+import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { toast } from "sonner";
 
 interface FIRRentriActionsProps {
@@ -14,6 +15,8 @@ interface FIRRentriActionsProps {
   firmaComeProduttore?: boolean;
   /** Callback quando l'emissione ha successo */
   onEmissioneSuccess?: (response: RentriVpsResponse) => void;
+  /** Template fields for UUID→name resolution */
+  templateFields?: Array<{ id: string; name: string }>;
 }
 
 export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess }: FIRRentriActionsProps) {
