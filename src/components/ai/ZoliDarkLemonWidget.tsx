@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, X, Minimize2, ExternalLink, Bot, User } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Send, X, Minimize2, Maximize2, Shrink, Bot, User } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
@@ -17,13 +17,13 @@ type ResizeDir = "e" | "s" | "se" | "sw" | "w" | "n" | "ne" | "nw" | null;
 export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState("");
   const isDragging = useRef(false);
   const hasDragged = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Determine context from URL
@@ -43,13 +43,14 @@ export function ZoliDarkLemonWidget() {
 
   // Drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isFullscreen) return;
     if ((e.target as HTMLElement).closest("input, a")) return;
     if ((e.target as HTMLElement).dataset.resize) return;
     isDragging.current = true;
     hasDragged.current = false;
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     e.preventDefault();
-  }, [position]);
+  }, [position, isFullscreen]);
 
   // Resize start
   const handleResizeDown = useCallback((dir: ResizeDir) => (e: React.MouseEvent) => {
@@ -109,11 +110,17 @@ export function ZoliDarkLemonWidget() {
     sendMessage(userMsg);
   };
 
-  const openFullChat = () => {
-    if (isMN) {
-      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
+  const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const toggleFullscreen = () => {
+    if (isFullscreen) {
+      setPosition({ x: savedPos.current.x, y: savedPos.current.y });
+      setSize({ width: savedPos.current.w, height: savedPos.current.h });
+      setIsFullscreen(false);
     } else {
-      navigate("/admin/zoli-dark-lemon");
+      savedPos.current = { x: position.x, y: position.y, w: size.width, h: size.height };
+      setPosition({ x: 0, y: 0 });
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+      setIsFullscreen(true);
     }
   };
 
@@ -148,17 +155,22 @@ export function ZoliDarkLemonWidget() {
       ref={widgetRef}
       onMouseDown={handleMouseDown}
       className="fixed z-[9999] select-none"
-      style={{ left: position.x, top: position.y, width: size.width, height: size.height }}
+      style={isFullscreen
+        ? { left: 0, top: 0, width: "100vw", height: "100vh" }
+        : { left: position.x, top: position.y, width: size.width, height: size.height }
+      }
     >
-      {/* Resize handles */}
-      <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
-      <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
-      <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
-      <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
-      <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
-      <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
-      <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
-      <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
+      {/* Resize handles - hidden in fullscreen */}
+      {!isFullscreen && <>
+        <div data-resize="n" onMouseDown={handleResizeDown("n")} className="absolute -top-1 left-3 right-3 h-2 cursor-n-resize z-[10000]" />
+        <div data-resize="s" onMouseDown={handleResizeDown("s")} className="absolute -bottom-1 left-3 right-3 h-2 cursor-s-resize z-[10000]" />
+        <div data-resize="e" onMouseDown={handleResizeDown("e")} className="absolute -right-1 top-3 bottom-3 w-2 cursor-e-resize z-[10000]" />
+        <div data-resize="w" onMouseDown={handleResizeDown("w")} className="absolute -left-1 top-3 bottom-3 w-2 cursor-w-resize z-[10000]" />
+        <div data-resize="nw" onMouseDown={handleResizeDown("nw")} className="absolute -top-1 -left-1 w-4 h-4 cursor-nw-resize z-[10001]" />
+        <div data-resize="ne" onMouseDown={handleResizeDown("ne")} className="absolute -top-1 -right-1 w-4 h-4 cursor-ne-resize z-[10001]" />
+        <div data-resize="sw" onMouseDown={handleResizeDown("sw")} className="absolute -bottom-1 -left-1 w-4 h-4 cursor-sw-resize z-[10001]" />
+        <div data-resize="se" onMouseDown={handleResizeDown("se")} className="absolute -bottom-1 -right-1 w-4 h-4 cursor-se-resize z-[10001]" />
+      </>}
 
       <div className="relative rounded-2xl p-[3px] overflow-hidden h-full">
         <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
@@ -169,8 +181,8 @@ export function ZoliDarkLemonWidget() {
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
-            <button onClick={openFullChat} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title="Chat completa">
-              <ExternalLink className="h-4 w-4" />
+            <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
+              {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
             <button onClick={() => setMinimized(true)} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-yellow-400 transition-colors" title="Minimizza">
               <Minimize2 className="h-4 w-4" />
