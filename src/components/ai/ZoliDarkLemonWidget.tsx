@@ -43,13 +43,14 @@ export function ZoliDarkLemonWidget() {
 
   // Drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (isFullscreen) return;
     if ((e.target as HTMLElement).closest("input, a")) return;
     if ((e.target as HTMLElement).dataset.resize) return;
     isDragging.current = true;
     hasDragged.current = false;
     dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     e.preventDefault();
-  }, [position]);
+  }, [position, isFullscreen]);
 
   // Resize start
   const handleResizeDown = useCallback((dir: ResizeDir) => (e: React.MouseEvent) => {
