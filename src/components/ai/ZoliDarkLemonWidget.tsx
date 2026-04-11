@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, X, Minimize2, ExternalLink, Bot, User } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Send, X, Minimize2, Maximize2, Shrink, Bot, User } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
