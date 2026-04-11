@@ -31,12 +31,13 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
     setQrCodeUrl(null);
 
     try {
-      const payload: Record<string, unknown> = {
-        ...formData,
-        firma_produttore: firmaComeProduttore,
-        firma_trasportatore: true,
-      };
+      // Map form fields to RENTRI-structured payload
+      const payload = mapFormToRentriPayload(cliente, formData, {
+        firmaComeProduttore,
+        templateFields,
+      });
 
+      console.log("[RENTRI] Payload emissione:", JSON.stringify(payload, null, 2));
       const res = await emissioneFir(cliente, payload);
       setResult(res);
 
