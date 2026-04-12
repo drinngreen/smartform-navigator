@@ -19,7 +19,7 @@ export function ZoliDarkLemonWidget() {
   const [minimized, setMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [input, setInput] = useState("");
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
   const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const isDragging = useRef(false);
   const hasDragged = useRef(false);
@@ -156,9 +156,11 @@ export function ZoliDarkLemonWidget() {
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
-            <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
-              <MessageSquare className="h-4 w-4" />
-            </button>
+            {isFullscreen && (
+              <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
+                <MessageSquare className="h-4 w-4" />
+              </button>
+            )}
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
@@ -172,33 +174,35 @@ export function ZoliDarkLemonWidget() {
 
           <div className="flex flex-1 overflow-hidden">
             {/* History sidebar */}
-            {showHistory && (
-              <div className="w-48 shrink-0 border-r border-white/10 flex flex-col bg-[hsl(222,47%,7%)]" onMouseDown={e => e.stopPropagation()}>
-                <button onClick={() => { newChat(); }} className="flex items-center gap-1.5 px-3 py-2 m-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] hover:bg-cyan-500/20 transition-colors">
-                  <Plus className="h-3 w-3" /> Nuova Chat
-                </button>
-                <div className="flex-1 overflow-y-auto px-1 pb-2 space-y-0.5">
+            {isFullscreen && showHistory && (
+              <div className="w-64 shrink-0 border-r border-white/10 flex flex-col bg-[hsl(222,47%,5%)]" onMouseDown={e => e.stopPropagation()}>
+                <div className="p-3 border-b border-white/10">
+                  <button onClick={() => { newChat(); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors">
+                    <Plus className="h-3.5 w-3.5" /> Nuova Chat
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
                   {conversations.map((conv) => (
                     <div
                       key={conv.id}
                       className={cn(
-                        "group flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[10px] cursor-pointer transition-colors",
+                        "group flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs cursor-pointer transition-colors",
                         conv.id === currentConversationId ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
                       )}
                       onClick={() => loadConversation(conv.id)}
                     >
-                      <MessageSquare className="h-2.5 w-2.5 shrink-0" />
+                      <MessageSquare className="h-3.5 w-3.5 shrink-0" />
                       <span className="flex-1 truncate">{conv.title}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
                         className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
                       >
-                        <Trash2 className="h-2.5 w-2.5" />
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
                   {conversations.length === 0 && (
-                    <p className="text-white/20 text-[10px] text-center px-2 py-4">Nessuna conversazione</p>
+                    <p className="text-white/25 text-xs text-center px-3 py-8">Nessuna conversazione</p>
                   )}
                 </div>
               </div>
