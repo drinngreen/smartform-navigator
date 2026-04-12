@@ -3,17 +3,16 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, Eye, CheckCircle, Clock, Filter
+  FileText, Search, RefreshCw, Loader2, Edit, Eye, CheckCircle, Clock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 
 interface FirForm {
   id: string;
@@ -40,9 +39,7 @@ export default function FormulariPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
-  const [editDialog, setEditDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
-  const [editData, setEditData] = useState<Record<string, any>>({});
-  const [saving, setSaving] = useState(false);
+  const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
 
   const fetchForms = useCallback(async () => {
     setLoading(true);
@@ -62,62 +59,13 @@ export default function FormulariPage() {
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
-  // Realtime subscription for fir_forms changes
   useEffect(() => {
     const channel = supabase
       .channel("admin-fir-forms")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "fir_forms" },
-        () => { fetchForms(); }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "fir_forms" }, () => { fetchForms(); })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [fetchForms]);
-
-  const openEdit = (form: FirForm) => {
-    setEditData({
-      codice_eer: form.codice_eer || "",
-      descrizione_rifiuto: form.descrizione_rifiuto || "",
-      quantita: form.quantita ?? "",
-      unita_misura: form.unita_misura || "",
-      stato_fisico: form.stato_fisico || "",
-      produttore_denominazione: form.produttore_denominazione || "",
-      trasportatore_denominazione: form.trasportatore_denominazione || "",
-      destinatario_denominazione: form.destinatario_denominazione || "",
-      note: form.note || "",
-    });
-    setEditDialog({ open: true, form });
-  };
-
-  const handleSave = async () => {
-    if (!editDialog.form) return;
-    setSaving(true);
-    try {
-      const updates: Record<string, any> = {};
-      for (const [k, v] of Object.entries(editData)) {
-        if (k === "quantita") {
-          updates[k] = v ? parseFloat(v) : null;
-        } else {
-          updates[k] = v || null;
-        }
-      }
-
-      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
-        body: { action: "update_fir_form", form_id: editDialog.form.id, updates },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Formulario aggiornato");
-      setEditDialog({ open: false, form: null });
-      fetchForms();
-    } catch (e: any) {
-      toast.error("Errore salvataggio: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
@@ -128,7 +76,6 @@ export default function FormulariPage() {
       f.user_profile?.nome?.toLowerCase().includes(q) ||
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-
     if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
     if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
     if (tab === "completed") return matchSearch && (f.status === "completed" || f.status === "completato");
@@ -153,7 +100,6 @@ export default function FormulariPage() {
 
   return (
     <AdminLayout title="Formulari" subtitle="Gestione formulari FIR creati dagli autisti">
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: "Totale", value: stats.total, icon: FileText, color: "text-primary" },
@@ -171,23 +117,16 @@ export default function FormulariPage() {
         ))}
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cerca per numero FIR, CER, produttore, autista..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-card/60 border-border/30"
-          />
+          <Input placeholder="Cerca per numero FIR, CER, produttore, autista..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card/60 border-border/30" />
         </div>
         <Button variant="outline" size="icon" onClick={fetchForms} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
 
-      {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="mb-4">
         <TabsList className="bg-card/60 border border-border/30">
           <TabsTrigger value="all">Tutti ({stats.total})</TabsTrigger>
@@ -197,11 +136,8 @@ export default function FormulariPage() {
         </TabsList>
       </Tabs>
 
-      {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden">
           <div className="overflow-x-auto">
@@ -224,42 +160,34 @@ export default function FormulariPage() {
                   <tr key={form.id} className="border-b border-border/10 hover:bg-secondary/30 transition-colors">
                     <td className="p-3">{statusBadge(form.status)}</td>
                     <td className="p-3 font-mono text-xs text-foreground">{form.numero_fir || "—"}</td>
-                    <td className="p-3 text-foreground">
-                      {form.user_profile
-                        ? `${form.user_profile.nome} ${form.user_profile.cognome}`
-                        : "—"}
-                    </td>
+                    <td className="p-3 text-foreground">{form.user_profile ? `${form.user_profile.nome} ${form.user_profile.cognome}` : "—"}</td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{form.codice_eer || "—"}</td>
                     <td className="p-3 text-muted-foreground text-xs max-w-[200px] truncate">{form.descrizione_rifiuto || "—"}</td>
                     <td className="p-3 text-muted-foreground text-xs">{form.produttore_denominazione || "—"}</td>
-                    <td className="p-3 font-mono text-xs text-muted-foreground">
-                      {form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}
-                    </td>
-                    <td className="p-3 text-muted-foreground text-xs">
-                      {new Date(form.updated_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                    </td>
+                    <td className="p-3 font-mono text-xs text-muted-foreground">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
+                    <td className="p-3 text-muted-foreground text-xs">{new Date(form.updated_at).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-1">
-                        {(form.status === "draft" || form.status === "bozza") && (
-                          <button
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium border border-blue-400 hover:bg-blue-500 transition-colors"
-                            title="Modifica Bozza"
-                            onClick={() => openEdit(form)}
-                          >
-                            <Edit className="h-4 w-4" />
-                            Modifica
-                          </button>
-                        )}
+                        <button
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            form.status === "draft" || form.status === "bozza"
+                              ? "bg-blue-600 text-white border-blue-400 hover:bg-blue-500"
+                              : "bg-secondary/50 text-foreground border-border/50 hover:bg-secondary"
+                          }`}
+                          onClick={() => setViewDialog({ open: true, form })}
+                        >
+                          {form.status === "draft" || form.status === "bozza" ? (
+                            <><Edit className="h-4 w-4" /> Modifica</>
+                          ) : (
+                            <><Eye className="h-4 w-4" /> Visualizza</>
+                          )}
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                      Nessun formulario trovato
-                    </td>
-                  </tr>
+                  <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
                 )}
               </tbody>
             </table>
@@ -267,57 +195,27 @@ export default function FormulariPage() {
         </div>
       )}
 
-      {/* Edit Draft Dialog */}
-      <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ open: o, form: o ? editDialog.form : null })}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      {/* Full FIR Alternative Form Dialog */}
+      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
-            <DialogTitle>Modifica Bozza — {editDialog.form?.numero_fir || "Senza Numero"}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
+              <FileText className="h-5 w-5 text-primary" />
+              {viewDialog.form?.status === "bozza" || viewDialog.form?.status === "draft" ? "Modifica" : "Visualizza"} FIR — {viewDialog.form?.numero_fir || "Senza Numero"}
+              {viewDialog.form?.user_profile && (
+                <span className="text-sm text-muted-foreground font-normal ml-2">
+                  ({viewDialog.form.user_profile.nome} {viewDialog.form.user_profile.cognome})
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Codice EER</Label>
-              <Input value={editData.codice_eer || ""} onChange={(e) => setEditData((p: any) => ({ ...p, codice_eer: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Quantità</Label>
-              <Input type="number" value={editData.quantita || ""} onChange={(e) => setEditData((p: any) => ({ ...p, quantita: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Unità Misura</Label>
-              <Input value={editData.unita_misura || ""} onChange={(e) => setEditData((p: any) => ({ ...p, unita_misura: e.target.value }))} placeholder="kg" />
-            </div>
-            <div>
-              <Label>Stato Fisico</Label>
-              <Input value={editData.stato_fisico || ""} onChange={(e) => setEditData((p: any) => ({ ...p, stato_fisico: e.target.value }))} placeholder="S / L / F" />
-            </div>
-            <div className="col-span-2">
-              <Label>Descrizione Rifiuto</Label>
-              <Textarea value={editData.descrizione_rifiuto || ""} onChange={(e) => setEditData((p: any) => ({ ...p, descrizione_rifiuto: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Produttore</Label>
-              <Input value={editData.produttore_denominazione || ""} onChange={(e) => setEditData((p: any) => ({ ...p, produttore_denominazione: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Trasportatore</Label>
-              <Input value={editData.trasportatore_denominazione || ""} onChange={(e) => setEditData((p: any) => ({ ...p, trasportatore_denominazione: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Destinatario</Label>
-              <Input value={editData.destinatario_denominazione || ""} onChange={(e) => setEditData((p: any) => ({ ...p, destinatario_denominazione: e.target.value }))} />
-            </div>
-            <div className="col-span-2">
-              <Label>Note</Label>
-              <Textarea value={editData.note || ""} onChange={(e) => setEditData((p: any) => ({ ...p, note: e.target.value }))} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog({ open: false, form: null })}>Annulla</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Salva Modifiche
-            </Button>
-          </DialogFooter>
+          {viewDialog.form && (
+            <FIRAlternativeForm
+              key={viewDialog.form.id}
+              firFormId={viewDialog.form.id}
+              presetNumeroFir={viewDialog.form.numero_fir || undefined}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </AdminLayout>
