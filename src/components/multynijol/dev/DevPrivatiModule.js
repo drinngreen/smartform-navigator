@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,22 @@ export function DevPrivatiModule() {
     const [ricevutaForm, setRicevutaForm] = useState({ importo: "", note: "" });
     const [privatoForm, setPrivatoForm] = useState({ ...EMPTY_PRIVATO_FORM });
     const [scadenzaDate, setScadenzaDate] = useState();
+    // Form Bridge: register privato form fields for AI auto-fill
+    const setPrivatoField = useCallback((key) => (v) => setPrivatoForm(prev => ({ ...prev, [key]: v })), []);
+    const setConfField = useCallback((key) => (v) => setConfForm(prev => ({ ...prev, [key]: v })), []);
+    useFormBridgeFields(() => [
+        { id: "privato_nome", label: "Nome", type: "text", getValue: () => privatoForm.nome, setValue: setPrivatoField("nome") },
+        { id: "privato_cognome", label: "Cognome", type: "text", getValue: () => privatoForm.cognome, setValue: setPrivatoField("cognome") },
+        { id: "privato_codice_fiscale", label: "Codice Fiscale", type: "text", getValue: () => privatoForm.codice_fiscale, setValue: setPrivatoField("codice_fiscale") },
+        { id: "privato_comune_residenza", label: "Comune Residenza", type: "text", getValue: () => privatoForm.comune_residenza, setValue: setPrivatoField("comune_residenza") },
+        { id: "privato_numero_documento", label: "Numero Documento", type: "text", getValue: () => privatoForm.numero_documento, setValue: setPrivatoField("numero_documento") },
+        { id: "privato_targa_automezzo", label: "Targa Automezzo", type: "text", getValue: () => privatoForm.targa_automezzo, setValue: setPrivatoField("targa_automezzo") },
+        { id: "privato_modello_automezzo", label: "Modello Automezzo", type: "text", getValue: () => privatoForm.modello_automezzo, setValue: setPrivatoField("modello_automezzo") },
+        { id: "conf_cer", label: "CER Conferimento", type: "text", getValue: () => confForm.cer, setValue: setConfField("cer") },
+        { id: "conf_kg_pesati", label: "Kg Pesati", type: "number", getValue: () => confForm.kg_pesati, setValue: setConfField("kg_pesati") },
+        { id: "conf_importo_pagato", label: "Importo Pagato", type: "number", getValue: () => confForm.importo_pagato, setValue: setConfField("importo_pagato") },
+        { id: "conf_note", label: "Note Conferimento", type: "textarea", getValue: () => confForm.note, setValue: setConfField("note") },
+    ], [privatoForm, confForm]);
     // Fetch impianti for the tenant
     const { data: impianti } = useQuery({
         queryKey: ["dev-impianti", MULTY_TENANT_ID],
