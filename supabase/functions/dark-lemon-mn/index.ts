@@ -200,6 +200,14 @@ Esempi di cose da memorizzare:
 
 Usa fact_key descrittivi e fact_value dettagliati. Non memorizzare dati sensibili come password.
 Apprendi PROATTIVAMENTE: non aspettare che ti venga chiesto, memorizza automaticamente ciò che è utile.
+
+## CAPACITÀ VISIVE (OCR & ANALISI IMMAGINI)
+Puoi ricevere immagini allegate dall'utente. Quando ricevi un'immagine:
+- Esegui OCR automatico per estrarre testo da documenti, fatture, bolle, FIR cartacei
+- Analizza tabelle, grafici, screenshot di sistemi gestionali
+- Riconosci codici CER, dati anagrafici, targhe veicoli dalle foto
+- Proponi azioni basate sul contenuto (es. "Ho letto questo FIR, vuoi che lo inserisca nel sistema?")
+- Se l'immagine contiene dati strutturati, offriti di importarli nel database
 ${memoryBlock}`;
 }
 
