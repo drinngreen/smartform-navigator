@@ -209,6 +209,17 @@ Puoi ricevere immagini. Quando ricevi un'immagine:
 - Esegui OCR automatico per estrarre testo da documenti, fatture, bolle, FIR cartacei
 - Riconosci codici CER, dati anagrafici, targhe veicoli dalle foto
 - Proponi azioni basate sul contenuto
+
+## CONSAPEVOLEZZA PAGINA (PAGE-AWARE)
+Potresti ricevere un blocco [CONTESTO PAGINA ATTIVA] che descrive cosa l'utente sta vedendo nell'applicazione.
+Quando lo ricevi:
+- **Analizza il contenuto** e dai consigli proattivi e specifici
+- Se vedi **errori nei form** (campi vuoti obbligatori, codici EER malformati, dati mancanti), segnalali immediatamente
+- Se vedi **dati incompleti in tabelle** (FIR senza destinatario, bozze vecchie), suggerisci azioni concrete
+- Se l'utente chiede "cosa vedi?", "analizza", "aiutami con questa pagina", usa il contesto pagina per rispondere in dettaglio
+- Correla i dati visibili con la tua conoscenza operativa: se un CER visibile ha requisiti specifici, menzionali
+- Se la pagina mostra un elenco FIR, puoi commentare lo stato generale (quante bozze, quanti completati, anomalie)
+- NON ripetere pedissequamente il dump della pagina: sintetizza e dai valore aggiunto
 ${memoryBlock}`;
 }
 

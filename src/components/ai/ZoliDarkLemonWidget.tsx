@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
+import { usePageContext } from "@/hooks/usePageContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
@@ -33,6 +34,7 @@ export function ZoliDarkLemonWidget() {
   const context = isMN ? (ctxMatch?.[1] || "multyproget") : "multyproget";
 
   const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context);
+  const { pageTitle, capturePageContent } = usePageContext();
 
   const isResizing = useRef<ResizeDir>(null);
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
@@ -88,8 +90,19 @@ export function ZoliDarkLemonWidget() {
   }, [setPosition, setSize]);
 
   const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
-    sendMessage(content, attachments);
-  }, [sendMessage]);
+    const ctx = capturePageContent();
+    sendMessage(content, attachments, { route: ctx.route, pageTitle: ctx.pageTitle });
+  }, [sendMessage, capturePageContent]);
+
+  const handleAnalyzePage = useCallback(() => {
+    if (isLoading) return;
+    const ctx = capturePageContent();
+    sendMessage(
+      `Analizza la pagina che sto visualizzando e dammi consigli utili.`,
+      undefined,
+      ctx
+    );
+  }, [sendMessage, capturePageContent, isLoading]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
@@ -154,6 +167,11 @@ export function ZoliDarkLemonWidget() {
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
+            {!isFullscreen && (
+              <button onClick={handleAnalyzePage} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-green-400 transition-colors" title={`Analizza: ${pageTitle}`} disabled={isLoading}>
+                <ScanSearch className="h-4 w-4" />
+              </button>
+            )}
             {isFullscreen && (
               <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
                 <MessageSquare className="h-4 w-4" />
