@@ -261,6 +261,78 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPr
       });
   }, [presetNumeroFir, activeDraftNumero]);
 
+  // Auto-prefill trasportatore fields from the assigned user's profile
+  useEffect(() => {
+    if (!firFormId || fields.length === 0) return;
+
+    supabase
+      .from("fir_forms")
+      .select("user_id")
+      .eq("id", firFormId)
+      .maybeSingle()
+      .then(({ data: draft }) => {
+        if (!draft?.user_id) return;
+
+        supabase
+          .from("profiles")
+          .select("nome, cognome, codice_fiscale, targa_automezzo")
+          .eq("user_id", draft.user_id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (!profile) return;
+
+            const updates: Record<string, string> = {};
+
+            // Denominazione trasportatore = tenant preset (es. Multyproget S.r.l.)
+            const denomField = findFieldByTokens(fields, ["denominazione", "trasportatore"]);
+            if (denomField && !normalizeFieldName(denomField.name).includes("nuovo")) {
+              updates[denomField.id] = tenantPreset.nome;
+            }
+
+            // Codice fiscale trasportatore = tenant preset CF (P.IVA azienda)
+            const cfField = findFieldByTokens(fields, ["codice", "fiscale", "trasportatore"]);
+            if (cfField && !normalizeFieldName(cfField.name).includes("nuovo")) {
+              updates[cfField.id] = tenantPreset.cf;
+            }
+
+            // Cognome e nome conducente = dal profilo utente
+            const conducenteField = findFieldByTokens(fields, ["cognome", "nome", "conducente"]);
+            if (conducenteField) {
+              updates[conducenteField.id] = `${profile.cognome ?? ""} ${profile.nome ?? ""}`.trim();
+            }
+
+            // Targa automezzo = dal profilo utente
+            const targaField = fields.find(f =>
+              hasTokens(f.name, ["targa", "automezzo"]) &&
+              !normalizeFieldName(f.name).includes("trasbordo")
+            );
+            if (targaField && profile.targa_automezzo) {
+              updates[targaField.id] = profile.targa_automezzo;
+            }
+
+            // Numero iscrizione albo trasportatore
+            const alboField = findFieldByTokens(fields, ["iscrizione", "albo", "trasportatore"]);
+            if (alboField && !normalizeFieldName(alboField.name).includes("nuovo")) {
+              // Use tenant preset autorizzazione if available
+              if (tenantPreset.autorizzazione) {
+                updates[alboField.id] = tenantPreset.autorizzazione;
+              }
+            }
+
+            // Only apply updates where values are not already filled
+            setValues(prev => {
+              const merged = { ...prev };
+              for (const [key, val] of Object.entries(updates)) {
+                if (!merged[key] || String(merged[key]).trim() === "") {
+                  merged[key] = val;
+                }
+              }
+              return merged;
+            });
+          });
+      });
+  }, [firFormId, fields, tenantPreset]);
+
   useEffect(() => {
     setScale(1);
     setTranslate({ x: 0, y: 0 });
