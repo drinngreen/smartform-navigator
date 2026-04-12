@@ -108,21 +108,30 @@ export function useDarkLemonMN(context?: string) {
 
     // Build API messages - last 19 + current
     const apiMessages = [...messages.slice(-19), userMsg].map(m => {
-      // For multimodal messages with attachments
       if (m.attachments && m.attachments.length > 0) {
         const parts: any[] = [{ type: "text", text: m.content }];
         for (const att of m.attachments) {
-          if (att.type.startsWith("image/")) {
+          if (att.type.startsWith("image/") || att.type === "application/pdf") {
+            // Images and PDFs: send as image_url with data URL (Gemini supports both)
             parts.push({
               type: "image_url",
               image_url: { url: att.dataUrl },
             });
           } else {
-            // For non-image files, include as text description
-            parts.push({
-              type: "text",
-              text: `[Allegato: ${att.name} (${att.type})]`,
-            });
+            // Text-based files (csv, txt, etc): decode base64 and send as text
+            try {
+              const base64Content = att.dataUrl.split(",")[1];
+              const decoded = atob(base64Content);
+              parts.push({
+                type: "text",
+                text: `--- CONTENUTO FILE: ${att.name} ---\n${decoded}\n--- FINE FILE ---`,
+              });
+            } catch {
+              parts.push({
+                type: "text",
+                text: `[Allegato non leggibile: ${att.name} (${att.type})]`,
+              });
+            }
           }
         }
         return { role: m.role, content: parts };
