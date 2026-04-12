@@ -134,15 +134,317 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
   return updates;
 }
 
+const STATO_FISICO_CODE_MAP: Record<string, string> = {
+  "1": "1",
+  solido_pulverulento: "1",
+  "2": "2",
+  solido_non_pulverulento: "2",
+  "3": "3",
+  fangoso_palabile: "3",
+  "4": "4",
+  liquido: "4",
+  "5": "5",
+  aeriforme: "5",
+  "6": "6",
+  altro: "6",
+};
+
+interface FIRAlternativeDraftData {
+  id?: string;
+  numero_fir?: string | null;
+  status?: string | null;
+  user_id?: string | null;
+  produttore_denominazione?: string | null;
+  produttore_codice_fiscale?: string | null;
+  produttore_indirizzo?: string | null;
+  destinatario_denominazione?: string | null;
+  destinatario_codice_fiscale?: string | null;
+  destinatario_indirizzo?: string | null;
+  destinatario_autorizzazione?: string | null;
+  trasportatore_denominazione?: string | null;
+  trasportatore_codice_fiscale?: string | null;
+  trasportatore_iscrizione_albo?: string | null;
+  trasportatore_targa_automezzo?: string | null;
+  trasportatore_targa_rimorchio?: string | null;
+  trasportatore_conducente?: string | null;
+  codice_eer?: string | null;
+  descrizione_rifiuto?: string | null;
+  stato_fisico?: string | null;
+  quantita?: number | null;
+  unita_misura?: string | null;
+  caratteristiche_hp?: string[] | null;
+  data_partenza?: string | null;
+  data_arrivo?: string | null;
+  intermediario_denominazione?: string | null;
+  intermediario_codice_fiscale?: string | null;
+  intermediario_iscrizione_albo?: string | null;
+  note?: string | null;
+  form_data?: Record<string, unknown> | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+function getFormDataValue(formData: Record<string, unknown> | null | undefined, ...keys: string[]) {
+  if (!formData) return null;
+
+  for (const key of keys) {
+    if (!(key in formData)) continue;
+    const value = formData[key];
+    if (value === null || value === undefined) continue;
+    if (typeof value === "string" && value.trim() === "") continue;
+    return value;
+  }
+
+  return null;
+}
+
+function toCheckboxValue(value: unknown): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return false;
+    return ["1", "true", "si", "sì", "yes", "y", "on", "x", "checked"].includes(normalized);
+  }
+  return Boolean(value);
+}
+
+function toTextValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  return String(value);
+}
+
+function extractDateValue(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+
+  const directMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (directMatch) return directMatch[1];
+
+  const embeddedMatch = value.match(/(\d{4}-\d{2}-\d{2})[ T]/);
+  if (embeddedMatch) return embeddedMatch[1];
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function extractTimeValue(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+
+  const embeddedMatch = value.match(/[T ](\d{2}:\d{2})/);
+  if (embeddedMatch) return embeddedMatch[1];
+
+  const directMatch = value.match(/^(\d{2}:\d{2})/);
+  if (directMatch) return directMatch[1];
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  const hours = String(parsed.getHours()).padStart(2, "0");
+  const minutes = String(parsed.getMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
+function toStatoFisicoCode(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const normalized = normalizeFieldName(value);
+  return STATO_FISICO_CODE_MAP[normalized] || value.trim();
+}
+
+function getDraftValueForField(
+  field: TemplateField,
+  draft: FIRAlternativeDraftData,
+  formData: Record<string, unknown> | null
+): unknown {
+  const normalized = normalizeFieldName(field.name);
+  const isSecondDestField = normalized.includes("secondo_destinatario");
+  const isNuovoTrasportatoreField = normalized.includes("nuovo_trasportatore") || normalized.includes("produttore_detentore_originale");
+  const isFrazionamentoField = normalized.includes("frazionamento");
+  const isTrasbordoTotaleField = normalized.includes("trasbordo_totale");
+
+  if (field.type === "checkbox") {
+    if (normalized === "registro_no") return getFormDataValue(formData, "registro_no") === "NO";
+    if (normalized === "detentore") return getFormDataValue(formData, "detentore_checkbox");
+    if (normalized === "recupero") return getFormDataValue(formData, "destinatario_operazione_R", "destinatario_operazione_r");
+    if (normalized === "smaltimento") return getFormDataValue(formData, "destinatario_operazione_D", "destinatario_operazione_d");
+    if (normalized === "speciale") return getFormDataValue(formData, "provenienza_speciale");
+    if (normalized === "urbano") return getFormDataValue(formData, "provenienza_urbano");
+    if (normalized === "accettato_per_intero") return getFormDataValue(formData, "accettato_per_intero");
+    if (normalized === "accettato_parzialmente") return getFormDataValue(formData, "accettato_parzialmente");
+    if (normalized === "respinto") return getFormDataValue(formData, "respinto");
+    if (normalized === "peso_verificato_in_partenza") return getFormDataValue(formData, "peso_verificato_partenza");
+    if (normalized === "trasporto_adr_rid") return getFormDataValue(formData, "trasporto_adr_rid");
+    if (normalized === "alla_rinfusa") return getFormDataValue(formData, "aspetto_rinfusa");
+    if (normalized === "chilogrammi") return String(draft.unita_misura || "kg").toLowerCase() !== "l";
+    if (normalized === "litri") return String(draft.unita_misura || "").toLowerCase() === "l";
+    if (normalized === "in_attesa_di_verifica_analitica") return getFormDataValue(formData, "in_attesa_verifica_analitica");
+    if (normalized === "microraccolta") return getFormDataValue(formData, "microraccolta");
+    if (normalized === "intermodale") return getFormDataValue(formData, "intermodale");
+    if (normalized === "analisi_rapporto_di_prova") return getFormDataValue(formData, "analisi_rapporto_di_prova");
+    if (normalized === "classificazione_caratteristiche_chimico_fisiche") return getFormDataValue(formData, "classificazione_caratteristiche_chimico_fisiche");
+    if (normalized === "ir") return getFormDataValue(formData, "ir");
+    if (normalized === "nc") return getFormDataValue(formData, "nc");
+    if (normalized === "a") return getFormDataValue(formData, "a");
+    return null;
+  }
+
+  if (field.type === "date") {
+    if (normalized === "data_emissione" || normalized === "data_di_emissione_foglio_2") return draft.created_at || draft.updated_at;
+    if (hasTokens(field.name, ["data", "inizio", "trasporto"])) return draft.data_partenza;
+    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return draft.data_arrivo;
+    if (normalized === "valida_al") return getFormDataValue(formData, "valida_al", "analisi_valida_al", "classificazione_valida_al");
+    if (hasTokens(field.name, ["data", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
+    if (normalized.includes("prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
+    if (normalized.includes("seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
+    if (normalized.includes("terza_sospensione")) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    if (normalized.includes("ripresa_primo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_1_data_ripresa");
+    if (normalized.includes("ripresa_secondo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_2_data_ripresa");
+    if (normalized.includes("ripresa_terzo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_3_data_ripresa");
+    if (normalized === "data_presa_rimorchio_precedente") return getFormDataValue(formData, "trasbordo_totale_data_presa_carico", "trasbordoTotDataPresaCarico");
+    return null;
+  }
+
+  if (field.type === "time") {
+    if (hasTokens(field.name, ["ora", "inizio", "trasporto"])) return draft.data_partenza;
+    if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return draft.data_arrivo;
+    if (hasTokens(field.name, ["ora", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
+    if (normalized.includes("ora_prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
+    if (normalized.includes("ora_seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
+    if (normalized.includes("ora_terza_sospensione")) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    if (normalized.includes("ora_ripresa_primo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_1_data_ripresa");
+    if (normalized.includes("ora_ripresa_secondo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_2_data_ripresa");
+    if (normalized.includes("ora_ripresa_terzo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_3_data_ripresa");
+    if (normalized === "ora_presa_rimorchio_precedente") return getFormDataValue(formData, "trasbordo_totale_data_presa_carico", "trasbordoTotDataPresaCarico");
+    return null;
+  }
+
+  if (normalized === "numero_fir") return draft.numero_fir;
+  if (normalized === "numero_di_registrazione") return getFormDataValue(formData, "numero_registro");
+  if (normalized === "codice_eer") return draft.codice_eer;
+  if (normalized === "descrizione_rifiuto") return draft.descrizione_rifiuto;
+  if (normalized === "caratteristiche_di_pericolo") return draft.caratteristiche_hp;
+  if (normalized === "stato_fisico") return toStatoFisicoCode(draft.stato_fisico);
+  if (normalized === "quantita") return draft.quantita;
+  if (normalized === "quantita_accettata") return getFormDataValue(formData, "quantita_accettata");
+  if (normalized === "quantita_respinta" || normalized === "kg_respinti") return getFormDataValue(formData, "quantita_respinta", "kg_respinti");
+  if (normalized === "annotazioni_pagina_1") return draft.note;
+  if (normalized === "annotazioni_seconda_pagina") return getFormDataValue(formData, "annotazioni_pag2", "annotazioni_seconda_pagina");
+  if (normalized === "nr_onu") return getFormDataValue(formData, "nr_onu");
+  if (normalized === "note_caratteristiche_chimico_fisiche") return getFormDataValue(formData, "note_adr");
+  if (normalized === "percorso_se_diverso_dal_piu_breve") return getFormDataValue(formData, "percorso");
+  if (normalized === "motivazioni_respinta") return getFormDataValue(formData, "motivazioni_respinta", "motivazione_respingimento");
+  if (normalized === "nr_documento") return getFormDataValue(formData, "nr_documento", "analisi_numero", "classificazione_numero");
+  if (normalized === "luogo_di_produzione_se_diverso_produttore") return getFormDataValue(formData, "produttore_luogo_produzione");
+  if (normalized === "denominazione_detentore") return getFormDataValue(formData, "detentore_denominazione");
+  if (normalized === "unita_locale_indirizzo_detentore") return getFormDataValue(formData, "detentore_unita_locale", "detentore_indirizzo");
+  if (normalized === "codice_fiscale_detentore") return getFormDataValue(formData, "detentore_codice_fiscale", "detentore_cf");
+
+  if (isProduttoreDenominationField(field.name)) return draft.produttore_denominazione;
+  if (isProduttoreCfField(field.name)) return draft.produttore_codice_fiscale;
+  if (isProduttoreAddressField(field.name)) return draft.produttore_indirizzo;
+  if (isProduttoreAuthorizationField(field.name)) return getFormDataValue(formData, "produttore_numero_aut", "produttore_iscrizione_albo");
+  if (isProduttoreAuthorizationTypeField(field.name)) return getFormDataValue(formData, "produttore_tipo", "produttore_tipo_aut");
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "produttore"])) return getFormDataValue(formData, "produttore_iscrizione_albo");
+
+  if (isDestinatarioDenominationField(field.name)) return draft.destinatario_denominazione;
+  if (isDestinatarioCfField(field.name)) return draft.destinatario_codice_fiscale;
+  if (isDestinatarioAddressField(field.name)) return draft.destinatario_indirizzo;
+  if (isDestinatarioAuthorizationField(field.name)) return getFormDataValue(formData, "destinatario_n_aut_comunicazione", "destinatario_numero_aut") || draft.destinatario_autorizzazione;
+  if (isDestinatarioAuthorizationTypeField(field.name)) return getFormDataValue(formData, "destinatario_tipo");
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "destinatario"]) && !isSecondDestField) return draft.destinatario_autorizzazione;
+
+  if (hasTokens(field.name, ["denominazione", "trasportatore"]) && !isNuovoTrasportatoreField && !isFrazionamentoField && !isTrasbordoTotaleField) return draft.trasportatore_denominazione;
+  if (hasTokens(field.name, ["codice", "fiscale", "trasportatore"]) && !isNuovoTrasportatoreField && !isFrazionamentoField && !isTrasbordoTotaleField) return draft.trasportatore_codice_fiscale;
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "trasportatore"]) && !isNuovoTrasportatoreField && !isFrazionamentoField && !isTrasbordoTotaleField) return draft.trasportatore_iscrizione_albo;
+  if (hasTokens(field.name, ["cognome", "nome", "conducente"]) && !isTrasbordoTotaleField) return draft.trasportatore_conducente;
+  if (hasTokens(field.name, ["targa", "automezzo"]) && !isFrazionamentoField && !isTrasbordoTotaleField) return draft.trasportatore_targa_automezzo;
+  if (hasTokens(field.name, ["targa", "rimorchio"]) && !isFrazionamentoField && !isTrasbordoTotaleField) return draft.trasportatore_targa_rimorchio;
+
+  if (hasTokens(field.name, ["denominazione", "intermediario"])) return draft.intermediario_denominazione;
+  if (hasTokens(field.name, ["codice", "fiscale", "intermediario"])) return draft.intermediario_codice_fiscale;
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "intermediario"])) return draft.intermediario_iscrizione_albo;
+
+  if (hasTokens(field.name, ["classe", "pericolo"])) return getFormDataValue(formData, "classe_pericolo");
+  if (hasTokens(field.name, ["numero", "colli"])) return getFormDataValue(formData, "numero_colli");
+  if (hasTokens(field.name, ["quantita", "residua"])) return getFormDataValue(formData, "trasbordo_parziale_quantita_residua");
+  if (hasTokens(field.name, ["riferimento", "formulario"])) return getFormDataValue(formData, "trasbordo_parziale_rif_formulario");
+
+  if (hasTokens(field.name, ["denominazione", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_denominazione");
+  if (hasTokens(field.name, ["unita", "locale", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_unita_locale");
+  if (hasTokens(field.name, ["codice", "fiscale", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_codice_fiscale");
+  if (hasTokens(field.name, ["aut", "comunicazione", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_iscrizione_albo");
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_iscrizione_albo");
+  if (hasTokens(field.name, ["tipologia", "autorizzazione", "ambientale", "destinatario"]) && isSecondDestField) return getFormDataValue(formData, "secondo_destinatario_tipo", "dest2TipoAut");
+
+  if (isNuovoTrasportatoreField && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
+  if (isNuovoTrasportatoreField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
+  if (isNuovoTrasportatoreField && hasTokens(field.name, ["iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
+
+  if (isFrazionamentoField && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
+  if (isFrazionamentoField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
+  if (isFrazionamentoField && hasTokens(field.name, ["numero", "iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
+  if (isFrazionamentoField && hasTokens(field.name, ["targa", "automezzo"])) return getFormDataValue(formData, "trasbordo_parziale_targa_automezzo");
+  if (isFrazionamentoField && hasTokens(field.name, ["targa", "rimorchio"])) return getFormDataValue(formData, "trasbordo_parziale_targa_rimorchio");
+
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_totale_denominazione", "trasbordoTotDenominazione");
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_totale_codice_fiscale", "trasbordoTotCF");
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["numero", "iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_totale_iscrizione_albo", "trasbordoTotAlbo");
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["targa", "automezzo"])) return getFormDataValue(formData, "trasbordo_totale_targa_automezzo", "trasbordoTotTarga");
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["targa", "rimorchio"])) return getFormDataValue(formData, "trasbordo_totale_targa_rimorchio", "trasbordoTotRimorchio");
+  if (isTrasbordoTotaleField && hasTokens(field.name, ["conducente"])) return getFormDataValue(formData, "trasbordo_totale_conducente", "trasbordoTotConducente");
+
+  if (hasTokens(field.name, ["luogo", "primo", "stazionamento"])) return getFormDataValue(formData, "sosta_tecnica_1_luogo");
+  if (hasTokens(field.name, ["luogo", "secondo", "stazionamento"])) return getFormDataValue(formData, "sosta_tecnica_2_luogo");
+  if (hasTokens(field.name, ["luogo", "terzo", "stazionamento"])) return getFormDataValue(formData, "sosta_tecnica_3_luogo");
+
+  return null;
+}
+
+function buildDraftFieldValues(fields: TemplateField[], draft: FIRAlternativeDraftData) {
+  const formData = draft.form_data && typeof draft.form_data === "object" && !Array.isArray(draft.form_data)
+    ? draft.form_data as Record<string, unknown>
+    : null;
+
+  const nextValues: Record<string, string | boolean> = {};
+
+  fields.forEach((field) => {
+    const rawValue = getDraftValueForField(field, draft, formData);
+    if (rawValue === null || rawValue === undefined) return;
+
+    if (field.type === "checkbox") {
+      nextValues[field.id] = toCheckboxValue(rawValue);
+      return;
+    }
+
+    const formattedValue = field.type === "date"
+      ? extractDateValue(rawValue)
+      : field.type === "time"
+        ? extractTimeValue(rawValue)
+        : toTextValue(rawValue);
+
+    if (formattedValue !== "") {
+      nextValues[field.id] = formattedValue;
+    }
+  });
+
+  return nextValues;
+}
+
 interface FIRAlternativeFormProps {
   presetNumeroFir?: string;
   firFormId?: string;
   assignedUserId?: string;
+  draftData?: FIRAlternativeDraftData | null;
   printOnly?: boolean;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
@@ -261,6 +563,49 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         setLoading(false);
       });
   }, [presetNumeroFir, activeDraftNumero]);
+
+  useEffect(() => {
+    if (fields.length === 0) return;
+
+    let cancelled = false;
+
+    const loadDraftValues = async () => {
+      let draft = draftData ?? null;
+
+      if (!draft && activeDraftId) {
+        const { data } = await supabase
+          .from("fir_forms")
+          .select("*")
+          .eq("id", activeDraftId)
+          .maybeSingle();
+
+        draft = (data as FIRAlternativeDraftData | null) ?? null;
+      }
+
+      if (!draft || cancelled) return;
+
+      const hydratedValues = buildDraftFieldValues(fields, draft);
+      const effectiveNumero = draft.numero_fir || presetNumeroFir || activeDraftNumero;
+
+      if (effectiveNumero) {
+        fields.forEach((field) => {
+          if (hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"])) {
+            hydratedValues[field.id] = effectiveNumero;
+          }
+        });
+      }
+
+      if (!cancelled) {
+        setValues((prev) => ({ ...prev, ...hydratedValues }));
+      }
+    };
+
+    void loadDraftValues();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fields, draftData, activeDraftId, presetNumeroFir, activeDraftNumero]);
 
   // Auto-prefill trasportatore fields from the assigned user's profile
   useEffect(() => {
