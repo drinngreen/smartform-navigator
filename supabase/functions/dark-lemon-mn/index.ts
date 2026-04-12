@@ -38,15 +38,21 @@ function hasAttachmentPayload(messages: any[] = []) {
 
 function buildSystemPrompt(adminName: string, tenantId: string, contextLabel: string, memories: any[]) {
   const memoryBlock = memories.length > 0
-    ? `\n\n### Memoria admin:\n${memories.map(m => `- ${m.fact_key}: ${m.fact_value}`).join("\n")}`
+    ? `\n\n### Memoria admin (ricordi recenti):\n${memories.map(m => `- [${m.category || 'generale'}] ${m.fact_key}: ${m.fact_value}`).join("\n")}`
     : "";
 
   return `Sei DARK LEMON AI, l'agente operativo COMPLETO per ${contextLabel}. Sei personalizzato per ${adminName}.
 
-## IDENTITÀ
-Sei un agente AI con accesso TOTALE a tutte le operazioni aziendali di ${contextLabel}. Non sei un semplice chatbot: sei il braccio operativo dell'amministratore. Puoi fare QUALUNQUE cosa venga richiesta.
+## IDENTITÀ DUALE
+Sei contemporaneamente:
+1. **SUPERVISORE TECNICO** — agente operativo specializzato nella gestione rifiuti, FIR, RENTRI, normativa ambientale
+2. **ASSISTENTE AI GENERALISTA** — chat AI completa capace di rispondere a qualsiasi domanda su qualsiasi argomento
 
-## CONTESTO
+Quando l'utente chiede qualcosa che riguarda il software, i rifiuti o la normativa, agisci come supervisore tecnico pignolo.
+Quando l'utente chiede qualcosa di generico (cultura, scienza, consigli, storia, tecnologia, ecc.), rispondi come un'AI generalista competente e completa.
+NON rifiutare MAI domande generiche dicendo "non è il mio campo". Sei una chat AI completa.
+
+## CONTESTO OPERATIVO
 - Tenant attivo: ${contextLabel} (ID: ${tenantId})
 - Impianto principale: ${MULTY_IMPIANTO_ID}
 - Società RENTRI: multy (CF: 12347770013)
@@ -55,177 +61,154 @@ Sei un agente AI con accesso TOTALE a tutte le operazioni aziendali di ${context
 ## REGOLA CRITICA DI ISOLAMENTO
 OGNI operazione DEVE essere filtrata per tenant_id = '${tenantId}'. Non accedere MAI a dati di altri tenant.
 
+## LIMITI INVALICABILI (SUPERVISORE TECNICO)
+Queste regole sono ASSOLUTE e non possono essere ignorate:
+1. MAI permettere un FIR senza: codice EER valido, produttore, trasportatore, destinatario
+2. MAI inviare a RENTRI senza TUTTI i campi obbligatori compilati
+3. Se un dato RENTRI obbligatorio manca, BLOCCA l'operazione ed elenca i campi mancanti
+4. Codice EER DEVE essere numerico a 6 cifre (es. 150106), senza punti né spazi
+5. Quantità DEVE essere > 0
+6. Stato fisico DEVE essere uno tra: S (solido), L (liquido), F (fangoso), P (polverulento), SNP (solido non polverulento)
+7. Se scopri un'informazione utile, DEVI salvarla con save_memory PRIMA di rispondere
+8. Per operazioni distruttive (DELETE, annullamento), chiedi SEMPRE conferma
+
+## PROCEDURE OPERATIVE AUTOMATICHE
+Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
+
+### "Nuovo Carico" / "Nuovo FIR"
+1. Verifica codice EER → se non valido, BLOCCA
+2. Verifica disponibilità numero nel pool FIR
+3. Controlla autorizzazione mezzo trasportatore per quel CER
+4. Compila tutti i campi obbligatori del FIR
+5. Verifica completezza → se manca qualcosa, elenca i mancanti
+6. Completa il FIR solo quando tutto è in ordine
+
+### "Conferimento Privato"
+1. Cerca il privato in anagrafica (per CF, nome o tessera)
+2. Se non esiste, proponi di crearlo
+3. Registra il conferimento (CER, peso, importo)
+4. Emetti ricevuta con numero progressivo automatico
+
+### "Invio RENTRI"
+1. Pre-valida TUTTI i campi obbligatori del FIR
+2. Se manca anche UN SOLO campo, BLOCCA e mostra l'elenco completo
+3. Solo se tutto è completo, procedi con l'invio
+4. Logga l'esito
+
 ## CAPACITÀ OPERATIVE
 
-### 1. FORMULARI FIR (Formulario Identificazione Rifiuti)
-Puoi gestire l'intero ciclo di vita dei FIR:
-- **Consultare** tutti i FIR (bozze, completati, inviati) con list_fir_forms
-- **Compilare** un FIR specifico campo per campo con update_fir_form
-- **Creare bozze extra** per un utente con create_extra_draft
-- **Assegnare** un FIR a un utente specifico
-- **Verificare il pool** dei numeri disponibili con check_fir_pool
-- **Distribuire** numeri FIR automaticamente con distribute_baseline
+### 1. FORMULARI FIR
+- Consultare tutti i FIR con list_fir_forms
+- Compilare campo per campo con update_fir_form
+- Creare bozze extra con create_extra_draft
+- Verificare il pool con check_fir_pool
+- Distribuire baseline con distribute_baseline
+- Completare FIR con complete_fir
+- Inviare a RENTRI con send_to_rentri
 
-#### Campi FIR disponibili per la compilazione:
-- numero_fir, status (bozza/completato/inviato)
-- produttore_denominazione, produttore_codice_fiscale, produttore_indirizzo, produttore_comune, produttore_provincia, produttore_cap
-- destinatario_denominazione, destinatario_codice_fiscale, destinatario_indirizzo, destinatario_comune, destinatario_provincia, destinatario_cap, destinatario_autorizzazione
-- trasportatore_denominazione, trasportatore_codice_fiscale, trasportatore_conducente, trasportatore_iscrizione_albo, trasportatore_targa_automezzo, trasportatore_targa_rimorchio
-- intermediario_denominazione, intermediario_codice_fiscale, intermediario_iscrizione_albo
-- codice_eer, stato_fisico, descrizione_rifiuto, caratteristiche_hp
-- quantita, unita_misura, data_partenza, data_arrivo
-- note, form_data (JSONB per campi extra)
+### 2. ANAGRAFICA PRIVATI
+- Cercare con search_privati
+- Creare con create_privato
+- Aggiornare con update_privato
 
-### 2. INVIO RENTRI
-Puoi inviare FIR al sistema RENTRI ministeriale con send_to_rentri.
-Il proxy VPS (167.235.29.27:3000) gestisce mTLS e firme JWT.
+### 3. CONFERIMENTI E RICEVUTE
+- Registrare conferimenti con create_conferimento
+- Consultare storico con list_conferimenti
+- Emettere ricevute con create_ricevuta
 
-### 3. ANAGRAFICA PRIVATI
-- Cercare privati per nome, cognome, CF con search_privati
-- Creare nuovi privati con create_privato
-- Aggiornare dati privati con update_privato
+### 4. FATTURE ERP
+- Creare fatture con create_fattura
 
-### 4. CONFERIMENTI
-- Registrare conferimenti rifiuti dai privati con create_conferimento
-- Consultare lo storico conferimenti con list_conferimenti
+### 5. PERSONALE / TRASPORTATORI
+- Elencare con list_trasportatori
+- Inviare messaggi con send_message_to_user
 
-### 5. RICEVUTE
-- Creare ricevute per conferimenti con create_ricevuta
-- Consultare ricevute emesse
+### 6. SOCIAL
+- Leggere feed con read_social_feed
+- Moderare con moderate_post
 
-### 6. FATTURE (ERP)
-- Creare fatture di vendita con create_fattura
-- Consultare fatture esistenti
-- Gestire righe fattura
+### 7. DATABASE GENERICO
+- Query SELECT con query_database
+- INSERT/UPDATE/DELETE con write_database
+- Conteggi con count_records
 
-### 7. MAGAZZINO
-- Consultare giacenze con query_database
-- Registrare movimenti carico/scarico
-- Gestire cernite (separazione rifiuti)
+### 8. MEMORIA STRATEGICA
+- Salvare ricordi categorizzati con save_memory
+- Richiamare ricordi specifici con recall_memory
+- Elencare tutti i ricordi con list_memories
+- Cancellare ricordi con delete_memory
 
-### 8. PERSONALE / TRASPORTATORI
-- Elencare tutti i trasportatori del tenant
-- Visualizzare lo stato dei FIR assegnati per ogni trasportatore
-- Inviare messaggi ai trasportatori
+### 9. KNOWLEDGE BASE
+- Cercare normative e procedure con search_knowledge
 
-### 9. SOCIAL E COMUNICAZIONI
-- Leggere e moderare il feed social
-- Inviare messaggi diretti
-- Gestire comunicazioni
-
-### 10. DATABASE GENERICO
-Per qualunque altra esigenza, hai accesso diretto al database con query_database e write_database.
-
-## SCHEMA DATABASE COMPLETO
+## SCHEMA DATABASE (campi principali)
 
 ### fir_forms
-Formulari FIR compilati. Colonne principali:
-id (uuid PK), user_id (uuid), tenant_id (uuid), status (text: bozza/completato/inviato), numero_fir (text),
-produttore_denominazione, produttore_codice_fiscale, produttore_indirizzo, produttore_comune, produttore_provincia, produttore_cap,
-destinatario_denominazione, destinatario_codice_fiscale, destinatario_indirizzo, destinatario_comune, destinatario_provincia, destinatario_cap, destinatario_autorizzazione,
-trasportatore_denominazione, trasportatore_codice_fiscale, trasportatore_conducente, trasportatore_iscrizione_albo, trasportatore_targa_automezzo, trasportatore_targa_rimorchio,
-intermediario_denominazione, intermediario_codice_fiscale, intermediario_iscrizione_albo,
-codice_eer, stato_fisico, descrizione_rifiuto, caratteristiche_hp (text[]),
-quantita (numeric), unita_misura, data_partenza, data_arrivo,
-note, form_data (jsonb), allegati (jsonb), submitted_at, completed_at,
-deleted_by_user (bool), created_at, updated_at.
+id, user_id, tenant_id, status (bozza/completato/inviato), numero_fir,
+produttore_*, destinatario_*, trasportatore_*, intermediario_*,
+codice_eer, stato_fisico, descrizione_rifiuto, caratteristiche_hp,
+quantita, unita_misura, data_partenza, data_arrivo, note, form_data, allegati.
 
 ### fir_number_pool
-Pool numeri FIR vidimati. Colonne:
-id, fir_number (text), user_id (uuid), societa_id (text: global/multy/niyol), status (available/reserved/consumed),
-assigned_at, assigned_by, consumed_at, reserved_by_fir_id, suspended (bool), is_demo (bool), qr_code_data.
+id, fir_number, user_id, societa_id, status (available/reserved/consumed), assigned_at, suspended, is_demo.
 
 ### profiles
-Profili utenti. Colonne: id, user_id, nome, cognome, email, ruolo, telefono, tenant_id, mn_context, avatar_url, is_social_only, codice_fiscale, recording_consent, created_at, updated_at.
+id, user_id, nome, cognome, email, ruolo, telefono, tenant_id, mn_context, is_social_only.
 
 ### anagrafica_privati
-Privati che conferiscono rifiuti. Colonne:
-id, tenant_id, impianto_id, nome, cognome, codice_fiscale, denominazione, comune_residenza, indirizzo, cap, provincia, nazione,
-numero_tessera, tipo_utenza (domestica/non_domestica), email, telefono, cellulare, pec, fax, partita_iva,
-codice_destinatario, note, attivo (bool), automezzo, targa_automezzo, modello_automezzo,
-numero_documento, scadenza_documento, import_source, import_batch_id, created_at, updated_at.
+id, tenant_id, impianto_id, nome, cognome, codice_fiscale, tipo_utenza, numero_tessera, targa_automezzo.
 
 ### privati_conferimenti
-Conferimenti rifiuti. Colonne:
-id, impianto_id, tenant_id, privato_id, nome_privato, cf_pi, cer, kg_pesati, data, importo_pagato, metodo_pag,
-tipo_utenza, numero_fir, quantita_presunta, stato_rifiuto, codice_ce, esito_pesata, targa_automezzo, modello_automezzo, note, created_at, updated_at.
+id, impianto_id, tenant_id, privato_id, cer, kg_pesati, importo_pagato, data.
 
-### ricevute_privati
-Ricevute emesse. Colonne:
-id, tenant_id, impianto_id, conferimento_id, privato_id, numero_ricevuta, anno, data_emissione, importo, pdf_path, qr_code_data, note, created_at, updated_at.
+### ricevute_privati, erp_fatture_vendita, erp_righe_fatture_vendita, magazzino_giacenze, movimenti_impianto, cernite, messages, social_posts.
 
-### erp_fatture_vendita
-Fatture vendita. Colonne:
-id, tenant_id, numero, data_fattura, tipo_documento, cliente_id, imponibile, iva, totale, ritenuta_acconto, netto_a_pagare,
-metodo_pagamento_id, condizioni_pagamento, stato, contabilizzata, causale_id, da_conferimenti, note, created_by, created_at, updated_at.
+## COMPETENZA NORMATIVA
+Sei esperto di:
+- D.Lgs 152/2006 (Testo Unico Ambiente) — gestione rifiuti, registri, FIR, bonifica
+- RENTRI (D.M. 59/2023) — tracciabilità digitale, vidimazione, registri elettronici
+- ADR — trasporto merci pericolose su strada
+- MUD — dichiarazione annuale rifiuti
+- Albo Gestori Ambientali — categorie, iscrizioni, obblighi
+- Codici EER — catalogo europeo rifiuti, famiglie, pericolosità
+- Caratteristiche HP — classi di pericolo da HP1 a HP15
 
-### erp_righe_fatture_vendita
-Righe fattura. Colonne:
-id, fattura_id, riga_numero, descrizione, quantita, prezzo_unitario, aliquota_iva, imponibile, importo_iva,
-sconto_percentuale, cer, fir_id, conferimento_id, impianto_id, codice_iva_id, centro_costo, commessa, peso_totale.
-
-### erp_anagrafiche
-Anagrafiche ERP (clienti/fornitori). Colonne:
-id, tenant_id, ragione_sociale, tipo_soggetto (cliente/fornitore/entrambi), nome, cognome, codice_fiscale, partita_iva,
-indirizzo, comune, provincia, cap, nazione, email, pec, telefono, codice_destinatario, iban, condizioni_pagamento_default, note, attivo, created_at, updated_at.
-
-### magazzino_giacenze
-id, tenant_id, impianto_id, cer, quantita_kg, ultimo_carico_at, created_at, updated_at.
-
-### movimenti_impianto
-id, tenant_id, impianto_id, cer, tipo_movimento (CARICO/SCARICO), quantita_kg, ruolo_impianto, descrizione, data_movimento, note, created_at.
-
-### cernite / cernita_output
-Cernite e output di separazione rifiuti.
-
-### messages
-id, sender_id, receiver_id, content, is_read, read_at, deleted_by_sender, created_at.
-
-### social_posts / social_comments / social_moderation
-Post social, commenti, azioni moderazione.
-
-### impianti_accounts / impianto_fir_inbox
-Account impianto e inbox FIR destinatario.
-
-### organizations / memberships
-Organizzazioni RENTRI e appartenenze.
-
-### intermediari / intermediazioni
-Registri intermediazione.
+Usa search_knowledge per consultare la knowledge base quando serve approfondire normative.
 
 ## REGOLE OPERATIVE
 1. Rispondi SEMPRE in italiano, chiaro e professionale.
 2. Filtra SEMPRE per tenant_id = '${tenantId}'.
 3. Quando inserisci, includi SEMPRE tenant_id = '${tenantId}'.
-4. Per operazioni distruttive, chiedi conferma PRIMA di eseguire.
-5. Formatta i risultati in modo leggibile (tabelle markdown, elenchi).
-6. Limita le SELECT a max 50 righe salvo richiesta specifica.
-7. Quando compili un FIR, usa update_fir_form per aggiornare i campi specifici.
-8. Quando crei una bozza extra, usa create_extra_draft.
-9. Per le ricevute, genera automaticamente il numero progressivo.
-10. Sii proattivo: se l'utente chiede qualcosa di vago, proponi opzioni concrete.
-11. Quando assegni un FIR a un utente, prima cerca l'utente nel DB per ottenere lo user_id.
+4. Formatta i risultati in modo leggibile (tabelle markdown, elenchi).
+5. Limita le SELECT a max 50 righe salvo richiesta specifica.
+6. Sii proattivo: se l'utente chiede qualcosa di vago, proponi opzioni concrete.
+7. Per domande generiche (cultura, scienza, consigli), rispondi liberamente come un'AI completa.
 
-## APPRENDIMENTO CONTINUO
-IMPORTANTE: Devi apprendere attivamente dalle conversazioni! Ogni volta che scopri informazioni utili, usa save_memory per ricordarle.
-Esempi di cose da memorizzare:
-- Preferenze dell'admin (formato report preferito, utenti frequenti, procedure abituali)
-- Pattern ricorrenti (combinazioni CER/destinatario usate spesso, trasportatori preferiti)
-- Informazioni aziendali scoperte durante le query (numero medio conferimenti, clienti principali)
-- Correzioni o chiarimenti dell'utente (es. "il codice CER corretto per X è Y")
-- Flussi di lavoro abituali (es. "prima cerco il privato, poi creo conferimento, poi ricevuta")
-- Contatti chiave e ruoli (es. "Mario è il responsabile impianto")
+## APPRENDIMENTO CONTINUO — MEMORIA STRATEGICA
+IMPORTANTE: Devi apprendere attivamente dalle conversazioni usando save_memory con categoria e ambiente appropriati!
 
-Usa fact_key descrittivi e fact_value dettagliati. Non memorizzare dati sensibili come password.
-Apprendi PROATTIVAMENTE: non aspettare che ti venga chiesto, memorizza automaticamente ciò che è utile.
+### Categorie di memoria:
+- **preferenze** — formati, orari, procedure abituali dell'admin
+- **pattern_operativi** — combinazioni CER/destinatario frequenti, trasportatori preferiti
+- **info_aziendali** — dati scoperti (clienti principali, medie, contatti chiave)
+- **normativa** — regole RENTRI, codici EER corretti, autorizzazioni
+- **correzioni** — chiarimenti dell'utente su dati o procedure
+- **generale** — fallback
+
+### Ambienti di memoria:
+- **operativo** — logistica quotidiana, FIR, conferimenti
+- **normativa** — MUD, consulenza annuale, adempimenti
+- **impianto** — gestione impianto, cernite, magazzino
+- **erp** — fatturazione, contabilità
+
+Usa recall_memory per recuperare ricordi specifici PRIMA di rispondere a domande operative.
+Apprendi PROATTIVAMENTE: non aspettare che ti venga chiesto.
 
 ## CAPACITÀ VISIVE (OCR & ANALISI IMMAGINI)
-Puoi ricevere immagini allegate dall'utente. Quando ricevi un'immagine:
+Puoi ricevere immagini. Quando ricevi un'immagine:
 - Esegui OCR automatico per estrarre testo da documenti, fatture, bolle, FIR cartacei
-- Analizza tabelle, grafici, screenshot di sistemi gestionali
 - Riconosci codici CER, dati anagrafici, targhe veicoli dalle foto
-- Proponi azioni basate sul contenuto (es. "Ho letto questo FIR, vuoi che lo inserisca nel sistema?")
-- Se l'immagine contiene dati strutturati, offriti di importarli nel database
+- Proponi azioni basate sul contenuto
 ${memoryBlock}`;
 }
 
@@ -262,6 +245,21 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "count_records",
+      description: "Conta record in una tabella con filtro opzionale.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: { type: "string" },
+          filter: { type: "string", description: "WHERE aggiuntivo (opzionale)" }
+        },
+        required: ["table"]
+      }
+    }
+  },
 
   // === FIR MANAGEMENT ===
   {
@@ -284,16 +282,13 @@ const tools = [
     type: "function",
     function: {
       name: "update_fir_form",
-      description: "Aggiorna/compila campi di un formulario FIR specifico. Usa per compilare produttore, destinatario, trasportatore, rifiuto, quantità, ecc.",
+      description: "Aggiorna/compila campi di un formulario FIR specifico.",
       parameters: {
         type: "object",
         properties: {
           fir_form_id: { type: "string", description: "UUID del formulario FIR da aggiornare" },
-          fields: {
-            type: "object",
-            description: "Oggetto con i campi da aggiornare. Es: {produttore_denominazione: 'Eco Srl', codice_eer: '150106'}",
-          },
-          explanation: { type: "string", description: "Spiegazione di cosa si sta compilando" }
+          fields: { type: "object", description: "Campi da aggiornare. Es: {produttore_denominazione: 'Eco Srl', codice_eer: '150106'}" },
+          explanation: { type: "string", description: "Spiegazione" }
         },
         required: ["fir_form_id", "fields", "explanation"]
       }
@@ -306,9 +301,7 @@ const tools = [
       description: "Crea una bozza FIR extra per un utente specifico, prelevando un numero dal pool condiviso.",
       parameters: {
         type: "object",
-        properties: {
-          user_id: { type: "string", description: "UUID dell'utente a cui assegnare la bozza extra" }
-        },
+        properties: { user_id: { type: "string", description: "UUID dell'utente" } },
         required: ["user_id"]
       }
     }
@@ -317,12 +310,10 @@ const tools = [
     type: "function",
     function: {
       name: "check_fir_pool",
-      description: "Verifica lo stato del pool numeri FIR per il tenant: disponibili, in uso, consumati.",
+      description: "Verifica lo stato del pool numeri FIR: disponibili, in uso, consumati.",
       parameters: {
         type: "object",
-        properties: {
-          detail: { type: "boolean", description: "Se true, mostra dettaglio per utente" }
-        }
+        properties: { detail: { type: "boolean", description: "Se true, mostra dettaglio per utente" } }
       }
     }
   },
@@ -330,23 +321,18 @@ const tools = [
     type: "function",
     function: {
       name: "distribute_baseline",
-      description: "Esegui la distribuzione automatica baseline dei FIR: 1 bozza per ogni trasportatore, Impianto e Conto Proprio.",
-      parameters: {
-        type: "object",
-        properties: {}
-      }
+      description: "Esegui la distribuzione automatica baseline dei FIR: 1 bozza per ogni trasportatore.",
+      parameters: { type: "object", properties: {} }
     }
   },
   {
     type: "function",
     function: {
       name: "complete_fir",
-      description: "Completa un FIR (cambia stato da bozza a completato) e opzionalmente consuma il numero.",
+      description: "Completa un FIR (cambia stato da bozza a completato) e consuma il numero.",
       parameters: {
         type: "object",
-        properties: {
-          fir_form_id: { type: "string", description: "UUID del FIR da completare" },
-        },
+        properties: { fir_form_id: { type: "string", description: "UUID del FIR da completare" } },
         required: ["fir_form_id"]
       }
     }
@@ -376,7 +362,7 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          search_term: { type: "string", description: "Termine di ricerca (nome, cognome, CF, tessera)" },
+          search_term: { type: "string", description: "Termine di ricerca" },
           limit: { type: "number", description: "Max risultati (default 10)" }
         },
         required: ["search_term"]
@@ -391,20 +377,12 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          nome: { type: "string" },
-          cognome: { type: "string" },
-          codice_fiscale: { type: "string" },
-          comune_residenza: { type: "string" },
-          indirizzo: { type: "string" },
-          cap: { type: "string" },
-          provincia: { type: "string" },
-          telefono: { type: "string" },
-          email: { type: "string" },
-          tipo_utenza: { type: "string", enum: ["domestica", "non_domestica"], description: "Default: domestica" },
-          numero_tessera: { type: "string" },
-          denominazione: { type: "string" },
-          targa_automezzo: { type: "string" },
-          note: { type: "string" }
+          nome: { type: "string" }, cognome: { type: "string" }, codice_fiscale: { type: "string" },
+          comune_residenza: { type: "string" }, indirizzo: { type: "string" }, cap: { type: "string" },
+          provincia: { type: "string" }, telefono: { type: "string" }, email: { type: "string" },
+          tipo_utenza: { type: "string", enum: ["domestica", "non_domestica"] },
+          numero_tessera: { type: "string" }, denominazione: { type: "string" },
+          targa_automezzo: { type: "string" }, note: { type: "string" }
         },
         required: ["nome", "cognome", "codice_fiscale"]
       }
@@ -435,17 +413,10 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          privato_id: { type: "string", description: "UUID del privato (opzionale se si fornisce nome_privato)" },
-          nome_privato: { type: "string", description: "Nome del privato (se non si ha l'UUID)" },
-          cf_pi: { type: "string", description: "Codice fiscale o P.IVA del privato" },
-          cer: { type: "string", description: "Codice EER/CER del rifiuto" },
-          kg_pesati: { type: "number", description: "Kg pesati" },
-          importo_pagato: { type: "number", description: "Importo pagato (opzionale)" },
-          metodo_pag: { type: "string", description: "Metodo pagamento: contanti, POS, bonifico" },
-          tipo_utenza: { type: "string", description: "domestica o non_domestica" },
-          stato_rifiuto: { type: "string", description: "Stato fisico del rifiuto" },
-          targa_automezzo: { type: "string" },
-          note: { type: "string" }
+          privato_id: { type: "string" }, nome_privato: { type: "string" }, cf_pi: { type: "string" },
+          cer: { type: "string" }, kg_pesati: { type: "number" }, importo_pagato: { type: "number" },
+          metodo_pag: { type: "string" }, tipo_utenza: { type: "string" }, stato_rifiuto: { type: "string" },
+          targa_automezzo: { type: "string" }, note: { type: "string" }
         },
         required: ["cer", "kg_pesati"]
       }
@@ -459,11 +430,8 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          privato_id: { type: "string", description: "UUID privato (opzionale)" },
-          date_from: { type: "string", description: "Data inizio YYYY-MM-DD (opzionale)" },
-          date_to: { type: "string", description: "Data fine YYYY-MM-DD (opzionale)" },
-          cer: { type: "string", description: "Filtro CER (opzionale)" },
-          limit: { type: "number", description: "Max risultati (default 20)" }
+          privato_id: { type: "string" }, date_from: { type: "string" },
+          date_to: { type: "string" }, cer: { type: "string" }, limit: { type: "number" }
         }
       }
     }
@@ -478,10 +446,8 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          conferimento_id: { type: "string", description: "UUID del conferimento" },
-          privato_id: { type: "string", description: "UUID del privato" },
-          importo: { type: "number", description: "Importo della ricevuta" },
-          note: { type: "string" }
+          conferimento_id: { type: "string" }, privato_id: { type: "string" },
+          importo: { type: "number" }, note: { type: "string" }
         },
         required: ["conferimento_id", "privato_id"]
       }
@@ -497,26 +463,21 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          cliente_id: { type: "string", description: "UUID del cliente (erp_anagrafiche)" },
-          tipo_documento: { type: "string", description: "FPA12 (fattura PA), FPR12 (fattura privati), TD01 (fattura)" },
+          cliente_id: { type: "string" },
+          tipo_documento: { type: "string" },
           righe: {
             type: "array",
             items: {
               type: "object",
               properties: {
-                descrizione: { type: "string" },
-                quantita: { type: "number" },
-                prezzo_unitario: { type: "number" },
-                aliquota_iva: { type: "number", description: "Es: 22, 10, 4, 0" },
-                cer: { type: "string" },
-                peso_totale: { type: "number" }
+                descrizione: { type: "string" }, quantita: { type: "number" },
+                prezzo_unitario: { type: "number" }, aliquota_iva: { type: "number" },
+                cer: { type: "string" }, peso_totale: { type: "number" }
               },
               required: ["descrizione", "quantita", "prezzo_unitario", "aliquota_iva"]
-            },
-            description: "Righe della fattura"
+            }
           },
-          condizioni_pagamento: { type: "string" },
-          note: { type: "string" }
+          condizioni_pagamento: { type: "string" }, note: { type: "string" }
         },
         required: ["cliente_id", "righe"]
       }
@@ -531,9 +492,7 @@ const tools = [
       description: "Elenca tutti i trasportatori/utenti del tenant con stato FIR assegnati.",
       parameters: {
         type: "object",
-        properties: {
-          with_fir_status: { type: "boolean", description: "Includi conteggio FIR per utente (default true)" }
-        }
+        properties: { with_fir_status: { type: "boolean" } }
       }
     }
   },
@@ -547,8 +506,7 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          receiver_id: { type: "string", description: "UUID del destinatario" },
-          content: { type: "string", description: "Testo del messaggio" }
+          receiver_id: { type: "string" }, content: { type: "string" }
         },
         required: ["receiver_id", "content"]
       }
@@ -561,10 +519,7 @@ const tools = [
       description: "Leggi conversazioni con trasportatori/utenti.",
       parameters: {
         type: "object",
-        properties: {
-          partner_id: { type: "string", description: "UUID utente specifico (opzionale)" },
-          limit: { type: "number", description: "Numero messaggi (default 20)" }
-        }
+        properties: { partner_id: { type: "string" }, limit: { type: "number" } }
       }
     }
   },
@@ -577,10 +532,7 @@ const tools = [
       description: "Leggi i post del social feed.",
       parameters: {
         type: "object",
-        properties: {
-          limit: { type: "number", description: "Numero post (default 15)" },
-          include_hidden: { type: "boolean", description: "Includi post nascosti (default true per admin)" }
-        }
+        properties: { limit: { type: "number" }, include_hidden: { type: "boolean" } }
       }
     }
   },
@@ -592,45 +544,90 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          post_id: { type: "string", description: "UUID del post" },
-          action: { type: "string", enum: ["hide", "delete"] },
-          reason: { type: "string", description: "Motivo della moderazione" }
+          post_id: { type: "string" }, action: { type: "string", enum: ["hide", "delete"] },
+          reason: { type: "string" }
         },
         required: ["post_id", "action", "reason"]
       }
     }
   },
 
-  // === MEMORIA ===
+  // === MEMORIA STRATEGICA ===
   {
     type: "function",
     function: {
       name: "save_memory",
-      description: "Salva un fatto importante per ricordarlo in futuro.",
+      description: "Salva un fatto importante categorizzato per ricordarlo in futuro. Scegli categoria e ambiente appropriati.",
       parameters: {
         type: "object",
         properties: {
-          fact_key: { type: "string" },
-          fact_value: { type: "string" }
+          fact_key: { type: "string", description: "Chiave descrittiva del fatto" },
+          fact_value: { type: "string", description: "Valore/descrizione del fatto" },
+          category: { type: "string", enum: ["preferenze", "pattern_operativi", "info_aziendali", "normativa", "correzioni", "generale"], description: "Categoria del ricordo (default: generale)" },
+          environment: { type: "string", enum: ["operativo", "normativa", "impianto", "erp"], description: "Ambiente del ricordo (default: operativo)" }
         },
         required: ["fact_key", "fact_value"]
       }
     }
   },
-
-  // === CONTEGGIO ===
   {
     type: "function",
     function: {
-      name: "count_records",
-      description: "Conta record in una tabella con filtro opzionale.",
+      name: "recall_memory",
+      description: "Cerca ricordi specifici per parola chiave, categoria o ambiente. Usa PRIMA di rispondere a domande operative per recuperare contesto rilevante.",
       parameters: {
         type: "object",
         properties: {
-          table: { type: "string" },
-          filter: { type: "string", description: "WHERE aggiuntivo (opzionale)" }
+          keyword: { type: "string", description: "Parola chiave da cercare in fact_key e fact_value" },
+          category: { type: "string", enum: ["preferenze", "pattern_operativi", "info_aziendali", "normativa", "correzioni", "generale"], description: "Filtra per categoria (opzionale)" },
+          environment: { type: "string", enum: ["operativo", "normativa", "impianto", "erp"], description: "Filtra per ambiente (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 10)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_memories",
+      description: "Elenca tutti i ricordi salvati, opzionalmente filtrati per categoria o ambiente.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: { type: "string", description: "Filtra per categoria (opzionale)" },
+          environment: { type: "string", description: "Filtra per ambiente (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_memory",
+      description: "Cancella un ricordo specifico per chiave (fact_key).",
+      parameters: {
+        type: "object",
+        properties: {
+          fact_key: { type: "string", description: "Chiave del fatto da cancellare" }
         },
-        required: ["table"]
+        required: ["fact_key"]
+      }
+    }
+  },
+
+  // === KNOWLEDGE BASE ===
+  {
+    type: "function",
+    function: {
+      name: "search_knowledge",
+      description: "Cerca nella knowledge base normative, procedure e regole RENTRI. Usa per approfondire normative ambientali, codici EER, procedure standard.",
+      parameters: {
+        type: "object",
+        properties: {
+          keyword: { type: "string", description: "Parola chiave da cercare" },
+          category: { type: "string", description: "Filtra per categoria: normativa, procedura (opzionale)" }
+        },
+        required: ["keyword"]
       }
     }
   },
@@ -698,7 +695,6 @@ async function handleTool(
     case "update_fir_form": {
       const id = args.fir_form_id;
       const fields = args.fields || {};
-      // Build SET clause
       const setClauses: string[] = [];
       const allowedFields = [
         "numero_fir", "status", "produttore_denominazione", "produttore_codice_fiscale",
@@ -735,13 +731,12 @@ async function handleTool(
     case "create_extra_draft": {
       const { data, error } = await db.rpc("create_extra_fir_draft", { p_user_id: args.user_id });
       if (error) return { error: error.message };
-      // Fetch the created draft details
       const { data: draft } = await db.from("fir_forms").select("id, numero_fir, status, user_id").eq("id", data).single();
       return { success: true, draft: draft || { id: data } };
     }
 
     case "check_fir_pool": {
-      const societa = "multy"; // Multyproget
+      const societa = "multy";
       let q = `SELECT 
         COUNT(*) FILTER (WHERE status = 'available' AND NOT suspended) as disponibili,
         COUNT(*) FILTER (WHERE status = 'reserved') as in_uso,
@@ -774,26 +769,19 @@ async function handleTool(
     }
 
     case "complete_fir": {
-      // Update status to completato
       const updateSql = `UPDATE fir_forms SET status = 'completato', completed_at = now(), updated_at = now() WHERE id = '${args.fir_form_id}' AND tenant_id = '${tenantId}' AND status = 'bozza' RETURNING id, numero_fir`;
       const { data: updated, error: updateErr } = await db.rpc("exec_sql_write", { query: updateSql }).maybeSingle();
       if (updateErr) return { error: updateErr.message };
-      // Consume the FIR number
       const { error: consumeErr } = await db.rpc("consume_fir_number", { p_fir_id: args.fir_form_id });
       if (consumeErr) console.error("Consume error:", consumeErr);
       return { success: true, completed: updated };
     }
 
     case "send_to_rentri": {
-      // Load FIR data
       const { data: fir, error: firErr } = await db.from("fir_forms")
-        .select("*")
-        .eq("id", args.fir_form_id)
-        .eq("tenant_id", tenantId)
-        .single();
+        .select("*").eq("id", args.fir_form_id).eq("tenant_id", tenantId).single();
       if (firErr || !fir) return { error: firErr?.message || "FIR non trovato" };
 
-      // Build RENTRI payload
       const payload = {
         rentri_path: args.rentri_path || "/api/rentri/action/emissioneFir",
         societaId: "multy",
@@ -801,54 +789,20 @@ async function handleTool(
           num_iscr_sito: "TO-00001",
           dati_partenza: {
             numero_fir: fir.numero_fir,
-            produttore: {
-              cf_prod: fir.produttore_codice_fiscale || "",
-              denominazione: fir.produttore_denominazione || "",
-              indirizzo: fir.produttore_indirizzo || "",
-              comune: fir.produttore_comune || "",
-              provincia: fir.produttore_provincia || "",
-              cap: fir.produttore_cap || "",
-            },
-            rifiuto: {
-              codice_eer: (fir.codice_eer || "").replace(/\./g, ""),
-              stato_fisico: fir.stato_fisico === "Solido" ? "SNP" : fir.stato_fisico === "Liquido" ? "L" : fir.stato_fisico || "SNP",
-              descrizione: fir.descrizione_rifiuto || "",
-              quantita: fir.quantita || 0,
-              unita_misura: fir.unita_misura === "tonnellate" ? "T" : "KG",
-            },
-            trasportatore: {
-              cf_tras: fir.trasportatore_codice_fiscale || "",
-              denominazione: fir.trasportatore_denominazione || "",
-              conducente: fir.trasportatore_conducente || "",
-              targa: fir.trasportatore_targa_automezzo || "",
-            },
+            produttore: { cf_prod: fir.produttore_codice_fiscale || "", denominazione: fir.produttore_denominazione || "", indirizzo: fir.produttore_indirizzo || "", comune: fir.produttore_comune || "", provincia: fir.produttore_provincia || "", cap: fir.produttore_cap || "" },
+            rifiuto: { codice_eer: (fir.codice_eer || "").replace(/\./g, ""), stato_fisico: fir.stato_fisico === "Solido" ? "SNP" : fir.stato_fisico === "Liquido" ? "L" : fir.stato_fisico || "SNP", descrizione: fir.descrizione_rifiuto || "", quantita: fir.quantita || 0, unita_misura: fir.unita_misura === "tonnellate" ? "T" : "KG" },
+            trasportatore: { cf_tras: fir.trasportatore_codice_fiscale || "", denominazione: fir.trasportatore_denominazione || "", conducente: fir.trasportatore_conducente || "", targa: fir.trasportatore_targa_automezzo || "" },
           },
-          dati_arrivo: {
-            destinatario: {
-              cf_dest: fir.destinatario_codice_fiscale || "",
-              denominazione: fir.destinatario_denominazione || "",
-            },
-          },
+          dati_arrivo: { destinatario: { cf_dest: fir.destinatario_codice_fiscale || "", denominazione: fir.destinatario_denominazione || "" } },
         },
       };
 
       try {
         const vpsResp = await fetch("http://167.235.29.27:3000/invia-operazione", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
         });
         const vpsResult = await vpsResp.json();
-        
-        // Log the RENTRI operation
-        await db.from("rentri_logs").insert({
-          tenant_id: tenantId,
-          operation_type: "emissione_fir",
-          payload: payload,
-          response: vpsResult,
-          status: vpsResp.ok ? "success" : "error",
-        }).catch(() => {});
-
+        await db.from("rentri_logs").insert({ tenant_id: tenantId, operation_type: "emissione_fir", payload, response: vpsResult, status: vpsResp.ok ? "success" : "error" }).catch(() => {});
         return { success: vpsResp.ok, rentri_response: vpsResult };
       } catch (e) {
         return { error: `Errore connessione VPS: ${e instanceof Error ? e.message : "unknown"}` };
@@ -936,7 +890,6 @@ async function handleTool(
     // ---------- RICEVUTE ----------
     case "create_ricevuta": {
       const year = new Date().getFullYear();
-      // Get next receipt number
       const { data: numData } = await db.rpc("next_ricevuta_number", { p_impianto_id: MULTY_IMPIANTO_ID, p_anno: year });
       const numRicevuta = numData || `00001/${year}`;
       const importo = args.importo || 0;
@@ -949,36 +902,25 @@ async function handleTool(
 
     // ---------- FATTURE ERP ----------
     case "create_fattura": {
-      // Get next invoice number
       const year = new Date().getFullYear();
       const { data: countData } = await db.rpc("exec_sql_readonly", {
         query: `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(numero, '[^0-9]', '', 'g') AS INTEGER)), 0) + 1 as next_num FROM erp_fatture_vendita WHERE tenant_id = '${tenantId}' AND EXTRACT(YEAR FROM data_fattura) = ${year}`
       });
       const nextNum = countData?.[0]?.next_num || 1;
       const numero = `${String(nextNum).padStart(4, "0")}/${year}`;
-
-      // Calculate totals
       const righe = args.righe || [];
       let imponibile = 0, iva = 0;
-      for (const r of righe) {
-        const imp = (r.quantita || 1) * (r.prezzo_unitario || 0);
-        imponibile += imp;
-        iva += imp * ((r.aliquota_iva || 22) / 100);
-      }
+      for (const r of righe) { const imp = (r.quantita || 1) * (r.prezzo_unitario || 0); imponibile += imp; iva += imp * ((r.aliquota_iva || 22) / 100); }
       const totale = imponibile + iva;
-
       const sql = `INSERT INTO erp_fatture_vendita (tenant_id, numero, data_fattura, tipo_documento, cliente_id, imponibile, iva, totale, netto_a_pagare, stato, condizioni_pagamento, note, created_by)
         VALUES ('${tenantId}', '${numero}', CURRENT_DATE, '${args.tipo_documento || "TD01"}', '${args.cliente_id}', ${imponibile}, ${iva}, ${totale}, ${totale}, 'bozza', ${args.condizioni_pagamento ? `'${args.condizioni_pagamento}'` : "NULL"}, ${args.note ? `'${args.note.replace(/'/g, "''")}'` : "NULL"}, ${adminUserId ? `'${adminUserId}'` : "NULL"})
         RETURNING id, numero, totale, stato`;
       const { data: fattura, error: fatErr } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
       if (fatErr) return { error: fatErr.message };
-
       const fatturaId = fattura?.[0]?.id || fattura?.id;
       if (fatturaId && righe.length > 0) {
         for (let i = 0; i < righe.length; i++) {
-          const r = righe[i];
-          const imp = (r.quantita || 1) * (r.prezzo_unitario || 0);
-          const ivaRiga = imp * ((r.aliquota_iva || 22) / 100);
+          const r = righe[i]; const imp = (r.quantita || 1) * (r.prezzo_unitario || 0); const ivaRiga = imp * ((r.aliquota_iva || 22) / 100);
           const rigaSql = `INSERT INTO erp_righe_fatture_vendita (fattura_id, riga_numero, descrizione, quantita, prezzo_unitario, aliquota_iva, imponibile, importo_iva${r.cer ? ", cer" : ""}${r.peso_totale ? ", peso_totale" : ""})
             VALUES ('${fatturaId}', ${i + 1}, '${(r.descrizione || "").replace(/'/g, "''")}', ${r.quantita || 1}, ${r.prezzo_unitario || 0}, ${r.aliquota_iva || 22}, ${imp}, ${ivaRiga}${r.cer ? `, '${r.cer}'` : ""}${r.peso_totale ? `, ${r.peso_totale}` : ""})`;
           await db.rpc("exec_sql_write", { query: rigaSql });
@@ -1003,19 +945,13 @@ async function handleTool(
     // ---------- MESSAGGI ----------
     case "send_message_to_user": {
       if (!adminUserId) return { error: "Admin non autenticato" };
-      const { error } = await db.from("messages").insert({
-        sender_id: adminUserId,
-        receiver_id: args.receiver_id,
-        content: args.content,
-      });
+      const { error } = await db.from("messages").insert({ sender_id: adminUserId, receiver_id: args.receiver_id, content: args.content });
       return error ? { error: error.message } : { success: true, message: "Messaggio inviato!" };
     }
 
     case "read_messages": {
       if (!adminUserId) return { error: "Admin non autenticato" };
-      let query = db.from("messages")
-        .select("id, sender_id, receiver_id, content, is_read, created_at")
-        .order("created_at", { ascending: false }).limit(args.limit || 20);
+      let query = db.from("messages").select("id, sender_id, receiver_id, content, is_read, created_at").order("created_at", { ascending: false }).limit(args.limit || 20);
       if (args.partner_id) {
         query = query.or(`and(sender_id.eq.${adminUserId},receiver_id.eq.${args.partner_id}),and(sender_id.eq.${args.partner_id},receiver_id.eq.${adminUserId})`);
       } else {
@@ -1027,9 +963,7 @@ async function handleTool(
 
     // ---------- SOCIAL ----------
     case "read_social_feed": {
-      let query = db.from("social_posts")
-        .select("id, author_id, content, post_type, is_hidden, likes_count, comments_count, created_at")
-        .order("created_at", { ascending: false }).limit(args.limit || 15);
+      let query = db.from("social_posts").select("id, author_id, content, post_type, is_hidden, likes_count, comments_count, created_at").order("created_at", { ascending: false }).limit(args.limit || 15);
       if (!args.include_hidden) query = query.eq("is_hidden", false);
       const { data: posts, error } = await query;
       if (error) return { error: error.message };
@@ -1051,23 +985,65 @@ async function handleTool(
         const { error } = await db.from("social_posts").delete().eq("id", args.post_id);
         if (error) return { error: error.message };
       }
-      await db.from("social_moderation").insert({
-        moderator_id: adminUserId, target_type: "post", target_id: args.post_id, action: args.action, reason: args.reason,
-      });
+      await db.from("social_moderation").insert({ moderator_id: adminUserId, target_type: "post", target_id: args.post_id, action: args.action, reason: args.reason });
       return { success: true, message: `Post ${args.action === "hide" ? "nascosto" : "eliminato"}!` };
     }
 
-    // ---------- MEMORIA ----------
+    // ---------- MEMORIA STRATEGICA ----------
     case "save_memory": {
       if (!adminUserId) return { error: "Admin non autenticato" };
+      const category = args.category || "generale";
+      const environment = args.environment || "operativo";
       const { data: existing } = await db.from("ai_user_memory")
         .select("id").eq("user_id", adminUserId).eq("fact_key", args.fact_key).single();
       if (existing) {
-        await db.from("ai_user_memory").update({ fact_value: args.fact_value }).eq("id", existing.id);
+        await db.from("ai_user_memory").update({ fact_value: args.fact_value, category, environment, updated_at: new Date().toISOString() }).eq("id", existing.id);
       } else {
-        await db.from("ai_user_memory").insert({ user_id: adminUserId, fact_key: args.fact_key, fact_value: args.fact_value });
+        await db.from("ai_user_memory").insert({ user_id: adminUserId, fact_key: args.fact_key, fact_value: args.fact_value, category, environment });
       }
-      return { success: true, message: `Memorizzato: ${args.fact_key}` };
+      return { success: true, message: `Memorizzato [${category}/${environment}]: ${args.fact_key}` };
+    }
+
+    case "recall_memory": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      let q = `SELECT fact_key, fact_value, category, environment, updated_at FROM ai_user_memory WHERE user_id = '${adminUserId}'`;
+      if (args.keyword) {
+        const kw = args.keyword.replace(/'/g, "''");
+        q += ` AND (fact_key ILIKE '%${kw}%' OR fact_value ILIKE '%${kw}%')`;
+      }
+      if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
+      if (args.environment) q += ` AND environment = '${args.environment.replace(/'/g, "")}'`;
+      q += ` ORDER BY updated_at DESC LIMIT ${args.limit || 10}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { memories: data || [] };
+    }
+
+    case "list_memories": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      let q = `SELECT fact_key, fact_value, category, environment, updated_at FROM ai_user_memory WHERE user_id = '${adminUserId}'`;
+      if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
+      if (args.environment) q += ` AND environment = '${args.environment.replace(/'/g, "")}'`;
+      q += ` ORDER BY category, updated_at DESC`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { memories: data || [] };
+    }
+
+    case "delete_memory": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      const delSql = `DELETE FROM ai_user_memory WHERE user_id = '${adminUserId}' AND fact_key = '${(args.fact_key || "").replace(/'/g, "''")}'`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: delSql }).maybeSingle();
+      return error ? { error: error.message } : { success: true, message: `Rimosso: ${args.fact_key}` };
+    }
+
+    // ---------- KNOWLEDGE BASE ----------
+    case "search_knowledge": {
+      const kw = (args.keyword || "").replace(/'/g, "''");
+      let q = `SELECT title, content, category, keywords FROM ai_knowledge_base WHERE (tenant_id = '${tenantId}' OR tenant_id IS NULL)`;
+      q += ` AND (title ILIKE '%${kw}%' OR content ILIKE '%${kw}%' OR '${kw}' = ANY(keywords))`;
+      if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
+      q += ` ORDER BY updated_at DESC LIMIT 5`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { knowledge: data || [] };
     }
 
     default:
@@ -1085,8 +1061,6 @@ Deno.serve(async (req) => {
   try {
     const { messages, context } = await req.json();
 
-    // Messages can contain multimodal content (text + images)
-    // The client sends image_url parts with base64 data URLs for OCR/vision
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
 
@@ -1111,10 +1085,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Load admin memories
+    // Load recent memories (max 10 for context efficiency)
     let memories: any[] = [];
     if (adminUserId) {
-      const { data } = await db.from("ai_user_memory").select("fact_key, fact_value").eq("user_id", adminUserId).order("updated_at", { ascending: false }).limit(30);
+      const { data } = await db.from("ai_user_memory")
+        .select("fact_key, fact_value, category, environment")
+        .eq("user_id", adminUserId)
+        .order("updated_at", { ascending: false })
+        .limit(10);
       memories = data || [];
     }
 
@@ -1131,7 +1109,7 @@ Deno.serve(async (req) => {
       { role: "system", content: systemPrompt },
       ...(attachmentAware ? [{
         role: "system",
-        content: "ISTRUZIONE ALLEGATI: se nei messaggi ricevi parti image_url o testo estratto da file, allora l'allegato è realmente disponibile e devi analizzarlo. Non dire mai che non puoi leggere allegati. Ignora eventuali vecchie risposte dell'assistente che sostengono il contrario: sono obsolete.",
+        content: "ISTRUZIONE ALLEGATI: se nei messaggi ricevi parti image_url o testo estratto da file, allora l'allegato è realmente disponibile e devi analizzarlo. Non dire mai che non puoi leggere allegati.",
       }] : []),
       ...modelMessages,
     ];
