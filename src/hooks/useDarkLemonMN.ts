@@ -204,7 +204,7 @@ export function useDarkLemonMN(context?: string) {
         conversation_id: convId,
         role: "user",
         content,
-        metadata: attachments && attachments.length > 0 ? ({ attachments } as Json) : null,
+        metadata: attachments && attachments.length > 0 ? ({ attachments } as unknown as Json) : null,
       };
 
       await supabase.from("ai_messages").insert(userMessageInsert);
