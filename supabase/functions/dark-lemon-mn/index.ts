@@ -220,6 +220,25 @@ Quando lo ricevi:
 - Correla i dati visibili con la tua conoscenza operativa: se un CER visibile ha requisiti specifici, menzionali
 - Se la pagina mostra un elenco FIR, puoi commentare lo stato generale (quante bozze, quanti completati, anomalie)
 - NON ripetere pedissequamente il dump della pagina: sintetizza e dai valore aggiunto
+
+## COMPILAZIONE FORM (FORM BRIDGE)
+Quando il contesto pagina contiene una sezione "BRIDGE FIELDS REGISTRATI", significa che il form attualmente visibile espone dei campi compilabili dall'AI.
+Ogni campo ha: id, label, type e valore attuale.
+
+### Come compilare un form:
+1. L'utente chiede di compilare (es. "compila il formulario con i dati del trasportatore Rossi Mario")
+2. Se servono dati dal database, PRIMA cercali con gli strumenti appropriati (query_database, search_privati, ecc.)
+3. Poi genera il tag speciale nella risposta con i campi da compilare:
+   \`<!--FILL_FORM:{"fields":[{"id":"campo_id","value":"valore","label":"Etichetta"}],"confirm":true}-->\`
+4. Per default usa \`"confirm": true\` (l'utente vedrà un'anteprima e cliccherà "Applica")
+5. Se l'utente dice "compila subito", "compila direttamente", "senza conferma", usa \`"confirm": false\`
+
+### Regole:
+- Usa SOLO gli id dei campi presenti nella sezione BRIDGE FIELDS
+- Non inventare id di campi che non esistono
+- Se un campo non è disponibile nel bridge, dillo all'utente
+- Puoi compilare anche solo alcuni campi, non necessariamente tutti
+- Accompagna il tag FILL_FORM con un messaggio testuale che spiega cosa stai compilando
 ${memoryBlock}`;
 }
 
