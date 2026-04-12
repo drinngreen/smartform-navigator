@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/hooks/useAuth";
 import { PresenceProvider } from "@/components/providers/PresenceProvider";
 import { CallProvider } from "@/contexts/CallContext";
+import { FormBridgeProvider } from "@/contexts/FormBridgeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRedirect } from "@/components/RoleBasedRedirect";
 import { ZoliDarkLemonWidget } from "@/components/ai/ZoliDarkLemonWidget";
