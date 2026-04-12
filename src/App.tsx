@@ -136,6 +136,7 @@ const App = () => (
       <AuthProvider>
         <PresenceProvider>
           <CallProvider>
+            <FormBridgeProvider>
             <Toaster position="top-right" theme="dark" />
             <CallManager />
             <GlobalNotificationBell />
