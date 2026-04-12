@@ -128,7 +128,9 @@ export type Database = {
       }
       ai_user_memory: {
         Row: {
+          category: string | null
           created_at: string
+          environment: string | null
           fact_key: string
           fact_value: string
           id: string
@@ -137,7 +139,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
+          environment?: string | null
           fact_key: string
           fact_value: string
           id?: string
@@ -146,7 +150,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
+          environment?: string | null
           fact_key?: string
           fact_value?: string
           id?: string
