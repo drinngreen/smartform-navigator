@@ -162,7 +162,7 @@ export function accettaFirInArrivoDestinatario(
     cliente,
     "POST",
     `/formulari/v1.0/${uuidFir}/accettazione`,
-    payload,
+    payload as unknown as Record<string, unknown>,
   );
 }
 
