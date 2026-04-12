@@ -273,27 +273,7 @@ export function ZoliDarkLemonWidget() {
               </div>
 
               {/* Input */}
-              <div className="p-3 border-t border-white/10 shrink-0">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    placeholder="Chiedi qualcosa..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
-                  />
-                  <button
-                    onClick={handleSend}
-                    onMouseDown={e => e.stopPropagation()}
-                    disabled={!input.trim() || isLoading}
-                    className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 disabled:opacity-30 hover:bg-cyan-500/30 transition-all"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
+              <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
             </div>
           </div>
         </div>
