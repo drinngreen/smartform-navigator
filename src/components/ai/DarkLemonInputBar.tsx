@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, Mic, MicOff, X, FileImage, FileText } from "lucide-react";
+import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Attachment {
@@ -17,6 +17,7 @@ interface DarkLemonInputBarProps {
 export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps) {
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isPreparingAttachments, setIsPreparingAttachments] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,39 +28,58 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
     setSpeechSupported(!!SpeechRecognition);
   }, []);
 
+  const readFileAsDataUrl = useCallback((file: File) => new Promise<Attachment>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve({
+        type: file.type,
+        name: file.name,
+        dataUrl,
+        preview: file.type.startsWith("image/") ? dataUrl : undefined,
+      });
+    };
+    reader.onerror = () => reject(reader.error || new Error(`Impossibile leggere ${file.name}`));
+    reader.readAsDataURL(file);
+  }), []);
+
   const handleSend = useCallback(() => {
-    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+    if ((!input.trim() && attachments.length === 0) || isLoading || isPreparingAttachments) return;
     const text = input.trim() || (attachments.length > 0 ? `Analizza ${attachments.length === 1 ? "questo file" : "questi file"}` : "");
     onSend(text, attachments.length > 0 ? attachments : undefined);
     setInput("");
     setAttachments([]);
-  }, [input, attachments, isLoading, onSend]);
+  }, [input, attachments, isLoading, isPreparingAttachments, onSend]);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    for (const file of Array.from(files)) {
+    const validFiles = Array.from(files).filter((file) => {
       if (file.size > 10 * 1024 * 1024) {
         alert(`File "${file.name}" troppo grande (max 10MB)`);
-        continue;
+        return false;
       }
+      return true;
+    });
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        setAttachments(prev => [...prev, {
-          type: file.type,
-          name: file.name,
-          dataUrl,
-          preview: file.type.startsWith("image/") ? dataUrl : undefined,
-        }]);
-      };
-      reader.readAsDataURL(file);
+    if (validFiles.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
 
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+    setIsPreparingAttachments(true);
+    try {
+      const nextAttachments = await Promise.all(validFiles.map(readFileAsDataUrl));
+      setAttachments((prev) => [...prev, ...nextAttachments]);
+    } catch (error) {
+      console.error("Attachment read error:", error);
+      alert("Non sono riuscito a leggere uno degli allegati. Riprova.");
+    } finally {
+      setIsPreparingAttachments(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [readFileAsDataUrl]);
 
   const removeAttachment = useCallback((index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
@@ -140,10 +160,11 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
         <button
           onClick={() => fileInputRef.current?.click()}
           onMouseDown={e => e.stopPropagation()}
-          className="p-2 rounded-xl text-white/40 hover:text-cyan-400 hover:bg-white/5 transition-all shrink-0"
-          title="Allega file o immagine"
+          disabled={isPreparingAttachments}
+          className="p-2 rounded-xl text-white/40 hover:text-cyan-400 hover:bg-white/5 transition-all shrink-0 disabled:opacity-40 disabled:hover:text-white/40"
+          title={isPreparingAttachments ? "Sto preparando gli allegati..." : "Allega file o immagine"}
         >
-          <Paperclip className="h-4 w-4" />
+          {isPreparingAttachments ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
         </button>
         <input
           ref={fileInputRef}
@@ -189,12 +210,16 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
         <button
           onClick={handleSend}
           onMouseDown={e => e.stopPropagation()}
-          disabled={(!input.trim() && attachments.length === 0) || isLoading}
+          disabled={(!input.trim() && attachments.length === 0) || isLoading || isPreparingAttachments}
           className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 disabled:opacity-30 hover:bg-cyan-500/30 transition-all shrink-0"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {isPreparingAttachments && (
+        <p className="mt-2 text-[10px] text-white/40">Sto preparando gli allegati prima dell'invio…</p>
+      )}
     </div>
   );
 }

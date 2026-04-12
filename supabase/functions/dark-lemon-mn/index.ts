@@ -7,14 +7,33 @@ const corsHeaders = {
 
 const TENANT_MAP: Record<string, string> = {
   multyproget: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  "dev-multyproget": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
   niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+  "dev-niyol": "819c783e-78dd-4080-8265-802e75b0d813",
 };
 const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
+const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
+
+function normalizeContext(context?: string): string | undefined {
+  return context?.replace(/^dev-/, "");
+}
+
 function resolveTenantId(context?: string): string {
-  if (context && TENANT_MAP[context]) return TENANT_MAP[context];
+  const normalizedContext = normalizeContext(context);
+  if (normalizedContext && TENANT_MAP[normalizedContext]) return TENANT_MAP[normalizedContext];
   return DEFAULT_TENANT_ID;
+}
+
+function hasAttachmentPayload(messages: any[] = []) {
+  return messages.some((message) => Array.isArray(message?.content) && message.content.some((part: any) =>
+    part?.type === "image_url"
+    || part?.type === "input_image"
+    || part?.type === "file"
+    || part?.type === "file_url"
+    || (part?.type === "text" && typeof part.text === "string" && part.text.includes("--- CONTENUTO FILE:"))
+  ));
 }
 
 function buildSystemPrompt(adminName: string, tenantId: string, contextLabel: string, memories: any[]) {
@@ -1099,13 +1118,22 @@ Deno.serve(async (req) => {
       memories = data || [];
     }
 
-    const tenantId = resolveTenantId(context);
-    const contextLabel = context === "multyproget" ? "Multyproget S.r.l." : context === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
+    const normalizedContext = normalizeContext(context);
+    const tenantId = resolveTenantId(normalizedContext);
+    const contextLabel = normalizedContext === "multyproget" ? "Multyproget S.r.l." : normalizedContext === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
     const systemPrompt = buildSystemPrompt(adminName, tenantId, contextLabel, memories);
+    const attachmentAware = hasAttachmentPayload(messages);
+    const modelMessages = attachmentAware
+      ? messages.filter((message: any) => !(message?.role === "assistant" && typeof message?.content === "string" && ATTACHMENT_REFUSAL_PATTERN.test(message.content)))
+      : messages;
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
-      ...messages,
+      ...(attachmentAware ? [{
+        role: "system",
+        content: "ISTRUZIONE ALLEGATI: se nei messaggi ricevi parti image_url o testo estratto da file, allora l'allegato è realmente disponibile e devi analizzarlo. Non dire mai che non puoi leggere allegati. Ignora eventuali vecchie risposte dell'assistente che sostengono il contrario: sono obsolete.",
+      }] : []),
+      ...modelMessages,
     ];
 
     let finalContent = "";
