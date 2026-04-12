@@ -1,106 +1,108 @@
 
 
-# Piano: Dark Lemon Page-Aware — Lettura Contesto Pagina in Tempo Reale
+# Piano: Dark Lemon Form Bridge — Compilazione Automatica Form via AI
 
-## Panoramica
+## Vincolo chiave
+Nessuna funzionalità manuale esistente viene modificata. L'utente continua a compilare i form normalmente. Il Form Bridge aggiunge solo la **possibilità** per Dark Lemon di compilare i campi, senza alterare il comportamento standard. Solo contesto dev-multyproget.
 
-Quando Dark Lemon è in modalità banner/floating (non fullscreen), un pulsante "Analizza Pagina" permette di catturare il contenuto della pagina sottostante e iniettarlo nel messaggio. In più, il widget invia automaticamente il contesto della route corrente (quale pagina, quale sezione) ad ogni messaggio, permettendo a Dark Lemon di dare consigli proattivi.
-
-## Cosa cambia per l'utente
-
-- Un nuovo pulsante **🔍 Analizza Pagina** nell'header del widget cattura il contenuto visibile della pagina
-- Dark Lemon sa SEMPRE su quale pagina si trova l'utente (FIR, Trasportatori, Dashboard, ecc.)
-- Può dare consigli come: "Vedo che stai compilando un FIR — il codice EER 150106 richiede stato fisico S"
-- Può leggere tabelle, form, dati visibili e commentarli
-- Se l'utente scrive "cosa vedi?" o "aiutami con questa pagina", Dark Lemon analizza automaticamente il DOM
-
-## Dettaglio tecnico
-
-### 1. Hook `usePageContext` (nuovo file)
-
-Crea `src/hooks/usePageContext.ts` che:
-- Usa `useLocation()` per determinare la pagina corrente
-- Mappa le route a descrizioni leggibili (es. `/mn/admin/dev-multyproget/formulari` → "Pagina Formulari FIR")
-- Espone una funzione `capturePageContent()` che:
-  - Prende il contenuto testuale del `<main>` o del container principale (escludendo il widget stesso)
-  - Estrae testo da tabelle, form input values, headings, badge/status
-  - Limita a ~4000 caratteri per non esplodere il prompt
-  - Restituisce un oggetto `{ route, pageTitle, pageContent, formFields, tableData }`
-
-### 2. Widget `ZoliDarkLemonWidget.tsx` — Modifiche
-
-- Importa `usePageContext`
-- Aggiunge pulsante "Analizza Pagina" (icona `Eye` o `ScanSearch`) nell'header, visibile solo quando NON in fullscreen
-- Al click: chiama `capturePageContent()`, poi invia un messaggio automatico con prefisso `[CONTESTO PAGINA]` contenente il dump
-- Ad ogni messaggio utente, inietta silenziosamente il `route` e `pageTitle` come metadato nel body della richiesta API
-
-### 3. Hook `useDarkLemonMN.ts` — Modifiche
-
-- `sendMessage` accetta un nuovo parametro opzionale `pageContext?: { route: string; pageTitle: string; content?: string }`
-- Quando presente, aggiunge un blocco `[CONTESTO PAGINA ATTIVA]` nei messaggi API prima dell'ultimo messaggio utente
-- Il contesto pagina NON viene salvato nel DB (è volatile, cambia ad ogni messaggio)
-
-### 4. Edge Function `dark-lemon-mn` — Modifiche
-
-- Nel system prompt, aggiungere sezione:
-  ```
-  ## CONSAPEVOLEZZA PAGINA
-  Potresti ricevere un blocco [CONTESTO PAGINA ATTIVA] che descrive cosa l'utente sta vedendo.
-  Quando presente:
-  - Analizza il contenuto e dai consigli proattivi
-  - Se vedi errori nei form, segnalali
-  - Se vedi dati incompleti in tabelle, suggerisci azioni
-  - Se l'utente chiede "cosa vedi?" o "analizza", usa il contesto pagina per rispondere
-  ```
-
-### 5. Mappatura Route → Descrizione
+## Architettura
 
 ```text
-/mn/admin/*/formulari      → "Gestione Formulari FIR"
-/mn/admin/*/trasportatori  → "Gestione Trasportatori"
-/mn/admin/*/aree-riservate → "Aree Riservate Impianti"
-/mn/admin/*/magazzino      → "Magazzino e Giacenze"
-/mn/admin/*/privati        → "Anagrafica Privati"
-/mn/admin/*/conferimenti   → "Conferimenti Privati"
-/mn/admin/*/fatture        → "Fatturazione ERP"
-/mn/admin/*/personale      → "Gestione Personale"
-/mn/admin/*/social         → "Social / Community"
-/mn/admin/*                → "Dashboard Principale"
+┌──────────────────────────┐
+│  FormBridgeProvider      │  (Context globale)
+│  - registry: Map<id, {   │
+│      label, type,        │
+│      getValue, setValue   │
+│    }>                    │
+│  - getRegisteredFields() │
+│  - fillFields(entries[]) │
+└──────────┬───────────────┘
+           │
+    ┌──────┴──────┐
+    │ useFormBridge│  (Hook per registrare campi)
+    │ registerField│
+    │ unregister   │
+    └──────┬──────┘
+           │ usato da
+    ┌──────┴──────────────┐
+    │ Form esistenti      │  (aggiunta di 3-5 righe)
+    │ es. FIR form,       │
+    │ Anagrafica Privati  │
+    └─────────────────────┘
+
+    ┌─────────────────────────────────┐
+    │ ZoliDarkLemonWidget.tsx         │
+    │ - Intercetta risposta con       │
+    │   tag <!--FILL_FORM:{...}-->    │
+    │ - Mostra anteprima + "Applica"  │
+    │   oppure applica direttamente   │
+    └─────────────────────────────────┘
+
+    ┌─────────────────────────────────┐
+    │ Edge Function dark-lemon-mn     │
+    │ + tool "fill_form"              │
+    │ + tool "get_form_fields"        │
+    │ + istruzioni nel system prompt  │
+    └─────────────────────────────────┘
 ```
 
-### 6. Funzione di cattura DOM
+## Dettaglio implementazione
 
+### 1. `FormBridgeContext.tsx` + `useFormBridge.ts` (nuovi)
+- Context con `Map<string, FieldDescriptor>` dove ogni campo ha: `id`, `label`, `type` (text/select/date/number), `getValue()`, `setValue(v)`
+- Hook `useFormBridge()` che espone `registerField(descriptor)` e cleanup automatico su unmount
+- Funzione `fillFields(entries: {id: string, value: string}[])` che chiama `setValue` per ogni campo registrato
+- Funzione `getRegisteredFields()` che ritorna l'elenco dei campi con label e valore corrente
+
+### 2. Integrazione nei form esistenti (solo aggiunta, zero modifiche)
+Esempio in un form FIR — si aggiungono solo 3 righe:
 ```typescript
-function capturePageContent(): string {
-  const main = document.querySelector("main") || document.querySelector("[data-page-content]") || document.body;
-  // Escludi il widget stesso
-  const clone = main.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll("[class*='z-[9999]']").forEach(el => el.remove());
-  
-  // Estrai form fields con valori
-  const inputs = clone.querySelectorAll("input, select, textarea");
-  const formData = Array.from(inputs).map(el => {
-    const label = el.closest("label")?.textContent || el.getAttribute("placeholder") || el.getAttribute("name");
-    return `${label}: ${(el as HTMLInputElement).value}`;
-  }).filter(v => v.includes(": ") && !v.endsWith(": "));
-  
-  // Estrai tabelle
-  const tables = clone.querySelectorAll("table");
-  // ... parse rows/headers
-  
-  // Testo generale (heading + paragrafi)
-  const textContent = clone.innerText.substring(0, 3000);
-  
-  return formattedResult;
-}
+const { registerField } = useFormBridge();
+useEffect(() => {
+  const cleanup = registerField({
+    id: "produttore_denominazione",
+    label: "Produttore",
+    type: "text",
+    getValue: () => formData.produttore_denominazione,
+    setValue: (v) => setFormData(prev => ({...prev, produttore_denominazione: v}))
+  });
+  return cleanup;
+}, [formData.produttore_denominazione]);
 ```
+I form da integrare inizialmente (solo dev-multy):
+- Form FIR (campi principali: produttore, trasportatore, destinatario, CER, quantita, ecc.)
+- Anagrafica Privati (nome, cognome, CF, indirizzo)
+- Conferimenti (CER, peso, importo)
 
-### 7. File modificati
+### 3. Edge Function — nuovi tool
+**`get_form_fields`**: ritorna la lista dei campi registrati nel bridge (iniettata dal widget nel messaggio)
+**`fill_form`**: l'AI restituisce un JSON con i campi da compilare. La risposta contiene un marcatore speciale `<!--FILL_FORM:{"fields":[{"id":"...","value":"..."}],"confirm":true}-->` che il widget intercetta.
+
+### 4. Widget — intercettazione e applicazione
+- Il widget parsifica la risposta cercando il tag `<!--FILL_FORM:...-->`
+- **Modalità conferma** (default): mostra un pannello con l'anteprima dei campi e un pulsante "✅ Applica" / "❌ Annulla"
+- **Modalità diretta**: se l'utente dice "compila direttamente" o "compila subito", l'AI mette `"confirm": false` e il widget applica immediatamente
+- Dopo l'applicazione, mostra un toast "✅ X campi compilati"
+
+### 5. `usePageContext` — arricchimento
+Aggiungere l'elenco dei campi registrati nel bridge al contesto pagina inviato all'AI, così l'agente sa esattamente quali campi può compilare e i loro ID.
+
+### 6. System prompt — nuove istruzioni
+Aggiungere una sezione "COMPILAZIONE FORM" al prompt che spiega:
+- Quando l'utente chiede di compilare un form, usa `fill_form`
+- Se il contesto pagina contiene `bridgeFields`, usali per sapere quali campi sono disponibili
+- Di default chiedi conferma, a meno che l'utente non dica "compila subito/direttamente"
+- Se l'utente chiede dati da DB (es. "compila con i dati del trasportatore Rossi"), prima cerca nel DB, poi compila
+
+## File coinvolti
 
 | File | Azione |
 |------|--------|
-| `src/hooks/usePageContext.ts` | Nuovo — cattura DOM e mappa route |
-| `src/components/ai/ZoliDarkLemonWidget.tsx` | Pulsante "Analizza Pagina" + invio contesto route |
-| `src/hooks/useDarkLemonMN.ts` | Parametro `pageContext` in `sendMessage` |
-| `supabase/functions/dark-lemon-mn/index.ts` | Sezione "Consapevolezza Pagina" nel system prompt |
+| `src/contexts/FormBridgeContext.tsx` | Nuovo — context + provider |
+| `src/hooks/useFormBridge.ts` | Nuovo — hook registrazione campi |
+| `src/components/ai/ZoliDarkLemonWidget.tsx` | Intercetta FILL_FORM, pannello conferma |
+| `src/hooks/usePageContext.js` | Aggiunge bridgeFields al contesto |
+| `supabase/functions/dark-lemon-mn/index.ts` | Tool fill_form + istruzioni prompt |
+| Form FIR / Privati / Conferimenti | +3 righe di registrazione bridge per form |
+| `src/App.tsx` | Wrappare con `FormBridgeProvider` |
 
