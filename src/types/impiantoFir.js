@@ -1,1 +1,1 @@
-export * from "./impiantoFir.ts";
+export {};

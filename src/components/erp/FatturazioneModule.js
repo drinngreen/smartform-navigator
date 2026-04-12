@@ -1,1 +1,11 @@
-export * from "./FatturazioneModule.tsx";
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, FileText, Calculator, BookOpen, BookOpenCheck } from "lucide-react";
+import { AnagraficheTab } from "./AnagraficheTab";
+import { FattureVenditaTab } from "./FattureVenditaTab";
+import { PianoContiTab } from "./PianoContiTab";
+import { TabelleFiscaliTab } from "./TabelleFiscaliTab";
+import { PrimaNotaTab } from "./PrimaNotaTab";
+export function FatturazioneModule({ tenantId }) {
+    return (_jsxs(Tabs, { defaultValue: "fatture", className: "space-y-4", children: [_jsxs(TabsList, { className: "bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1", children: [_jsxs(TabsTrigger, { value: "fatture", className: "gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary", children: [_jsx(FileText, { className: "h-4 w-4" }), "Fatture Vendita"] }), _jsxs(TabsTrigger, { value: "anagrafiche", className: "gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary", children: [_jsx(Users, { className: "h-4 w-4" }), "Anagrafiche"] }), _jsxs(TabsTrigger, { value: "piano-conti", className: "gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary", children: [_jsx(BookOpen, { className: "h-4 w-4" }), "Piano dei Conti"] }), _jsxs(TabsTrigger, { value: "tabelle", className: "gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary", children: [_jsx(Calculator, { className: "h-4 w-4" }), "Tabelle Fiscali"] }), _jsxs(TabsTrigger, { value: "prima-nota", className: "gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary", children: [_jsx(BookOpenCheck, { className: "h-4 w-4" }), "Prima Nota"] })] }), _jsx(TabsContent, { value: "fatture", children: _jsx(FattureVenditaTab, { tenantId: tenantId }) }), _jsx(TabsContent, { value: "anagrafiche", children: _jsx(AnagraficheTab, { tenantId: tenantId }) }), _jsx(TabsContent, { value: "piano-conti", children: _jsx(PianoContiTab, { tenantId: tenantId }) }), _jsx(TabsContent, { value: "tabelle", children: _jsx(TabelleFiscaliTab, { tenantId: tenantId }) }), _jsx(TabsContent, { value: "prima-nota", children: _jsx(PrimaNotaTab, { tenantId: tenantId }) })] }));
+}
