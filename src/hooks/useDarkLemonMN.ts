@@ -1,12 +1,20 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
+import type { Database, Json } from "@/integrations/supabase/types";
+
+export interface DLAttachment {
+  type: string;
+  name: string;
+  dataUrl: string;
+  preview?: string;
+}
 
 export interface DLMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  attachments?: { type: string; name: string; dataUrl: string }[];
+  attachments?: DLAttachment[];
   createdAt: Date;
 }
 
@@ -17,12 +25,102 @@ export interface DLConversation {
   updatedAt: Date;
 }
 
+type AIMessageInsert = Database["public"]["Tables"]["ai_messages"]["Insert"];
+
+const TEXT_ATTACHMENT_EXTENSIONS = new Set([
+  "txt", "md", "csv", "tsv", "json", "xml", "yaml", "yml", "log", "html", "htm", "css", "js", "jsx", "ts", "tsx",
+]);
+
+function normalizeMNContext(context?: string) {
+  return context?.replace(/^dev-/, "");
+}
+
+function isDLAttachment(value: unknown): value is DLAttachment {
+  if (!value || typeof value !== "object") return false;
+  const attachment = value as Partial<DLAttachment>;
+  return typeof attachment.name === "string"
+    && typeof attachment.dataUrl === "string"
+    && typeof attachment.type === "string";
+}
+
+function getAttachmentsFromMetadata(metadata: unknown): DLAttachment[] | undefined {
+  if (!metadata || typeof metadata !== "object") return undefined;
+
+  const attachments = (metadata as { attachments?: unknown }).attachments;
+  if (!Array.isArray(attachments)) return undefined;
+
+  const validAttachments = attachments.filter(isDLAttachment);
+  return validAttachments.length > 0 ? validAttachments : undefined;
+}
+
+function decodeAttachmentText(dataUrl: string) {
+  try {
+    const base64Content = dataUrl.split(",")[1];
+    if (!base64Content) return null;
+    const binary = atob(base64Content);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function isTextAttachment(attachment: DLAttachment) {
+  const type = attachment.type.toLowerCase();
+  const extension = attachment.name.split(".").pop()?.toLowerCase() || "";
+
+  return type.startsWith("text/")
+    || type.includes("json")
+    || type.includes("xml")
+    || type.includes("csv")
+    || type === "application/javascript"
+    || type === "application/x-javascript"
+    || TEXT_ATTACHMENT_EXTENSIONS.has(extension);
+}
+
+function buildApiMessage(message: DLMessage) {
+  if (!message.attachments || message.attachments.length === 0) {
+    return { role: message.role, content: message.content };
+  }
+
+  const parts: any[] = [{ type: "text", text: message.content }];
+
+  for (const attachment of message.attachments) {
+    if (attachment.type.startsWith("image/") || attachment.type === "application/pdf") {
+      parts.push({
+        type: "image_url",
+        image_url: { url: attachment.dataUrl },
+      });
+      continue;
+    }
+
+    if (isTextAttachment(attachment)) {
+      const decoded = decodeAttachmentText(attachment.dataUrl);
+      parts.push({
+        type: "text",
+        text: decoded
+          ? `--- CONTENUTO FILE: ${attachment.name} ---\n${decoded}\n--- FINE FILE ---`
+          : `[Allegato testuale non leggibile: ${attachment.name} (${attachment.type})]`,
+      });
+      continue;
+    }
+
+    parts.push({
+      type: "text",
+      text: `[Allegato disponibile: ${attachment.name} (${attachment.type || "tipo sconosciuto"})]`,
+    });
+  }
+
+  return { role: message.role, content: parts };
+}
+
 export function useDarkLemonMN(context?: string) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<DLMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<DLConversation[]>([]);
+  const normalizedContext = normalizeMNContext(context);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -54,7 +152,7 @@ export function useDarkLemonMN(context?: string) {
       .insert({
         user_id: user.id,
         title,
-        context: { source: "dark-lemon-mn", mn_context: context },
+        context: { source: "dark-lemon-mn", ...(normalizedContext ? { mn_context: normalizedContext } : {}) },
       })
       .select()
       .single();
@@ -63,7 +161,7 @@ export function useDarkLemonMN(context?: string) {
     setMessages([]);
     await loadConversations();
     return data.id;
-  }, [user, context, loadConversations]);
+  }, [user, normalizedContext, loadConversations]);
 
   const loadConversation = useCallback(async (conversationId: string) => {
     const { data } = await supabase
@@ -76,6 +174,7 @@ export function useDarkLemonMN(context?: string) {
         id: m.id,
         role: m.role as "user" | "assistant",
         content: m.content,
+        attachments: getAttachmentsFromMetadata(m.metadata),
         createdAt: new Date(m.created_at),
       })));
       setCurrentConversationId(conversationId);
@@ -84,7 +183,7 @@ export function useDarkLemonMN(context?: string) {
 
   const sendMessage = useCallback(async (
     content: string,
-    attachments?: { type: string; name: string; dataUrl: string }[]
+    attachments?: DLAttachment[]
   ) => {
     let convId = currentConversationId;
     if (!convId) {
@@ -101,47 +200,23 @@ export function useDarkLemonMN(context?: string) {
     setMessages(prev => [...prev, userMsg]);
 
     if (convId) {
-      await supabase.from("ai_messages").insert({ conversation_id: convId, role: "user", content });
+      const userMessageInsert: AIMessageInsert = {
+        conversation_id: convId,
+        role: "user",
+        content,
+        metadata: attachments && attachments.length > 0 ? ({ attachments } as unknown as Json) : null,
+      };
+
+      await supabase.from("ai_messages").insert(userMessageInsert);
     }
 
     setIsLoading(true);
 
-    // Build API messages - last 19 + current
-    const apiMessages = [...messages.slice(-19), userMsg].map(m => {
-      if (m.attachments && m.attachments.length > 0) {
-        const parts: any[] = [{ type: "text", text: m.content }];
-        for (const att of m.attachments) {
-          if (att.type.startsWith("image/") || att.type === "application/pdf") {
-            // Images and PDFs: send as image_url with data URL (Gemini supports both)
-            parts.push({
-              type: "image_url",
-              image_url: { url: att.dataUrl },
-            });
-          } else {
-            // Text-based files (csv, txt, etc): decode base64 and send as text
-            try {
-              const base64Content = att.dataUrl.split(",")[1];
-              const decoded = atob(base64Content);
-              parts.push({
-                type: "text",
-                text: `--- CONTENUTO FILE: ${att.name} ---\n${decoded}\n--- FINE FILE ---`,
-              });
-            } catch {
-              parts.push({
-                type: "text",
-                text: `[Allegato non leggibile: ${att.name} (${att.type})]`,
-              });
-            }
-          }
-        }
-        return { role: m.role, content: parts };
-      }
-      return { role: m.role, content: m.content };
-    });
+    const apiMessages = [...messages.slice(-19), userMsg].map(buildApiMessage);
 
     try {
       const { data, error } = await supabase.functions.invoke("dark-lemon-mn", {
-        body: { messages: apiMessages, context },
+        body: { messages: apiMessages, context: normalizedContext },
       });
 
       if (error) throw new Error(error.message || "Errore nella risposta");
@@ -156,11 +231,13 @@ export function useDarkLemonMN(context?: string) {
       setMessages(prev => [...prev, assistantMsg]);
 
       if (convId) {
-        await supabase.from("ai_messages").insert({
+        const assistantMessageInsert: AIMessageInsert = {
           conversation_id: convId,
           role: "assistant",
           content: assistantContent,
-        });
+        };
+
+        await supabase.from("ai_messages").insert(assistantMessageInsert);
         if (messages.length === 0) {
           await supabase.from("ai_conversations")
             .update({ title: content.substring(0, 100), updated_at: new Date().toISOString() })
@@ -179,7 +256,7 @@ export function useDarkLemonMN(context?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversationId, context, createConversation, loadConversations]);
+  }, [messages, currentConversationId, normalizedContext, createConversation, loadConversations]);
 
   const deleteConversation = useCallback(async (conversationId: string) => {
     await supabase.from("ai_messages").delete().eq("conversation_id", conversationId);
