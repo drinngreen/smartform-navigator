@@ -85,6 +85,17 @@ function getCandidates(c: string): string[] {
   return [...new Set((CLIENTE_RETRY_MAP[n] ?? [n]).map(norm).filter(Boolean))];
 }
 
+function normalizeMethod(value: unknown): "GET" | "POST" | null {
+  const method = String(value ?? "").trim().toUpperCase();
+  return method === "GET" || method === "POST" ? method : null;
+}
+
+function normalizePath(value: unknown): string | null {
+  const path = String(value ?? "").trim();
+  if (!path) return null;
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
 /* ── Routing: mappa tipo_operazione → path + method RENTRI ── */
 
 interface RouteInfo {
@@ -220,19 +231,24 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { cliente, tipo_operazione, payload } = body;
+    const body = await req.json() as Record<string, unknown>;
+    const { cliente, tipo_operazione, payload, rentri_method, rentri_path } = body;
+    const directMethod = normalizeMethod(rentri_method);
+    const directPath = normalizePath(rentri_path);
+    const hasDirectRoute = Boolean(directMethod && directPath);
 
-    if (!cliente?.trim?.() || !tipo_operazione?.trim?.()) {
+    if (!cliente?.trim?.() || (!hasDirectRoute && !tipo_operazione?.trim?.())) {
       return new Response(
-        JSON.stringify({ success: false, error: "cliente e tipo_operazione sono obbligatori" }),
+        JSON.stringify({ success: false, error: "cliente e tipo_operazione oppure rentri_method/rentri_path sono obbligatori" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const tipoOp = tipo_operazione.trim().toUpperCase();
+    const tipoOp = hasDirectRoute
+      ? String(tipo_operazione ?? "CUSTOM").trim().toUpperCase()
+      : String(tipo_operazione).trim().toUpperCase();
     const candidates = getCandidates(cliente);
-    const allowFallback = (tipoOp === "VIDIMAZIONE" || tipoOp === "LOTTO") && candidates.length > 1;
+    const allowFallback = !hasDirectRoute && (tipoOp === "VIDIMAZIONE" || tipoOp === "LOTTO") && candidates.length > 1;
 
     const attempts: Array<{
       cliente: string; company: string; status: number; success: boolean;
@@ -247,7 +263,9 @@ serve(async (req) => {
     for (let i = 0; i < candidates.length; i++) {
       const cur = candidates[i];
       const safePayload = normalizePayload(payload);
-      const route = resolveRoute(tipoOp, cur, safePayload);
+      const route = hasDirectRoute
+        ? { method: directMethod!, path: directPath! }
+        : resolveRoute(tipoOp, cur, safePayload);
       const upstream = buildUpstreamBody(cur, tipoOp, payload, route);
       const targetUrl = `${VPS_URL}/invia-operazione`;
 

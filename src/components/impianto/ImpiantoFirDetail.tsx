@@ -12,9 +12,20 @@ interface Props {
   onClose: () => void;
   onSignReception: (payload: { kg_pesata: number; data_arrivo: string; ora_arrivo: string; esito: "accettato" | "parziale" | "respinto"; motivazione?: string }) => Promise<void>;
   onSignDestination: (payload: { kg_pesata: number; data_arrivo: string; ora_arrivo: string; esito: "accettato" | "parziale" | "respinto"; motivazione?: string }) => Promise<void>;
+  forceDestinationOnly?: boolean;
+  destinationActionLabel?: string;
 }
 
-export function ImpiantoFirDetail({ item, events, color, onClose, onSignReception, onSignDestination }: Props) {
+export function ImpiantoFirDetail({
+  item,
+  events,
+  color,
+  onClose,
+  onSignReception,
+  onSignDestination,
+  forceDestinationOnly = false,
+  destinationActionLabel = "FIRMA DESTINATARIO",
+}: Props) {
   const [form, setForm] = useState({ kg: "", data: new Date().toISOString().slice(0, 10), ora: new Date().toTimeString().slice(0, 5), esito: "accettato" as const, motivazione: "" });
   const [signing, setSigning] = useState(false);
   const [confirmDestinazione, setConfirmDestinazione] = useState(false);
@@ -22,8 +33,8 @@ export function ImpiantoFirDetail({ item, events, color, onClose, onSignReceptio
 
   if (!item) return null;
 
-  const canSignReception = item.stato_interno === "importato" || item.stato_interno === "attesa_firma_ricezione";
-  const canSignDestination = item.stato_interno === "firmato_ricezione";
+  const canSignReception = !forceDestinationOnly && (item.stato_interno === "importato" || item.stato_interno === "attesa_firma_ricezione");
+  const canSignDestination = forceDestinationOnly || item.stato_interno === "firmato_ricezione";
 
   const handleSign = async (type: "reception" | "destination") => {
     if (!form.kg) { toast.error("Inserisci il peso della pesata"); return; }
@@ -88,7 +99,7 @@ export function ImpiantoFirDetail({ item, events, color, onClose, onSignReceptio
           {(canSignReception || canSignDestination) && (
             <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: `rgba(${color}, 0.3)`, background: `rgba(${color}, 0.05)` }}>
               <h4 className="font-display text-sm tracking-wider" style={{ color: `rgb(${color})` }}>
-                {canSignReception ? "Presa in Carico" : "Chiusura Definitiva"}
+                {canSignReception ? "Presa in Carico" : forceDestinationOnly ? "Accettazione e Firma Scarico" : "Chiusura Definitiva"}
               </h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -137,7 +148,7 @@ export function ImpiantoFirDetail({ item, events, color, onClose, onSignReceptio
                     disabled={signing}
                     className="flex-1 py-3 rounded-xl font-display font-semibold tracking-wider bg-emerald-600 text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    <CheckCircle className="h-4 w-4" /> FIRMA DESTINATARIO
+                    <CheckCircle className="h-4 w-4" /> {destinationActionLabel}
                   </button>
                 )}
               </div>

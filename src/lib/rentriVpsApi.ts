@@ -13,12 +13,17 @@ export type RentriTipoOperazione =
   | "FIRMA_RICEZIONE"
   | "RICERCA_MOVIMENTI"
   | "TRANSAZIONE_REGISTRO"
-  | "TRANSAZIONE_FIR";
+  | "TRANSAZIONE_FIR"
+  | "CUSTOM";
+
+export type RentriMethod = "GET" | "POST";
 
 export interface RentriVpsRequest {
   cliente: RentriCliente;
   tipo_operazione: RentriTipoOperazione;
-  payload: Record<string, unknown>;
+  payload: Record<string, unknown> | null;
+  rentri_method?: RentriMethod;
+  rentri_path?: string;
 }
 
 export interface RentriVpsResponse {
@@ -26,6 +31,17 @@ export interface RentriVpsResponse {
   status: number;
   data: unknown;
   error?: string;
+}
+
+export interface RentriAccettazionePayload {
+  data_ora_ricezione: string;
+  quantita_ricevuta: {
+    valore: number;
+    unita_misura: string;
+  };
+  esito_conferimento: string;
+  num_iscr_sito: string;
+  motivazione?: string;
 }
 
 export async function inviaOperazioneRentri(
@@ -107,6 +123,47 @@ export function statoTransazioneFir(cliente: RentriCliente, transazioneId: strin
 
 export function firmaRicezione(cliente: RentriCliente, firPayload: Record<string, unknown>) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "FIRMA_RICEZIONE", payload: firPayload });
+}
+
+export function inviaOperazioneRentriCustom(
+  cliente: RentriCliente,
+  method: RentriMethod,
+  path: string,
+  payload: Record<string, unknown> | null = null,
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "CUSTOM",
+    rentri_method: method,
+    rentri_path: path,
+    payload,
+  });
+}
+
+export function listaFirInArrivoDestinatario(
+  cliente: RentriCliente,
+  identificativoSoggetto: string,
+) {
+  const query = new URLSearchParams({
+    identificativo_soggetto: identificativoSoggetto,
+    ruolo: "DESTINATARIO",
+    pendenza_arrivo: "true",
+  });
+
+  return inviaOperazioneRentriCustom(cliente, "GET", `/formulari/v1.0?${query.toString()}`, null);
+}
+
+export function accettaFirInArrivoDestinatario(
+  cliente: RentriCliente,
+  uuidFir: string,
+  payload: RentriAccettazionePayload,
+) {
+  return inviaOperazioneRentriCustom(
+    cliente,
+    "POST",
+    `/formulari/v1.0/${uuidFir}/accettazione`,
+    payload,
+  );
 }
 
 /* ── Async Vidimazione orchestrator ── */

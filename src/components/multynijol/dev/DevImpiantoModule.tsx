@@ -4,10 +4,14 @@ import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
+import { ImpiantoFirList } from "@/components/impianto/ImpiantoFirList";
+import { ImpiantoFirDetail } from "@/components/impianto/ImpiantoFirDetail";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { listIncomingXFir, signIncomingXFir } from "@/services/impiantoFirService";
+import type { FirEvent, FirSummary } from "@/types/impiantoFir";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +23,7 @@ import {
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
   Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
-  ClipboardList,
+  ClipboardList, Truck,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
@@ -29,6 +33,7 @@ import { getTenantConfig } from "@/lib/rentriBlockCodes";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const SOCIETA_ID = "multy";
+const IMPIANTO_RGB = "16, 185, 129";
 
 async function loadImpiantoPoolStats() {
   const [totalRes, disponibiliRes, inUsoRes, usatiRes] = await Promise.all([
@@ -151,6 +156,8 @@ function ImpiantoFormulari() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
+  const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
+  const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});
 
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
@@ -171,6 +178,16 @@ function ImpiantoFormulari() {
     },
   });
 
+  const { data: incomingItems = [], isLoading: incomingLoading, refetch: refetchIncoming } = useQuery({
+    queryKey: ["dev-impianto-fir-in-arrivo", SOCIETA_ID],
+    queryFn: async () => {
+      const cfg = getTenantConfig(SOCIETA_ID);
+      if (!cfg) throw new Error("Configurazione RENTRI Multy mancante");
+      return await listIncomingXFir("multy", cfg.issuer);
+    },
+    refetchInterval: 30000,
+  });
+
   const filtered = forms.filter((f: any) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -189,6 +206,60 @@ function ImpiantoFormulari() {
     draft: forms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
     submitted: forms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
     completed: forms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+  };
+
+  const selectedIncomingEvents = selectedIncoming
+    ? incomingEvents[selectedIncoming.id] ?? [{
+        id: `incoming-${selectedIncoming.id}`,
+        tipo: "importato",
+        descrizione: "FIR individuato tra i formulari in arrivo da firmare",
+        timestamp: selectedIncoming.data_ricezione,
+        payload: { stato_rentri: selectedIncoming.stato_rentri ?? "IN_ARRIVO" },
+      }]
+    : [];
+
+  const handleIncomingSign = async (
+    mode: "reception" | "destination",
+    payload: { kg_pesata: number; data_arrivo: string; ora_arrivo: string; esito: "accettato" | "parziale" | "respinto"; motivazione?: string },
+  ) => {
+    if (!selectedIncoming) throw new Error("Nessun FIR selezionato");
+
+    const cfg = getTenantConfig(SOCIETA_ID);
+    if (!cfg?.unitId) throw new Error("num_iscr_sito Multy non configurato");
+
+    const response = await signIncomingXFir(
+      "multy",
+      selectedIncoming.id,
+      {
+        numero_fir: selectedIncoming.numero_fir,
+        ...payload,
+      },
+      cfg.unitId,
+    );
+
+    if (!response.success) {
+      const detailMessage = typeof response.data === "object" && response.data
+        ? JSON.stringify(response.data)
+        : "";
+      throw new Error(response.error || detailMessage || "Firma impianto non riuscita");
+    }
+
+    setIncomingEvents((prev) => ({
+      ...prev,
+      [selectedIncoming.id]: [
+        ...(prev[selectedIncoming.id] ?? selectedIncomingEvents),
+        {
+          id: `${mode}-${Date.now()}`,
+          tipo: mode === "destination" ? "firma_destinatario" : "firma_ricezione",
+          descrizione: mode === "destination" ? "Accettazione e scarico firmati su RENTRI" : "Ricezione registrata su RENTRI",
+          timestamp: new Date().toISOString(),
+          payload: (response.data as Record<string, unknown>) ?? undefined,
+        },
+      ],
+    }));
+
+    await refetchIncoming();
+    setSelectedIncoming(null);
   };
 
   return (
@@ -249,6 +320,34 @@ function ImpiantoFormulari() {
           <Printer className="h-3 w-3" /> PDF
         </Button>
       </div>
+
+      <Card className="bg-card/60 border-emerald-500/30">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-emerald-400 flex items-center gap-2">
+            <Truck className="h-5 w-5" /> Accettazione rifiuti RENTRI
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetchIncoming()}
+            disabled={incomingLoading}
+            className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+          >
+            <RefreshCw className={`h-4 w-4 ${incomingLoading ? "animate-spin" : ""}`} /> Aggiorna FIR in arrivo
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Questa lista interroga RENTRI lato Lovable con ruolo destinatario e mostra solo i FIR in arrivo ancora da accettare e firmare.
+          </p>
+          <ImpiantoFirList
+            items={incomingItems}
+            loading={incomingLoading}
+            color={IMPIANTO_RGB}
+            onSelect={setSelectedIncoming}
+          />
+        </CardContent>
+      </Card>
 
       <div className="flex gap-2 flex-wrap">
         {["all", "draft", "submitted", "completed"].map((t) => (
@@ -333,6 +432,17 @@ function ImpiantoFormulari() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ImpiantoFirDetail
+        item={selectedIncoming}
+        events={selectedIncomingEvents}
+        color={IMPIANTO_RGB}
+        onClose={() => setSelectedIncoming(null)}
+        onSignReception={(payload) => handleIncomingSign("reception", payload)}
+        onSignDestination={(payload) => handleIncomingSign("destination", payload)}
+        forceDestinationOnly
+        destinationActionLabel="ACCETTA E FIRMA SCARICO"
+      />
     </div>
   );
 }
