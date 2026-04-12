@@ -168,7 +168,7 @@ export function ZoliDarkLemonWidget() {
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
             {!isFullscreen && (
-              <button onClick={handleAnalyzePage} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-green-400 transition-colors" title={`Analizza: ${pageTitle}`} disabled={isLoading}>
+              <button onClick={handleAnalyzePage} onMouseDown={e => e.stopPropagation()} className="p-1.5 rounded-md bg-green-500/15 text-green-400 hover:bg-green-500/25 hover:text-green-300 transition-colors" title={`🔍 Analizza: ${pageTitle}`} disabled={isLoading}>
                 <ScanSearch className="h-4 w-4" />
               </button>
             )}
