@@ -183,7 +183,8 @@ export function useDarkLemonMN(context?: string) {
 
   const sendMessage = useCallback(async (
     content: string,
-    attachments?: DLAttachment[]
+    attachments?: DLAttachment[],
+    pageContext?: { route: string; pageTitle: string; content?: string }
   ) => {
     let convId = currentConversationId;
     if (!convId) {
@@ -215,8 +216,22 @@ export function useDarkLemonMN(context?: string) {
     const apiMessages = [...messages.slice(-19), userMsg].map(buildApiMessage);
 
     try {
+      // Inject volatile page context before the last user message
+      if (pageContext?.content) {
+        const contextMsg = {
+          role: "user" as const,
+          content: `[CONTESTO PAGINA ATTIVA]\n${pageContext.content}\n[/CONTESTO PAGINA ATTIVA]`,
+        };
+        apiMessages.splice(apiMessages.length - 1, 0, contextMsg);
+      }
+
       const { data, error } = await supabase.functions.invoke("dark-lemon-mn", {
-        body: { messages: apiMessages, context: normalizedContext },
+        body: {
+          messages: apiMessages,
+          context: normalizedContext,
+          pageRoute: pageContext?.route,
+          pageTitle: pageContext?.pageTitle,
+        },
       });
 
       if (error) throw new Error(error.message || "Errore nella risposta");
