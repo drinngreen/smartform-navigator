@@ -1,13 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import { usePageContext } from "@/hooks/usePageContext";
+import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 
 const MIN_W = 300;
 const MIN_H = 280;
@@ -16,11 +18,29 @@ const MAX_H = 800;
 
 type ResizeDir = "e" | "s" | "se" | "sw" | "w" | "n" | "ne" | "nw" | null;
 
+interface FillFormPayload {
+  fields: { id: string; value: string; label?: string }[];
+  confirm: boolean;
+}
+
+function parseFillFormTag(content: string): { cleanContent: string; payload: FillFormPayload | null } {
+  const match = content.match(/<!--FILL_FORM:([\s\S]*?)-->/);
+  if (!match) return { cleanContent: content, payload: null };
+  try {
+    const payload = JSON.parse(match[1]) as FillFormPayload;
+    const cleanContent = content.replace(/<!--FILL_FORM:[\s\S]*?-->/g, "").trim();
+    return { cleanContent, payload };
+  } catch {
+    return { cleanContent: content, payload: null };
+  }
+}
+
 export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHistory, setShowHistory] = useState(true);
+  const [pendingFill, setPendingFill] = useState<FillFormPayload | null>(null);
   const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const isDragging = useRef(false);
   const hasDragged = useRef(false);
@@ -35,6 +55,7 @@ export function ZoliDarkLemonWidget() {
 
   const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context);
   const { pageTitle, capturePageContent } = usePageContext();
+  const { fillFields, getRegisteredFields } = useFormBridgeContext();
 
   const isResizing = useRef<ResizeDir>(null);
   const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0, px: 0, py: 0 });
@@ -42,6 +63,31 @@ export function ZoliDarkLemonWidget() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Check for FILL_FORM in latest assistant message
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role !== "assistant") return;
+    const { payload } = parseFillFormTag(lastMsg.content);
+    if (!payload) return;
+    if (!payload.confirm) {
+      // Direct mode: apply immediately
+      const count = fillFields(payload.fields);
+      if (count > 0) toast.success(`✅ ${count} campi compilati automaticamente`);
+      else toast.error("Nessun campo compilato (campi non trovati nel form)");
+    } else {
+      setPendingFill(payload);
+    }
+  }, [messages, fillFields]);
+
+  const handleApplyFill = useCallback(() => {
+    if (!pendingFill) return;
+    const count = fillFields(pendingFill.fields);
+    if (count > 0) toast.success(`✅ ${count} campi compilati`);
+    else toast.error("Nessun campo corrispondente trovato nel form");
+    setPendingFill(null);
+  }, [pendingFill, fillFields]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isFullscreen) return;
@@ -91,18 +137,31 @@ export function ZoliDarkLemonWidget() {
 
   const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
     const ctx = capturePageContent();
-    sendMessage(content, attachments, { route: ctx.route, pageTitle: ctx.pageTitle });
-  }, [sendMessage, capturePageContent]);
+    // Inject bridge fields into page context
+    const bridgeFields = getRegisteredFields();
+    const bridgeInfo = bridgeFields.length > 0
+      ? `\n\n🔗 BRIDGE FIELDS REGISTRATI (compilabili via fill_form):\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
+      : "";
+    const enrichedCtx = {
+      ...ctx,
+      content: (ctx.content || "") + bridgeInfo,
+    };
+    sendMessage(content, attachments, { route: enrichedCtx.route, pageTitle: enrichedCtx.pageTitle, content: enrichedCtx.content });
+  }, [sendMessage, capturePageContent, getRegisteredFields]);
 
   const handleAnalyzePage = useCallback(() => {
     if (isLoading) return;
     const ctx = capturePageContent();
+    const bridgeFields = getRegisteredFields();
+    const bridgeInfo = bridgeFields.length > 0
+      ? `\n\n🔗 BRIDGE FIELDS REGISTRATI (compilabili via fill_form):\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
+      : "";
     sendMessage(
       `Analizza la pagina che sto visualizzando e dammi consigli utili.`,
       undefined,
-      ctx
+      { ...ctx, content: (ctx.content || "") + bridgeInfo }
     );
-  }, [sendMessage, capturePageContent, isLoading]);
+  }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
@@ -115,6 +174,11 @@ export function ZoliDarkLemonWidget() {
       savedPos.current = { x: position.x, y: position.y, w: size.width, h: size.height };
       setIsFullscreen(true);
     }
+  };
+
+  const renderMessageContent = (content: string) => {
+    const { cleanContent } = parseFillFormTag(content);
+    return <ReactMarkdown>{cleanContent}</ReactMarkdown>;
   };
 
   if (!isOpen) return null;
@@ -264,7 +328,7 @@ export function ZoliDarkLemonWidget() {
                           ))}
                         </div>
                       )}
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      {renderMessageContent(msg.content)}
                     </div>
                     {msg.role === "user" && (
                       <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -289,6 +353,29 @@ export function ZoliDarkLemonWidget() {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Fill Form Confirmation Panel */}
+              {pendingFill && (
+                <div className="mx-3 mb-2 rounded-xl border border-green-500/30 bg-green-500/5 p-3" onMouseDown={e => e.stopPropagation()}>
+                  <p className="text-green-400 text-xs font-semibold mb-2">📝 Anteprima Compilazione</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto mb-2">
+                    {pendingFill.fields.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[11px]">
+                        <span className="text-white/50 min-w-[100px]">{f.label || f.id}:</span>
+                        <span className="text-white font-mono">{f.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleApplyFill} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 text-xs font-medium transition-colors">
+                      <Check className="h-3 w-3" /> Applica
+                    </button>
+                    <button onClick={() => setPendingFill(null)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs font-medium transition-colors">
+                      <XCircle className="h-3 w-3" /> Annulla
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Input */}
               <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
