@@ -328,6 +328,7 @@ function ImpiantoFormulari() {
               firFormId={viewDialog.form.id}
               presetNumeroFir={viewDialog.form.numero_fir || undefined}
               assignedUserId={viewDialog.form.user_id || undefined}
+              draftData={viewDialog.form}
             />
           )}
         </DialogContent>
