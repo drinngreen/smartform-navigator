@@ -1,72 +1,78 @@
 
-Obiettivo corretto: il sistema Multyproget deve mantenere sempre una dotazione base automatica di FIR, cioè 1 bozza pronta per ogni trasportatore + 1 per Multyproget Impianto + 1 per Multyproget Conto Proprio. L’assegnazione manuale serve solo ad aggiungere FIR extra oltre a questa dotazione base.
 
-1. Correggere prima le incongruenze che oggi rompono la logica
-- Sistemare `MNTrasportatoriPage.tsx`: oggi il `CONTEXT_MAP` usa ancora il tenant consolidato `dc2a...` invece del tenant reale Multyproget `77ec9a3d-602e-438f-97bf-1c69abd8f691`.
-- Uniformare tutti i punti che creano/filtrano utenti e FIR su quel tenant reale, altrimenti il database assegna i numeri a una società e l’interfaccia ne cerca un’altra.
+# Piano: Dark Lemon Super Agent — Memoria Strategica + Chat AI Generalista
 
-2. Definire chiaramente i 3 gruppi di assegnazione automatica
-- Gruppo A: trasportatori Multyproget (`profiles.mn_context = 'multyproget'`, ruolo user, tenant Multyproget).
-- Gruppo B: bucket “Multyproget Impianto”.
-- Gruppo C: bucket “Multyproget Conto Proprio”.
-- Poiché oggi Impianto e Conto Proprio usano lo stesso admin loggato e non hanno un utente dedicato separato, servirà introdurre una regola esplicita backend per identificarli come destinatari della dotazione base. La soluzione più solida è creare/riusare 2 account operativi dedicati oppure aggiungere una funzione che gestisca 2 bucket speciali separati dal singolo utente admin.
+## Panoramica
 
-3. Rifare la logica backend di distribuzione automatica
-- Aggiornare le funzioni database coinvolte (`auto_distribute_fir_numbers`, `ensure_user_has_fir_draft`, `auto_assign_after_consume`).
-- Nuova regola:
-  - ogni destinatario “base” deve avere almeno 1 FIR disponibile/bozza;
-  - quando un FIR viene consumato o annullato, il sistema pesca dal serbatoio condiviso e ricrea subito il rimpiazzo per quel destinatario;
-  - i FIR extra assegnati manualmente non devono essere rimossi dalla logica automatica.
-- Separare quindi “dotazione minima automatica” da “assegnazioni extra manuali”, evitando che la routine di ridistribuzione rimandi tutto nel pool condiviso.
+Due interventi principali:
+1. **Memoria strategica categorizzata** con compartimenti stagni e procedure operative rigide — solo per Multyproget (il pattern sarà replicabile per Niyol e Global in futuro)
+2. **Capacità generalista** — Dark Lemon diventa anche una chat AI completa, capace di rispondere a domande su normative ambientali, cultura generale, e qualsiasi argomento, mantenendo la specializzazione operativa sul software
 
-4. Aggiungere un’assegnazione manuale davvero “extra”
-- Nel pulsante “Assegna” di `DevGestioneFIRModule.tsx`, mantenere solo i trasportatori Multyproget.
-- Quando l’admin assegna manualmente un FIR:
-  - il numero va associato al trasportatore scelto;
-  - non deve interferire con la bozza base automatica già garantita;
-  - se quel trasportatore annulla o usa più FIR nello stesso giorno, il sistema continua comunque a garantirgli sempre almeno 1 bozza pronta.
+## Cosa cambia per l'utente
 
-5. Sistemare il pulsante “Crea FIR” nel Personale
-- Il pulsante vicino a ogni nome deve creare una bozza aggiuntiva per quell’utente, non limitarsi a “garantire che ne esista una”.
-- Quindi non basta chiamare sempre `ensure_user_has_fir_draft`: servirà un nuovo flusso che crei una nuova bozza extra da un numero disponibile del serbatoio.
-- Risultato atteso:
-  - automatico = 1 bozza minima sempre presente;
-  - manuale “Crea FIR” = bozza extra immediata nella app del trasportatore.
+- L'agente **ricorda** preferenze, pattern e informazioni scoperte, categorizzandole automaticamente (preferenze, pattern operativi, normativa, info aziendali, correzioni)
+- Le memorie sono **separate per ambiente** (operativo, normativa, impianto, erp) — nessuna contaminazione
+- L'agente **richiama solo i ricordi rilevanti** per l'operazione in corso (max 5-10 fatti pertinenti, non tutto il database)
+- Comandi come "Nuovo carico" attivano **procedure automatiche** con validazione sequenziale
+- L'agente **blocca** operazioni con dati RENTRI incompleti (supervisore tecnico pignolo)
+- L'agente **risponde anche a domande generali**: normative ambientali, codici EER, cultura generale, consigli operativi — come una chat AI completa
 
-6. Far funzionare sia modulo normale che modulo alternativo sui FIR assegnati
-- Verificare `MNFIRFormComplete.tsx` e `FIRAlternativeForm.tsx` affinché lavorino sul FIR già assegnato alla persona giusta.
-- Controllare che entrambi compongano la chiamata di firma digitale usando il contesto Multyproget corretto (`multy`) e il FIR associato alla bozza corrente.
-- Verificare anche il post-firma/post-chiusura: consumo numero, refresh bozza successiva e aggiornamento stato nel pool.
+## Dettaglio tecnico
 
-7. Allineare la UX delle app e dei moduli soggetto
-- Dev Impianto e Dev Conto Proprio oggi usano il form dell’utente admin, quindi non rappresentano due “dotazioni base” separate.
-- Va deciso e implementato un mapping stabile:
-  - o due account operativi dedicati;
-  - oppure due bucket speciali gestiti da funzione backend e caricati nei rispettivi moduli.
-- Poi i moduli Dev Impianto / Dev Conto Proprio dovranno leggere e usare il FIR del proprio bucket, non quello generico dell’admin.
+### 1. Migrazione DB — `ai_user_memory`
 
-8. Verifiche finali da fare dopo l’implementazione
-- Controllare che i 30 FIR vengano distribuiti così: 1 per ogni trasportatore + 1 Impianto + 1 Conto Proprio, tutto il resto nel serbatoio condiviso.
-- Usare un FIR da trasportatore e verificare che ne compaia subito un altro in bozza.
-- Annullare una bozza e verificare che il numero torni disponibile e venga ristabilita la dotazione minima.
-- Assegnare manualmente un FIR extra da “Gestione FIR” e verificare che il trasportatore abbia più di una bozza.
-- Usare “Crea FIR” dal Personale e verificare che la bozza extra appaia davvero nella sua app.
-- Testare end-to-end firma digitale da modulo normale, modulo alternativo e moduli soggetto.
+Aggiungere colonne `category` e `environment` con indici:
 
-Dettagli tecnici
-- Problema già individuato nel codice: `MNTrasportatoriPage.tsx` usa tenant sbagliato (`dc2a...`) nel `CONTEXT_MAP`.
-- Problema architetturale attuale: `ensure_user_has_fir_draft` garantisce al massimo una bozza per utente; non copre il concetto di “bozza base + extra manuali”.
-- Problema funzionale attuale: Dev Impianto e Dev Conto Proprio non sono due assegnatari separati, perché usano lo stesso utente loggato.
-- Lavoro richiesto in pratica:
-  - correzione frontend;
-  - migrazione SQL sulle funzioni FIR;
-  - probabile introduzione di un nuovo RPC per creare bozza extra;
-  - eventuale definizione persistente dei 2 destinatari speciali Impianto / Conto Proprio.
+```sql
+ALTER TABLE ai_user_memory 
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'generale',
+  ADD COLUMN IF NOT EXISTS environment text DEFAULT 'operativo';
 
-Sequenza consigliata
-1. Fix tenant e filtri.
-2. Definizione backend dei destinatari base.
-3. Refactor funzioni automatiche FIR.
-4. Nuovo flusso “bozza extra”.
-5. Allineamento moduli normale/alternativo/soggetti.
-6. Test end-to-end completo.
+CREATE INDEX IF NOT EXISTS idx_ai_user_memory_cat ON ai_user_memory(user_id, category);
+CREATE INDEX IF NOT EXISTS idx_ai_user_memory_env ON ai_user_memory(user_id, environment);
+```
+
+Categorie: `preferenze`, `pattern_operativi`, `info_aziendali`, `normativa`, `correzioni`, `generale`
+Ambienti: `operativo`, `normativa`, `impianto`, `erp`
+
+### 2. Edge Function `dark-lemon-mn` — Aggiornamenti
+
+**a) Tool `save_memory` potenziato** — nuovi parametri `category` e `environment` (opzionali, il modello li sceglie automaticamente)
+
+**b) Nuovo tool `recall_memory`** — cerca ricordi per keyword/categoria/ambiente con `ILIKE` su `fact_key`/`fact_value`. Restituisce max 10 risultati pertinenti.
+
+**c) Nuovo tool `list_memories`** — elenca tutte le memorie per ambiente/categoria, utile per l'admin per vedere cosa l'agente ha imparato
+
+**d) Nuovo tool `delete_memory`** — cancella un ricordo per `fact_key`
+
+**e) Nuovo tool `search_knowledge`** — cerca nella tabella `ai_knowledge_base` per keyword/categoria, filtrato per `tenant_id`
+
+**f) System prompt aggiornato** con tre nuove sezioni:
+
+- **LIMITI INVALICABILI (SUPERVISORE TECNICO)**: regole rigide RENTRI (mai FIR senza CER, mai invio senza campi obbligatori, CER 6 cifre, stato fisico S/L/F, quantità > 0)
+- **PROCEDURE OPERATIVE**: schemi d'azione per "Nuovo carico", "Nuovo FIR", "Conferimento privato", "Invio RENTRI"
+- **CAPACITÀ GENERALISTA**: istruzione esplicita che l'agente è anche una chat AI completa — può rispondere a domande su normative ambientali (D.Lgs 152/2006, RENTRI, ADR), codici EER, cultura generale, consigli operativi. Se la domanda non riguarda il software, risponde comunque in modo competente come un'AI generalista
+
+**g) Assemblaggio intelligente del contesto**: il system prompt carica solo le ultime 10 memorie generiche; per operazioni specifiche, il modello usa `recall_memory` per recuperare solo i fatti pertinenti
+
+### 3. Seed `ai_knowledge_base` — Regole RENTRI base
+
+Inserire 10-15 record fondamentali nella knowledge base con `tenant_id = '77ec9a3d-602e-438f-97bf-1c69abd8f691'` (Multyproget):
+- Struttura codici EER e famiglie principali (15, 16, 17, 19, 20)
+- Regole RENTRI obbligatorie (campi minimi FIR)
+- Stati fisici ammessi (S, L, F, P)
+- Caratteristiche HP (HP1-HP15)
+- Procedure standard compilazione FIR
+
+### 4. Nota sull'isolamento multi-tenant
+
+Tutto il lavoro è scoped a `tenant_id = Multyproget`. Quando si implementerà Niyol o Global, basterà replicare i seed della knowledge base con il `tenant_id` corretto e le stesse funzionalità saranno automaticamente isolate.
+
+### 5. File modificati
+
+| File | Azione |
+|------|--------|
+| Migrazione SQL | Colonne `category`/`environment` + indici su `ai_user_memory` |
+| `supabase/functions/dark-lemon-mn/index.ts` | Nuovi tool, system prompt potenziato, procedure operative, capacità generalista |
+| Seed SQL `ai_knowledge_base` | 10-15 record normative RENTRI per Multyproget |
+
