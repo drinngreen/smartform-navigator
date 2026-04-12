@@ -287,6 +287,7 @@ const App = () => (
             </Suspense>
 
             <AdminOverlays />
+            </FormBridgeProvider>
           </CallProvider>
         </PresenceProvider>
       </AuthProvider>
