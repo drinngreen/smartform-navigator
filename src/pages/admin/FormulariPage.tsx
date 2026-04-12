@@ -214,6 +214,7 @@ export default function FormulariPage() {
               key={viewDialog.form.id}
               firFormId={viewDialog.form.id}
               presetNumeroFir={viewDialog.form.numero_fir || undefined}
+              assignedUserId={viewDialog.form.user_id || undefined}
             />
           )}
         </DialogContent>

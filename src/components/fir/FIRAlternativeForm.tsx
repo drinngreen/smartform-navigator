@@ -137,11 +137,12 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
 interface FIRAlternativeFormProps {
   presetNumeroFir?: string;
   firFormId?: string;
+  assignedUserId?: string;
   printOnly?: boolean;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
@@ -263,75 +264,80 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, printOnly, onPr
 
   // Auto-prefill trasportatore fields from the assigned user's profile
   useEffect(() => {
-    if (!firFormId || fields.length === 0) return;
+    if (fields.length === 0) return;
 
-    supabase
-      .from("fir_forms")
-      .select("user_id")
-      .eq("id", firFormId)
-      .maybeSingle()
-      .then(({ data: draft }) => {
-        if (!draft?.user_id) return;
+    // Determine user ID: from prop, or try fetching from fir_forms
+    const resolveUserId = async (): Promise<string | null> => {
+      if (assignedUserId) return assignedUserId;
+      if (!firFormId) return null;
+      const { data } = await supabase
+        .from("fir_forms")
+        .select("user_id")
+        .eq("id", firFormId)
+        .maybeSingle();
+      return data?.user_id || null;
+    };
 
-        supabase
-          .from("profiles")
-          .select("nome, cognome, codice_fiscale, targa_automezzo")
-          .eq("user_id", draft.user_id)
-          .maybeSingle()
-          .then(({ data: profile }) => {
-            if (!profile) return;
+    resolveUserId().then(async (userId) => {
+      if (!userId) return;
 
-            const updates: Record<string, string> = {};
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("nome, cognome, codice_fiscale, targa_automezzo")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-            // Denominazione trasportatore = tenant preset (es. Multyproget S.r.l.)
-            const denomField = findFieldByTokens(fields, ["denominazione", "trasportatore"]);
-            if (denomField && !normalizeFieldName(denomField.name).includes("nuovo")) {
-              updates[denomField.id] = tenantPreset.nome;
-            }
+      if (!profile) return;
 
-            // Codice fiscale trasportatore = tenant preset CF (P.IVA azienda)
-            const cfField = findFieldByTokens(fields, ["codice", "fiscale", "trasportatore"]);
-            if (cfField && !normalizeFieldName(cfField.name).includes("nuovo")) {
-              updates[cfField.id] = tenantPreset.cf;
-            }
+      const updates: Record<string, string> = {};
 
-            // Cognome e nome conducente = dal profilo utente
-            const conducenteField = findFieldByTokens(fields, ["cognome", "nome", "conducente"]);
-            if (conducenteField) {
-              updates[conducenteField.id] = `${profile.cognome ?? ""} ${profile.nome ?? ""}`.trim();
-            }
+      // Denominazione trasportatore = tenant preset (es. Multyproget S.r.l.)
+      const denomField = findFieldByTokens(fields, ["denominazione", "trasportatore"]);
+      if (denomField && !normalizeFieldName(denomField.name).includes("nuovo")) {
+        updates[denomField.id] = tenantPreset.nome;
+      }
 
-            // Targa automezzo = dal profilo utente
-            const targaField = fields.find(f =>
-              hasTokens(f.name, ["targa", "automezzo"]) &&
-              !normalizeFieldName(f.name).includes("trasbordo")
-            );
-            if (targaField && profile.targa_automezzo) {
-              updates[targaField.id] = profile.targa_automezzo;
-            }
+      // Codice fiscale trasportatore = tenant preset CF (P.IVA azienda)
+      const cfField = findFieldByTokens(fields, ["codice", "fiscale", "trasportatore"]);
+      if (cfField && !normalizeFieldName(cfField.name).includes("nuovo")) {
+        updates[cfField.id] = tenantPreset.cf;
+      }
 
-            // Numero iscrizione albo trasportatore
-            const alboField = findFieldByTokens(fields, ["iscrizione", "albo", "trasportatore"]);
-            if (alboField && !normalizeFieldName(alboField.name).includes("nuovo")) {
-              // Use tenant preset autorizzazione if available
-              if (tenantPreset.autorizzazione) {
-                updates[alboField.id] = tenantPreset.autorizzazione;
-              }
-            }
+      // Cognome e nome conducente = dal profilo utente
+      const conducenteField = findFieldByTokens(fields, ["cognome", "nome", "conducente"]);
+      if (conducenteField) {
+        updates[conducenteField.id] = `${profile.cognome ?? ""} ${profile.nome ?? ""}`.trim();
+      }
 
-            // Only apply updates where values are not already filled
-            setValues(prev => {
-              const merged = { ...prev };
-              for (const [key, val] of Object.entries(updates)) {
-                if (!merged[key] || String(merged[key]).trim() === "") {
-                  merged[key] = val;
-                }
-              }
-              return merged;
-            });
-          });
+      // Targa automezzo = dal profilo utente
+      const targaField = fields.find(f =>
+        hasTokens(f.name, ["targa", "automezzo"]) &&
+        !normalizeFieldName(f.name).includes("trasbordo")
+      );
+      if (targaField && profile.targa_automezzo) {
+        updates[targaField.id] = profile.targa_automezzo;
+      }
+
+      // Numero iscrizione albo trasportatore
+      const alboField = findFieldByTokens(fields, ["iscrizione", "albo", "trasportatore"]);
+      if (alboField && !normalizeFieldName(alboField.name).includes("nuovo")) {
+        if (tenantPreset.autorizzazione) {
+          updates[alboField.id] = tenantPreset.autorizzazione;
+        }
+      }
+
+      // Only apply updates where values are not already filled
+      setValues(prev => {
+        const merged = { ...prev };
+        for (const [key, val] of Object.entries(updates)) {
+          if (!merged[key] || String(merged[key]).trim() === "") {
+            merged[key] = val;
+          }
+        }
+        return merged;
       });
-  }, [firFormId, fields, tenantPreset]);
+    });
+  }, [firFormId, assignedUserId, fields, tenantPreset]);
 
   useEffect(() => {
     setScale(1);
