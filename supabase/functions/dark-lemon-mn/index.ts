@@ -1059,6 +1059,8 @@ serve(async (req) => {
   try {
     const { messages, context } = await req.json();
 
+    // Messages can contain multimodal content (text + images)
+    // The client sends image_url parts with base64 data URLs for OCR/vision
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
 
