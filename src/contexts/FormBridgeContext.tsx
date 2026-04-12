@@ -3,10 +3,11 @@ import React, { createContext, useContext, useCallback, useRef } from "react";
 export interface FieldDescriptor {
   id: string;
   label: string;
-  type: "text" | "number" | "select" | "date" | "textarea";
+  type: "text" | "number" | "select" | "date" | "textarea" | "checkbox";
   getValue: () => string;
   setValue: (value: string) => void;
   options?: string[]; // for select fields
+  aliases?: string[];
 }
 
 export interface FormBridgeEntry {
@@ -21,6 +22,16 @@ interface FormBridgeContextValue {
 }
 
 const FormBridgeContext = createContext<FormBridgeContextValue | null>(null);
+
+function normalizeBridgeKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
 export function FormBridgeProvider({ children }: { children: React.ReactNode }) {
   const registryRef = useRef<Map<string, FieldDescriptor>>(new Map());
@@ -42,17 +53,37 @@ export function FormBridgeProvider({ children }: { children: React.ReactNode }) 
     }));
   }, []);
 
+  const resolveField = useCallback((entryId: string) => {
+    const directMatch = registryRef.current.get(entryId);
+    if (directMatch) return directMatch;
+
+    const normalizedEntryId = normalizeBridgeKey(entryId);
+    if (!normalizedEntryId) return null;
+
+    for (const field of registryRef.current.values()) {
+      const candidates = [field.id, field.label, ...(field.aliases ?? [])]
+        .map((candidate) => normalizeBridgeKey(candidate))
+        .filter(Boolean);
+
+      if (candidates.includes(normalizedEntryId)) {
+        return field;
+      }
+    }
+
+    return null;
+  }, []);
+
   const fillFields = useCallback((entries: FormBridgeEntry[]) => {
     let filled = 0;
     for (const entry of entries) {
-      const field = registryRef.current.get(entry.id);
+      const field = resolveField(entry.id);
       if (field) {
         field.setValue(entry.value);
         filled++;
       }
     }
     return filled;
-  }, []);
+  }, [resolveField]);
 
   return (
     <FormBridgeContext.Provider value={{ registerField, getRegisteredFields, fillFields }}>
