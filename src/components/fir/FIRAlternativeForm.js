@@ -524,13 +524,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         const label = field.name?.trim() || field.id;
         const bridgeType = field.type === "date"
             ? "date"
-            : field.type === "long_text"
-                ? "textarea"
-                : "text";
+            : field.type === "checkbox"
+                ? "checkbox"
+                : field.type === "long_text"
+                    ? "textarea"
+                    : "text";
         return {
             id: `xfir_${normalizedName || field.id}`,
             label,
             type: bridgeType,
+            aliases: [field.id, normalizedName, label],
             getValue: () => {
                 const current = values[field.id];
                 if (field.type === "checkbox") {
