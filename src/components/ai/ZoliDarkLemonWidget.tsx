@@ -156,9 +156,11 @@ export function ZoliDarkLemonWidget() {
           <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
-            <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
-              <MessageSquare className="h-4 w-4" />
-            </button>
+            {isFullscreen && (
+              <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
+                <MessageSquare className="h-4 w-4" />
+              </button>
+            )}
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
