@@ -7,6 +7,7 @@ import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, NIYOL, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
+import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 
 interface TemplateField {
@@ -507,6 +508,36 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   const [activeAutocompleteFieldId, setActiveAutocompleteFieldId] = useState<string | null>(null);
   const [confirmedFieldIds, setConfirmedFieldIds] = useState<Set<string>>(new Set());
+
+  useFormBridgeFields(
+    () => fields.map((field) => {
+      const normalizedName = normalizeFieldName(field.name || field.id);
+      const label = field.name?.trim() || field.id;
+      const bridgeType = field.type === "date"
+        ? "date"
+        : field.type === "long_text"
+          ? "textarea"
+          : "text";
+
+      return {
+        id: `xfir_${normalizedName || field.id}`,
+        label,
+        type: bridgeType,
+        getValue: () => {
+          const current = values[field.id];
+          if (field.type === "checkbox") {
+            return current ? "true" : "false";
+          }
+          return typeof current === "string" ? current : current ? String(current) : "";
+        },
+        setValue: (nextValue: string) => {
+          const next = field.type === "checkbox" ? toCheckboxValue(nextValue) : nextValue;
+          setValues((prev) => ({ ...prev, [field.id]: next }));
+        },
+      };
+    }),
+    [fields, values],
+  );
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
