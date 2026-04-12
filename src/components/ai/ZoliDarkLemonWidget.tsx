@@ -87,11 +87,9 @@ export function ZoliDarkLemonWidget() {
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, [setPosition, setSize]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    setInput("");
-    sendMessage(input.trim());
-  };
+  const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
+    sendMessage(content, attachments);
+  }, [sendMessage]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
