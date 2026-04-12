@@ -6,6 +6,7 @@ export interface DLMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: { type: string; name: string; dataUrl: string }[];
   createdAt: Date;
 }
 
@@ -31,7 +32,6 @@ export function useDarkLemonMN(context?: string) {
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false });
     if (data) {
-      // Filter conversations that have the MN context tag
       setConversations(data
         .filter(c => {
           const ctx = c.context as any;
@@ -82,13 +82,22 @@ export function useDarkLemonMN(context?: string) {
     }
   }, []);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (
+    content: string,
+    attachments?: { type: string; name: string; dataUrl: string }[]
+  ) => {
     let convId = currentConversationId;
     if (!convId) {
       convId = await createConversation(content.substring(0, 50) + "...");
     }
 
-    const userMsg: DLMessage = { id: crypto.randomUUID(), role: "user", content, createdAt: new Date() };
+    const userMsg: DLMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content,
+      attachments,
+      createdAt: new Date(),
+    };
     setMessages(prev => [...prev, userMsg]);
 
     if (convId) {
@@ -96,7 +105,30 @@ export function useDarkLemonMN(context?: string) {
     }
 
     setIsLoading(true);
-    const apiMessages = [...messages.slice(-19), userMsg].map(m => ({ role: m.role, content: m.content }));
+
+    // Build API messages - last 19 + current
+    const apiMessages = [...messages.slice(-19), userMsg].map(m => {
+      // For multimodal messages with attachments
+      if (m.attachments && m.attachments.length > 0) {
+        const parts: any[] = [{ type: "text", text: m.content }];
+        for (const att of m.attachments) {
+          if (att.type.startsWith("image/")) {
+            parts.push({
+              type: "image_url",
+              image_url: { url: att.dataUrl },
+            });
+          } else {
+            // For non-image files, include as text description
+            parts.push({
+              type: "text",
+              text: `[Allegato: ${att.name} (${att.type})]`,
+            });
+          }
+        }
+        return { role: m.role, content: parts };
+      }
+      return { role: m.role, content: m.content };
+    });
 
     try {
       const { data, error } = await supabase.functions.invoke("dark-lemon-mn", {

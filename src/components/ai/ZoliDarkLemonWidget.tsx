@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
+import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 
@@ -18,7 +19,6 @@ export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [input, setInput] = useState("");
   const [showHistory, setShowHistory] = useState(true);
   const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const isDragging = useRef(false);
@@ -87,11 +87,9 @@ export function ZoliDarkLemonWidget() {
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, [setPosition, setSize]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    setInput("");
-    sendMessage(input.trim());
-  };
+  const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
+    sendMessage(content, attachments);
+  }, [sendMessage]);
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
@@ -234,6 +232,20 @@ export function ZoliDarkLemonWidget() {
                         ? "bg-blue-500/20 text-white border border-blue-500/30"
                         : "bg-white/5 text-white/90 border border-cyan-500/20"
                     )}>
+                      {/* Attachment thumbnails */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex gap-1.5 mb-1.5 flex-wrap">
+                          {msg.attachments.map((att, j) => (
+                            att.type.startsWith("image/") ? (
+                              <img key={j} src={att.dataUrl} alt={att.name} className="h-20 w-auto max-w-[200px] rounded-lg object-cover" />
+                            ) : (
+                              <div key={j} className="flex items-center gap-1 text-[10px] text-white/50 bg-white/5 rounded px-1.5 py-0.5">
+                                <FileImage className="h-3 w-3" /> {att.name}
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.role === "user" && (
@@ -261,27 +273,7 @@ export function ZoliDarkLemonWidget() {
               </div>
 
               {/* Input */}
-              <div className="p-3 border-t border-white/10 shrink-0">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    placeholder="Chiedi qualcosa..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
-                  />
-                  <button
-                    onClick={handleSend}
-                    onMouseDown={e => e.stopPropagation()}
-                    disabled={!input.trim() || isLoading}
-                    className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 disabled:opacity-30 hover:bg-cyan-500/30 transition-all"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
+              <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
             </div>
           </div>
         </div>
