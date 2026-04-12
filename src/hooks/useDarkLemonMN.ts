@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 export interface DLAttachment {
   type: string;
@@ -23,6 +24,8 @@ export interface DLConversation {
   createdAt: Date;
   updatedAt: Date;
 }
+
+type AIMessageInsert = Database["public"]["Tables"]["ai_messages"]["Insert"];
 
 const TEXT_ATTACHMENT_EXTENSIONS = new Set([
   "txt", "md", "csv", "tsv", "json", "xml", "yaml", "yml", "log", "html", "htm", "css", "js", "jsx", "ts", "tsx",
@@ -158,7 +161,7 @@ export function useDarkLemonMN(context?: string) {
     setMessages([]);
     await loadConversations();
     return data.id;
-  }, [user, context, loadConversations]);
+  }, [user, normalizedContext, loadConversations]);
 
   const loadConversation = useCallback(async (conversationId: string) => {
     const { data } = await supabase
@@ -197,12 +200,14 @@ export function useDarkLemonMN(context?: string) {
     setMessages(prev => [...prev, userMsg]);
 
     if (convId) {
-      await supabase.from("ai_messages").insert({
+      const userMessageInsert: AIMessageInsert = {
         conversation_id: convId,
         role: "user",
         content,
-        metadata: attachments && attachments.length > 0 ? { attachments } : null,
-      });
+        metadata: attachments && attachments.length > 0 ? ({ attachments } as Json) : null,
+      };
+
+      await supabase.from("ai_messages").insert(userMessageInsert);
     }
 
     setIsLoading(true);
@@ -226,11 +231,13 @@ export function useDarkLemonMN(context?: string) {
       setMessages(prev => [...prev, assistantMsg]);
 
       if (convId) {
-        await supabase.from("ai_messages").insert({
+        const assistantMessageInsert: AIMessageInsert = {
           conversation_id: convId,
           role: "assistant",
           content: assistantContent,
-        });
+        };
+
+        await supabase.from("ai_messages").insert(assistantMessageInsert);
         if (messages.length === 0) {
           await supabase.from("ai_conversations")
             .update({ title: content.substring(0, 100), updated_at: new Date().toISOString() })
