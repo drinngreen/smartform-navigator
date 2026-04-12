@@ -232,6 +232,20 @@ export function ZoliDarkLemonWidget() {
                         ? "bg-blue-500/20 text-white border border-blue-500/30"
                         : "bg-white/5 text-white/90 border border-cyan-500/20"
                     )}>
+                      {/* Attachment thumbnails */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex gap-1.5 mb-1.5 flex-wrap">
+                          {msg.attachments.map((att, j) => (
+                            att.type.startsWith("image/") ? (
+                              <img key={j} src={att.dataUrl} alt={att.name} className="h-20 w-auto max-w-[200px] rounded-lg object-cover" />
+                            ) : (
+                              <div key={j} className="flex items-center gap-1 text-[10px] text-white/50 bg-white/5 rounded px-1.5 py-0.5">
+                                <FileImage className="h-3 w-3" /> {att.name}
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.role === "user" && (
