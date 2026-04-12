@@ -149,13 +149,9 @@ export function DevImpiantoModule() {
 
 // ─── Formulari sub-module ───
 function ImpiantoFormulari() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
-  const [editDialog, setEditDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
-  const [editData, setEditData] = useState<Record<string, any>>({});
-  const [saving, setSaving] = useState(false);
+  const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
 
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
@@ -175,44 +171,6 @@ function ImpiantoFormulari() {
       return await loadForms(GLOBAL_FIR_TENANT_ID);
     },
   });
-
-  const openEdit = (form: any) => {
-    setEditData({
-      codice_eer: form.codice_eer || "",
-      descrizione_rifiuto: form.descrizione_rifiuto || "",
-      quantita: form.quantita ?? "",
-      unita_misura: form.unita_misura || "",
-      stato_fisico: form.stato_fisico || "",
-      produttore_denominazione: form.produttore_denominazione || "",
-      trasportatore_denominazione: form.trasportatore_denominazione || "",
-      destinatario_denominazione: form.destinatario_denominazione || "",
-      note: form.note || "",
-    });
-    setEditDialog({ open: true, form });
-  };
-
-  const handleSave = async () => {
-    if (!editDialog.form) return;
-    setSaving(true);
-    try {
-      const updates: Record<string, any> = {};
-      for (const [k, v] of Object.entries(editData)) {
-        updates[k] = k === "quantita" ? (v ? parseFloat(v as string) : null) : (v || null);
-      }
-      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
-        body: { action: "update_fir_form", form_id: editDialog.form.id, updates },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success("Formulario aggiornato");
-      setEditDialog({ open: false, form: null });
-      refetch();
-    } catch (e: any) {
-      toast.error("Errore: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const filtered = forms.filter((f: any) => {
     const q = search.toLowerCase();
@@ -334,11 +292,15 @@ function ImpiantoFormulari() {
                       <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
                       <td className="p-3 text-muted-foreground text-xs">{new Date(form.updated_at).toLocaleDateString("it-IT")}</td>
                       <td className="p-3 text-right">
-                        {(form.status === "draft" || form.status === "bozza") && (
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(form)} className="gap-1 text-emerald-400">
-                            <Edit className="h-3 w-3" /> Modifica
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewDialog({ open: true, form })}
+                          className={`gap-1 ${form.status === "bozza" || form.status === "draft" ? "text-emerald-400" : "text-muted-foreground"}`}
+                        >
+                          <Edit className="h-3 w-3" />
+                          {form.status === "bozza" || form.status === "draft" ? "Modifica" : "Visualizza"}
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -352,29 +314,27 @@ function ImpiantoFormulari() {
         </Card>
       )}
 
-      <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ open: o, form: o ? editDialog.form : null })}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Modifica Bozza — {editDialog.form?.numero_fir || "N/D"}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div><Label>Codice EER</Label><Input value={editData.codice_eer || ""} onChange={(e) => setEditData((p) => ({ ...p, codice_eer: e.target.value }))} /></div>
-            <div><Label>Quantità</Label><Input type="number" value={editData.quantita || ""} onChange={(e) => setEditData((p) => ({ ...p, quantita: e.target.value }))} /></div>
-            <div className="col-span-2"><Label>Descrizione Rifiuto</Label><Textarea value={editData.descrizione_rifiuto || ""} onChange={(e) => setEditData((p) => ({ ...p, descrizione_rifiuto: e.target.value }))} /></div>
-            <div><Label>Produttore</Label><Input value={editData.produttore_denominazione || ""} onChange={(e) => setEditData((p) => ({ ...p, produttore_denominazione: e.target.value }))} /></div>
-            <div><Label>Destinatario</Label><Input value={editData.destinatario_denominazione || ""} onChange={(e) => setEditData((p) => ({ ...p, destinatario_denominazione: e.target.value }))} /></div>
-            <div className="col-span-2"><Label>Note</Label><Textarea value={editData.note || ""} onChange={(e) => setEditData((p) => ({ ...p, note: e.target.value }))} /></div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog({ open: false, form: null })}>Annulla</Button>
-            <Button onClick={handleSave} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Salva
-            </Button>
-          </DialogFooter>
+      {/* Full FIR Alternative Form Dialog */}
+      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
+              <FileText className="h-5 w-5 text-emerald-400" />
+              {viewDialog.form?.status === "bozza" || viewDialog.form?.status === "draft" ? "Modifica" : "Visualizza"} FIR — {viewDialog.form?.numero_fir || "N/D"}
+            </DialogTitle>
+          </DialogHeader>
+          {viewDialog.form && (
+            <FIRAlternativeForm
+              key={viewDialog.form.id}
+              firFormId={viewDialog.form.id}
+              presetNumeroFir={viewDialog.form.numero_fir || undefined}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
 // ─── Gestione FIR sub-module (Pool + Vidimazione + Test RENTRI) ───
 function ImpiantoGestioneFIR() {
   const { user } = useAuth();
