@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, FileText } from "lucide-react";
 import { useState } from "react";
 import type { DragonDocumentType } from "@/types/dragon";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const docTypeLabels: Record<string, string> = { FIR: "FIR", DDT_IN: "DDT Entrata", DDT_OUT: "DDT Uscita", FORMULARIO_MODELLO: "Formulario", ALTRO: "Altro" };
 
@@ -28,6 +29,7 @@ export default function DragonDocumentiPage() {
   return (
     <MNAdminLayout title="Documenti" subtitle="Dragon Rifiuti 2 — Archivio FIR, DDT e documenti">
       <div className="space-y-4">
+        <DragonBackButton />
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><FileText className="h-4 w-4 inline mr-1" />{documents.length} documenti</p>
           <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Documento</Button>

@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Play, XCircle, Scissors, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const statusColors: Record<string, string> = {
   BOZZA: "bg-yellow-500/20 text-yellow-300",
@@ -333,6 +334,7 @@ export default function DragonCerniteBatchPage() {
   return (
     <MNAdminLayout title="Cernite & Lavorazioni" subtitle="Dragon Rifiuti 2 — Batch di trasformazione">
       <div className="space-y-4">
+        <DragonBackButton />
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} batch totali</p>
           <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Batch</Button>

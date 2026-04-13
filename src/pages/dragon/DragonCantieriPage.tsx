@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, MapPin } from "lucide-react";
 import type { DragonSiteActivity } from "@/types/dragon";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const activityLabels: Record<string, string> = {
   ND: "Non definita",
@@ -35,6 +36,7 @@ export default function DragonCantieriPage() {
   return (
     <MNAdminLayout title="Cantieri / Luoghi Produzione" subtitle="Dragon Rifiuti 2 — Siti produzione fuori U.L.">
       <div className="space-y-4">
+        <DragonBackButton />
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><MapPin className="h-4 w-4 inline mr-1" />{sites.length} cantieri registrati</p>
           <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Cantiere</Button>

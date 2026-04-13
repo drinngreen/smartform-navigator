@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Plus, Scissors, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { DragonItemType, DragonQuantityMode, DragonWarehouseScope } from "@/types/dragon";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 export default function DragonCerniteModelliPage() {
   const { models, isLoading, createModel } = useDragonTransformModels();
@@ -72,6 +73,7 @@ export default function DragonCerniteModelliPage() {
   return (
     <MNAdminLayout title="Modelli di Cernita" subtitle="Dragon Rifiuti 2 — Template lavorazioni e cernite">
       <div className="space-y-4">
+        <DragonBackButton />
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{models.length} modelli</p>
           <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Modello</Button>
