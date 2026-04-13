@@ -408,22 +408,18 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
       if (!roleCheck) return { error: "⛔ Solo gli admin possono consultare i FIR in arrivo RENTRI" };
 
       const cliente = args.cliente || "multy";
-      // Get num_iscr_sito from impianti_accounts for this tenant
+      const unitIdMap: Record<string, string> = {
+        multy: "OP2501XMQ021914-TO0001",
+        niyol: "OP2501SXW021767-TO0001",
+        global: "OP2501RMK022692-TO0001",
+      };
       const tenantMap: Record<string, string> = {
         multy: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
         niyol: "819c783e-78dd-4080-8265-802e75b0d813",
         global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
       };
       const tenantId = tenantMap[cliente] || tenantMap.multy;
-
-      const { data: impianto } = await db.from("impianti")
-        .select("codice_rentri")
-        .eq("tenant_id", tenantId)
-        .limit(1)
-        .single();
-
-      const numIscrSito = impianto?.codice_rentri || "";
-      if (!numIscrSito) return { error: "Codice RENTRI impianto non configurato per " + cliente };
+      const numIscrSito = unitIdMap[cliente] || unitIdMap.multy;
 
       // Call VPS proxy to get pending FIR
       const vpsUrl = Deno.env.get("SUPABASE_URL")! + "/functions/v1/rentri-vps-proxy";
