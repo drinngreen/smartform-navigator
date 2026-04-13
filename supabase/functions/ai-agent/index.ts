@@ -386,6 +386,182 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
       return { success: true, message: `Memorizzato: ${args.fact_key} = ${args.fact_value}` };
     }
 
+    case "rentri_lista_fir_arrivo": {
+      // Check admin role
+      const { data: roleCheck } = await db.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").single();
+      if (!roleCheck) return { error: "⛔ Solo gli admin possono consultare i FIR in arrivo RENTRI" };
+
+      const cliente = args.cliente || "multy";
+      // Get num_iscr_sito from impianti_accounts for this tenant
+      const tenantMap: Record<string, string> = {
+        multy: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+        niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+        global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
+      };
+      const tenantId = tenantMap[cliente] || tenantMap.multy;
+
+      const { data: impianto } = await db.from("impianti")
+        .select("codice_rentri")
+        .eq("tenant_id", tenantId)
+        .limit(1)
+        .single();
+
+      const numIscrSito = impianto?.codice_rentri || "";
+      if (!numIscrSito) return { error: "Codice RENTRI impianto non configurato per " + cliente };
+
+      // Call VPS proxy to get pending FIR
+      const vpsUrl = Deno.env.get("SUPABASE_URL")! + "/functions/v1/rentri-vps-proxy";
+      const vpsRes = await fetch(vpsUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          cliente,
+          tipo_operazione: "CUSTOM",
+          rentri_method: "GET",
+          rentri_path: `/formulari/v1.0?identificativo_soggetto=${encodeURIComponent(numIscrSito)}&ruolo=DESTINATARIO&pendenza_arrivo=true`,
+          payload: null,
+        }),
+      });
+      const vpsData = await vpsRes.json();
+      if (!vpsData.success) return { error: "Errore RENTRI: " + (vpsData.error || "sconosciuto") };
+
+      // Parse response
+      const items = Array.isArray(vpsData.data) ? vpsData.data
+        : (vpsData.data?.formulari || vpsData.data?.items || vpsData.data?.content || []);
+
+      return {
+        fir_in_arrivo: items,
+        count: items.length,
+        num_iscr_sito: numIscrSito,
+        message: items.length === 0
+          ? "✅ Nessun FIR in attesa di firma all'impianto"
+          : `📋 ${items.length} FIR in arrivo da firmare come destinatario`
+      };
+    }
+
+    case "rentri_dettaglio_fir": {
+      const { data: roleCheck } = await db.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").single();
+      if (!roleCheck) return { error: "⛔ Solo gli admin possono consultare i dettagli FIR RENTRI" };
+
+      const cliente = args.cliente || "multy";
+      const vpsUrl = Deno.env.get("SUPABASE_URL")! + "/functions/v1/rentri-vps-proxy";
+
+      if (args.uuid_fir) {
+        const res = await fetch(vpsUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ cliente, tipo_operazione: "DETTAGLIO_FIR", payload: { uuid_fir: args.uuid_fir } }),
+        });
+        const data = await res.json();
+        return data.success ? { fir: data.data } : { error: data.error || "FIR non trovato" };
+      }
+
+      if (args.numero_fir) {
+        const res = await fetch(vpsUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ cliente, tipo_operazione: "RICERCA_FIR", payload: { numero_fir: args.numero_fir } }),
+        });
+        const data = await res.json();
+        return data.success ? { fir: data.data } : { error: data.error || "FIR non trovato" };
+      }
+
+      return { error: "Specifica uuid_fir o numero_fir" };
+    }
+
+    case "rentri_firma_destinatario": {
+      // CRITICAL: Admin-only check
+      const { data: roleCheck } = await db.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").single();
+      if (!roleCheck) return { error: "⛔ OPERAZIONE NEGATA: Solo gli admin possono firmare i FIR come destinatario" };
+
+      // Verify explicit authorization text
+      const conferma = (args.conferma_admin || "").toUpperCase().trim();
+      if (!conferma.includes("CONFERMO") && !conferma.includes("AUTORIZZATO") && !conferma.includes("AUTORIZZA")) {
+        return { error: "⚠️ Autorizzazione mancante. L'admin deve scrivere esplicitamente 'CONFERMO' o 'AUTORIZZATO' nella chat prima di procedere con la firma." };
+      }
+
+      const cliente = args.cliente || "multy";
+      const tenantMap: Record<string, string> = {
+        multy: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+        niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+        global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
+      };
+      const tenantId = tenantMap[cliente] || tenantMap.multy;
+
+      const { data: impianto } = await db.from("impianti")
+        .select("codice_rentri")
+        .eq("tenant_id", tenantId)
+        .limit(1)
+        .single();
+
+      const numIscrSito = impianto?.codice_rentri || "";
+      if (!numIscrSito) return { error: "Codice RENTRI impianto non configurato" };
+
+      const dataOra = args.data_ora_ricezione || new Date().toISOString();
+      const esito = args.esito || "ACCETTATO_TOTALMENTE";
+
+      const accettazionePayload = {
+        data_ora_ricezione: dataOra,
+        quantita_ricevuta: { valore: args.quantita_kg, unita_misura: "kg" },
+        esito_conferimento: esito,
+        num_iscr_sito: numIscrSito,
+        ...(args.motivazione ? { motivazione: args.motivazione } : {}),
+      };
+
+      const vpsUrl = Deno.env.get("SUPABASE_URL")! + "/functions/v1/rentri-vps-proxy";
+      const res = await fetch(vpsUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          cliente,
+          tipo_operazione: "CUSTOM",
+          rentri_method: "POST",
+          rentri_path: `/formulari/v1.0/${args.uuid_fir}/accettazione`,
+          payload: accettazionePayload,
+        }),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        // Log the operation
+        await db.from("rentri_logs").insert({
+          tenant_id: tenantId,
+          operazione: "FIRMA_DESTINATARIO",
+          payload: { uuid_fir: args.uuid_fir, quantita_kg: args.quantita_kg, esito, conferma: args.conferma_admin },
+          risposta: result.data,
+          esito: "successo",
+          created_by: userId,
+        });
+        return {
+          success: true,
+          message: `✅ FIR firmato come DESTINATARIO! Quantità: ${args.quantita_kg} kg, Esito: ${esito}`,
+          rentri_response: result.data,
+        };
+      } else {
+        await db.from("rentri_logs").insert({
+          tenant_id: tenantId,
+          operazione: "FIRMA_DESTINATARIO",
+          payload: { uuid_fir: args.uuid_fir, quantita_kg: args.quantita_kg, esito },
+          risposta: result,
+          esito: "errore",
+          created_by: userId,
+        });
+        return { error: `❌ Errore firma RENTRI: ${result.error || JSON.stringify(result)}` };
+      }
+    }
+
     default:
       return { error: `Tool sconosciuto: ${toolName}` };
   }
