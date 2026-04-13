@@ -440,7 +440,7 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
           cliente,
           tipo_operazione: "CUSTOM",
           rentri_method: "GET",
-          rentri_path: `/formulari/v1.0?identificativo_soggetto=${encodeURIComponent(numIscrSito)}&ruolo=DESTINATARIO&pendenza_arrivo=true`,
+          rentri_path: `/formulari/v1.0?identificativo_soggetto=${encodeURIComponent(codiceFiscale)}&ruolo=DESTINATARIO&pendenza_arrivo=true`,
           payload: null,
         }),
       });
