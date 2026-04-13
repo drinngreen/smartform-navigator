@@ -203,6 +203,54 @@ const tools = [
         required: ["fact_key", "fact_value"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "rentri_lista_fir_arrivo",
+      description: "Controlla i FIR in arrivo all'impianto (pendenze RENTRI). Mostra i formulari che devono essere firmati come DESTINATARIO. Richiede autorizzazione admin.",
+      parameters: {
+        type: "object",
+        properties: {
+          cliente: { type: "string", enum: ["multy", "niyol", "global"], description: "Tenant/società (default: multy)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "rentri_dettaglio_fir",
+      description: "Recupera il dettaglio completo di un FIR dal RENTRI tramite il suo UUID o numero FIR",
+      parameters: {
+        type: "object",
+        properties: {
+          cliente: { type: "string", enum: ["multy", "niyol", "global"], description: "Tenant/società" },
+          uuid_fir: { type: "string", description: "UUID del FIR su RENTRI (se disponibile)" },
+          numero_fir: { type: "string", description: "Numero FIR da cercare (alternativo a uuid_fir)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "rentri_firma_destinatario",
+      description: "Firma un FIR come DESTINATARIO (accettazione rifiuto all'impianto). ATTENZIONE: operazione irreversibile! Richiede SEMPRE autorizzazione esplicita scritta dall'admin prima di procedere. Se l'utente non è admin, rifiuta l'operazione.",
+      parameters: {
+        type: "object",
+        properties: {
+          cliente: { type: "string", enum: ["multy", "niyol", "global"], description: "Tenant/società (default: multy)" },
+          uuid_fir: { type: "string", description: "UUID del FIR su RENTRI da firmare" },
+          quantita_kg: { type: "number", description: "Quantità ricevuta in kg" },
+          data_ora_ricezione: { type: "string", description: "Data/ora ricezione formato ISO (es. 2026-04-13T10:30:00)" },
+          esito: { type: "string", enum: ["ACCETTATO_TOTALMENTE", "ACCETTATO_PARZIALMENTE", "RESPINTO"], description: "Esito conferimento (default: ACCETTATO_TOTALMENTE)" },
+          motivazione: { type: "string", description: "Motivazione (obbligatoria se parziale o respinto)" },
+          conferma_admin: { type: "string", description: "Testo esatto di conferma dell'admin (deve contenere 'CONFERMO' o 'AUTORIZZATO')" }
+        },
+        required: ["uuid_fir", "quantita_kg", "conferma_admin"]
+      }
+    }
   }
 ];
 
