@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Package, FileText, Scissors, History, ExternalLink } from "lucide-react";
+import { BookOpen, Package, FileText, Scissors, History, ExternalLink, Warehouse } from "lucide-react";
 
 const PREFIX = "/mn/admin/dev-multyproget/dragon";
 
@@ -13,6 +13,7 @@ export function DevMagazzinoDevModule() {
   const sections = [
     { id: "registro", label: "Registro", icon: BookOpen, path: `${PREFIX}/registro` },
     { id: "magazzino", label: "Magazzino", icon: Package, path: `${PREFIX}/magazzino` },
+    { id: "magazzini", label: "Archivio Magazzini", icon: Warehouse, path: `${PREFIX}/magazzini` },
     { id: "articoli", label: "Articoli CER", icon: FileText, path: `${PREFIX}/articoli` },
     { id: "cernite", label: "Cernite", icon: Scissors, path: `${PREFIX}/cernite/modelli` },
     { id: "audit", label: "Audit Trail", icon: History, path: `${PREFIX}/audit` },

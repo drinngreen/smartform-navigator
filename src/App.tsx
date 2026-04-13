@@ -92,6 +92,7 @@ const MNStoricoRicevutePage = React.lazy(() => import("./pages/multynijol/MNStor
 // Dragon Rifiuti 2 pages
 const DragonRegistroPage = React.lazy(() => import("./pages/dragon/DragonRegistroPage"));
 const DragonMagazzinoPage = React.lazy(() => import("./pages/dragon/DragonMagazzinoPage"));
+const DragonMagazziniPage = React.lazy(() => import("./pages/dragon/DragonMagazziniPage"));
 const DragonCantieriPage = React.lazy(() => import("./pages/dragon/DragonCantieriPage"));
 const DragonArticoliPage = React.lazy(() => import("./pages/dragon/DragonArticoliPage"));
 const DragonDocumentiPage = React.lazy(() => import("./pages/dragon/DragonDocumentiPage"));
@@ -267,6 +268,7 @@ const App = () => (
                 {/* Dragon Rifiuti 2 Routes */}
                 <Route path="/mn/admin/:context/dragon/registro" element={<ProtectedRoute><DragonRegistroPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/magazzino" element={<ProtectedRoute><DragonMagazzinoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/magazzini" element={<ProtectedRoute><DragonMagazziniPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/cantieri" element={<ProtectedRoute><DragonCantieriPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/articoli" element={<ProtectedRoute><DragonArticoliPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/documenti" element={<ProtectedRoute><DragonDocumentiPage /></ProtectedRoute>} />
