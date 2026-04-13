@@ -22,17 +22,26 @@ export function useDragonDocuments() {
   });
 
   const create = useMutation({
-    mutationFn: async (doc: Partial<DragonDocument>) => {
+    mutationFn: async (doc: Omit<Partial<DragonDocument>, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
       const { data, error } = await supabase
         .from("dragon_documents")
-        .insert({ ...doc, company_id: companyId })
+        .insert({
+          company_id: companyId,
+          document_type: doc.document_type ?? 'ALTRO',
+          number: doc.number ?? null,
+          document_date: doc.document_date ?? null,
+          counterparty_id: doc.counterparty_id ?? null,
+          notes: doc.notes ?? null,
+          status: doc.status ?? 'attivo',
+          metadata: (doc.metadata ?? {}) as any,
+        })
         .select()
         .single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["dragon-documents"] }); toast.success("Documento creato"); },
-    onError: (e) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return { documents, isLoading, create };

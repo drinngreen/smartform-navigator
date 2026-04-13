@@ -11,7 +11,7 @@ interface Filters {
   cerCode?: string;
   causeId?: string;
   status?: DragonMovementStatus;
-  movementType?: string;
+  movementType?: 'CARICO' | 'SCARICO';
   search?: string;
 }
 
@@ -43,7 +43,7 @@ export function useDragonRegister(filters?: Filters) {
       if (filters?.cerCode) query = query.ilike("cer_code", `%${filters.cerCode}%`);
       if (filters?.causeId) query = query.eq("cause_id", filters.causeId);
       if (filters?.status) query = query.eq("status", filters.status);
-      if (filters?.movementType) query = query.eq("movement_type", filters.movementType);
+      if (filters?.movementType) query = query.eq("movement_type", filters.movementType as any);
 
       const { data, error } = await query.limit(500);
       if (error) throw error;
@@ -52,14 +52,14 @@ export function useDragonRegister(filters?: Filters) {
   });
 
   const createMovement = useMutation({
-    mutationFn: async (movement: Partial<DragonRegisterMovement>) => {
+    mutationFn: async (movement: Record<string, any>) => {
       const { data, error } = await supabase
         .from("dragon_register_movements")
         .insert({
-          ...movement,
           company_id: companyId,
           created_by: user?.id,
-        })
+          ...movement,
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -70,16 +70,16 @@ export function useDragonRegister(filters?: Filters) {
       qc.invalidateQueries({ queryKey: ["dragon-stock"] });
       toast.success("Movimento registrato");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const consolidate = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
         .from("dragon_register_movements")
-        .update({ status: "CONSOLIDATO" as DragonMovementStatus, updated_by: user?.id })
+        .update({ status: "CONSOLIDATO" as any, updated_by: user?.id } as any)
         .eq("id", id)
-        .eq("status", "BOZZA")
+        .eq("status", "BOZZA" as any)
         .select()
         .single();
       if (error) throw error;
@@ -90,7 +90,7 @@ export function useDragonRegister(filters?: Filters) {
       qc.invalidateQueries({ queryKey: ["dragon-stock"] });
       toast.success("Movimento consolidato");
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return { movements, isLoading, createMovement, consolidate };
