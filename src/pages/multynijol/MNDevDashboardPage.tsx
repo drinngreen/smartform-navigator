@@ -27,6 +27,7 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
+import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -131,6 +132,13 @@ export default function MNDevDashboardPage() {
             <Users className="h-4 w-4" />
             Personale
           </TabsTrigger>
+          <TabsTrigger
+            value="magazzino-dev"
+            className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
+          >
+            <Package className="h-4 w-4" />
+            Magazzino Dev
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="impianto">
@@ -168,6 +176,9 @@ export default function MNDevDashboardPage() {
         </TabsContent>
         <TabsContent value="personale">
           <DevPersonaleModule />
+        </TabsContent>
+        <TabsContent value="magazzino-dev">
+          <DevMagazzinoDevModule />
         </TabsContent>
       </Tabs>
     </MNAdminLayout>
