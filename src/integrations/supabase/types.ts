@@ -934,12 +934,16 @@ export type Database = {
           codice_cer: string
           company_id: string
           created_at: string
+          default_warehouse_id: string | null
           descrizione: string
+          fattore_conversione: number
           id: string
           item_type: Database["public"]["Enums"]["dragon_item_type"]
           metadata: Json | null
           pericoloso: boolean
           stato_fisico_default: string | null
+          tipo_mps_eow: string | null
+          tipo_mps_eow_desc: string | null
           unita_misura_default: string
           updated_at: string
         }
@@ -949,12 +953,16 @@ export type Database = {
           codice_cer: string
           company_id: string
           created_at?: string
+          default_warehouse_id?: string | null
           descrizione: string
+          fattore_conversione?: number
           id?: string
           item_type?: Database["public"]["Enums"]["dragon_item_type"]
           metadata?: Json | null
           pericoloso?: boolean
           stato_fisico_default?: string | null
+          tipo_mps_eow?: string | null
+          tipo_mps_eow_desc?: string | null
           unita_misura_default?: string
           updated_at?: string
         }
@@ -964,16 +972,28 @@ export type Database = {
           codice_cer?: string
           company_id?: string
           created_at?: string
+          default_warehouse_id?: string | null
           descrizione?: string
+          fattore_conversione?: number
           id?: string
           item_type?: Database["public"]["Enums"]["dragon_item_type"]
           metadata?: Json | null
           pericoloso?: boolean
           stato_fisico_default?: string | null
+          tipo_mps_eow?: string | null
+          tipo_mps_eow_desc?: string | null
           unita_misura_default?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dragon_items_default_warehouse_id_fkey"
+            columns: ["default_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dragon_movement_allocations: {
         Row: {
@@ -1263,6 +1283,7 @@ export type Database = {
           source_document_id: string | null
           source_register_movement_id: string | null
           source_transform_batch_id: string | null
+          warehouse_id: string | null
           warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
         Insert: {
@@ -1280,6 +1301,7 @@ export type Database = {
           source_document_id?: string | null
           source_register_movement_id?: string | null
           source_transform_batch_id?: string | null
+          warehouse_id?: string | null
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
         Update: {
@@ -1297,6 +1319,7 @@ export type Database = {
           source_document_id?: string | null
           source_register_movement_id?: string | null
           source_transform_batch_id?: string | null
+          warehouse_id?: string | null
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
         Relationships: [
@@ -1326,6 +1349,13 @@ export type Database = {
             columns: ["source_register_movement_id"]
             isOneToOne: false
             referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_stock_movements_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_warehouses"
             referencedColumns: ["id"]
           },
           {
@@ -1560,6 +1590,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dragon_warehouses: {
+        Row: {
+          active: boolean
+          code: string
+          company_id: string
+          created_at: string
+          description: string
+          has_cer: boolean
+          has_mps: boolean
+          id: string
+          limit_mps_eow: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          company_id: string
+          created_at?: string
+          description?: string
+          has_cer?: boolean
+          has_mps?: boolean
+          id?: string
+          limit_mps_eow?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          company_id?: string
+          created_at?: string
+          description?: string
+          has_cer?: boolean
+          has_mps?: boolean
+          id?: string
+          limit_mps_eow?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       driver_locations: {
         Row: {
