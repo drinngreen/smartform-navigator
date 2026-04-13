@@ -88,6 +88,15 @@ const MNEmailPage = React.lazy(() => import("./pages/multynijol/MNEmailPage"));
 const MNRubricaPage = React.lazy(() => import("./pages/multynijol/MNRubricaPage"));
 const MNAnagraficaPrivatiPage = React.lazy(() => import("./pages/multynijol/MNAnagraficaPrivatiPage"));
 const MNStoricoRicevutePage = React.lazy(() => import("./pages/multynijol/MNStoricoRicevutePage"));
+
+// Dragon Rifiuti 2 pages
+const DragonRegistroPage = React.lazy(() => import("./pages/dragon/DragonRegistroPage"));
+const DragonMagazzinoPage = React.lazy(() => import("./pages/dragon/DragonMagazzinoPage"));
+const DragonCantieriPage = React.lazy(() => import("./pages/dragon/DragonCantieriPage"));
+const DragonArticoliPage = React.lazy(() => import("./pages/dragon/DragonArticoliPage"));
+const DragonDocumentiPage = React.lazy(() => import("./pages/dragon/DragonDocumentiPage"));
+const DragonCerniteModelliPage = React.lazy(() => import("./pages/dragon/DragonCerniteModelliPage"));
+const DragonAuditPage = React.lazy(() => import("./pages/dragon/DragonAuditPage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
