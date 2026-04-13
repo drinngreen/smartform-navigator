@@ -88,6 +88,15 @@ const MNEmailPage = React.lazy(() => import("./pages/multynijol/MNEmailPage"));
 const MNRubricaPage = React.lazy(() => import("./pages/multynijol/MNRubricaPage"));
 const MNAnagraficaPrivatiPage = React.lazy(() => import("./pages/multynijol/MNAnagraficaPrivatiPage"));
 const MNStoricoRicevutePage = React.lazy(() => import("./pages/multynijol/MNStoricoRicevutePage"));
+
+// Dragon Rifiuti 2 pages
+const DragonRegistroPage = React.lazy(() => import("./pages/dragon/DragonRegistroPage"));
+const DragonMagazzinoPage = React.lazy(() => import("./pages/dragon/DragonMagazzinoPage"));
+const DragonCantieriPage = React.lazy(() => import("./pages/dragon/DragonCantieriPage"));
+const DragonArticoliPage = React.lazy(() => import("./pages/dragon/DragonArticoliPage"));
+const DragonDocumentiPage = React.lazy(() => import("./pages/dragon/DragonDocumentiPage"));
+const DragonCerniteModelliPage = React.lazy(() => import("./pages/dragon/DragonCerniteModelliPage"));
+const DragonAuditPage = React.lazy(() => import("./pages/dragon/DragonAuditPage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
@@ -251,6 +260,15 @@ const App = () => (
                 <Route path="/mn/admin/:context/system-prompt" element={<ProtectedRoute><MNSystemPromptPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/aree-riservate-impianti" element={<ProtectedRoute><MNAreeRiservateImpiantiPage /></ProtectedRoute>} />
+
+                {/* Dragon Rifiuti 2 Routes */}
+                <Route path="/mn/admin/:context/dragon/registro" element={<ProtectedRoute><DragonRegistroPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/magazzino" element={<ProtectedRoute><DragonMagazzinoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/cantieri" element={<ProtectedRoute><DragonCantieriPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/articoli" element={<ProtectedRoute><DragonArticoliPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/documenti" element={<ProtectedRoute><DragonDocumentiPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/cernite/modelli" element={<ProtectedRoute><DragonCerniteModelliPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/audit" element={<ProtectedRoute><DragonAuditPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
                 <Route path="/mn/app/multyproget" element={<MNMultyprogetAppPage />} />

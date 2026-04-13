@@ -738,6 +738,829 @@ export type Database = {
           },
         ]
       }
+      dragon_audit_logs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["dragon_audit_action"]
+          after_state: Json | null
+          before_state: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          performed_at: string
+          performed_by: string | null
+          reason: string | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["dragon_audit_action"]
+          after_state?: Json | null
+          before_state?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["dragon_audit_action"]
+          after_state?: Json | null
+          before_state?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      dragon_causes: {
+        Row: {
+          active: boolean
+          code: string
+          config: Json | null
+          created_at: string
+          default_document_type:
+            | Database["public"]["Enums"]["dragon_document_type"]
+            | null
+          direction: Database["public"]["Enums"]["dragon_cause_direction"]
+          generates_stock_movement: boolean
+          id: string
+          name: string
+          requires_fir: boolean
+          requires_site: boolean
+          requires_source_movement: boolean
+          scope: Database["public"]["Enums"]["dragon_cause_scope"]
+          stock_sign: Database["public"]["Enums"]["dragon_stock_sign"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          config?: Json | null
+          created_at?: string
+          default_document_type?:
+            | Database["public"]["Enums"]["dragon_document_type"]
+            | null
+          direction?: Database["public"]["Enums"]["dragon_cause_direction"]
+          generates_stock_movement?: boolean
+          id?: string
+          name: string
+          requires_fir?: boolean
+          requires_site?: boolean
+          requires_source_movement?: boolean
+          scope?: Database["public"]["Enums"]["dragon_cause_scope"]
+          stock_sign?: Database["public"]["Enums"]["dragon_stock_sign"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          config?: Json | null
+          created_at?: string
+          default_document_type?:
+            | Database["public"]["Enums"]["dragon_document_type"]
+            | null
+          direction?: Database["public"]["Enums"]["dragon_cause_direction"]
+          generates_stock_movement?: boolean
+          id?: string
+          name?: string
+          requires_fir?: boolean
+          requires_site?: boolean
+          requires_source_movement?: boolean
+          scope?: Database["public"]["Enums"]["dragon_cause_scope"]
+          stock_sign?: Database["public"]["Enums"]["dragon_stock_sign"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dragon_documents: {
+        Row: {
+          company_id: string
+          counterparty_id: string | null
+          created_at: string
+          document_date: string | null
+          document_type: Database["public"]["Enums"]["dragon_document_type"]
+          id: string
+          metadata: Json | null
+          notes: string | null
+          number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          counterparty_id?: string | null
+          created_at?: string
+          document_date?: string | null
+          document_type?: Database["public"]["Enums"]["dragon_document_type"]
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          counterparty_id?: string | null
+          created_at?: string
+          document_date?: string | null
+          document_type?: Database["public"]["Enums"]["dragon_document_type"]
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dragon_inventory_adjustments: {
+        Row: {
+          adjustment_type: Database["public"]["Enums"]["dragon_adjustment_type"]
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          quantity: number
+          reason: string
+          related_stock_movement_id: string | null
+        }
+        Insert: {
+          adjustment_type: Database["public"]["Enums"]["dragon_adjustment_type"]
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          quantity: number
+          reason: string
+          related_stock_movement_id?: string | null
+        }
+        Update: {
+          adjustment_type?: Database["public"]["Enums"]["dragon_adjustment_type"]
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          quantity?: number
+          reason?: string
+          related_stock_movement_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_inventory_adjustments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_inventory_adjustments_related_stock_movement_id_fkey"
+            columns: ["related_stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_stock_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_items: {
+        Row: {
+          attivo: boolean
+          classi_hp: string[] | null
+          codice_cer: string
+          company_id: string
+          created_at: string
+          descrizione: string
+          id: string
+          item_type: Database["public"]["Enums"]["dragon_item_type"]
+          metadata: Json | null
+          pericoloso: boolean
+          stato_fisico_default: string | null
+          unita_misura_default: string
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          classi_hp?: string[] | null
+          codice_cer: string
+          company_id: string
+          created_at?: string
+          descrizione: string
+          id?: string
+          item_type?: Database["public"]["Enums"]["dragon_item_type"]
+          metadata?: Json | null
+          pericoloso?: boolean
+          stato_fisico_default?: string | null
+          unita_misura_default?: string
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          classi_hp?: string[] | null
+          codice_cer?: string
+          company_id?: string
+          created_at?: string
+          descrizione?: string
+          id?: string
+          item_type?: Database["public"]["Enums"]["dragon_item_type"]
+          metadata?: Json | null
+          pericoloso?: boolean
+          stato_fisico_default?: string | null
+          unita_misura_default?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dragon_movement_allocations: {
+        Row: {
+          allocated_quantity: number
+          created_at: string
+          id: string
+          in_movement_id: string
+          out_movement_id: string
+        }
+        Insert: {
+          allocated_quantity: number
+          created_at?: string
+          id?: string
+          in_movement_id: string
+          out_movement_id: string
+        }
+        Update: {
+          allocated_quantity?: number
+          created_at?: string
+          id?: string
+          in_movement_id?: string
+          out_movement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_movement_allocations_in_movement_id_fkey"
+            columns: ["in_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_movement_allocations_out_movement_id_fkey"
+            columns: ["out_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_production_sites: {
+        Row: {
+          active: boolean
+          activity_type: Database["public"]["Enums"]["dragon_site_activity"]
+          address: string | null
+          company_id: string
+          created_at: string
+          id: string
+          municipality: string | null
+          name: string
+          notes: string | null
+          province: string | null
+          site_code: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          activity_type?: Database["public"]["Enums"]["dragon_site_activity"]
+          address?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          municipality?: string | null
+          name: string
+          notes?: string | null
+          province?: string | null
+          site_code: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          activity_type?: Database["public"]["Enums"]["dragon_site_activity"]
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          municipality?: string | null
+          name?: string
+          notes?: string | null
+          province?: string | null
+          site_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dragon_register_movements: {
+        Row: {
+          annotations: string | null
+          cause_id: string
+          cer_code: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description_snapshot: string | null
+          destination_type: string | null
+          hp_codes: string[] | null
+          id: string
+          internal_number: string | null
+          item_id: string
+          linked_document_id: string | null
+          movement_date: string
+          movement_number: number
+          movement_type: Database["public"]["Enums"]["dragon_movement_type"]
+          note: string | null
+          parent_movement_id: string | null
+          physical_state: string | null
+          quantity: number
+          recording_date: string
+          register_id: string | null
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          source_context: Database["public"]["Enums"]["dragon_source_context"]
+          source_site_id: string | null
+          source_transform_batch_id: string | null
+          status: Database["public"]["Enums"]["dragon_movement_status"]
+          unit_of_measure: string
+          updated_at: string
+          updated_by: string | null
+          weight_status: Database["public"]["Enums"]["dragon_weight_status"]
+        }
+        Insert: {
+          annotations?: string | null
+          cause_id: string
+          cer_code: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description_snapshot?: string | null
+          destination_type?: string | null
+          hp_codes?: string[] | null
+          id?: string
+          internal_number?: string | null
+          item_id: string
+          linked_document_id?: string | null
+          movement_date?: string
+          movement_number?: number
+          movement_type: Database["public"]["Enums"]["dragon_movement_type"]
+          note?: string | null
+          parent_movement_id?: string | null
+          physical_state?: string | null
+          quantity?: number
+          recording_date?: string
+          register_id?: string | null
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          source_context?: Database["public"]["Enums"]["dragon_source_context"]
+          source_site_id?: string | null
+          source_transform_batch_id?: string | null
+          status?: Database["public"]["Enums"]["dragon_movement_status"]
+          unit_of_measure?: string
+          updated_at?: string
+          updated_by?: string | null
+          weight_status?: Database["public"]["Enums"]["dragon_weight_status"]
+        }
+        Update: {
+          annotations?: string | null
+          cause_id?: string
+          cer_code?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description_snapshot?: string | null
+          destination_type?: string | null
+          hp_codes?: string[] | null
+          id?: string
+          internal_number?: string | null
+          item_id?: string
+          linked_document_id?: string | null
+          movement_date?: string
+          movement_number?: number
+          movement_type?: Database["public"]["Enums"]["dragon_movement_type"]
+          note?: string | null
+          parent_movement_id?: string | null
+          physical_state?: string | null
+          quantity?: number
+          recording_date?: string
+          register_id?: string | null
+          sign?: Database["public"]["Enums"]["dragon_sign"]
+          source_context?: Database["public"]["Enums"]["dragon_source_context"]
+          source_site_id?: string | null
+          source_transform_batch_id?: string | null
+          status?: Database["public"]["Enums"]["dragon_movement_status"]
+          unit_of_measure?: string
+          updated_at?: string
+          updated_by?: string | null
+          weight_status?: Database["public"]["Enums"]["dragon_weight_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_register_movements_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_register_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_register_movements_linked_document_id_fkey"
+            columns: ["linked_document_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_register_movements_parent_movement_id_fkey"
+            columns: ["parent_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_register_movements_register_id_fkey"
+            columns: ["register_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_registers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_register_movements_source_site_id_fkey"
+            columns: ["source_site_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_production_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_dragon_reg_mov_batch"
+            columns: ["source_transform_batch_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_registers: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          register_code: string
+          subject_type: Database["public"]["Enums"]["dragon_subject_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          register_code: string
+          subject_type?: Database["public"]["Enums"]["dragon_subject_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          register_code?: string
+          subject_type?: Database["public"]["Enums"]["dragon_subject_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dragon_stock_movements: {
+        Row: {
+          cause_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          lot_reference: string | null
+          movement_date: string
+          note: string | null
+          quantity: number
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          source_document_id: string | null
+          source_register_movement_id: string | null
+          source_transform_batch_id: string | null
+          warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Insert: {
+          cause_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          lot_reference?: string | null
+          movement_date?: string
+          note?: string | null
+          quantity?: number
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          source_document_id?: string | null
+          source_register_movement_id?: string | null
+          source_transform_batch_id?: string | null
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Update: {
+          cause_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          lot_reference?: string | null
+          movement_date?: string
+          note?: string | null
+          quantity?: number
+          sign?: Database["public"]["Enums"]["dragon_sign"]
+          source_document_id?: string | null
+          source_register_movement_id?: string | null
+          source_transform_batch_id?: string | null
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_stock_movements_cause_id_fkey"
+            columns: ["cause_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_causes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_stock_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_stock_movements_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_stock_movements_source_register_movement_id_fkey"
+            columns: ["source_register_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_dragon_stock_mov_batch"
+            columns: ["source_transform_batch_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_transform_batch_outputs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          generated_register_movement_id: string | null
+          generated_stock_movement_id: string | null
+          id: string
+          output_item_id: string
+          output_quantity: number
+          warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          generated_register_movement_id?: string | null
+          generated_stock_movement_id?: string | null
+          id?: string
+          output_item_id: string
+          output_quantity: number
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          generated_register_movement_id?: string | null
+          generated_stock_movement_id?: string | null
+          id?: string
+          output_item_id?: string
+          output_quantity?: number
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_transform_batch_output_generated_register_movement__fkey"
+            columns: ["generated_register_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batch_outputs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batch_outputs_generated_stock_movement_id_fkey"
+            columns: ["generated_stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_stock_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batch_outputs_output_item_id_fkey"
+            columns: ["output_item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_transform_batches: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          execution_date: string
+          id: string
+          input_quantity: number
+          model_id: string
+          notes: string | null
+          source_item_id: string
+          source_register_movement_id: string | null
+          status: Database["public"]["Enums"]["dragon_batch_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          execution_date?: string
+          id?: string
+          input_quantity: number
+          model_id: string
+          notes?: string | null
+          source_item_id: string
+          source_register_movement_id?: string | null
+          status?: Database["public"]["Enums"]["dragon_batch_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          execution_date?: string
+          id?: string
+          input_quantity?: number
+          model_id?: string
+          notes?: string | null
+          source_item_id?: string
+          source_register_movement_id?: string | null
+          status?: Database["public"]["Enums"]["dragon_batch_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_transform_batches_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batches_source_item_id_fkey"
+            columns: ["source_item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batches_source_register_movement_id_fkey"
+            columns: ["source_register_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_register_movements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_transform_model_outputs: {
+        Row: {
+          created_at: string
+          id: string
+          model_id: string
+          notes: string | null
+          output_item_id: string
+          output_type: Database["public"]["Enums"]["dragon_item_type"]
+          quantity_mode: Database["public"]["Enums"]["dragon_quantity_mode"]
+          quantity_value: number
+          warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_id: string
+          notes?: string | null
+          output_item_id: string
+          output_type?: Database["public"]["Enums"]["dragon_item_type"]
+          quantity_mode?: Database["public"]["Enums"]["dragon_quantity_mode"]
+          quantity_value?: number
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_id?: string
+          notes?: string | null
+          output_item_id?: string
+          output_type?: Database["public"]["Enums"]["dragon_item_type"]
+          quantity_mode?: Database["public"]["Enums"]["dragon_quantity_mode"]
+          quantity_value?: number
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_transform_model_outputs_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_model_outputs_output_item_id_fkey"
+            columns: ["output_item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_transform_models: {
+        Row: {
+          active: boolean
+          code: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          input_item_id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          input_item_id: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          input_item_id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_transform_models_input_item_id_fkey"
+            columns: ["input_item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -4213,6 +5036,18 @@ export type Database = {
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
+      dragon_get_stock_balance: {
+        Args: {
+          p_company_id: string
+          p_item_id: string
+          p_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Returns: number
+      }
+      dragon_next_movement_number: {
+        Args: { p_company_id: string; p_register_id: string }
+        Returns: number
+      }
       ensure_user_has_fir_draft: {
         Args: { p_user_id: string }
         Returns: string
@@ -4290,6 +5125,50 @@ export type Database = {
       app_role: "admin" | "user"
       call_status: "ringing" | "answered" | "ended" | "missed" | "ai_fallback"
       call_type: "audio" | "video"
+      dragon_adjustment_type: "POSITIVE" | "NEGATIVE"
+      dragon_audit_action:
+        | "CREATE"
+        | "UPDATE"
+        | "SOFT_DELETE"
+        | "RESTORE"
+        | "CONFIRM"
+        | "CANCEL"
+        | "ADJUST"
+      dragon_batch_status: "BOZZA" | "CONFERMATA" | "ANNULLATA"
+      dragon_cause_direction: "IN" | "OUT" | "TRANSFORM" | "ADJUST"
+      dragon_cause_scope: "REGISTER" | "STOCK" | "BOTH"
+      dragon_document_type:
+        | "FIR"
+        | "DDT_IN"
+        | "DDT_OUT"
+        | "FORMULARIO_MODELLO"
+        | "ALTRO"
+      dragon_item_type: "WASTE_CER" | "MPS" | "MATERIAL"
+      dragon_movement_status:
+        | "BOZZA"
+        | "CONSOLIDATO"
+        | "STAMPATO"
+        | "DA_NON_STAMPARE"
+        | "DA_NON_INVIARE_RENTRI"
+        | "INVIATO_RENTRI"
+      dragon_movement_type: "CARICO" | "SCARICO"
+      dragon_quantity_mode: "PERCENT" | "FIXED"
+      dragon_sign: "PLUS" | "MINUS"
+      dragon_site_activity:
+        | "ND"
+        | "MANUTENZIONE"
+        | "ASSISTENZA_SANITARIA"
+        | "CANTIERE_TEMPORANEO_MOBILE"
+        | "BONIFICA_AMIANTO"
+      dragon_source_context: "UL" | "FUORI_UL"
+      dragon_stock_sign: "PLUS" | "MINUS" | "NONE"
+      dragon_subject_type:
+        | "PRODUTTORE"
+        | "DESTINATARIO"
+        | "TRASPORTATORE"
+        | "INTERMEDIARIO"
+      dragon_warehouse_scope: "WASTE" | "MPS"
+      dragon_weight_status: "DEFINITIVO" | "DA_VERIFICARE_A_DESTINO"
       fir_stato:
         | "DRAFT"
         | "READY_TO_SEND"
@@ -4437,6 +5316,55 @@ export const Constants = {
       app_role: ["admin", "user"],
       call_status: ["ringing", "answered", "ended", "missed", "ai_fallback"],
       call_type: ["audio", "video"],
+      dragon_adjustment_type: ["POSITIVE", "NEGATIVE"],
+      dragon_audit_action: [
+        "CREATE",
+        "UPDATE",
+        "SOFT_DELETE",
+        "RESTORE",
+        "CONFIRM",
+        "CANCEL",
+        "ADJUST",
+      ],
+      dragon_batch_status: ["BOZZA", "CONFERMATA", "ANNULLATA"],
+      dragon_cause_direction: ["IN", "OUT", "TRANSFORM", "ADJUST"],
+      dragon_cause_scope: ["REGISTER", "STOCK", "BOTH"],
+      dragon_document_type: [
+        "FIR",
+        "DDT_IN",
+        "DDT_OUT",
+        "FORMULARIO_MODELLO",
+        "ALTRO",
+      ],
+      dragon_item_type: ["WASTE_CER", "MPS", "MATERIAL"],
+      dragon_movement_status: [
+        "BOZZA",
+        "CONSOLIDATO",
+        "STAMPATO",
+        "DA_NON_STAMPARE",
+        "DA_NON_INVIARE_RENTRI",
+        "INVIATO_RENTRI",
+      ],
+      dragon_movement_type: ["CARICO", "SCARICO"],
+      dragon_quantity_mode: ["PERCENT", "FIXED"],
+      dragon_sign: ["PLUS", "MINUS"],
+      dragon_site_activity: [
+        "ND",
+        "MANUTENZIONE",
+        "ASSISTENZA_SANITARIA",
+        "CANTIERE_TEMPORANEO_MOBILE",
+        "BONIFICA_AMIANTO",
+      ],
+      dragon_source_context: ["UL", "FUORI_UL"],
+      dragon_stock_sign: ["PLUS", "MINUS", "NONE"],
+      dragon_subject_type: [
+        "PRODUTTORE",
+        "DESTINATARIO",
+        "TRASPORTATORE",
+        "INTERMEDIARIO",
+      ],
+      dragon_warehouse_scope: ["WASTE", "MPS"],
+      dragon_weight_status: ["DEFINITIVO", "DA_VERIFICARE_A_DESTINO"],
       fir_stato: [
         "DRAFT",
         "READY_TO_SEND",
