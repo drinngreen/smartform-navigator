@@ -30,6 +30,10 @@ export interface DragonItem {
   item_type: DragonItemType;
   attivo: boolean;
   metadata: Record<string, unknown>;
+  fattore_conversione: number;
+  tipo_mps_eow: string | null;
+  tipo_mps_eow_desc: string | null;
+  default_warehouse_id: string | null;
   created_at: string;
   updated_at: string;
 }
