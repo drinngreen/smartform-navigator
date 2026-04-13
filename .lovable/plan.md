@@ -1,46 +1,78 @@
 
 
-# Piano: Fix Modulo Alternativo vuoto + Firma Impianto RENTRI
+# Piano Raffinato: Macro-area "Registro & Magazzino" — Dragon Rifiuti 2
 
-## Problema principale
-I file `.js` nella cartella `src/components/fir/` (e altrove) sono copie standalone compilate da vecchie versioni dei `.tsx`. Vite risolve `.js` prima di `.tsx`, quindi **tutto il codice aggiornato** (hydration draftData, FormBridge, props `assignedUserId`) **non viene mai caricato**. Questo spiega:
+## Separazione architetturale (principio tassativo)
 
-1. **Modulo vuoto**: il `.js` non ha la logica `buildDraftFieldValues` né la prop `draftData`
-2. **Dark Lemon non riconosce i campi**: il `.js` non ha `useFormBridgeFields`
-3. **Dark Lemon non può creare bozze**: il FormBridge `.js` non ha `resolveField`
+Un `dragon_register_movement` può generare **zero o più** `dragon_stock_movements`. Una `dragon_transform_batch` genera **sia** `dragon_register_movements` **sia** `dragon_stock_movements`. Queste tre entità non devono MAI essere fuse in un'unica tabella. Sono livelli distinti:
 
-## Soluzione
-
-### Step 1 — Eliminare tutti i file `.js` shadow (o convertirli in bridge)
-Sostituire ogni `.js` duplicato con un semplice re-export dal `.tsx`:
-
-```js
-// src/components/fir/FIRAlternativeForm.js
-export { FIRAlternativeForm } from "./FIRAlternativeForm.tsx";
+```text
+REGISTER (normativo)  ──1:N──▶  STOCK (fisico)
+                                    ▲
+TRANSFORM (processo)  ──1:N──▶  REGISTER  ──1:N──▶  STOCK
 ```
 
-File da convertire in bridge (1 riga):
-- `src/components/fir/FIRAlternativeForm.js` (934 righe → 1)
-- `src/components/fir/FIRRentriActions.js` (134 righe → 1)
-- `src/components/fir/FIRFormComplete.js`
-- `src/components/fir/FIRTrafficLight.js`
-- `src/components/fir/MNFIRFormComplete.js`
-- `src/contexts/FormBridgeContext.js`
-- `src/hooks/useFormBridge.js`
+- **Register**: obblighi normativi, cronologia, progressivi, stati RENTRI
+- **Stock**: effetto fisico su giacenza, derivato da register o da transform
+- **Transform**: lavorazione/cernita, genera entrambi i livelli superiori
 
-Verificare e convertire anche tutti gli altri `.js` shadow in `src/` che duplicano un `.tsx`.
+## Campi minimi espliciti delle tabelle chiave
 
-### Step 2 — Verifica build
-Eseguire `npm run build` per confermare che non ci siano errori di importazione circolare o mancanti.
+### dragon_register_movements
+`id`, `company_id`, `register_id`, `movement_number`, `movement_date`, `recording_date`, `item_id`, `cer_code` (denorm.), `movement_type` (CARICO|SCARICO), `cause_id`, `quantity`, `unit_of_measure`, `sign` (PLUS|MINUS), `source_site_id` (nullable), `source_context` (UL|FUORI_UL), `linked_document_id` (nullable), `weight_status`, `status` (BOZZA→CONSOLIDATO→STAMPATO→INVIATO_RENTRI), `parent_movement_id`, `source_transform_batch_id`, `created_by`, `created_at`, `updated_at`, `deleted_at`
 
-### Step 3 — Firma Impianto RENTRI (già implementata, ora visibile)
-La logica di firma impianto è già stata scritta nel `.tsx` di `DevImpiantoModule` e in `rentriVpsApi.ts` (funzioni `listaFirInArrivoDestinatario` e `accettaFirInArrivoDestinatario`). Una volta risolto il problema dei shadow `.js`, queste funzionalità diventeranno operative automaticamente.
+### dragon_stock_movements
+`id`, `company_id`, `item_id`, `movement_date`, `cause_id`, `quantity`, `sign` (PLUS|MINUS), `warehouse_scope` (WASTE|MPS), `source_register_movement_id`, `source_transform_batch_id`, `source_document_id`, `lot_reference`, `note`, `created_by`, `created_at`
 
-## Dettagli tecnici
+### dragon_transform_batches
+`id`, `company_id`, `model_id`, `execution_date`, `source_register_movement_id`, `source_item_id`, `input_quantity`, `status` (BOZZA|CONFERMATA|ANNULLATA), `notes`, `created_by`, `created_at`
 
-**Perché i `.js` esistono?** Sono stati generati in passato (probabilmente da una build o transpilazione) e mai rimossi. Vite segue l'ordine di risoluzione: `.mjs` → `.js` → `.mts` → `.ts` → `.jsx` → `.tsx`. Il `.js` vince sempre sul `.tsx`.
+## RLS: company_id unico, niente legacy
 
-**Perché un bridge e non la cancellazione?** Alcuni import sparsi nel progetto (altri `.js` legacy) potrebbero puntare esplicitamente a `.js`. Il bridge garantisce compatibilità senza rotture.
+Tutte le tabelle `dragon_*` usano **esclusivamente** `company_id` (UUID). Non si usano mai le vecchie colonne `organization_id` o `tenant_id`. Ogni query UI passa il `company_id` corrente dal profilo MN (via `mnContextStore` → tenant UUID). Le RLS policy saranno:
+- SELECT/INSERT/UPDATE: `company_id = get_user_tenant(auth.uid())` OR `has_role(auth.uid(), 'admin')`
+- Nessun DELETE diretto (soft delete via `deleted_at`)
 
-**Impatto**: tutti i problemi segnalati (modulo vuoto, Dark Lemon che non compila, firma non funzionante) sono causati dalla stessa root cause e si risolvono con un singolo intervento.
+## Cernite: logica input/output esplicita
+
+Quando si conferma un `dragon_transform_batch`:
+1. Crea **uno scarico di lavorazione** (`SCARICO_PER_LAVORAZIONE`) su `dragon_register_movements` per l'input
+2. Crea **uno o più carichi** (`CARICO_DA_LAVORAZIONE`) su `dragon_register_movements` per ogni output di tipo `WASTE_CER`
+3. Crea **movimenti di magazzino** su `dragon_stock_movements` per ogni output di tipo `MPS` o `MATERIAL` (warehouse_scope = MPS)
+4. Tutti i record sono collegati via `source_transform_batch_id`
+5. L'annullamento crea movimenti inversi, non cancella righe
+
+## Dark Lemon: tabelle dragon_* esclusive
+
+In FASE 6, il system prompt di Dark Lemon sarà aggiornato con regola esplicita: "Quando l'utente chiede funzioni su registro, magazzino, giacenze, cernite o lavorazioni, usa **sempre** le tabelle `dragon_*` e **mai** quelle legacy (`register_movements`, `movimenti_impianto`, `cernite`, `cernita_output`)."
+
+## Fasi di implementazione
+
+### FASE 1 — Database
+- 16 enum, 14 tabelle `dragon_*`, indici, RLS, trigger per stock auto-generation, funzione progressivo
+- Seed 13 causali pre-caricate
+
+### FASE 2 — Anagrafiche CRUD
+- Items (CER/MPS/MAT), Cantieri, Documenti, Registri
+- Selettori riutilizzabili (CER picker, causale picker)
+
+### FASE 3 — Registro cronologico
+- Griglia con filtri avanzati, export Excel
+- Form nuovo movimento dinamico (campi guidati da causale)
+- Wizard carico/scarico contestuale (2 movimenti atomici + stock)
+- Scarico cumulativo con allocazioni FIFO (`dragon_movement_allocations`)
+
+### FASE 4 — Magazzino
+- Vista saldi per item (WASTE vs MPS), ledger movimenti
+- Rettifiche (aggiunta/sottrazione/inventariale) con motivo obbligatorio
+- Dati demo per test iniziali
+
+### FASE 5 — Cernite/Lavorazioni
+- CRUD modelli (input → N output con % o fisso)
+- Wizard esecuzione batch con logica input/output sopra descritta
+- Annullamento con movimenti inversi
+
+### FASE 6 — Audit + Dark Lemon
+- Vista audit trail (`dragon_audit_logs`)
+- Aggiornamento system prompt Dark Lemon con consapevolezza esclusiva `dragon_*`
 
