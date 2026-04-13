@@ -7,6 +7,7 @@ import { useMNContextStore } from "@/stores/mnContextStore";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 export default function DragonCaricoScaricoPage() {
   const { context } = useParams<{ context: string }>();
@@ -49,6 +50,7 @@ export default function DragonCaricoScaricoPage() {
 
   return (
     <MNAdminLayout title="Carico/Scarico Contestuale" subtitle="Dragon Rifiuti 2 — Wizard operazione contestuale">
+      <DragonBackButton />
       <div className="max-w-2xl mx-auto">
         <div className="bg-card/60 border border-border/30 rounded-xl p-6">
           <DragonCaricoScaricoWizard

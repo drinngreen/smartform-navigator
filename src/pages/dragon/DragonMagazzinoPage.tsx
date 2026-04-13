@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Package, Recycle, Plus, Minus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { DragonWarehouseScope, DragonAdjustmentType } from "@/types/dragon";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 export default function DragonMagazzinoPage() {
   const [scope, setScope] = useState<DragonWarehouseScope | undefined>(undefined);
@@ -108,6 +109,7 @@ export default function DragonMagazzinoPage() {
 
   return (
     <MNAdminLayout title="Magazzino" subtitle="Dragon Rifiuti 2 — Giacenze e movimenti fisici">
+      <DragonBackButton />
       <Tabs defaultValue="balances" className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>

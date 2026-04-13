@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import type { DragonItemType } from "@/types/dragon";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const typeLabels: Record<string, string> = { WASTE_CER: "Rifiuto CER", MPS: "MPS", MATERIAL: "Materiale" };
 const typeColors: Record<string, string> = { WASTE_CER: "bg-amber-500/20 text-amber-300", MPS: "bg-blue-500/20 text-blue-300", MATERIAL: "bg-violet-500/20 text-violet-300" };
@@ -33,6 +34,7 @@ export default function DragonArticoliPage() {
   return (
     <MNAdminLayout title="Articoli / CER / MPS" subtitle="Dragon Rifiuti 2 — Anagrafica articoli ambientali">
       <div className="space-y-4">
+        <DragonBackButton />
         <div className="flex flex-wrap justify-between items-center gap-3">
           <Input placeholder="Cerca codice o descrizione..." className="w-64 h-9" value={filter} onChange={e => setFilter(e.target.value)} />
           <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Articolo</Button>

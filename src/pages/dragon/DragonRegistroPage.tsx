@@ -13,6 +13,7 @@ import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers } from "l
 import { DragonRegisterMovement, DragonMovementStatus } from "@/types/dragon";
 import { DragonMovementForm } from "@/components/dragon/DragonMovementForm";
 import { exportToExcel } from "@/lib/exportUtils";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const statusColors: Record<string, string> = {
   BOZZA: "bg-amber-500/20 text-amber-300 border-amber-500/30",
@@ -62,6 +63,7 @@ export default function DragonRegistroPage() {
     <MNAdminLayout title="Registro Cronologico" subtitle="Dragon Rifiuti 2 — Movimenti di registro">
       <div className="space-y-4">
         {/* Toolbar */}
+        <DragonBackButton />
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex gap-2 items-center flex-wrap">
             <Input placeholder="Cerca CER..." className="w-40 h-9" value={filters.cerCode || ""} onChange={(e) => setFilters(f => ({ ...f, cerCode: e.target.value || undefined }))} />

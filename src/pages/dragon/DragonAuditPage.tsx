@@ -3,6 +3,7 @@ import { useDragonAudit } from "@/hooks/dragon/useDragonAudit";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Shield } from "lucide-react";
+import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
 const actionColors: Record<string, string> = {
   CREATE: "bg-emerald-500/20 text-emerald-300",
@@ -20,6 +21,7 @@ export default function DragonAuditPage() {
   return (
     <MNAdminLayout title="Audit Trail" subtitle="Dragon Rifiuti 2 — Cronologia eventi e tracciabilità">
       <div className="space-y-4">
+        <DragonBackButton />
         <p className="text-sm text-muted-foreground"><Shield className="h-4 w-4 inline mr-1" />{logs.length} eventi registrati</p>
 
         <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
