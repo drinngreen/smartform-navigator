@@ -15,6 +15,7 @@ import {
   Package,
   Users,
 } from "lucide-react";
+import logoDragon from "@/assets/logo-dragon.png";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
 import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermediarioModule";
@@ -54,6 +55,13 @@ export default function MNDevDashboardPage() {
           >
             <Warehouse className="h-4 w-4" />
             Impianto
+          </TabsTrigger>
+          <TabsTrigger
+            value="magazzino-dev"
+            className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
+          >
+            <img src={logoDragon} alt="Dragon" className="h-5 w-5" />
+            Magazzino Dev
           </TabsTrigger>
           <TabsTrigger
             value="conto-proprio"
@@ -131,13 +139,6 @@ export default function MNDevDashboardPage() {
           >
             <Users className="h-4 w-4" />
             Personale
-          </TabsTrigger>
-          <TabsTrigger
-            value="magazzino-dev"
-            className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400"
-          >
-            <Package className="h-4 w-4" />
-            Magazzino Dev
           </TabsTrigger>
         </TabsList>
 
