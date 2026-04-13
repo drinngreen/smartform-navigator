@@ -146,6 +146,7 @@ export interface DragonStockMovement {
   quantity: number;
   sign: DragonSign;
   warehouse_scope: DragonWarehouseScope;
+  warehouse_id: string | null;
   source_register_movement_id: string | null;
   source_transform_batch_id: string | null;
   source_document_id: string | null;
