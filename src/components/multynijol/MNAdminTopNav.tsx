@@ -41,6 +41,15 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", iconImage: iconDashboard, path: "", color: "251, 191, 36" },
+  { label: "Dragon", iconImage: logoDragon, path: "/dragon/registro", color: "239, 68, 68", subItems: [
+    { label: "Registro", iconImage: iconRegistroFir, path: "/dragon/registro", color: "249, 115, 22" },
+    { label: "Magazzino", iconImage: iconPrivati, path: "/dragon/magazzino", color: "20, 184, 166" },
+    { label: "Articoli CER", iconImage: iconProduttore, path: "/dragon/articoli", color: "59, 130, 246" },
+    { label: "Cantieri", iconImage: iconGpsFlotta, path: "/dragon/cantieri", color: "6, 182, 212" },
+    { label: "Cernite", iconImage: iconGestioneFormulari, path: "/dragon/cernite/modelli", color: "34, 197, 94" },
+    { label: "Documenti", iconImage: iconFatturazione, path: "/dragon/documenti", color: "236, 72, 153" },
+    { label: "Audit Trail", iconImage: iconAnalytics, path: "/dragon/audit", color: "168, 85, 247" },
+  ] },
   { label: "Registro", iconImage: iconRegistroFir, path: "/registro", color: "249, 115, 22" },
   { label: "RENTRI", iconImage: iconRentri, path: "/rentri", color: "236, 72, 153" },
   { label: "Trasportatori", iconImage: iconPersonale, path: "/trasportatori", color: "6, 182, 212" },
