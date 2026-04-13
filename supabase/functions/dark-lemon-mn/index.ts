@@ -161,7 +161,56 @@ id, tenant_id, impianto_id, nome, cognome, codice_fiscale, tipo_utenza, numero_t
 ### privati_conferimenti
 id, impianto_id, tenant_id, privato_id, cer, kg_pesati, importo_pagato, data.
 
-### ricevute_privati, erp_fatture_vendita, erp_righe_fatture_vendita, magazzino_giacenze, movimenti_impianto, cernite, messages, social_posts.
+### ricevute_privati, erp_fatture_vendita, erp_righe_fatture_vendita, messages, social_posts.
+
+## ⚠️ DRAGON RIFIUTI 2 — TABELLE ESCLUSIVE PER REGISTRO, MAGAZZINO, CERNITE
+REGOLA TASSATIVA: Quando l'utente chiede funzioni su registro cronologico di carico/scarico, magazzino rifiuti, giacenze, cernite, lavorazioni, movimenti di registro o stock, usa SEMPRE le tabelle dragon_* e MAI quelle legacy (register_movements, movimenti_impianto, cernite, cernita_output, magazzino_giacenze).
+
+### dragon_items (Articoli CER/MPS/Materiali)
+id, company_id, codice_cer, descrizione, pericoloso, classi_hp[], stato_fisico_default, unita_misura_default, item_type (WASTE_CER|MPS|MATERIAL), attivo.
+
+### dragon_causes (Causali movimento)
+id, code, name, scope (REGISTER|STOCK|BOTH), direction (IN|OUT|TRANSFORM|ADJUST), requires_fir, requires_site, generates_stock_movement, stock_sign (PLUS|MINUS|NONE).
+
+### dragon_registers (Registri cronologici)
+id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARIO|...), active.
+
+### dragon_register_movements (Movimenti registro — livello NORMATIVO)
+id, company_id, register_id, movement_number (auto), movement_date, recording_date, item_id, cer_code, movement_type (CARICO|SCARICO), cause_id, quantity, unit_of_measure, sign (PLUS|MINUS), source_site_id, source_context (UL|FUORI_UL), linked_document_id, weight_status, status (BOZZA→CONSOLIDATO→STAMPATO→INVIATO_RENTRI), parent_movement_id, source_transform_batch_id, deleted_at.
+
+### dragon_stock_movements (Movimenti magazzino — livello FISICO)
+id, company_id, item_id, movement_date, cause_id, quantity, sign (PLUS|MINUS), warehouse_scope (WASTE|MPS), source_register_movement_id, source_transform_batch_id, lot_reference, note.
+
+### dragon_production_sites (Cantieri/Luoghi di produzione)
+id, company_id, site_code, name, address, municipality, province, activity_type, active.
+
+### dragon_documents (Documenti collegati)
+id, company_id, document_type (FIR|DDT_IN|DDT_OUT|...), number, document_date, counterparty_id, notes, status.
+
+### dragon_transform_models (Modelli di cernita/lavorazione)
+id, company_id, code, name, input_item_id, description, active.
+Output: dragon_transform_model_outputs — output_item_id, output_type, quantity_mode (PERCENT|FIXED), quantity_value, warehouse_scope.
+
+### dragon_transform_batches (Batch esecuzione cernita)
+id, company_id, model_id, execution_date, source_item_id, input_quantity, status (BOZZA|CONFERMATA|ANNULLATA), notes.
+Output: dragon_transform_batch_outputs — output_item_id, output_quantity, warehouse_scope, generated_register_movement_id, generated_stock_movement_id.
+
+### dragon_inventory_adjustments (Rettifiche inventariali)
+id, company_id, item_id, adjustment_type (POSITIVE|NEGATIVE), quantity, reason (obbligatorio), related_stock_movement_id.
+
+### dragon_movement_allocations (Allocazioni FIFO scarico cumulativo)
+id, out_movement_id, in_movement_id, allocated_quantity.
+
+### dragon_audit_logs (Audit trail)
+id, entity_type, entity_id, action_type (CREATE|UPDATE|SOFT_DELETE|RESTORE|CONFIRM|CANCEL|ADJUST), before_state, after_state, performed_by, performed_at, reason.
+
+### RELAZIONI CHIAVE DRAGON:
+- Un dragon_register_movement può generare 0..N dragon_stock_movements (via trigger su CONSOLIDATO)
+- Un dragon_transform_batch genera sia dragon_register_movements sia dragon_stock_movements (tutti collegati via source_transform_batch_id)
+- L'annullamento di un batch crea MOVIMENTI INVERSI, non cancella righe
+- Le rettifiche inventariali creano un dragon_stock_movement + un dragon_inventory_adjustments con motivo obbligatorio
+- Usa dragon_get_stock_balance(company_id, item_id, scope?) per calcolare giacenze
+
 
 ## COMPETENZA NORMATIVA
 Sei esperto di:
