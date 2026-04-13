@@ -10,6 +10,7 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import intermediazionIcon from "@/assets/intermediazione-icon.png";
 import systemPromptIcon from "@/assets/system-prompt-icon.png";
 import iconDashboard from "@/assets/menu-icons/dashboard.png";
+import iconGpsFlotta from "@/assets/menu-icons/gps_flotta.png";
 import iconPersonale from "@/assets/menu-icons/personale.png";
 import iconRegistroFir from "@/assets/menu-icons/registro_fir.png";
 import iconRentri from "@/assets/menu-icons/rentri.png";
@@ -17,11 +18,21 @@ import iconFatturazione from "@/assets/menu-icons/fatturazione.png";
 import iconGestioneFormulari from "@/assets/menu-icons/gestione_formulari.png";
 import iconReportChiamate from "@/assets/menu-icons/report_chiamate.png";
 import iconZoliMessages from "@/assets/menu-icons/zoli_messages.png";
+import iconAnalytics from "@/assets/menu-icons/analytics.png";
 import iconPrivati from "@/assets/menu-icons/privati.png";
 import iconProduttore from "@/assets/menu-icons/produttore.png";
 import iconDestinatario from "@/assets/menu-icons/destinatario.png";
 const navItems = [
     { label: "Dashboard", iconImage: iconDashboard, path: "", color: "251, 191, 36" },
+    { label: "Dragon", iconImage: logoDragon, path: "/dragon/registro", color: "239, 68, 68", subItems: [
+            { label: "Registro", iconImage: iconRegistroFir, path: "/dragon/registro", color: "249, 115, 22" },
+            { label: "Magazzino", iconImage: iconPrivati, path: "/dragon/magazzino", color: "20, 184, 166" },
+            { label: "Articoli CER", iconImage: iconProduttore, path: "/dragon/articoli", color: "59, 130, 246" },
+            { label: "Cantieri", iconImage: iconGpsFlotta, path: "/dragon/cantieri", color: "6, 182, 212" },
+            { label: "Cernite", iconImage: iconGestioneFormulari, path: "/dragon/cernite/modelli", color: "34, 197, 94" },
+            { label: "Documenti", iconImage: iconFatturazione, path: "/dragon/documenti", color: "236, 72, 153" },
+            { label: "Audit Trail", iconImage: iconAnalytics, path: "/dragon/audit", color: "168, 85, 247" },
+        ] },
     { label: "Registro", iconImage: iconRegistroFir, path: "/registro", color: "249, 115, 22" },
     { label: "RENTRI", iconImage: iconRentri, path: "/rentri", color: "236, 72, 153" },
     { label: "Trasportatori", iconImage: iconPersonale, path: "/trasportatori", color: "6, 182, 212" },
