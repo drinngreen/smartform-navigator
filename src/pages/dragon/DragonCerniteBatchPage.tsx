@@ -75,9 +75,9 @@ export default function DragonCerniteBatchPage() {
       if (!model || !model.outputs?.length) throw new Error("Modello senza output definiti");
 
       // Find causes
-      const scaricoCause = causes.find(c => c.code === "SCAR_LAV");
-      const caricoCause = causes.find(c => c.code === "CAR_LAV");
-      if (!scaricoCause || !caricoCause) throw new Error("Causali SCAR_LAV / CAR_LAV non trovate");
+      const scaricoCause = causes.find(c => c.code === "SCARICO_PER_LAVORAZIONE");
+      const caricoCause = causes.find(c => c.code === "CARICO_DA_LAVORAZIONE");
+      if (!scaricoCause || !caricoCause) throw new Error("Causali SCARICO_PER_LAVORAZIONE / CARICO_DA_LAVORAZIONE non trovate");
 
       // Find a register
       const { data: registers } = await supabase
@@ -220,8 +220,8 @@ export default function DragonCerniteBatchPage() {
       if (!batch) throw new Error("Batch non trovato");
       if (batch.status !== "CONFERMATA") throw new Error("Solo batch CONFERMATI possono essere annullati");
 
-      const scaricoCause = causes.find(c => c.code === "SCAR_LAV");
-      const caricoCause = causes.find(c => c.code === "CAR_LAV");
+      const scaricoCause = causes.find(c => c.code === "SCARICO_PER_LAVORAZIONE");
+      const caricoCause = causes.find(c => c.code === "CARICO_DA_LAVORAZIONE");
       if (!scaricoCause || !caricoCause) throw new Error("Causali non trovate");
 
       const today = new Date().toISOString().split("T")[0];

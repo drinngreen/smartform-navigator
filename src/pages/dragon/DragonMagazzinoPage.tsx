@@ -45,8 +45,7 @@ export default function DragonMagazzinoPage() {
     }
     setSubmitting(true);
     try {
-      // Find the RETT_POS or RETT_NEG cause
-      const adjustCauseCode = adjustForm.adjustment_type === "POSITIVE" ? "RETT_POS" : "RETT_NEG";
+      const adjustCauseCode = adjustForm.adjustment_type === "POSITIVE" ? "RETTIFICA_GIACENZA_POSITIVA" : "RETTIFICA_GIACENZA_NEGATIVA";
       const adjustCause = causes.find(c => c.code === adjustCauseCode);
       if (!adjustCause) throw new Error(`Causale ${adjustCauseCode} non trovata`);
 
