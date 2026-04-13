@@ -502,21 +502,18 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
       }
 
       const cliente = args.cliente || "multy";
+      const unitIdMap: Record<string, string> = {
+        multy: "OP2501XMQ021914-TO0001",
+        niyol: "OP2501SXW021767-TO0001",
+        global: "OP2501RMK022692-TO0001",
+      };
       const tenantMap: Record<string, string> = {
         multy: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
         niyol: "819c783e-78dd-4080-8265-802e75b0d813",
         global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
       };
       const tenantId = tenantMap[cliente] || tenantMap.multy;
-
-      const { data: impianto } = await db.from("impianti")
-        .select("codice_rentri")
-        .eq("tenant_id", tenantId)
-        .limit(1)
-        .single();
-
-      const numIscrSito = impianto?.codice_rentri || "";
-      if (!numIscrSito) return { error: "Codice RENTRI impianto non configurato" };
+      const numIscrSito = unitIdMap[cliente] || unitIdMap.multy;
 
       const dataOra = args.data_ora_ricezione || new Date().toISOString();
       const esito = args.esito || "ACCETTATO_TOTALMENTE";
