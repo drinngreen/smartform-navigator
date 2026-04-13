@@ -408,6 +408,12 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
       if (!roleCheck) return { error: "⛔ Solo gli admin possono consultare i FIR in arrivo RENTRI" };
 
       const cliente = args.cliente || "multy";
+      // identificativo_soggetto = Codice Fiscale del tenant
+      const cfMap: Record<string, string> = {
+        multy: "12347770013",
+        niyol: "09879800010",
+        global: "08934760961",
+      };
       const unitIdMap: Record<string, string> = {
         multy: "OP2501XMQ021914-TO0001",
         niyol: "OP2501SXW021767-TO0001",
@@ -419,6 +425,7 @@ async function executeTool(db: any, userId: string, toolName: string, args: any)
         global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
       };
       const tenantId = tenantMap[cliente] || tenantMap.multy;
+      const codiceFiscale = cfMap[cliente] || cfMap.multy;
       const numIscrSito = unitIdMap[cliente] || unitIdMap.multy;
 
       // Call VPS proxy to get pending FIR
