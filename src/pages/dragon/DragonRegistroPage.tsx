@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Filter, Download, CheckCircle, FileText } from "lucide-react";
+import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers } from "lucide-react";
 import { DragonRegisterMovement, DragonMovementStatus } from "@/types/dragon";
 import { DragonMovementForm } from "@/components/dragon/DragonMovementForm";
 import { exportToExcel } from "@/lib/exportUtils";
@@ -30,12 +30,15 @@ const typeColors: Record<string, string> = {
 
 export default function DragonRegistroPage() {
   const { context } = useParams<{ context: string }>();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [detail, setDetail] = useState<DragonRegisterMovement | null>(null);
   const [filters, setFilters] = useState<{ cerCode?: string; status?: DragonMovementStatus; movementType?: 'CARICO' | 'SCARICO' }>({});
 
   const { movements, isLoading, createMovement, consolidate } = useDragonRegister(filters);
   const { causes } = useDragonCauses();
+
+  const prefix = `/mn/admin/${context}/dragon`;
 
   const handleExport = () => {
     exportToExcel(
@@ -81,8 +84,10 @@ export default function DragonRegistroPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" /> Export</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/scarico-cumulativo`)}><Layers className="h-4 w-4 mr-1" /> Scarico Cumulativo</Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/carico-scarico`)}><ArrowLeftRight className="h-4 w-4 mr-1" /> Carico/Scarico</Button>
             <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Movimento</Button>
           </div>
         </div>
