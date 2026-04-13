@@ -6,7 +6,7 @@ import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { useMNContextStore } from "@/stores/mnContextStore";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Package, Recycle, Plus, Minus, RotateCcw } from "lucide-react";
+import { Package, Recycle, Plus, Minus, RotateCcw, FileDown } from "lucide-react";
 import { toast } from "sonner";
-import type { DragonWarehouseScope, DragonAdjustmentType } from "@/types/dragon";
+import type { DragonWarehouseScope, DragonAdjustmentType, DragonStockMovement } from "@/types/dragon";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
+import { DragonMovementDetail } from "@/components/dragon/DragonMovementDetail";
+import { DragonNewMovementForm } from "@/components/dragon/DragonNewMovementForm";
 
 export default function DragonMagazzinoPage() {
   const [scope, setScope] = useState<DragonWarehouseScope | undefined>(undefined);
@@ -29,6 +31,7 @@ export default function DragonMagazzinoPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
+  // Adjustment state
   const [showAdjust, setShowAdjust] = useState(false);
   const [adjustForm, setAdjustForm] = useState({
     item_id: "",
@@ -38,6 +41,26 @@ export default function DragonMagazzinoPage() {
     warehouse_scope: "WASTE" as DragonWarehouseScope,
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // New movement form
+  const [showNewMov, setShowNewMov] = useState(false);
+
+  // Movement detail dialog
+  const [detailMov, setDetailMov] = useState<DragonStockMovement | null>(null);
+
+  // Ledger filters
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterItemId, setFilterItemId] = useState("");
+  const [filterCauseId, setFilterCauseId] = useState("");
+
+  const filteredMovements = stockMovements.filter(m => {
+    if (filterDateFrom && m.movement_date < filterDateFrom) return false;
+    if (filterDateTo && m.movement_date > filterDateTo) return false;
+    if (filterItemId && m.item_id !== filterItemId) return false;
+    if (filterCauseId && m.cause_id !== filterCauseId) return false;
+    return true;
+  });
 
   const handleAdjust = async () => {
     if (!adjustForm.item_id || !adjustForm.quantity || !adjustForm.reason) {
@@ -53,7 +76,6 @@ export default function DragonMagazzinoPage() {
       const qty = parseFloat(adjustForm.quantity);
       if (isNaN(qty) || qty <= 0) throw new Error("Quantità non valida");
 
-      // Create stock movement for adjustment
       const { data: stockMov, error: stockErr } = await supabase
         .from("dragon_stock_movements")
         .insert({
@@ -71,7 +93,6 @@ export default function DragonMagazzinoPage() {
         .single();
       if (stockErr) throw stockErr;
 
-      // Create inventory adjustment record
       const { error: adjErr } = await supabase
         .from("dragon_inventory_adjustments")
         .insert({
@@ -85,7 +106,6 @@ export default function DragonMagazzinoPage() {
         } as any);
       if (adjErr) throw adjErr;
 
-      // Create audit log
       await supabase.from("dragon_audit_logs").insert({
         entity_type: "inventory_adjustment",
         entity_id: stockMov.id,
@@ -121,7 +141,6 @@ export default function DragonMagazzinoPage() {
             <Button variant={scope === undefined ? "default" : "outline"} size="sm" onClick={() => setScope(undefined)}>Tutti</Button>
             <Button variant={scope === "WASTE" ? "default" : "outline"} size="sm" onClick={() => setScope("WASTE")}><Recycle className="h-4 w-4 mr-1" /> Rifiuti</Button>
             <Button variant={scope === "MPS" ? "default" : "outline"} size="sm" onClick={() => setScope("MPS")}><Package className="h-4 w-4 mr-1" /> MPS</Button>
-            <Button size="sm" variant="outline" onClick={() => setShowAdjust(true)}><RotateCcw className="h-4 w-4 mr-1" /> Rettifica</Button>
           </div>
         </div>
 
@@ -161,6 +180,42 @@ export default function DragonMagazzinoPage() {
         </TabsContent>
 
         <TabsContent value="ledger">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-3 items-end">
+            <div>
+              <Label className="text-xs">Da</Label>
+              <Input type="date" className="h-8 w-36 text-xs" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">A</Label>
+              <Input type="date" className="h-8 w-36 text-xs" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Articolo</Label>
+              <Select value={filterItemId} onValueChange={setFilterItemId}>
+                <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Tutti" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutti</SelectItem>
+                  {items.filter(i => i.attivo).map(i => <SelectItem key={i.id} value={i.id}>{i.codice_cer}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Causale</Label>
+              <Select value={filterCauseId} onValueChange={setFilterCauseId}>
+                <SelectTrigger className="h-8 w-48 text-xs"><SelectValue placeholder="Tutte" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutte</SelectItem>
+                  {causes.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Button size="sm" onClick={() => setShowNewMov(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Movimento</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowAdjust(true)}><RotateCcw className="h-4 w-4 mr-1" /> Rettifica</Button>
+            </div>
+          </div>
+
           <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
@@ -177,11 +232,11 @@ export default function DragonMagazzinoPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
-                ) : stockMovements.length === 0 ? (
+                ) : filteredMovements.length === 0 ? (
                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessun movimento</TableCell></TableRow>
                 ) : (
-                  stockMovements.map((m) => (
-                    <TableRow key={m.id} className="border-border/10">
+                  filteredMovements.map((m) => (
+                    <TableRow key={m.id} className="border-border/10 cursor-pointer hover:bg-muted/30" onClick={() => setDetailMov(m)}>
                       <TableCell className="text-sm">{new Date(m.movement_date).toLocaleDateString("it-IT")}</TableCell>
                       <TableCell className="font-mono text-sm">{(m.item as any)?.codice_cer}</TableCell>
                       <TableCell className="text-xs">{(m.cause as any)?.name || "—"}</TableCell>
@@ -201,6 +256,12 @@ export default function DragonMagazzinoPage() {
           <AdjustmentsTab companyId={companyId} />
         </TabsContent>
       </Tabs>
+
+      {/* New Movement Form */}
+      <DragonNewMovementForm open={showNewMov} onOpenChange={setShowNewMov} />
+
+      {/* Movement Detail Dialog */}
+      <DragonMovementDetail movement={detailMov} open={!!detailMov} onClose={() => setDetailMov(null)} />
 
       {/* Adjustment Sheet */}
       <Sheet open={showAdjust} onOpenChange={setShowAdjust}>
@@ -296,8 +357,6 @@ function AdjustmentsTab({ companyId }: { companyId: string }) {
     </div>
   );
 }
-
-import { useQuery } from "@tanstack/react-query";
 
 function useAdjustments(companyId: string) {
   return useQuery({
