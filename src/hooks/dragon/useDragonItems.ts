@@ -22,7 +22,7 @@ export function useDragonItems() {
   });
 
   const create = useMutation({
-    mutationFn: async (item: Omit<Partial<DragonItem>, 'id' | 'created_at' | 'updated_at' | 'company_id'>) => {
+    mutationFn: async (item: Omit<Partial<DragonItem>, 'id' | 'created_at' | 'updated_at' | 'company_id'> & Record<string, any>) => {
       const { data, error } = await supabase
         .from("dragon_items")
         .insert({
@@ -36,7 +36,11 @@ export function useDragonItems() {
           item_type: item.item_type ?? 'WASTE_CER',
           attivo: item.attivo ?? true,
           metadata: (item.metadata ?? {}) as any,
-        })
+          fattore_conversione: item.fattore_conversione ?? 1,
+          tipo_mps_eow: item.tipo_mps_eow ?? null,
+          tipo_mps_eow_desc: item.tipo_mps_eow_desc ?? null,
+          default_warehouse_id: item.default_warehouse_id ?? null,
+        } as any)
         .select()
         .single();
       if (error) throw error;
