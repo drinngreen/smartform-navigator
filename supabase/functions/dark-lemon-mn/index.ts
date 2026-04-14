@@ -1994,30 +1994,36 @@ async function handleTool(
       const physicalState = args.physical_state ? String(args.physical_state).trim().replace(/'/g, "''") : null;
       const eowType = args.eow_type ? String(args.eow_type).trim().replace(/'/g, "''") : null;
 
-      const existingQ = `SELECT id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo
-        FROM dragon_items
-        WHERE company_id = '${tenantId}' AND codice_cer = '${cerCode}'
-        ORDER BY attivo DESC, created_at ASC
-        LIMIT 1`;
-      const { data: existingData, error: existingError } = await db.rpc("exec_sql_readonly", { query: existingQ }).maybeSingle();
+      // Check existing via SDK
+      const { data: existingItems, error: existingError } = await db.from("dragon_items")
+        .select("id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo")
+        .eq("company_id", tenantId)
+        .eq("codice_cer", cerCode)
+        .order("attivo", { ascending: false })
+        .limit(1);
       if (existingError) return { error: existingError.message };
+      if (existingItems && existingItems.length > 0) return { success: true, created: false, item: existingItems[0] };
 
-      const existingItem = existingData?.[0] || existingData;
-      if (existingItem) return { success: true, created: false, item: existingItem };
+      // Insert via SDK
+      const insertPayload: any = {
+        company_id: tenantId,
+        codice_cer: cerCode,
+        descrizione: description,
+        item_type: itemType,
+        pericoloso: dangerous,
+        unita_misura_default: unit,
+        fattore_conversione: 1,
+        attivo: true,
+        metadata: { source: "dark_lemon_auto", ensured_by: "dragon_ensure_item" },
+      };
+      if (physicalState) insertPayload.stato_fisico_default = physicalState;
+      if (eowType) insertPayload.tipo_mps_eow = eowType;
 
-      const safeDescription = description.replace(/'/g, "''");
-      const metadata = JSON.stringify({ source: "dark_lemon_auto", ensured_by: "dragon_ensure_item" }).replace(/'/g, "''");
-      const insertSql = `INSERT INTO dragon_items (
-          company_id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default,
-          fattore_conversione, attivo, metadata${physicalState ? ", stato_fisico_default" : ""}${eowType ? ", tipo_mps_eow" : ""}
-        ) VALUES (
-          '${tenantId}', '${cerCode}', '${safeDescription}', '${itemType}', ${dangerous}, '${unit}',
-          1, true, '${metadata}'::jsonb${physicalState ? `, '${physicalState}'` : ""}${eowType ? `, '${eowType}'` : ""}
-        )
-        RETURNING id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo`;
-      const { data, error } = await db.rpc("exec_sql_write", { query: insertSql }).maybeSingle();
-      const item = data?.[0] || data;
-      return error ? { error: error.message } : { success: true, created: true, item };
+      const { data: newItem, error: insertError } = await db.from("dragon_items")
+        .insert(insertPayload)
+        .select("id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo")
+        .single();
+      return insertError ? { error: insertError.message } : { success: true, created: true, item: newItem };
     }
 
     case "dragon_cernita": {
