@@ -115,6 +115,75 @@ function resolveTenantId(context?: string): string {
   return DEFAULT_TENANT_ID;
 }
 
+function normalizeLooseText(value: unknown): string {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeFirPhysicalState(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+
+  const normalized = normalizeLooseText(value);
+  if (!normalized) return null;
+
+  const physicalStateMap: Record<string, string> = {
+    s: "solido non pulverulento",
+    solido: "solido non pulverulento",
+    snp: "solido non pulverulento",
+    "solido non pulverulento": "solido non pulverulento",
+    "solido non polverulento": "solido non pulverulento",
+    p: "solido pulverulento",
+    polverulento: "solido pulverulento",
+    pulverulento: "solido pulverulento",
+    sp: "solido pulverulento",
+    "solido pulverulento": "solido pulverulento",
+    "solido polverulento": "solido pulverulento",
+    f: "fangoso palabile",
+    fp: "fangoso palabile",
+    fangoso: "fangoso palabile",
+    "fangoso palabile": "fangoso palabile",
+    l: "liquido",
+    lq: "liquido",
+    liquido: "liquido",
+    g: "aeriforme",
+    gs: "aeriforme",
+    gassoso: "aeriforme",
+    aeriforme: "aeriforme",
+    al: "altro",
+    altro: "altro",
+  };
+
+  return physicalStateMap[normalized] ?? String(value).trim();
+}
+
+function mapFirPhysicalStateToRentri(value: unknown): string {
+  const normalized = normalizeFirPhysicalState(value);
+
+  const rentriMap: Record<string, string> = {
+    "solido pulverulento": "SP",
+    "solido non pulverulento": "SNP",
+    "fangoso palabile": "FP",
+    liquido: "LQ",
+    aeriforme: "GS",
+    altro: "AL",
+  };
+
+  return normalized ? (rentriMap[normalized] ?? "SNP") : "SNP";
+}
+
+function mapFirUnitToRentri(value: unknown): string {
+  const normalized = normalizeLooseText(value);
+
+  if (["t", "tonnellata", "tonnellate"].includes(normalized)) return "T";
+  if (["l", "lt", "litro", "litri"].includes(normalized)) return "L";
+  if (["m3", "mc"].includes(normalized)) return "M3";
+  return "KG";
+}
+
 function hasAutonomySignal(messages: any[] = []) {
   return messages.some((message) =>
     message?.role === "user"
@@ -177,7 +246,7 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 3. Se un dato RENTRI obbligatorio manca, BLOCCA l'operazione ed elenca i campi mancanti
 4. Codice EER DEVE essere numerico a 6 cifre (es. 150106), senza punti né spazi
 5. Quantità DEVE essere > 0
-6. Stato fisico DEVE essere uno tra: S (solido), L (liquido), F (fangoso), P (polverulento), SNP (solido non polverulento)
+6. Nel database FIR stato_fisico DEVE essere uno tra: "solido pulverulento", "solido non pulverulento", "fangoso palabile", "liquido", "aeriforme", "altro". Se l'utente usa sigle o forme brevi (S, SNP, SP, P, F, FP, L, LQ, GS, AL), convertili automaticamente prima di usare update_fir_form
 7. Se scopri un'informazione utile, DEVI salvarla con save_memory PRIMA di rispondere
 8. Per operazioni distruttive (DELETE, annullamento), chiedi SEMPRE conferma
 9. ECCEZIONE AUTONOMIA: quando l'utente dice "inventa", "fantasia", "simula", "procedi tu", le regole 1-3 sono SOSPESE. Devi procedere usando i tool con dati plausibili senza chiedere nulla.
@@ -696,7 +765,7 @@ const tools = [
     type: "function",
     function: {
       name: "update_fir_form",
-      description: "Aggiorna/compila campi di un formulario FIR specifico. Accetta UUID o numero FIR visibile.",
+      description: "Aggiorna/compila campi di un formulario FIR specifico. Accetta UUID o numero FIR visibile. Per stato_fisico puoi usare anche alias come S, SNP, SP, F, FP, L, LQ, GS, AL: verranno normalizzati automaticamente.",
       parameters: {
         type: "object",
         properties: {
@@ -1631,6 +1700,11 @@ async function handleTool(
           continue;
         }
 
+        if (key === "stato_fisico") {
+          updatePayload.stato_fisico = normalizeFirPhysicalState(value);
+          continue;
+        }
+
         if (value === undefined) continue;
         updatePayload[key] = value;
       }
@@ -1647,7 +1721,14 @@ async function handleTool(
         .select("id, numero_fir, status")
         .maybeSingle();
 
-      if (error) return { error: error.message };
+      if (error) {
+        if (error.message?.includes("fir_forms_stato_fisico_check")) {
+          return {
+            error: 'Valore stato_fisico non valido. Valori accettati: "solido pulverulento", "solido non pulverulento", "fangoso palabile", "liquido", "aeriforme", "altro". Le sigle S/SNP/SP/F/FP/L/LQ/GS/AL vengono convertite automaticamente.',
+          };
+        }
+        return { error: error.message };
+      }
       if (!data) return { error: "FIR non trovato o non aggiornabile" };
 
       return { success: true, updated: data };
@@ -1730,7 +1811,7 @@ async function handleTool(
           dati_partenza: {
             numero_fir: fir.numero_fir,
             produttore: { cf_prod: fir.produttore_codice_fiscale || "", denominazione: fir.produttore_denominazione || "", indirizzo: fir.produttore_indirizzo || "", comune: fir.produttore_comune || "", provincia: fir.produttore_provincia || "", cap: fir.produttore_cap || "" },
-            rifiuto: { codice_eer: (fir.codice_eer || "").replace(/\./g, ""), stato_fisico: fir.stato_fisico === "Solido" ? "SNP" : fir.stato_fisico === "Liquido" ? "L" : fir.stato_fisico || "SNP", descrizione: fir.descrizione_rifiuto || "", quantita: fir.quantita || 0, unita_misura: fir.unita_misura === "tonnellate" ? "T" : "KG" },
+            rifiuto: { codice_eer: (fir.codice_eer || "").replace(/\./g, ""), stato_fisico: mapFirPhysicalStateToRentri(fir.stato_fisico), descrizione: fir.descrizione_rifiuto || "", quantita: fir.quantita || 0, unita_misura: mapFirUnitToRentri(fir.unita_misura) },
             trasportatore: { cf_tras: fir.trasportatore_codice_fiscale || "", denominazione: fir.trasportatore_denominazione || "", conducente: fir.trasportatore_conducente || "", targa: fir.trasportatore_targa_automezzo || "" },
           },
           dati_arrivo: { destinatario: { cf_dest: fir.destinatario_codice_fiscale || "", denominazione: fir.destinatario_denominazione || "" } },
