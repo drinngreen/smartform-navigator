@@ -1496,14 +1496,26 @@ async function handleTool(
     }
 
     case "search_user": {
-      let query = db.from("profiles").select("user_id, nome, cognome, codice_fiscale, email, tenant_id, mn_context, targa, telefono");
+      let query = db
+        .from("profiles")
+        .select("user_id, nome, cognome, codice_fiscale, tenant_id, mn_context, targa:targa_automezzo, autista_alternativo");
+
       if (args.codice_fiscale) query = query.ilike("codice_fiscale", `%${args.codice_fiscale}%`);
       if (args.cognome) query = query.ilike("cognome", `%${args.cognome}%`);
       if (args.nome) query = query.ilike("nome", `%${args.nome}%`);
-      if (args.email) query = query.ilike("email", `%${args.email}%`);
+
       const { data, error } = await query.limit(10);
       if (error) return { error: error.message };
-      return Array.isArray(data) ? data : data ? [data] : [];
+
+      const results = Array.isArray(data) ? data : data ? [data] : [];
+      if (args.email) {
+        return {
+          warning: "La ricerca email non è disponibile su questo tool; usa codice fiscale, nome o cognome.",
+          results,
+        };
+      }
+
+      return results;
     }
 
     // ---------- FIR MANAGEMENT ----------
