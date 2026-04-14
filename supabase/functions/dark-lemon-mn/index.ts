@@ -1537,7 +1537,7 @@ async function handleTool(
     }
 
     case "update_fir_form": {
-      const id = String(args.fir_form_id || "").trim();
+      let id = String(args.fir_form_id || "").trim();
       const fields = args.fields && typeof args.fields === "object" ? args.fields : {};
       const allowedFields = new Set([
         "numero_fir", "status", "produttore_denominazione", "produttore_codice_fiscale",
@@ -1552,6 +1552,21 @@ async function handleTool(
       ]);
 
       if (!id) return { error: "fir_form_id mancante" };
+
+      // If the id is not a UUID, try to resolve it as a FIR number
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        const { data: resolved, error: resolveErr } = await db
+          .from("fir_forms")
+          .select("id")
+          .eq("numero_fir", id.toUpperCase())
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (resolveErr || !resolved) return { error: `FIR "${id}" non trovato. Usa list_fir_forms per ottenere l'ID corretto.` };
+        id = resolved.id;
+      }
 
       const updatePayload: Record<string, any> = {};
 
