@@ -1989,11 +1989,18 @@ async function handleTool(
     }
 
     case "dragon_consolidate_movement": {
-      const sql = `UPDATE dragon_register_movements SET status = 'CONSOLIDATO', updated_at = now(), updated_by = ${adminUserId ? `'${adminUserId}'` : 'NULL'}
-        WHERE id = '${args.movement_id}' AND company_id = '${tenantId}' AND status = 'BOZZA'
-        RETURNING id, movement_number, status`;
-      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : { success: true, consolidated: data };
+      const updatePayload: any = { status: "CONSOLIDATO", updated_at: new Date().toISOString() };
+      if (adminUserId) updatePayload.updated_by = adminUserId;
+      const { data, error } = await db.from("dragon_register_movements")
+        .update(updatePayload)
+        .eq("id", args.movement_id)
+        .eq("company_id", tenantId)
+        .eq("status", "BOZZA")
+        .select("id, movement_number, status")
+        .maybeSingle();
+      if (error) return { error: error.message };
+      if (!data) return { error: "Movimento non trovato o già consolidato" };
+      return { success: true, consolidated: data };
     }
 
     case "dragon_list_items": {
@@ -2053,67 +2060,123 @@ async function handleTool(
     }
 
     case "dragon_cernita": {
-      // Find causes
-      const causesQ = `SELECT id, code FROM dragon_causes WHERE code IN ('SCARICO_PER_LAVORAZIONE', 'CARICO_DA_LAVORAZIONE') AND active = true`;
-      const { data: causesData } = await db.rpc("exec_sql_readonly", { query: causesQ }).maybeSingle();
-      const causesArr = Array.isArray(causesData) ? causesData : [causesData].filter(Boolean);
-      const scaricoCause = causesArr.find((c: any) => c.code === "SCARICO_PER_LAVORAZIONE");
-      const caricoCause = causesArr.find((c: any) => c.code === "CARICO_DA_LAVORAZIONE");
+      // Find causes via SDK
+      const { data: causesData, error: causesErr } = await db.from("dragon_causes")
+        .select("id, code")
+        .in("code", ["SCARICO_PER_LAVORAZIONE", "CARICO_DA_LAVORAZIONE"])
+        .eq("active", true);
+      if (causesErr) return { error: causesErr.message };
+      const scaricoCause = (causesData || []).find((c: any) => c.code === "SCARICO_PER_LAVORAZIONE");
+      const caricoCause = (causesData || []).find((c: any) => c.code === "CARICO_DA_LAVORAZIONE");
       if (!scaricoCause || !caricoCause) return { error: "Causali di lavorazione non trovate nel DB" };
 
-      const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND active = true LIMIT 1`;
-      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
-      const registerId = regData?.[0]?.id || regData?.id || null;
+      // Find register
+      const { data: regArr } = await db.from("dragon_registers")
+        .select("id")
+        .eq("company_id", tenantId)
+        .eq("active", true)
+        .limit(1);
+      const registerId = regArr?.[0]?.id || null;
 
       const today = new Date().toISOString().split("T")[0];
 
       // Get input item info
-      const itemQ = `SELECT codice_cer, descrizione, unita_misura_default, item_type FROM dragon_items WHERE id = '${args.input_item_id}'`;
-      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
-      const sourceItem = itemData?.[0] || itemData;
-      if (!sourceItem) return { error: "Articolo input non trovato" };
+      const { data: sourceItem, error: siErr } = await db.from("dragon_items")
+        .select("codice_cer, descrizione, unita_misura_default, item_type")
+        .eq("id", args.input_item_id)
+        .single();
+      if (siErr || !sourceItem) return { error: "Articolo input non trovato" };
 
       // Create batch
-      const batchSql = `INSERT INTO dragon_transform_batches (company_id, created_by, source_item_id, input_quantity, execution_date, notes, status)
-        VALUES ('${tenantId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'}, '${args.input_item_id}', ${args.input_quantity}, '${today}', ${args.notes ? `'${args.notes.replace(/'/g, "''")}'` : 'NULL'}, 'CONFERMATA')
-        RETURNING id`;
-      const { data: batchData, error: batchErr } = await db.rpc("exec_sql_write", { query: batchSql }).maybeSingle();
+      const { data: batchRow, error: batchErr } = await db.from("dragon_transform_batches")
+        .insert({
+          company_id: tenantId,
+          created_by: adminUserId || null,
+          source_item_id: args.input_item_id,
+          input_quantity: args.input_quantity,
+          execution_date: today,
+          notes: args.notes || null,
+          status: "CONFERMATA",
+        })
+        .select("id")
+        .single();
       if (batchErr) return { error: batchErr.message };
-      const batchId = batchData?.[0]?.id || batchData?.id;
+      const batchId = batchRow.id;
 
-      // Scarico input
-      const scarSql = `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, description_snapshot, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, source_transform_batch_id, created_by)
-        VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.input_item_id}', '${sourceItem.codice_cer}', '${(sourceItem.descrizione || "").replace(/'/g, "''")}', 'SCARICO', '${scaricoCause.id}', ${args.input_quantity}, '${sourceItem.unita_misura_default || "kg"}', 'MINUS', 'UL', 'DEFINITIVO', 'CONSOLIDATO', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`;
-      await db.rpc("exec_sql_write", { query: scarSql });
+      // Scarico input register movement
+      await db.from("dragon_register_movements").insert({
+        company_id: tenantId,
+        register_id: registerId,
+        movement_date: today,
+        recording_date: today,
+        item_id: args.input_item_id,
+        cer_code: sourceItem.codice_cer,
+        description_snapshot: sourceItem.descrizione || "",
+        movement_type: "SCARICO",
+        cause_id: scaricoCause.id,
+        quantity: args.input_quantity,
+        unit_of_measure: sourceItem.unita_misura_default || "kg",
+        sign: "MINUS",
+        source_context: "UL",
+        weight_status: "DEFINITIVO",
+        status: "CONSOLIDATO",
+        source_transform_batch_id: batchId,
+        created_by: adminUserId || null,
+      });
 
       // Output movements
       const outputResults: any[] = [];
       for (const out of (args.outputs || [])) {
-        const outItemQ = `SELECT codice_cer, descrizione, unita_misura_default, item_type FROM dragon_items WHERE id = '${out.item_id}'`;
-        const { data: outItemData } = await db.rpc("exec_sql_readonly", { query: outItemQ }).maybeSingle();
-        const outItem = outItemData?.[0] || outItemData;
+        const { data: outItem } = await db.from("dragon_items")
+          .select("codice_cer, descrizione, unita_misura_default, item_type")
+          .eq("id", out.item_id)
+          .single();
         if (!outItem) continue;
 
         const isWaste = outItem.item_type === "WASTE_CER";
         const warehouseScope = isWaste ? "WASTE" : "MPS";
 
         if (isWaste) {
-          await db.rpc("exec_sql_write", {
-            query: `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, description_snapshot, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, source_transform_batch_id, created_by)
-              VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${out.item_id}', '${outItem.codice_cer}', '${(outItem.descrizione || "").replace(/'/g, "''")}', 'CARICO', '${caricoCause.id}', ${out.quantity}, '${outItem.unita_misura_default || "kg"}', 'PLUS', 'UL', 'DEFINITIVO', 'CONSOLIDATO', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`
+          await db.from("dragon_register_movements").insert({
+            company_id: tenantId,
+            register_id: registerId,
+            movement_date: today,
+            recording_date: today,
+            item_id: out.item_id,
+            cer_code: outItem.codice_cer,
+            description_snapshot: outItem.descrizione || "",
+            movement_type: "CARICO",
+            cause_id: caricoCause.id,
+            quantity: out.quantity,
+            unit_of_measure: outItem.unita_misura_default || "kg",
+            sign: "PLUS",
+            source_context: "UL",
+            weight_status: "DEFINITIVO",
+            status: "CONSOLIDATO",
+            source_transform_batch_id: batchId,
+            created_by: adminUserId || null,
           });
         }
 
         // Stock movement
-        await db.rpc("exec_sql_write", {
-          query: `INSERT INTO dragon_stock_movements (company_id, item_id, movement_date, cause_id, quantity, sign, warehouse_scope, source_transform_batch_id, created_by)
-            VALUES ('${tenantId}', '${out.item_id}', '${today}', '${caricoCause.id}', ${out.quantity}, 'PLUS', '${warehouseScope}', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`
+        await db.from("dragon_stock_movements").insert({
+          company_id: tenantId,
+          item_id: out.item_id,
+          movement_date: today,
+          cause_id: caricoCause.id,
+          quantity: out.quantity,
+          sign: "PLUS",
+          warehouse_scope: warehouseScope,
+          source_transform_batch_id: batchId,
+          created_by: adminUserId || null,
         });
 
         // Batch output
-        await db.rpc("exec_sql_write", {
-          query: `INSERT INTO dragon_transform_batch_outputs (batch_id, output_item_id, output_quantity, warehouse_scope)
-            VALUES ('${batchId}', '${out.item_id}', ${out.quantity}, '${warehouseScope}')`
+        await db.from("dragon_transform_batch_outputs").insert({
+          batch_id: batchId,
+          output_item_id: out.item_id,
+          output_quantity: out.quantity,
+          warehouse_scope: warehouseScope,
         });
 
         outputResults.push({ cer: outItem.codice_cer, qty: out.quantity, scope: warehouseScope });
