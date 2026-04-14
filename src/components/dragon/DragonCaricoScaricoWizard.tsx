@@ -251,6 +251,12 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
                 <p className="text-xs text-muted-foreground">Data</p>
                 <p>{new Date(movementDate).toLocaleDateString("it-IT")}</p>
               </div>
+              {operationCode && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Operazione R/D</p>
+                  <p className="font-mono">{operationCode}</p>
+                </div>
+              )}
             </div>
             <div className="border-t border-border/20 pt-3 text-xs text-muted-foreground">
               <p>Verranno creati <strong>2 movimenti</strong> di registro (carico + scarico) collegati, con i relativi movimenti di magazzino.</p>
