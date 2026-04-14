@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { exportToExcel } from "@/lib/exportUtils";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonStock } from "@/hooks/dragon/useDragonStock";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
@@ -147,6 +148,31 @@ export default function DragonMagazzinoPage() {
         </div>
 
         <TabsContent value="balances">
+          <div className="flex justify-end mb-3">
+            <Button variant="outline" size="sm" onClick={() => {
+              exportToExcel(
+                balances.map(b => ({
+                  codice_cer: b.item?.codice_cer || "",
+                  descrizione: b.item?.descrizione || "",
+                  tipo: b.item?.item_type || "",
+                  ambito: b.warehouse_scope,
+                  giacenza: Number(b.balance),
+                  um: b.item?.unita_misura_default || "kg",
+                })),
+                [
+                  { header: "Codice", key: "codice_cer", width: 12 },
+                  { header: "Descrizione", key: "descrizione", width: 30 },
+                  { header: "Tipo", key: "tipo", width: 10 },
+                  { header: "Ambito", key: "ambito", width: 10 },
+                  { header: "Giacenza", key: "giacenza", width: 14 },
+                  { header: "U.M.", key: "um", width: 6 },
+                ],
+                `situazione_magazzino_${new Date().toISOString().split("T")[0]}`
+              );
+            }}>
+              <FileDown className="h-4 w-4 mr-1" /> Stampa Situazione
+            </Button>
+          </div>
           <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
