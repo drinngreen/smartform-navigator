@@ -1,233 +1,144 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useDragonStock } from "@/hooks/dragon/useDragonStock";
+import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
 import {
-  BookOpen, Package, FileText, Scissors, History, ExternalLink,
-  Warehouse, ArrowDownToLine, ArrowUpFromLine, Repeat2, Search,
-  ClipboardCheck, FileBarChart, Truck, Factory, Blend
+  BookOpen, Package, Scissors, History, Warehouse,
+  FileText, ClipboardList, ArrowRight, RotateCcw,
+  TrendingUp, TrendingDown, Scale
 } from "lucide-react";
 
 const PREFIX = "/mn/admin/dev-multyproget/dragon";
 
-interface OpCard {
-  label: string;
-  desc: string;
-  icon: React.ElementType;
-  path: string;
-  color: string;
-}
-
-const phases: { title: string; subtitle: string; color: string; items: OpCard[] }[] = [
-  {
-    title: "Fase 1 — Carico (Ingresso Materiali)",
-    subtitle: "Rifiuti da terzi con FIR, produzione interna, ingresso MPS/DDT",
-    color: "emerald",
-    items: [
-      {
-        label: "Registro — Ingresso Rifiuti",
-        desc: "Carico da FIR (terzi), peso a destino → Ufficiale",
-        icon: ArrowDownToLine,
-        path: `${PREFIX}/registro`,
-        color: "emerald",
-      },
-      {
-        label: "Registro — Carico Produzione",
-        desc: "Rifiuto prodotto internamente (CER, data, Kg)",
-        icon: Factory,
-        path: `${PREFIX}/registro`,
-        color: "emerald",
-      },
-      {
-        label: "Magazzino — Carico MPS/Materiali",
-        desc: "Movimento manuale o da DDT di ingresso",
-        icon: Package,
-        path: `${PREFIX}/magazzino`,
-        color: "emerald",
-      },
-    ],
-  },
-  {
-    title: "Fase 2 — Lavorazioni (Trasformazione)",
-    subtitle: "Scarico lavorazione FIFO, ricarico automatico, cernite e miscelazioni",
-    color: "amber",
-    items: [
-      {
-        label: "Scarico di Lavorazione",
-        desc: "Quantità da individuare → FIFO automatico (segno −)",
-        icon: Scissors,
-        path: `${PREFIX}/cernite/batch`,
-        color: "amber",
-      },
-      {
-        label: "Ricarico da Lavorazione",
-        desc: "Proposta automatica → nuovi CER su registro, MPS su magazzino (segno +)",
-        icon: Repeat2,
-        path: `${PREFIX}/cernite/batch`,
-        color: "amber",
-      },
-      {
-        label: "Miscelazioni",
-        desc: "N input CER → 1 output cumulativo CER/MPS",
-        icon: Blend,
-        path: `${PREFIX}/cernite/batch`,
-        color: "amber",
-      },
-    ],
-  },
-  {
-    title: "Fase 3 — Scarico (Uscita Materiali)",
-    subtitle: "Uscita rifiuti con FIR, uscita MPS/DDT, carico & scarico contestuale",
-    color: "red",
-    items: [
-      {
-        label: "Registro — Scarico Uscita + FIR",
-        desc: "Seleziona CER con giacenza → abbina carichi → FIR automatico",
-        icon: ArrowUpFromLine,
-        path: `${PREFIX}/registro`,
-        color: "red",
-      },
-      {
-        label: "Magazzino — Scarico MPS/Materiali",
-        desc: "Movimento manuale o da DDT di uscita",
-        icon: Truck,
-        path: `${PREFIX}/magazzino`,
-        color: "red",
-      },
-      {
-        label: "Carico & Scarico Contestuale",
-        desc: "Per CER senza giacenza: produzione e uscita simultanea",
-        icon: Repeat2,
-        path: `${PREFIX}/registro`,
-        color: "red",
-      },
-    ],
-  },
-  {
-    title: "Fase 4 — Controllo e Tracciabilità",
-    subtitle: "Traccia lavorazioni, rintraccia/traccia, stampa situazione magazzino",
-    color: "blue",
-    items: [
-      {
-        label: "Traccia Lavorazioni",
-        desc: "Sequenza scarichi (−) e ricarichi (+), raggruppamento per CER",
-        icon: ClipboardCheck,
-        path: `${PREFIX}/registro`,
-        color: "blue",
-      },
-      {
-        label: "Rintraccia & Traccia",
-        desc: "Ciclo di vita completo: FIR ingresso → lavorazione → magazzino",
-        icon: Search,
-        path: `${PREFIX}/magazzino`,
-        color: "blue",
-      },
-      {
-        label: "Stampa Situazione Magazzino",
-        desc: "Report PDF giacenze effettive, giornale di magazzino",
-        icon: FileBarChart,
-        path: `${PREFIX}/magazzino`,
-        color: "blue",
-      },
-    ],
-  },
-];
-
-const quickLinks = [
-  { label: "Registro", icon: BookOpen, path: `${PREFIX}/registro` },
-  { label: "Magazzino", icon: Package, path: `${PREFIX}/magazzino` },
-  { label: "Archivio Magazzini", icon: Warehouse, path: `${PREFIX}/magazzini` },
-  { label: "Articoli CER/MPS", icon: FileText, path: `${PREFIX}/articoli` },
-  { label: "Cernite", icon: Scissors, path: `${PREFIX}/cernite/batch` },
-  { label: "Audit Trail", icon: History, path: `${PREFIX}/audit` },
-];
-
-const colorMap: Record<string, { border: string; bg: string; text: string; badge: string }> = {
-  emerald: {
-    border: "border-emerald-500/30",
-    bg: "hover:bg-emerald-500/10",
-    text: "text-emerald-400",
-    badge: "bg-emerald-500/20 text-emerald-300",
-  },
-  amber: {
-    border: "border-amber-500/30",
-    bg: "hover:bg-amber-500/10",
-    text: "text-amber-400",
-    badge: "bg-amber-500/20 text-amber-300",
-  },
-  red: {
-    border: "border-red-500/30",
-    bg: "hover:bg-red-500/10",
-    text: "text-red-400",
-    badge: "bg-red-500/20 text-red-300",
-  },
-  blue: {
-    border: "border-blue-500/30",
-    bg: "hover:bg-blue-500/10",
-    text: "text-blue-400",
-    badge: "bg-blue-500/20 text-blue-300",
-  },
-};
-
 export function DevMagazzinoDevModule() {
   const navigate = useNavigate();
+  const { balances, isLoading: loadingStock } = useDragonStock();
+  const { movements, isLoading: loadingReg } = useDragonRegister();
+
+  const totalWaste = balances.filter(b => b.warehouse_scope === "WASTE").reduce((s, b) => s + b.balance, 0);
+  const totalMps = balances.filter(b => b.warehouse_scope === "MPS").reduce((s, b) => s + b.balance, 0);
+  const bozze = movements.filter(m => m.status === "BOZZA").length;
+
+  const sections = [
+    {
+      title: "Registri",
+      desc: "Registro cronologico carico/scarico rifiuti",
+      items: [
+        { label: "Registro Generale", desc: "Tutti i movimenti di carico e scarico", icon: BookOpen, path: `${PREFIX}/registro` },
+        { label: "Carico / Scarico Guidato", desc: "Wizard per ingresso/uscita con FIR", icon: ClipboardList, path: `${PREFIX}/registro/carico-scarico` },
+        { label: "Scarico Cumulativo", desc: "Scarico FIFO multiplo per codice CER", icon: TrendingDown, path: `${PREFIX}/registro/scarico-cumulativo` },
+      ],
+    },
+    {
+      title: "Magazzino",
+      desc: "Giacenze fisiche, movimenti e rettifiche",
+      items: [
+        { label: "Giacenze & Movimenti", desc: "Saldi in tempo reale, ledger, rettifiche", icon: Package, path: `${PREFIX}/magazzino` },
+        { label: "Archivio Magazzini", desc: "Aree di stoccaggio e limiti", icon: Warehouse, path: `${PREFIX}/magazzini` },
+      ],
+    },
+    {
+      title: "Lavorazioni",
+      desc: "Cernite e trasformazioni materiali",
+      items: [
+        { label: "Cernite", desc: "Smonta un lotto in componenti (CER → materiali)", icon: Scissors, path: `${PREFIX}/cernite/batch` },
+      ],
+    },
+    {
+      title: "Anagrafica & Tracciabilità",
+      desc: "Configurazione e storico",
+      items: [
+        { label: "Articoli CER / MPS", desc: "Catalogo codici rifiuto e materiali", icon: FileText, path: `${PREFIX}/articoli` },
+        { label: "Audit Trail", desc: "Storico completo di ogni operazione", icon: History, path: `${PREFIX}/audit` },
+      ],
+    },
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-emerald-300">🐉 Dragon — Magazzino Dev</h3>
+        <h3 className="text-lg font-semibold text-emerald-300">🐉 Dragon — Magazzino & Registro</h3>
         <p className="text-xs text-muted-foreground">
-          Sistema integrato Registro &amp; Magazzino Rifiuti — Flusso operativo completo
+          Gestione integrata rifiuti: registro, magazzino, cernite e tracciabilità
         </p>
       </div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {quickLinks.map((s) => (
-          <Button
-            key={s.label}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1.5 h-auto py-2 border-border/40 hover:border-emerald-500/40 hover:bg-emerald-500/10 text-xs"
-            onClick={() => navigate(s.path)}
-          >
-            <s.icon className="h-3.5 w-3.5 text-emerald-400" />
-            {s.label}
-          </Button>
-        ))}
+      {/* Live Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Giacenza Rifiuti"
+          value={loadingStock ? "..." : `${Math.round(totalWaste).toLocaleString("it-IT")} kg`}
+          icon={<Scale className="h-4 w-4 text-amber-400" />}
+          color="amber"
+        />
+        <StatCard
+          label="Giacenza MPS"
+          value={loadingStock ? "..." : `${Math.round(totalMps).toLocaleString("it-IT")} kg`}
+          icon={<TrendingUp className="h-4 w-4 text-blue-400" />}
+          color="blue"
+        />
+        <StatCard
+          label="Movimenti Registro"
+          value={loadingReg ? "..." : String(movements.length)}
+          icon={<BookOpen className="h-4 w-4 text-emerald-400" />}
+          color="emerald"
+        />
+        <StatCard
+          label="Bozze da Consolidare"
+          value={loadingReg ? "..." : String(bozze)}
+          icon={<RotateCcw className="h-4 w-4 text-rose-400" />}
+          color={bozze > 0 ? "rose" : "emerald"}
+          alert={bozze > 0}
+        />
       </div>
 
-      {/* 4 Phases */}
-      {phases.map((phase) => {
-        const c = colorMap[phase.color];
-        return (
-          <div key={phase.title} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${c.badge}`}>
-                {phase.title}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground ml-1">{phase.subtitle}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {phase.items.map((item) => {
-                const ic = colorMap[item.color];
-                return (
-                  <button
-                    key={item.label}
-                    className={`text-left rounded-lg border ${ic.border} ${ic.bg} bg-card p-4 transition-all space-y-1`}
-                    onClick={() => navigate(item.path)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <item.icon className={`h-5 w-5 ${ic.text}`} />
-                      <span className="text-sm font-medium text-foreground">{item.label}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                  </button>
-                );
-              })}
-            </div>
+      {/* Sections */}
+      {sections.map((section) => (
+        <div key={section.title} className="space-y-2">
+          <div>
+            <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
+            <p className="text-xs text-muted-foreground">{section.desc}</p>
           </div>
-        );
-      })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {section.items.map((item) => (
+              <button
+                key={item.label}
+                className="group text-left rounded-lg border border-border/30 hover:border-emerald-500/40 bg-card/60 hover:bg-emerald-500/5 p-3 transition-all flex items-start gap-3"
+                onClick={() => navigate(item.path)}
+              >
+                <div className="mt-0.5 p-1.5 rounded-md bg-emerald-500/10 text-emerald-400">
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground group-hover:text-emerald-300 transition-colors">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-emerald-400 mt-1 transition-colors" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon, color, alert }: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  color: string;
+  alert?: boolean;
+}) {
+  return (
+    <div className={`rounded-lg border p-3 ${alert ? "border-rose-500/40 bg-rose-500/5" : "border-border/30 bg-card/60"}`}>
+      <div className="flex items-center gap-2 mb-1">
+        {icon}
+        <span className="text-xs text-muted-foreground">{label}</span>
+      </div>
+      <p className={`text-xl font-bold ${alert ? "text-rose-400" : "text-foreground"}`}>{value}</p>
     </div>
   );
 }
