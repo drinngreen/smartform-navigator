@@ -91,9 +91,16 @@ export function DarkLemonMNChat({ context }: Props) {
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="ml-auto p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+              className={cn(
+                "ml-auto inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                sidebarOpen
+                  ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-400"
+                  : "border-white/10 bg-white/5 text-white/70 hover:border-cyan-500/20 hover:bg-cyan-500/10 hover:text-cyan-400"
+              )}
+              title="Cronologia"
             >
-              <MessageSquare className="h-5 w-5" />
+              <MessageSquare className="h-4 w-4" />
+              <span>Cronologia</span>
             </button>
           </div>
 

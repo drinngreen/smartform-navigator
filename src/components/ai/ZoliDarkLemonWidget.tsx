@@ -236,8 +236,19 @@ export function ZoliDarkLemonWidget() {
                 <ScanSearch className="h-4 w-4" />
               </button>
             )}
-            <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
-              <MessageSquare className="h-4 w-4" />
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              onMouseDown={e => e.stopPropagation()}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors shrink-0",
+                showHistory
+                  ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-400"
+                  : "border-white/10 bg-white/5 text-white/70 hover:border-cyan-500/20 hover:bg-cyan-500/10 hover:text-cyan-400"
+              )}
+              title="Cronologia"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Cronologia</span>
             </button>
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
