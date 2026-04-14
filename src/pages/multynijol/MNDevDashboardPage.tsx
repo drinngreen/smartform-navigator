@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -31,6 +31,8 @@ import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoD
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "impianto";
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
@@ -46,7 +48,7 @@ export default function MNDevDashboardPage() {
         </div>
       </button>
 
-      <Tabs defaultValue="impianto" className="space-y-4">
+      <Tabs defaultValue={defaultTab} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
           <TabsTrigger
             value="impianto"
