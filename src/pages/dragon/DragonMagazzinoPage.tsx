@@ -154,9 +154,10 @@ export default function DragonMagazzinoPage() {
                   <TableHead>Codice</TableHead>
                   <TableHead>Descrizione</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Ambito</TableHead>
-                  <TableHead className="text-right">Giacenza</TableHead>
-                  <TableHead>U.M.</TableHead>
+                   <TableHead>Ambito</TableHead>
+                   <TableHead className="text-right">Giacenza</TableHead>
+                   <TableHead>U.M.</TableHead>
+                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
