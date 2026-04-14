@@ -2473,7 +2473,9 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
     ];
 
     let finalContent = "";
-    for (let iteration = 0; iteration < 8; iteration++) {
+    let lastNonEmptyContent = "";
+    for (let iteration = 0; iteration < 12; iteration++) {
+      console.log(`[dark-lemon] iteration=${iteration}, msgs=${conversationMessages.length}`);
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -2522,6 +2524,11 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       const assistantMsg = choice.message;
       conversationMessages.push(assistantMsg);
 
+      // Track any non-empty content even during tool-call iterations
+      if (typeof assistantMsg.content === "string" && assistantMsg.content.trim()) {
+        lastNonEmptyContent = assistantMsg.content;
+      }
+
       if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
         const assistantText = typeof assistantMsg.content === "string" ? assistantMsg.content : "";
         if (autonomyMode && AUTONOMY_BLOCKING_PATTERN.test(assistantText)) {
@@ -2547,7 +2554,9 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       }
     }
 
-    return new Response(JSON.stringify({ content: finalContent }), {
+    const responseContent = finalContent || lastNonEmptyContent || "⚠️ Operazione completata ma nessun riepilogo generato. Riprova.";
+    console.log(`[dark-lemon] done, content length=${responseContent.length}`);
+    return new Response(JSON.stringify({ content: responseContent }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
