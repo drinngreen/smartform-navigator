@@ -37,6 +37,7 @@ export default function DragonCerniteBatchPage() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
