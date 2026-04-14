@@ -277,6 +277,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/dragon/audit" element={<ProtectedRoute><DragonAuditPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/carico-scarico" element={<ProtectedRoute><DragonCaricoScaricoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/scarico-cumulativo" element={<ProtectedRoute><DragonScaricoCumulativoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/registro/ingresso" element={<ProtectedRoute><DragonIngressoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/cernite/batch" element={<ProtectedRoute><DragonCerniteBatchPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
