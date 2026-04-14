@@ -117,6 +117,7 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
         physical_state: firstSelected.physical_state,
         hp_codes: firstSelected.hp_codes || [],
         note: note || null,
+        operation_code: operationCode || null,
         weight_status: "DEFINITIVO",
         status: "BOZZA",
       },
