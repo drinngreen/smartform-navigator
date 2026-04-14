@@ -1417,6 +1417,203 @@ async function handleTool(
       return error ? { error: error.message } : { knowledge: data || [] };
     }
 
+    // ---------- DRAGON REGISTRO & MAGAZZINO ----------
+    case "dragon_stock_balances": {
+      let q = `SELECT di.codice_cer, di.descrizione, di.item_type, di.unita_misura_default,
+        dsm.warehouse_scope,
+        SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) as balance
+        FROM dragon_stock_movements dsm
+        JOIN dragon_items di ON di.id = dsm.item_id
+        WHERE dsm.company_id = '${tenantId}'`;
+      if (args.scope && args.scope !== "ALL") q += ` AND dsm.warehouse_scope = '${args.scope}'`;
+      if (args.cer_code) q += ` AND di.codice_cer ILIKE '%${args.cer_code.replace(/'/g, "")}%'`;
+      q += ` GROUP BY di.codice_cer, di.descrizione, di.item_type, di.unita_misura_default, dsm.warehouse_scope
+        HAVING SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) <> 0
+        ORDER BY di.codice_cer`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { balances: data || [] };
+    }
+
+    case "dragon_register_list": {
+      let q = `SELECT drm.id, drm.movement_number, drm.movement_date, drm.movement_type, drm.cer_code,
+        drm.description_snapshot, drm.quantity, drm.unit_of_measure, drm.sign, drm.status, drm.weight_status,
+        dc.name as cause_name, dc.code as cause_code, dr.subject_type as register_type
+        FROM dragon_register_movements drm
+        LEFT JOIN dragon_causes dc ON dc.id = drm.cause_id
+        LEFT JOIN dragon_registers dr ON dr.id = drm.register_id
+        WHERE drm.company_id = '${tenantId}' AND drm.deleted_at IS NULL`;
+      if (args.movement_type) q += ` AND drm.movement_type = '${args.movement_type}'`;
+      if (args.status) q += ` AND drm.status = '${args.status}'`;
+      if (args.cer_code) q += ` AND drm.cer_code ILIKE '%${args.cer_code.replace(/'/g, "")}%'`;
+      if (args.register_type) q += ` AND dr.subject_type = '${args.register_type}'`;
+      if (args.date_from) q += ` AND drm.movement_date >= '${args.date_from}'`;
+      if (args.date_to) q += ` AND drm.movement_date <= '${args.date_to}'`;
+      q += ` ORDER BY drm.movement_date DESC, drm.movement_number DESC LIMIT ${args.limit || 30}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { movements: data || [] };
+    }
+
+    case "dragon_create_movement": {
+      // Find cause by code
+      const causeQ = `SELECT id, direction, stock_sign FROM dragon_causes WHERE code = '${args.cause_code.replace(/'/g, "")}' AND active = true LIMIT 1`;
+      const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
+      const cause = causeData?.[0] || causeData;
+      if (!cause) return { error: `Causale '${args.cause_code}' non trovata` };
+
+      // Find register
+      const regType = args.register_type || "PRODUTTORE";
+      const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND subject_type = '${regType}' AND active = true LIMIT 1`;
+      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
+      const registerId = regData?.[0]?.id || regData?.id || null;
+
+      const today = args.movement_date || new Date().toISOString().split("T")[0];
+      const sign = args.movement_type === "CARICO" ? "PLUS" : "MINUS";
+      const status = args.status || "BOZZA";
+
+      const sql = `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, note, created_by)
+        VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.item_id}', '${args.cer_code.replace(/'/g, "")}', '${args.movement_type}', '${cause.id}', ${args.quantity}, 'kg', '${sign}', 'UL', 'DEFINITIVO', '${status}', ${args.note ? `'${args.note.replace(/'/g, "''")}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
+        RETURNING id, movement_number, movement_type, cer_code, quantity, status`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
+      return error ? { error: error.message } : { success: true, movement: data };
+    }
+
+    case "dragon_consolidate_movement": {
+      const sql = `UPDATE dragon_register_movements SET status = 'CONSOLIDATO', updated_at = now(), updated_by = ${adminUserId ? `'${adminUserId}'` : 'NULL'}
+        WHERE id = '${args.movement_id}' AND company_id = '${tenantId}' AND status = 'BOZZA'
+        RETURNING id, movement_number, status`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
+      return error ? { error: error.message } : { success: true, consolidated: data };
+    }
+
+    case "dragon_list_items": {
+      let q = `SELECT id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, fattore_conversione, tipo_mps_eow, attivo
+        FROM dragon_items WHERE company_id = '${tenantId}'`;
+      if (args.active_only !== false) q += ` AND attivo = true`;
+      if (args.item_type) q += ` AND item_type = '${args.item_type}'`;
+      q += ` ORDER BY codice_cer`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { items: data || [] };
+    }
+
+    case "dragon_cernita": {
+      // Find causes
+      const causesQ = `SELECT id, code FROM dragon_causes WHERE code IN ('SCARICO_PER_LAVORAZIONE', 'CARICO_DA_LAVORAZIONE') AND active = true`;
+      const { data: causesData } = await db.rpc("exec_sql_readonly", { query: causesQ }).maybeSingle();
+      const causesArr = Array.isArray(causesData) ? causesData : [causesData].filter(Boolean);
+      const scaricoCause = causesArr.find((c: any) => c.code === "SCARICO_PER_LAVORAZIONE");
+      const caricoCause = causesArr.find((c: any) => c.code === "CARICO_DA_LAVORAZIONE");
+      if (!scaricoCause || !caricoCause) return { error: "Causali di lavorazione non trovate nel DB" };
+
+      const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND active = true LIMIT 1`;
+      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
+      const registerId = regData?.[0]?.id || regData?.id || null;
+
+      const today = new Date().toISOString().split("T")[0];
+
+      // Get input item info
+      const itemQ = `SELECT codice_cer, descrizione, unita_misura_default, item_type FROM dragon_items WHERE id = '${args.input_item_id}'`;
+      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
+      const sourceItem = itemData?.[0] || itemData;
+      if (!sourceItem) return { error: "Articolo input non trovato" };
+
+      // Create batch
+      const batchSql = `INSERT INTO dragon_transform_batches (company_id, created_by, source_item_id, input_quantity, execution_date, notes, status)
+        VALUES ('${tenantId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'}, '${args.input_item_id}', ${args.input_quantity}, '${today}', ${args.notes ? `'${args.notes.replace(/'/g, "''")}'` : 'NULL'}, 'CONFERMATA')
+        RETURNING id`;
+      const { data: batchData, error: batchErr } = await db.rpc("exec_sql_write", { query: batchSql }).maybeSingle();
+      if (batchErr) return { error: batchErr.message };
+      const batchId = batchData?.[0]?.id || batchData?.id;
+
+      // Scarico input
+      const scarSql = `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, description_snapshot, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, source_transform_batch_id, created_by)
+        VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.input_item_id}', '${sourceItem.codice_cer}', '${(sourceItem.descrizione || "").replace(/'/g, "''")}', 'SCARICO', '${scaricoCause.id}', ${args.input_quantity}, '${sourceItem.unita_misura_default || "kg"}', 'MINUS', 'UL', 'DEFINITIVO', 'CONSOLIDATO', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`;
+      await db.rpc("exec_sql_write", { query: scarSql });
+
+      // Output movements
+      const outputResults: any[] = [];
+      for (const out of (args.outputs || [])) {
+        const outItemQ = `SELECT codice_cer, descrizione, unita_misura_default, item_type FROM dragon_items WHERE id = '${out.item_id}'`;
+        const { data: outItemData } = await db.rpc("exec_sql_readonly", { query: outItemQ }).maybeSingle();
+        const outItem = outItemData?.[0] || outItemData;
+        if (!outItem) continue;
+
+        const isWaste = outItem.item_type === "WASTE_CER";
+        const warehouseScope = isWaste ? "WASTE" : "MPS";
+
+        if (isWaste) {
+          await db.rpc("exec_sql_write", {
+            query: `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, description_snapshot, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, source_transform_batch_id, created_by)
+              VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${out.item_id}', '${outItem.codice_cer}', '${(outItem.descrizione || "").replace(/'/g, "''")}', 'CARICO', '${caricoCause.id}', ${out.quantity}, '${outItem.unita_misura_default || "kg"}', 'PLUS', 'UL', 'DEFINITIVO', 'CONSOLIDATO', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`
+          });
+        }
+
+        // Stock movement
+        await db.rpc("exec_sql_write", {
+          query: `INSERT INTO dragon_stock_movements (company_id, item_id, movement_date, cause_id, quantity, sign, warehouse_scope, source_transform_batch_id, created_by)
+            VALUES ('${tenantId}', '${out.item_id}', '${today}', '${caricoCause.id}', ${out.quantity}, 'PLUS', '${warehouseScope}', '${batchId}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})`
+        });
+
+        // Batch output
+        await db.rpc("exec_sql_write", {
+          query: `INSERT INTO dragon_transform_batch_outputs (batch_id, output_item_id, output_quantity, warehouse_scope)
+            VALUES ('${batchId}', '${out.item_id}', ${out.quantity}, '${warehouseScope}')`
+        });
+
+        outputResults.push({ cer: outItem.codice_cer, qty: out.quantity, scope: warehouseScope });
+      }
+
+      return { success: true, batch_id: batchId, input: { cer: sourceItem.codice_cer, qty: args.input_quantity }, outputs: outputResults };
+    }
+
+    case "dragon_trace_movement": {
+      const q = `SELECT dsm.*, 
+        di.codice_cer, di.descrizione as item_desc,
+        dc.name as cause_name,
+        drm.movement_number as reg_number, drm.movement_type as reg_type, drm.status as reg_status,
+        dd.document_type, dd.number as doc_number, dd.document_date,
+        dtb.status as batch_status, dtb.input_quantity as batch_input_qty,
+        dsi.codice_cer as batch_source_cer
+        FROM dragon_stock_movements dsm
+        LEFT JOIN dragon_items di ON di.id = dsm.item_id
+        LEFT JOIN dragon_causes dc ON dc.id = dsm.cause_id
+        LEFT JOIN dragon_register_movements drm ON drm.id = dsm.source_register_movement_id
+        LEFT JOIN dragon_documents dd ON dd.id = dsm.source_document_id
+        LEFT JOIN dragon_transform_batches dtb ON dtb.id = dsm.source_transform_batch_id
+        LEFT JOIN dragon_items dsi ON dsi.id = dtb.source_item_id
+        WHERE dsm.id = '${args.movement_id}' AND dsm.company_id = '${tenantId}'`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      if (error) return { error: error.message };
+      const mov = data?.[0] || data;
+      if (!mov) return { error: "Movimento non trovato" };
+
+      // Get batch outputs if from transform
+      let batchOutputs: any[] = [];
+      if (mov.source_transform_batch_id) {
+        const outQ = `SELECT dtbo.output_quantity, dtbo.warehouse_scope, di.codice_cer, di.descrizione
+          FROM dragon_transform_batch_outputs dtbo
+          JOIN dragon_items di ON di.id = dtbo.output_item_id
+          WHERE dtbo.batch_id = '${mov.source_transform_batch_id}'`;
+        const { data: outData } = await db.rpc("exec_sql_readonly", { query: outQ }).maybeSingle();
+        batchOutputs = outData || [];
+      }
+
+      // Get FIFO allocations
+      let allocations: any[] = [];
+      if (mov.source_register_movement_id) {
+        const allocQ = `SELECT dma.allocated_quantity,
+          drm_in.movement_number as in_number, drm_in.movement_date as in_date,
+          drm_out.movement_number as out_number, drm_out.movement_date as out_date
+          FROM dragon_movement_allocations dma
+          LEFT JOIN dragon_register_movements drm_in ON drm_in.id = dma.in_movement_id
+          LEFT JOIN dragon_register_movements drm_out ON drm_out.id = dma.out_movement_id
+          WHERE dma.in_movement_id = '${mov.source_register_movement_id}' OR dma.out_movement_id = '${mov.source_register_movement_id}'`;
+        const { data: allocData } = await db.rpc("exec_sql_readonly", { query: allocQ }).maybeSingle();
+        allocations = allocData || [];
+      }
+
+      return { trace: mov, batch_outputs: batchOutputs, fifo_allocations: allocations };
+    }
+
     default:
       return { error: `Strumento sconosciuto: ${fn.name}` };
   }
