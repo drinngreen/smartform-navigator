@@ -1925,10 +1925,13 @@ async function handleTool(
         };
       }
 
-      // Find cause by normalized code
-      const causeQ = `SELECT id, code, direction, stock_sign FROM dragon_causes WHERE code = '${normalizedCauseCode.replace(/'/g, "")}' AND active = true LIMIT 1`;
-      const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
-      const cause = causeData?.[0] || causeData;
+      // Find cause by normalized code via SDK
+      const { data: causeArr } = await db.from("dragon_causes")
+        .select("id, code, direction, stock_sign")
+        .eq("code", normalizedCauseCode)
+        .eq("active", true)
+        .limit(1);
+      const cause = causeArr?.[0];
       if (!cause) {
         return {
           error: `Causale '${normalizedCauseCode}' non trovata`,
@@ -1940,22 +1943,45 @@ async function handleTool(
         };
       }
 
-      // Find register
-      const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND subject_type = '${regType}' AND active = true LIMIT 1`;
-      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
-      const registerId = regData?.[0]?.id || regData?.id || null;
+      // Find register via SDK
+      const { data: regArr } = await db.from("dragon_registers")
+        .select("id")
+        .eq("company_id", tenantId)
+        .eq("subject_type", regType)
+        .eq("active", true)
+        .limit(1);
+      const registerId = regArr?.[0]?.id || null;
 
       const today = args.movement_date || new Date().toISOString().split("T")[0];
       const sign = args.movement_type === "CARICO" ? "PLUS" : "MINUS";
       const status = args.status || "BOZZA";
 
-      const sql = `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, note, created_by)
-        VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.item_id}', '${args.cer_code.replace(/'/g, "")}', '${args.movement_type}', '${cause.id}', ${args.quantity}, 'kg', '${sign}', 'UL', 'DEFINITIVO', '${status}', ${args.note ? `'${args.note.replace(/'/g, "''")}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
-        RETURNING id, movement_number, movement_type, cer_code, quantity, status`;
-      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : {
+      const insertPayload: any = {
+        company_id: tenantId,
+        register_id: registerId,
+        movement_date: today,
+        recording_date: today,
+        item_id: args.item_id,
+        cer_code: String(args.cer_code).replace(/[^A-Za-z0-9]/g, ""),
+        movement_type: args.movement_type,
+        cause_id: cause.id,
+        quantity: args.quantity,
+        unit_of_measure: "kg",
+        sign,
+        source_context: "UL",
+        weight_status: "DEFINITIVO",
+        status,
+      };
+      if (args.note) insertPayload.note = args.note;
+      if (adminUserId) insertPayload.created_by = adminUserId;
+
+      const { data: newMov, error: movError } = await db.from("dragon_register_movements")
+        .insert(insertPayload)
+        .select("id, movement_number, movement_type, cer_code, quantity, status")
+        .single();
+      return movError ? { error: movError.message } : {
         success: true,
-        movement: data,
+        movement: newMov,
         register_type: regType,
         applied_cause_code: cause.code,
         requested_cause_code: args.cause_code || null,
