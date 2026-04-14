@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
-import { useDragonTransformBatches } from "@/hooks/dragon/useDragonTransforms";
+import { useDragonTransformBatches, useDragonTransformModels } from "@/hooks/dragon/useDragonTransforms";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { useMNContextStore } from "@/stores/mnContextStore";
@@ -32,6 +32,7 @@ interface OutputRow {
 
 export default function DragonCerniteBatchPage() {
   const { batches, isLoading } = useDragonTransformBatches();
+  const { models } = useDragonTransformModels();
   const { items } = useDragonItems();
   const { causes } = useDragonCauses();
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
@@ -43,6 +44,7 @@ export default function DragonCerniteBatchPage() {
   const [creating, setCreating] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [appliedModelId, setAppliedModelId] = useState<string | null>(null);
 
   // Form state
   const [inputItemId, setInputItemId] = useState("");
@@ -53,6 +55,12 @@ export default function DragonCerniteBatchPage() {
   const inputItem = items.find(i => i.id === inputItemId);
   const inputQty = parseFloat(inputQuantity) || 0;
 
+  // Find matching models for the selected input item
+  const matchingModels = useMemo(() =>
+    models.filter(m => m.active && m.input_item_id === inputItemId),
+    [models, inputItemId]
+  );
+
   const totalOutput = useMemo(() =>
     outputRows.reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0),
     [outputRows]
@@ -60,10 +68,26 @@ export default function DragonCerniteBatchPage() {
   const difference = inputQty - totalOutput;
 
   const activeItems = items.filter(i => i.attivo);
-  // Exclude input item from output choices
   const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
 
-  // Auto-open from URL params (e.g. from Magazzino "Cernita" button)
+  // Apply a transform model: pre-fill output rows with the model's recipe
+  const applyModel = (modelId: string) => {
+    const model = models.find(m => m.id === modelId);
+    if (!model || !model.outputs) return;
+    const newRows: OutputRow[] = (model.outputs as any[]).map((o: any) => {
+      let qty = 0;
+      if (o.quantity_mode === "PERCENT" && inputQty > 0) {
+        qty = (o.quantity_value / 100) * inputQty;
+      } else if (o.quantity_mode === "FIXED") {
+        qty = o.quantity_value;
+      }
+      return { item_id: o.output_item_id, quantity: qty > 0 ? qty.toFixed(2) : "" };
+    });
+    setOutputRows(newRows.length > 0 ? newRows : [{ item_id: "", quantity: "" }]);
+    setAppliedModelId(modelId);
+  };
+
+  // Auto-open from URL params (e.g. from Magazzino "Cernita" button or Registro "Avvia Lavorazione")
   useEffect(() => {
     const paramItemId = searchParams.get("item_id");
     const paramQty = searchParams.get("qty");
