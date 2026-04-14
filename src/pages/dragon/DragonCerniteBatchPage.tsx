@@ -481,7 +481,7 @@ export default function DragonCerniteBatchPage() {
                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
                             <SelectContent>
                               {outputItemOptions.map(i => (
-                                <SelectItem key={i.id} value={i.id} className="text-xs">{i.codice_cer} — {i.descrizione} [{i.item_type}]</SelectItem>
+                                <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione} [{i.item_type}]</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
