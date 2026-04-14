@@ -128,6 +128,18 @@ export function DragonNewMovementForm({ open, onOpenChange }: Props) {
               </Select>
             </div>
           )}
+          <div>
+            <Label>Codice Operazione (R/D)</Label>
+            <Select value={operationCode} onValueChange={setOperationCode}>
+              <SelectTrigger><SelectValue placeholder="Seleziona operazione..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {TUTTI_CODICI_OPERAZIONE.map(op => (
+                  <SelectItem key={op.codice} value={op.codice}>{op.codice} — {op.descrizione}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="border-t border-border/30 pt-3">
             <div className="flex justify-between items-center mb-2">
