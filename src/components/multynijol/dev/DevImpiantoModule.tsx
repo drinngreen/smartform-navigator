@@ -338,7 +338,7 @@ function ImpiantoFormulari() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Questa lista interroga RENTRI lato Lovable con ruolo destinatario e mostra solo i FIR in arrivo ancora da accettare e firmare.
+            Questa lista interroga RENTRI lato Multyproget con ruolo destinatario e mostra solo i FIR in arrivo ancora da accettare e firmare.
           </p>
           <ImpiantoFirList
             items={incomingItems}
