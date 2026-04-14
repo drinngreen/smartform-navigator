@@ -6,7 +6,7 @@ import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
 import {
   BookOpen, Package, Scissors, History, Warehouse,
   FileText, ClipboardList, ArrowRight, RotateCcw,
-  TrendingUp, TrendingDown, Scale
+  TrendingUp, TrendingDown, Scale, LogIn
 } from "lucide-react";
 
 const PREFIX = "/mn/admin/dev-multyproget/dragon";
