@@ -16,7 +16,7 @@ const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
-const AUTONOMY_BLOCKING_PATTERN = /(potresti confermare|ho bisogno della tua conferma|ho (?:assolutamente )?bisogno di conoscere|devo sapere se .* esiste|è già configurato|è già presente|non posso verificarlo direttamente|non posso usare query_database|non posso usare il database|non posso inventarl[eo]|ti chiedo ancora|ti chiedo se puoi fornirmi|non posso andare avanti|non posso procedere|in attesa di questa informazione)/i;
+const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare)|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare)/i;
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
   INGRESSO_UL: "CARICO_DA_FORMULARIO",
@@ -2449,7 +2449,20 @@ Deno.serve(async (req) => {
       { role: "system", content: systemPrompt },
       ...(autonomyMode ? [{
         role: "system",
-        content: "AUTONOMIA OBBLIGATORIA ATTIVA: l'utente ti ha autorizzato a inventare dati e procedere da solo. È vietato chiedere conferme sull'esistenza di CER, articoli, anagrafiche o prerequisiti che puoi verificare o creare tu. Se un articolo manca, usa dragon_ensure_item oppure write_database e prosegui.",
+        content: `AUTONOMIA OBBLIGATORIA ATTIVA — REGOLE INDEROGABILI:
+1. L'utente ti ha ESPLICITAMENTE autorizzato a inventare dati e procedere da solo.
+2. È VIETATO chiedere conferme, item_id, cause_code o qualsiasi altro dato all'utente.
+3. Se un articolo CER/MPS non esiste, DEVI chiamare dragon_ensure_item SUBITO come PRIMO step.
+4. Se non conosci la causale giusta, DEVI chiamare dragon_list_causes con movement_type e register_type.
+5. Se manca un registro, chiama dragon_list_registers.
+6. PROCEDI STEP-BY-STEP usando i tool, senza mai fermarti a chiedere.
+7. Il flusso corretto per "carico come destinatario + cernita" è:
+   a) dragon_ensure_item (crea CER se manca)
+   b) dragon_create_movement (movement_type=CARICO, cause_code=CARICO_DA_FORMULARIO, register_type=DESTINATARIO)
+   c) dragon_consolidate_movement (per rendere il carico ufficiale)
+   d) dragon_ensure_item per ogni output della cernita
+   e) dragon_cernita (input_item_id, input_quantity, outputs[])
+NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       }] : []),
       ...(attachmentAware ? [{
         role: "system",
