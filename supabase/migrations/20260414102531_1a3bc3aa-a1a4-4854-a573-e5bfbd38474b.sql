@@ -1,0 +1,1 @@
+ALTER TABLE public.dragon_transform_batches ALTER COLUMN model_id DROP NOT NULL;

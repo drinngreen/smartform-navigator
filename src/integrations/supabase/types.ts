@@ -1437,7 +1437,7 @@ export type Database = {
           execution_date: string
           id: string
           input_quantity: number
-          model_id: string
+          model_id: string | null
           notes: string | null
           source_item_id: string
           source_register_movement_id: string | null
@@ -1451,7 +1451,7 @@ export type Database = {
           execution_date?: string
           id?: string
           input_quantity: number
-          model_id: string
+          model_id?: string | null
           notes?: string | null
           source_item_id: string
           source_register_movement_id?: string | null
@@ -1465,7 +1465,7 @@ export type Database = {
           execution_date?: string
           id?: string
           input_quantity?: number
-          model_id?: string
+          model_id?: string | null
           notes?: string | null
           source_item_id?: string
           source_register_movement_id?: string | null
