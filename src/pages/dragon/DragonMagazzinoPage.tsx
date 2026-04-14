@@ -31,6 +31,7 @@ export default function DragonMagazzinoPage() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   // Adjustment state
   const [showAdjust, setShowAdjust] = useState(false);
