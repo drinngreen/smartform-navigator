@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonTransformBatches } from "@/hooks/dragon/useDragonTransforms";
-import { useDragonTransformModels } from "@/hooks/dragon/useDragonTransforms";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { useMNContextStore } from "@/stores/mnContextStore";
@@ -15,8 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Play, XCircle, Scissors, AlertTriangle } from "lucide-react";
+import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal } from "lucide-react";
 import { toast } from "sonner";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 
@@ -26,9 +24,13 @@ const statusColors: Record<string, string> = {
   ANNULLATA: "bg-rose-500/20 text-rose-300",
 };
 
+interface OutputRow {
+  item_id: string;
+  quantity: string;
+}
+
 export default function DragonCerniteBatchPage() {
-  const { batches, isLoading, createBatch } = useDragonTransformBatches();
-  const { models } = useDragonTransformModels();
+  const { batches, isLoading } = useDragonTransformBatches();
   const { items } = useDragonItems();
   const { causes } = useDragonCauses();
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
@@ -37,50 +39,51 @@ export default function DragonCerniteBatchPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ model_id: "", input_quantity: "", notes: "" });
   const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
-  const selectedModel = models.find(m => m.id === form.model_id);
+  // Form state
+  const [inputItemId, setInputItemId] = useState("");
+  const [inputQuantity, setInputQuantity] = useState("");
+  const [notes, setNotes] = useState("");
+  const [outputRows, setOutputRows] = useState<OutputRow[]>([{ item_id: "", quantity: "" }]);
 
-  const handleCreate = async () => {
-    if (!form.model_id || !form.input_quantity) return;
-    setCreating(true);
-    try {
-      const model = models.find(m => m.id === form.model_id);
-      if (!model) throw new Error("Modello non trovato");
-      await createBatch.mutateAsync({
-        model_id: form.model_id,
-        source_item_id: model.input_item_id,
-        input_quantity: parseFloat(form.input_quantity),
-        notes: form.notes || undefined,
-      });
-      setShowCreate(false);
-      setForm({ model_id: "", input_quantity: "", notes: "" });
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setCreating(false);
-    }
+  const inputItem = items.find(i => i.id === inputItemId);
+  const inputQty = parseFloat(inputQuantity) || 0;
+
+  const totalOutput = useMemo(() =>
+    outputRows.reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0),
+    [outputRows]
+  );
+  const difference = inputQty - totalOutput;
+
+  const activeItems = items.filter(i => i.attivo);
+  // Exclude input item from output choices
+  const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
+
+  const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "" }]);
+  const removeOutputRow = (idx: number) => setOutputRows(r => r.filter((_, i) => i !== idx));
+  const updateOutputRow = (idx: number, field: keyof OutputRow, value: string) =>
+    setOutputRows(r => r.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+
+  const isFormValid = inputItemId && inputQty > 0 && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
+
+  const resetForm = () => {
+    setInputItemId("");
+    setInputQuantity("");
+    setNotes("");
+    setOutputRows([{ item_id: "", quantity: "" }]);
   };
 
-  // CONFIRM BATCH: Creates register + stock movements per the plan
-  const handleConfirm = async (batchId: string) => {
-    setConfirming(batchId);
+  // CREATE + CONFIRM in one step
+  const handleCreate = async () => {
+    if (!isFormValid) return;
+    setCreating(true);
     try {
-      const batch = batches.find(b => b.id === batchId);
-      if (!batch) throw new Error("Batch non trovato");
-      if (batch.status !== "BOZZA") throw new Error("Solo batch in BOZZA possono essere confermati");
-
-      const model = models.find(m => m.id === batch.model_id);
-      if (!model || !model.outputs?.length) throw new Error("Modello senza output definiti");
-
-      // Find causes
       const scaricoCause = causes.find(c => c.code === "SCARICO_PER_LAVORAZIONE");
       const caricoCause = causes.find(c => c.code === "CARICO_DA_LAVORAZIONE");
       if (!scaricoCause || !caricoCause) throw new Error("Causali SCARICO_PER_LAVORAZIONE / CARICO_DA_LAVORAZIONE non trovate");
 
-      // Find a register
       const { data: registers } = await supabase
         .from("dragon_registers")
         .select("id")
@@ -90,22 +93,40 @@ export default function DragonCerniteBatchPage() {
       const registerId = registers?.[0]?.id || null;
 
       const today = new Date().toISOString().split("T")[0];
-      const sourceItem = items.find(i => i.id === batch.source_item_id);
+      const sourceItem = items.find(i => i.id === inputItemId);
+
+      // Create batch record (CONFERMATA directly)
+      const { data: batch, error: batchErr } = await supabase
+        .from("dragon_transform_batches")
+        .insert({
+          company_id: companyId,
+          created_by: user?.id,
+          model_id: null as any, // no model
+          source_item_id: inputItemId,
+          input_quantity: inputQty,
+          execution_date: today,
+          notes: notes || null,
+          status: "CONFERMATA" as any,
+        } as any)
+        .select()
+        .single();
+      if (batchErr) throw batchErr;
+      const batchId = batch.id;
 
       // 1) SCARICO input (register movement)
-      const { data: scaricoMov, error: scaricoErr } = await supabase
+      await supabase
         .from("dragon_register_movements")
         .insert({
           company_id: companyId,
           register_id: registerId,
           movement_date: today,
           recording_date: today,
-          item_id: batch.source_item_id,
+          item_id: inputItemId,
           cer_code: sourceItem?.codice_cer || "",
           description_snapshot: sourceItem?.descrizione,
           movement_type: "SCARICO",
           cause_id: scaricoCause.id,
-          quantity: batch.input_quantity,
+          quantity: inputQty,
           unit_of_measure: sourceItem?.unita_misura_default || "kg",
           sign: "MINUS",
           source_context: "UL",
@@ -113,21 +134,18 @@ export default function DragonCerniteBatchPage() {
           status: "CONSOLIDATO",
           source_transform_batch_id: batchId,
           created_by: user?.id,
-        } as any)
-        .select()
-        .single();
-      if (scaricoErr) throw scaricoErr;
+        } as any);
 
-      // 2) For each model output, create movements
-      for (const modelOutput of model.outputs || []) {
-        const outputItem = items.find(i => i.id === modelOutput.output_item_id);
-        const outputQty = modelOutput.quantity_mode === "PERCENT"
-          ? (batch.input_quantity * modelOutput.quantity_value / 100)
-          : modelOutput.quantity_value;
+      // 2) For each output row, create movements
+      for (const row of outputRows) {
+        const outputItem = items.find(i => i.id === row.item_id);
+        const outputQty = parseFloat(row.quantity) || 0;
+        const isWaste = outputItem?.item_type === "WASTE_CER";
+        const warehouseScope = (outputItem?.item_type === "MPS" || outputItem?.item_type === "MATERIAL") ? "MPS" : "WASTE";
 
-        // Register movement (CARICO) for WASTE_CER outputs
+        // Register movement (CARICO) for waste outputs
         let regMovId: string | null = null;
-        if (modelOutput.output_type === "WASTE_CER") {
+        if (isWaste) {
           const { data: caricoMov, error: caricoErr } = await supabase
             .from("dragon_register_movements")
             .insert({
@@ -135,7 +153,7 @@ export default function DragonCerniteBatchPage() {
               register_id: registerId,
               movement_date: today,
               recording_date: today,
-              item_id: modelOutput.output_item_id,
+              item_id: row.item_id,
               cer_code: outputItem?.codice_cer || "",
               description_snapshot: outputItem?.descrizione,
               movement_type: "CARICO",
@@ -155,13 +173,12 @@ export default function DragonCerniteBatchPage() {
           regMovId = caricoMov.id;
         }
 
-        // Stock movement for MPS/MATERIAL outputs (or all outputs go to stock)
-        const warehouseScope = (modelOutput.output_type === "MPS" || modelOutput.output_type === "MATERIAL") ? "MPS" : "WASTE";
+        // Stock movement
         const { data: stockMov, error: stockErr } = await supabase
           .from("dragon_stock_movements")
           .insert({
             company_id: companyId,
-            item_id: modelOutput.output_item_id,
+            item_id: row.item_id,
             movement_date: today,
             cause_id: caricoCause.id,
             quantity: outputQty,
@@ -174,10 +191,10 @@ export default function DragonCerniteBatchPage() {
           .single();
         if (stockErr) throw stockErr;
 
-        // Insert batch output record
+        // Batch output record
         await supabase.from("dragon_transform_batch_outputs").insert({
           batch_id: batchId,
-          output_item_id: modelOutput.output_item_id,
+          output_item_id: row.item_id,
           output_quantity: outputQty,
           warehouse_scope: warehouseScope,
           generated_register_movement_id: regMovId,
@@ -185,35 +202,38 @@ export default function DragonCerniteBatchPage() {
         } as any);
       }
 
-      // Update batch status to CONFERMATA
-      await supabase
-        .from("dragon_transform_batches")
-        .update({ status: "CONFERMATA" as any, updated_at: new Date().toISOString() } as any)
-        .eq("id", batchId);
-
       // Audit log
       await supabase.from("dragon_audit_logs").insert({
         entity_type: "transform_batch",
         entity_id: batchId,
         action_type: "CONFIRM",
-        after_state: { model: model.code, input_qty: batch.input_quantity, outputs: model.outputs?.length } as any,
+        after_state: {
+          input: sourceItem?.codice_cer,
+          input_qty: inputQty,
+          outputs: outputRows.map(r => ({
+            item: items.find(i => i.id === r.item_id)?.codice_cer,
+            qty: parseFloat(r.quantity),
+          })),
+        } as any,
         performed_by: user?.id,
-        reason: "Conferma batch cernita",
+        reason: "Cernita confermata",
       } as any);
 
       qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] });
       qc.invalidateQueries({ queryKey: ["dragon-register"] });
       qc.invalidateQueries({ queryKey: ["dragon-stock"] });
       qc.invalidateQueries({ queryKey: ["dragon-audit"] });
-      toast.success("Batch confermato — movimenti generati");
+      toast.success("Cernita confermata — movimenti generati");
+      setShowCreate(false);
+      resetForm();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
-      setConfirming(null);
+      setCreating(false);
     }
   };
 
-  // CANCEL BATCH: Create inverse movements (no deletes)
+  // CANCEL BATCH (inverse movements)
   const handleCancel = async (batchId: string) => {
     setCancelling(batchId);
     try {
@@ -236,7 +256,7 @@ export default function DragonCerniteBatchPage() {
         .limit(1);
       const registerId = registers?.[0]?.id || null;
 
-      // Inverse of SCARICO input → CARICO (re-add input)
+      // Inverse SCARICO → CARICO (re-add input)
       await supabase.from("dragon_register_movements").insert({
         company_id: companyId,
         register_id: registerId,
@@ -254,16 +274,14 @@ export default function DragonCerniteBatchPage() {
         weight_status: "DEFINITIVO",
         status: "CONSOLIDATO",
         source_transform_batch_id: batchId,
-        annotations: "Annullamento batch cernita",
+        annotations: "Annullamento cernita",
         created_by: user?.id,
       } as any);
 
-      // Inverse of each output
+      // Inverse each output
       for (const output of batch.outputs || []) {
         const outputItem = items.find(i => i.id === output.output_item_id);
-        const warehouseScope = output.warehouse_scope;
 
-        // SCARICO (remove output from register if it was WASTE)
         if (output.generated_register_movement_id) {
           await supabase.from("dragon_register_movements").insert({
             company_id: companyId,
@@ -282,12 +300,11 @@ export default function DragonCerniteBatchPage() {
             weight_status: "DEFINITIVO",
             status: "CONSOLIDATO",
             source_transform_batch_id: batchId,
-            annotations: "Annullamento batch cernita",
+            annotations: "Annullamento cernita",
             created_by: user?.id,
           } as any);
         }
 
-        // Inverse stock movement
         await supabase.from("dragon_stock_movements").insert({
           company_id: companyId,
           item_id: output.output_item_id,
@@ -295,20 +312,18 @@ export default function DragonCerniteBatchPage() {
           cause_id: scaricoCause.id,
           quantity: output.output_quantity,
           sign: "MINUS",
-          warehouse_scope: warehouseScope,
+          warehouse_scope: output.warehouse_scope,
           source_transform_batch_id: batchId,
-          note: "Annullamento batch cernita",
+          note: "Annullamento cernita",
           created_by: user?.id,
         } as any);
       }
 
-      // Mark batch as ANNULLATA
       await supabase
         .from("dragon_transform_batches")
         .update({ status: "ANNULLATA" as any, updated_at: new Date().toISOString() } as any)
         .eq("id", batchId);
 
-      // Audit log
       await supabase.from("dragon_audit_logs").insert({
         entity_type: "transform_batch",
         entity_id: batchId,
@@ -316,14 +331,14 @@ export default function DragonCerniteBatchPage() {
         before_state: { status: "CONFERMATA" } as any,
         after_state: { status: "ANNULLATA" } as any,
         performed_by: user?.id,
-        reason: "Annullamento batch cernita con movimenti inversi",
+        reason: "Annullamento cernita con movimenti inversi",
       } as any);
 
       qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] });
       qc.invalidateQueries({ queryKey: ["dragon-register"] });
       qc.invalidateQueries({ queryKey: ["dragon-stock"] });
       qc.invalidateQueries({ queryKey: ["dragon-audit"] });
-      toast.success("Batch annullato — movimenti inversi creati");
+      toast.success("Cernita annullata — movimenti inversi creati");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -332,23 +347,24 @@ export default function DragonCerniteBatchPage() {
   };
 
   return (
-    <MNAdminLayout title="Cernite & Lavorazioni" subtitle="Dragon Rifiuti 2 — Batch di trasformazione">
+    <MNAdminLayout title="Cernite" subtitle="Dragon — Smontaggio materiali in componenti">
       <div className="space-y-4">
         <DragonBackButton />
         <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} batch totali</p>
-          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Batch</Button>
+          <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} cernite totali</p>
+          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuova Cernita</Button>
         </div>
 
+        {/* Existing batches table */}
         <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-border/20">
                 <TableHead>Data</TableHead>
-                <TableHead>Modello</TableHead>
                 <TableHead>Input CER</TableHead>
-                <TableHead className="text-right">Qty Input</TableHead>
-                <TableHead>Output</TableHead>
+                <TableHead className="text-right">Kg Input</TableHead>
+                <TableHead className="text-right">Kg Output</TableHead>
+                <TableHead>Componenti</TableHead>
                 <TableHead>Stato</TableHead>
                 <TableHead>Azioni</TableHead>
               </TableRow>
@@ -357,78 +373,185 @@ export default function DragonCerniteBatchPage() {
               {isLoading ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
               ) : batches.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessun batch creato</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessuna cernita eseguita</TableCell></TableRow>
               ) : (
-                batches.map((b) => (
-                  <TableRow key={b.id} className="border-border/10">
-                    <TableCell className="text-sm">{new Date(b.execution_date).toLocaleDateString("it-IT")}</TableCell>
-                    <TableCell className="text-sm font-medium">{(b.model as any)?.name || "—"}</TableCell>
-                    <TableCell className="font-mono text-sm">{(b.source_item as any)?.codice_cer || "—"}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(b.input_quantity).toLocaleString("it-IT")} kg</TableCell>
-                    <TableCell><Badge variant="outline">{(b.outputs as any[])?.length || 0} output</Badge></TableCell>
-                    <TableCell><Badge variant="outline" className={statusColors[b.status] || ""}>{b.status}</Badge></TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {b.status === "BOZZA" && (
-                          <Button size="sm" variant="outline" disabled={confirming === b.id} onClick={() => handleConfirm(b.id)}>
-                            <Play className="h-3 w-3 mr-1" />{confirming === b.id ? "..." : "Conferma"}
-                          </Button>
-                        )}
+                batches.map((b) => {
+                  const outputsArr = (b.outputs as any[]) || [];
+                  const totalOut = outputsArr.reduce((s, o) => s + (Number(o.output_quantity) || 0), 0);
+                  return (
+                    <TableRow key={b.id} className="border-border/10">
+                      <TableCell className="text-sm">{new Date(b.execution_date).toLocaleDateString("it-IT")}</TableCell>
+                      <TableCell className="font-mono text-sm">{(b.source_item as any)?.codice_cer || "—"}</TableCell>
+                      <TableCell className="text-right font-mono">{Number(b.input_quantity).toLocaleString("it-IT")} kg</TableCell>
+                      <TableCell className="text-right font-mono">{totalOut.toLocaleString("it-IT")} kg</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {outputsArr.map((o, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {(o.output_item as any)?.codice_cer || "?"} ({Number(o.output_quantity).toLocaleString("it-IT")} kg)
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className={statusColors[b.status] || ""}>{b.status}</Badge></TableCell>
+                      <TableCell>
                         {b.status === "CONFERMATA" && (
                           <Button size="sm" variant="outline" className="text-rose-400" disabled={cancelling === b.id} onClick={() => handleCancel(b.id)}>
                             <XCircle className="h-3 w-3 mr-1" />{cancelling === b.id ? "..." : "Annulla"}
                           </Button>
                         )}
                         {b.status === "ANNULLATA" && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Annullato</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Annullata</span>
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      {/* Create Batch Sheet */}
-      <Sheet open={showCreate} onOpenChange={setShowCreate}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader><SheetTitle>Nuovo Batch di Cernita</SheetTitle></SheetHeader>
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label>Modello di Cernita *</Label>
-              <Select value={form.model_id} onValueChange={v => setForm(f => ({ ...f, model_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleziona modello..." /></SelectTrigger>
-                <SelectContent>
-                  {models.filter(m => m.active).map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.code} — {m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {selectedModel && (
-              <div className="p-3 bg-muted/30 rounded-lg text-sm space-y-1">
-                <p><strong>Input:</strong> {(selectedModel.input_item as any)?.codice_cer} — {(selectedModel.input_item as any)?.descrizione}</p>
-                <p><strong>Output definiti:</strong> {selectedModel.outputs?.length || 0}</p>
-                {selectedModel.outputs?.map((o, i) => (
-                  <p key={i} className="text-xs text-muted-foreground ml-2">
-                    → {(o.output_item as any)?.codice_cer} ({o.quantity_mode === "PERCENT" ? `${o.quantity_value}%` : `${o.quantity_value} kg`}) [{o.output_type}]
-                  </p>
-                ))}
+      {/* Create Cernita Sheet */}
+      <Sheet open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) resetForm(); }}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader><SheetTitle>Nuova Cernita — Distribuzione Materiali</SheetTitle></SheetHeader>
+          <div className="space-y-5 mt-4">
+
+            {/* INPUT SECTION */}
+            <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/5 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-red-400">
+                <ArrowDown className="h-4 w-4" /> MATERIALE IN INGRESSO (da smontare)
               </div>
-            )}
-            <div>
-              <Label>Quantità Input (kg) *</Label>
-              <Input type="number" step="0.01" value={form.input_quantity} onChange={e => setForm(f => ({ ...f, input_quantity: e.target.value }))} placeholder="0.00" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Articolo / CER *</Label>
+                  <Select value={inputItemId} onValueChange={setInputItemId}>
+                    <SelectTrigger><SelectValue placeholder="Seleziona articolo..." /></SelectTrigger>
+                    <SelectContent>
+                      {activeItems.map(i => (
+                        <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Quantità (kg) *</Label>
+                  <Input type="number" step="0.01" value={inputQuantity} onChange={e => setInputQuantity(e.target.value)} placeholder="0.00" className="font-mono" />
+                </div>
+              </div>
+              {inputItem && (
+                <p className="text-xs text-muted-foreground">
+                  Tipo: <Badge variant="outline" className="text-xs">{inputItem.item_type}</Badge>
+                  {inputItem.pericoloso && <Badge variant="outline" className="text-xs ml-1 text-amber-400">⚠ Pericoloso</Badge>}
+                </p>
+              )}
             </div>
+
+            {/* OUTPUT SECTION — Distribution table */}
+            <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                  <ArrowUp className="h-4 w-4" /> COMPONENTI IN USCITA (distribuisci i kg)
+                </div>
+                <Button size="sm" variant="outline" onClick={addOutputRow}><Plus className="h-3 w-3 mr-1" /> Riga</Button>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border/20">
+                    <TableHead className="w-8">#</TableHead>
+                    <TableHead>Articolo / CER</TableHead>
+                    <TableHead className="text-right w-32">Kg</TableHead>
+                    <TableHead className="text-right w-20">%</TableHead>
+                    <TableHead className="w-10"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {outputRows.map((row, idx) => {
+                    const rowQty = parseFloat(row.quantity) || 0;
+                    const pct = inputQty > 0 ? ((rowQty / inputQty) * 100).toFixed(1) : "0.0";
+                    const rowItem = items.find(i => i.id === row.item_id);
+                    return (
+                      <TableRow key={idx} className="border-border/10">
+                        <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                        <TableCell>
+                          <Select value={row.item_id} onValueChange={v => updateOutputRow(idx, "item_id", v)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+                            <SelectContent>
+                              {outputItemOptions.map(i => (
+                                <SelectItem key={i.id} value={i.id} className="text-xs">{i.codice_cer} — {i.descrizione} [{i.item_type}]</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={row.quantity}
+                            onChange={e => updateOutputRow(idx, "quantity", e.target.value)}
+                            placeholder="0.00"
+                            className="h-8 text-right font-mono text-xs"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground font-mono">{pct}%</TableCell>
+                        <TableCell>
+                          {outputRows.length > 1 && (
+                            <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-400" onClick={() => removeOutputRow(idx)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* TOTALS */}
+            <div className="p-4 rounded-xl border border-border/30 bg-muted/20 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Equal className="h-4 w-4" /> RIEPILOGO
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground">Kg Ingresso</p>
+                  <p className="text-lg font-mono font-bold text-red-400">{inputQty.toLocaleString("it-IT")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Kg Uscita Totale</p>
+                  <p className="text-lg font-mono font-bold text-emerald-400">{totalOutput.toLocaleString("it-IT")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Differenza</p>
+                  <p className={`text-lg font-mono font-bold ${Math.abs(difference) < 0.01 ? "text-emerald-400" : difference > 0 ? "text-amber-400" : "text-rose-400"}`}>
+                    {difference > 0 ? "+" : ""}{difference.toLocaleString("it-IT")} kg
+                  </p>
+                </div>
+              </div>
+              {difference < -0.01 && (
+                <p className="text-xs text-rose-400 text-center">⚠ L'uscita supera l'ingresso — controlla le quantità</p>
+              )}
+              {difference > 0.01 && inputQty > 0 && (
+                <p className="text-xs text-amber-400 text-center">ℹ Restano {difference.toLocaleString("it-IT")} kg non assegnati (scarto/calo)</p>
+              )}
+            </div>
+
+            {/* Notes */}
             <div>
               <Label>Note</Label>
-              <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Note opzionali..." />
+              <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note opzionali..." />
             </div>
-            <Button onClick={handleCreate} disabled={creating || !form.model_id || !form.input_quantity} className="w-full">
-              {creating ? "Creazione..." : "Crea Batch (Bozza)"}
+
+            <Button
+              onClick={handleCreate}
+              disabled={creating || !isFormValid}
+              className="w-full"
+            >
+              {creating ? "Conferma in corso..." : "Conferma Cernita e Genera Movimenti"}
             </Button>
           </div>
         </SheetContent>
