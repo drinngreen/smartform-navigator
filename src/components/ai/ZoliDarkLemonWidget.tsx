@@ -39,7 +39,7 @@ export function ZoliDarkLemonWidget() {
   const { isOpen, setOpen, position, setPosition, size, setSize } = useZoliDarkLemonWidgetStore();
   const [minimized, setMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showHistory, setShowHistory] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
   const [pendingFill, setPendingFill] = useState<FillFormPayload | null>(null);
   const savedPos = useRef({ x: 0, y: 0, w: 0, h: 0 });
   const isDragging = useRef(false);
