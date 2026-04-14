@@ -12,6 +12,7 @@ interface Filters {
   causeId?: string;
   status?: DragonMovementStatus;
   movementType?: 'CARICO' | 'SCARICO';
+  registerId?: string;
   search?: string;
 }
 
@@ -44,6 +45,7 @@ export function useDragonRegister(filters?: Filters) {
       if (filters?.causeId) query = query.eq("cause_id", filters.causeId);
       if (filters?.status) query = query.eq("status", filters.status);
       if (filters?.movementType) query = query.eq("movement_type", filters.movementType as any);
+      if (filters?.registerId) query = query.eq("register_id", filters.registerId);
 
       const { data, error } = await query.limit(500);
       if (error) throw error;

@@ -2,14 +2,16 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
+import { useDragonRegisters } from "@/hooks/dragon/useDragonRegisters";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers } from "lucide-react";
+import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers, LogIn, Scissors } from "lucide-react";
 import { DragonRegisterMovement, DragonMovementStatus } from "@/types/dragon";
 import { DragonMovementForm } from "@/components/dragon/DragonMovementForm";
 import { exportToExcel } from "@/lib/exportUtils";
@@ -29,17 +31,33 @@ const typeColors: Record<string, string> = {
   SCARICO: "bg-rose-500/20 text-rose-300",
 };
 
+const registerLabels: Record<string, string> = {
+  PRODUTTORE: "Conto Proprio",
+  DESTINATARIO: "Impianto",
+  TRASPORTATORE: "Trasportatore",
+  INTERMEDIARIO: "Intermediazione",
+};
+
 export default function DragonRegistroPage() {
   const { context } = useParams<{ context: string }>();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [detail, setDetail] = useState<DragonRegisterMovement | null>(null);
+  const [activeRegisterId, setActiveRegisterId] = useState<string>("");
   const [filters, setFilters] = useState<{ cerCode?: string; status?: DragonMovementStatus; movementType?: 'CARICO' | 'SCARICO' }>({});
 
-  const { movements, isLoading, createMovement, consolidate } = useDragonRegister(filters);
+  const { registers, isLoading: loadingRegisters } = useDragonRegisters();
+  const { movements, isLoading, createMovement, consolidate } = useDragonRegister({
+    ...filters,
+    registerId: activeRegisterId || undefined,
+  });
   const { causes } = useDragonCauses();
 
   const prefix = `/mn/admin/${context}/dragon`;
+
+  // Auto-select first register
+  const currentRegisterId = activeRegisterId || (registers.length > 0 ? registers[0].id : "");
+  const currentRegister = registers.find(r => r.id === currentRegisterId);
 
   const handleExport = () => {
     exportToExcel(
@@ -55,15 +73,33 @@ export default function DragonRegistroPage() {
         { header: "Causale", key: "cause", width: 25, format: (v: any) => v?.name || "" },
         { header: "Stato", key: "status", width: 14 },
       ],
-      `registro_${context}_${new Date().toISOString().split("T")[0]}`
+      `registro_${currentRegister?.subject_type || "all"}_${new Date().toISOString().split("T")[0]}`
     );
   };
 
   return (
     <MNAdminLayout title="Registro Cronologico" subtitle="Dragon Rifiuti 2 — Movimenti di registro">
       <div className="space-y-4">
-        {/* Toolbar */}
         <DragonBackButton />
+
+        {/* Register selector tabs */}
+        {registers.length > 0 && (
+          <Tabs
+            value={currentRegisterId}
+            onValueChange={(v) => setActiveRegisterId(v)}
+            className="w-full"
+          >
+            <TabsList className="w-full justify-start flex-wrap h-auto gap-1 p-1">
+              {registers.map((r) => (
+                <TabsTrigger key={r.id} value={r.id} className="text-xs">
+                  {registerLabels[r.subject_type] || r.register_code}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
+
+        {/* Toolbar */}
         <div className="flex flex-wrap gap-3 items-center justify-between">
           <div className="flex gap-2 items-center flex-wrap">
             <Input placeholder="Cerca CER..." className="w-40 h-9" value={filters.cerCode || ""} onChange={(e) => setFilters(f => ({ ...f, cerCode: e.target.value || undefined }))} />
@@ -88,6 +124,9 @@ export default function DragonRegistroPage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" /> Export</Button>
+            {currentRegister?.subject_type === "DESTINATARIO" && (
+              <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/ingresso`)}><LogIn className="h-4 w-4 mr-1" /> Ingresso FIR</Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/scarico-cumulativo`)}><Layers className="h-4 w-4 mr-1" /> Scarico Cumulativo</Button>
             <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/carico-scarico`)}><ArrowLeftRight className="h-4 w-4 mr-1" /> Carico/Scarico</Button>
             <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Movimento</Button>
@@ -109,7 +148,7 @@ export default function DragonRegistroPage() {
           ))}
         </div>
 
-        {/* Table */}
+        {/* Movements with weight_status indicator */}
         <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
           <Table>
             <TableHeader>
@@ -122,34 +161,58 @@ export default function DragonRegistroPage() {
                 <TableHead className="w-24 text-right">Quantità</TableHead>
                 <TableHead className="w-32">Causale</TableHead>
                 <TableHead className="w-28">Stato</TableHead>
-                <TableHead className="w-20">Azioni</TableHead>
+                <TableHead className="w-28">Azioni</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isLoading || loadingRegisters ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
               ) : movements.length === 0 ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">Nessun movimento trovato</TableCell></TableRow>
               ) : (
-                movements.map((m) => (
-                  <TableRow key={m.id} className="border-border/10 cursor-pointer hover:bg-muted/30" onClick={() => setDetail(m)}>
-                    <TableCell className="font-mono text-xs">{m.movement_number}</TableCell>
-                    <TableCell className="text-sm">{new Date(m.movement_date).toLocaleDateString("it-IT")}</TableCell>
-                    <TableCell><Badge variant="outline" className={typeColors[m.movement_type]}>{m.movement_type}</Badge></TableCell>
-                    <TableCell className="font-mono text-sm">{m.cer_code}</TableCell>
-                    <TableCell className="text-sm truncate max-w-[200px]">{m.description_snapshot || "—"}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(m.quantity).toLocaleString("it-IT")} {m.unit_of_measure}</TableCell>
-                    <TableCell className="text-xs">{(m.cause as any)?.name || "—"}</TableCell>
-                    <TableCell><Badge variant="outline" className={statusColors[m.status] || ""}>{m.status}</Badge></TableCell>
-                    <TableCell>
-                      {m.status === "BOZZA" && (
-                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); consolidate.mutate(m.id); }} title="Consolida">
-                          <CheckCircle className="h-4 w-4 text-emerald-400" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+                movements.map((m) => {
+                  const isAwaitingWeight = m.weight_status === "DA_VERIFICARE_A_DESTINO";
+                  return (
+                    <TableRow
+                      key={m.id}
+                      className={`border-border/10 cursor-pointer hover:bg-muted/30 ${isAwaitingWeight ? "bg-amber-500/5" : ""}`}
+                      onClick={() => setDetail(m)}
+                    >
+                      <TableCell className="font-mono text-xs">{m.movement_number}</TableCell>
+                      <TableCell className="text-sm">{new Date(m.movement_date).toLocaleDateString("it-IT")}</TableCell>
+                      <TableCell><Badge variant="outline" className={typeColors[m.movement_type]}>{m.movement_type}</Badge></TableCell>
+                      <TableCell className="font-mono text-sm">{m.cer_code}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[200px]">{m.description_snapshot || "—"}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {Number(m.quantity).toLocaleString("it-IT")} {m.unit_of_measure}
+                        {isAwaitingWeight && <span className="ml-1 text-amber-400" title="In attesa peso a destino">⚖️</span>}
+                      </TableCell>
+                      <TableCell className="text-xs">{(m.cause as any)?.name || "—"}</TableCell>
+                      <TableCell><Badge variant="outline" className={statusColors[m.status] || ""}>{m.status}</Badge></TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {m.status === "BOZZA" && (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); consolidate.mutate(m.id); }} title="Consolida">
+                              <CheckCircle className="h-4 w-4 text-emerald-400" />
+                            </Button>
+                          )}
+                          {m.movement_type === "CARICO" && m.status === "CONSOLIDATO" && (
+                            <Button variant="ghost" size="sm" onClick={(e) => {
+                              e.stopPropagation();
+                              const item = m.item;
+                              if (item) {
+                                const params = new URLSearchParams({ item_id: m.item_id, qty: String(m.quantity) });
+                                navigate(`${prefix}/cernite/batch?${params.toString()}`);
+                              }
+                            }} title="Avvia Lavorazione">
+                              <Scissors className="h-4 w-4 text-blue-400" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -163,7 +226,10 @@ export default function DragonRegistroPage() {
           <DragonMovementForm
             causes={causes}
             onSubmit={async (data) => {
-              await createMovement.mutateAsync(data);
+              await createMovement.mutateAsync({
+                ...data,
+                register_id: currentRegisterId || null,
+              });
               setShowForm(false);
             }}
             isLoading={createMovement.isPending}
@@ -186,6 +252,9 @@ export default function DragonRegistroPage() {
                 <div><p className="text-xs text-muted-foreground">Segno</p><p className="text-sm">{detail.sign === "PLUS" ? "➕" : "➖"} {detail.sign}</p></div>
                 <div><p className="text-xs text-muted-foreground">Contesto</p><p className="text-sm">{detail.source_context}</p></div>
                 <div><p className="text-xs text-muted-foreground">Peso</p><p className="text-sm">{detail.weight_status}</p></div>
+                {detail.register && (
+                  <div><p className="text-xs text-muted-foreground">Registro</p><p className="text-sm">{registerLabels[(detail.register as any).subject_type] || (detail.register as any).register_code}</p></div>
+                )}
               </div>
               {detail.description_snapshot && <div><p className="text-xs text-muted-foreground">Descrizione</p><p className="text-sm">{detail.description_snapshot}</p></div>}
               {detail.note && <div><p className="text-xs text-muted-foreground">Note</p><p className="text-sm">{detail.note}</p></div>}

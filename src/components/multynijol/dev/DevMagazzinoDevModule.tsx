@@ -6,7 +6,7 @@ import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
 import {
   BookOpen, Package, Scissors, History, Warehouse,
   FileText, ClipboardList, ArrowRight, RotateCcw,
-  TrendingUp, TrendingDown, Scale
+  TrendingUp, TrendingDown, Scale, LogIn
 } from "lucide-react";
 
 const PREFIX = "/mn/admin/dev-multyproget/dragon";
@@ -26,6 +26,7 @@ export function DevMagazzinoDevModule() {
       desc: "Registro cronologico carico/scarico rifiuti",
       items: [
         { label: "Registro Generale", desc: "Tutti i movimenti di carico e scarico", icon: BookOpen, path: `${PREFIX}/registro` },
+        { label: "Ingresso FIR (Destinatario)", desc: "Accettazione rifiuti in ingresso con formulario", icon: LogIn, path: `${PREFIX}/registro/ingresso` },
         { label: "Carico / Scarico Guidato", desc: "Wizard per ingresso/uscita con FIR", icon: ClipboardList, path: `${PREFIX}/registro/carico-scarico` },
         { label: "Scarico Cumulativo", desc: "Scarico FIFO multiplo per codice CER", icon: TrendingDown, path: `${PREFIX}/registro/scarico-cumulativo` },
       ],
