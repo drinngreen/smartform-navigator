@@ -36,9 +36,41 @@ type DragonRegisterType = typeof VALID_REGISTER_TYPES[number];
 
 function sanitizeRegisterType(registerType?: string): DragonRegisterType {
   const normalized = String(registerType || "").trim().toUpperCase();
-  return (VALID_REGISTER_TYPES as readonly string[]).includes(normalized)
-    ? normalized as DragonRegisterType
+  const aliasMap: Record<string, DragonRegisterType> = {
+    IMPIANTO: "DESTINATARIO",
+    DESTINATARIO: "DESTINATARIO",
+    PRODUTTORE: "PRODUTTORE",
+    TRASPORTATORE: "TRASPORTATORE",
+    CONTO_PROPRIO: "TRASPORTATORE",
+    INTERMEDIARIO: "INTERMEDIARIO",
+  };
+  const resolved = aliasMap[normalized] ?? normalized;
+  return (VALID_REGISTER_TYPES as readonly string[]).includes(resolved)
+    ? resolved as DragonRegisterType
     : "PRODUTTORE";
+}
+
+function suggestedCauseCodesForContext(movementType?: string, registerType?: string): string[] {
+  const normalizedMovementType = String(movementType || "").trim().toUpperCase();
+  const normalizedRegisterType = sanitizeRegisterType(registerType);
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "DESTINATARIO") {
+    return ["CARICO_DA_FORMULARIO", "CARICO_DA_DDT"];
+  }
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "PRODUTTORE") {
+    return ["CARICO_PRODUZIONE_UL", "CARICO_PRODUZIONE_FUORI_UL", "CARICO_SCARICO_CONTESTUALE"];
+  }
+
+  if (normalizedMovementType === "SCARICO" && normalizedRegisterType === "DESTINATARIO") {
+    return ["SCARICO_USCITA_FORMULARIO", "SCARICO_PER_LAVORAZIONE", "SCARICO_DA_DDT"];
+  }
+
+  if (normalizedMovementType === "SCARICO" && normalizedRegisterType === "PRODUTTORE") {
+    return ["SCARICO_USCITA_FORMULARIO", "SCARICO_PER_LAVORAZIONE", "SCARICO_DA_DDT"];
+  }
+
+  return [];
 }
 
 function defaultCauseCodeForMovement(movementType?: string, registerType?: string): string | null {
@@ -1001,6 +1033,21 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "dragon_list_causes",
+      description: "Elenca le causali Dragon attive. Se specifichi movement_type e register_type, restituisce le causali corrette per quel contesto operativo.",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento (opzionale)" },
+          register_type: { type: "string", enum: ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"], description: "Tipo registro (opzionale)" },
+          direction: { type: "string", enum: ["IN", "OUT", "TRANSFORM", "ADJUST"], description: "Direzione causale (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "dragon_register_list",
       description: "Elenca movimenti dal registro cronologico Dragon. Filtra per tipo (CARICO/SCARICO), stato, CER, registro.",
       parameters: {
@@ -1021,12 +1068,12 @@ const tools = [
     type: "function",
     function: {
       name: "dragon_create_movement",
-      description: "Crea un movimento di registro Dragon (carico o scarico). Richiede SEMPRE conferma dell'utente prima dell'esecuzione.",
+      description: "Crea un movimento di registro Dragon (carico o scarico). Se cause_code manca o usa un alias descrittivo, il sistema prova a normalizzarlo automaticamente ai codici reali attivi.",
       parameters: {
         type: "object",
         properties: {
           movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento" },
-          cause_code: { type: "string", description: "Codice causale (es. CARICO_PRODUZIONE_UL, INGRESSO_UL, SCARICO_USCITA_FORMULARIO)" },
+          cause_code: { type: "string", description: "Codice causale reale o alias descrittivo (es. CARICO_DA_FORMULARIO, INGRESSO_UL, SCARICO_USCITA_FORMULARIO)" },
           cer_code: { type: "string", description: "Codice CER del rifiuto" },
           item_id: { type: "string", description: "UUID dell'articolo Dragon" },
           quantity: { type: "number", description: "Quantità in kg" },
@@ -1035,7 +1082,7 @@ const tools = [
           status: { type: "string", enum: ["BOZZA", "CONSOLIDATO"], description: "Stato iniziale (default: BOZZA)" },
           note: { type: "string", description: "Note opzionali" }
         },
-        required: ["movement_type", "cause_code", "cer_code", "item_id", "quantity"]
+        required: ["movement_type", "cer_code", "item_id", "quantity"]
       }
     }
   },
