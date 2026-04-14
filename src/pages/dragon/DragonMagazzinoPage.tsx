@@ -15,12 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Package, Recycle, Plus, Minus, RotateCcw, FileDown } from "lucide-react";
+import { Package, Recycle, Plus, Minus, RotateCcw, FileDown, Scissors } from "lucide-react";
 import { toast } from "sonner";
-import type { DragonWarehouseScope, DragonAdjustmentType, DragonStockMovement } from "@/types/dragon";
+import type { DragonWarehouseScope, DragonAdjustmentType, DragonStockMovement, DragonStockBalance } from "@/types/dragon";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 import { DragonMovementDetail } from "@/components/dragon/DragonMovementDetail";
 import { DragonNewMovementForm } from "@/components/dragon/DragonNewMovementForm";
+import { useNavigate } from "react-router-dom";
 
 export default function DragonMagazzinoPage() {
   const [scope, setScope] = useState<DragonWarehouseScope | undefined>(undefined);
