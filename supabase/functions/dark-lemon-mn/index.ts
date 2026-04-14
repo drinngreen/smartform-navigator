@@ -1537,10 +1537,9 @@ async function handleTool(
     }
 
     case "update_fir_form": {
-      const id = args.fir_form_id;
-      const fields = args.fields || {};
-      const setClauses: string[] = [];
-      const allowedFields = [
+      const id = String(args.fir_form_id || "").trim();
+      const fields = args.fields && typeof args.fields === "object" ? args.fields : {};
+      const allowedFields = new Set([
         "numero_fir", "status", "produttore_denominazione", "produttore_codice_fiscale",
         "produttore_indirizzo", "produttore_comune", "produttore_provincia", "produttore_cap",
         "destinatario_denominazione", "destinatario_codice_fiscale", "destinatario_indirizzo",
@@ -1549,27 +1548,68 @@ async function handleTool(
         "trasportatore_iscrizione_albo", "trasportatore_targa_automezzo", "trasportatore_targa_rimorchio",
         "intermediario_denominazione", "intermediario_codice_fiscale", "intermediario_iscrizione_albo",
         "codice_eer", "stato_fisico", "descrizione_rifiuto", "quantita", "unita_misura",
-        "data_partenza", "data_arrivo", "note", "form_data",
-      ];
+        "data_partenza", "data_arrivo", "note", "form_data", "caratteristiche_hp",
+      ]);
+
+      if (!id) return { error: "fir_form_id mancante" };
+
+      const updatePayload: Record<string, any> = {};
+
       for (const [key, value] of Object.entries(fields)) {
-        if (!allowedFields.includes(key)) continue;
-        if (key === "form_data" && typeof value === "object") {
-          setClauses.push(`form_data = COALESCE(form_data, '{}'::jsonb) || '${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`);
-        } else if (key === "caratteristiche_hp" && Array.isArray(value)) {
-          setClauses.push(`caratteristiche_hp = ARRAY[${(value as string[]).map(v => `'${String(v).replace(/'/g, "''")}'`).join(",")}]::text[]`);
-        } else if (typeof value === "number") {
-          setClauses.push(`${key} = ${value}`);
-        } else if (value === null) {
-          setClauses.push(`${key} = NULL`);
-        } else {
-          setClauses.push(`${key} = '${String(value).replace(/'/g, "''")}'`);
+        if (!allowedFields.has(key)) continue;
+
+        if (key === "form_data") {
+          if (value === null) {
+            updatePayload.form_data = null;
+            continue;
+          }
+
+          if (typeof value !== "object" || Array.isArray(value)) continue;
+
+          const { data: currentForm, error: readError } = await db
+            .from("fir_forms")
+            .select("form_data")
+            .eq("id", id)
+            .eq("tenant_id", tenantId)
+            .maybeSingle();
+
+          if (readError) return { error: readError.message };
+          if (!currentForm) return { error: "FIR non trovato" };
+
+          updatePayload.form_data = {
+            ...((currentForm.form_data && typeof currentForm.form_data === "object" && !Array.isArray(currentForm.form_data)) ? currentForm.form_data : {}),
+            ...value,
+          };
+          continue;
         }
+
+        if (key === "caratteristiche_hp") {
+          if (value === null || Array.isArray(value)) {
+            updatePayload.caratteristiche_hp = value;
+          }
+          continue;
+        }
+
+        if (value === undefined) continue;
+        updatePayload[key] = value;
       }
-      if (setClauses.length === 0) return { error: "Nessun campo valido da aggiornare" };
-      setClauses.push("updated_at = now()");
-      const sql = `UPDATE fir_forms SET ${setClauses.join(", ")} WHERE id = '${id}' AND tenant_id = '${tenantId}' RETURNING id, numero_fir, status`;
-      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : { success: true, updated: data };
+
+      if (Object.keys(updatePayload).length === 0) return { error: "Nessun campo valido da aggiornare" };
+
+      updatePayload.updated_at = new Date().toISOString();
+
+      const { data, error } = await db
+        .from("fir_forms")
+        .update(updatePayload)
+        .eq("id", id)
+        .eq("tenant_id", tenantId)
+        .select("id, numero_fir, status")
+        .maybeSingle();
+
+      if (error) return { error: error.message };
+      if (!data) return { error: "FIR non trovato o non aggiornabile" };
+
+      return { success: true, updated: data };
     }
 
     case "create_extra_draft": {
