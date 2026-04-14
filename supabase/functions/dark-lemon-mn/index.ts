@@ -729,6 +729,22 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "search_user",
+      description: "Cerca un utente/profilo per codice fiscale, nome, cognome o email. Restituisce user_id, tenant_id, nome, cognome, codice_fiscale, targa, mn_context.",
+      parameters: {
+        type: "object",
+        properties: {
+          codice_fiscale: { type: "string", description: "Codice fiscale dell'utente (opzionale)" },
+          nome: { type: "string", description: "Nome o parte del nome (opzionale)" },
+          cognome: { type: "string", description: "Cognome o parte del cognome (opzionale)" },
+          email: { type: "string", description: "Email (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "complete_fir",
       description: "Completa un FIR (cambia stato da bozza a completato) e consuma il numero.",
       parameters: {
