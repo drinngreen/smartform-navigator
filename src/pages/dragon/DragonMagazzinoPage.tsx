@@ -162,9 +162,9 @@ export default function DragonMagazzinoPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
-                ) : balances.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Nessuna giacenza</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
+                 ) : balances.length === 0 ? (
+                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessuna giacenza</TableCell></TableRow>
                 ) : (
                   balances.map((b, i) => (
                     <TableRow key={`${b.item_id}-${b.warehouse_scope}-${i}`} className="border-border/10">
