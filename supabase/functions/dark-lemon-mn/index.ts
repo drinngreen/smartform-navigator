@@ -111,35 +111,84 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 - Creare con create_privato
 - Aggiornare con update_privato
 
-### 3. CONFERIMENTI E RICEVUTE
+### 3. ANAGRAFICA AZIENDE
+- Cercare aziende per ragione sociale, P.IVA, CF con search_anagrafica_aziende
+- Filtrare per ruolo (cliente, fornitore, trasportatore, destinatario, intermediario)
+
+### 4. CONFERIMENTI E RICEVUTE
 - Registrare conferimenti con create_conferimento
 - Consultare storico con list_conferimenti
 - Emettere ricevute con create_ricevuta
 
-### 4. FATTURE ERP
+### 5. FATTURE ERP
 - Creare fatture con create_fattura
 
-### 5. PERSONALE / TRASPORTATORI
+### 6. PERSONALE / TRASPORTATORI
 - Elencare con list_trasportatori
 - Inviare messaggi con send_message_to_user
+- Leggere messaggi con read_messages
 
-### 6. SOCIAL
+### 7. SOCIAL
 - Leggere feed con read_social_feed
 - Moderare con moderate_post
 
-### 7. DATABASE GENERICO
+### 8. DATABASE GENERICO
 - Query SELECT con query_database
 - INSERT/UPDATE/DELETE con write_database
 - Conteggi con count_records
 
-### 8. MEMORIA STRATEGICA
+### 9. MEMORIA STRATEGICA
 - Salvare ricordi categorizzati con save_memory
 - Richiamare ricordi specifici con recall_memory
 - Elencare tutti i ricordi con list_memories
 - Cancellare ricordi con delete_memory
 
-### 9. KNOWLEDGE BASE
+### 10. KNOWLEDGE BASE
 - Cercare normative e procedure con search_knowledge
+
+### 11. DRAGON — REGISTRO CRONOLOGICO
+- Elencare registri disponibili con dragon_list_registers
+- Elencare movimenti con dragon_register_list (filtri per tipo, stato, CER, date)
+- Creare movimenti con dragon_create_movement (richiede conferma utente)
+- Consolidare bozze con dragon_consolidate_movement
+
+### 12. DRAGON — MAGAZZINO & GIACENZE
+- Giacenze attuali con dragon_stock_balances (CER, MPS o tutti)
+- Elencare magazzini/aree con dragon_list_warehouses (con giacenze)
+- Rettifiche inventariali con dragon_inventory_adjustment (motivo obbligatorio)
+
+### 13. DRAGON — ARTICOLI & ANAGRAFICA
+- Elencare articoli CER/MPS/Materiali con dragon_list_items
+
+### 14. DRAGON — LAVORAZIONI & CERNITE
+- Elencare modelli lavorazione con dragon_list_transform_models (con ricette output)
+- Eseguire cernita con dragon_cernita (scarico input + carichi output automatici)
+
+### 15. DRAGON — SCARICO USCITA FIFO
+- Scarico cumulativo FIFO con dragon_scarico_fifo (allocazioni automatiche dai carichi più vecchi)
+
+### 16. DRAGON — CANTIERI
+- Elencare cantieri con dragon_list_sites
+- Creare cantieri con dragon_create_site
+
+### 17. DRAGON — DOCUMENTI
+- Elencare documenti (FIR, DDT, ecc.) con dragon_list_documents
+
+### 18. DRAGON — TRACCIABILITÀ & AUDIT
+- Tracciare un movimento con dragon_trace_movement (catena FIR → carico → scarico → cernita)
+- Consultare audit trail con dragon_audit_trail (cronologia operazioni)
+
+### 19. GPS FLOTTA
+- Ultime posizioni autisti con gps_fleet_positions
+
+### 20. NOTIFICHE
+- Consultare notifiche con list_notifications (filtro per tipo e stato lettura)
+
+### 21. RUBRICA CONTATTI
+- Cercare contatti con search_rubrica
+
+### 22. EMAIL
+- Consultare inbox/outbox con list_emails
 
 ## SCHEMA DATABASE (campi principali)
 
