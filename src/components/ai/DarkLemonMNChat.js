@@ -9,7 +9,7 @@ export function DarkLemonMNChat({ context }) {
     const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat, } = useDarkLemonMN(context);
     const [input, setInput] = useState("");
     const messagesEndRef = useRef(null);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
