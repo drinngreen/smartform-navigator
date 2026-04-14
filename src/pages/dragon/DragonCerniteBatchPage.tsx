@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonTransformBatches } from "@/hooks/dragon/useDragonTransforms";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
@@ -36,6 +37,7 @@ export default function DragonCerniteBatchPage() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -60,6 +62,18 @@ export default function DragonCerniteBatchPage() {
   const activeItems = items.filter(i => i.attivo);
   // Exclude input item from output choices
   const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
+
+  // Auto-open from URL params (e.g. from Magazzino "Cernita" button)
+  useEffect(() => {
+    const paramItemId = searchParams.get("item_id");
+    const paramQty = searchParams.get("qty");
+    if (paramItemId && items.length > 0) {
+      setInputItemId(paramItemId);
+      if (paramQty) setInputQuantity(paramQty);
+      setShowCreate(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, items.length]);
 
   const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "" }]);
   const removeOutputRow = (idx: number) => setOutputRows(r => r.filter((_, i) => i !== idx));

@@ -15,12 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Package, Recycle, Plus, Minus, RotateCcw, FileDown } from "lucide-react";
+import { Package, Recycle, Plus, Minus, RotateCcw, FileDown, Scissors } from "lucide-react";
 import { toast } from "sonner";
-import type { DragonWarehouseScope, DragonAdjustmentType, DragonStockMovement } from "@/types/dragon";
+import type { DragonWarehouseScope, DragonAdjustmentType, DragonStockMovement, DragonStockBalance } from "@/types/dragon";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 import { DragonMovementDetail } from "@/components/dragon/DragonMovementDetail";
 import { DragonNewMovementForm } from "@/components/dragon/DragonNewMovementForm";
+import { useNavigate } from "react-router-dom";
 
 export default function DragonMagazzinoPage() {
   const [scope, setScope] = useState<DragonWarehouseScope | undefined>(undefined);
@@ -30,6 +31,7 @@ export default function DragonMagazzinoPage() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   // Adjustment state
   const [showAdjust, setShowAdjust] = useState(false);
@@ -152,16 +154,17 @@ export default function DragonMagazzinoPage() {
                   <TableHead>Codice</TableHead>
                   <TableHead>Descrizione</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Ambito</TableHead>
-                  <TableHead className="text-right">Giacenza</TableHead>
-                  <TableHead>U.M.</TableHead>
+                   <TableHead>Ambito</TableHead>
+                   <TableHead className="text-right">Giacenza</TableHead>
+                   <TableHead>U.M.</TableHead>
+                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
-                ) : balances.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Nessuna giacenza</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Caricamento...</TableCell></TableRow>
+                 ) : balances.length === 0 ? (
+                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessuna giacenza</TableCell></TableRow>
                 ) : (
                   balances.map((b, i) => (
                     <TableRow key={`${b.item_id}-${b.warehouse_scope}-${i}`} className="border-border/10">
@@ -170,7 +173,22 @@ export default function DragonMagazzinoPage() {
                       <TableCell><Badge variant="outline" className="text-xs">{b.item?.item_type}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={b.warehouse_scope === "WASTE" ? "bg-amber-500/20 text-amber-300" : "bg-blue-500/20 text-blue-300"}>{b.warehouse_scope}</Badge></TableCell>
                       <TableCell className={`text-right font-mono font-bold ${b.balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{Number(b.balance).toLocaleString("it-IT")}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{b.item?.unita_misura_default}</TableCell>
+                       <TableCell className="text-xs text-muted-foreground">{b.item?.unita_misura_default}</TableCell>
+                       <TableCell>
+                         {b.balance > 0 && (
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="text-xs"
+                             onClick={() => {
+                               const params = new URLSearchParams({ item_id: b.item_id, qty: String(Math.round(b.balance)) });
+                               navigate(`/mn/admin/dev-multyproget/dragon/cernite/batch?${params.toString()}`);
+                             }}
+                           >
+                             <Scissors className="h-3 w-3 mr-1" /> Cernita
+                           </Button>
+                         )}
+                       </TableCell>
                     </TableRow>
                   ))
                 )}
