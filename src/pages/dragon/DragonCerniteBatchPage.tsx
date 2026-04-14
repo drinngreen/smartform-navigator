@@ -63,6 +63,18 @@ export default function DragonCerniteBatchPage() {
   // Exclude input item from output choices
   const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
 
+  // Auto-open from URL params (e.g. from Magazzino "Cernita" button)
+  useEffect(() => {
+    const paramItemId = searchParams.get("item_id");
+    const paramQty = searchParams.get("qty");
+    if (paramItemId && items.length > 0) {
+      setInputItemId(paramItemId);
+      if (paramQty) setInputQuantity(paramQty);
+      setShowCreate(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, items.length]);
+
   const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "" }]);
   const removeOutputRow = (idx: number) => setOutputRows(r => r.filter((_, i) => i !== idx));
   const updateOutputRow = (idx: number, field: keyof OutputRow, value: string) =>
