@@ -184,6 +184,13 @@ CAUSALI DESTINATARIO:
 - CARICO_LAVORAZIONE — Carico da lavorazione manuale (CER ottenuto da lavorazione, inserito manualmente)
 - SCARICO_MISCELAZIONE — Scarico per miscelazione (più CER vengono miscelati)
 - CARICO_MISCELAZIONE — Carico da miscelazione (prodotto risultante dalla miscela, su registro o magazzino MPS)
+CAUSALI PRODUTTORE:
+- CARICO_PRODUZIONE_UL — Carico di produzione nella propria Unità Locale (DT = prodotto/detenuto in UL)
+- CARICO_PRODUZIONE_CANTIERE — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE = prodotto fuori UL)
+- SCARICO_USCITA_FIR — Uscita con Formulario (aT = scarico a terzi, genera FIR automaticamente)
+- SCARICO_USCITA_FIR_CANTIERE — Uscita con Formulario con Cantiere (deposito temporaneo in cantiere)
+- CARICO_SCARICO_CONTESTUALE — Carico & Scarico contestuale (nessuna giacenza, CER prodotto e smaltito subito)
+- CARICO_SCARICO_CONTESTUALE_CANTIERE — Carico & Scarico contestuale da cantiere
 
 ### dragon_registers (Registri cronologici)
 id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARIO|...), active.
