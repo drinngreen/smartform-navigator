@@ -54,21 +54,21 @@ const phases: { title: string; subtitle: string; color: string; items: OpCard[] 
         label: "Scarico di Lavorazione",
         desc: "Quantità da individuare → FIFO automatico (segno −)",
         icon: Scissors,
-        path: `${PREFIX}/cernite/modelli`,
+        path: `${PREFIX}/cernite/batch`,
         color: "amber",
       },
       {
         label: "Ricarico da Lavorazione",
         desc: "Proposta automatica → nuovi CER su registro, MPS su magazzino (segno +)",
         icon: Repeat2,
-        path: `${PREFIX}/cernite/modelli`,
+        path: `${PREFIX}/cernite/batch`,
         color: "amber",
       },
       {
         label: "Miscelazioni",
         desc: "N input CER → 1 output cumulativo CER/MPS",
         icon: Blend,
-        path: `${PREFIX}/cernite/modelli`,
+        path: `${PREFIX}/cernite/batch`,
         color: "amber",
       },
     ],
@@ -136,7 +136,7 @@ const quickLinks = [
   { label: "Magazzino", icon: Package, path: `${PREFIX}/magazzino` },
   { label: "Archivio Magazzini", icon: Warehouse, path: `${PREFIX}/magazzini` },
   { label: "Articoli CER/MPS", icon: FileText, path: `${PREFIX}/articoli` },
-  { label: "Cernite & Modelli", icon: Scissors, path: `${PREFIX}/cernite/modelli` },
+  { label: "Cernite", icon: Scissors, path: `${PREFIX}/cernite/batch` },
   { label: "Audit Trail", icon: History, path: `${PREFIX}/audit` },
 ];
 
