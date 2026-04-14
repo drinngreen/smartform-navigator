@@ -729,6 +729,22 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "search_user",
+      description: "Cerca un utente/profilo per codice fiscale, nome, cognome o email. Restituisce user_id, tenant_id, nome, cognome, codice_fiscale, targa, mn_context.",
+      parameters: {
+        type: "object",
+        properties: {
+          codice_fiscale: { type: "string", description: "Codice fiscale dell'utente (opzionale)" },
+          nome: { type: "string", description: "Nome o parte del nome (opzionale)" },
+          cognome: { type: "string", description: "Cognome o parte del cognome (opzionale)" },
+          email: { type: "string", description: "Email (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "complete_fir",
       description: "Completa un FIR (cambia stato da bozza a completato) e consuma il numero.",
       parameters: {
@@ -1477,6 +1493,17 @@ async function handleTool(
       if (args.filter) q += ` AND (${args.filter})`;
       const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
       return error ? { error: error.message } : data;
+    }
+
+    case "search_user": {
+      let query = db.from("profiles").select("user_id, nome, cognome, codice_fiscale, email, tenant_id, mn_context, targa, telefono");
+      if (args.codice_fiscale) query = query.ilike("codice_fiscale", `%${args.codice_fiscale}%`);
+      if (args.cognome) query = query.ilike("cognome", `%${args.cognome}%`);
+      if (args.nome) query = query.ilike("nome", `%${args.nome}%`);
+      if (args.email) query = query.ilike("email", `%${args.email}%`);
+      const { data, error } = await query.limit(10);
+      if (error) return { error: error.message };
+      return Array.isArray(data) ? data : data ? [data] : [];
     }
 
     // ---------- FIR MANAGEMENT ----------
