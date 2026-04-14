@@ -111,35 +111,84 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 - Creare con create_privato
 - Aggiornare con update_privato
 
-### 3. CONFERIMENTI E RICEVUTE
+### 3. ANAGRAFICA AZIENDE
+- Cercare aziende per ragione sociale, P.IVA, CF con search_anagrafica_aziende
+- Filtrare per ruolo (cliente, fornitore, trasportatore, destinatario, intermediario)
+
+### 4. CONFERIMENTI E RICEVUTE
 - Registrare conferimenti con create_conferimento
 - Consultare storico con list_conferimenti
 - Emettere ricevute con create_ricevuta
 
-### 4. FATTURE ERP
+### 5. FATTURE ERP
 - Creare fatture con create_fattura
 
-### 5. PERSONALE / TRASPORTATORI
+### 6. PERSONALE / TRASPORTATORI
 - Elencare con list_trasportatori
 - Inviare messaggi con send_message_to_user
+- Leggere messaggi con read_messages
 
-### 6. SOCIAL
+### 7. SOCIAL
 - Leggere feed con read_social_feed
 - Moderare con moderate_post
 
-### 7. DATABASE GENERICO
+### 8. DATABASE GENERICO
 - Query SELECT con query_database
 - INSERT/UPDATE/DELETE con write_database
 - Conteggi con count_records
 
-### 8. MEMORIA STRATEGICA
+### 9. MEMORIA STRATEGICA
 - Salvare ricordi categorizzati con save_memory
 - Richiamare ricordi specifici con recall_memory
 - Elencare tutti i ricordi con list_memories
 - Cancellare ricordi con delete_memory
 
-### 9. KNOWLEDGE BASE
+### 10. KNOWLEDGE BASE
 - Cercare normative e procedure con search_knowledge
+
+### 11. DRAGON — REGISTRO CRONOLOGICO
+- Elencare registri disponibili con dragon_list_registers
+- Elencare movimenti con dragon_register_list (filtri per tipo, stato, CER, date)
+- Creare movimenti con dragon_create_movement (richiede conferma utente)
+- Consolidare bozze con dragon_consolidate_movement
+
+### 12. DRAGON — MAGAZZINO & GIACENZE
+- Giacenze attuali con dragon_stock_balances (CER, MPS o tutti)
+- Elencare magazzini/aree con dragon_list_warehouses (con giacenze)
+- Rettifiche inventariali con dragon_inventory_adjustment (motivo obbligatorio)
+
+### 13. DRAGON — ARTICOLI & ANAGRAFICA
+- Elencare articoli CER/MPS/Materiali con dragon_list_items
+
+### 14. DRAGON — LAVORAZIONI & CERNITE
+- Elencare modelli lavorazione con dragon_list_transform_models (con ricette output)
+- Eseguire cernita con dragon_cernita (scarico input + carichi output automatici)
+
+### 15. DRAGON — SCARICO USCITA FIFO
+- Scarico cumulativo FIFO con dragon_scarico_fifo (allocazioni automatiche dai carichi più vecchi)
+
+### 16. DRAGON — CANTIERI
+- Elencare cantieri con dragon_list_sites
+- Creare cantieri con dragon_create_site
+
+### 17. DRAGON — DOCUMENTI
+- Elencare documenti (FIR, DDT, ecc.) con dragon_list_documents
+
+### 18. DRAGON — TRACCIABILITÀ & AUDIT
+- Tracciare un movimento con dragon_trace_movement (catena FIR → carico → scarico → cernita)
+- Consultare audit trail con dragon_audit_trail (cronologia operazioni)
+
+### 19. GPS FLOTTA
+- Ultime posizioni autisti con gps_fleet_positions
+
+### 20. NOTIFICHE
+- Consultare notifiche con list_notifications (filtro per tipo e stato lettura)
+
+### 21. RUBRICA CONTATTI
+- Cercare contatti con search_rubrica
+
+### 22. EMAIL
+- Consultare inbox/outbox con list_emails
 
 ## SCHEMA DATABASE (campi principali)
 
@@ -1002,6 +1051,248 @@ const tools = [
       }
     }
   },
+
+  // === DRAGON — MAGAZZINI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_warehouses",
+      description: "Elenca i magazzini/aree di stoccaggio Dragon con giacenze attuali. Mostra codice, descrizione, flag CER/MPS, limiti e quantità presenti.",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — CANTIERI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_sites",
+      description: "Elenca i cantieri/luoghi di produzione Dragon. Include codice, nome, indirizzo, comune, provincia, tipo attività.",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" },
+          search: { type: "string", description: "Cerca per nome o codice (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_create_site",
+      description: "Crea un nuovo cantiere/luogo di produzione Dragon.",
+      parameters: {
+        type: "object",
+        properties: {
+          site_code: { type: "string", description: "Codice identificativo cantiere" },
+          name: { type: "string", description: "Nome cantiere" },
+          address: { type: "string", description: "Indirizzo" },
+          municipality: { type: "string", description: "Comune" },
+          province: { type: "string", description: "Provincia (sigla 2 lettere)" },
+          activity_type: { type: "string", enum: ["ND", "MANUTENZIONE", "ASSISTENZA_SANITARIA", "CANTIERE_TEMPORANEO_MOBILE", "BONIFICA_AMIANTO"], description: "Tipo attività (default: ND)" },
+          notes: { type: "string", description: "Note opzionali" }
+        },
+        required: ["site_code", "name"]
+      }
+    }
+  },
+
+  // === DRAGON — DOCUMENTI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_documents",
+      description: "Elenca i documenti Dragon (FIR, DDT_IN, DDT_OUT, ecc.) con filtri.",
+      parameters: {
+        type: "object",
+        properties: {
+          document_type: { type: "string", enum: ["FIR", "DDT_IN", "DDT_OUT", "FORMULARIO_MODELLO", "ALTRO"], description: "Filtra per tipo (opzionale)" },
+          date_from: { type: "string", description: "Data da (YYYY-MM-DD)" },
+          date_to: { type: "string", description: "Data a (YYYY-MM-DD)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — MODELLI DI LAVORAZIONE ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_transform_models",
+      description: "Elenca i modelli di lavorazione/cernita Dragon con le righe di output (ricette).",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — REGISTRI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_registers",
+      description: "Elenca i registri cronologici Dragon disponibili (PRODUTTORE, DESTINATARIO, ecc.).",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — RETTIFICHE INVENTARIALI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_inventory_adjustment",
+      description: "Crea una rettifica inventariale Dragon. Genera automaticamente il movimento di stock corrispondente. Richiede un motivo obbligatorio.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "string", description: "UUID articolo Dragon" },
+          adjustment_type: { type: "string", enum: ["POSITIVE", "NEGATIVE"], description: "Tipo rettifica" },
+          quantity: { type: "number", description: "Quantità da rettificare in kg" },
+          reason: { type: "string", description: "Motivo obbligatorio della rettifica" }
+        },
+        required: ["item_id", "adjustment_type", "quantity", "reason"]
+      }
+    }
+  },
+
+  // === DRAGON — AUDIT TRAIL ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_audit_trail",
+      description: "Consulta l'audit trail Dragon: cronologia di tutte le operazioni (CREATE, UPDATE, DELETE, CONFIRM, ecc.).",
+      parameters: {
+        type: "object",
+        properties: {
+          entity_type: { type: "string", description: "Filtra per tipo entità: register_movement, stock_movement, transform_batch (opzionale)" },
+          entity_id: { type: "string", description: "UUID entità specifica (opzionale)" },
+          action_type: { type: "string", enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "CONFIRM", "CANCEL", "ADJUST"], description: "Filtra per azione (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — SCARICO CUMULATIVO FIFO ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_scarico_fifo",
+      description: "Esegue uno scarico cumulativo FIFO: distribuisce la quantità da scaricare sui carichi più vecchi del CER. Crea il movimento di scarico + allocazioni FIFO + documento FIR in bozza.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "string", description: "UUID articolo CER da scaricare" },
+          quantity: { type: "number", description: "Quantità totale da scaricare in kg" },
+          cause_code: { type: "string", description: "Codice causale (default: SCARICO_USCITA)" },
+          operation_code: { type: "string", description: "Codice operazione R/D (es. R13, D15, R04)" },
+          movement_date: { type: "string", description: "Data movimento (YYYY-MM-DD, default oggi)" },
+          note: { type: "string", description: "Note opzionali" }
+        },
+        required: ["item_id", "quantity"]
+      }
+    }
+  },
+
+  // === ANAGRAFICA AZIENDE ===
+  {
+    type: "function",
+    function: {
+      name: "search_anagrafica_aziende",
+      description: "Cerca aziende nell'anagrafica Multyproget per ragione sociale, P.IVA, CF, codice.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_term: { type: "string", description: "Termine di ricerca" },
+          ruolo: { type: "string", enum: ["cliente", "fornitore", "trasportatore", "destinatario", "intermediario"], description: "Filtra per ruolo (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        },
+        required: ["search_term"]
+      }
+    }
+  },
+
+  // === GPS FLOTTA ===
+  {
+    type: "function",
+    function: {
+      name: "gps_fleet_positions",
+      description: "Mostra le ultime posizioni GPS dei trasportatori della flotta. Utile per sapere dove si trovano gli autisti.",
+      parameters: {
+        type: "object",
+        properties: {
+          user_id: { type: "string", description: "UUID di un utente specifico (opzionale)" },
+          last_hours: { type: "number", description: "Ultime N ore (default 24)" }
+        }
+      }
+    }
+  },
+
+  // === NOTIFICHE ===
+  {
+    type: "function",
+    function: {
+      name: "list_notifications",
+      description: "Elenca le notifiche recenti dell'admin. Può filtrare per tipo e stato di lettura.",
+      parameters: {
+        type: "object",
+        properties: {
+          unread_only: { type: "boolean", description: "Solo non lette (default: false)" },
+          type: { type: "string", description: "Filtra per tipo: fir_pool_empty, fir_draft, missed_call (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === RUBRICA CONTATTI ===
+  {
+    type: "function",
+    function: {
+      name: "search_rubrica",
+      description: "Cerca contatti nella rubrica aziendale per nome, ragione sociale, telefono, email.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_term: { type: "string", description: "Termine di ricerca" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        },
+        required: ["search_term"]
+      }
+    }
+  },
+
+  // === EMAIL ===
+  {
+    type: "function",
+    function: {
+      name: "list_emails",
+      description: "Elenca le email ricevute (inbox) o inviate (outbox).",
+      parameters: {
+        type: "object",
+        properties: {
+          direction: { type: "string", enum: ["inbox", "outbox"], description: "inbox o outbox (default: inbox)" },
+          unread_only: { type: "boolean", description: "Solo non lette (solo inbox)" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        }
+      }
+    }
+  },
 ];
 
 // ====================== TOOL HANDLERS ======================
@@ -1612,6 +1903,247 @@ async function handleTool(
       }
 
       return { trace: mov, batch_outputs: batchOutputs, fifo_allocations: allocations };
+    }
+
+    // ---------- DRAGON MAGAZZINI ----------
+    case "dragon_list_warehouses": {
+      const q = `SELECT dw.id, dw.code, dw.description, dw.has_cer, dw.has_mps, dw.limit_mps_eow, dw.active,
+        COALESCE((SELECT SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) FROM dragon_stock_movements dsm WHERE dsm.warehouse_id = dw.id AND dsm.warehouse_scope = 'WASTE'), 0) as giacenza_cer,
+        COALESCE((SELECT SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) FROM dragon_stock_movements dsm WHERE dsm.warehouse_id = dw.id AND dsm.warehouse_scope = 'MPS'), 0) as giacenza_mps
+        FROM dragon_warehouses dw WHERE dw.company_id = '${tenantId}'${args.active_only !== false ? " AND dw.active = true" : ""} ORDER BY dw.code`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { warehouses: data || [] };
+    }
+
+    // ---------- DRAGON CANTIERI ----------
+    case "dragon_list_sites": {
+      let q = `SELECT id, site_code, name, address, municipality, province, activity_type, notes, active
+        FROM dragon_production_sites WHERE company_id = '${tenantId}'`;
+      if (args.active_only !== false) q += ` AND active = true`;
+      if (args.search) q += ` AND (name ILIKE '%${args.search.replace(/'/g, "")}%' OR site_code ILIKE '%${args.search.replace(/'/g, "")}%')`;
+      q += ` ORDER BY site_code`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { sites: data || [] };
+    }
+
+    case "dragon_create_site": {
+      const sql = `INSERT INTO dragon_production_sites (company_id, site_code, name, address, municipality, province, activity_type, notes)
+        VALUES ('${tenantId}', '${(args.site_code || "").replace(/'/g, "''")}', '${(args.name || "").replace(/'/g, "''")}',
+        ${args.address ? `'${args.address.replace(/'/g, "''")}'` : "NULL"},
+        ${args.municipality ? `'${args.municipality.replace(/'/g, "''")}'` : "NULL"},
+        ${args.province ? `'${args.province.replace(/'/g, "''")}'` : "NULL"},
+        '${args.activity_type || "ND"}',
+        ${args.notes ? `'${args.notes.replace(/'/g, "''")}'` : "NULL"})
+        RETURNING id, site_code, name`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
+      return error ? { error: error.message } : { success: true, site: data };
+    }
+
+    // ---------- DRAGON DOCUMENTI ----------
+    case "dragon_list_documents": {
+      let q = `SELECT id, document_type, number, document_date, counterparty_id, notes, status, created_at
+        FROM dragon_documents WHERE company_id = '${tenantId}'`;
+      if (args.document_type) q += ` AND document_type = '${args.document_type}'`;
+      if (args.date_from) q += ` AND document_date >= '${args.date_from}'`;
+      if (args.date_to) q += ` AND document_date <= '${args.date_to}'`;
+      q += ` ORDER BY document_date DESC NULLS LAST LIMIT ${args.limit || 20}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { documents: data || [] };
+    }
+
+    // ---------- DRAGON MODELLI LAVORAZIONE ----------
+    case "dragon_list_transform_models": {
+      let q = `SELECT dtm.id, dtm.code, dtm.name, dtm.description, dtm.active,
+        di.codice_cer as input_cer, di.descrizione as input_desc,
+        (SELECT jsonb_agg(jsonb_build_object('output_cer', doi.codice_cer, 'output_desc', doi.descrizione, 'output_type', dtmo.output_type, 'quantity_mode', dtmo.quantity_mode, 'quantity_value', dtmo.quantity_value, 'warehouse_scope', dtmo.warehouse_scope))
+         FROM dragon_transform_model_outputs dtmo JOIN dragon_items doi ON doi.id = dtmo.output_item_id WHERE dtmo.model_id = dtm.id) as outputs
+        FROM dragon_transform_models dtm
+        JOIN dragon_items di ON di.id = dtm.input_item_id
+        WHERE dtm.company_id = '${tenantId}'${args.active_only !== false ? " AND dtm.active = true" : ""}
+        ORDER BY dtm.code`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { models: data || [] };
+    }
+
+    // ---------- DRAGON REGISTRI ----------
+    case "dragon_list_registers": {
+      let q = `SELECT id, register_code, description, subject_type, active
+        FROM dragon_registers WHERE company_id = '${tenantId}'`;
+      if (args.active_only !== false) q += ` AND active = true`;
+      q += ` ORDER BY register_code`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { registers: data || [] };
+    }
+
+    // ---------- DRAGON RETTIFICHE INVENTARIALI ----------
+    case "dragon_inventory_adjustment": {
+      const adjCauseQ = `SELECT id FROM dragon_causes WHERE code = 'RETTIFICA_INVENTARIALE' AND active = true LIMIT 1`;
+      const { data: adjCauseData } = await db.rpc("exec_sql_readonly", { query: adjCauseQ }).maybeSingle();
+      const adjCause = adjCauseData?.[0] || adjCauseData;
+
+      const itemQ = `SELECT codice_cer, item_type, unita_misura_default FROM dragon_items WHERE id = '${args.item_id}' AND company_id = '${tenantId}'`;
+      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
+      const item = itemData?.[0] || itemData;
+      if (!item) return { error: "Articolo non trovato" };
+
+      const sign = args.adjustment_type === "POSITIVE" ? "PLUS" : "MINUS";
+      const warehouseScope = item.item_type === "WASTE_CER" ? "WASTE" : "MPS";
+      const today = new Date().toISOString().split("T")[0];
+
+      let stockMovId: string | null = null;
+      if (adjCause) {
+        const stockSql = `INSERT INTO dragon_stock_movements (company_id, item_id, movement_date, cause_id, quantity, sign, warehouse_scope, note, created_by)
+          VALUES ('${tenantId}', '${args.item_id}', '${today}', '${adjCause.id}', ${args.quantity}, '${sign}', '${warehouseScope}', 'Rettifica: ${args.reason.replace(/'/g, "''")}', ${adminUserId ? `'${adminUserId}'` : 'NULL'})
+          RETURNING id`;
+        const { data: stockData } = await db.rpc("exec_sql_write", { query: stockSql }).maybeSingle();
+        stockMovId = stockData?.[0]?.id || stockData?.id || null;
+      }
+
+      const adjSql = `INSERT INTO dragon_inventory_adjustments (company_id, item_id, adjustment_type, quantity, reason, related_stock_movement_id, created_by)
+        VALUES ('${tenantId}', '${args.item_id}', '${args.adjustment_type}', ${args.quantity}, '${args.reason.replace(/'/g, "''")}', ${stockMovId ? `'${stockMovId}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
+        RETURNING id, adjustment_type, quantity, reason`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: adjSql }).maybeSingle();
+      return error ? { error: error.message } : { success: true, adjustment: data, stock_movement_id: stockMovId };
+    }
+
+    // ---------- DRAGON AUDIT TRAIL ----------
+    case "dragon_audit_trail": {
+      let q = `SELECT id, entity_type, entity_id, action_type, reason, performed_by, performed_at,
+        substring(before_state::text from 1 for 200) as before_preview,
+        substring(after_state::text from 1 for 200) as after_preview
+        FROM dragon_audit_logs WHERE 1=1`;
+      if (args.entity_type) q += ` AND entity_type = '${args.entity_type.replace(/'/g, "")}'`;
+      if (args.entity_id) q += ` AND entity_id = '${args.entity_id}'`;
+      if (args.action_type) q += ` AND action_type = '${args.action_type}'`;
+      q += ` ORDER BY performed_at DESC LIMIT ${args.limit || 20}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { audit_logs: data || [] };
+    }
+
+    // ---------- DRAGON SCARICO FIFO ----------
+    case "dragon_scarico_fifo": {
+      const causeCode = args.cause_code || "SCARICO_USCITA";
+      const causeQ = `SELECT id FROM dragon_causes WHERE code = '${causeCode.replace(/'/g, "")}' AND active = true LIMIT 1`;
+      const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
+      const cause = causeData?.[0] || causeData;
+      if (!cause) return { error: `Causale '${causeCode}' non trovata` };
+
+      const itemQ = `SELECT codice_cer, descrizione, unita_misura_default FROM dragon_items WHERE id = '${args.item_id}' AND company_id = '${tenantId}'`;
+      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
+      const item = itemData?.[0] || itemData;
+      if (!item) return { error: "Articolo non trovato" };
+
+      const balQ = `SELECT COALESCE(SUM(CASE WHEN sign = 'PLUS' THEN quantity ELSE -quantity END), 0) as balance
+        FROM dragon_stock_movements WHERE company_id = '${tenantId}' AND item_id = '${args.item_id}' AND warehouse_scope = 'WASTE'`;
+      const { data: balData } = await db.rpc("exec_sql_readonly", { query: balQ }).maybeSingle();
+      const balance = balData?.[0]?.balance || balData?.balance || 0;
+      if (balance < args.quantity) return { error: `Giacenza insufficiente: disponibili ${balance} kg, richiesti ${args.quantity} kg` };
+
+      const fifoQ = `SELECT drm.id, drm.movement_number, drm.movement_date, drm.quantity,
+        drm.quantity - COALESCE((SELECT SUM(allocated_quantity) FROM dragon_movement_allocations WHERE in_movement_id = drm.id), 0) as residuo
+        FROM dragon_register_movements drm
+        WHERE drm.company_id = '${tenantId}' AND drm.item_id = '${args.item_id}' AND drm.movement_type = 'CARICO' AND drm.status = 'CONSOLIDATO' AND drm.deleted_at IS NULL
+        HAVING drm.quantity - COALESCE((SELECT SUM(allocated_quantity) FROM dragon_movement_allocations WHERE in_movement_id = drm.id), 0) > 0
+        ORDER BY drm.movement_date ASC, drm.movement_number ASC`;
+      const { data: fifoData } = await db.rpc("exec_sql_readonly", { query: fifoQ }).maybeSingle();
+      const carichi = Array.isArray(fifoData) ? fifoData : fifoData ? [fifoData] : [];
+
+      const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND active = true LIMIT 1`;
+      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
+      const registerId = regData?.[0]?.id || regData?.id || null;
+
+      const today = args.movement_date || new Date().toISOString().split("T")[0];
+
+      const scarSql = `INSERT INTO dragon_register_movements (company_id, register_id, movement_date, recording_date, item_id, cer_code, description_snapshot, movement_type, cause_id, quantity, unit_of_measure, sign, source_context, weight_status, status, operation_code, note, created_by)
+        VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.item_id}', '${item.codice_cer}', '${(item.descrizione || "").replace(/'/g, "''")}', 'SCARICO', '${cause.id}', ${args.quantity}, 'kg', 'MINUS', 'UL', 'DEFINITIVO', 'CONSOLIDATO', ${args.operation_code ? `'${args.operation_code}'` : 'NULL'}, ${args.note ? `'${args.note.replace(/'/g, "''")}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
+        RETURNING id, movement_number`;
+      const { data: scarData, error: scarErr } = await db.rpc("exec_sql_write", { query: scarSql }).maybeSingle();
+      if (scarErr) return { error: scarErr.message };
+      const scarId = scarData?.[0]?.id || scarData?.id;
+      const scarNum = scarData?.[0]?.movement_number || scarData?.movement_number;
+
+      let remaining = args.quantity;
+      const allocations: any[] = [];
+      for (const carico of carichi) {
+        if (remaining <= 0) break;
+        const allocQty = Math.min(remaining, carico.residuo);
+        await db.rpc("exec_sql_write", {
+          query: `INSERT INTO dragon_movement_allocations (out_movement_id, in_movement_id, allocated_quantity) VALUES ('${scarId}', '${carico.id}', ${allocQty})`
+        });
+        allocations.push({ carico_num: carico.movement_number, carico_date: carico.movement_date, allocated: allocQty });
+        remaining -= allocQty;
+      }
+
+      return { success: true, scarico: { id: scarId, movement_number: scarNum, quantity: args.quantity, cer: item.codice_cer }, allocations };
+    }
+
+    // ---------- ANAGRAFICA AZIENDE ----------
+    case "search_anagrafica_aziende": {
+      const term = (args.search_term || "").replace(/'/g, "''");
+      let q = `SELECT id, ragione_sociale, partita_iva, codice_fiscale, codice, indirizzo, citta, provincia, cap, telefono, email, pec,
+        cliente, fornitore, trasportatore, destinatario, intermediario, attivo
+        FROM anagrafica_aziende_mp WHERE tenant_id = '${tenantId}'
+        AND (ragione_sociale ILIKE '%${term}%' OR partita_iva ILIKE '%${term}%' OR codice_fiscale ILIKE '%${term}%' OR codice ILIKE '%${term}%' OR alias ILIKE '%${term}%')`;
+      if (args.ruolo) q += ` AND ${args.ruolo} = true`;
+      q += ` ORDER BY ragione_sociale LIMIT ${args.limit || 15}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { aziende: data || [] };
+    }
+
+    // ---------- GPS FLOTTA ----------
+    case "gps_fleet_positions": {
+      const hours = args.last_hours || 24;
+      let q = `SELECT DISTINCT ON (dl.user_id) dl.user_id, dl.lat, dl.lng, dl.speed, dl.accuracy, dl.created_at,
+        p.nome || ' ' || p.cognome as driver_name, dl.fir_id
+        FROM driver_locations dl
+        JOIN profiles p ON p.user_id = dl.user_id
+        WHERE dl.created_at > now() - interval '${hours} hours'`;
+      if (args.user_id) q += ` AND dl.user_id = '${args.user_id}'`;
+      else q += ` AND p.tenant_id = '${tenantId}'`;
+      q += ` ORDER BY dl.user_id, dl.created_at DESC`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { positions: data || [] };
+    }
+
+    // ---------- NOTIFICHE ----------
+    case "list_notifications": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      let q = `SELECT id, type, title, body, reference_id, reference_type, is_read, created_at
+        FROM notifications WHERE user_id = '${adminUserId}'`;
+      if (args.unread_only) q += ` AND is_read = false`;
+      if (args.type) q += ` AND type = '${args.type.replace(/'/g, "")}'`;
+      q += ` ORDER BY created_at DESC LIMIT ${args.limit || 20}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { notifications: data || [] };
+    }
+
+    // ---------- RUBRICA CONTATTI ----------
+    case "search_rubrica": {
+      const term = (args.search_term || "").replace(/'/g, "''");
+      const q = `SELECT id, nome, cognome, ragione_sociale, telefono, email, pec, comune, provincia, note, origine
+        FROM rubrica_contatti WHERE tenant_id = '${tenantId}'
+        AND (nome ILIKE '%${term}%' OR cognome ILIKE '%${term}%' OR ragione_sociale ILIKE '%${term}%' OR telefono ILIKE '%${term}%' OR email ILIKE '%${term}%')
+        ORDER BY cognome, nome LIMIT ${args.limit || 15}`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      return error ? { error: error.message } : { contatti: data || [] };
+    }
+
+    // ---------- EMAIL ----------
+    case "list_emails": {
+      const dir = args.direction || "inbox";
+      if (dir === "inbox") {
+        let q = `SELECT id, from_address, to_address, subject, received_at, is_read, fir_id, impianto_id
+          FROM emails_global_inbox WHERE 1=1`;
+        if (args.unread_only) q += ` AND is_read = false`;
+        q += ` ORDER BY received_at DESC LIMIT ${args.limit || 15}`;
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+        return error ? { error: error.message } : { emails: data || [] };
+      } else {
+        const q = `SELECT id, from_address, to_address, subject, sent_at, status, category, fir_id
+          FROM emails_global_outbox ORDER BY sent_at DESC LIMIT ${args.limit || 15}`;
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+        return error ? { error: error.message } : { emails: data || [] };
+      }
     }
 
     default:
