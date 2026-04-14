@@ -6,8 +6,8 @@ export function DragonBackButton() {
   const navigate = useNavigate();
   const { context } = useParams<{ context: string }>();
   const target = context === "dev-multyproget"
-    ? "/mn/admin/dev-multyproget"
-    : `/mn/admin/${context || "dev-multyproget"}`;
+    ? "/mn/admin/dev-multyproget?tab=magazzino-dev"
+    : `/mn/admin/${context || "dev-multyproget"}?tab=magazzino-dev`;
 
   return (
     <button
