@@ -101,6 +101,7 @@ const DragonCerniteBatchPage = React.lazy(() => import("./pages/dragon/DragonCer
 const DragonAuditPage = React.lazy(() => import("./pages/dragon/DragonAuditPage"));
 const DragonCaricoScaricoPage = React.lazy(() => import("./pages/dragon/DragonCaricoScaricoPage"));
 const DragonScaricoCumulativoPage = React.lazy(() => import("./pages/dragon/DragonScaricoCumulativoPage"));
+const DragonIngressoPage = React.lazy(() => import("./pages/dragon/DragonIngressoPage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
