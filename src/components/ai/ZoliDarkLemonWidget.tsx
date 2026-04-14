@@ -236,11 +236,9 @@ export function ZoliDarkLemonWidget() {
                 <ScanSearch className="h-4 w-4" />
               </button>
             )}
-            {isFullscreen && (
-              <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
-                <MessageSquare className="h-4 w-4" />
-              </button>
-            )}
+            <button onClick={() => setShowHistory(!showHistory)} onMouseDown={e => e.stopPropagation()} className={cn("p-1 transition-colors", showHistory ? "text-cyan-400" : "text-white/60 hover:text-cyan-400")} title="Cronologia">
+              <MessageSquare className="h-4 w-4" />
+            </button>
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
@@ -254,7 +252,7 @@ export function ZoliDarkLemonWidget() {
 
           <div className="flex flex-1 overflow-hidden">
             {/* History sidebar */}
-            {isFullscreen && showHistory && (
+            {showHistory && (
               <div className="w-64 shrink-0 border-r border-white/10 flex flex-col bg-[hsl(222,47%,5%)]" onMouseDown={e => e.stopPropagation()}>
                 <div className="p-3 border-b border-white/10">
                   <button onClick={() => { newChat(); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors">
