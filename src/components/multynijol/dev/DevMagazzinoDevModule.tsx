@@ -28,6 +28,7 @@ export function DevMagazzinoDevModule() {
         { label: "Registro Generale", desc: "Tutti i movimenti di carico e scarico", icon: BookOpen, path: `${PREFIX}/registro` },
         { label: "Ingresso FIR (Destinatario)", desc: "Accettazione rifiuti in ingresso con formulario", icon: LogIn, path: `${PREFIX}/registro/ingresso` },
         { label: "Carico / Scarico Guidato", desc: "Wizard per ingresso/uscita con FIR", icon: ClipboardList, path: `${PREFIX}/registro/carico-scarico` },
+        { label: "Scarico Uscita con FIR", desc: "Emissione formulario e abbinamento FIFO", icon: TrendingDown, path: `${PREFIX}/registro/scarico-uscita` },
         { label: "Scarico Cumulativo", desc: "Scarico FIFO multiplo per codice CER", icon: TrendingDown, path: `${PREFIX}/registro/scarico-cumulativo` },
       ],
     },

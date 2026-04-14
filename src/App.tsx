@@ -102,6 +102,7 @@ const DragonAuditPage = React.lazy(() => import("./pages/dragon/DragonAuditPage"
 const DragonCaricoScaricoPage = React.lazy(() => import("./pages/dragon/DragonCaricoScaricoPage"));
 const DragonScaricoCumulativoPage = React.lazy(() => import("./pages/dragon/DragonScaricoCumulativoPage"));
 const DragonIngressoPage = React.lazy(() => import("./pages/dragon/DragonIngressoPage"));
+const DragonScaricoUscitaPage = React.lazy(() => import("./pages/dragon/DragonScaricoUscitaPage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
@@ -278,6 +279,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/dragon/registro/carico-scarico" element={<ProtectedRoute><DragonCaricoScaricoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/scarico-cumulativo" element={<ProtectedRoute><DragonScaricoCumulativoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/ingresso" element={<ProtectedRoute><DragonIngressoPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/registro/scarico-uscita" element={<ProtectedRoute><DragonScaricoUscitaPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/cernite/batch" element={<ProtectedRoute><DragonCerniteBatchPage /></ProtectedRoute>} />
 
                 {/* MultyNijol Mobile Apps */}
