@@ -10,6 +10,7 @@ import { useDragonSites } from "@/hooks/dragon/useDragonSites";
 import { useDragonDocuments } from "@/hooks/dragon/useDragonDocuments";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { Check, ChevronRight, MapPin, FileText, Package, ArrowRight } from "lucide-react";
+import { TUTTI_CODICI_OPERAZIONE } from "@/lib/codiciRecuperoSmaltimento";
 
 interface Props {
   onSubmit: (data: { carico: Record<string, any>; scarico: Record<string, any> }) => Promise<void>;

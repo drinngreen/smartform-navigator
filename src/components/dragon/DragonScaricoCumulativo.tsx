@@ -11,6 +11,7 @@ import { useDragonDocuments } from "@/hooks/dragon/useDragonDocuments";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import type { DragonRegisterMovement } from "@/types/dragon";
 import { Info, ArrowDownCircle } from "lucide-react";
+import { TUTTI_CODICI_OPERAZIONE } from "@/lib/codiciRecuperoSmaltimento";
 
 interface Props {
   pendingCarichi: DragonRegisterMovement[];
