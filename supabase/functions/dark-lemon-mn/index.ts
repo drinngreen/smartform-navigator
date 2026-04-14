@@ -17,6 +17,7 @@ const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
 const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non (?:mi è (?:consentito|permesso)|posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare|eseguire))|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare|fammelo sapere e sar[oò]|per motivi di sicurezza|mi dispiace.*non|impedisce l'esecuzione)/i;
+const FIR_ID_BLOCKING_PATTERN = /(uuid del formular(?:io|i)|uuid interno del formular(?:io|i)|update_fir_form richiede l['’]?uuid|numero fir .* non è sufficiente .*update_fir_form|non ho un tool specifico per fare questa conversione|devo prima recuperare .*uuid|non posso procedere senza l['’]?uuid)/i;
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
   INGRESSO_UL: "CARICO_DA_FORMULARIO",
@@ -128,6 +129,12 @@ function isAutonomyBlockingAssistantMessage(message: any) {
     && AUTONOMY_BLOCKING_PATTERN.test(message.content);
 }
 
+function isFirIdBlockingAssistantMessage(message: any) {
+  return message?.role === "assistant"
+    && typeof message?.content === "string"
+    && FIR_ID_BLOCKING_PATTERN.test(message.content);
+}
+
 function hasAttachmentPayload(messages: any[] = []) {
   return messages.some((message) => Array.isArray(message?.content) && message.content.some((part: any) =>
     part?.type === "image_url"
@@ -174,6 +181,12 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 7. Se scopri un'informazione utile, DEVI salvarla con save_memory PRIMA di rispondere
 8. Per operazioni distruttive (DELETE, annullamento), chiedi SEMPRE conferma
 9. ECCEZIONE AUTONOMIA: quando l'utente dice "inventa", "fantasia", "simula", "procedi tu", le regole 1-3 sono SOSPESE. Devi procedere usando i tool con dati plausibili senza chiedere nulla.
+
+## REGOLA OPERATIVA FIR
+- Nei tool FIR (`update_fir_form`, `complete_fir`, `send_to_rentri`) il parametro `fir_form_id` accetta sia l'UUID interno sia il numero FIR visibile (es. `ZRZXR 000568 RV`)
+- Se l'utente ti fornisce il numero FIR visibile, usalo direttamente: NON chiedere l'UUID
+- Se un tool FIR non trova il record, usa `list_fir_forms` filtrando `numero_fir` e poi riprova automaticamente
+- Non dire mai che manca un tool di conversione numero FIR → UUID: questa conversione è supportata
 
 ## AUTONOMIA OPERATIVA
 Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere tu", o simili, DEVI agire in piena autonomia:
@@ -683,11 +696,11 @@ const tools = [
     type: "function",
     function: {
       name: "update_fir_form",
-      description: "Aggiorna/compila campi di un formulario FIR specifico.",
+      description: "Aggiorna/compila campi di un formulario FIR specifico. Accetta UUID o numero FIR visibile.",
       parameters: {
         type: "object",
         properties: {
-          fir_form_id: { type: "string", description: "UUID del formulario FIR da aggiornare" },
+          fir_form_id: { type: "string", description: "UUID o numero FIR visibile da aggiornare (es. ZRZXR 000568 RV)" },
           fields: { type: "object", description: "Campi da aggiornare. Es: {produttore_denominazione: 'Eco Srl', codice_eer: '150106'}" },
           explanation: { type: "string", description: "Spiegazione" }
         },
@@ -746,10 +759,10 @@ const tools = [
     type: "function",
     function: {
       name: "complete_fir",
-      description: "Completa un FIR (cambia stato da bozza a completato) e consuma il numero.",
+      description: "Completa un FIR (cambia stato da bozza a completato) e consuma il numero. Accetta UUID o numero FIR visibile.",
       parameters: {
         type: "object",
-        properties: { fir_form_id: { type: "string", description: "UUID del FIR da completare" } },
+        properties: { fir_form_id: { type: "string", description: "UUID o numero FIR visibile da completare (es. ZRZXR 000568 RV)" } },
         required: ["fir_form_id"]
       }
     }
@@ -758,11 +771,11 @@ const tools = [
     type: "function",
     function: {
       name: "send_to_rentri",
-      description: "Invia un FIR completato al sistema RENTRI ministeriale tramite il proxy VPS.",
+      description: "Invia un FIR completato al sistema RENTRI ministeriale tramite il proxy VPS. Accetta UUID o numero FIR visibile.",
       parameters: {
         type: "object",
         properties: {
-          fir_form_id: { type: "string", description: "UUID del FIR da inviare" },
+          fir_form_id: { type: "string", description: "UUID o numero FIR visibile da inviare (es. ZRZXR 000568 RV)" },
           rentri_path: { type: "string", description: "Path RENTRI (default: /api/rentri/action/emissioneFir)" }
         },
         required: ["fir_form_id"]
@@ -1454,6 +1467,33 @@ const tools = [
   },
 ];
 
+async function resolveFirFormId(
+  db: any,
+  tenantId: string,
+  rawFirFormId: unknown,
+) {
+  const candidate = String(rawFirFormId || "").trim();
+  if (!candidate) return { id: null, error: "fir_form_id mancante" };
+
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(candidate)) return { id: candidate, original: candidate };
+
+  const normalizedNumber = candidate.toUpperCase().replace(/\s+/g, " ").trim();
+  const { data, error } = await db
+    .from("fir_forms")
+    .select("id, numero_fir, status")
+    .eq("numero_fir", normalizedNumber)
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { id: null, error: error.message };
+  if (!data) return { id: null, error: `FIR "${candidate}" non trovato nel tenant attivo` };
+
+  return { id: data.id, original: candidate, fir: data };
+}
+
 // ====================== TOOL HANDLERS ======================
 
 async function handleTool(
@@ -1537,7 +1577,10 @@ async function handleTool(
     }
 
     case "update_fir_form": {
-      let id = String(args.fir_form_id || "").trim();
+      const resolvedFir = await resolveFirFormId(db, tenantId, args.fir_form_id);
+      if (resolvedFir.error || !resolvedFir.id) return { error: resolvedFir.error || "FIR non trovato" };
+
+      const id = resolvedFir.id;
       const fields = args.fields && typeof args.fields === "object" ? args.fields : {};
       const allowedFields = new Set([
         "numero_fir", "status", "produttore_denominazione", "produttore_codice_fiscale",
@@ -1550,23 +1593,6 @@ async function handleTool(
         "codice_eer", "stato_fisico", "descrizione_rifiuto", "quantita", "unita_misura",
         "data_partenza", "data_arrivo", "note", "form_data", "caratteristiche_hp",
       ]);
-
-      if (!id) return { error: "fir_form_id mancante" };
-
-      // If the id is not a UUID, try to resolve it as a FIR number
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(id)) {
-        const { data: resolved, error: resolveErr } = await db
-          .from("fir_forms")
-          .select("id")
-          .eq("numero_fir", id.toUpperCase())
-          .eq("tenant_id", tenantId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (resolveErr || !resolved) return { error: `FIR "${id}" non trovato. Usa list_fir_forms per ottenere l'ID corretto.` };
-        id = resolved.id;
-      }
 
       const updatePayload: Record<string, any> = {};
 
@@ -1668,17 +1694,32 @@ async function handleTool(
     }
 
     case "complete_fir": {
-      const updateSql = `UPDATE fir_forms SET status = 'completato', completed_at = now(), updated_at = now() WHERE id = '${args.fir_form_id}' AND tenant_id = '${tenantId}' AND status = 'bozza' RETURNING id, numero_fir`;
-      const { data: updated, error: updateErr } = await db.rpc("exec_sql_write", { query: updateSql }).maybeSingle();
+      const resolvedFir = await resolveFirFormId(db, tenantId, args.fir_form_id);
+      if (resolvedFir.error || !resolvedFir.id) return { error: resolvedFir.error || "FIR non trovato" };
+
+      const timestamp = new Date().toISOString();
+      const { data: updated, error: updateErr } = await db
+        .from("fir_forms")
+        .update({ status: "completato", completed_at: timestamp, updated_at: timestamp })
+        .eq("id", resolvedFir.id)
+        .eq("tenant_id", tenantId)
+        .eq("status", "bozza")
+        .select("id, numero_fir, status")
+        .maybeSingle();
       if (updateErr) return { error: updateErr.message };
-      const { error: consumeErr } = await db.rpc("consume_fir_number", { p_fir_id: args.fir_form_id });
+      if (!updated) return { error: "FIR non trovato o non completabile" };
+
+      const { error: consumeErr } = await db.rpc("consume_fir_number", { p_fir_id: resolvedFir.id });
       if (consumeErr) console.error("Consume error:", consumeErr);
       return { success: true, completed: updated };
     }
 
     case "send_to_rentri": {
+      const resolvedFir = await resolveFirFormId(db, tenantId, args.fir_form_id);
+      if (resolvedFir.error || !resolvedFir.id) return { error: resolvedFir.error || "FIR non trovato" };
+
       const { data: fir, error: firErr } = await db.from("fir_forms")
-        .select("*").eq("id", args.fir_form_id).eq("tenant_id", tenantId).single();
+        .select("*").eq("id", resolvedFir.id).eq("tenant_id", tenantId).maybeSingle();
       if (firErr || !fir) return { error: firErr?.message || "FIR non trovato" };
 
       const payload = {
@@ -2633,6 +2674,9 @@ Deno.serve(async (req) => {
       if (attachmentAware && message?.role === "assistant" && typeof message?.content === "string" && ATTACHMENT_REFUSAL_PATTERN.test(message.content)) {
         return false;
       }
+      if (isFirIdBlockingAssistantMessage(message)) {
+        return false;
+      }
       if (autonomyMode && isAutonomyBlockingAssistantMessage(message)) {
         return false;
       }
@@ -2717,14 +2761,27 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       const assistantMsg = choice.message;
       conversationMessages.push(assistantMsg);
 
-      // Track any non-empty content even during tool-call iterations
-      if (typeof assistantMsg.content === "string" && assistantMsg.content.trim()) {
-        lastNonEmptyContent = assistantMsg.content;
+      const assistantText = typeof assistantMsg.content === "string" ? assistantMsg.content : "";
+      const isFirIdBlockingText = FIR_ID_BLOCKING_PATTERN.test(assistantText);
+      const isAutonomyBlockingText = autonomyMode && AUTONOMY_BLOCKING_PATTERN.test(assistantText);
+
+      if (assistantText.trim() && !isFirIdBlockingText && !isAutonomyBlockingText) {
+        lastNonEmptyContent = assistantText;
       }
 
       if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
-        const assistantText = typeof assistantMsg.content === "string" ? assistantMsg.content : "";
-        if (autonomyMode && AUTONOMY_BLOCKING_PATTERN.test(assistantText)) {
+        if (isFirIdBlockingText) {
+          conversationMessages.push({
+            role: "system",
+            content: `CORREZIONE OBBLIGATORIA FIR: nei tool FIR il parametro fir_form_id accetta sia l'UUID interno sia il numero FIR visibile (es. "ZRZXR 000568 RV").
+Se l'utente ti fornisce il numero FIR, usalo direttamente in update_fir_form, complete_fir o send_to_rentri.
+Se serve verificare l'esistenza del record, usa list_fir_forms con numero_fir e poi procedi automaticamente.
+È VIETATO rispondere che serve per forza l'UUID o che non esiste un tool di conversione.
+USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
+          });
+          continue;
+        }
+        if (isAutonomyBlockingText) {
           conversationMessages.push({
             role: "system",
             content: `CORREZIONE OBBLIGATORIA: stai RIFIUTANDO di eseguire l'operazione nonostante l'utente abbia ESPLICITAMENTE attivato la modalità autonomia. 
@@ -2735,7 +2792,6 @@ ESEGUI ORA questi step nell'ordine:
 3. Continua con consolidamento e cernita
 USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
           });
-          finalContent = assistantText;
           continue;
         }
         finalContent = assistantText;
