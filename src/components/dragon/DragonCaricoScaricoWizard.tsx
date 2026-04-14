@@ -63,6 +63,7 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
       physical_state: physicalState || selectedItem.stato_fisico_default,
       hp_codes: selectedItem.classi_hp || [],
       note: note || null,
+      operation_code: operationCode || null,
       weight_status: "DEFINITIVO",
       status: "BOZZA",
     };
