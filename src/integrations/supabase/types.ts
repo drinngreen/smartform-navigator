@@ -1099,6 +1099,7 @@ export type Database = {
           movement_number: number
           movement_type: Database["public"]["Enums"]["dragon_movement_type"]
           note: string | null
+          operation_code: string | null
           parent_movement_id: string | null
           physical_state: string | null
           quantity: number
@@ -1133,6 +1134,7 @@ export type Database = {
           movement_number?: number
           movement_type: Database["public"]["Enums"]["dragon_movement_type"]
           note?: string | null
+          operation_code?: string | null
           parent_movement_id?: string | null
           physical_state?: string | null
           quantity?: number
@@ -1167,6 +1169,7 @@ export type Database = {
           movement_number?: number
           movement_type?: Database["public"]["Enums"]["dragon_movement_type"]
           note?: string | null
+          operation_code?: string | null
           parent_movement_id?: string | null
           physical_state?: string | null
           quantity?: number
