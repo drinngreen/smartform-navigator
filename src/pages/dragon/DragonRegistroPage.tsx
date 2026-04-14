@@ -127,6 +127,7 @@ export default function DragonRegistroPage() {
             {currentRegister?.subject_type === "DESTINATARIO" && (
               <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/ingresso`)}><LogIn className="h-4 w-4 mr-1" /> Ingresso FIR</Button>
             )}
+            <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/scarico-uscita`)}><TrendingDown className="h-4 w-4 mr-1" /> Scarico Uscita</Button>
             <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/scarico-cumulativo`)}><Layers className="h-4 w-4 mr-1" /> Scarico Cumulativo</Button>
             <Button variant="outline" size="sm" onClick={() => navigate(`${prefix}/registro/carico-scarico`)}><ArrowLeftRight className="h-4 w-4 mr-1" /> Carico/Scarico</Button>
             <Button size="sm" onClick={() => setShowForm(true)}><Plus className="h-4 w-4 mr-1" /> Nuovo Movimento</Button>
