@@ -859,6 +859,133 @@ const tools = [
     }
   },
 
+  // === DRAGON — REGISTRO & MAGAZZINO ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_stock_balances",
+      description: "Mostra le giacenze attuali del magazzino Dragon (rifiuti CER e/o MPS). Usa per rispondere a domande su giacenze, disponibilità materiali, situazione magazzino.",
+      parameters: {
+        type: "object",
+        properties: {
+          scope: { type: "string", enum: ["WASTE", "MPS", "ALL"], description: "Filtra per ambito: WASTE (rifiuti), MPS (materie prime seconde), ALL (tutti). Default: ALL" },
+          cer_code: { type: "string", description: "Filtra per codice CER specifico (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_register_list",
+      description: "Elenca movimenti dal registro cronologico Dragon. Filtra per tipo (CARICO/SCARICO), stato, CER, registro.",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento (opzionale)" },
+          status: { type: "string", enum: ["BOZZA", "CONSOLIDATO", "STAMPATO", "INVIATO_RENTRI"], description: "Stato (opzionale)" },
+          cer_code: { type: "string", description: "Filtra per CER (opzionale)" },
+          register_type: { type: "string", enum: ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"], description: "Tipo registro (opzionale)" },
+          date_from: { type: "string", description: "Data da (YYYY-MM-DD)" },
+          date_to: { type: "string", description: "Data a (YYYY-MM-DD)" },
+          limit: { type: "number", description: "Max risultati (default 30)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_create_movement",
+      description: "Crea un movimento di registro Dragon (carico o scarico). Richiede SEMPRE conferma dell'utente prima dell'esecuzione.",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento" },
+          cause_code: { type: "string", description: "Codice causale (es. CARICO_PRODUZIONE_UL, INGRESSO_UL, SCARICO_USCITA_FORMULARIO)" },
+          cer_code: { type: "string", description: "Codice CER del rifiuto" },
+          item_id: { type: "string", description: "UUID dell'articolo Dragon" },
+          quantity: { type: "number", description: "Quantità in kg" },
+          movement_date: { type: "string", description: "Data movimento (YYYY-MM-DD, default oggi)" },
+          register_type: { type: "string", enum: ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"], description: "Tipo registro (default: PRODUTTORE)" },
+          status: { type: "string", enum: ["BOZZA", "CONSOLIDATO"], description: "Stato iniziale (default: BOZZA)" },
+          note: { type: "string", description: "Note opzionali" }
+        },
+        required: ["movement_type", "cause_code", "cer_code", "item_id", "quantity"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_consolidate_movement",
+      description: "Consolida un movimento BOZZA del registro Dragon (lo rende ufficiale).",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_id: { type: "string", description: "UUID del movimento da consolidare" }
+        },
+        required: ["movement_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_items",
+      description: "Elenca gli articoli Dragon (CER, MPS, Materiali) configurati.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_type: { type: "string", enum: ["WASTE_CER", "MPS", "MATERIAL"], description: "Filtra per tipo (opzionale)" },
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_cernita",
+      description: "Esegue una cernita (smontaggio di un CER in componenti). Genera automaticamente scarico input + carichi output su registro e magazzino.",
+      parameters: {
+        type: "object",
+        properties: {
+          input_item_id: { type: "string", description: "UUID articolo input da smontare" },
+          input_quantity: { type: "number", description: "Quantità input in kg" },
+          outputs: {
+            type: "array",
+            description: "Componenti in uscita",
+            items: {
+              type: "object",
+              properties: {
+                item_id: { type: "string", description: "UUID articolo output" },
+                quantity: { type: "number", description: "Quantità output in kg" }
+              },
+              required: ["item_id", "quantity"]
+            }
+          },
+          notes: { type: "string", description: "Note opzionali" }
+        },
+        required: ["input_item_id", "input_quantity", "outputs"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_trace_movement",
+      description: "Traccia un movimento di magazzino: risale la catena FIR → carico → scarico lavorazione → cernita → ricarico.",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_id: { type: "string", description: "UUID del movimento stock da tracciare" }
+        },
+        required: ["movement_id"]
+      }
+    }
+  },
+
   // === KNOWLEDGE BASE ===
   {
     type: "function",
