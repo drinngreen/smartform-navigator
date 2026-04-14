@@ -2773,11 +2773,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
         if (isFirIdBlockingText) {
           conversationMessages.push({
             role: "system",
-            content: `CORREZIONE OBBLIGATORIA FIR: nei tool FIR il parametro fir_form_id accetta sia l'UUID interno sia il numero FIR visibile (es. "ZRZXR 000568 RV").
-Se l'utente ti fornisce il numero FIR, usalo direttamente in update_fir_form, complete_fir o send_to_rentri.
-Se serve verificare l'esistenza del record, usa list_fir_forms con numero_fir e poi procedi automaticamente.
-È VIETATO rispondere che serve per forza l'UUID o che non esiste un tool di conversione.
-USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
+            content: "CORREZIONE OBBLIGATORIA FIR: nei tool FIR il parametro fir_form_id accetta sia l'UUID interno sia il numero FIR visibile (es. "ZRZXR 000568 RV").\nSe l'utente ti fornisce il numero FIR, usalo direttamente in update_fir_form, complete_fir o send_to_rentri.\nSe serve verificare l'esistenza del record, usa list_fir_forms con numero_fir e poi procedi automaticamente.\nÈ VIETATO rispondere che serve per forza l'UUID o che non esiste un tool di conversione.\nUSA I TOOL ADESSO. NON RISPONDERE CON TESTO.",
           });
           continue;
         }
