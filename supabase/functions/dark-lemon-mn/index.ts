@@ -2248,7 +2248,15 @@ Deno.serve(async (req) => {
             status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        throw new Error(`OpenRouter error: ${response.status}`);
+        const isFallbackable = response.status >= 500;
+        return new Response(JSON.stringify({
+          content: isFallbackable
+            ? "⚠️ Il servizio AI è temporaneamente non disponibile. Riprova tra qualche secondo."
+            : `❌ Errore AI: ${response.status}`,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const data = await response.json();
