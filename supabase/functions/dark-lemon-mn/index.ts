@@ -1864,8 +1864,9 @@ async function handleTool(
       q += ` GROUP BY di.codice_cer, di.descrizione, di.item_type, di.unita_misura_default, dsm.warehouse_scope
         HAVING SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) <> 0
         ORDER BY di.codice_cer`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
-      return error ? { error: error.message } : { balances: data || [] };
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
+      const balances = Array.isArray(data) ? data : data ? [data] : [];
+      return error ? { error: error.message } : { balances };
     }
 
     case "dragon_list_causes": {
@@ -1909,8 +1910,9 @@ async function handleTool(
       if (args.date_from) q += ` AND drm.movement_date >= '${args.date_from}'`;
       if (args.date_to) q += ` AND drm.movement_date <= '${args.date_to}'`;
       q += ` ORDER BY drm.movement_date DESC, drm.movement_number DESC LIMIT ${args.limit || 30}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
-      return error ? { error: error.message } : { movements: data || [] };
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
+      const movements = Array.isArray(data) ? data : data ? [data] : [];
+      return error ? { error: error.message } : { movements };
     }
 
     case "dragon_create_movement": {
@@ -2009,8 +2011,9 @@ async function handleTool(
       if (args.active_only !== false) q += ` AND attivo = true`;
       if (args.item_type) q += ` AND item_type = '${args.item_type}'`;
       q += ` ORDER BY codice_cer`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
-      return error ? { error: error.message } : { items: data || [] };
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
+      const items = Array.isArray(data) ? data : data ? [data] : [];
+      return error ? { error: error.message } : { items };
     }
 
     case "dragon_ensure_item": {
@@ -2300,8 +2303,9 @@ async function handleTool(
         FROM dragon_registers WHERE company_id = '${tenantId}'`;
       if (args.active_only !== false) q += ` AND active = true`;
       q += ` ORDER BY register_code`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
-      return error ? { error: error.message } : { registers: data || [] };
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
+      const registers = Array.isArray(data) ? data : data ? [data] : [];
+      return error ? { error: error.message } : { registers };
     }
 
     // ---------- DRAGON RETTIFICHE INVENTARIALI ----------
