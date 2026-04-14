@@ -207,6 +207,18 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
             </div>
           </div>
 
+          <div>
+            <Label>Codice Operazione (R/D)</Label>
+            <Select value={operationCode} onValueChange={setOperationCode}>
+              <SelectTrigger><SelectValue placeholder="Seleziona operazione..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {TUTTI_CODICI_OPERAZIONE.map(op => (
+                  <SelectItem key={op.codice} value={op.codice}>{op.codice} — {op.descrizione}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>Note</Label><Textarea value={note} onChange={e => setNote(e.target.value)} rows={2} /></div>
 
           {/* FIFO Preview */}
