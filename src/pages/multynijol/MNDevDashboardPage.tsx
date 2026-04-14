@@ -31,6 +31,8 @@ import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoD
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "impianto";
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
