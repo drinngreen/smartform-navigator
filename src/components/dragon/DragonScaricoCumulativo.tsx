@@ -11,6 +11,7 @@ import { useDragonDocuments } from "@/hooks/dragon/useDragonDocuments";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import type { DragonRegisterMovement } from "@/types/dragon";
 import { Info, ArrowDownCircle } from "lucide-react";
+import { TUTTI_CODICI_OPERAZIONE } from "@/lib/codiciRecuperoSmaltimento";
 
 interface Props {
   pendingCarichi: DragonRegisterMovement[];
@@ -30,6 +31,7 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
   const [totalQuantity, setTotalQuantity] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [note, setNote] = useState("");
+  const [operationCode, setOperationCode] = useState("");
 
   const causeScarico = causes.find(c => c.code === "SCARICO_USCITA_FORMULARIO");
 
@@ -115,6 +117,7 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
         physical_state: firstSelected.physical_state,
         hp_codes: firstSelected.hp_codes || [],
         note: note || null,
+        operation_code: operationCode || null,
         weight_status: "DEFINITIVO",
         status: "BOZZA",
       },
@@ -205,6 +208,18 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
             </div>
           </div>
 
+          <div>
+            <Label>Codice Operazione (R/D)</Label>
+            <Select value={operationCode} onValueChange={setOperationCode}>
+              <SelectTrigger><SelectValue placeholder="Seleziona operazione..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {TUTTI_CODICI_OPERAZIONE.map(op => (
+                  <SelectItem key={op.codice} value={op.codice}>{op.codice} — {op.descrizione}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div><Label>Note</Label><Textarea value={note} onChange={e => setNote(e.target.value)} rows={2} /></div>
 
           {/* FIFO Preview */}

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
+import { TUTTI_CODICI_OPERAZIONE } from "@/lib/codiciRecuperoSmaltimento";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { useDragonWarehouses } from "@/hooks/dragon/useDragonWarehouses";
 import { useMNContextStore } from "@/stores/mnContextStore";
@@ -39,6 +40,7 @@ export function DragonNewMovementForm({ open, onOpenChange }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [causeId, setCauseId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
+  const [operationCode, setOperationCode] = useState("");
   const [lines, setLines] = useState<Line[]>([{ item_id: "", quantity: "", note: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -126,6 +128,18 @@ export function DragonNewMovementForm({ open, onOpenChange }: Props) {
               </Select>
             </div>
           )}
+          <div>
+            <Label>Codice Operazione (R/D)</Label>
+            <Select value={operationCode} onValueChange={setOperationCode}>
+              <SelectTrigger><SelectValue placeholder="Seleziona operazione..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {TUTTI_CODICI_OPERAZIONE.map(op => (
+                  <SelectItem key={op.codice} value={op.codice}>{op.codice} — {op.descrizione}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="border-t border-border/30 pt-3">
             <div className="flex justify-between items-center mb-2">

@@ -10,6 +10,7 @@ import { useDragonSites } from "@/hooks/dragon/useDragonSites";
 import { useDragonDocuments } from "@/hooks/dragon/useDragonDocuments";
 import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
 import { Check, ChevronRight, MapPin, FileText, Package, ArrowRight } from "lucide-react";
+import { TUTTI_CODICI_OPERAZIONE } from "@/lib/codiciRecuperoSmaltimento";
 
 interface Props {
   onSubmit: (data: { carico: Record<string, any>; scarico: Record<string, any> }) => Promise<void>;
@@ -32,6 +33,7 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
   const [siteId, setSiteId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [note, setNote] = useState("");
+  const [operationCode, setOperationCode] = useState("");
   const [physicalState, setPhysicalState] = useState("solido_non_pulverulento");
 
   const selectedItem = items.find(i => i.id === itemId);
@@ -61,6 +63,7 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
       physical_state: physicalState || selectedItem.stato_fisico_default,
       hp_codes: selectedItem.classi_hp || [],
       note: note || null,
+      operation_code: operationCode || null,
       weight_status: "DEFINITIVO",
       status: "BOZZA",
     };
@@ -199,6 +202,18 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
             </Select>
           </div>
           <div>
+            <Label>Codice Operazione (R/D)</Label>
+            <Select value={operationCode} onValueChange={setOperationCode}>
+              <SelectTrigger><SelectValue placeholder="Seleziona operazione..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nessuno</SelectItem>
+                {TUTTI_CODICI_OPERAZIONE.map(op => (
+                  <SelectItem key={op.codice} value={op.codice}>{op.codice} — {op.descrizione}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Note</Label>
             <Textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="Note opzionali..." />
           </div>
@@ -236,6 +251,12 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
                 <p className="text-xs text-muted-foreground">Data</p>
                 <p>{new Date(movementDate).toLocaleDateString("it-IT")}</p>
               </div>
+              {operationCode && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Operazione R/D</p>
+                  <p className="font-mono">{operationCode}</p>
+                </div>
+              )}
             </div>
             <div className="border-t border-border/20 pt-3 text-xs text-muted-foreground">
               <p>Verranno creati <strong>2 movimenti</strong> di registro (carico + scarico) collegati, con i relativi movimenti di magazzino.</p>

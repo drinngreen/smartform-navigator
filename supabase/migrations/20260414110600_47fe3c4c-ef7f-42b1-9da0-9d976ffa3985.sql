@@ -1,0 +1,1 @@
+ALTER TABLE public.dragon_register_movements ADD COLUMN IF NOT EXISTS operation_code text;
