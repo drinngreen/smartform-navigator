@@ -16,7 +16,93 @@ const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
-const AUTONOMY_BLOCKING_PATTERN = /(potresti confermare|ho bisogno della tua conferma|devo sapere se .* esiste|è già configurato|è già presente|non posso verificarlo direttamente|ti chiedo ancora)/i;
+const AUTONOMY_BLOCKING_PATTERN = /(potresti confermare|ho bisogno della tua conferma|ho (?:assolutamente )?bisogno di conoscere|devo sapere se .* esiste|è già configurato|è già presente|non posso verificarlo direttamente|non posso usare query_database|non posso usare il database|non posso inventarl[eo]|ti chiedo ancora|ti chiedo se puoi fornirmi|non posso andare avanti|non posso procedere|in attesa di questa informazione)/i;
+
+const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
+  INGRESSO_UL: "CARICO_DA_FORMULARIO",
+  INGRESSO_MIO_CANTIERE: "CARICO_DA_FORMULARIO",
+  INGRESSO_CANTIERE_TERZI: "CARICO_DA_FORMULARIO",
+  SCARICO_USCITA: "SCARICO_USCITA_FORMULARIO",
+  SCARICO_USCITA_FIR: "SCARICO_USCITA_FORMULARIO",
+  SCARICO_USCITA_FIR_CANTIERE: "SCARICO_USCITA_FORMULARIO",
+  CARICO_PRODUZIONE_CANTIERE: "CARICO_PRODUZIONE_FUORI_UL",
+  CARICO_PRODUZIONE_MIO_CANTIERE: "CARICO_PRODUZIONE_FUORI_UL",
+  SCARICO_LAVORAZIONE: "SCARICO_PER_LAVORAZIONE",
+  CARICO_LAVORAZIONE: "CARICO_DA_LAVORAZIONE",
+};
+
+const VALID_REGISTER_TYPES = ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"] as const;
+type DragonRegisterType = typeof VALID_REGISTER_TYPES[number];
+
+function sanitizeRegisterType(registerType?: string): DragonRegisterType {
+  const normalized = String(registerType || "").trim().toUpperCase();
+  const aliasMap: Record<string, DragonRegisterType> = {
+    IMPIANTO: "DESTINATARIO",
+    DESTINATARIO: "DESTINATARIO",
+    PRODUTTORE: "PRODUTTORE",
+    TRASPORTATORE: "TRASPORTATORE",
+    CONTO_PROPRIO: "TRASPORTATORE",
+    INTERMEDIARIO: "INTERMEDIARIO",
+  };
+  const resolved = aliasMap[normalized] ?? normalized;
+  return (VALID_REGISTER_TYPES as readonly string[]).includes(resolved)
+    ? resolved as DragonRegisterType
+    : "PRODUTTORE";
+}
+
+function suggestedCauseCodesForContext(movementType?: string, registerType?: string): string[] {
+  const normalizedMovementType = String(movementType || "").trim().toUpperCase();
+  const normalizedRegisterType = sanitizeRegisterType(registerType);
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "DESTINATARIO") {
+    return ["CARICO_DA_FORMULARIO", "CARICO_DA_DDT"];
+  }
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "PRODUTTORE") {
+    return ["CARICO_PRODUZIONE_UL", "CARICO_PRODUZIONE_FUORI_UL", "CARICO_SCARICO_CONTESTUALE"];
+  }
+
+  if (normalizedMovementType === "SCARICO" && normalizedRegisterType === "DESTINATARIO") {
+    return ["SCARICO_USCITA_FORMULARIO", "SCARICO_PER_LAVORAZIONE", "SCARICO_DA_DDT"];
+  }
+
+  if (normalizedMovementType === "SCARICO" && normalizedRegisterType === "PRODUTTORE") {
+    return ["SCARICO_USCITA_FORMULARIO", "SCARICO_PER_LAVORAZIONE", "SCARICO_DA_DDT"];
+  }
+
+  return [];
+}
+
+function defaultCauseCodeForMovement(movementType?: string, registerType?: string): string | null {
+  const normalizedMovementType = String(movementType || "").trim().toUpperCase();
+  const normalizedRegisterType = sanitizeRegisterType(registerType);
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "DESTINATARIO") {
+    return "CARICO_DA_FORMULARIO";
+  }
+
+  if (normalizedMovementType === "CARICO" && normalizedRegisterType === "PRODUTTORE") {
+    return "CARICO_PRODUZIONE_UL";
+  }
+
+  if (normalizedMovementType === "SCARICO") {
+    return "SCARICO_USCITA_FORMULARIO";
+  }
+
+  return null;
+}
+
+function normalizeCauseCodeForDb(causeCode?: string, movementType?: string, registerType?: string): string {
+  const rawCode = String(causeCode || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
+  if (!rawCode) return defaultCauseCodeForMovement(movementType, registerType) ?? "";
+  return DRAGON_CAUSE_CODE_ALIASES[rawCode] ?? rawCode;
+}
 
 function normalizeContext(context?: string): string | undefined {
   return context?.replace(/^dev-/, "");
@@ -95,6 +181,7 @@ Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere t
 - NON chiedere conferma su dati che l'utente ti ha esplicitamente detto di inventare
 - Procedi step-by-step chiamando i tool necessari senza fermarti a ogni passaggio
 - Se un tool fallisce perché manca un prerequisito, CREA il prerequisito e riprova
+- Se ti serve una causale Dragon, NON chiedere mai l'elenco all'utente: usa dragon_list_causes oppure i codici attivi noti nel prompt
 
 ## PROCEDURE OPERATIVE AUTOMATICHE
 Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
@@ -172,8 +259,9 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 
 ### 11. DRAGON — REGISTRO CRONOLOGICO
 - Elencare registri disponibili con dragon_list_registers
+- Elencare causali attive con dragon_list_causes
 - Elencare movimenti con dragon_register_list (filtri per tipo, stato, CER, date)
-- Creare movimenti con dragon_create_movement (richiede conferma utente)
+- Creare movimenti con dragon_create_movement (se l'utente ti ha già chiesto di procedere o ha autorizzato dati di fantasia, NON chiedere ulteriore conferma)
 - Consolidare bozze con dragon_consolidate_movement
 
 ### 12. DRAGON — MAGAZZINO & GIACENZE
@@ -249,22 +337,16 @@ NOTA: Un magazzino può contenere sia CER che MPS. Il limite di giacenza genera 
 
 ### dragon_causes (Causali movimento)
 id, code, name, scope (REGISTER|STOCK|BOTH), direction (IN|OUT|TRANSFORM|ADJUST), requires_fir, requires_site, generates_stock_movement, stock_sign (PLUS|MINUS|NONE).
-CAUSALI DESTINATARIO:
-- INGRESSO_UL — Ingresso da Unità Locale del produttore (rifiuto conferito direttamente dall'UL del produttore)
-- INGRESSO_MIO_CANTIERE — Ingresso da cantiere proprio (rifiuto prodotto fuori dalla propria UL)
-- INGRESSO_CANTIERE_TERZI — Ingresso da cantiere di terzi (rifiuto prodotto da terzi fuori dalla loro UL)
-- SCARICO_USCITA — Scarico di uscita con formulario (per rifiuti stoccati R13/D15, derivati da lavorazione, o da produttore iniziale)
-- SCARICO_LAVORAZIONE — Scarico per lavorazione/cernita (il CER viene processato)
-- CARICO_LAVORAZIONE — Carico da lavorazione manuale (CER ottenuto da lavorazione, inserito manualmente)
-- SCARICO_MISCELAZIONE — Scarico per miscelazione (più CER vengono miscelati)
-- CARICO_MISCELAZIONE — Carico da miscelazione (prodotto risultante dalla miscela, su registro o magazzino MPS)
-CAUSALI PRODUTTORE:
-- CARICO_PRODUZIONE_UL — Carico di produzione nella propria Unità Locale (DT = prodotto/detenuto in UL)
-- CARICO_PRODUZIONE_CANTIERE — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE = prodotto fuori UL)
-- SCARICO_USCITA_FIR — Uscita con Formulario (aT = scarico a terzi, genera FIR automaticamente)
-- SCARICO_USCITA_FIR_CANTIERE — Uscita con Formulario con Cantiere (deposito temporaneo in cantiere)
-- CARICO_SCARICO_CONTESTUALE — Carico & Scarico contestuale (nessuna giacenza, CER prodotto e smaltito subito)
-- CARICO_SCARICO_CONTESTUALE_CANTIERE — Carico & Scarico contestuale da cantiere
+CODICI ATTIVI DA USARE NEL DB (NON inventare alias):
+- DESTINATARIO / carico da FIR in ingresso → CARICO_DA_FORMULARIO
+- DESTINATARIO / carico da DDT → CARICO_DA_DDT
+- LAVORAZIONE / scarico input → SCARICO_PER_LAVORAZIONE
+- LAVORAZIONE / carico output → CARICO_DA_LAVORAZIONE
+- PRODUTTORE / carico in U.L. → CARICO_PRODUZIONE_UL
+- PRODUTTORE / carico fuori U.L. → CARICO_PRODUZIONE_FUORI_UL
+- USCITA con formulario → SCARICO_USCITA_FORMULARIO
+- RETTIFICHE → RETTIFICA_GIACENZA_POSITIVA / RETTIFICA_GIACENZA_NEGATIVA
+Alias testuali come INGRESSO_UL, INGRESSO_MIO_CANTIERE, INGRESSO_CANTIERE_TERZI, SCARICO_USCITA, SCARICO_LAVORAZIONE, CARICO_LAVORAZIONE, SCARICO_USCITA_FIR e CARICO_PRODUZIONE_CANTIERE sono solo descrittivi e vanno tradotti nei codici reali sopra.
 
 ### dragon_registers (Registri cronologici)
 id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARIO|...), active.
@@ -323,9 +405,9 @@ Il destinatario è l'azienda autorizzata a ricevere rifiuti per smaltimento, rec
 6. FIR senza quantità a destino = giallo; FIR senza quantità all'origine E a destino = rosso
 
 ### Causali per il Destinatario
-- **Ingresso da Unità Locale** (INGRESSO_UL): il rifiuto proviene direttamente dall'UL del produttore
-- **Ingresso da mio cantiere** (INGRESSO_MIO_CANTIERE): il rifiuto è stato prodotto fuori dalla propria UL
-- **Ingresso da Cantiere di terzi** (INGRESSO_CANTIERE_TERZI): il rifiuto è stato prodotto da un soggetto diverso fuori dalla sua UL
+- **Ingresso da formulario** → usa sempre il codice reale **CARICO_DA_FORMULARIO**
+- **Ingresso da DDT** → usa **CARICO_DA_DDT**
+- Se in chat compaiono etichette descrittive come “Ingresso da Unità Locale”, “Ingresso da mio cantiere” o “Ingresso da cantiere di terzi”, per creare il movimento nel DB devi normalizzarle a **CARICO_DA_FORMULARIO**
 
 ### Scarico di Uscita
 Per far uscire dall'azienda:
@@ -434,10 +516,10 @@ Come il contestuale standard, ma con:
 
 ### CAUSALI PRODUTTORE (riepilogo Dragon)
 - CARICO_PRODUZIONE_UL — Carico di produzione nella propria Unità Locale (DT)
-- CARICO_PRODUZIONE_CANTIERE — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE)
-- SCARICO_USCITA_FIR — Uscita con Formulario (aT, scarico a terzi)
-- SCARICO_USCITA_FIR_CANTIERE — Uscita con Formulario con Cantiere (deposito temporaneo in cantiere)
+- CARICO_PRODUZIONE_FUORI_UL — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE)
+- SCARICO_USCITA_FORMULARIO — Uscita con Formulario (aT, scarico a terzi)
 - CARICO_SCARICO_CONTESTUALE — Carico & Scarico contestuale (nessuna giacenza)
+- Se l'utente usa nomi descrittivi diversi, traducili al codice attivo più vicino presente nel DB
 - CARICO_SCARICO_CONTESTUALE_CANTIERE — Carico & Scarico contestuale da cantiere
 
 ### Gestione del Peso a Destino
@@ -951,6 +1033,21 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "dragon_list_causes",
+      description: "Elenca le causali Dragon attive. Se specifichi movement_type e register_type, restituisce le causali corrette per quel contesto operativo.",
+      parameters: {
+        type: "object",
+        properties: {
+          movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento (opzionale)" },
+          register_type: { type: "string", enum: ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"], description: "Tipo registro (opzionale)" },
+          direction: { type: "string", enum: ["IN", "OUT", "TRANSFORM", "ADJUST"], description: "Direzione causale (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "dragon_register_list",
       description: "Elenca movimenti dal registro cronologico Dragon. Filtra per tipo (CARICO/SCARICO), stato, CER, registro.",
       parameters: {
@@ -971,12 +1068,12 @@ const tools = [
     type: "function",
     function: {
       name: "dragon_create_movement",
-      description: "Crea un movimento di registro Dragon (carico o scarico). Richiede SEMPRE conferma dell'utente prima dell'esecuzione.",
+      description: "Crea un movimento di registro Dragon (carico o scarico). Se cause_code manca o usa un alias descrittivo, il sistema prova a normalizzarlo automaticamente ai codici reali attivi.",
       parameters: {
         type: "object",
         properties: {
           movement_type: { type: "string", enum: ["CARICO", "SCARICO"], description: "Tipo movimento" },
-          cause_code: { type: "string", description: "Codice causale (es. CARICO_PRODUZIONE_UL, INGRESSO_UL, SCARICO_USCITA_FORMULARIO)" },
+          cause_code: { type: "string", description: "Codice causale reale o alias descrittivo (es. CARICO_DA_FORMULARIO, INGRESSO_UL, SCARICO_USCITA_FORMULARIO)" },
           cer_code: { type: "string", description: "Codice CER del rifiuto" },
           item_id: { type: "string", description: "UUID dell'articolo Dragon" },
           quantity: { type: "number", description: "Quantità in kg" },
@@ -985,7 +1082,7 @@ const tools = [
           status: { type: "string", enum: ["BOZZA", "CONSOLIDATO"], description: "Stato iniziale (default: BOZZA)" },
           note: { type: "string", description: "Note opzionali" }
         },
-        required: ["movement_type", "cause_code", "cer_code", "item_id", "quantity"]
+        required: ["movement_type", "cer_code", "item_id", "quantity"]
       }
     }
   },
@@ -1770,6 +1867,32 @@ async function handleTool(
       return error ? { error: error.message } : { balances: data || [] };
     }
 
+    case "dragon_list_causes": {
+      const registerType = args.register_type ? sanitizeRegisterType(args.register_type) : null;
+      const preferredCodes = suggestedCauseCodesForContext(args.movement_type, registerType || undefined);
+
+      let q = `SELECT id, code, name, scope, direction, requires_fir, requires_site, generates_stock_movement, stock_sign, active
+        FROM dragon_causes
+        WHERE active = true`;
+      if (args.direction) q += ` AND direction = '${String(args.direction).replace(/'/g, "")}'`;
+      if (preferredCodes.length > 0) {
+        q += ` AND code IN (${preferredCodes.map((code) => `'${code}'`).join(",")})`;
+      }
+      q += ` ORDER BY code`;
+
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const causes = Array.isArray(data) ? data : data ? [data] : [];
+
+      return error
+        ? { error: error.message }
+        : {
+            causes,
+            preferred_codes: preferredCodes,
+            register_type: registerType,
+            movement_type: args.movement_type || null,
+          };
+    }
+
     case "dragon_register_list": {
       let q = `SELECT drm.id, drm.movement_number, drm.movement_date, drm.movement_type, drm.cer_code,
         drm.description_snapshot, drm.quantity, drm.unit_of_measure, drm.sign, drm.status, drm.weight_status,
@@ -1790,14 +1913,33 @@ async function handleTool(
     }
 
     case "dragon_create_movement": {
-      // Find cause by code
-      const causeQ = `SELECT id, direction, stock_sign FROM dragon_causes WHERE code = '${args.cause_code.replace(/'/g, "")}' AND active = true LIMIT 1`;
+      const regType = sanitizeRegisterType(args.register_type);
+      const normalizedCauseCode = normalizeCauseCodeForDb(args.cause_code, args.movement_type, regType);
+      if (!normalizedCauseCode) {
+        return {
+          error: "Causale non determinabile automaticamente",
+          suggested_cause_codes: suggestedCauseCodesForContext(args.movement_type, regType),
+          register_type: regType,
+          movement_type: args.movement_type,
+        };
+      }
+
+      // Find cause by normalized code
+      const causeQ = `SELECT id, code, direction, stock_sign FROM dragon_causes WHERE code = '${normalizedCauseCode.replace(/'/g, "")}' AND active = true LIMIT 1`;
       const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
       const cause = causeData?.[0] || causeData;
-      if (!cause) return { error: `Causale '${args.cause_code}' non trovata` };
+      if (!cause) {
+        return {
+          error: `Causale '${normalizedCauseCode}' non trovata`,
+          requested_cause_code: args.cause_code || null,
+          normalized_cause_code: normalizedCauseCode,
+          suggested_cause_codes: suggestedCauseCodesForContext(args.movement_type, regType),
+          register_type: regType,
+          movement_type: args.movement_type,
+        };
+      }
 
       // Find register
-      const regType = args.register_type || "PRODUTTORE";
       const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND subject_type = '${regType}' AND active = true LIMIT 1`;
       const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
       const registerId = regData?.[0]?.id || regData?.id || null;
@@ -1810,7 +1952,13 @@ async function handleTool(
         VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.item_id}', '${args.cer_code.replace(/'/g, "")}', '${args.movement_type}', '${cause.id}', ${args.quantity}, 'kg', '${sign}', 'UL', 'DEFINITIVO', '${status}', ${args.note ? `'${args.note.replace(/'/g, "''")}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
         RETURNING id, movement_number, movement_type, cer_code, quantity, status`;
       const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : { success: true, movement: data };
+      return error ? { error: error.message } : {
+        success: true,
+        movement: data,
+        register_type: regType,
+        applied_cause_code: cause.code,
+        requested_cause_code: args.cause_code || null,
+      };
     }
 
     case "dragon_consolidate_movement": {
