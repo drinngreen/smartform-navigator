@@ -173,7 +173,22 @@ export default function DragonMagazzinoPage() {
                       <TableCell><Badge variant="outline" className="text-xs">{b.item?.item_type}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={b.warehouse_scope === "WASTE" ? "bg-amber-500/20 text-amber-300" : "bg-blue-500/20 text-blue-300"}>{b.warehouse_scope}</Badge></TableCell>
                       <TableCell className={`text-right font-mono font-bold ${b.balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{Number(b.balance).toLocaleString("it-IT")}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{b.item?.unita_misura_default}</TableCell>
+                       <TableCell className="text-xs text-muted-foreground">{b.item?.unita_misura_default}</TableCell>
+                       <TableCell>
+                         {b.balance > 0 && (
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             className="text-xs"
+                             onClick={() => {
+                               const params = new URLSearchParams({ item_id: b.item_id, qty: String(Math.round(b.balance)) });
+                               navigate(`/mn/admin/dev-multyproget/dragon/cernite/batch?${params.toString()}`);
+                             }}
+                           >
+                             <Scissors className="h-3 w-3 mr-1" /> Cernita
+                           </Button>
+                         )}
+                       </TableCell>
                     </TableRow>
                   ))
                 )}
