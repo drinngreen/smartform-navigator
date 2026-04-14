@@ -172,6 +172,7 @@ export default function DragonMagazzinoPage() {
               <FileDown className="h-4 w-4 mr-1" /> Stampa Situazione
             </Button>
           </div>
+          <div className="bg-card/60 border border-border/30 rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-border/20">
