@@ -15,7 +15,7 @@ const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
-const AUTONOMY_SIGNAL_PATTERN = /(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)/i;
+const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
 const AUTONOMY_BLOCKING_PATTERN = /(potresti confermare|ho bisogno della tua conferma|devo sapere se .* esiste|è già configurato|è già presente|non posso verificarlo direttamente|ti chiedo ancora)/i;
 
 function normalizeContext(context?: string): string | undefined {
