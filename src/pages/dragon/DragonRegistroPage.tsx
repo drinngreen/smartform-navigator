@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers, LogIn, Scissors } from "lucide-react";
+import { Plus, Download, CheckCircle, FileText, ArrowLeftRight, Layers, LogIn, Scissors, TrendingDown } from "lucide-react";
 import { DragonRegisterMovement, DragonMovementStatus } from "@/types/dragon";
 import { DragonMovementForm } from "@/components/dragon/DragonMovementForm";
 import { exportToExcel } from "@/lib/exportUtils";
