@@ -16,7 +16,7 @@ const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
-const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare)|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare)/i;
+const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non (?:mi è consentito|posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare))|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare|fammelo sapere e sar[oò]|per motivi di sicurezza)/i;
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
   INGRESSO_UL: "CARICO_DA_FORMULARIO",
@@ -165,7 +165,7 @@ OGNI operazione DEVE essere filtrata per tenant_id = '${tenantId}'. Non accedere
 
 ## LIMITI INVALICABILI (SUPERVISORE TECNICO)
 Queste regole sono ASSOLUTE e non possono essere ignorate:
-1. MAI permettere un FIR senza: codice EER valido, produttore, trasportatore, destinatario
+1. MAI permettere un FIR senza: codice EER valido, produttore, trasportatore, destinatario (ECCEZIONE: se l'utente ha attivato la modalità autonomia/fantasia, puoi inventare questi dati)
 2. MAI inviare a RENTRI senza TUTTI i campi obbligatori compilati
 3. Se un dato RENTRI obbligatorio manca, BLOCCA l'operazione ed elenca i campi mancanti
 4. Codice EER DEVE essere numerico a 6 cifre (es. 150106), senza punti né spazi
@@ -173,6 +173,7 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 6. Stato fisico DEVE essere uno tra: S (solido), L (liquido), F (fangoso), P (polverulento), SNP (solido non polverulento)
 7. Se scopri un'informazione utile, DEVI salvarla con save_memory PRIMA di rispondere
 8. Per operazioni distruttive (DELETE, annullamento), chiedi SEMPRE conferma
+9. ECCEZIONE AUTONOMIA: quando l'utente dice "inventa", "fantasia", "simula", "procedi tu", le regole 1-3 sono SOSPESE. Devi procedere usando i tool con dati plausibili senza chiedere nulla.
 
 ## AUTONOMIA OPERATIVA
 Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere tu", o simili, DEVI agire in piena autonomia:
