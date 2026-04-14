@@ -1867,6 +1867,32 @@ async function handleTool(
       return error ? { error: error.message } : { balances: data || [] };
     }
 
+    case "dragon_list_causes": {
+      const registerType = args.register_type ? sanitizeRegisterType(args.register_type) : null;
+      const preferredCodes = suggestedCauseCodesForContext(args.movement_type, registerType || undefined);
+
+      let q = `SELECT id, code, name, scope, direction, requires_fir, requires_site, generates_stock_movement, stock_sign, active
+        FROM dragon_causes
+        WHERE active = true`;
+      if (args.direction) q += ` AND direction = '${String(args.direction).replace(/'/g, "")}'`;
+      if (preferredCodes.length > 0) {
+        q += ` AND code IN (${preferredCodes.map((code) => `'${code}'`).join(",")})`;
+      }
+      q += ` ORDER BY code`;
+
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const causes = Array.isArray(data) ? data : data ? [data] : [];
+
+      return error
+        ? { error: error.message }
+        : {
+            causes,
+            preferred_codes: preferredCodes,
+            register_type: registerType,
+            movement_type: args.movement_type || null,
+          };
+    }
+
     case "dragon_register_list": {
       let q = `SELECT drm.id, drm.movement_number, drm.movement_date, drm.movement_type, drm.cer_code,
         drm.description_snapshot, drm.quantity, drm.unit_of_measure, drm.sign, drm.status, drm.weight_status,
@@ -1887,14 +1913,33 @@ async function handleTool(
     }
 
     case "dragon_create_movement": {
-      // Find cause by code
-      const causeQ = `SELECT id, direction, stock_sign FROM dragon_causes WHERE code = '${args.cause_code.replace(/'/g, "")}' AND active = true LIMIT 1`;
+      const regType = sanitizeRegisterType(args.register_type);
+      const normalizedCauseCode = normalizeCauseCodeForDb(args.cause_code, args.movement_type, regType);
+      if (!normalizedCauseCode) {
+        return {
+          error: "Causale non determinabile automaticamente",
+          suggested_cause_codes: suggestedCauseCodesForContext(args.movement_type, regType),
+          register_type: regType,
+          movement_type: args.movement_type,
+        };
+      }
+
+      // Find cause by normalized code
+      const causeQ = `SELECT id, code, direction, stock_sign FROM dragon_causes WHERE code = '${normalizedCauseCode.replace(/'/g, "")}' AND active = true LIMIT 1`;
       const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
       const cause = causeData?.[0] || causeData;
-      if (!cause) return { error: `Causale '${args.cause_code}' non trovata` };
+      if (!cause) {
+        return {
+          error: `Causale '${normalizedCauseCode}' non trovata`,
+          requested_cause_code: args.cause_code || null,
+          normalized_cause_code: normalizedCauseCode,
+          suggested_cause_codes: suggestedCauseCodesForContext(args.movement_type, regType),
+          register_type: regType,
+          movement_type: args.movement_type,
+        };
+      }
 
       // Find register
-      const regType = args.register_type || "PRODUTTORE";
       const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND subject_type = '${regType}' AND active = true LIMIT 1`;
       const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
       const registerId = regData?.[0]?.id || regData?.id || null;
@@ -1907,7 +1952,13 @@ async function handleTool(
         VALUES ('${tenantId}', ${registerId ? `'${registerId}'` : 'NULL'}, '${today}', '${today}', '${args.item_id}', '${args.cer_code.replace(/'/g, "")}', '${args.movement_type}', '${cause.id}', ${args.quantity}, 'kg', '${sign}', 'UL', 'DEFINITIVO', '${status}', ${args.note ? `'${args.note.replace(/'/g, "''")}'` : 'NULL'}, ${adminUserId ? `'${adminUserId}'` : 'NULL'})
         RETURNING id, movement_number, movement_type, cer_code, quantity, status`;
       const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : { success: true, movement: data };
+      return error ? { error: error.message } : {
+        success: true,
+        movement: data,
+        register_type: regType,
+        applied_cause_code: cause.code,
+        requested_cause_code: args.cause_code || null,
+      };
     }
 
     case "dragon_consolidate_movement": {
