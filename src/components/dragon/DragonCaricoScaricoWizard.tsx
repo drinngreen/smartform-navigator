@@ -33,6 +33,7 @@ export function DragonCaricoScaricoWizard({ onSubmit, isLoading, onCancel }: Pro
   const [siteId, setSiteId] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [note, setNote] = useState("");
+  const [operationCode, setOperationCode] = useState("");
   const [physicalState, setPhysicalState] = useState("solido_non_pulverulento");
 
   const selectedItem = items.find(i => i.id === itemId);

@@ -31,6 +31,7 @@ export function DragonScaricoCumulativo({ pendingCarichi, onSubmit, isLoading, o
   const [totalQuantity, setTotalQuantity] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [note, setNote] = useState("");
+  const [operationCode, setOperationCode] = useState("");
 
   const causeScarico = causes.find(c => c.code === "SCARICO_USCITA_FORMULARIO");
 
