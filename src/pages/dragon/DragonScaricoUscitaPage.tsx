@@ -87,7 +87,7 @@ export default function DragonScaricoUscitaPage() {
     return allocations;
   }, [qty, carichiForItem]);
 
-  const scaricoCause = causes.find(c => c.code === "SCARICO_USCITA_FIR" || c.code === "SCARICO_USCITA");
+  const scaricoCause = causes.find(c => c.code === "SCARICO_USCITA_FORMULARIO" || c.code === "SCARICO_USCITA_FIR" || c.code === "SCARICO_USCITA");
   const produttoreRegister = registers.find(r => r.subject_type === "PRODUTTORE");
 
   const handleSubmit = async () => {
