@@ -184,6 +184,13 @@ CAUSALI DESTINATARIO:
 - CARICO_LAVORAZIONE — Carico da lavorazione manuale (CER ottenuto da lavorazione, inserito manualmente)
 - SCARICO_MISCELAZIONE — Scarico per miscelazione (più CER vengono miscelati)
 - CARICO_MISCELAZIONE — Carico da miscelazione (prodotto risultante dalla miscela, su registro o magazzino MPS)
+CAUSALI PRODUTTORE:
+- CARICO_PRODUZIONE_UL — Carico di produzione nella propria Unità Locale (DT = prodotto/detenuto in UL)
+- CARICO_PRODUZIONE_CANTIERE — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE = prodotto fuori UL)
+- SCARICO_USCITA_FIR — Uscita con Formulario (aT = scarico a terzi, genera FIR automaticamente)
+- SCARICO_USCITA_FIR_CANTIERE — Uscita con Formulario con Cantiere (deposito temporaneo in cantiere)
+- CARICO_SCARICO_CONTESTUALE — Carico & Scarico contestuale (nessuna giacenza, CER prodotto e smaltito subito)
+- CARICO_SCARICO_CONTESTUALE_CANTIERE — Carico & Scarico contestuale da cantiere
 
 ### dragon_registers (Registri cronologici)
 id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARIO|...), active.
@@ -290,6 +297,84 @@ Con "Visualizzazione raggruppata" si vedono solo i totali per CER.
 - Il limite limit_mps_eow genera avvisi quando la giacenza raggiunge la soglia
 - I movimenti di stock (dragon_stock_movements) possono essere associati a un magazzino specifico (warehouse_id)
 - Inserimento movimenti multi-riga: data registrazione + causale + N righe (articolo, quantità, note) registrate in batch
+
+## PROCEDURE PRODUTTORE (Flusso Prometeo)
+Il produttore iniziale è il soggetto la cui attività produce rifiuti. Il detentore (persona fisica o giuridica diversa dal produttore che possiede il rifiuto) segue le stesse regole.
+
+### A) PRODUTTORE PRESSO L'UNITÀ LOCALE
+
+#### Carico di Produzione (nella propria U.L.)
+1. L'utente indica il codice CER (se non è nei preferiti, può aggiungerlo all'anagrafica CER)
+2. Indica la data (default: data odierna)
+3. Verifica le caratteristiche del rifiuto (stato fisico, classi HP)
+4. Inserisce la quantità in kg
+5. SALVA → sul registro appare come "Carico di produzione nella mia U.L."
+6. Tipo destinazione RENTRI: DT (prodotto o detenuto nell'unità locale)
+7. Campi obbligatori RENTRI per carico di produzione: numero operazione, data, CER, descrizione, stato fisico, quantità, U.M.
+
+#### Scarico di Uscita con Formulario
+1. L'utente seleziona il CER da scaricare (visibili SOLO i CER con giacenza effettiva alla data indicata)
+2. Indica la data
+3. Seleziona i carichi pendenti da abbinare allo scarico (FIFO):
+   - Opzione A: spunta manuale dei singoli carichi
+   - Opzione B: indica "Quantità da individuare" → distribuzione automatica FIFO sui carichi più vecchi
+4. La quantità viene calcolata automaticamente dalla somma dei carichi selezionati
+5. SALVA → si apre automaticamente la finestra per compilare il FIR:
+   a. Tipo Stampa: "A4 (Vidimato)" + Blocco RENTRI, oppure "Non Stampo" + numero manuale
+   b. Data Emissione (può differire dalla data di registrazione)
+   c. Produttore: compilato automaticamente con i dati dell'azienda
+   d. Destinatario: selezionato dall'anagrafica (o creato al volo)
+   e. Trasportatore: selezionato dall'anagrafica (o creato al volo)
+   f. Data inizio trasporto
+   g. Caratteristiche rifiuto: compilate automaticamente dal movimento di scarico
+6. Sul registro appare come "Uscita con Formulario"
+7. Tipo destinazione RENTRI: aT (scarico a terzi)
+
+#### Carico & Scarico Contestuale
+Utilizzare SOLO per CER senza giacenza (smaltiti contestualmente alla produzione):
+1. Indica CER, data carico, data scarico (possono differire), caratteristiche, quantità
+2. SALVA → si apre automaticamente il FIR (come sopra)
+3. Sul registro appaiono DUE movimenti: "Carico di produzione nella mia U.L." + "Uscita con Formulario"
+
+### B) PRODUTTORE IN CANTIERE (Fuori dall'Unità Locale)
+Per rifiuti prodotti fuori dalla propria U.L.: manutenzione, assistenza sanitaria, reti fognarie, conferimenti agricoli.
+
+#### Carico di Produzione da Mio Cantiere
+1. Seleziona la causale "Carico di produzione da mio cantiere/Fuori dalla mia U.L."
+2. Indica CER, data, caratteristiche rifiuto, quantità in kg
+3. Seleziona il Cantiere (luogo di produzione) dall'anagrafica cantieri (dragon_production_sites) — se non esiste, può crearlo
+4. SALVA → sul registro appare come "da Mio cantiere/Fuori dalla mia U.L."
+5. Tipo destinazione RENTRI: RE (prodotto fuori dall'unità locale)
+
+#### Scarico di Uscita con Formulario con Cantiere
+Due causali possibili:
+- **"Uscita con Formulario con Cantiere"**: se il rifiuto è stato accumulato (deposito temporaneo) presso il cantiere → richiede selezione del Cantiere
+- **"Uscita con Formulario"**: se il rifiuto è stato accumulato presso la propria U.L.
+Il resto della procedura è identico allo scarico standard (selezione carichi FIFO, compilazione FIR automatica).
+
+#### Carico & Scarico Contestuale da Cantiere
+Come il contestuale standard, ma con:
+1. Causale "Carico di produzione da mio cantiere/Fuori dalla mia U.L."
+2. Campo Cantiere obbligatorio
+3. Sul registro: "da Mio cantiere/Fuori dalla mia U.L." + "Uscita con Formulario con Cantiere"
+
+### CAUSALI PRODUTTORE (riepilogo Dragon)
+- CARICO_PRODUZIONE_UL — Carico di produzione nella propria Unità Locale (DT)
+- CARICO_PRODUZIONE_CANTIERE — Carico di produzione da mio cantiere/Fuori dalla mia U.L. (RE)
+- SCARICO_USCITA_FIR — Uscita con Formulario (aT, scarico a terzi)
+- SCARICO_USCITA_FIR_CANTIERE — Uscita con Formulario con Cantiere (deposito temporaneo in cantiere)
+- CARICO_SCARICO_CONTESTUALE — Carico & Scarico contestuale (nessuna giacenza)
+- CARICO_SCARICO_CONTESTUALE_CANTIERE — Carico & Scarico contestuale da cantiere
+
+### Gestione del Peso a Destino
+Dopo l'invio del formulario, il destinatario comunica il peso a destino:
+1. Il produttore apre il FIR dalla "Visualizza Formulari"
+2. Inserisce la quantità a destino ricevuta dal destinatario
+3. FIR senza peso a destino = giallo; senza peso all'origine E a destino = rosso
+4. Solo con il peso a destino il FIR diventa "Ufficiale"
+
+### Regole FIFO per Scarichi
+Quando l'utente indica una "Quantità da individuare", il sistema distribuisce automaticamente partendo dal carico più vecchio disponibile. Se un carico non basta a coprire la quantità richiesta, viene scaricato totalmente e si passa al successivo (scarico parziale del secondo carico per la differenza). Le allocazioni sono tracciate in dragon_movement_allocations.
 
 
 ## COMPETENZA NORMATIVA
