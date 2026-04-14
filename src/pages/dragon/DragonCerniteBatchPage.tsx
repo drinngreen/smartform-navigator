@@ -446,6 +446,31 @@ export default function DragonCerniteBatchPage() {
                   );
                 })
               )}
+              {/* Model suggestion */}
+              {matchingModels.length > 0 && (
+                <div className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/5 space-y-2">
+                  <p className="text-xs font-medium text-blue-400">📋 Modelli di lavorazione disponibili:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {matchingModels.map(m => (
+                      <Button
+                        key={m.id}
+                        size="sm"
+                        variant={appliedModelId === m.id ? "default" : "outline"}
+                        className="text-xs"
+                        onClick={() => applyModel(m.id)}
+                      >
+                        {m.name}
+                        {appliedModelId === m.id && " ✓"}
+                      </Button>
+                    ))}
+                  </div>
+                  {appliedModelId && (
+                    <p className="text-xs text-muted-foreground">
+                      Modello applicato — le quantità sono pre-calcolate. Puoi modificarle manualmente.
+                    </p>
+                  )}
+                </div>
+              )}
             </TableBody>
           </Table>
         </div>
