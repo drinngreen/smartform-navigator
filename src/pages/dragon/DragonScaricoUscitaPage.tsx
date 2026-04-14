@@ -263,9 +263,7 @@ export default function DragonScaricoUscitaPage() {
                 <Select value={operationCode} onValueChange={setOperationCode}>
                   <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none" disabled>— Recupero —</SelectItem>
                     {rCodes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    <SelectItem value="none2" disabled>— Smaltimento —</SelectItem>
                     {dCodes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
