@@ -1002,6 +1002,248 @@ const tools = [
       }
     }
   },
+
+  // === DRAGON — MAGAZZINI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_warehouses",
+      description: "Elenca i magazzini/aree di stoccaggio Dragon con giacenze attuali. Mostra codice, descrizione, flag CER/MPS, limiti e quantità presenti.",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — CANTIERI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_sites",
+      description: "Elenca i cantieri/luoghi di produzione Dragon. Include codice, nome, indirizzo, comune, provincia, tipo attività.",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" },
+          search: { type: "string", description: "Cerca per nome o codice (opzionale)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_create_site",
+      description: "Crea un nuovo cantiere/luogo di produzione Dragon.",
+      parameters: {
+        type: "object",
+        properties: {
+          site_code: { type: "string", description: "Codice identificativo cantiere" },
+          name: { type: "string", description: "Nome cantiere" },
+          address: { type: "string", description: "Indirizzo" },
+          municipality: { type: "string", description: "Comune" },
+          province: { type: "string", description: "Provincia (sigla 2 lettere)" },
+          activity_type: { type: "string", enum: ["ND", "MANUTENZIONE", "ASSISTENZA_SANITARIA", "CANTIERE_TEMPORANEO_MOBILE", "BONIFICA_AMIANTO"], description: "Tipo attività (default: ND)" },
+          notes: { type: "string", description: "Note opzionali" }
+        },
+        required: ["site_code", "name"]
+      }
+    }
+  },
+
+  // === DRAGON — DOCUMENTI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_documents",
+      description: "Elenca i documenti Dragon (FIR, DDT_IN, DDT_OUT, ecc.) con filtri.",
+      parameters: {
+        type: "object",
+        properties: {
+          document_type: { type: "string", enum: ["FIR", "DDT_IN", "DDT_OUT", "FORMULARIO_MODELLO", "ALTRO"], description: "Filtra per tipo (opzionale)" },
+          date_from: { type: "string", description: "Data da (YYYY-MM-DD)" },
+          date_to: { type: "string", description: "Data a (YYYY-MM-DD)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — MODELLI DI LAVORAZIONE ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_transform_models",
+      description: "Elenca i modelli di lavorazione/cernita Dragon con le righe di output (ricette).",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — REGISTRI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_list_registers",
+      description: "Elenca i registri cronologici Dragon disponibili (PRODUTTORE, DESTINATARIO, ecc.).",
+      parameters: {
+        type: "object",
+        properties: {
+          active_only: { type: "boolean", description: "Solo attivi (default: true)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — RETTIFICHE INVENTARIALI ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_inventory_adjustment",
+      description: "Crea una rettifica inventariale Dragon. Genera automaticamente il movimento di stock corrispondente. Richiede un motivo obbligatorio.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "string", description: "UUID articolo Dragon" },
+          adjustment_type: { type: "string", enum: ["POSITIVE", "NEGATIVE"], description: "Tipo rettifica" },
+          quantity: { type: "number", description: "Quantità da rettificare in kg" },
+          reason: { type: "string", description: "Motivo obbligatorio della rettifica" }
+        },
+        required: ["item_id", "adjustment_type", "quantity", "reason"]
+      }
+    }
+  },
+
+  // === DRAGON — AUDIT TRAIL ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_audit_trail",
+      description: "Consulta l'audit trail Dragon: cronologia di tutte le operazioni (CREATE, UPDATE, DELETE, CONFIRM, ecc.).",
+      parameters: {
+        type: "object",
+        properties: {
+          entity_type: { type: "string", description: "Filtra per tipo entità: register_movement, stock_movement, transform_batch (opzionale)" },
+          entity_id: { type: "string", description: "UUID entità specifica (opzionale)" },
+          action_type: { type: "string", enum: ["CREATE", "UPDATE", "SOFT_DELETE", "RESTORE", "CONFIRM", "CANCEL", "ADJUST"], description: "Filtra per azione (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === DRAGON — SCARICO CUMULATIVO FIFO ===
+  {
+    type: "function",
+    function: {
+      name: "dragon_scarico_fifo",
+      description: "Esegue uno scarico cumulativo FIFO: distribuisce la quantità da scaricare sui carichi più vecchi del CER. Crea il movimento di scarico + allocazioni FIFO + documento FIR in bozza.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "string", description: "UUID articolo CER da scaricare" },
+          quantity: { type: "number", description: "Quantità totale da scaricare in kg" },
+          cause_code: { type: "string", description: "Codice causale (default: SCARICO_USCITA)" },
+          operation_code: { type: "string", description: "Codice operazione R/D (es. R13, D15, R04)" },
+          movement_date: { type: "string", description: "Data movimento (YYYY-MM-DD, default oggi)" },
+          note: { type: "string", description: "Note opzionali" }
+        },
+        required: ["item_id", "quantity"]
+      }
+    }
+  },
+
+  // === ANAGRAFICA AZIENDE ===
+  {
+    type: "function",
+    function: {
+      name: "search_anagrafica_aziende",
+      description: "Cerca aziende nell'anagrafica Multyproget per ragione sociale, P.IVA, CF, codice.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_term: { type: "string", description: "Termine di ricerca" },
+          ruolo: { type: "string", enum: ["cliente", "fornitore", "trasportatore", "destinatario", "intermediario"], description: "Filtra per ruolo (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        },
+        required: ["search_term"]
+      }
+    }
+  },
+
+  // === GPS FLOTTA ===
+  {
+    type: "function",
+    function: {
+      name: "gps_fleet_positions",
+      description: "Mostra le ultime posizioni GPS dei trasportatori della flotta. Utile per sapere dove si trovano gli autisti.",
+      parameters: {
+        type: "object",
+        properties: {
+          user_id: { type: "string", description: "UUID di un utente specifico (opzionale)" },
+          last_hours: { type: "number", description: "Ultime N ore (default 24)" }
+        }
+      }
+    }
+  },
+
+  // === NOTIFICHE ===
+  {
+    type: "function",
+    function: {
+      name: "list_notifications",
+      description: "Elenca le notifiche recenti dell'admin. Può filtrare per tipo e stato di lettura.",
+      parameters: {
+        type: "object",
+        properties: {
+          unread_only: { type: "boolean", description: "Solo non lette (default: false)" },
+          type: { type: "string", description: "Filtra per tipo: fir_pool_empty, fir_draft, missed_call (opzionale)" },
+          limit: { type: "number", description: "Max risultati (default 20)" }
+        }
+      }
+    }
+  },
+
+  // === RUBRICA CONTATTI ===
+  {
+    type: "function",
+    function: {
+      name: "search_rubrica",
+      description: "Cerca contatti nella rubrica aziendale per nome, ragione sociale, telefono, email.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_term: { type: "string", description: "Termine di ricerca" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        },
+        required: ["search_term"]
+      }
+    }
+  },
+
+  // === EMAIL ===
+  {
+    type: "function",
+    function: {
+      name: "list_emails",
+      description: "Elenca le email ricevute (inbox) o inviate (outbox).",
+      parameters: {
+        type: "object",
+        properties: {
+          direction: { type: "string", enum: ["inbox", "outbox"], description: "inbox o outbox (default: inbox)" },
+          unread_only: { type: "boolean", description: "Solo non lette (solo inbox)" },
+          limit: { type: "number", description: "Max risultati (default 15)" }
+        }
+      }
+    }
+  },
 ];
 
 // ====================== TOOL HANDLERS ======================
