@@ -1989,11 +1989,18 @@ async function handleTool(
     }
 
     case "dragon_consolidate_movement": {
-      const sql = `UPDATE dragon_register_movements SET status = 'CONSOLIDATO', updated_at = now(), updated_by = ${adminUserId ? `'${adminUserId}'` : 'NULL'}
-        WHERE id = '${args.movement_id}' AND company_id = '${tenantId}' AND status = 'BOZZA'
-        RETURNING id, movement_number, status`;
-      const { data, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
-      return error ? { error: error.message } : { success: true, consolidated: data };
+      const updatePayload: any = { status: "CONSOLIDATO", updated_at: new Date().toISOString() };
+      if (adminUserId) updatePayload.updated_by = adminUserId;
+      const { data, error } = await db.from("dragon_register_movements")
+        .update(updatePayload)
+        .eq("id", args.movement_id)
+        .eq("company_id", tenantId)
+        .eq("status", "BOZZA")
+        .select("id, movement_number, status")
+        .maybeSingle();
+      if (error) return { error: error.message };
+      if (!data) return { error: "Movimento non trovato o già consolidato" };
+      return { success: true, consolidated: data };
     }
 
     case "dragon_list_items": {
