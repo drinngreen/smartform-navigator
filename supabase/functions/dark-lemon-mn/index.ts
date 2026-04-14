@@ -15,6 +15,8 @@ const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
+const AUTONOMY_SIGNAL_PATTERN = /(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)/i;
+const AUTONOMY_BLOCKING_PATTERN = /(potresti confermare|ho bisogno della tua conferma|devo sapere se .* esiste|è già configurato|è già presente|non posso verificarlo direttamente|ti chiedo ancora)/i;
 
 function normalizeContext(context?: string): string | undefined {
   return context?.replace(/^dev-/, "");
@@ -24,6 +26,20 @@ function resolveTenantId(context?: string): string {
   const normalizedContext = normalizeContext(context);
   if (normalizedContext && TENANT_MAP[normalizedContext]) return TENANT_MAP[normalizedContext];
   return DEFAULT_TENANT_ID;
+}
+
+function hasAutonomySignal(messages: any[] = []) {
+  return messages.some((message) =>
+    message?.role === "user"
+    && typeof message?.content === "string"
+    && AUTONOMY_SIGNAL_PATTERN.test(message.content)
+  );
+}
+
+function isAutonomyBlockingAssistantMessage(message: any) {
+  return message?.role === "assistant"
+    && typeof message?.content === "string"
+    && AUTONOMY_BLOCKING_PATTERN.test(message.content);
 }
 
 function hasAttachmentPayload(messages: any[] = []) {
@@ -74,7 +90,7 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 
 ## AUTONOMIA OPERATIVA
 Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere tu", o simili, DEVI agire in piena autonomia:
-- Se un articolo CER/MPS non esiste nel sistema, CREALO tu stesso usando write_database (INSERT INTO dragon_items) con dati realistici
+- Se un articolo CER/MPS non esiste nel sistema, CREALO tu stesso usando dragon_ensure_item (preferito) oppure write_database (INSERT INTO dragon_items) con dati realistici
 - Se mancano anagrafiche (produttore, trasportatore), INVENTALE con dati plausibili e inseriscile
 - NON chiedere conferma su dati che l'utente ti ha esplicitamente detto di inventare
 - Procedi step-by-step chiamando i tool necessari senza fermarti a ogni passaggio
@@ -167,6 +183,7 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 
 ### 13. DRAGON — ARTICOLI & ANAGRAFICA
 - Elencare articoli CER/MPS/Materiali con dragon_list_items
+- Garantire o creare un articolo mancante con dragon_ensure_item
 
 ### 14. DRAGON — LAVORAZIONI & CERNITE
 - Elencare modelli lavorazione con dragon_list_transform_models (con ricette output)
@@ -1003,6 +1020,26 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "dragon_ensure_item",
+      description: "Verifica se un articolo Dragon esiste per questo codice; se manca, lo crea automaticamente con dati realistici.",
+      parameters: {
+        type: "object",
+        properties: {
+          cer_code: { type: "string", description: "Codice CER/MPS/materiale senza punti né spazi" },
+          description: { type: "string", description: "Descrizione articolo" },
+          item_type: { type: "string", enum: ["WASTE_CER", "MPS", "MATERIAL"], description: "Tipo articolo (default: WASTE_CER)" },
+          unit_of_measure: { type: "string", description: "Unità di misura (default: kg)" },
+          dangerous: { type: "boolean", description: "Se l'articolo è pericoloso" },
+          physical_state: { type: "string", description: "Stato fisico default opzionale" },
+          eow_type: { type: "string", description: "Tipo MPS/EOW opzionale" }
+        },
+        required: ["cer_code", "description"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "dragon_cernita",
       description: "Esegue una cernita (smontaggio di un CER in componenti). Genera automaticamente scarico input + carichi output su registro e magazzino.",
       parameters: {
@@ -1794,6 +1831,46 @@ async function handleTool(
       return error ? { error: error.message } : { items: data || [] };
     }
 
+    case "dragon_ensure_item": {
+      const cerCode = String(args.cer_code || "").replace(/[^A-Za-z0-9]/g, "");
+      const description = String(args.description || "").trim();
+      if (!cerCode) return { error: "cer_code obbligatorio" };
+      if (!description) return { error: "description obbligatoria" };
+
+      const itemType = ["WASTE_CER", "MPS", "MATERIAL"].includes(String(args.item_type || ""))
+        ? String(args.item_type)
+        : "WASTE_CER";
+      const unit = String(args.unit_of_measure || "kg").trim().replace(/'/g, "''").toLowerCase();
+      const dangerous = args.dangerous === true;
+      const physicalState = args.physical_state ? String(args.physical_state).trim().replace(/'/g, "''") : null;
+      const eowType = args.eow_type ? String(args.eow_type).trim().replace(/'/g, "''") : null;
+
+      const existingQ = `SELECT id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo
+        FROM dragon_items
+        WHERE company_id = '${tenantId}' AND codice_cer = '${cerCode}'
+        ORDER BY attivo DESC, created_at ASC
+        LIMIT 1`;
+      const { data: existingData, error: existingError } = await db.rpc("exec_sql_readonly", { query: existingQ }).maybeSingle();
+      if (existingError) return { error: existingError.message };
+
+      const existingItem = existingData?.[0] || existingData;
+      if (existingItem) return { success: true, created: false, item: existingItem };
+
+      const safeDescription = description.replace(/'/g, "''");
+      const metadata = JSON.stringify({ source: "dark_lemon_auto", ensured_by: "dragon_ensure_item" }).replace(/'/g, "''");
+      const insertSql = `INSERT INTO dragon_items (
+          company_id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default,
+          fattore_conversione, attivo, metadata${physicalState ? ", stato_fisico_default" : ""}${eowType ? ", tipo_mps_eow" : ""}
+        ) VALUES (
+          '${tenantId}', '${cerCode}', '${safeDescription}', '${itemType}', ${dangerous}, '${unit}',
+          1, true, '${metadata}'::jsonb${physicalState ? `, '${physicalState}'` : ""}${eowType ? `, '${eowType}'` : ""}
+        )
+        RETURNING id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo`;
+      const { data, error } = await db.rpc("exec_sql_write", { query: insertSql }).maybeSingle();
+      const item = data?.[0] || data;
+      return error ? { error: error.message } : { success: true, created: true, item };
+    }
+
     case "dragon_cernita": {
       // Find causes
       const causesQ = `SELECT id, code FROM dragon_causes WHERE code IN ('SCARICO_PER_LAVORAZIONE', 'CARICO_DA_LAVORAZIONE') AND active = true`;
@@ -2209,12 +2286,23 @@ Deno.serve(async (req) => {
     const contextLabel = normalizedContext === "multyproget" ? "Multyproget S.r.l." : normalizedContext === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
     const systemPrompt = buildSystemPrompt(adminName, tenantId, contextLabel, memories);
     const attachmentAware = hasAttachmentPayload(messages);
-    const modelMessages = attachmentAware
-      ? messages.filter((message: any) => !(message?.role === "assistant" && typeof message?.content === "string" && ATTACHMENT_REFUSAL_PATTERN.test(message.content)))
-      : messages;
+    const autonomyMode = hasAutonomySignal(messages);
+    const modelMessages = messages.filter((message: any) => {
+      if (attachmentAware && message?.role === "assistant" && typeof message?.content === "string" && ATTACHMENT_REFUSAL_PATTERN.test(message.content)) {
+        return false;
+      }
+      if (autonomyMode && isAutonomyBlockingAssistantMessage(message)) {
+        return false;
+      }
+      return true;
+    });
 
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
+      ...(autonomyMode ? [{
+        role: "system",
+        content: "AUTONOMIA OBBLIGATORIA ATTIVA: l'utente ti ha autorizzato a inventare dati e procedere da solo. È vietato chiedere conferme sull'esistenza di CER, articoli, anagrafiche o prerequisiti che puoi verificare o creare tu. Se un articolo manca, usa dragon_ensure_item oppure write_database e prosegui.",
+      }] : []),
       ...(attachmentAware ? [{
         role: "system",
         content: "ISTRUZIONE ALLEGATI: se nei messaggi ricevi parti image_url o testo estratto da file, allora l'allegato è realmente disponibile e devi analizzarlo. Non dire mai che non puoi leggere allegati.",
@@ -2244,8 +2332,13 @@ Deno.serve(async (req) => {
         const errorText = await response.text();
         console.error("OpenRouter error:", response.status, errorText);
         if (response.status === 429) {
-          return new Response(JSON.stringify({ content: "⚠️ Troppe richieste, riprova tra poco." }), {
-            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          return new Response(JSON.stringify({
+            content: "⚠️ Troppe richieste al servizio AI, riprova tra poco.",
+            fallback: true,
+            rate_limited: true,
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
         const isFallbackable = response.status >= 500;
@@ -2253,6 +2346,7 @@ Deno.serve(async (req) => {
           content: isFallbackable
             ? "⚠️ Il servizio AI è temporaneamente non disponibile. Riprova tra qualche secondo."
             : `❌ Errore AI: ${response.status}`,
+          fallback: isFallbackable,
         }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -2267,7 +2361,16 @@ Deno.serve(async (req) => {
       conversationMessages.push(assistantMsg);
 
       if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
-        finalContent = assistantMsg.content || "";
+        const assistantText = typeof assistantMsg.content === "string" ? assistantMsg.content : "";
+        if (autonomyMode && AUTONOMY_BLOCKING_PATTERN.test(assistantText)) {
+          conversationMessages.push({
+            role: "system",
+            content: "CORREZIONE OBBLIGATORIA: hai appena chiesto una conferma all'utente nonostante l'autonomia attiva. Non fermarti. Usa i tool per verificare o creare articoli e prerequisiti mancanti, poi completa l'operazione.",
+          });
+          finalContent = assistantText;
+          continue;
+        }
+        finalContent = assistantText;
         break;
       }
 
@@ -2289,9 +2392,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("Dark Lemon MN error:", error);
     return new Response(JSON.stringify({
-      content: `❌ Errore: ${error instanceof Error ? error.message : "Errore sconosciuto"}`
+      content: `❌ Errore: ${error instanceof Error ? error.message : "Errore sconosciuto"}`,
+      fallback: true,
     }), {
-      status: 500,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
