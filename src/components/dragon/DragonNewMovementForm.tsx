@@ -40,6 +40,7 @@ export function DragonNewMovementForm({ open, onOpenChange }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [causeId, setCauseId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
+  const [operationCode, setOperationCode] = useState("");
   const [lines, setLines] = useState<Line[]>([{ item_id: "", quantity: "", note: "" }]);
   const [submitting, setSubmitting] = useState(false);
 
