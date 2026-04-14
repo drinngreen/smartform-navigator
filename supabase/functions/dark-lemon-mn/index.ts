@@ -167,10 +167,23 @@ id, impianto_id, tenant_id, privato_id, cer, kg_pesati, importo_pagato, data.
 REGOLA TASSATIVA: Quando l'utente chiede funzioni su registro cronologico di carico/scarico, magazzino rifiuti, giacenze, cernite, lavorazioni, movimenti di registro o stock, usa SEMPRE le tabelle dragon_* e MAI quelle legacy (register_movements, movimenti_impianto, cernite, cernita_output, magazzino_giacenze).
 
 ### dragon_items (Articoli CER/MPS/Materiali)
-id, company_id, codice_cer, descrizione, pericoloso, classi_hp[], stato_fisico_default, unita_misura_default, item_type (WASTE_CER|MPS|MATERIAL), attivo.
+id, company_id, codice_cer, descrizione, pericoloso, classi_hp[], stato_fisico_default, unita_misura_default, item_type (WASTE_CER|MPS|MATERIAL), attivo, fattore_conversione (numeric, default 1 — fattore di conversione quando U.M. diversa da kg), tipo_mps_eow (text — valori: MPS, EOW, ALTRO — per Comunicazione Enti), tipo_mps_eow_desc (text — descrizione quando tipo_mps_eow = ALTRO), default_warehouse_id (uuid — magazzino predefinito associato all'articolo).
+
+### dragon_warehouses (Magazzini / Aree di stoccaggio)
+id, company_id, code (codice identificativo univoco), description (nome/descrizione magazzino), has_cer (bool — contiene rifiuti CER), has_mps (bool — contiene MPS/EOW), limit_mps_eow (numeric — limite giacenza MPS/EOW, null = nessun limite), active, created_at, updated_at.
+NOTA: Un magazzino può contenere sia CER che MPS. Il limite di giacenza genera avvisi quando raggiunto. Ogni articolo può avere un magazzino predefinito (default_warehouse_id).
 
 ### dragon_causes (Causali movimento)
 id, code, name, scope (REGISTER|STOCK|BOTH), direction (IN|OUT|TRANSFORM|ADJUST), requires_fir, requires_site, generates_stock_movement, stock_sign (PLUS|MINUS|NONE).
+CAUSALI DESTINATARIO:
+- INGRESSO_UL — Ingresso da Unità Locale del produttore (rifiuto conferito direttamente dall'UL del produttore)
+- INGRESSO_MIO_CANTIERE — Ingresso da cantiere proprio (rifiuto prodotto fuori dalla propria UL)
+- INGRESSO_CANTIERE_TERZI — Ingresso da cantiere di terzi (rifiuto prodotto da terzi fuori dalla loro UL)
+- SCARICO_USCITA — Scarico di uscita con formulario (per rifiuti stoccati R13/D15, derivati da lavorazione, o da produttore iniziale)
+- SCARICO_LAVORAZIONE — Scarico per lavorazione/cernita (il CER viene processato)
+- CARICO_LAVORAZIONE — Carico da lavorazione manuale (CER ottenuto da lavorazione, inserito manualmente)
+- SCARICO_MISCELAZIONE — Scarico per miscelazione (più CER vengono miscelati)
+- CARICO_MISCELAZIONE — Carico da miscelazione (prodotto risultante dalla miscela, su registro o magazzino MPS)
 
 ### dragon_registers (Registri cronologici)
 id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARIO|...), active.
@@ -179,7 +192,7 @@ id, company_id, register_code, description, subject_type (PRODUTTORE|DESTINATARI
 id, company_id, register_id, movement_number (auto), movement_date, recording_date, item_id, cer_code, movement_type (CARICO|SCARICO), cause_id, quantity, unit_of_measure, sign (PLUS|MINUS), source_site_id, source_context (UL|FUORI_UL), linked_document_id, weight_status, status (BOZZA→CONSOLIDATO→STAMPATO→INVIATO_RENTRI), parent_movement_id, source_transform_batch_id, deleted_at.
 
 ### dragon_stock_movements (Movimenti magazzino — livello FISICO)
-id, company_id, item_id, movement_date, cause_id, quantity, sign (PLUS|MINUS), warehouse_scope (WASTE|MPS), source_register_movement_id, source_transform_batch_id, lot_reference, note.
+id, company_id, item_id, movement_date, cause_id, quantity, sign (PLUS|MINUS), warehouse_scope (WASTE|MPS), warehouse_id (uuid — riferimento al magazzino specifico in dragon_warehouses), source_register_movement_id, source_transform_batch_id, source_document_id, lot_reference, note.
 
 ### dragon_production_sites (Cantieri/Luoghi di produzione)
 id, company_id, site_code, name, address, municipality, province, activity_type, active.
@@ -187,11 +200,15 @@ id, company_id, site_code, name, address, municipality, province, activity_type,
 ### dragon_documents (Documenti collegati)
 id, company_id, document_type (FIR|DDT_IN|DDT_OUT|...), number, document_date, counterparty_id, notes, status.
 
-### dragon_transform_models (Modelli di cernita/lavorazione)
+### dragon_transform_models (Modelli di cernita/lavorazione — DA UNO A MOLTI)
 id, company_id, code, name, input_item_id, description, active.
 Output: dragon_transform_model_outputs — output_item_id, output_type, quantity_mode (PERCENT|FIXED), quantity_value, warehouse_scope.
+NOTA: Un modello di lavorazione definisce cosa si ottiene dalla lavorazione di un CER. Es: frantumazione di 170904 → 191202 (CER, su registro) + Frantumato (MPS, su magazzino). Le % possono essere zero (quantità indicate manualmente sulla "Proposta di Lavorazione").
 
-### dragon_transform_batches (Batch esecuzione cernita)
+### dragon_transform_models_miscelazione (Modelli di miscelazione — DA MOLTI A UNO) [logica applicativa]
+Operano in modo opposto ai modelli di lavorazione: più CER compositori vengono miscelati per ottenere un unico CER o MPS. Il quantitativo finale = somma dei quantitativi scaricati. Non è possibile miscelare CER+MPS come input, ma un MPS può essere il prodotto.
+
+### dragon_transform_batches (Batch esecuzione cernita/lavorazione)
 id, company_id, model_id, execution_date, source_item_id, input_quantity, status (BOZZA|CONFERMATA|ANNULLATA), notes.
 Output: dragon_transform_batch_outputs — output_item_id, output_quantity, warehouse_scope, generated_register_movement_id, generated_stock_movement_id.
 
@@ -210,6 +227,69 @@ id, entity_type, entity_id, action_type (CREATE|UPDATE|SOFT_DELETE|RESTORE|CONFI
 - L'annullamento di un batch crea MOVIMENTI INVERSI, non cancella righe
 - Le rettifiche inventariali creano un dragon_stock_movement + un dragon_inventory_adjustments con motivo obbligatorio
 - Usa dragon_get_stock_balance(company_id, item_id, scope?) per calcolare giacenze
+- dragon_stock_movements.warehouse_id collega il movimento a un magazzino specifico (dragon_warehouses)
+- dragon_items.default_warehouse_id indica il magazzino predefinito per quell'articolo
+
+## PROCEDURE DESTINATARIO (Flusso Prometeo)
+Il destinatario è l'azienda autorizzata a ricevere rifiuti per smaltimento, recupero (impianto di trattamento) o deposito (impianto di stoccaggio). Il destinatario accetta il carico, verifica l'integrità, compila la propria sezione del FIR e restituisce una copia al produttore.
+
+### Formulario di Ingresso & Carico
+1. Il destinatario riceve un FIR cartaceo già compilato
+2. Inserisce nel sistema: numero formulario, produttore, trasportatore, CER (con dati automatici), data ricezione
+3. I dati del destinatario appaiono automaticamente (propria azienda)
+4. Inserire la "Quantità a destino" — SOLO con la quantità a destino il FIR diventa "Ufficiale" e genera il movimento di CARICO sul registro cronologico
+5. Se il FIR arriva senza peso a destino, rimane in stato "In attesa di peso a destino" (giallo) — potrà essere completato successivamente
+6. FIR senza quantità a destino = giallo; FIR senza quantità all'origine E a destino = rosso
+
+### Causali per il Destinatario
+- **Ingresso da Unità Locale** (INGRESSO_UL): il rifiuto proviene direttamente dall'UL del produttore
+- **Ingresso da mio cantiere** (INGRESSO_MIO_CANTIERE): il rifiuto è stato prodotto fuori dalla propria UL
+- **Ingresso da Cantiere di terzi** (INGRESSO_CANTIERE_TERZI): il rifiuto è stato prodotto da un soggetto diverso fuori dalla sua UL
+
+### Scarico di Uscita
+Per far uscire dall'azienda:
+- Rifiuti conferiti con formulario per i quali si fa solo stoccaggio (R13 o D15)
+- Rifiuti derivanti da lavorazioni/miscelazioni ricaricati sul registro e non ulteriormente lavorabili
+- Rifiuti prodotti in qualità di "produttore iniziale"
+
+### Lavorazioni (Cernite) — Da uno a molti
+A fronte dello scarico di un CER, si ottengono N sottoprodotti (CER o MPS):
+1. L'utente seleziona il CER da scaricare per lavorazione
+2. Indica la quantità (FIFO automatico dai carichi più vecchi)
+3. Si apre la "Proposta di Lavorazione" con le righe del modello configurato
+4. L'utente conferma le quantità ottenute per ogni riga
+5. Il sistema genera automaticamente: carichi su REGISTRO (per CER) + carichi su MAGAZZINO MPS (per MPS)
+
+### Miscelazione — Da molti a uno
+Più CER vengono miscelati per ottenere un unico CER o MPS:
+1. L'utente seleziona il modello di miscelazione
+2. Indica la quantità da individuare per i CER compositori
+3. Il sistema scarica automaticamente (FIFO) tutti i CER del modello
+4. Il prodotto miscelato = somma dei quantitativi scaricati
+5. Caricato automaticamente su registro (se CER) o magazzino MPS (se MPS)
+
+### Carico Manuale di Lavorazione (CER)
+Alternativa ai modelli automatici — per chi:
+- Non gestisce MPS
+- Non conosce a priori cosa otterrà dalla lavorazione
+- Preferisce un unico carico cumulativo anziché tanti piccoli
+L'utente indica manualmente: CER, data, quantità prodotta da lavorazione
+
+### Traccia Lavorazioni
+Vista sequenziale che mostra: scarichi di lavorazione (segno -) e ricarichi da lavorazione CER/MPS (segno +).
+Con "Visualizzazione raggruppata" si vedono solo i totali per CER.
+
+### Tracciabilità Movimento (Rintraccia/Traccia)
+- **Rintraccia**: dal movimento corrente, risale al formulario di ingresso → carico → scarico di lavorazione → ricarico MPS
+- **Traccia**: dal movimento corrente, segue i lotti a cui è stato associato il quantitativo
+- Campi di collegamento: source_register_movement_id, source_transform_batch_id, source_document_id, warehouse_id
+
+### Magazzino Multi-Area
+- Gli articoli possono avere un magazzino predefinito (default_warehouse_id → dragon_warehouses)
+- Ogni magazzino ha flag has_cer e has_mps per indicare cosa contiene
+- Il limite limit_mps_eow genera avvisi quando la giacenza raggiunge la soglia
+- I movimenti di stock (dragon_stock_movements) possono essere associati a un magazzino specifico (warehouse_id)
+- Inserimento movimenti multi-riga: data registrazione + causale + N righe (articolo, quantità, note) registrate in batch
 
 
 ## COMPETENZA NORMATIVA
