@@ -250,6 +250,9 @@ export function ZoliDarkLemonWidget() {
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Cronologia</span>
             </button>
+            <button onClick={() => { const store = useZoliDarkLemonWidgetStore.getState(); store.setSidePanel(true); setOpen(false); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-green-400 transition-colors" title="Pannello laterale">
+              <PanelRight className="h-4 w-4" />
+            </button>
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
