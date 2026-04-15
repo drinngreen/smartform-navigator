@@ -13,12 +13,11 @@ import { toast } from "sonner";
 import html2canvas from "html2canvas";
 
 interface DarkLemonSidePanelProps {
-  workspaceRef?: React.RefObject<HTMLElement | null>;
   context?: string;
 }
 
-export function DarkLemonSidePanel({ workspaceRef, context = "multyproget" }: DarkLemonSidePanelProps) {
-  const { setSidePanel } = useZoliDarkLemonWidgetStore();
+export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePanelProps) {
+  const { setSidePanel, setWorking } = useZoliDarkLemonWidgetStore();
   const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context);
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
@@ -28,14 +27,24 @@ export function DarkLemonSidePanel({ workspaceRef, context = "multyproget" }: Da
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Sync isWorking with isLoading
+  useEffect(() => {
+    setWorking(isLoading);
+  }, [isLoading, setWorking]);
+
   const handleScreenshot = useCallback(async () => {
-    if (!workspaceRef?.current) {
+    // Capture the workspace area - find the main content area
+    const workspaceEl = document.querySelector("[data-admin-layout] main") as HTMLElement
+      || document.querySelector("main") as HTMLElement
+      || document.querySelector("[data-admin-layout] > div:first-child") as HTMLElement;
+
+    if (!workspaceEl) {
       toast.error("Area di lavoro non disponibile");
       return;
     }
     try {
       toast.info("📸 Cattura in corso...");
-      const canvas = await html2canvas(workspaceRef.current, {
+      const canvas = await html2canvas(workspaceEl, {
         scale: 1,
         useCORS: true,
         logging: false,
@@ -56,7 +65,7 @@ export function DarkLemonSidePanel({ workspaceRef, context = "multyproget" }: Da
     } catch (err) {
       toast.error("Errore nella cattura dello screenshot");
     }
-  }, [workspaceRef, sendMessage, capturePageContent, getRegisteredFields]);
+  }, [sendMessage, capturePageContent, getRegisteredFields]);
 
   const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
     const ctx = capturePageContent();
@@ -78,7 +87,7 @@ export function DarkLemonSidePanel({ workspaceRef, context = "multyproget" }: Da
   }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
 
   return (
-    <div className="h-full flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 animate-slide-in-right">
+    <div className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-6 w-6" />

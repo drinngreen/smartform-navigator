@@ -2,13 +2,15 @@ import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 
 export function DarkLemonWorkOverlay() {
   const isWorking = useZoliDarkLemonWidgetStore((s) => s.isWorking);
+  const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const setWorking = useZoliDarkLemonWidgetStore((s) => s.setWorking);
 
-  if (!isWorking) return null;
+  if (!isWorking || !sidePanel) return null;
 
   return (
     <div
-      className="absolute inset-0 z-[50] cursor-pointer flex items-center justify-center"
+      className="fixed inset-0 z-[55] cursor-pointer flex items-center justify-center"
+      style={{ right: "max(20vw, 280px)" }}
       onClick={() => setWorking(false)}
     >
       {/* Green tint overlay */}

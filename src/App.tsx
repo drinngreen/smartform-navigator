@@ -9,6 +9,9 @@ import { FormBridgeProvider } from "@/contexts/FormBridgeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRedirect } from "@/components/RoleBasedRedirect";
 import { ZoliDarkLemonWidget } from "@/components/ai/ZoliDarkLemonWidget";
+import { DarkLemonSidePanel } from "@/components/ai/DarkLemonSidePanel";
+import { DarkLemonWorkOverlay } from "@/components/ai/DarkLemonWorkOverlay";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { CallManager } from "@/components/calls/CallManager";
 import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 
@@ -139,10 +142,20 @@ function LoadingScreen() {
 function AdminOverlays() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin");
+  const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
 
   if (!isAdminRoute) return null;
 
-  return <ZoliDarkLemonWidget />;
+  const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
+  const context = ctxMatch?.[1] === "dev-multyproget" ? "multyproget" : (ctxMatch?.[1] || "multyproget");
+
+  return (
+    <>
+      <ZoliDarkLemonWidget />
+      {sidePanel && <DarkLemonSidePanel context={context} />}
+      <DarkLemonWorkOverlay />
+    </>
+  );
 }
 
 const App = () => (
