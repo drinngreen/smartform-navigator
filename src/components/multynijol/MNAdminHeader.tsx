@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Phone, PhoneOff, MessageSquare } from "lucide-react";
+import { Phone, PhoneOff, MessageSquare, PanelRight } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,8 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
   const location = useLocation();
   const isWidgetOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
   const toggleWidget = useZoliDarkLemonWidgetStore((s) => s.toggle);
+  const isSidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
+  const setSidePanel = useZoliDarkLemonWidgetStore((s) => s.setSidePanel);
   const [receiveCalls, setReceiveCalls] = useState(() => {
     const saved = localStorage.getItem("admin_receive_calls");
     return saved !== "false";
