@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import type { Database, Json } from "@/integrations/supabase/types";
 
 export interface DLAttachment {
@@ -118,9 +119,12 @@ export function useDarkLemonMN(context?: string) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<DLMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<DLConversation[]>([]);
   const normalizedContext = normalizeMNContext(context);
+
+  // Shared conversation ID from zustand store
+  const currentConversationId = useZoliDarkLemonWidgetStore((s) => s.currentConversationId);
+  const setCurrentConversationId = useZoliDarkLemonWidgetStore((s) => s.setCurrentConversationId);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -161,7 +165,7 @@ export function useDarkLemonMN(context?: string) {
     setMessages([]);
     await loadConversations();
     return data.id;
-  }, [user, normalizedContext, loadConversations]);
+  }, [user, normalizedContext, loadConversations, setCurrentConversationId]);
 
   const loadConversation = useCallback(async (conversationId: string) => {
     const { data } = await supabase
@@ -179,7 +183,7 @@ export function useDarkLemonMN(context?: string) {
       })));
       setCurrentConversationId(conversationId);
     }
-  }, []);
+  }, [setCurrentConversationId]);
 
   const sendMessage = useCallback(async (
     content: string,
@@ -216,7 +220,6 @@ export function useDarkLemonMN(context?: string) {
     const apiMessages = [...messages.slice(-19), userMsg].map(buildApiMessage);
 
     try {
-      // Inject volatile page context before the last user message
       if (pageContext?.content) {
         const contextMsg = {
           role: "user" as const,
@@ -281,12 +284,12 @@ export function useDarkLemonMN(context?: string) {
       setMessages([]);
     }
     await loadConversations();
-  }, [currentConversationId, loadConversations]);
+  }, [currentConversationId, loadConversations, setCurrentConversationId]);
 
   const newChat = useCallback(() => {
     setCurrentConversationId(null);
     setMessages([]);
-  }, []);
+  }, [setCurrentConversationId]);
 
   useEffect(() => { if (user) loadConversations(); }, [user, loadConversations]);
 

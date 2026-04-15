@@ -15,6 +15,8 @@ interface ZoliDarkLemonWidgetState {
   setSidePanel: (open: boolean) => void;
   isWorking: boolean;
   setWorking: (working: boolean) => void;
+  currentConversationId: string | null;
+  setCurrentConversationId: (id: string | null) => void;
 }
 
 const STORAGE_KEY = "dark-lemon-widget";
@@ -75,4 +77,6 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
   setSidePanel: (sidePanel) => set({ sidePanel }),
   isWorking: false,
   setWorking: (isWorking) => set({ isWorking }),
+  currentConversationId: null,
+  setCurrentConversationId: (currentConversationId) => set({ currentConversationId }),
 }));
