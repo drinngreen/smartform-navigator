@@ -1,8 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
 import { MNAdminHeader } from "./MNAdminHeader";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { DarkLemonSidePanel } from "@/components/ai/DarkLemonSidePanel";
+import { DarkLemonWorkOverlay } from "@/components/ai/DarkLemonWorkOverlay";
 const routeColors = {
     "/mn/admin": "34, 197, 94",
     "/mn/admin/dev-multyproget": "34, 197, 94",
@@ -40,6 +43,10 @@ const routeColors = {
 export function MNAdminLayout({ children, title, subtitle }) {
     const location = useLocation();
     const isDashboard = location.pathname === "/mn/admin";
+    const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
+    const workspaceRef = useRef(null);
+    const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
+    const context = ctxMatch?.[1] === "dev-multyproget" ? "multyproget" : (ctxMatch?.[1] || "multyproget");
     const accentColor = useMemo(() => {
         if (routeColors[location.pathname])
             return routeColors[location.pathname];
@@ -51,18 +58,30 @@ export function MNAdminLayout({ children, title, subtitle }) {
             return "249, 115, 22";
         return routeColors["/mn/admin"];
     }, [location.pathname]);
-    return (_jsxs("div", { "data-admin-layout": true, className: "flex flex-col h-screen bg-background overflow-hidden relative", children: [!isDashboard && (_jsx("div", { className: "absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out", style: {
+    return (_jsxs("div", { "data-admin-layout": true, className: "flex h-screen bg-background overflow-hidden relative", children: [
+        _jsxs("div", { className: `flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "w-[80%]" : "w-full"}`, children: [
+            !isDashboard && (_jsx("div", { className: "absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out", style: {
                     background: `
               radial-gradient(ellipse at 50% 30%, rgba(${accentColor}, 0.22) 0%, rgba(${accentColor}, 0.12) 25%, rgba(${accentColor}, 0.04) 55%, transparent 80%),
               radial-gradient(ellipse at 85% 15%, rgba(${accentColor}, 0.17) 0%, rgba(${accentColor}, 0.07) 25%, transparent 55%),
               radial-gradient(ellipse at 15% 75%, rgba(${accentColor}, 0.05) 0%, transparent 50%),
               radial-gradient(ellipse at 70% 70%, rgba(${accentColor}, 0.10) 0%, transparent 45%)
             `,
-                } })), _jsx("div", { className: "absolute inset-0 pointer-events-none z-[1]", style: {
+                } })),
+            _jsx("div", { className: "absolute inset-0 pointer-events-none z-[1]", style: {
                     backgroundImage: `
             linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
             linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
           `,
                     backgroundSize: '30px 30px',
-                } }), _jsx("div", { className: "relative z-20", children: _jsx(MNAdminTopNav, {}) }), _jsx("div", { className: "relative z-10", children: _jsx(MNAdminHeader, { title: title, subtitle: subtitle }) }), _jsx("main", { className: "flex-1 overflow-y-auto p-6 relative z-10", children: children })] }));
+                } }),
+            _jsx("div", { className: "relative z-20", children: _jsx(MNAdminTopNav, {}) }),
+            _jsx("div", { className: "relative z-10", children: _jsx(MNAdminHeader, { title: title, subtitle: subtitle }) }),
+            _jsxs("main", { ref: workspaceRef, className: "flex-1 overflow-y-auto p-6 relative z-10", children: [
+                _jsx(DarkLemonWorkOverlay, {}),
+                children
+            ] })
+        ] }),
+        sidePanel && (_jsx("div", { className: "w-[20%] min-w-[280px] h-full shrink-0 z-30", children: _jsx(DarkLemonSidePanel, { workspaceRef: workspaceRef, context: context }) }))
+    ] }));
 }
