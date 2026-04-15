@@ -9,6 +9,9 @@ import { FormBridgeProvider } from "@/contexts/FormBridgeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRedirect } from "@/components/RoleBasedRedirect";
 import { ZoliDarkLemonWidget } from "@/components/ai/ZoliDarkLemonWidget";
+import { DarkLemonSidePanel } from "@/components/ai/DarkLemonSidePanel";
+import { DarkLemonWorkOverlay } from "@/components/ai/DarkLemonWorkOverlay";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { CallManager } from "@/components/calls/CallManager";
 import { GlobalNotificationBell } from "@/components/notifications/GlobalNotificationBell";
 
