@@ -11,6 +11,10 @@ interface ZoliDarkLemonWidgetState {
   setPosition: (position: Position) => void;
   size: Size;
   setSize: (size: Size) => void;
+  sidePanel: boolean;
+  setSidePanel: (open: boolean) => void;
+  isWorking: boolean;
+  setWorking: (working: boolean) => void;
 }
 
 const STORAGE_KEY = "dark-lemon-widget";
