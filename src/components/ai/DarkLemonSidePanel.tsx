@@ -129,7 +129,11 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
                 ? "bg-blue-500/20 text-white border border-blue-500/30"
                 : "bg-white/5 text-white/90 border border-cyan-500/20"
             )}>
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
+              <ReactMarkdown>{msg.role === "assistant" ? stripFillFormTag(msg.content) : msg.content}</ReactMarkdown>
+              {msg.role === "assistant" && (() => {
+                const fillData = parseFillFormTag(msg.content);
+                return fillData ? <FillFormAction data={fillData} /> : null;
+              })()}
               {msg.role === "assistant" && (
                 <MessageCopyButton content={msg.content} className="absolute -top-1 -right-1" />
               )}
