@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import systemPromptIcon from "@/assets/system-prompt-icon.png";
 import ReactMarkdown from "react-markdown";
+import { MessageCopyButton } from "@/components/ai/MessageCopyButton";
 
 interface Message {
   id: string;
@@ -93,14 +94,14 @@ export function SystemPromptAssistantChat() {
           </div>
         )}
         {messages.map((msg) => (
-          <div key={msg.id} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+          <div key={msg.id} className={cn("flex gap-2 group", msg.role === "user" ? "justify-end" : "justify-start")}>
             {msg.role === "assistant" && (
               <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-1">
                 <Bot className="h-3 w-3 text-amber-400" />
               </div>
             )}
             <div className={cn(
-              "max-w-[80%] rounded-xl px-3 py-2 text-xs",
+              "max-w-[80%] rounded-xl px-3 py-2 text-xs select-text relative",
               msg.role === "user"
                 ? "bg-blue-500/10 border border-blue-500/20 text-white"
                 : "bg-white/5 border border-white/10 text-white/80"
@@ -108,6 +109,7 @@ export function SystemPromptAssistantChat() {
               <div className="prose prose-xs prose-invert max-w-none">
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
+              {msg.role === "assistant" && <MessageCopyButton content={msg.content} className="absolute -top-1 -right-1" />}
             </div>
             {msg.role === "user" && (
               <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-1">

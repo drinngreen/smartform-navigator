@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
@@ -10,6 +10,7 @@ import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { MessageCopyButton } from "./MessageCopyButton";
 
 const MIN_W = 300;
 const MIN_H = 280;
@@ -205,7 +206,7 @@ export function ZoliDarkLemonWidget() {
     <div
       ref={widgetRef}
       onMouseDown={handleMouseDown}
-      className="fixed z-[9999] select-none"
+      className="fixed z-[9999]"
       style={isFullscreen
         ? { left: 0, top: 0, width: "100vw", height: "100vh" }
         : { left: position.x, top: position.y, width: size.width, height: size.height }
@@ -228,7 +229,7 @@ export function ZoliDarkLemonWidget() {
 
         <div className="relative rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0 select-none">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
             {!isFullscreen && (
@@ -249,6 +250,9 @@ export function ZoliDarkLemonWidget() {
             >
               <MessageSquare className="h-3.5 w-3.5" />
               <span>Cronologia</span>
+            </button>
+            <button onClick={() => { const store = useZoliDarkLemonWidgetStore.getState(); store.setSidePanel(true); setOpen(false); }} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-green-400 transition-colors" title="Pannello laterale">
+              <PanelRight className="h-4 w-4" />
             </button>
             <button onClick={toggleFullscreen} onMouseDown={e => e.stopPropagation()} className="p-1 text-white/60 hover:text-cyan-400 transition-colors" title={isFullscreen ? "Riduci" : "Tutto schermo"}>
               {isFullscreen ? <Shrink className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -311,14 +315,14 @@ export function ZoliDarkLemonWidget() {
                   </div>
                 )}
                 {messages.map((msg, i) => (
-                  <div key={msg.id || i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+                  <div key={msg.id || i} className={cn("flex gap-2 group", msg.role === "user" ? "justify-end" : "justify-start")}>
                     {msg.role === "assistant" && (
                       <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
                         <Bot className="h-3 w-3 text-cyan-400" />
                       </div>
                     )}
                     <div className={cn(
-                      "max-w-[80%] rounded-xl px-3 py-2 text-xs prose prose-sm prose-invert max-w-none",
+                      "max-w-[80%] rounded-xl px-3 py-2 text-xs prose prose-sm prose-invert max-w-none select-text relative",
                       msg.role === "user"
                         ? "bg-blue-500/20 text-white border border-blue-500/30"
                         : "bg-white/5 text-white/90 border border-cyan-500/20"
@@ -338,6 +342,7 @@ export function ZoliDarkLemonWidget() {
                         </div>
                       )}
                       {renderMessageContent(msg.content)}
+                      {msg.role === "assistant" && <MessageCopyButton content={msg.content} className="absolute -top-1 -right-1" />}
                     </div>
                     {msg.role === "user" && (
                       <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
