@@ -1,10 +1,8 @@
-import { ReactNode, useMemo, useRef } from "react";
+import { ReactNode, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
 import { MNAdminHeader } from "./MNAdminHeader";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
-import { DarkLemonSidePanel } from "@/components/ai/DarkLemonSidePanel";
-import { DarkLemonWorkOverlay } from "@/components/ai/DarkLemonWorkOverlay";
 
 interface MNAdminLayoutProps {
   children: ReactNode;
@@ -51,10 +49,6 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
   const location = useLocation();
   const isDashboard = location.pathname === "/mn/admin";
   const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
-  const workspaceRef = useRef<HTMLDivElement>(null);
-
-  const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
-  const context = ctxMatch?.[1] === "dev-multyproget" ? "multyproget" : (ctxMatch?.[1] || "multyproget");
 
   const accentColor = useMemo(() => {
     if (routeColors[location.pathname]) return routeColors[location.pathname];
@@ -66,8 +60,7 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
-      {/* Main content area */}
-      <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "w-[80%]" : "w-full"}`}>
+      <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "mr-[max(20vw,280px)]" : ""}`}>
         {/* Background dinamico */}
         {!isDashboard && (
           <div
@@ -105,19 +98,11 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
           <MNAdminHeader title={title} subtitle={subtitle} />
         </div>
 
-        {/* Main content with workspace ref */}
-        <main ref={workspaceRef} className="flex-1 overflow-y-auto p-6 relative z-10">
-          <DarkLemonWorkOverlay />
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-6 relative z-10">
           {children}
         </main>
       </div>
-
-      {/* Side Panel */}
-      {sidePanel && (
-        <div className="w-[20%] min-w-[280px] h-full shrink-0 z-30">
-          <DarkLemonSidePanel workspaceRef={workspaceRef} context={context} />
-        </div>
-      )}
     </div>
   );
 }
