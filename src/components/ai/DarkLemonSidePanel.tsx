@@ -7,6 +7,7 @@ import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import { MessageCopyButton } from "./MessageCopyButton";
+import { FillFormAction, parseFillFormTag, stripFillFormTag } from "./FillFormAction";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
