@@ -1,7 +1,10 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
 import { MNAdminHeader } from "./MNAdminHeader";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { DarkLemonSidePanel } from "@/components/ai/DarkLemonSidePanel";
+import { DarkLemonWorkOverlay } from "@/components/ai/DarkLemonWorkOverlay";
 
 interface MNAdminLayoutProps {
   children: ReactNode;
@@ -47,6 +50,11 @@ const routeColors: Record<string, string> = {
 export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps) {
   const location = useLocation();
   const isDashboard = location.pathname === "/mn/admin";
+  const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+
+  const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
+  const context = ctxMatch?.[1] === "dev-multyproget" ? "multyproget" : (ctxMatch?.[1] || "multyproget");
 
   const accentColor = useMemo(() => {
     if (routeColors[location.pathname]) return routeColors[location.pathname];
@@ -57,48 +65,59 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
   }, [location.pathname]);
 
   return (
-    <div data-admin-layout className="flex flex-col h-screen bg-background overflow-hidden relative">
-      {/* Background dinamico - identical to Global */}
-      {!isDashboard && (
+    <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
+      {/* Main content area */}
+      <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "w-[80%]" : "w-full"}`}>
+        {/* Background dinamico */}
+        {!isDashboard && (
+          <div
+            className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out"
+            style={{
+              background: `
+                radial-gradient(ellipse at 50% 30%, rgba(${accentColor}, 0.22) 0%, rgba(${accentColor}, 0.12) 25%, rgba(${accentColor}, 0.04) 55%, transparent 80%),
+                radial-gradient(ellipse at 85% 15%, rgba(${accentColor}, 0.17) 0%, rgba(${accentColor}, 0.07) 25%, transparent 55%),
+                radial-gradient(ellipse at 15% 75%, rgba(${accentColor}, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 70%, rgba(${accentColor}, 0.10) 0%, transparent 45%)
+              `,
+            }}
+          />
+        )}
+
+        {/* Grid overlay */}
         <div
-          className="absolute inset-0 pointer-events-none transition-all duration-700 ease-in-out"
+          className="absolute inset-0 pointer-events-none z-[1]"
           style={{
-            background: `
-              radial-gradient(ellipse at 50% 30%, rgba(${accentColor}, 0.22) 0%, rgba(${accentColor}, 0.12) 25%, rgba(${accentColor}, 0.04) 55%, transparent 80%),
-              radial-gradient(ellipse at 85% 15%, rgba(${accentColor}, 0.17) 0%, rgba(${accentColor}, 0.07) 25%, transparent 55%),
-              radial-gradient(ellipse at 15% 75%, rgba(${accentColor}, 0.05) 0%, transparent 50%),
-              radial-gradient(ellipse at 70% 70%, rgba(${accentColor}, 0.10) 0%, transparent 45%)
+            backgroundImage: `
+              linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
             `,
+            backgroundSize: '30px 30px',
           }}
         />
+
+        {/* Top Navigation */}
+        <div className="relative z-20">
+          <MNAdminTopNav />
+        </div>
+
+        {/* Header */}
+        <div className="relative z-10">
+          <MNAdminHeader title={title} subtitle={subtitle} />
+        </div>
+
+        {/* Main content with workspace ref */}
+        <main ref={workspaceRef} className="flex-1 overflow-y-auto p-6 relative z-10">
+          <DarkLemonWorkOverlay />
+          {children}
+        </main>
+      </div>
+
+      {/* Side Panel */}
+      {sidePanel && (
+        <div className="w-[20%] min-w-[280px] h-full shrink-0 z-30">
+          <DarkLemonSidePanel workspaceRef={workspaceRef} context={context} />
+        </div>
       )}
-
-      {/* Grid overlay a quadretti - MOLTO VISIBILE - identical to Global */}
-      <div
-        className="absolute inset-0 pointer-events-none z-[1]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
-          `,
-          backgroundSize: '30px 30px',
-        }}
-      />
-
-      {/* Top Navigation */}
-      <div className="relative z-20">
-        <MNAdminTopNav />
-      </div>
-
-      {/* Header with Phone/AI/Messages - identical to Global */}
-      <div className="relative z-10">
-        <MNAdminHeader title={title} subtitle={subtitle} />
-      </div>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-6 relative z-10">
-        {children}
-      </main>
     </div>
   );
 }

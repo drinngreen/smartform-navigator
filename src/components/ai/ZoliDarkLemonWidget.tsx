@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
