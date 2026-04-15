@@ -10,6 +10,7 @@ import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { MessageCopyButton } from "./MessageCopyButton";
 
 const MIN_W = 300;
 const MIN_H = 280;
@@ -314,14 +315,14 @@ export function ZoliDarkLemonWidget() {
                   </div>
                 )}
                 {messages.map((msg, i) => (
-                  <div key={msg.id || i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+                  <div key={msg.id || i} className={cn("flex gap-2 group", msg.role === "user" ? "justify-end" : "justify-start")}>
                     {msg.role === "assistant" && (
                       <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0 mt-0.5">
                         <Bot className="h-3 w-3 text-cyan-400" />
                       </div>
                     )}
                     <div className={cn(
-                      "max-w-[80%] rounded-xl px-3 py-2 text-xs prose prose-sm prose-invert max-w-none",
+                      "max-w-[80%] rounded-xl px-3 py-2 text-xs prose prose-sm prose-invert max-w-none select-text relative",
                       msg.role === "user"
                         ? "bg-blue-500/20 text-white border border-blue-500/30"
                         : "bg-white/5 text-white/90 border border-cyan-500/20"
@@ -341,6 +342,7 @@ export function ZoliDarkLemonWidget() {
                         </div>
                       )}
                       {renderMessageContent(msg.content)}
+                      {msg.role === "assistant" && <MessageCopyButton content={msg.content} className="absolute -top-1 -right-1" />}
                     </div>
                     {msg.role === "user" && (
                       <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0 mt-0.5">
