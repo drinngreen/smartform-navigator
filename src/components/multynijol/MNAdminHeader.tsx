@@ -95,6 +95,19 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           <img src={zoliLemonIcon} alt="AI" className="h-5 w-5" />
         </button>
 
+        {/* Side Panel toggle */}
+        <button
+          onClick={() => setSidePanel(!isSidePanel)}
+          className={`p-2 rounded-lg border transition-all duration-300 ${
+            isSidePanel
+              ? "bg-green-500/20 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+              : "bg-secondary/50 border-border hover:bg-secondary hover:border-green-500/30"
+          }`}
+          title="Pannello laterale Dark Lemon"
+        >
+          <PanelRight className="h-5 w-5 text-white/80" />
+        </button>
+
         {/* Messages */}
         <button
           onClick={() => navigate(messagesPath)}
