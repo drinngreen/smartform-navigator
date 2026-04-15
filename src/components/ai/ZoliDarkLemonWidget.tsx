@@ -205,7 +205,7 @@ export function ZoliDarkLemonWidget() {
     <div
       ref={widgetRef}
       onMouseDown={handleMouseDown}
-      className="fixed z-[9999] select-none"
+      className="fixed z-[9999]"
       style={isFullscreen
         ? { left: 0, top: 0, width: "100vw", height: "100vh" }
         : { left: position.x, top: position.y, width: size.width, height: size.height }
@@ -228,7 +228,7 @@ export function ZoliDarkLemonWidget() {
 
         <div className="relative rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden h-full flex flex-col">
           {/* Header */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0">
+          <div className="flex items-center gap-2 px-4 py-3 bg-[hsl(222,47%,8%)] border-b border-white/10 cursor-grab active:cursor-grabbing shrink-0 select-none">
             <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7" />
             <span className="text-white font-display text-sm tracking-wider flex-1">DARK LEMON AI</span>
             {!isFullscreen && (
