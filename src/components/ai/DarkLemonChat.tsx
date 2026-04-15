@@ -3,6 +3,7 @@ import { Send, Bot, User, Plus, Trash2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAIAgent } from "@/hooks/useAIAgent";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
+import { MessageCopyButton } from "./MessageCopyButton";
 
 export function DarkLemonChat() {
   const {
@@ -103,7 +104,7 @@ export function DarkLemonChat() {
               </div>
             )}
             {messages.map((msg, i) => (
-              <div key={msg.id || i} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
+              <div key={msg.id || i} className={cn("flex gap-3 group", msg.role === "user" ? "justify-end" : "justify-start")}>
                 {msg.role === "assistant" && (
                   <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.3), rgba(59,130,246,0.3))", boxShadow: "0 0 15px rgba(6,182,212,0.3)" }}>
                     <Bot className="h-4 w-4 text-cyan-400" />
@@ -115,12 +116,12 @@ export function DarkLemonChat() {
                     ? "text-white"
                     : "text-white/90"
                 )}>
-                  {/* Message LED border */}
                   <div className="absolute inset-0 rounded-2xl p-[1px] overflow-hidden">
                     <div className="absolute inset-0 rounded-2xl animate-gradient opacity-50" style={{ background: msg.role === "user" ? "linear-gradient(90deg, #3b82f6, #a855f7, #3b82f6)" : "linear-gradient(90deg, #06b6d4, #22c55e, #06b6d4)", backgroundSize: "200% 100%" }} />
                   </div>
-                  <div className={cn("relative rounded-2xl px-4 py-3", msg.role === "user" ? "bg-[hsl(222,47%,12%)]" : "bg-[hsl(222,47%,8%)]")}>
+                  <div className={cn("relative rounded-2xl px-4 py-3 select-text", msg.role === "user" ? "bg-[hsl(222,47%,12%)]" : "bg-[hsl(222,47%,8%)]")}>
                     {msg.content}
+                    {msg.role === "assistant" && <MessageCopyButton content={msg.content} className="absolute top-1 right-1" />}
                   </div>
                 </div>
                 {msg.role === "user" && (

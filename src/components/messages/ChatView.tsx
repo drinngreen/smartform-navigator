@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { MessageCopyButton } from "@/components/ai/MessageCopyButton";
 
 interface ChatViewProps {
   partnerId: string;
@@ -52,12 +53,13 @@ export function ChatView({ partnerId, className }: ChatViewProps) {
           messages.map((msg) => {
             const isOwn = msg.sender_id === user?.id;
             return (
-              <div key={msg.id} className={cn("flex", isOwn ? "justify-end" : "justify-start")}>
-                <div className={cn("max-w-[80%] rounded-2xl px-4 py-2 text-sm", isOwn ? "bg-primary/20 text-foreground rounded-br-md" : "bg-card border border-border/30 text-foreground rounded-bl-md")}>
+              <div key={msg.id} className={cn("flex group", isOwn ? "justify-end" : "justify-start")}>
+                <div className={cn("max-w-[80%] rounded-2xl px-4 py-2 text-sm select-text relative", isOwn ? "bg-primary/20 text-foreground rounded-br-md" : "bg-card border border-border/30 text-foreground rounded-bl-md")}>
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                   <p className="text-[10px] text-muted-foreground mt-1 text-right font-mono">
                     {format(new Date(msg.created_at), "HH:mm", { locale: it })}
                   </p>
+                  {!isOwn && <MessageCopyButton content={msg.content} className="absolute -top-1 -right-1" />}
                 </div>
               </div>
             );
