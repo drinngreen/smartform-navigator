@@ -71,4 +71,8 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
     set({ size });
     saveState(get().isOpen, get().position, size);
   },
+  sidePanel: false,
+  setSidePanel: (sidePanel) => set({ sidePanel }),
+  isWorking: false,
+  setWorking: (isWorking) => set({ isWorking }),
 }));
