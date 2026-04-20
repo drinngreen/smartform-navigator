@@ -329,7 +329,24 @@ function ImpiantoFormulari() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetchIncoming()}
+            onClick={async () => {
+              const prevCount = incomingItems.length;
+              const tid = toast.loading("Interrogazione RENTRI in corso...");
+              try {
+                await qc.invalidateQueries({ queryKey: ["dev-impianto-fir-in-arrivo", SOCIETA_ID] });
+                const res = await refetchIncoming();
+                const newCount = (res.data ?? []).length;
+                const delta = newCount - prevCount;
+                toast.success(
+                  delta > 0
+                    ? `✅ ${newCount} FIR in arrivo (+${delta} nuovi)`
+                    : `✅ ${newCount} FIR in arrivo (nessuna novità)`,
+                  { id: tid }
+                );
+              } catch (e: any) {
+                toast.error("Errore aggiornamento: " + (e?.message ?? "sconosciuto"), { id: tid });
+              }
+            }}
             disabled={incomingLoading}
             className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
           >
