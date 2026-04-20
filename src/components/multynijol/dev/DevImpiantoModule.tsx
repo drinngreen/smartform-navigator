@@ -153,6 +153,7 @@ export function DevImpiantoModule() {
 
 // ─── Formulari sub-module ───
 function ImpiantoFormulari() {
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
