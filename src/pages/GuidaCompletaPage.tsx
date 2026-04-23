@@ -295,14 +295,37 @@ const SECTIONS: Section[] = [
     icon: <Brain size={18} />,
     content: (
       <div className="space-y-3 text-sm text-muted-foreground">
+        <h4 className="font-semibold text-foreground">Dark Lemon — 3 modalità di vista:</h4>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong className="text-foreground">Dark Lemon</strong> — Assistente AI per admin (Zoli Dark Lemon Widget)</li>
-          <li><strong className="text-foreground">Dark Lemon MN</strong> — Variante per contesto Multy Niyol</li>
-          <li><strong className="text-foreground">AI Agent</strong> — Chatbot per trasportatori con knowledge base e memoria utente</li>
-          <li><strong className="text-foreground">Social AI Agent</strong> — Analisi post, moderazione automatica</li>
-          <li><strong className="text-foreground">System Prompt</strong> — Prompt personalizzabili per tenant con workflow di approvazione</li>
-          <li>Modelli: Gemini 2.5 Pro/Flash, GPT-5 (via Lovable AI, senza API key)</li>
+          <li><strong className="text-foreground">Widget fluttuante</strong> — Bolla draggabile e ridimensionabile sopra l'area di lavoro, persistente tra le pagine</li>
+          <li><strong className="text-foreground">Fullscreen</strong> — Vista a schermo intero con cronologia laterale delle conversazioni</li>
+          <li><strong className="text-foreground">Side Panel (20% larghezza)</strong> — Pannello laterale destro persistente: il contenuto principale si restringe automaticamente, resta visibile mentre si compilano moduli (Modulo Alternativo, Cernita, ecc.)</li>
         </ul>
+        <h4 className="font-semibold text-foreground mt-2">Capacità operative attive:</h4>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong className="text-foreground">Screenshot dell'area di lavoro</strong> — Pulsante 📸 dedicato (via html2canvas) o tramite prompt ("fai uno screenshot ed esaminalo")</li>
+          <li><strong className="text-foreground">Scrittura real-time nei moduli</strong> — Tag <code className="text-primary">FILL_FORM</code> con delay di 300ms tra i campi: l'utente vede fisicamente la compilazione progressiva del form</li>
+          <li><strong className="text-foreground">Form Bridge</strong> — Context globale che espone i campi React (id, label, tipo, valore) all'AI per scrittura mirata</li>
+          <li><strong className="text-foreground">Overlay verde "sta lavorando"</strong> — Filtro semi-trasparente con onde animate sull'area di lavoro durante l'attività AI; click per interrompere il flusso</li>
+          <li><strong className="text-foreground">ScanSearch (🔍)</strong> — Cattura ~4000 caratteri di contesto pagina + bridge fields per analisi mirata</li>
+          <li><strong className="text-foreground">Cronologia condivisa</strong> — Tutte e 3 le viste condividono lo stesso <code className="text-primary">currentConversationId</code>: ogni messaggio finisce in cronologia, le conversazioni vecchie si riaprono dalla vista widget o fullscreen</li>
+          <li><strong className="text-foreground">Selezione e copia testo</strong> — Tutti i messaggi sono selezionabili con pulsante 📋 Copia on-hover su ogni risposta assistant in tutte le chat (Widget, Side Panel, Fullscreen, System Prompt, Messaggi)</li>
+        </ul>
+        <h4 className="font-semibold text-foreground mt-2">Toolkit operativo (49 tool):</h4>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong className="text-foreground">RENTRI</strong> — Vidimazione, emissione FIR, firma ricezione, ricerca movimenti (richiede "CONFERMO" per firme)</li>
+          <li><strong className="text-foreground">Dragon Rifiuti 2</strong> — 7 tool su giacenze, movimenti registro, cernita, miscelazione, tracciabilità (isolati per <code className="text-primary">company_id</code>)</li>
+          <li><strong className="text-foreground">Comunicazioni</strong> — Invio email, SMS, WhatsApp, ricerca rubrica e anagrafiche</li>
+          <li><strong className="text-foreground">GPS Flotta</strong> — Posizioni real-time dei trasportatori</li>
+          <li><strong className="text-foreground">Auto-provisioning</strong> — Crea automaticamente entità mancanti (causali, magazzini) per sbloccare i flussi</li>
+        </ul>
+        <h4 className="font-semibold text-foreground mt-2">Altri agenti AI:</h4>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong className="text-foreground">AI Agent</strong> — Chatbot per trasportatori con knowledge base e memoria utente persistente</li>
+          <li><strong className="text-foreground">Social AI Agent</strong> — Analisi post e moderazione automatica</li>
+          <li><strong className="text-foreground">System Prompt</strong> — Prompt personalizzabili per tenant con workflow di approvazione Super Admin</li>
+        </ul>
+        <p className="mt-2 text-xs">Provider: <strong className="text-foreground">OpenRouter</strong> (google/gemini-2.0-flash) via Edge Function — Lovable AI nativa è disabilitata per Dark Lemon.</p>
       </div>
     ),
   },
