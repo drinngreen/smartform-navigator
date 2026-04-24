@@ -2,6 +2,7 @@
  * RENTRI API Service – routes through VPS proxy (rentri-vps-proxy edge function).
  */
 import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto } from "@/lib/rentriVpsApi";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
 // ─── Tenant → company mapping ─────────────────────────────
 const TENANT_MAP = {
     "167d07ad-9184-484e-85a6-da5ceafa42a3": "global",
@@ -71,7 +72,12 @@ export async function checkRentriHealth() {
  */
 export async function inviaFirmaRentri(payload) {
     const cliente = (payload.societaId.toLowerCase());
-    const res = await emissioneFir(cliente, payload.payloadFir);
+    const cfg = getTenantConfig(cliente);
+    const enrichedPayload = { ...payload.payloadFir };
+    if (cfg?.unitId && !enrichedPayload.num_iscr_sito) {
+        enrichedPayload.num_iscr_sito = cfg.unitId;
+    }
+    const res = await emissioneFir(cliente, enrichedPayload);
     if (res.success) {
         const root = res.data || {};
         const firId = root.firId || root.numero_fir || root.fir_id || "";
