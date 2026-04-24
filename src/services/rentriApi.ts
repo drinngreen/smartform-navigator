@@ -3,6 +3,7 @@
  */
 
 import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, type RentriCliente } from "@/lib/rentriVpsApi";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
 // ─── Tenant → company mapping ─────────────────────────────
 const TENANT_MAP: Record<string, RentriCliente> = {
@@ -124,7 +125,14 @@ export async function inviaFirmaRentri(
 ): Promise<RentriFirmaResponse> {
   const cliente = (payload.societaId.toLowerCase()) as RentriCliente;
 
-  const res = await emissioneFir(cliente, payload.payloadFir);
+  // Inject num_iscr_sito from tenant config if missing (mobile FIR form sends raw dbFields)
+  const cfg = getTenantConfig(cliente);
+  const enrichedPayload: Record<string, unknown> = { ...payload.payloadFir };
+  if (cfg?.unitId && !enrichedPayload.num_iscr_sito) {
+    enrichedPayload.num_iscr_sito = cfg.unitId;
+  }
+
+  const res = await emissioneFir(cliente, enrichedPayload);
 
   if (res.success) {
     const root = (res.data as any) || {};
