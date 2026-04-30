@@ -11,6 +11,58 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
 
+const registroColumns = [
+  { header: "N. Int.", key: "numero_interno", width: 10, align: "left" },
+  { header: "N. Movimento", key: "numero_movimento", width: 14, align: "left" },
+  { header: "Data Mov.", key: "data_movimento", width: 12, align: "left" },
+  { header: "C.E.R.", key: "cer", width: 10, align: "left" },
+  { header: "Descrizione", key: "descrizione", width: 34, align: "left" },
+  { header: "C./S.", key: "carico_scarico", width: 12, align: "left" },
+  { header: "Tipo Operazione", key: "tipo_operazione", width: 24, align: "left" },
+  { header: "Al RENTRI", key: "al_rentri", width: 10, align: "left" },
+  { header: "N° Formulario", key: "numero_formulario", width: 18, align: "left" },
+  { header: "+/-", key: "segno", width: 8, align: "left" },
+  { header: "Quantità", key: "quantita", width: 12, align: "right" },
+  { header: "Peso Destino", key: "peso_destino", width: 14, align: "right" },
+  { header: "Qta. Scaricata", key: "qta_scaricata", width: 14, align: "right" },
+  { header: "Data Ricezione", key: "data_ricezione", width: 14, align: "left" },
+  { header: "Luogo di Produzione", key: "luogo_produzione", width: 30, align: "left" },
+  { header: "Destinazione", key: "destinazione", width: 14, align: "left" },
+  { header: "Classi Pericolo", key: "classi_pericolo", width: 18, align: "left" },
+  { header: "Stato fisico", key: "stato_fisico", width: 12, align: "left" },
+  { header: "Descrizione Tipica", key: "descrizione_tipica", width: 20, align: "left" },
+  { header: "Scaricato", key: "scaricato", width: 12, align: "left" },
+  { header: "Cod. Magazzino", key: "cod_magazzino", width: 14, align: "left" },
+  { header: "Peso Lordo", key: "peso_lordo", width: 12, align: "right" },
+  { header: "Tara", key: "tara", width: 10, align: "right" },
+  { header: "Annotazioni", key: "annotazioni", width: 24, align: "left" },
+  { header: "Nota Int.", key: "nota_int", width: 22, align: "left" },
+  { header: "Cod. Intermed.", key: "cod_intermed", width: 14, align: "left" },
+  { header: "Intermediario", key: "intermediario", width: 28, align: "left" },
+  { header: "Indirizzo Intermed.", key: "indirizzo_intermed", width: 34, align: "left" },
+  { header: "FlagNoMud", key: "flagnomud", width: 12, align: "left" },
+  { header: "Origine Rifiuto", key: "origine_rifiuto", width: 16, align: "left" },
+  { header: "CONAI", key: "conai", width: 10, align: "left" },
+  { header: "Att. Orig. Rif.", key: "att_orig_rif", width: 28, align: "left" },
+  { header: "Pseudonimo Cantiere", key: "pseudonimo_cantiere", width: 24, align: "left" },
+  { header: "Indirizzo Cantiere", key: "indirizzo_cantiere", width: 30, align: "left" },
+  { header: "CAP Cantiere", key: "cap_cantiere", width: 12, align: "left" },
+  { header: "Comune Cantiere", key: "comune_cantiere", width: 20, align: "left" },
+  { header: "Provincia Cantiere", key: "provincia_cantiere", width: 12, align: "left" },
+  { header: "Emissione Formulario", key: "data_emissione_formulario", width: 18, align: "left" },
+  { header: "Form. Urbano", key: "form_urbano", width: 12, align: "left" },
+  { header: "DDT di Ingresso", key: "ddt_ingresso", width: 18, align: "left" },
+  { header: "Data DDT di Ingresso", key: "data_ddt_ingresso", width: 20, align: "left" },
+  { header: "Respinto", key: "respinto", width: 12, align: "left" },
+] as const;
+
+const formatCellValue = (value: unknown) => {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Sì" : "No";
+  if (typeof value === "number") return value.toLocaleString("it-IT");
+  return String(value);
+};
+
 export function DevRegistroGeneraleModule() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
