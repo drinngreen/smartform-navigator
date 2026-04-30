@@ -41,7 +41,13 @@ export function DevRegistroGeneraleModule() {
 
   const cerList = useMemo(() => {
     if (!rows) return [];
-    return Array.from(new Set(rows.map((r: any) => r.cer).filter(Boolean))).sort();
+    return Array.from(
+      new Set(
+        rows
+          .map((r: any) => (r.cer ?? "").toString().trim())
+          .filter((c: string) => c.length > 0)
+      )
+    ).sort();
   }, [rows]);
 
   const filtered = useMemo(() => {
