@@ -344,7 +344,7 @@ export function DevRicevuteModule() {
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
                         <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {new Date(r.created_at).toLocaleDateString("it-IT")}
+                          {new Date(r.data_emissione).toLocaleDateString("it-IT")}
                         </td>
                         <td className="px-3 py-2">
                           <div className="font-medium">{p ? `${p.cognome} ${p.nome}` : "—"}</div>
