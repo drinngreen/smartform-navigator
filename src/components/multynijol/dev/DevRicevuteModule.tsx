@@ -16,7 +16,7 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 
-const MULTY_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 type RicevutaRow = {
   id: string;
