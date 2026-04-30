@@ -200,7 +200,7 @@ export function DevRicevuteModule() {
 <body>
   ${aziendaHtml}
   <h1>${escHtml(title)}</h1>
-  <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
+  <div class="meta">Data: ${escHtml(new Date(r.data_emissione).toLocaleString("it-IT"))}</div>
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
@@ -227,7 +227,7 @@ export function DevRicevuteModule() {
     { header: "Numero", key: "numero_ricevuta", width: 16 },
     {
       header: "Data",
-      key: "created_at",
+      key: "data_emissione",
       width: 14,
       format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-"),
     },
