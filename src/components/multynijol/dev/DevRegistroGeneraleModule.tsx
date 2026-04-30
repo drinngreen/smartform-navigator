@@ -11,6 +11,58 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
 
+const registroColumns = [
+  { header: "N. Int.", key: "numero_interno", width: 10, align: "left" },
+  { header: "N. Movimento", key: "numero_movimento", width: 14, align: "left" },
+  { header: "Data Mov.", key: "data_movimento", width: 12, align: "left" },
+  { header: "C.E.R.", key: "cer", width: 10, align: "left" },
+  { header: "Descrizione", key: "descrizione", width: 34, align: "left" },
+  { header: "C./S.", key: "carico_scarico", width: 12, align: "left" },
+  { header: "Tipo Operazione", key: "tipo_operazione", width: 24, align: "left" },
+  { header: "Al RENTRI", key: "al_rentri", width: 10, align: "left" },
+  { header: "N° Formulario", key: "numero_formulario", width: 18, align: "left" },
+  { header: "+/-", key: "segno", width: 8, align: "left" },
+  { header: "Quantità", key: "quantita", width: 12, align: "right" },
+  { header: "Peso Destino", key: "peso_destino", width: 14, align: "right" },
+  { header: "Qta. Scaricata", key: "qta_scaricata", width: 14, align: "right" },
+  { header: "Data Ricezione", key: "data_ricezione", width: 14, align: "left" },
+  { header: "Luogo di Produzione", key: "luogo_produzione", width: 30, align: "left" },
+  { header: "Destinazione", key: "destinazione", width: 14, align: "left" },
+  { header: "Classi Pericolo", key: "classi_pericolo", width: 18, align: "left" },
+  { header: "Stato fisico", key: "stato_fisico", width: 12, align: "left" },
+  { header: "Descrizione Tipica", key: "descrizione_tipica", width: 20, align: "left" },
+  { header: "Scaricato", key: "scaricato", width: 12, align: "left" },
+  { header: "Cod. Magazzino", key: "cod_magazzino", width: 14, align: "left" },
+  { header: "Peso Lordo", key: "peso_lordo", width: 12, align: "right" },
+  { header: "Tara", key: "tara", width: 10, align: "right" },
+  { header: "Annotazioni", key: "annotazioni", width: 24, align: "left" },
+  { header: "Nota Int.", key: "nota_int", width: 22, align: "left" },
+  { header: "Cod. Intermed.", key: "cod_intermed", width: 14, align: "left" },
+  { header: "Intermediario", key: "intermediario", width: 28, align: "left" },
+  { header: "Indirizzo Intermed.", key: "indirizzo_intermed", width: 34, align: "left" },
+  { header: "FlagNoMud", key: "flagnomud", width: 12, align: "left" },
+  { header: "Origine Rifiuto", key: "origine_rifiuto", width: 16, align: "left" },
+  { header: "CONAI", key: "conai", width: 10, align: "left" },
+  { header: "Att. Orig. Rif.", key: "att_orig_rif", width: 28, align: "left" },
+  { header: "Pseudonimo Cantiere", key: "pseudonimo_cantiere", width: 24, align: "left" },
+  { header: "Indirizzo Cantiere", key: "indirizzo_cantiere", width: 30, align: "left" },
+  { header: "CAP Cantiere", key: "cap_cantiere", width: 12, align: "left" },
+  { header: "Comune Cantiere", key: "comune_cantiere", width: 20, align: "left" },
+  { header: "Provincia Cantiere", key: "provincia_cantiere", width: 12, align: "left" },
+  { header: "Emissione Formulario", key: "data_emissione_formulario", width: 18, align: "left" },
+  { header: "Form. Urbano", key: "form_urbano", width: 12, align: "left" },
+  { header: "DDT di Ingresso", key: "ddt_ingresso", width: 18, align: "left" },
+  { header: "Data DDT di Ingresso", key: "data_ddt_ingresso", width: 20, align: "left" },
+  { header: "Respinto", key: "respinto", width: 12, align: "left" },
+] as const;
+
+const formatCellValue = (value: unknown) => {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Sì" : "No";
+  if (typeof value === "number") return value.toLocaleString("it-IT");
+  return String(value);
+};
+
 export function DevRegistroGeneraleModule() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -25,7 +77,7 @@ export function DevRegistroGeneraleModule() {
       while (true) {
         const { data, error } = await supabase
           .from("registro_generale" as any)
-          .select("id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, segno, quantita, peso_destino, destinazione, luogo_produzione, classi_pericolo, annotazioni, pseudonimo_cantiere, indirizzo_cantiere, comune_cantiere, provincia_cantiere")
+          .select("id, numero_interno, numero_movimento, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, al_rentri, numero_formulario, segno, quantita, peso_destino, qta_scaricata, data_ricezione, luogo_produzione, destinazione, classi_pericolo, stato_fisico, descrizione_tipica, scaricato, cod_magazzino, peso_lordo, tara, annotazioni, nota_int, cod_intermed, intermediario, indirizzo_intermed, flagnomud, origine_rifiuto, conai, att_orig_rif, pseudonimo_cantiere, indirizzo_cantiere, cap_cantiere, comune_cantiere, provincia_cantiere, data_emissione_formulario, form_urbano, ddt_ingresso, data_ddt_ingresso, respinto")
           .eq("tenant_id", MULTY_TENANT_ID)
           .order("data_movimento", { ascending: false })
           .order("numero_interno", { ascending: false })
@@ -62,7 +114,10 @@ export function DevRegistroGeneraleModule() {
           (r.descrizione || "").toLowerCase().includes(s) ||
           (r.cer || "").includes(s) ||
           String(r.numero_interno || "").includes(s) ||
-          (r.luogo_produzione || "").toLowerCase().includes(s)
+          (r.numero_formulario || "").toLowerCase().includes(s) ||
+          (r.luogo_produzione || "").toLowerCase().includes(s) ||
+          (r.intermediario || "").toLowerCase().includes(s) ||
+          (r.comune_cantiere || "").toLowerCase().includes(s)
         );
       }
       return true;
@@ -80,19 +135,7 @@ export function DevRegistroGeneraleModule() {
     return { totale: rows.length, carichi, scarichi, kg };
   }, [rows]);
 
-  const exportCols = [
-    { header: "N. Int.", key: "numero_interno", width: 10 },
-    { header: "Data", key: "data_movimento", width: 12 },
-    { header: "CER", key: "cer", width: 10 },
-    { header: "Descrizione", key: "descrizione", width: 30 },
-    { header: "C./S.", key: "carico_scarico", width: 10 },
-    { header: "Tipo Operazione", key: "tipo_operazione", width: 22 },
-    { header: "N° Formulario", key: "numero_formulario", width: 18 },
-    { header: "Quantità", key: "quantita", width: 12 },
-    { header: "Peso Destino", key: "peso_destino", width: 12 },
-    { header: "Destinazione", key: "destinazione", width: 16 },
-    { header: "Luogo Produzione", key: "luogo_produzione", width: 28 },
-  ];
+  const exportCols = registroColumns.map(({ header, key, width }) => ({ header, key, width }));
 
   return (
     <div className="space-y-4">
@@ -141,32 +184,28 @@ export function DevRegistroGeneraleModule() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="min-w-max text-sm">
                   <thead>
                     <tr className="border-b border-border/30 text-muted-foreground">
-                      <th className="text-left py-2 px-3">N. Int.</th>
-                      <th className="text-left py-2 px-3">Data</th>
-                      <th className="text-left py-2 px-3">CER</th>
-                      <th className="text-left py-2 px-3">Descrizione</th>
-                      <th className="text-left py-2 px-3">C./S.</th>
-                      <th className="text-left py-2 px-3">Tipo Operazione</th>
-                      <th className="text-left py-2 px-3">N° FIR</th>
-                      <th className="text-right py-2 px-3">Qty</th>
-                      <th className="text-left py-2 px-3">Dest.</th>
+                      {registroColumns.map((column) => (
+                        <th key={column.key} className={`py-2 px-3 whitespace-nowrap ${column.align === "right" ? "text-right" : "text-left"}`}>
+                          {column.header}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {paginated.map((r: any) => (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-white/5">
-                        <td className="py-2 px-3 font-mono text-xs">{r.numero_interno || "-"}</td>
-                        <td className="py-2 px-3 text-xs text-muted-foreground">{r.data_movimento}</td>
-                        <td className="py-2 px-3 font-mono text-emerald-300">{r.cer}</td>
-                        <td className="py-2 px-3 text-xs max-w-[260px] truncate">{r.descrizione || "-"}</td>
-                        <td className={`py-2 px-3 text-xs font-semibold ${r.carico_scarico === "Carico" ? "text-blue-400" : "text-amber-400"}`}>{r.carico_scarico || "-"}</td>
-                        <td className="py-2 px-3 text-xs max-w-[180px] truncate">{r.tipo_operazione || "-"}</td>
-                        <td className="py-2 px-3 font-mono text-blue-300 text-xs">{r.numero_formulario || "-"}</td>
-                        <td className="py-2 px-3 text-right font-mono font-bold">{Number(r.quantita || 0).toLocaleString("it-IT")}</td>
-                        <td className="py-2 px-3 text-xs">{r.destinazione || "-"}</td>
+                        {registroColumns.map((column) => (
+                          <td
+                            key={column.key}
+                            className={`py-2 px-3 text-xs max-w-[280px] truncate ${column.align === "right" ? "text-right font-mono" : "text-left"}`}
+                            title={formatCellValue(r[column.key])}
+                          >
+                            {formatCellValue(r[column.key])}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>

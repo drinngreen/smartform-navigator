@@ -4344,21 +4344,32 @@ export type Database = {
         Row: {
           al_rentri: boolean | null
           annotazioni: string | null
+          att_orig_rif: string | null
           cap_cantiere: string | null
           carico_scarico: string | null
           cer: string | null
           classi_pericolo: string | null
+          cod_intermed: string | null
           cod_magazzino: string | null
           comune_cantiere: string | null
+          conai: string | null
           created_at: string | null
+          data_ddt_ingresso: string | null
           data_emissione_formulario: string | null
           data_movimento: string | null
           data_ricezione: string | null
+          ddt_ingresso: string | null
           descrizione: string | null
+          descrizione_tipica: string | null
           destinazione: string | null
+          flagnomud: boolean | null
+          form_urbano: boolean | null
           id: string
           indirizzo_cantiere: string | null
+          indirizzo_intermed: string | null
+          intermediario: string | null
           luogo_produzione: string | null
+          nota_int: string | null
           numero_formulario: string | null
           numero_interno: number | null
           numero_movimento: string | null
@@ -4371,6 +4382,7 @@ export type Database = {
           quantita: number | null
           raw: Json | null
           respinto: string | null
+          scaricato: string | null
           segno: string | null
           stato_fisico: string | null
           tara: number | null
@@ -4380,21 +4392,32 @@ export type Database = {
         Insert: {
           al_rentri?: boolean | null
           annotazioni?: string | null
+          att_orig_rif?: string | null
           cap_cantiere?: string | null
           carico_scarico?: string | null
           cer?: string | null
           classi_pericolo?: string | null
+          cod_intermed?: string | null
           cod_magazzino?: string | null
           comune_cantiere?: string | null
+          conai?: string | null
           created_at?: string | null
+          data_ddt_ingresso?: string | null
           data_emissione_formulario?: string | null
           data_movimento?: string | null
           data_ricezione?: string | null
+          ddt_ingresso?: string | null
           descrizione?: string | null
+          descrizione_tipica?: string | null
           destinazione?: string | null
+          flagnomud?: boolean | null
+          form_urbano?: boolean | null
           id?: string
           indirizzo_cantiere?: string | null
+          indirizzo_intermed?: string | null
+          intermediario?: string | null
           luogo_produzione?: string | null
+          nota_int?: string | null
           numero_formulario?: string | null
           numero_interno?: number | null
           numero_movimento?: string | null
@@ -4407,6 +4430,7 @@ export type Database = {
           quantita?: number | null
           raw?: Json | null
           respinto?: string | null
+          scaricato?: string | null
           segno?: string | null
           stato_fisico?: string | null
           tara?: number | null
@@ -4416,21 +4440,32 @@ export type Database = {
         Update: {
           al_rentri?: boolean | null
           annotazioni?: string | null
+          att_orig_rif?: string | null
           cap_cantiere?: string | null
           carico_scarico?: string | null
           cer?: string | null
           classi_pericolo?: string | null
+          cod_intermed?: string | null
           cod_magazzino?: string | null
           comune_cantiere?: string | null
+          conai?: string | null
           created_at?: string | null
+          data_ddt_ingresso?: string | null
           data_emissione_formulario?: string | null
           data_movimento?: string | null
           data_ricezione?: string | null
+          ddt_ingresso?: string | null
           descrizione?: string | null
+          descrizione_tipica?: string | null
           destinazione?: string | null
+          flagnomud?: boolean | null
+          form_urbano?: boolean | null
           id?: string
           indirizzo_cantiere?: string | null
+          indirizzo_intermed?: string | null
+          intermediario?: string | null
           luogo_produzione?: string | null
+          nota_int?: string | null
           numero_formulario?: string | null
           numero_interno?: number | null
           numero_movimento?: string | null
@@ -4443,6 +4478,7 @@ export type Database = {
           quantita?: number | null
           raw?: Json | null
           respinto?: string | null
+          scaricato?: string | null
           segno?: string | null
           stato_fisico?: string | null
           tara?: number | null
