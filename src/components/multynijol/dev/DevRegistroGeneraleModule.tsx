@@ -136,6 +136,36 @@ export function DevRegistroGeneraleModule() {
 
   const exportCols = registroColumns.map(({ header, key, width }) => ({ header, key, width }));
 
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [tableWidth, setTableWidth] = useState(0);
+  const syncing = useRef(false);
+
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const ro = new ResizeObserver(() => {
+      if (tableRef.current) setTableWidth(tableRef.current.scrollWidth);
+    });
+    ro.observe(tableRef.current);
+    return () => ro.disconnect();
+  }, [paginated.length]);
+
+  const handleTopScroll = () => {
+    if (syncing.current) { syncing.current = false; return; }
+    if (bottomScrollRef.current && topScrollRef.current) {
+      syncing.current = true;
+      bottomScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
+    }
+  };
+  const handleBottomScroll = () => {
+    if (syncing.current) { syncing.current = false; return; }
+    if (topScrollRef.current && bottomScrollRef.current) {
+      syncing.current = true;
+      topScrollRef.current.scrollLeft = bottomScrollRef.current.scrollLeft;
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Stats */}
@@ -182,8 +212,19 @@ export function DevRegistroGeneraleModule() {
             <p className="text-muted-foreground text-sm p-4">Caricamento registro...</p>
           ) : (
             <>
-              <div className="overflow-auto max-h-[70vh]">
-                <table className="min-w-max text-sm">
+              <div
+                ref={topScrollRef}
+                onScroll={handleTopScroll}
+                className="overflow-x-auto overflow-y-hidden border-b border-border/20"
+              >
+                <div style={{ width: tableWidth, height: 1 }} />
+              </div>
+              <div
+                ref={bottomScrollRef}
+                onScroll={handleBottomScroll}
+                className="overflow-auto max-h-[70vh]"
+              >
+                <table ref={tableRef} className="min-w-max text-sm">
                   <thead className="sticky top-0 z-10 bg-card">
                     <tr className="border-b border-border/30 text-muted-foreground">
                       {registroColumns.map((column) => (
