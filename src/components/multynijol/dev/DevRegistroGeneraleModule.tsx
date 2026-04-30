@@ -77,7 +77,7 @@ export function DevRegistroGeneraleModule() {
       while (true) {
         const { data, error } = await supabase
           .from("registro_generale" as any)
-          .select("id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, segno, quantita, peso_destino, destinazione, luogo_produzione, classi_pericolo, annotazioni, pseudonimo_cantiere, indirizzo_cantiere, comune_cantiere, provincia_cantiere")
+          .select("id, numero_interno, numero_movimento, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, al_rentri, numero_formulario, segno, quantita, peso_destino, qta_scaricata, data_ricezione, luogo_produzione, destinazione, classi_pericolo, stato_fisico, descrizione_tipica, scaricato, cod_magazzino, peso_lordo, tara, annotazioni, nota_int, cod_intermed, intermediario, indirizzo_intermed, flagnomud, origine_rifiuto, conai, att_orig_rif, pseudonimo_cantiere, indirizzo_cantiere, cap_cantiere, comune_cantiere, provincia_cantiere, data_emissione_formulario, form_urbano, ddt_ingresso, data_ddt_ingresso, respinto")
           .eq("tenant_id", MULTY_TENANT_ID)
           .order("data_movimento", { ascending: false })
           .order("numero_interno", { ascending: false })
@@ -114,7 +114,10 @@ export function DevRegistroGeneraleModule() {
           (r.descrizione || "").toLowerCase().includes(s) ||
           (r.cer || "").includes(s) ||
           String(r.numero_interno || "").includes(s) ||
-          (r.luogo_produzione || "").toLowerCase().includes(s)
+          (r.numero_formulario || "").toLowerCase().includes(s) ||
+          (r.luogo_produzione || "").toLowerCase().includes(s) ||
+          (r.intermediario || "").toLowerCase().includes(s) ||
+          (r.comune_cantiere || "").toLowerCase().includes(s)
         );
       }
       return true;
@@ -132,19 +135,7 @@ export function DevRegistroGeneraleModule() {
     return { totale: rows.length, carichi, scarichi, kg };
   }, [rows]);
 
-  const exportCols = [
-    { header: "N. Int.", key: "numero_interno", width: 10 },
-    { header: "Data", key: "data_movimento", width: 12 },
-    { header: "CER", key: "cer", width: 10 },
-    { header: "Descrizione", key: "descrizione", width: 30 },
-    { header: "C./S.", key: "carico_scarico", width: 10 },
-    { header: "Tipo Operazione", key: "tipo_operazione", width: 22 },
-    { header: "N° Formulario", key: "numero_formulario", width: 18 },
-    { header: "Quantità", key: "quantita", width: 12 },
-    { header: "Peso Destino", key: "peso_destino", width: 12 },
-    { header: "Destinazione", key: "destinazione", width: 16 },
-    { header: "Luogo Produzione", key: "luogo_produzione", width: 28 },
-  ];
+  const exportCols = registroColumns.map(({ header, key, width }) => ({ header, key, width }));
 
   return (
     <div className="space-y-4">
