@@ -103,10 +103,10 @@ export function DevPrivatiModule() {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
         .from("ricevute_privati" as any)
-        .select("id, numero_ricevuta, anno, importo, note, created_at")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, created_at")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
-        .order("created_at", { ascending: false });
+        .order("data_emissione", { ascending: false });
       if (error) throw error;
       return (data ?? []) as any[];
     },
