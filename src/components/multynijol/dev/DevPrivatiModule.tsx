@@ -603,7 +603,7 @@ export function DevPrivatiModule() {
                         if (!ricevute?.length) return toast.error("Nessuna ricevuta");
                         const cols = [
                           { header: "Numero", key: "numero_ricevuta", width: 16 },
-                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Data", key: "data_emissione", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
                           { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
                           { header: "Note", key: "note", width: 30 },
                         ];
@@ -615,7 +615,7 @@ export function DevPrivatiModule() {
                         if (!ricevute?.length) return toast.error("Nessuna ricevuta");
                         const cols = [
                           { header: "Numero", key: "numero_ricevuta", width: 16 },
-                          { header: "Data", key: "created_at", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
+                          { header: "Data", key: "data_emissione", width: 14, format: (v: any) => v ? new Date(v).toLocaleDateString("it-IT") : "-" },
                           { header: "Importo", key: "importo", width: 12, format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
                           { header: "Note", key: "note", width: 30 },
                         ];
@@ -636,7 +636,7 @@ export function DevPrivatiModule() {
                           <div>
                             <p className="font-medium">{r.numero_ricevuta || "-"}</p>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(r.created_at).toLocaleDateString("it-IT")} · € {Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+                              {new Date(r.data_emissione || r.created_at).toLocaleDateString("it-IT")} · € {Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                           <Button variant="outline" size="sm" className="ml-auto h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
