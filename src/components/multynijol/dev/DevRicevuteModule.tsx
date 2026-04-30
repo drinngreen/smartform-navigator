@@ -24,7 +24,7 @@ type RicevutaRow = {
   anno: number | null;
   importo: number | null;
   note: string | null;
-  created_at: string;
+  data_emissione: string;
   privato_id: string | null;
 };
 
@@ -70,9 +70,9 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, created_at, privato_id")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("created_at", { ascending: false })
+        .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
       return (data ?? []) as RicevutaRow[];
@@ -200,7 +200,7 @@ export function DevRicevuteModule() {
 <body>
   ${aziendaHtml}
   <h1>${escHtml(title)}</h1>
-  <div class="meta">Data: ${escHtml(new Date(r.created_at).toLocaleString("it-IT"))}</div>
+  <div class="meta">Data: ${escHtml(new Date(r.data_emissione).toLocaleString("it-IT"))}</div>
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
@@ -227,7 +227,7 @@ export function DevRicevuteModule() {
     { header: "Numero", key: "numero_ricevuta", width: 16 },
     {
       header: "Data",
-      key: "created_at",
+      key: "data_emissione",
       width: 14,
       format: (v: any) => (v ? new Date(v).toLocaleDateString("it-IT") : "-"),
     },
@@ -344,7 +344,7 @@ export function DevRicevuteModule() {
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
                         <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {new Date(r.created_at).toLocaleDateString("it-IT")}
+                          {new Date(r.data_emissione).toLocaleDateString("it-IT")}
                         </td>
                         <td className="px-3 py-2">
                           <div className="font-medium">{p ? `${p.cognome} ${p.nome}` : "—"}</div>
