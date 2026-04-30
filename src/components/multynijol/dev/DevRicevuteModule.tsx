@@ -24,7 +24,7 @@ type RicevutaRow = {
   anno: number | null;
   importo: number | null;
   note: string | null;
-  created_at: string;
+  data_emissione: string;
   privato_id: string | null;
 };
 
@@ -70,9 +70,9 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, created_at, privato_id")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("created_at", { ascending: false })
+        .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
       return (data ?? []) as RicevutaRow[];
