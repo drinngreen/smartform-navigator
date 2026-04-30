@@ -184,32 +184,28 @@ export function DevRegistroGeneraleModule() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="min-w-max text-sm">
                   <thead>
                     <tr className="border-b border-border/30 text-muted-foreground">
-                      <th className="text-left py-2 px-3">N. Int.</th>
-                      <th className="text-left py-2 px-3">Data</th>
-                      <th className="text-left py-2 px-3">CER</th>
-                      <th className="text-left py-2 px-3">Descrizione</th>
-                      <th className="text-left py-2 px-3">C./S.</th>
-                      <th className="text-left py-2 px-3">Tipo Operazione</th>
-                      <th className="text-left py-2 px-3">N° FIR</th>
-                      <th className="text-right py-2 px-3">Qty</th>
-                      <th className="text-left py-2 px-3">Dest.</th>
+                      {registroColumns.map((column) => (
+                        <th key={column.key} className={`py-2 px-3 whitespace-nowrap ${column.align === "right" ? "text-right" : "text-left"}`}>
+                          {column.header}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {paginated.map((r: any) => (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-white/5">
-                        <td className="py-2 px-3 font-mono text-xs">{r.numero_interno || "-"}</td>
-                        <td className="py-2 px-3 text-xs text-muted-foreground">{r.data_movimento}</td>
-                        <td className="py-2 px-3 font-mono text-emerald-300">{r.cer}</td>
-                        <td className="py-2 px-3 text-xs max-w-[260px] truncate">{r.descrizione || "-"}</td>
-                        <td className={`py-2 px-3 text-xs font-semibold ${r.carico_scarico === "Carico" ? "text-blue-400" : "text-amber-400"}`}>{r.carico_scarico || "-"}</td>
-                        <td className="py-2 px-3 text-xs max-w-[180px] truncate">{r.tipo_operazione || "-"}</td>
-                        <td className="py-2 px-3 font-mono text-blue-300 text-xs">{r.numero_formulario || "-"}</td>
-                        <td className="py-2 px-3 text-right font-mono font-bold">{Number(r.quantita || 0).toLocaleString("it-IT")}</td>
-                        <td className="py-2 px-3 text-xs">{r.destinazione || "-"}</td>
+                        {registroColumns.map((column) => (
+                          <td
+                            key={column.key}
+                            className={`py-2 px-3 text-xs max-w-[280px] truncate ${column.align === "right" ? "text-right font-mono" : "text-left"}`}
+                            title={formatCellValue(r[column.key])}
+                          >
+                            {formatCellValue(r[column.key])}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
