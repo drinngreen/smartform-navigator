@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,12 +15,14 @@ import {
   PenTool,
   Users,
   Globe,
+  Send,
 } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
 import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermediarioModule";
 import { DevRegistroGeneraleModule } from "@/components/multynijol/dev/DevRegistroGeneraleModule";
+import { DevInviiRentriModule } from "@/components/multynijol/dev/DevInviiRentriModule";
 import { DevContattiModule } from "@/components/multynijol/dev/DevContattiModule";
 import { DevPrivatiModule } from "@/components/multynijol/dev/DevPrivatiModule";
 import { DevRicevuteModule } from "@/components/multynijol/dev/DevRicevuteModule";
@@ -32,8 +35,30 @@ import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoD
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get("tab") || "impianto";
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Persisted tab + sub-tab via URL params (so reload keeps the user where they were)
+  const [tab, setTab] = useState<string>(searchParams.get("tab") || "impianto");
+  const [registriSub, setRegistriSub] = useState<string>(searchParams.get("sub") || "intermediario");
+
+  // Sync state -> URL (replace, no history pollution)
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", tab);
+    if (tab === "registri") next.set("sub", registriSub);
+    else next.delete("sub");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, registriSub]);
+
+  // React to back/forward URL changes
+  useEffect(() => {
+    const t = searchParams.get("tab");
+    const s = searchParams.get("sub");
+    if (t && t !== tab) setTab(t);
+    if (s && s !== registriSub) setRegistriSub(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
@@ -49,7 +74,7 @@ export default function MNDevDashboardPage() {
         </div>
       </button>
 
-      <Tabs defaultValue={defaultTab} className="space-y-4">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
@@ -93,7 +118,7 @@ export default function MNDevDashboardPage() {
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
 
         <TabsContent value="registri">
-          <Tabs defaultValue="intermediario" className="space-y-4">
+          <Tabs value={registriSub} onValueChange={setRegistriSub} className="space-y-4">
             <TabsList className="bg-card/40 border border-border/30 p-1">
               <TabsTrigger value="intermediario" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
                 <Globe className="h-4 w-4" />Intermediario
@@ -101,9 +126,13 @@ export default function MNDevDashboardPage() {
               <TabsTrigger value="generale" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
                 <BookOpen className="h-4 w-4" />Registro Generale
               </TabsTrigger>
+              <TabsTrigger value="invii-rentri" className="gap-2 data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">
+                <Send className="h-4 w-4" />Invii al RENTRI
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="intermediario"><DevIntermediarioModule /></TabsContent>
             <TabsContent value="generale"><DevRegistroGeneraleModule /></TabsContent>
+            <TabsContent value="invii-rentri"><DevInviiRentriModule /></TabsContent>
           </Tabs>
         </TabsContent>
 
