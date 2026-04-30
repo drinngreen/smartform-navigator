@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 interface ExportColumn {
@@ -55,83 +56,83 @@ export function exportToPdf(
   filename: string,
   title?: string
 ) {
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  // Auto-pick page format/orientation based on column count to avoid overlap
+  const colCount = columns.length;
+  const format: string = colCount > 20 ? "a2" : colCount > 12 ? "a3" : "a4";
+  const orientation: "landscape" | "portrait" = colCount > 4 ? "landscape" : "portrait";
+
+  const doc = new jsPDF({ orientation, unit: "mm", format });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const marginX = 10;
-  const marginY = 10;
-  let y = marginY;
+  const marginX = 8;
+  let y = 10;
 
-  // Title (supports multiline with \n)
+  // Title block
   if (title) {
     const lines = title.split("\n");
     lines.forEach((line, idx) => {
-      if (idx === 0) {
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-      } else {
-        doc.setFontSize(8);
-        doc.setFont("helvetica", "normal");
-      }
-      doc.text(line, marginX, y + 5);
-      y += idx === 0 ? 6 : 4;
+      doc.setFontSize(idx === 0 ? 13 : 8);
+      doc.setFont("helvetica", idx === 0 ? "bold" : "normal");
+      doc.text(line, marginX, y);
+      y += idx === 0 ? 5 : 4;
     });
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text(`Esportato il ${new Date().toLocaleDateString("it-IT")} — ${data.length} record`, marginX, y + 4);
-    y += 8;
+    doc.setTextColor(110, 110, 110);
+    doc.text(
+      `Esportato il ${new Date().toLocaleDateString("it-IT")} — ${data.length} record`,
+      marginX,
+      y + 3
+    );
+    y += 6;
   }
 
-  // Column widths
-  const totalAvail = pageW - marginX * 2;
-  const totalDeclared = columns.reduce((s, c) => s + (c.width || 18), 0);
-  const colWidths = columns.map((c) => ((c.width || 18) / totalDeclared) * totalAvail);
+  // Build head/body
+  const head = [columns.map((c) => c.header.toUpperCase())];
+  const body = data.map((row) =>
+    columns.map((col) => {
+      const raw = col.format ? col.format(row[col.key], row) : row[col.key];
+      if (raw === null || raw === undefined || raw === "") return "—";
+      return String(raw);
+    })
+  );
 
-  // Header
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setFillColor(30, 30, 40);
-  doc.setTextColor(255, 255, 255);
-  doc.rect(marginX, y, totalAvail, 6, "F");
-  let x = marginX + 1;
-  columns.forEach((col, i) => {
-    doc.text(col.header.toUpperCase(), x, y + 4, { maxWidth: colWidths[i] - 2 });
-    x += colWidths[i];
+  // Adaptive font size based on column density
+  const fontSize = colCount > 25 ? 5.5 : colCount > 18 ? 6 : colCount > 12 ? 6.5 : 8;
+
+  autoTable(doc, {
+    head,
+    body,
+    startY: y + 2,
+    margin: { left: marginX, right: marginX, top: 10, bottom: 12 },
+    styles: {
+      font: "helvetica",
+      fontSize,
+      cellPadding: { top: 1.2, right: 1.2, bottom: 1.2, left: 1.2 },
+      overflow: "linebreak",
+      valign: "middle",
+      lineColor: [220, 220, 230],
+      lineWidth: 0.1,
+    },
+    headStyles: {
+      fillColor: [30, 30, 40],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: Math.max(fontSize - 0.5, 5),
+      halign: "left",
+    },
+    alternateRowStyles: { fillColor: [245, 245, 248] },
+    tableWidth: "auto",
+    horizontalPageBreak: false,
+    showHead: "everyPage",
+    didDrawPage: () => {
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      const current = (doc as any).internal.getCurrentPageInfo().pageNumber;
+      doc.setFontSize(7);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Pagina ${current}/${pageCount}`, pageW - marginX - 20, pageH - 5);
+    },
   });
-  y += 7;
-
-  // Rows
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(20, 20, 20);
-
-  data.forEach((row, rowIdx) => {
-    if (y > pageH - 12) {
-      doc.addPage();
-      y = marginY;
-    }
-
-    if (rowIdx % 2 === 0) {
-      doc.setFillColor(245, 245, 248);
-      doc.rect(marginX, y - 1, totalAvail, 5.5, "F");
-    }
-
-    x = marginX + 1;
-    columns.forEach((col, i) => {
-      const val = col.format ? col.format(row[col.key], row) : String(row[col.key] ?? "—");
-      doc.text(val.substring(0, 60), x, y + 3, { maxWidth: colWidths[i] - 2 });
-      x += colWidths[i];
-    });
-    y += 5.5;
-  });
-
-  // Footer
-  const totalPages = doc.getNumberOfPages();
-  for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p);
-    doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Pagina ${p}/${totalPages}`, pageW - marginX - 20, pageH - 5);
-  }
 
   doc.save(`${filename}.pdf`);
 }
