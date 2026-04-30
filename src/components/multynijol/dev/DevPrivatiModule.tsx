@@ -293,7 +293,7 @@ export function DevPrivatiModule() {
       <table>
         <thead><tr><th>Numero</th><th>Data</th><th>Importo</th><th>Note</th></tr></thead>
         <tbody>
-          ${ricevute.map(r => `<tr><td>${r.numero_ricevuta || "-"}</td><td>${new Date(r.created_at).toLocaleDateString("it-IT")}</td><td>€ ${Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td><td>${r.note || "-"}</td></tr>`).join("")}
+          ${ricevute.map(r => `<tr><td>${r.numero_ricevuta || "-"}</td><td>${new Date(r.data_emissione || r.created_at).toLocaleDateString("it-IT")}</td><td>€ ${Number(r.importo || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td><td>${r.note || "-"}</td></tr>`).join("")}
         </tbody>
       </table>
       </body></html>
