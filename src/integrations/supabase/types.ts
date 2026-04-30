@@ -4340,6 +4340,117 @@ export type Database = {
           },
         ]
       }
+      registro_generale: {
+        Row: {
+          al_rentri: boolean | null
+          annotazioni: string | null
+          cap_cantiere: string | null
+          carico_scarico: string | null
+          cer: string | null
+          classi_pericolo: string | null
+          cod_magazzino: string | null
+          comune_cantiere: string | null
+          created_at: string | null
+          data_emissione_formulario: string | null
+          data_movimento: string | null
+          data_ricezione: string | null
+          descrizione: string | null
+          destinazione: string | null
+          id: string
+          indirizzo_cantiere: string | null
+          luogo_produzione: string | null
+          numero_formulario: string | null
+          numero_interno: number | null
+          numero_movimento: string | null
+          origine_rifiuto: string | null
+          peso_destino: number | null
+          peso_lordo: number | null
+          provincia_cantiere: string | null
+          pseudonimo_cantiere: string | null
+          qta_scaricata: number | null
+          quantita: number | null
+          raw: Json | null
+          respinto: string | null
+          segno: string | null
+          stato_fisico: string | null
+          tara: number | null
+          tenant_id: string
+          tipo_operazione: string | null
+        }
+        Insert: {
+          al_rentri?: boolean | null
+          annotazioni?: string | null
+          cap_cantiere?: string | null
+          carico_scarico?: string | null
+          cer?: string | null
+          classi_pericolo?: string | null
+          cod_magazzino?: string | null
+          comune_cantiere?: string | null
+          created_at?: string | null
+          data_emissione_formulario?: string | null
+          data_movimento?: string | null
+          data_ricezione?: string | null
+          descrizione?: string | null
+          destinazione?: string | null
+          id?: string
+          indirizzo_cantiere?: string | null
+          luogo_produzione?: string | null
+          numero_formulario?: string | null
+          numero_interno?: number | null
+          numero_movimento?: string | null
+          origine_rifiuto?: string | null
+          peso_destino?: number | null
+          peso_lordo?: number | null
+          provincia_cantiere?: string | null
+          pseudonimo_cantiere?: string | null
+          qta_scaricata?: number | null
+          quantita?: number | null
+          raw?: Json | null
+          respinto?: string | null
+          segno?: string | null
+          stato_fisico?: string | null
+          tara?: number | null
+          tenant_id: string
+          tipo_operazione?: string | null
+        }
+        Update: {
+          al_rentri?: boolean | null
+          annotazioni?: string | null
+          cap_cantiere?: string | null
+          carico_scarico?: string | null
+          cer?: string | null
+          classi_pericolo?: string | null
+          cod_magazzino?: string | null
+          comune_cantiere?: string | null
+          created_at?: string | null
+          data_emissione_formulario?: string | null
+          data_movimento?: string | null
+          data_ricezione?: string | null
+          descrizione?: string | null
+          destinazione?: string | null
+          id?: string
+          indirizzo_cantiere?: string | null
+          luogo_produzione?: string | null
+          numero_formulario?: string | null
+          numero_interno?: number | null
+          numero_movimento?: string | null
+          origine_rifiuto?: string | null
+          peso_destino?: number | null
+          peso_lordo?: number | null
+          provincia_cantiere?: string | null
+          pseudonimo_cantiere?: string | null
+          qta_scaricata?: number | null
+          quantita?: number | null
+          raw?: Json | null
+          respinto?: string | null
+          segno?: string | null
+          stato_fisico?: string | null
+          tara?: number | null
+          tenant_id?: string
+          tipo_operazione?: string | null
+        }
+        Relationships: []
+      }
       registro_kg_privati: {
         Row: {
           cer: string
