@@ -7,7 +7,9 @@ import { useFormBridge } from "@/hooks/useFormBridge";
 import { FormBridgeProvider } from "@/contexts/FormBridgeContext";
 import {
   Shield, LogOut, Send, Loader2, ScanLine, Users, FileText,
-  Globe, Sparkles, Paperclip, X
+  Globe, Sparkles, Paperclip, X, Mail, Phone, MessageSquare,
+  Database, UserPlus, Bell, Stamp, Activity, Zap, ChevronRight,
+  Wand2, Building2, Inbox, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import logoDragon from "@/assets/logo-dragon.png";
@@ -18,6 +20,7 @@ interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   ts: number;
+  trace?: any[];
 }
 
 interface AppUser {
@@ -27,13 +30,28 @@ interface AppUser {
   codice_fiscale: string | null;
 }
 
-function ChatPanel() {
+const QUICK_ACTIONS: { label: string; prompt: string; icon: any; color: string }[] = [
+  { label: "Lista utenti app", prompt: "Mostrami gli ultimi 20 utenti app Global Reco con nome, cognome, codice fiscale e data registrazione.", icon: Users, color: "from-emerald-500 to-teal-500" },
+  { label: "FIR in bozza", prompt: "Elenca tutti i FIR in stato bozza di Global Reco, ordinati dal più vecchio.", icon: FileText, color: "from-amber-500 to-orange-500" },
+  { label: "FIR completati oggi", prompt: "Quanti FIR sono stati completati oggi su Global Reco? Dammi anche l'elenco.", icon: CheckCircle2, color: "from-green-500 to-emerald-500" },
+  { label: "Pool numeri FIR", prompt: "Stato del pool fir_number_pool per Global Reco: quanti available, reserved, consumed, suspended.", icon: Database, color: "from-blue-500 to-cyan-500" },
+  { label: "Vidima nuovo blocchetto", prompt: "Voglio vidimarmi un nuovo blocchetto FIR RENTRI per Global Reco. Guidami nella scelta dell'unità e del tipo.", icon: Stamp, color: "from-purple-500 to-pink-500" },
+  { label: "Crea utente app", prompt: "Voglio creare un nuovo utente app per Global Reco. Chiedimi i dati necessari (nome, cognome, codice fiscale, email).", icon: UserPlus, color: "from-indigo-500 to-purple-500" },
+  { label: "Invia email", prompt: "Voglio inviare una email da Global Reco. Chiedimi destinatario, oggetto e contenuto.", icon: Mail, color: "from-rose-500 to-red-500" },
+  { label: "Invia SMS / WhatsApp", prompt: "Voglio inviare un SMS o WhatsApp dal numero Global Reco. Chiedimi numero e testo.", icon: MessageSquare, color: "from-teal-500 to-cyan-500" },
+  { label: "Chiamate perse", prompt: "Mostrami le chiamate perse di oggi su Global Reco e i numeri da richiamare.", icon: Phone, color: "from-orange-500 to-red-500" },
+  { label: "Email in arrivo", prompt: "Ultime 10 email in arrivo su Global Reco non lette.", icon: Inbox, color: "from-sky-500 to-blue-500" },
+  { label: "Anagrafica aziende", prompt: "Lista delle ultime 20 aziende in anagrafica Global Reco.", icon: Building2, color: "from-violet-500 to-purple-500" },
+  { label: "Notifiche admin", prompt: "Notifiche non lette degli admin Global Reco.", icon: Bell, color: "from-yellow-500 to-amber-500" },
+];
+
+function ChatPanel({ onTrace }: { onTrace: (t: any[]) => void }) {
   const { getRegisteredFields, fillFields } = useFormBridge();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       content:
-        "Ciao 👋 sono **Comando Global Reco**. Seleziona un utente app a destra, poi dimmi cosa compilare nel formulario o carica una foto del FIR per OCR.",
+        "Ciao 👋 sono **Comando Global Reco**. Posso leggere, scrivere, inviare email/SMS, vidimare FIR, creare utenti, e compilare il formulario a destra. Usa le **scorciatoie qui sopra** o scrivi un comando libero.",
       ts: Date.now(),
     },
   ]);
@@ -70,8 +88,8 @@ function ChatPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  async function send() {
-    const text = input.trim();
+  async function send(textOverride?: string) {
+    const text = (textOverride ?? input).trim();
     if (!text || busy) return;
     const userMsg: ChatMessage = { role: "user", content: text, ts: Date.now() };
     setMessages((m) => [...m, userMsg]);
@@ -91,10 +109,10 @@ function ChatPanel() {
 
       const reply = data?.reply || "(nessuna risposta)";
       const updates = (data?.field_updates || []) as { id: string; value: string }[];
+      const trace = data?.tool_trace || [];
       let filled = 0;
-      if (updates.length) {
-        filled = fillFields(updates);
-      }
+      if (updates.length) filled = fillFields(updates);
+      if (trace.length) onTrace(trace);
 
       setMessages((m) => [
         ...m,
@@ -102,6 +120,7 @@ function ChatPanel() {
           role: "assistant",
           content: filled > 0 ? `${reply}\n\n✅ Compilati ${filled} campi nel formulario.` : reply,
           ts: Date.now(),
+          trace,
         },
       ]);
     } catch (e: any) {
@@ -153,20 +172,25 @@ function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200 text-slate-900">
-      {/* User selector */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50">
+    <div className="flex flex-col h-full bg-white">
+      {/* User selector compact */}
+      <div className="p-3 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-emerald-50/50">
         <div className="flex items-center gap-2 mb-2">
           <Users size={14} className="text-emerald-600" />
-          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
-            Utente App Global ({filteredUsers.length}/{users.length})
+          <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+            Utente App ({filteredUsers.length}/{users.length})
           </span>
+          {selectedUser && (
+            <span className="ml-auto text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+              {[selectedUser.cognome, selectedUser.nome].filter(Boolean).join(" ") || "selezionato"}
+            </span>
+          )}
         </div>
         <input
           type="text"
           value={userSearch}
           onChange={(e) => setUserSearch(e.target.value)}
-          placeholder="Cerca per nome, cognome o codice fiscale…"
+          placeholder="🔎 Cerca per nome, cognome o codice fiscale…"
           className="w-full px-3 py-2 mb-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
         <select
@@ -175,10 +199,9 @@ function ChatPanel() {
             const u = users.find((x) => x.user_id === e.target.value) || null;
             setSelectedUser(u);
           }}
-          size={Math.min(8, Math.max(3, filteredUsers.length))}
           className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          {filteredUsers.length === 0 && <option value="">— Nessun utente trovato —</option>}
+          <option value="">— Nessun utente selezionato —</option>
           {filteredUsers.map((u) => (
             <option key={u.user_id} value={u.user_id}>
               {[u.cognome, u.nome].filter(Boolean).join(" ") || u.codice_fiscale || u.user_id.slice(0, 8)}
@@ -189,32 +212,38 @@ function ChatPanel() {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-white to-slate-50">
         {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
+              className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap shadow-sm ${
                 m.role === "user"
-                  ? "bg-emerald-600 text-white"
-                  : "bg-slate-100 text-slate-900 border border-slate-200"
+                  ? "bg-gradient-to-br from-emerald-600 to-teal-600 text-white"
+                  : "bg-white text-slate-900 border border-slate-200"
               }`}
             >
               {m.content}
+              {m.trace && m.trace.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-slate-200 flex flex-wrap gap-1">
+                  {m.trace.map((t: any, j: number) => (
+                    <span key={j} className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                      🔧 {t.tool}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
         {busy && (
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Loader2 size={14} className="animate-spin" /> Elaborazione…
+          <div className="flex items-center gap-2 text-xs text-slate-500 px-2">
+            <Loader2 size={14} className="animate-spin text-emerald-600" /> Comando Global Reco sta operando…
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2">
+      <div className="p-3 border-t border-slate-200 bg-gradient-to-t from-slate-50 to-white space-y-2">
         {lastOcr && (
           <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">
             <ScanLine size={12} /> OCR caricato ({lastOcr.fields?.length || 0} campi)
@@ -224,18 +253,12 @@ function ChatPanel() {
           </div>
         )}
         <div className="flex gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={onFile}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={ocrBusy}
-            title="OCR (OpenRouter Gemini Vision)"
-            className="p-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-50 text-slate-700"
+            title="OCR Gemini Vision"
+            className="p-2 rounded-lg bg-white border border-slate-300 hover:bg-emerald-50 hover:border-emerald-400 disabled:opacity-50 text-slate-700 transition-colors"
           >
             {ocrBusy ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
           </button>
@@ -243,16 +266,37 @@ function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
-            placeholder="Scrivi un comando o una richiesta…"
+            placeholder="Comando libero per Global Reco…"
             className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <button
-            onClick={send}
+            onClick={() => send()}
             disabled={busy || !input.trim()}
-            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-semibold disabled:opacity-50 flex items-center gap-2 shadow-md"
           >
             <Send size={14} /> Invia
           </button>
+        </div>
+        {/* Quick Actions */}
+        <div>
+          <div className="flex items-center gap-1 mb-1.5 mt-1">
+            <Zap size={11} className="text-amber-500" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Comandi rapidi</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
+            {QUICK_ACTIONS.map((qa) => (
+              <button
+                key={qa.label}
+                onClick={() => send(qa.prompt)}
+                disabled={busy}
+                className={`group text-left px-2 py-1.5 rounded-lg bg-gradient-to-br ${qa.color} text-white text-[11px] font-semibold disabled:opacity-50 hover:shadow-md transition-all flex items-center gap-1.5`}
+              >
+                <qa.icon size={12} className="shrink-0" />
+                <span className="truncate">{qa.label}</span>
+                <ChevronRight size={10} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -262,6 +306,7 @@ function ChatPanel() {
 export default function SuperAdminGlobalDashboard() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [lastTrace, setLastTrace] = useState<any[]>([]);
 
   const handleLogout = async () => {
     await signOut();
@@ -271,32 +316,25 @@ export default function SuperAdminGlobalDashboard() {
   return (
     <FormBridgeProvider>
       <style>{`
-        .superglobal-form, .superglobal-form * {
-          color: #0f172a !important;
-        }
+        .superglobal-form, .superglobal-form * { color: #0f172a !important; }
         .superglobal-form input, .superglobal-form textarea, .superglobal-form select {
           background-color: #ffffff !important;
           border-color: #cbd5e1 !important;
           color: #0f172a !important;
         }
-        .superglobal-form input::placeholder, .superglobal-form textarea::placeholder {
-          color: #94a3b8 !important;
-        }
-        .superglobal-form label, .superglobal-form .label {
-          color: #1e293b !important;
-          font-weight: 600;
-        }
+        .superglobal-form input::placeholder, .superglobal-form textarea::placeholder { color: #94a3b8 !important; }
+        .superglobal-form label, .superglobal-form .label { color: #1e293b !important; font-weight: 600; }
       `}</style>
-      <div className="h-screen flex flex-col bg-slate-50 text-slate-900">
-        {/* Banner gradient */}
-        <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 text-white text-center py-2 px-4 font-display text-xs tracking-[0.2em] flex items-center justify-center gap-2 shadow-md">
-          <Globe size={14} />
-          <span className="font-bold">COMANDO GLOBAL RECO · SUPER ADMIN</span>
-          <Sparkles size={14} />
+      <div className="h-screen flex flex-col bg-slate-100 text-slate-900">
+        {/* Banner gradient unique */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white text-center py-1.5 px-4 font-display text-xs tracking-[0.25em] flex items-center justify-center gap-2 shadow-md">
+          <Globe size={14} className="animate-pulse" />
+          <span className="font-bold">COMANDO GLOBAL RECO · CONTROLLO TOTALE AI</span>
+          <Sparkles size={14} className="animate-pulse" />
         </div>
 
         {/* Header */}
-        <header className="border-b border-slate-200 bg-white px-5 py-3 flex items-center justify-between shrink-0 shadow-sm">
+        <header className="border-b border-slate-200 bg-white/90 backdrop-blur px-5 py-3 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="relative">
               <img src={logoDragon} alt="" className="h-10 w-10" style={{ filter: "drop-shadow(0 0 10px rgba(16,185,129,0.5))" }} />
@@ -307,11 +345,15 @@ export default function SuperAdminGlobalDashboard() {
             <div>
               <div className="font-display text-base tracking-wider flex items-center gap-2 text-slate-900 font-bold">
                 SUPER ADMIN <span className="text-emerald-600">GLOBAL</span>
+                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">AI · CRUD · SEND</span>
               </div>
               <div className="text-[11px] text-slate-500 font-mono">{user?.email}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <span className="hidden md:flex items-center gap-1 text-[10px] text-slate-500 px-2 py-1 bg-slate-50 rounded-lg border border-slate-200">
+              <Activity size={10} className="text-emerald-500" /> Live · solo Global Reco
+            </span>
             <button
               onClick={() => navigate("/admin")}
               className="px-3 py-1.5 rounded-lg text-xs bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-medium flex items-center gap-2 transition-colors"
@@ -328,22 +370,44 @@ export default function SuperAdminGlobalDashboard() {
         </header>
 
         {/* Split */}
-        <div className="flex-1 grid grid-cols-[440px_1fr] overflow-hidden">
-          <ChatPanel />
-          <div className="overflow-auto bg-gradient-to-br from-slate-50 to-emerald-50/30">
+        <div className="flex-1 grid grid-cols-[460px_1fr] overflow-hidden">
+          <div className="border-r border-slate-200 shadow-[4px_0_12px_rgba(15,23,42,0.04)]">
+            <ChatPanel onTrace={setLastTrace} />
+          </div>
+          <div className="overflow-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
             <div className="p-5 superglobal-form">
-              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-5">
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
-                  <div className="h-8 w-1 bg-emerald-500 rounded-full" />
+                  <div className="h-8 w-1 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full" />
+                  <Wand2 size={16} className="text-emerald-600" />
                   <h2 className="font-display text-lg font-bold text-slate-900 tracking-wide">
                     COMPILATORE FORMULARIO
                   </h2>
-                  <span className="ml-auto text-[10px] uppercase tracking-widest text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full font-bold">
+                  <span className="ml-auto text-[10px] uppercase tracking-widest text-emerald-700 bg-gradient-to-r from-emerald-100 to-teal-100 px-2 py-1 rounded-full font-bold">
                     Live · AI Bridge
                   </span>
                 </div>
                 <FIRAlternativeForm />
               </div>
+
+              {/* Tool trace panel */}
+              {lastTrace.length > 0 && (
+                <div className="mt-4 bg-slate-900 text-emerald-300 rounded-2xl shadow-lg border border-slate-700 p-4 font-mono text-[11px]">
+                  <div className="flex items-center gap-2 mb-2 text-emerald-400">
+                    <Activity size={12} /> <span className="font-bold uppercase tracking-wider text-xs">Ultima esecuzione AI</span>
+                    <span className="ml-auto text-slate-400">{lastTrace.length} step</span>
+                  </div>
+                  <div className="space-y-1.5 max-h-60 overflow-auto">
+                    {lastTrace.map((t, i) => (
+                      <div key={i} className="border-l-2 border-emerald-500 pl-2">
+                        <div className="text-emerald-400 font-bold">→ {t.tool}</div>
+                        <div className="text-slate-400 truncate">args: {JSON.stringify(t.args).slice(0, 200)}</div>
+                        <div className="text-slate-500 truncate">res: {JSON.stringify(t.result).slice(0, 200)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
