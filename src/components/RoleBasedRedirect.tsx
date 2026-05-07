@@ -20,6 +20,9 @@ export function RoleBasedRedirect() {
     if (email === "superadmin@zoli.live") {
       return <Navigate to="/super" replace />;
     }
+    if (email === "superadminglobal@zoli.live") {
+      return <Navigate to="/superglobal" replace />;
+    }
     if (email === "multyniyol@zoli.live") {
       return <Navigate to="/mn/admin" replace />;
     }
