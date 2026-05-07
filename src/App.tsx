@@ -189,6 +189,7 @@ const App = () => (
                 <Route path="/super" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
                 <Route path="/super/form-editor" element={<ProtectedRoute><SuperAdminFormEditor /></ProtectedRoute>} />
                 <Route path="/super/modulo-alternativo" element={<ProtectedRoute><ModuloAlternativoPage /></ProtectedRoute>} />
+                <Route path="/superglobal" element={<ProtectedRoute><SuperAdminGlobalDashboard /></ProtectedRoute>} />
 
                 {/* Social Network */}
                 <Route path="/social" element={<ProtectedRoute><SocialPage /></ProtectedRoute>} />
