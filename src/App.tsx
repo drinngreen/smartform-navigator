@@ -23,6 +23,7 @@ const SuperAdminAuthPage = React.lazy(() => import("./pages/SuperAdminAuthPage")
 
 const SuperAdminDashboard = React.lazy(() => import("./pages/SuperAdminDashboard"));
 const SuperAdminFormEditor = React.lazy(() => import("./pages/SuperAdminFormEditor"));
+const SuperAdminGlobalDashboard = React.lazy(() => import("./pages/SuperAdminGlobalDashboard"));
 const SocialPage = React.lazy(() => import("./pages/SocialPage"));
 const SocialGuestAuthPage = React.lazy(() => import("./pages/SocialGuestAuthPage"));
 const SocialAIPage = React.lazy(() => import("./pages/SocialAIPage"));
