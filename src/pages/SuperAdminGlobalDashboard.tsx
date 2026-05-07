@@ -88,6 +88,16 @@ function ChatPanel({ onTrace }: { onTrace: (t: any[]) => void }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent).detail as string;
+      if (prompt) send(prompt);
+    };
+    window.addEventListener("superglobal-quick", handler);
+    return () => window.removeEventListener("superglobal-quick", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, busy, selectedUser, lastOcr]);
+
   async function send(textOverride?: string) {
     const text = (textOverride ?? input).trim();
     if (!text || busy) return;
@@ -277,26 +287,31 @@ function ChatPanel({ onTrace }: { onTrace: (t: any[]) => void }) {
             <Send size={14} /> Invia
           </button>
         </div>
-        {/* Quick Actions */}
-        <div>
-          <div className="flex items-center gap-1 mb-1.5 mt-1">
-            <Zap size={11} className="text-amber-500" />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Comandi rapidi</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
-            {QUICK_ACTIONS.map((qa) => (
-              <button
-                key={qa.label}
-                onClick={() => send(qa.prompt)}
-                disabled={busy}
-                className={`group text-left px-2 py-1.5 rounded-lg bg-gradient-to-br ${qa.color} text-white text-[11px] font-semibold disabled:opacity-50 hover:shadow-md transition-all flex items-center gap-1.5`}
-              >
-                <qa.icon size={12} className="shrink-0" />
-                <span className="truncate">{qa.label}</span>
-                <ChevronRight size={10} className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-            ))}
-          </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickActionsBar({ onPick, busy }: { onPick: (p: string) => void; busy: boolean }) {
+  return (
+    <div className="border-b border-slate-200 bg-white/95 backdrop-blur px-4 py-2 shrink-0 shadow-sm">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 shrink-0 pr-2 border-r border-slate-200">
+          <Zap size={12} className="text-amber-500" />
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Comandi</span>
+        </div>
+        <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-0.5">
+          {QUICK_ACTIONS.map((qa) => (
+            <button
+              key={qa.label}
+              onClick={() => onPick(qa.prompt)}
+              disabled={busy}
+              className={`shrink-0 px-2.5 py-1.5 rounded-lg bg-gradient-to-br ${qa.color} text-white text-[11px] font-semibold disabled:opacity-50 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-1.5 whitespace-nowrap`}
+            >
+              <qa.icon size={12} />
+              {qa.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -368,6 +383,12 @@ export default function SuperAdminGlobalDashboard() {
             </button>
           </div>
         </header>
+
+        {/* Quick actions full-width bar */}
+        <QuickActionsBar
+          busy={false}
+          onPick={(p) => window.dispatchEvent(new CustomEvent("superglobal-quick", { detail: p }))}
+        />
 
         {/* Split */}
         <div className="flex-1 grid grid-cols-[460px_1fr] overflow-hidden">
