@@ -1,28 +1,4 @@
 project_id = "zungtspcixpxjpjlcwzy"
 
-[functions.update-presence]
-verify_jwt = false
-
-[functions.ai-agent]
-verify_jwt = false
-
-[functions.admin-user-manage]
-verify_jwt = false
-
-[functions.dark-lemon-mn]
-verify_jwt = false
-
-[functions.social-ai-agent]
-verify_jwt = false
-
-[functions.send-global-email]
-verify_jwt = false
-
-[functions.sync-global-inbox]
-verify_jwt = false
-
-[functions.rentri-vps-proxy]
-verify_jwt = false
-
-[functions.db-backup]
+[functions.bootstrap-superglobal]
 verify_jwt = false
