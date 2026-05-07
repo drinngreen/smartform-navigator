@@ -391,11 +391,11 @@ export default function SuperAdminGlobalDashboard() {
         />
 
         {/* Split */}
-        <div className="flex-1 grid grid-cols-[460px_1fr] overflow-hidden">
-          <div className="border-r border-slate-200 shadow-[4px_0_12px_rgba(15,23,42,0.04)]">
+        <div className="flex-1 grid grid-cols-[460px_1fr] overflow-hidden min-h-0">
+          <div className="border-r border-slate-200 shadow-[4px_0_12px_rgba(15,23,42,0.04)] min-h-0 overflow-hidden">
             <ChatPanel onTrace={setLastTrace} />
           </div>
-          <div className="overflow-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50/30">
+          <div className="overflow-auto bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 min-h-0">
             <div className="p-5 superglobal-form">
               <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-5">
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
