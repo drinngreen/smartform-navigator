@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import logoDragon from "@/assets/logo-dragon.png";
 
-const ALLOWED_EMAIL = "superadmin@zoli.live";
+const ALLOWED_EMAILS = ["superadmin@zoli.live", "superadminglobal@zoli.live"];
 
 export default function SuperAdminAuthPage() {
   const navigate = useNavigate();
@@ -19,16 +19,17 @@ export default function SuperAdminAuthPage() {
   useEffect(() => {
     if (!isLoading && user) {
       const e = user.email?.toLowerCase() ?? "";
-      if (e === ALLOWED_EMAIL && isAdmin) {
-        navigate("/super", { replace: true });
+      if (ALLOWED_EMAILS.includes(e) && isAdmin) {
+        navigate(e === "superadminglobal@zoli.live" ? "/superglobal" : "/super", { replace: true });
       }
     }
   }, [user, isAdmin, isLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.toLowerCase() !== ALLOWED_EMAIL) {
-      toast.error("Accesso consentito solo a superadmin@zoli.live");
+    const lc = email.toLowerCase();
+    if (!ALLOWED_EMAILS.includes(lc)) {
+      toast.error("Accesso consentito solo a Super Admin");
       return;
     }
     setIsSubmitting(true);
@@ -37,7 +38,7 @@ export default function SuperAdminAuthPage() {
       toast.error("Credenziali non valide");
     } else {
       toast.success("Accesso Super Admin!");
-      navigate("/super", { replace: true });
+      navigate(lc === "superadminglobal@zoli.live" ? "/superglobal" : "/super", { replace: true });
     }
     setIsSubmitting(false);
   };
