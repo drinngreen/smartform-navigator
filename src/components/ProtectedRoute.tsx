@@ -72,8 +72,16 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // ── SUPER ADMIN GLOBAL: superadminglobal@zoli.live + superadmin ──
+  if (path.startsWith("/superglobal")) {
+    if (!isAdmin || !SUPER_GLOBAL_EMAILS.includes(email)) {
+      toast.error("Accesso non autorizzato: area Super Admin Global");
+      return <Navigate to="/" replace />;
+    }
+  }
+
   // ── SUPER ADMIN: only superadmin@zoli.live ──
-  if (path.startsWith("/super")) {
+  if (path.startsWith("/super") && !path.startsWith("/superglobal")) {
     if (!isAdmin || !SUPER_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Super Admin");
       return <Navigate to="/" replace />;
