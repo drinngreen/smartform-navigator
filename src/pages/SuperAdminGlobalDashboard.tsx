@@ -43,8 +43,17 @@ function ChatPanel() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<AppUser | null>(null);
   const [lastOcr, setLastOcr] = useState<any>(null);
+  const [userSearch, setUserSearch] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const filteredUsers = users.filter((u) => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return true;
+    return [u.nome, u.cognome, u.codice_fiscale]
+      .filter(Boolean)
+      .some((v) => (v as string).toLowerCase().includes(q));
+  });
 
   useEffect(() => {
     (async () => {
@@ -144,34 +153,43 @@ function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 text-slate-900">
       {/* User selector */}
-      <div className="p-3 border-b border-border bg-secondary/30">
+      <div className="p-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2 mb-2">
-          <Users size={14} className="text-emerald-400" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Utente App Global
+          <Users size={14} className="text-emerald-600" />
+          <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+            Utente App Global ({filteredUsers.length}/{users.length})
           </span>
         </div>
+        <input
+          type="text"
+          value={userSearch}
+          onChange={(e) => setUserSearch(e.target.value)}
+          placeholder="Cerca per nome, cognome o codice fiscale…"
+          className="w-full px-3 py-2 mb-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
         <select
           value={selectedUser?.user_id || ""}
           onChange={(e) => {
             const u = users.find((x) => x.user_id === e.target.value) || null;
             setSelectedUser(u);
           }}
-          className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          size={Math.min(8, Math.max(3, filteredUsers.length))}
+          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
-          <option value="">— Seleziona utente —</option>
-          {users.map((u) => (
+          {filteredUsers.length === 0 && <option value="">— Nessun utente trovato —</option>}
+          {filteredUsers.map((u) => (
             <option key={u.user_id} value={u.user_id}>
               {[u.cognome, u.nome].filter(Boolean).join(" ") || u.codice_fiscale || u.user_id.slice(0, 8)}
+              {u.codice_fiscale ? ` · ${u.codice_fiscale}` : ""}
             </option>
           ))}
         </select>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
         {messages.map((m, i) => (
           <div
             key={i}
@@ -181,7 +199,7 @@ function ChatPanel() {
               className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
                 m.role === "user"
                   ? "bg-emerald-600 text-white"
-                  : "bg-secondary text-foreground border border-border"
+                  : "bg-slate-100 text-slate-900 border border-slate-200"
               }`}
             >
               {m.content}
@@ -189,16 +207,16 @@ function ChatPanel() {
           </div>
         ))}
         {busy && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             <Loader2 size={14} className="animate-spin" /> Elaborazione…
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-border bg-secondary/20 space-y-2">
+      <div className="p-3 border-t border-slate-200 bg-slate-50 space-y-2">
         {lastOcr && (
-          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 rounded-lg px-2 py-1">
+          <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">
             <ScanLine size={12} /> OCR caricato ({lastOcr.fields?.length || 0} campi)
             <button onClick={() => setLastOcr(null)} className="ml-auto">
               <X size={12} />
@@ -217,7 +235,7 @@ function ChatPanel() {
             onClick={() => fileInputRef.current?.click()}
             disabled={ocrBusy}
             title="OCR (OpenRouter Gemini Vision)"
-            className="p-2 rounded-lg bg-background border border-border hover:bg-secondary disabled:opacity-50"
+            className="p-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-50 text-slate-700"
           >
             {ocrBusy ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
           </button>
@@ -226,7 +244,7 @@ function ChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
             placeholder="Scrivi un comando o una richiesta…"
-            className="flex-1 px-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
           <button
             onClick={send}
@@ -252,7 +270,7 @@ export default function SuperAdminGlobalDashboard() {
 
   return (
     <FormBridgeProvider>
-      <div className="h-screen flex flex-col bg-background text-foreground">
+      <div className="h-screen flex flex-col bg-white text-slate-900">
         {/* Banner */}
         <div className="bg-emerald-700 text-white text-center py-1.5 px-4 font-display text-xs tracking-wider flex items-center justify-center gap-2">
           <Globe size={14} />
@@ -261,26 +279,26 @@ export default function SuperAdminGlobalDashboard() {
         </div>
 
         {/* Header */}
-        <header className="border-b border-border bg-card px-4 py-2 flex items-center justify-between shrink-0">
+        <header className="border-b border-slate-200 bg-white px-4 py-2 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <img src={logoDragon} alt="" className="h-8 w-8" style={{ filter: "drop-shadow(0 0 8px rgba(16,185,129,0.6))" }} />
             <div>
-              <div className="font-display text-sm tracking-wider flex items-center gap-2">
-                <Shield size={14} className="text-emerald-400" /> SUPER ADMIN GLOBAL
+              <div className="font-display text-sm tracking-wider flex items-center gap-2 text-slate-900">
+                <Shield size={14} className="text-emerald-600" /> SUPER ADMIN GLOBAL
               </div>
-              <div className="text-[10px] text-muted-foreground">{user?.email}</div>
+              <div className="text-[10px] text-slate-500">{user?.email}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate("/admin")}
-              className="px-3 py-1.5 rounded-lg text-xs bg-secondary/50 hover:bg-secondary border border-border flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 flex items-center gap-2"
             >
               <FileText size={12} /> Admin Global Reco
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2"
             >
               <LogOut size={12} /> Logout
             </button>
@@ -290,7 +308,7 @@ export default function SuperAdminGlobalDashboard() {
         {/* Split */}
         <div className="flex-1 grid grid-cols-[420px_1fr] overflow-hidden">
           <ChatPanel />
-          <div className="overflow-auto bg-background">
+          <div className="overflow-auto bg-white">
             <div className="p-4">
               <FIRAlternativeForm />
             </div>
