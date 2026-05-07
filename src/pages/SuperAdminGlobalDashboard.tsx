@@ -88,6 +88,16 @@ function ChatPanel({ onTrace }: { onTrace: (t: any[]) => void }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent).detail as string;
+      if (prompt) send(prompt);
+    };
+    window.addEventListener("superglobal-quick", handler);
+    return () => window.removeEventListener("superglobal-quick", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, busy, selectedUser, lastOcr]);
+
   async function send(textOverride?: string) {
     const text = (textOverride ?? input).trim();
     if (!text || busy) return;
