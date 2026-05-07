@@ -374,6 +374,12 @@ export default function SuperAdminGlobalDashboard() {
           </div>
         </header>
 
+        {/* Quick actions full-width bar */}
+        <QuickActionsBar
+          busy={false}
+          onPick={(p) => window.dispatchEvent(new CustomEvent("superglobal-quick", { detail: p }))}
+        />
+
         {/* Split */}
         <div className="flex-1 grid grid-cols-[460px_1fr] overflow-hidden">
           <div className="border-r border-slate-200 shadow-[4px_0_12px_rgba(15,23,42,0.04)]">
