@@ -13,6 +13,7 @@ const GLOBAL_ADMIN_EMAILS = [
   "amministrazioneglobal@zoli.live",
   "segreteriaglobalreco@zoli.live",
   "superadmin@zoli.live",
+  "superadminglobal@zoli.live",
 ];
 
 const MN_ADMIN_EMAILS = [
@@ -21,6 +22,11 @@ const MN_ADMIN_EMAILS = [
 ];
 
 const SUPER_ADMIN_EMAILS = [
+  "superadmin@zoli.live",
+];
+
+const SUPER_GLOBAL_EMAILS = [
+  "superadminglobal@zoli.live",
   "superadmin@zoli.live",
 ];
 
