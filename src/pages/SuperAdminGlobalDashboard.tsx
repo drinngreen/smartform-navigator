@@ -270,35 +270,57 @@ export default function SuperAdminGlobalDashboard() {
 
   return (
     <FormBridgeProvider>
-      <div className="h-screen flex flex-col bg-white text-slate-900">
-        {/* Banner */}
-        <div className="bg-emerald-700 text-white text-center py-1.5 px-4 font-display text-xs tracking-wider flex items-center justify-center gap-2">
+      <style>{`
+        .superglobal-form, .superglobal-form * {
+          color: #0f172a !important;
+        }
+        .superglobal-form input, .superglobal-form textarea, .superglobal-form select {
+          background-color: #ffffff !important;
+          border-color: #cbd5e1 !important;
+          color: #0f172a !important;
+        }
+        .superglobal-form input::placeholder, .superglobal-form textarea::placeholder {
+          color: #94a3b8 !important;
+        }
+        .superglobal-form label, .superglobal-form .label {
+          color: #1e293b !important;
+          font-weight: 600;
+        }
+      `}</style>
+      <div className="h-screen flex flex-col bg-slate-50 text-slate-900">
+        {/* Banner gradient */}
+        <div className="bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 text-white text-center py-2 px-4 font-display text-xs tracking-[0.2em] flex items-center justify-center gap-2 shadow-md">
           <Globe size={14} />
-          COMANDO GLOBAL RECO — SUPER ADMIN
+          <span className="font-bold">COMANDO GLOBAL RECO · SUPER ADMIN</span>
           <Sparkles size={14} />
         </div>
 
         {/* Header */}
-        <header className="border-b border-slate-200 bg-white px-4 py-2 flex items-center justify-between shrink-0">
+        <header className="border-b border-slate-200 bg-white px-5 py-3 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <img src={logoDragon} alt="" className="h-8 w-8" style={{ filter: "drop-shadow(0 0 8px rgba(16,185,129,0.6))" }} />
-            <div>
-              <div className="font-display text-sm tracking-wider flex items-center gap-2 text-slate-900">
-                <Shield size={14} className="text-emerald-600" /> SUPER ADMIN GLOBAL
+            <div className="relative">
+              <img src={logoDragon} alt="" className="h-10 w-10" style={{ filter: "drop-shadow(0 0 10px rgba(16,185,129,0.5))" }} />
+              <div className="absolute -bottom-1 -right-1 bg-emerald-500 rounded-full p-0.5 border-2 border-white">
+                <Shield size={10} className="text-white" />
               </div>
-              <div className="text-[10px] text-slate-500">{user?.email}</div>
+            </div>
+            <div>
+              <div className="font-display text-base tracking-wider flex items-center gap-2 text-slate-900 font-bold">
+                SUPER ADMIN <span className="text-emerald-600">GLOBAL</span>
+              </div>
+              <div className="text-[11px] text-slate-500 font-mono">{user?.email}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate("/admin")}
-              className="px-3 py-1.5 rounded-lg text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg text-xs bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-medium flex items-center gap-2 transition-colors"
             >
               <FileText size={12} /> Admin Global Reco
             </button>
             <button
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-lg text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg text-xs text-slate-600 hover:text-white hover:bg-rose-500 border border-slate-200 hover:border-rose-500 flex items-center gap-2 transition-colors"
             >
               <LogOut size={12} /> Logout
             </button>
@@ -306,11 +328,22 @@ export default function SuperAdminGlobalDashboard() {
         </header>
 
         {/* Split */}
-        <div className="flex-1 grid grid-cols-[420px_1fr] overflow-hidden">
+        <div className="flex-1 grid grid-cols-[440px_1fr] overflow-hidden">
           <ChatPanel />
-          <div className="overflow-auto bg-white">
-            <div className="p-4">
-              <FIRAlternativeForm />
+          <div className="overflow-auto bg-gradient-to-br from-slate-50 to-emerald-50/30">
+            <div className="p-5 superglobal-form">
+              <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-5">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
+                  <div className="h-8 w-1 bg-emerald-500 rounded-full" />
+                  <h2 className="font-display text-lg font-bold text-slate-900 tracking-wide">
+                    COMPILATORE FORMULARIO
+                  </h2>
+                  <span className="ml-auto text-[10px] uppercase tracking-widest text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full font-bold">
+                    Live · AI Bridge
+                  </span>
+                </div>
+                <FIRAlternativeForm />
+              </div>
             </div>
           </div>
         </div>
