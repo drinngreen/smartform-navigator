@@ -247,7 +247,6 @@ export function DevGiacenzeModule() {
         doc.setTextColor(80);
         doc.text("Salvo diversa indicazione l'unità di misura di riferimento è il kg.", marginX, pageH - 8);
         doc.setTextColor(120);
-        doc.text("StRegRag.repx", marginX, pageH - 4);
         doc.text(`Pagina ${pageNumber} di ${totalPagesExp}`, pageW - marginX, pageH - 4, { align: "right" });
       },
     });
@@ -256,7 +255,7 @@ export function DevGiacenzeModule() {
       (doc as any).putTotalPages(totalPagesExp);
     }
 
-    doc.save(`StRegRag_Multyproget_${dataAl}.pdf`);
+    doc.save(`${buildFileName()}.pdf`);
   };
 
   // Excel con intestazione identica
