@@ -197,7 +197,8 @@ export function DevGiacenzeModule() {
       return y + 2;
     };
 
-    const headerEndY = drawHeader();
+    const headerEndY = 50;
+    const totalPagesExp = "{total_pages_count_string}";
 
     autoTable(doc, {
       startY: headerEndY,
@@ -224,30 +225,36 @@ export function DevGiacenzeModule() {
           { content: fmt(totals.saldo), styles: { halign: "right", fontStyle: "bold" } },
         ],
       ],
-      styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.2, lineColor: [180, 180, 180], lineWidth: 0.1 },
+      styles: { font: "helvetica", fontSize: 7.3, cellPadding: 1.1, lineColor: [180, 180, 180], lineWidth: 0.1, overflow: "linebreak" },
       headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
       footStyles: { fillColor: [230, 230, 230], textColor: 0 },
       columnStyles: {
-        0: { cellWidth: 22 },
+        0: { cellWidth: 34, overflow: "visible" },
         1: { cellWidth: "auto" },
         2: { cellWidth: 25 },
         3: { cellWidth: 25 },
         4: { cellWidth: 25 },
       },
-      margin: { left: marginX, right: marginX, top: 12, bottom: 14 },
+      margin: { left: marginX, right: marginX, top: headerEndY, bottom: 14 },
       showHead: "everyPage",
+      showFoot: "lastPage",
+      willDrawPage: () => {
+        drawHeader();
+      },
       didDrawPage: () => {
         const pageNumber = (doc as any).internal.getCurrentPageInfo().pageNumber;
-        const pageCount = (doc as any).internal.getNumberOfPages();
-        if (pageNumber > 1) drawHeader();
         doc.setFontSize(7.5);
         doc.setTextColor(80);
         doc.text("Salvo diversa indicazione l'unità di misura di riferimento è il kg.", marginX, pageH - 8);
         doc.setTextColor(120);
         doc.text("StRegRag.repx", marginX, pageH - 4);
-        doc.text(`Pagina ${pageNumber} di ${pageCount}`, pageW - marginX, pageH - 4, { align: "right" });
+        doc.text(`Pagina ${pageNumber} di ${totalPagesExp}`, pageW - marginX, pageH - 4, { align: "right" });
       },
     });
+
+    if (typeof (doc as any).putTotalPages === "function") {
+      (doc as any).putTotalPages(totalPagesExp);
+    }
 
     doc.save(`StRegRag_Multyproget_${dataAl}.pdf`);
   };
