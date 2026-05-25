@@ -151,6 +151,13 @@ export function DevGiacenzeModule() {
     ];
   };
 
+  // Nome file basato sul periodo richiesto (es. Registro_CER_dal_01-01-2025_al_31-12-2025)
+  const buildFileName = () => {
+    const slug = (d: string) => d.split("-").reverse().join("-"); // YYYY-MM-DD -> DD-MM-YYYY
+    if (dataDal) return `Registro_CER_dal_${slug(dataDal)}_al_${slug(dataAl)}`;
+    return `Registro_CER_al_${slug(dataAl)}`;
+  };
+
   // PDF replica StRegRag
   const handleExportPdf = () => {
     if (!filtered.length) return toast.error("Nessun dato da esportare");
@@ -247,7 +254,6 @@ export function DevGiacenzeModule() {
         doc.setTextColor(80);
         doc.text("Salvo diversa indicazione l'unità di misura di riferimento è il kg.", marginX, pageH - 8);
         doc.setTextColor(120);
-        doc.text("StRegRag.repx", marginX, pageH - 4);
         doc.text(`Pagina ${pageNumber} di ${totalPagesExp}`, pageW - marginX, pageH - 4, { align: "right" });
       },
     });
@@ -256,7 +262,7 @@ export function DevGiacenzeModule() {
       (doc as any).putTotalPages(totalPagesExp);
     }
 
-    doc.save(`StRegRag_Multyproget_${dataAl}.pdf`);
+    doc.save(`${buildFileName()}.pdf`);
   };
 
   // Excel con intestazione identica
@@ -274,7 +280,7 @@ export function DevGiacenzeModule() {
     ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registro CER");
-    XLSX.writeFile(wb, `StRegRag_Multyproget_${dataAl}.xlsx`);
+    XLSX.writeFile(wb, `${buildFileName()}.xlsx`);
   };
 
   const positiveCers = filtered.filter((r) => r.saldo > 0).length;
@@ -349,7 +355,7 @@ export function DevGiacenzeModule() {
           onClick={handleExportPdf}
           className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
         >
-          <FileText className="h-4 w-4" /> Stampa PDF (StRegRag)
+          <FileText className="h-4 w-4" /> Stampa PDF
         </Button>
         <Button
           variant="outline"
