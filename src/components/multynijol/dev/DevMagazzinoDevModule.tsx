@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, BookOpen, ClipboardList } from "lucide-react";
+import { Package, BookOpen, ClipboardList, Scissors, Layers } from "lucide-react";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroGeneraleModule } from "./DevRegistroGeneraleModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
+import DragonCerniteBatchPage from "@/pages/dragon/DragonCerniteBatchPage";
+import DragonCerniteModelliPage from "@/pages/dragon/DragonCerniteModelliPage";
 
 export function DevMagazzinoDevModule() {
   const [tab, setTab] = useState("giacenze");
@@ -28,11 +30,19 @@ export function DevMagazzinoDevModule() {
           <TabsTrigger value="carico-scarico" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <ClipboardList className="h-4 w-4" /> Carico / Scarico
           </TabsTrigger>
+          <TabsTrigger value="cernita" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <Scissors className="h-4 w-4" /> Cernita
+          </TabsTrigger>
+          <TabsTrigger value="modelli-cernita" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <Layers className="h-4 w-4" /> Modelli Cernita
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="giacenze" className="mt-4"><DevGiacenzeModule /></TabsContent>
         <TabsContent value="registro" className="mt-4"><DevRegistroGeneraleModule /></TabsContent>
         <TabsContent value="carico-scarico" className="mt-4"><DevRegistroCaricoScaricoModule /></TabsContent>
+        <TabsContent value="cernita" className="mt-4"><DragonCerniteBatchPage /></TabsContent>
+        <TabsContent value="modelli-cernita" className="mt-4"><DragonCerniteModelliPage /></TabsContent>
       </Tabs>
     </div>
   );
