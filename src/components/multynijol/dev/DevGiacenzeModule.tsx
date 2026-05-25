@@ -151,6 +151,13 @@ export function DevGiacenzeModule() {
     ];
   };
 
+  // Nome file basato sul periodo richiesto (es. Registro_CER_dal_01-01-2025_al_31-12-2025)
+  const buildFileName = () => {
+    const slug = (d: string) => d.split("-").reverse().join("-"); // YYYY-MM-DD -> DD-MM-YYYY
+    if (dataDal) return `Registro_CER_dal_${slug(dataDal)}_al_${slug(dataAl)}`;
+    return `Registro_CER_al_${slug(dataAl)}`;
+  };
+
   // PDF replica StRegRag
   const handleExportPdf = () => {
     if (!filtered.length) return toast.error("Nessun dato da esportare");
