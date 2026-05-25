@@ -280,7 +280,7 @@ export function DevGiacenzeModule() {
     ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registro CER");
-    XLSX.writeFile(wb, `StRegRag_Multyproget_${dataAl}.xlsx`);
+    XLSX.writeFile(wb, `${buildFileName()}.xlsx`);
   };
 
   const positiveCers = filtered.filter((r) => r.saldo > 0).length;
