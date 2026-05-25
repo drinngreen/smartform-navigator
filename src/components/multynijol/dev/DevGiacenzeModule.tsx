@@ -355,7 +355,7 @@ export function DevGiacenzeModule() {
           onClick={handleExportPdf}
           className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
         >
-          <FileText className="h-4 w-4" /> Stampa PDF (StRegRag)
+          <FileText className="h-4 w-4" /> Stampa PDF
         </Button>
         <Button
           variant="outline"
