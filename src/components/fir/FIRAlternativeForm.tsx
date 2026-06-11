@@ -554,6 +554,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     [fields, values],
   );
 
+  useEffect(() => {
+    if (!ocrEntries?.length || !fields.length) return;
+    const normalize = (value: string) => normalizeFieldName(value);
+    const nextValues: Record<string, string> = {};
+    ocrEntries.forEach((entry) => {
+      const wanted = normalize(entry.id);
+      const field = fields.find((candidate) => {
+        const normalizedName = normalize(candidate.name || candidate.id);
+        return normalizedName === wanted || normalizedName.includes(wanted) || wanted.includes(normalizedName);
+      });
+      if (field && entry.value) nextValues[field.id] = entry.value;
+    });
+    if (Object.keys(nextValues).length > 0) setValues((prev) => ({ ...prev, ...nextValues }));
+  }, [ocrEntries, fields]);
+
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
     if (len <= 20) return `clamp(7px, 1.8vw, ${baseMax}px)`;
