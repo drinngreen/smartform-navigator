@@ -989,6 +989,14 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         <button onClick={resetZoom} className="p-1.5 rounded-md border border-border/40 bg-card/60 hover:bg-card/80 transition-all">
           <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
+        {(firFormId || activeDraftId) && (
+          <button
+            onClick={handleSaveDraft}
+            className="ml-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
+          </button>
+        )}
       </div>
 
       <div
