@@ -184,6 +184,13 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
               Carica OCR
             </Button>
+            <Button
+              onClick={() => window.dispatchEvent(new Event("dev-fir-save-active"))}
+              disabled={!activeDraftId}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Save className="h-4 w-4" /> Salva formulario e registro
+            </Button>
             <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleOcrFile} />
           </div>
         </div>
