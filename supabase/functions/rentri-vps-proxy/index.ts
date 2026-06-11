@@ -7,6 +7,9 @@ const corsHeaders = {
 };
 
 const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://167.235.29.27:3000";
+const VPS_FETCH_TIMEOUT_MS = Number(Deno.env.get("RENTRI_VPS_TIMEOUT_MS") ?? 6000);
+const VPS_OFFLINE_TTL_MS = Number(Deno.env.get("RENTRI_VPS_OFFLINE_TTL_MS") ?? 180000);
+let vpsOfflineUntil = 0;
 
 function normalizeBaseUrl(raw: string): string {
   let url = raw.replace(/\/+$/, "");
@@ -15,6 +18,22 @@ function normalizeBaseUrl(raw: string): string {
 }
 
 const VPS_URL = normalizeBaseUrl(VPS_BASE);
+
+function isConnectivityError(message: string): boolean {
+  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|network|aborted|timeout/i.test(message);
+}
+
+function offlinePayload(message: string, attempts: unknown[] = []) {
+  return {
+    success: false,
+    status: 503,
+    error: "RENTRI momentaneamente non raggiungibile: la connessione al bridge è offline. Puoi continuare a compilare, modificare e salvare i FIR localmente; l'invio RENTRI sarà disponibile quando il bridge tornerà attivo.",
+    data: { error: message, rentri_offline: true },
+    rentri_offline: true,
+    attempts,
+    retry_after_ms: Math.max(0, vpsOfflineUntil - Date.now()),
+  };
+}
 
 /* ── Mappature tenant ── */
 
