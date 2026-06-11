@@ -11,7 +11,7 @@ import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
  * but uses the MN store. The data isolation comes from fir_forms.tenant_id
  * being set on insert (via the user's profile tenant_id).
  */
-export function useMNFIRForms() {
+export function useMNFIRForms(overrideTenantId?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { releaseNumber, consumeNumber } = useFIRNumberPool();
@@ -35,7 +35,7 @@ export function useMNFIRForms() {
     mutationFn: async (formData: Partial<FIRFormData>) => {
       const { data, error } = await supabase
         .from("fir_forms")
-        .insert({ user_id: user!.id, ...formData })
+        .insert({ user_id: user!.id, tenant_id: overrideTenantId ?? formData.tenant_id, ...formData })
         .select()
         .single();
       if (error) throw error;
@@ -107,7 +107,9 @@ export function useMNFIRForms() {
             if (remaining === 0) {
               toast.error("🚨 SERBATOIO ESAURITO!", { duration: 15000 });
               try {
-                const profileRes = await supabase.from("profiles").select("tenant_id, mn_context").eq("user_id", user.id).single();
+                const profileRes = overrideTenantId
+                  ? { data: { tenant_id: overrideTenantId, mn_context: overrideTenantId === "819c783e-78dd-4080-8265-802e75b0d813" ? "niyol" : "multyproget" } }
+                  : await supabase.from("profiles").select("tenant_id, mn_context").eq("user_id", user.id).single();
                 const tenantId = profileRes.data?.tenant_id;
                 const mnCtx = profileRes.data?.mn_context;
                 const societaId = mnCtx === "niyol" ? "niyol" : mnCtx === "multyproget" ? "multy" : "global";
