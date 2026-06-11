@@ -366,6 +366,13 @@ serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[rentri-vps] ERROR:", message);
+    if (isConnectivityError(message)) {
+      vpsOfflineUntil = Date.now() + VPS_OFFLINE_TTL_MS;
+      return new Response(
+        JSON.stringify(offlinePayload(message)),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
