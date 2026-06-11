@@ -914,8 +914,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           .eq("numero_formulario", numeroFir)
           .limit(1)
           .maybeSingle();
-        const registryError = found?.id
-          ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", found.id)).error
+        const foundRow = found as { id?: string } | null;
+        const registryError = foundRow?.id
+          ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", foundRow.id)).error
           : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
         if (registryError) throw registryError;
       }
