@@ -46,7 +46,9 @@ serve(async (req) => {
       });
     }
 
-    const dataUrl = `data:${mime_type || "image/png"};base64,${image_base64}`;
+    const effectiveMime = mime_type || "image/png";
+    const dataUrl = `data:${effectiveMime};base64,${image_base64}`;
+    const isPdf = effectiveMime.includes("pdf");
 
     const userPrompt = instruction
       ? `${instruction}\n\nEstrai i campi dal formulario nell'immagine.`
@@ -68,7 +70,9 @@ serve(async (req) => {
             role: "user",
             content: [
               { type: "text", text: userPrompt },
-              { type: "image_url", image_url: { url: dataUrl } },
+              isPdf
+                ? { type: "file", file: { filename: "formulario.pdf", file_data: dataUrl } }
+                : { type: "image_url", image_url: { url: dataUrl } },
             ],
           },
         ],

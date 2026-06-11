@@ -32,6 +32,22 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
+import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
+
+const DEV_TAB_LABELS: Record<string, string> = {
+  impianto: "Impianto",
+  "magazzino-dev": "Magazzino Dev",
+  "conto-proprio": "Conto Proprio",
+  registri: "Registri",
+  contatti: "Contatti",
+  privati: "Privati",
+  ricevute: "Ricevute",
+  "aree-riservate": "Aree Riservate",
+  "cer-preferiti": "CER Preferiti",
+  "gestione-fir": "Gestione FIR",
+  "firma-digitale": "Firma Digitale",
+  personale: "Personale",
+};
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -113,6 +129,8 @@ export default function MNDevDashboardPage() {
             <Users className="h-4 w-4" />Personale
           </TabsTrigger>
         </TabsList>
+
+        <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>

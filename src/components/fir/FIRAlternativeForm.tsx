@@ -32,6 +32,14 @@ const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> =
   niyol: { cliente: "niyol", preset: NIYOL },
 };
 
+const TENANT_ID_MAP: Record<string, string> = {
+  global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
+  multyproget: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  "multyproget-intermediario": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  "multyproget-impianto": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+};
+
 const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
 function normalizeFieldName(fieldName: string): string {
   return fieldName
@@ -442,11 +450,14 @@ interface FIRAlternativeFormProps {
   firFormId?: string;
   assignedUserId?: string;
   draftData?: FIRAlternativeDraftData | null;
+  ocrEntries?: { id: string; value: string }[];
   printOnly?: boolean;
+  registryMovementType?: "Carico" | "Scarico";
+  onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, ocrEntries, printOnly, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
@@ -542,6 +553,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     }),
     [fields, values],
   );
+
+  useEffect(() => {
+    if (!ocrEntries?.length || !fields.length) return;
+    const normalize = (value: string) => normalizeFieldName(value);
+    const nextValues: Record<string, string> = {};
+    ocrEntries.forEach((entry) => {
+      const wanted = normalize(entry.id);
+      const field = fields.find((candidate) => {
+        const normalizedName = normalize(candidate.name || candidate.id);
+        return normalizedName === wanted || normalizedName.includes(wanted) || wanted.includes(normalizedName);
+      });
+      if (field && entry.value) nextValues[field.id] = entry.value;
+    });
+    if (Object.keys(nextValues).length > 0) setValues((prev) => ({ ...prev, ...nextValues }));
+  }, [ocrEntries, fields]);
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
@@ -831,6 +857,99 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     setScale((s) => Math.max(0.5, Math.min(4, s + delta)));
   };
 
+  const handleSaveDraft = async () => {
+    const targetId = firFormId || activeDraftId;
+    if (!targetId) { toast.error("Nessuna bozza attiva"); return; }
+    try {
+      const { data: existing } = await supabase
+        .from("fir_forms")
+        .select("*")
+        .eq("id", targetId)
+        .maybeSingle();
+      const mergedFormData = { ...((existing?.form_data as Record<string, unknown>) || {}), ...values };
+
+      const valByTokens = (...tokens: string[]) => {
+        const f = findFieldByTokens(fields, tokens);
+        return f ? String(values[f.id] ?? "").trim() : "";
+      };
+      const numToken = (...tokens: string[]) => {
+        const s = valByTokens(...tokens).replace(/\./g, "").replace(",", ".");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const desc = valByTokens("descrizione", "rifiuto");
+      const eer = valByTokens("codice", "eer") || valByTokens("cer");
+      const qta = numToken("quantita") ?? numToken("peso");
+      const um = valByTokens("unita", "misura") || "kg";
+      const statoFisico = valByTokens("stato", "fisico");
+      const prodDen = valByTokens("denominazione", "produttore");
+      const destDen = valByTokens("denominazione", "destinatario");
+      const trasDen = valByTokens("denominazione", "trasportatore");
+      const numeroFir = presetNumeroFir || activeDraftNumero || existing?.numero_fir || valByTokens("numero", "fir") || valByTokens("numero", "formulario");
+      const tenantId = (existing?.tenant_id as string | undefined) || TENANT_ID_MAP[tenantContext] || TENANT_ID_MAP.global;
+
+      const updates: Record<string, unknown> = { form_data: mergedFormData, updated_at: new Date().toISOString() };
+      if (desc) updates.descrizione_rifiuto = desc;
+      if (eer) updates.codice_eer = eer;
+      if (qta !== null) updates.quantita = qta;
+      if (um) updates.unita_misura = um;
+      if (statoFisico) updates.stato_fisico = statoFisico;
+      if (prodDen) updates.produttore_denominazione = prodDen;
+      if (destDen) updates.destinatario_denominazione = destDen;
+      if (trasDen) updates.trasportatore_denominazione = trasDen;
+      if (numeroFir) updates.numero_fir = numeroFir;
+
+      const { error } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
+      if (error) throw error;
+
+      if (tenantId && numeroFir) {
+        const registryRow = {
+          tenant_id: tenantId,
+          data_movimento: new Date().toISOString().slice(0, 10),
+          cer: eer || null,
+          descrizione: desc || null,
+          carico_scarico: registryMovementType || "Carico",
+          tipo_operazione: registryMovementType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
+          al_rentri: false,
+          numero_formulario: numeroFir,
+          segno: registryMovementType === "Scarico" ? "-" : "+",
+          quantita: qta,
+          peso_destino: qta,
+          luogo_produzione: prodDen || null,
+          destinazione: destDen || null,
+          stato_fisico: statoFisico || null,
+          annotazioni: "Creato da workspace FIR Dev Multyproget",
+          data_emissione_formulario: new Date().toISOString().slice(0, 10),
+          raw: { fir_form_id: targetId, form_data: mergedFormData },
+        };
+        const { data: found } = await supabase
+          .from("registro_generale" as any)
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("numero_formulario", numeroFir)
+          .limit(1)
+          .maybeSingle();
+        const foundRow = found as { id?: string } | null;
+        const registryError = foundRow?.id
+          ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", foundRow.id)).error
+          : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
+        if (registryError) throw registryError;
+      }
+
+      toast.success("✅ Formulario salvato e registrato");
+      onSaved?.();
+    } catch (err: any) {
+      toast.error("Errore salvataggio: " + (err?.message || err));
+    }
+  };
+
+  useEffect(() => {
+    const listener = () => { void handleSaveDraft(); };
+    window.addEventListener("dev-fir-save-active", listener);
+    return () => window.removeEventListener("dev-fir-save-active", listener);
+  });
+
   const pageFields = fields.filter((f) => f.page === activePage);
 
   if (loading) {
@@ -892,6 +1011,14 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         <button onClick={resetZoom} className="p-1.5 rounded-md border border-border/40 bg-card/60 hover:bg-card/80 transition-all">
           <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
+        {(firFormId || activeDraftId) && (
+          <button
+            onClick={handleSaveDraft}
+            className="ml-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
+          </button>
+        )}
       </div>
 
       <div
@@ -1085,61 +1212,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       {(firFormId || activeDraftId) && (
         <div className="flex justify-end pt-2">
           <button
-            onClick={async () => {
-              const targetId = firFormId || activeDraftId;
-              if (!targetId) { toast.error("Nessuna bozza attiva"); return; }
-              try {
-                const { data: existing } = await supabase
-                  .from("fir_forms")
-                  .select("form_data")
-                  .eq("id", targetId)
-                  .maybeSingle();
-                const mergedFormData = { ...(existing?.form_data as Record<string, unknown> || {}), ...values };
-
-                const valByTokens = (...tokens: string[]) => {
-                  const f = findFieldByTokens(fields, tokens);
-                  return f ? String(values[f.id] ?? "").trim() : "";
-                };
-                const numToken = (...tokens: string[]) => {
-                  const s = valByTokens(...tokens).replace(",", ".");
-                  const n = parseFloat(s);
-                  return Number.isFinite(n) ? n : null;
-                };
-
-                const updates: Record<string, unknown> = {
-                  form_data: mergedFormData,
-                  updated_at: new Date().toISOString(),
-                };
-                const desc = valByTokens("descrizione", "rifiuto");
-                const eer = valByTokens("codice", "eer") || valByTokens("cer");
-                const qta = numToken("quantita") ?? numToken("peso");
-                const um = valByTokens("unita", "misura");
-                const statoFisico = valByTokens("stato", "fisico");
-                const prodDen = valByTokens("denominazione", "produttore");
-                const destDen = valByTokens("denominazione", "destinatario");
-                const trasDen = valByTokens("denominazione", "trasportatore");
-                if (desc) updates.descrizione_rifiuto = desc;
-                if (eer) updates.codice_eer = eer;
-                if (qta !== null) updates.quantita = qta;
-                if (um) updates.unita_misura = um;
-                if (statoFisico) updates.stato_fisico = statoFisico;
-                if (prodDen) updates.produttore_denominazione = prodDen;
-                if (destDen) updates.destinatario_denominazione = destDen;
-                if (trasDen) updates.trasportatore_denominazione = trasDen;
-                if (presetNumeroFir || activeDraftNumero) {
-                  updates.numero_fir = presetNumeroFir || activeDraftNumero;
-                }
-
-                const { error } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
-                if (error) throw error;
-                toast.success("✅ Formulario salvato");
-              } catch (err: any) {
-                toast.error("Errore salvataggio: " + (err?.message || err));
-              }
-            }}
+            onClick={handleSaveDraft}
             className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
           >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO
+            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
           </button>
         </div>
       )}
