@@ -38,7 +38,7 @@ export interface RentriVpsResponse {
 const RENTRI_OFFLINE_MESSAGE = "RENTRI momentaneamente non raggiungibile: puoi continuare a compilare, modificare e salvare i FIR localmente.";
 
 export function isRentriConnectivityError(message: string): boolean {
-  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|Edge function returned 500|network|timeout|offline/i.test(message);
+  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|Edge function returned 500|network|aborted|timeout|offline/i.test(message);
 }
 
 export function isRentriOfflineResponse(response: Pick<RentriVpsResponse, "data" | "error" | "rentri_offline"> | null | undefined): boolean {
