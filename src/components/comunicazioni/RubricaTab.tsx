@@ -9,10 +9,11 @@ import { useNavigate } from "react-router-dom";
 
 interface RubricaTabProps {
   basePath?: string; // e.g. "/admin" or "/mn/admin/multyproget"
+  tenantId?: string;
 }
 
-export function RubricaTab({ basePath = "/admin" }: RubricaTabProps) {
-  const { data: contatti, isLoading, tenantId, deleteContatto, refetch } = useRubricaContatti();
+export function RubricaTab({ basePath = "/admin", tenantId: tenantIdOverride }: RubricaTabProps) {
+  const { data: contatti, isLoading, tenantId, deleteContatto, refetch } = useRubricaContatti(tenantIdOverride);
   const [search, setSearch] = useState("");
   const [showNew, setShowNew] = useState(false);
   const navigate = useNavigate();

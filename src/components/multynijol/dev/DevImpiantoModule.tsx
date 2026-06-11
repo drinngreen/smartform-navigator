@@ -95,8 +95,6 @@ function DevSerbatoioOverview() {
 }
 
 export function DevImpiantoModule() {
-  const { profile } = useAuth();
-
   return (
     <div className="space-y-4">
       <DevSerbatoioOverview />
@@ -124,7 +122,7 @@ export function DevImpiantoModule() {
 
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-            <MNFIRFormComplete />
+            <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" />
           </div>
         </TabsContent>
         <TabsContent value="giacenze">
@@ -138,7 +136,7 @@ export function DevImpiantoModule() {
         </TabsContent>
         <TabsContent value="fatturazione">
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-            <FatturazioneModule tenantId={profile?.tenant_id || undefined} />
+            <FatturazioneModule tenantId={MULTY_TENANT_ID} />
           </div>
         </TabsContent>
         <TabsContent value="registro">

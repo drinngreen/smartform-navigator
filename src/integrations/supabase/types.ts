@@ -5271,6 +5271,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      ensure_user_has_fir_draft_for_tenant: {
+        Args: { p_tenant_id: string; p_user_id: string }
+        Returns: string
+      }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }
       exec_sql_write: { Args: { query: string }; Returns: Json }
       generate_fir_numbers_for_user: {
@@ -5295,6 +5299,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_allowed_multy_niyol_tenant: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
+      is_multy_niyol_admin: { Args: never; Returns: boolean }
       is_superadmin: { Args: never; Returns: boolean }
       is_valid_fir_number: { Args: { p_value: string }; Returns: boolean }
       map_tenant_to_societa: { Args: { p_tenant_id: string }; Returns: string }

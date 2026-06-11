@@ -152,12 +152,19 @@ const isTestFirNumberMN = (value?: string | null) => {
   return /^(test[\s-]?|skkzr)/i.test(value.trim());
 };
 
-export function MNFIRFormComplete() {
-  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms();
+interface MNFIRFormCompleteProps {
+  tenantId?: string;
+  mnContext?: string;
+}
+
+export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProps) {
+  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const isStarted = !!store.editingFirId;
+  const activeTenantId = tenantId || profile?.tenant_id;
+  const activeMnContext = mnContext || profile?.mn_context;
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
@@ -178,13 +185,14 @@ export function MNFIRFormComplete() {
     (async () => {
       try {
         if (store.editingFirId) {
-          const { data: persistedFir } = await supabase
+          let persistedQuery = supabase
             .from("fir_forms")
             .select("*")
             .eq("id", store.editingFirId)
             .eq("user_id", user.id)
-            .eq("deleted_by_user", false)
-            .maybeSingle();
+            .eq("deleted_by_user", false);
+          if (tenantId) persistedQuery = persistedQuery.eq("tenant_id", tenantId);
+          const { data: persistedFir } = await persistedQuery.maybeSingle();
 
           if (isCancelled) return;
 
@@ -211,14 +219,14 @@ export function MNFIRFormComplete() {
           return;
         }
 
-        const { data: activeFirs } = await supabase
+        let activeQuery = supabase
           .from("fir_forms")
           .select("*")
           .eq("user_id", user.id)
           .eq("deleted_by_user", false)
-          .in("status", ["bozza", "inviato"])
-          .order("updated_at", { ascending: false })
-          .limit(1);
+          .in("status", ["bozza", "inviato"]);
+        if (tenantId) activeQuery = activeQuery.eq("tenant_id", tenantId);
+        const { data: activeFirs } = await activeQuery.order("updated_at", { ascending: false }).limit(1);
 
         if (isCancelled) return;
 
@@ -267,19 +275,20 @@ export function MNFIRFormComplete() {
   const ensureAndLoadDraft = async () => {
     if (!user?.id) throw new Error("Utente non autenticato");
 
-    const { data: draftId, error: ensureErr } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
-      p_user_id: user.id,
-    });
+    const { data: draftId, error: ensureErr } = tenantId
+      ? await supabase.rpc("ensure_user_has_fir_draft_for_tenant" as any, { p_user_id: user.id, p_tenant_id: tenantId })
+      : await supabase.rpc("ensure_user_has_fir_draft" as any, { p_user_id: user.id });
     if (ensureErr) throw ensureErr;
     if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
 
-    const { data: draft, error: draftErr } = await supabase
+    let draftQuery = supabase
       .from("fir_forms")
       .select("*")
       .eq("id", draftId)
       .eq("user_id", user.id)
-      .eq("deleted_by_user", false)
-      .maybeSingle();
+      .eq("deleted_by_user", false);
+    if (tenantId) draftQuery = draftQuery.eq("tenant_id", tenantId);
+    const { data: draft, error: draftErr } = await draftQuery.maybeSingle();
 
     if (draftErr) throw draftErr;
     if (!draft) throw new Error("Bozza FIR non trovata dopo assegnazione");
@@ -359,7 +368,7 @@ export function MNFIRFormComplete() {
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
-      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
       const result = await inviaFirmaRentri({ societaId, payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber } });
       const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
@@ -415,7 +424,7 @@ export function MNFIRFormComplete() {
 
   const handleControlloPolizia = async () => {
     try {
-      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
       const firId = d.selectedFirNumber;
       if (firId) {
         try {
@@ -475,7 +484,7 @@ export function MNFIRFormComplete() {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields, form_data: { ...dbFields.form_data, peso_ricevuto: peso } });
       try {
-        const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+        const societaId = resolveSocietaId(activeTenantId, activeMnContext);
         await chiudiFirRentri({
           societaId,
           numero_fir: d.selectedFirNumber,

@@ -48,7 +48,7 @@ export function DevContattiModule() {
 
       <TabsContent value="rubrica">
         <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-          <RubricaTab basePath="/mn/admin/dev-multyproget" />
+          <RubricaTab basePath="/mn/admin/dev-multyproget" tenantId={MULTY_TENANT_ID} />
         </div>
       </TabsContent>
       <TabsContent value="anagrafiche">

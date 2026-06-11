@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 
-export function useRubricaContatti() {
+export function useRubricaContatti(overrideTenantId?: string) {
   const { profile } = useAuth();
-  const tenantId = profile?.tenant_id;
+  const tenantId = overrideTenantId || profile?.tenant_id;
   const qc = useQueryClient();
 
   const query = useQuery({
