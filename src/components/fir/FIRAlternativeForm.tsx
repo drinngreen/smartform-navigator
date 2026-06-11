@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Zap, ZoomIn, ZoomOut, RotateCcw, Printer } from "lucide-react";
+import { Zap, ZoomIn, ZoomOut, RotateCcw, Printer, Save } from "lucide-react";
+import { toast } from "sonner";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
