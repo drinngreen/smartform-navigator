@@ -34,6 +34,21 @@ import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModu
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 
+const DEV_TAB_LABELS: Record<string, string> = {
+  impianto: "Impianto",
+  "magazzino-dev": "Magazzino Dev",
+  "conto-proprio": "Conto Proprio",
+  registri: "Registri",
+  contatti: "Contatti",
+  privati: "Privati",
+  ricevute: "Ricevute",
+  "aree-riservate": "Aree Riservate",
+  "cer-preferiti": "CER Preferiti",
+  "gestione-fir": "Gestione FIR",
+  "firma-digitale": "Firma Digitale",
+  personale: "Personale",
+};
+
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,11 +130,12 @@ export default function MNDevDashboardPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="impianto" className="space-y-4"><DevFirWorkspace currentSectionLabel="Impianto" /><DevImpiantoModule /></TabsContent>
-        <TabsContent value="conto-proprio" className="space-y-4"><DevFirWorkspace currentSectionLabel="Conto Proprio" /><DevContoProprioModule /></TabsContent>
+        <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />
+
+        <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
+        <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
 
         <TabsContent value="registri">
-          <DevFirWorkspace currentSectionLabel="Registri" />
           <Tabs value={registriSub} onValueChange={setRegistriSub} className="space-y-4">
             <TabsList className="bg-card/40 border border-border/30 p-1">
               <TabsTrigger value="intermediario" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
