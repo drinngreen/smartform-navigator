@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
-import { FormBridgeProvider } from "@/contexts/FormBridgeContext";
 import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 
