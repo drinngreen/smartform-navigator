@@ -278,14 +278,14 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
     if (ensureErr) throw ensureErr;
     if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
 
-    const { data: draft, error: draftErr } = await supabase
+    let draftQuery = supabase
       .from("fir_forms")
       .select("*")
       .eq("id", draftId)
       .eq("user_id", user.id)
-      .eq("tenant_id", tenantId || profile?.tenant_id || "")
-      .eq("deleted_by_user", false)
-      .maybeSingle();
+      .eq("deleted_by_user", false);
+    if (tenantId) draftQuery = draftQuery.eq("tenant_id", tenantId);
+    const { data: draft, error: draftErr } = await draftQuery.maybeSingle();
 
     if (draftErr) throw draftErr;
     if (!draft) throw new Error("Bozza FIR non trovata dopo assegnazione");
