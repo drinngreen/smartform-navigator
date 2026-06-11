@@ -244,9 +244,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
 }
 
 export function DevFirWorkspace({ currentSectionLabel }: { currentSectionLabel?: string }) {
-  return (
-    <FormBridgeProvider>
-      <DevFirWorkspaceInner currentSectionLabel={currentSectionLabel} />
-    </FormBridgeProvider>
-  );
+  // Uses the global FormBridgeProvider from App.tsx so Dark Lemon can fill these fields too.
+  return <DevFirWorkspaceInner currentSectionLabel={currentSectionLabel} />;
 }
