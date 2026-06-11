@@ -841,6 +841,92 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     setScale((s) => Math.max(0.5, Math.min(4, s + delta)));
   };
 
+  const handleSaveDraft = async () => {
+    const targetId = firFormId || activeDraftId;
+    if (!targetId) { toast.error("Nessuna bozza attiva"); return; }
+    try {
+      const { data: existing } = await supabase
+        .from("fir_forms")
+        .select("*")
+        .eq("id", targetId)
+        .maybeSingle();
+      const mergedFormData = { ...((existing?.form_data as Record<string, unknown>) || {}), ...values };
+
+      const valByTokens = (...tokens: string[]) => {
+        const f = findFieldByTokens(fields, tokens);
+        return f ? String(values[f.id] ?? "").trim() : "";
+      };
+      const numToken = (...tokens: string[]) => {
+        const s = valByTokens(...tokens).replace(/\./g, "").replace(",", ".");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const desc = valByTokens("descrizione", "rifiuto");
+      const eer = valByTokens("codice", "eer") || valByTokens("cer");
+      const qta = numToken("quantita") ?? numToken("peso");
+      const um = valByTokens("unita", "misura") || "kg";
+      const statoFisico = valByTokens("stato", "fisico");
+      const prodDen = valByTokens("denominazione", "produttore");
+      const destDen = valByTokens("denominazione", "destinatario");
+      const trasDen = valByTokens("denominazione", "trasportatore");
+      const numeroFir = presetNumeroFir || activeDraftNumero || existing?.numero_fir || valByTokens("numero", "fir") || valByTokens("numero", "formulario");
+      const tenantId = (existing?.tenant_id as string | undefined) || TENANT_ID_MAP[tenantContext] || TENANT_ID_MAP.global;
+
+      const updates: Record<string, unknown> = { form_data: mergedFormData, updated_at: new Date().toISOString() };
+      if (desc) updates.descrizione_rifiuto = desc;
+      if (eer) updates.codice_eer = eer;
+      if (qta !== null) updates.quantita = qta;
+      if (um) updates.unita_misura = um;
+      if (statoFisico) updates.stato_fisico = statoFisico;
+      if (prodDen) updates.produttore_denominazione = prodDen;
+      if (destDen) updates.destinatario_denominazione = destDen;
+      if (trasDen) updates.trasportatore_denominazione = trasDen;
+      if (numeroFir) updates.numero_fir = numeroFir;
+
+      const { error } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
+      if (error) throw error;
+
+      if (tenantId && numeroFir) {
+        const registryRow = {
+          tenant_id: tenantId,
+          data_movimento: new Date().toISOString().slice(0, 10),
+          cer: eer || null,
+          descrizione: desc || null,
+          carico_scarico: registryMovementType || "Carico",
+          tipo_operazione: registryMovementType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
+          al_rentri: false,
+          numero_formulario: numeroFir,
+          segno: registryMovementType === "Scarico" ? "-" : "+",
+          quantita: qta,
+          peso_destino: qta,
+          luogo_produzione: prodDen || null,
+          destinazione: destDen || null,
+          stato_fisico: statoFisico || null,
+          annotazioni: "Creato da workspace FIR Dev Multyproget",
+          data_emissione_formulario: new Date().toISOString().slice(0, 10),
+          raw: { fir_form_id: targetId, form_data: mergedFormData },
+        };
+        const { data: found } = await supabase
+          .from("registro_generale" as any)
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("numero_formulario", numeroFir)
+          .limit(1)
+          .maybeSingle();
+        const registryError = found?.id
+          ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", found.id)).error
+          : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
+        if (registryError) throw registryError;
+      }
+
+      toast.success("✅ Formulario salvato e registrato");
+      onSaved?.();
+    } catch (err: any) {
+      toast.error("Errore salvataggio: " + (err?.message || err));
+    }
+  };
+
   const pageFields = fields.filter((f) => f.page === activePage);
 
   if (loading) {
