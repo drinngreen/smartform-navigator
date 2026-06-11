@@ -19,12 +19,13 @@ export function useMNFIRForms(overrideTenantId?: string) {
   const { data: myForms, isLoading: isLoadingMyForms } = useQuery({
     queryKey: ["mn-fir-forms", "my", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("fir_forms")
         .select("*")
         .eq("user_id", user!.id)
         .eq("deleted_by_user", false)
-        .order("created_at", { ascending: false });
+      if (overrideTenantId) query = query.eq("tenant_id", overrideTenantId);
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return data as FIRFormData[];
     },
@@ -35,7 +36,7 @@ export function useMNFIRForms(overrideTenantId?: string) {
     mutationFn: async (formData: Partial<FIRFormData>) => {
       const { data, error } = await supabase
         .from("fir_forms")
-        .insert({ user_id: user!.id, tenant_id: overrideTenantId ?? formData.tenant_id, ...formData })
+        .insert({ user_id: user!.id, ...formData, tenant_id: overrideTenantId ?? formData.tenant_id })
         .select()
         .single();
       if (error) throw error;
