@@ -269,6 +269,13 @@ serve(async (req) => {
     const candidates = getCandidates(cliente);
     const allowFallback = !hasDirectRoute && (tipoOp === "VIDIMAZIONE" || tipoOp === "LOTTO") && candidates.length > 1;
 
+    if (Date.now() < vpsOfflineUntil) {
+      return new Response(
+        JSON.stringify(offlinePayload("Bridge RENTRI già marcato offline dopo un errore di connessione recente")),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const attempts: Array<{
       cliente: string; company: string; status: number; success: boolean;
       message?: string; rentri_path?: string;
@@ -293,11 +300,31 @@ serve(async (req) => {
         `issuer=${upstream.issuer}, tipo=${tipoOp}, rentri_path=${route.path}, codice_blocco=${upstream.codice_blocco || "N/A"}`
       );
 
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(upstream),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), VPS_FETCH_TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(targetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(upstream),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        const message = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        console.error("[rentri-vps] CONNECTIVITY:", message);
+        if (isConnectivityError(message)) {
+          vpsOfflineUntil = Date.now() + VPS_OFFLINE_TTL_MS;
+          attempts.push({ cliente: upstream.cliente, company: upstream.company, status: 503, success: false, message, rentri_path: route.path });
+          return new Response(
+            JSON.stringify(offlinePayload(message, attempts)),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw fetchErr;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const text = await res.text();
       const data = parseBody(text);
