@@ -944,6 +944,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     }
   };
 
+  useEffect(() => {
+    const listener = () => { void handleSaveDraft(); };
+    window.addEventListener("dev-fir-save-active", listener);
+    return () => window.removeEventListener("dev-fir-save-active", listener);
+  });
+
   const pageFields = fields.filter((f) => f.page === activePage);
 
   if (loading) {
