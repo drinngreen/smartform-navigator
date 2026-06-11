@@ -163,6 +163,8 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const isStarted = !!store.editingFirId;
+  const activeTenantId = tenantId || profile?.tenant_id;
+  const activeMnContext = mnContext || profile?.mn_context;
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
@@ -183,13 +185,14 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
     (async () => {
       try {
         if (store.editingFirId) {
-          const { data: persistedFir } = await supabase
+          let persistedQuery = supabase
             .from("fir_forms")
             .select("*")
             .eq("id", store.editingFirId)
             .eq("user_id", user.id)
-            .eq("deleted_by_user", false)
-            .maybeSingle();
+            .eq("deleted_by_user", false);
+          if (tenantId) persistedQuery = persistedQuery.eq("tenant_id", tenantId);
+          const { data: persistedFir } = await persistedQuery.maybeSingle();
 
           if (isCancelled) return;
 
@@ -216,14 +219,14 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
           return;
         }
 
-        const { data: activeFirs } = await supabase
+        let activeQuery = supabase
           .from("fir_forms")
           .select("*")
           .eq("user_id", user.id)
           .eq("deleted_by_user", false)
-          .in("status", ["bozza", "inviato"])
-          .order("updated_at", { ascending: false })
-          .limit(1);
+          .in("status", ["bozza", "inviato"]);
+        if (tenantId) activeQuery = activeQuery.eq("tenant_id", tenantId);
+        const { data: activeFirs } = await activeQuery.order("updated_at", { ascending: false }).limit(1);
 
         if (isCancelled) return;
 
