@@ -152,8 +152,13 @@ const isTestFirNumberMN = (value?: string | null) => {
   return /^(test[\s-]?|skkzr)/i.test(value.trim());
 };
 
-export function MNFIRFormComplete() {
-  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms();
+interface MNFIRFormCompleteProps {
+  tenantId?: string;
+  mnContext?: string;
+}
+
+export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProps) {
+  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
@@ -267,9 +272,9 @@ export function MNFIRFormComplete() {
   const ensureAndLoadDraft = async () => {
     if (!user?.id) throw new Error("Utente non autenticato");
 
-    const { data: draftId, error: ensureErr } = await supabase.rpc("ensure_user_has_fir_draft" as any, {
-      p_user_id: user.id,
-    });
+    const { data: draftId, error: ensureErr } = tenantId
+      ? await supabase.rpc("ensure_user_has_fir_draft_for_tenant" as any, { p_user_id: user.id, p_tenant_id: tenantId })
+      : await supabase.rpc("ensure_user_has_fir_draft" as any, { p_user_id: user.id });
     if (ensureErr) throw ensureErr;
     if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
 
@@ -278,6 +283,7 @@ export function MNFIRFormComplete() {
       .select("*")
       .eq("id", draftId)
       .eq("user_id", user.id)
+      .eq("tenant_id", tenantId || profile?.tenant_id || "")
       .eq("deleted_by_user", false)
       .maybeSingle();
 
