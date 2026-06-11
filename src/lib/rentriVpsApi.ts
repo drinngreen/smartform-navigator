@@ -31,6 +31,37 @@ export interface RentriVpsResponse {
   status: number;
   data: unknown;
   error?: string;
+  rentri_offline?: boolean;
+  retry_after_ms?: number;
+}
+
+const RENTRI_OFFLINE_MESSAGE = "RENTRI momentaneamente non raggiungibile: puoi continuare a compilare, modificare e salvare i FIR localmente.";
+
+export function isRentriConnectivityError(message: string): boolean {
+  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|Edge function returned 500|network|aborted|timeout|offline/i.test(message);
+}
+
+export function isRentriOfflineResponse(response: Pick<RentriVpsResponse, "data" | "error" | "rentri_offline"> | null | undefined): boolean {
+  const data = response?.data as Record<string, unknown> | null | undefined;
+  const dataError = typeof data?.error === "string" ? data.error : "";
+  return Boolean(response?.rentri_offline || data?.rentri_offline || isRentriConnectivityError(`${response?.error ?? ""} ${dataError}`));
+}
+
+function normalizeRentriResponse(data: unknown): RentriVpsResponse {
+  if (data && typeof data === "object" && "success" in data) {
+    const record = data as Record<string, unknown>;
+    const nested = record.data as Record<string, unknown> | null | undefined;
+    return {
+      success: Boolean(record.success),
+      status: Number(record.status ?? (record.rentri_offline ? 503 : 0)),
+      data: record.data ?? null,
+      error: typeof record.error === "string" ? record.error : undefined,
+      rentri_offline: Boolean(record.rentri_offline || nested?.rentri_offline),
+      retry_after_ms: typeof record.retry_after_ms === "number" ? record.retry_after_ms : undefined,
+    };
+  }
+
+  return { success: false, status: 0, data: data ?? null, error: "Risposta RENTRI non valida" };
 }
 
 export interface RentriAccettazionePayload {
@@ -53,13 +84,25 @@ export async function inviaOperazioneRentri(
     });
 
     if (error) {
-      return { success: false, status: 0, data: null, error: error.message };
+      return {
+        success: false,
+        status: isRentriConnectivityError(error.message) ? 503 : 0,
+        data: null,
+        error: isRentriConnectivityError(error.message) ? RENTRI_OFFLINE_MESSAGE : error.message,
+        rentri_offline: isRentriConnectivityError(error.message),
+      };
     }
 
-    return data as RentriVpsResponse;
+    return normalizeRentriResponse(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    return { success: false, status: 0, data: null, error: message };
+    return {
+      success: false,
+      status: isRentriConnectivityError(message) ? 503 : 0,
+      data: null,
+      error: isRentriConnectivityError(message) ? RENTRI_OFFLINE_MESSAGE : message,
+      rentri_offline: isRentriConnectivityError(message),
+    };
   }
 }
 

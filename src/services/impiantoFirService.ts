@@ -1,5 +1,6 @@
 import {
   accettaFirInArrivoDestinatario,
+  isRentriOfflineResponse,
   listaFirInArrivoDestinatario,
   ricercaFir,
   firmaRicezione,
@@ -62,6 +63,7 @@ export async function listIncomingXFir(
 ): Promise<FirSummary[]> {
   const res = await listaFirInArrivoDestinatario(cliente, identificativoSoggetto);
   if (!res.success) {
+    if (isRentriOfflineResponse(res)) return [];
     throw new Error(res.error || "Errore recupero FIR in arrivo");
   }
 

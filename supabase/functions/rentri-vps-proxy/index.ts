@@ -7,6 +7,9 @@ const corsHeaders = {
 };
 
 const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://167.235.29.27:3000";
+const VPS_FETCH_TIMEOUT_MS = Number(Deno.env.get("RENTRI_VPS_TIMEOUT_MS") ?? 6000);
+const VPS_OFFLINE_TTL_MS = Number(Deno.env.get("RENTRI_VPS_OFFLINE_TTL_MS") ?? 180000);
+let vpsOfflineUntil = 0;
 
 function normalizeBaseUrl(raw: string): string {
   let url = raw.replace(/\/+$/, "");
@@ -15,6 +18,22 @@ function normalizeBaseUrl(raw: string): string {
 }
 
 const VPS_URL = normalizeBaseUrl(VPS_BASE);
+
+function isConnectivityError(message: string): boolean {
+  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|network|aborted|timeout/i.test(message);
+}
+
+function offlinePayload(message: string, attempts: unknown[] = []) {
+  return {
+    success: false,
+    status: 503,
+    error: "RENTRI momentaneamente non raggiungibile: la connessione al bridge è offline. Puoi continuare a compilare, modificare e salvare i FIR localmente; l'invio RENTRI sarà disponibile quando il bridge tornerà attivo.",
+    data: { error: message, rentri_offline: true },
+    rentri_offline: true,
+    attempts,
+    retry_after_ms: Math.max(0, vpsOfflineUntil - Date.now()),
+  };
+}
 
 /* ── Mappature tenant ── */
 
@@ -250,6 +269,13 @@ serve(async (req) => {
     const candidates = getCandidates(cliente);
     const allowFallback = !hasDirectRoute && (tipoOp === "VIDIMAZIONE" || tipoOp === "LOTTO") && candidates.length > 1;
 
+    if (Date.now() < vpsOfflineUntil) {
+      return new Response(
+        JSON.stringify(offlinePayload("Bridge RENTRI già marcato offline dopo un errore di connessione recente")),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const attempts: Array<{
       cliente: string; company: string; status: number; success: boolean;
       message?: string; rentri_path?: string;
@@ -274,11 +300,31 @@ serve(async (req) => {
         `issuer=${upstream.issuer}, tipo=${tipoOp}, rentri_path=${route.path}, codice_blocco=${upstream.codice_blocco || "N/A"}`
       );
 
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(upstream),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), VPS_FETCH_TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(targetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(upstream),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        const message = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        console.error("[rentri-vps] CONNECTIVITY:", message);
+        if (isConnectivityError(message)) {
+          vpsOfflineUntil = Date.now() + VPS_OFFLINE_TTL_MS;
+          attempts.push({ cliente: upstream.cliente, company: upstream.company, status: 503, success: false, message, rentri_path: route.path });
+          return new Response(
+            JSON.stringify(offlinePayload(message, attempts)),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw fetchErr;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const text = await res.text();
       const data = parseBody(text);
@@ -320,6 +366,13 @@ serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[rentri-vps] ERROR:", message);
+    if (isConnectivityError(message)) {
+      vpsOfflineUntil = Date.now() + VPS_OFFLINE_TTL_MS;
+      return new Response(
+        JSON.stringify(offlinePayload(message)),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ success: false, error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
