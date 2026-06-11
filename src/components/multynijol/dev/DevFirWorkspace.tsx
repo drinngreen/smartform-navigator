@@ -13,14 +13,27 @@ import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 const OCR_FIELD_ALIASES: Record<string, string[]> = {
+  numero_fir: ["numero formulario", "numero_formulario"],
+  numero_formulario: ["numero_fir"],
   cer: ["codice_eer", "codice_cer", "codice eer"],
   codice_cer: ["codice_eer", "cer"],
+  codice_eer: ["cer", "codice_cer"],
+  descrizione_rifiuto: ["rifiuto_descrizione", "descrizione del rifiuto"],
   peso_kg: ["quantita", "peso", "quantita_kg"],
+  quantita_kg: ["quantita", "peso", "peso_kg"],
   targa_veicolo: ["targa_automezzo", "targa automezzo"],
   targa: ["targa_automezzo", "targa automezzo"],
+  produttore_denominazione: ["denominazione_produttore", "denominazione produttore"],
   produttore_cf: ["codice_fiscale_produttore", "produttore_codice_fiscale"],
+  produttore_codice_fiscale: ["codice_fiscale_produttore"],
+  produttore_indirizzo: ["unita_locale_produttore", "indirizzo_produttore"],
+  destinatario_denominazione: ["denominazione_destinatario", "denominazione destinatario"],
   destinatario_cf: ["codice_fiscale_destinatario", "destinatario_codice_fiscale"],
+  destinatario_codice_fiscale: ["codice_fiscale_destinatario"],
+  destinatario_indirizzo: ["unita_locale_destinatario", "indirizzo_destinatario"],
+  trasportatore_denominazione: ["denominazione_trasportatore", "denominazione trasportatore"],
   trasportatore_cf: ["codice_fiscale_trasportatore", "trasportatore_codice_fiscale"],
+  trasportatore_codice_fiscale: ["codice_fiscale_trasportatore"],
   data_trasporto: ["data_inizio_trasporto", "data_partenza"],
   ora_trasporto: ["ora_inizio_trasporto", "ora_partenza"],
 };
