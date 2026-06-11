@@ -443,10 +443,12 @@ interface FIRAlternativeFormProps {
   assignedUserId?: string;
   draftData?: FIRAlternativeDraftData | null;
   printOnly?: boolean;
+  registryMovementType?: "Carico" | "Scarico";
+  onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, printOnly, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, printOnly, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
