@@ -66,6 +66,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [activeDraft, setActiveDraft] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrEntries, setOcrEntries] = useState<{ id: string; value: string }[]>([]);
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
 
   const { data: drafts = [], isLoading } = useQuery({
@@ -148,6 +149,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         const aliases = OCR_FIELD_ALIASES[id] || [];
         return [{ id, value }, ...(field.label ? [{ id: field.label, value }] : []), ...aliases.map((alias) => ({ id: alias, value }))];
       });
+      setOcrEntries(entries);
       const filled = fillFields(entries);
       toast.success(`OCR completato: ${fields.length} campi letti, ${filled} applicati al formulario`);
     } catch (error: any) {
@@ -216,6 +218,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               presetNumeroFir={activeDraft?.numero_fir || undefined}
               assignedUserId={activeDraft?.user_id || user?.id}
               draftData={activeDraft}
+              ocrEntries={ocrEntries}
               registryMovementType={registryMovementType}
               onSaved={() => {
                 queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
