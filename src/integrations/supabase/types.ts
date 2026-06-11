@@ -5271,6 +5271,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      ensure_user_has_fir_draft_for_tenant: {
+        Args: { p_tenant_id: string; p_user_id: string }
+        Returns: string
+      }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }
       exec_sql_write: { Args: { query: string }; Returns: Json }
       generate_fir_numbers_for_user: {
