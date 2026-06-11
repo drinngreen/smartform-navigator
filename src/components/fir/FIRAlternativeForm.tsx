@@ -32,6 +32,14 @@ const TENANT_MAP: Record<string, { cliente: RentriCliente; preset: Soggetto }> =
   niyol: { cliente: "niyol", preset: NIYOL },
 };
 
+const TENANT_ID_MAP: Record<string, string> = {
+  global: "167d07ad-9184-484e-85a6-da5ceafa42a3",
+  multyproget: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  "multyproget-intermediario": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  "multyproget-impianto": "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  niyol: "819c783e-78dd-4080-8265-802e75b0d813",
+};
+
 const ALL_PRODUTTORI: Soggetto[] = [GLOBAL_RECO, MULTYPROGET, NIYOL];
 function normalizeFieldName(fieldName: string): string {
   return fieldName
