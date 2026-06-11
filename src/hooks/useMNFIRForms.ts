@@ -17,7 +17,7 @@ export function useMNFIRForms(overrideTenantId?: string) {
   const { releaseNumber, consumeNumber } = useFIRNumberPool();
 
   const { data: myForms, isLoading: isLoadingMyForms } = useQuery({
-    queryKey: ["mn-fir-forms", "my", user?.id],
+    queryKey: ["mn-fir-forms", "my", user?.id, overrideTenantId],
     queryFn: async () => {
       let query = supabase
         .from("fir_forms")
