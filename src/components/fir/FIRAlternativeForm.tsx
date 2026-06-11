@@ -1182,61 +1182,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       {(firFormId || activeDraftId) && (
         <div className="flex justify-end pt-2">
           <button
-            onClick={async () => {
-              const targetId = firFormId || activeDraftId;
-              if (!targetId) { toast.error("Nessuna bozza attiva"); return; }
-              try {
-                const { data: existing } = await supabase
-                  .from("fir_forms")
-                  .select("form_data")
-                  .eq("id", targetId)
-                  .maybeSingle();
-                const mergedFormData = { ...(existing?.form_data as Record<string, unknown> || {}), ...values };
-
-                const valByTokens = (...tokens: string[]) => {
-                  const f = findFieldByTokens(fields, tokens);
-                  return f ? String(values[f.id] ?? "").trim() : "";
-                };
-                const numToken = (...tokens: string[]) => {
-                  const s = valByTokens(...tokens).replace(",", ".");
-                  const n = parseFloat(s);
-                  return Number.isFinite(n) ? n : null;
-                };
-
-                const updates: Record<string, unknown> = {
-                  form_data: mergedFormData,
-                  updated_at: new Date().toISOString(),
-                };
-                const desc = valByTokens("descrizione", "rifiuto");
-                const eer = valByTokens("codice", "eer") || valByTokens("cer");
-                const qta = numToken("quantita") ?? numToken("peso");
-                const um = valByTokens("unita", "misura");
-                const statoFisico = valByTokens("stato", "fisico");
-                const prodDen = valByTokens("denominazione", "produttore");
-                const destDen = valByTokens("denominazione", "destinatario");
-                const trasDen = valByTokens("denominazione", "trasportatore");
-                if (desc) updates.descrizione_rifiuto = desc;
-                if (eer) updates.codice_eer = eer;
-                if (qta !== null) updates.quantita = qta;
-                if (um) updates.unita_misura = um;
-                if (statoFisico) updates.stato_fisico = statoFisico;
-                if (prodDen) updates.produttore_denominazione = prodDen;
-                if (destDen) updates.destinatario_denominazione = destDen;
-                if (trasDen) updates.trasportatore_denominazione = trasDen;
-                if (presetNumeroFir || activeDraftNumero) {
-                  updates.numero_fir = presetNumeroFir || activeDraftNumero;
-                }
-
-                const { error } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
-                if (error) throw error;
-                toast.success("✅ Formulario salvato");
-              } catch (err: any) {
-                toast.error("Errore salvataggio: " + (err?.message || err));
-              }
-            }}
+            onClick={handleSaveDraft}
             className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
           >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO
+            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
           </button>
         </div>
       )}
