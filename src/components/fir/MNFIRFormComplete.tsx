@@ -368,7 +368,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
-      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
       const result = await inviaFirmaRentri({ societaId, payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber } });
       const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
@@ -424,7 +424,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
 
   const handleControlloPolizia = async () => {
     try {
-      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
       const firId = d.selectedFirNumber;
       if (firId) {
         try {
@@ -484,7 +484,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields, form_data: { ...dbFields.form_data, peso_ricevuto: peso } });
       try {
-        const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+        const societaId = resolveSocietaId(activeTenantId, activeMnContext);
         await chiudiFirRentri({
           societaId,
           numero_fir: d.selectedFirNumber,
