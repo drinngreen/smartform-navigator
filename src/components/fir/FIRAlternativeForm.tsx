@@ -553,8 +553,24 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   // Auto-load user's active FIR draft if no preset provided
   useEffect(() => {
-    if (presetNumeroFir || firFormId) return;
-    
+    if (firFormId) return;
+
+    // If we have a numero_fir but no draft id, try to resolve the draft by numero
+    if (presetNumeroFir) {
+      supabase
+        .from("fir_forms")
+        .select("id")
+        .eq("numero_fir", presetNumeroFir)
+        .eq("deleted_by_user", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: draft }) => {
+          if (draft) setActiveDraftId(draft.id);
+        });
+      return;
+    }
+
     supabase.auth.getUser().then(({ data: { user: authUser } }) => {
       if (!authUser) return;
       supabase
