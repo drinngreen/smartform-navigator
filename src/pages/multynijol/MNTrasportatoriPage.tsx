@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil } from "lucide-react";
+import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +69,14 @@ interface MNTrasportatoriPageProps {
   context?: string;
 }
 
+function normalizeFirNumber(value: string) {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, " ");
+  if (/^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized)) return normalized;
+  const compact = normalized.replace(/[^A-Z0-9]/g, "");
+  const match = compact.match(/([A-Z]{5})([0-9]{6})([A-Z]{2})/);
+  return match ? `${match[1]} ${match[2]} ${match[3]}` : "";
+}
+
 export default function MNTrasportatoriPage({ embedded, context: contextProp }: MNTrasportatoriPageProps = {}) {
   const params = useParams<{ context: string }>();
   const contextKey = contextProp || params.context || "multyproget";
@@ -80,6 +88,8 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   const [createDialog, setCreateDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [manualFirDialog, setManualFirDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [manualFirNumber, setManualFirNumber] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -105,8 +115,30 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
 
   useEffect(() => { fetchUsers(); }, [contextKey]);
 
-  const handleCreateFir = () => {
-    toast.info("Creazione automatica disattivata: crea il FIR dal workspace inserendo il numero esatto.");
+  const handleCreateFir = async () => {
+    if (!manualFirDialog.user) return;
+    const normalized = normalizeFirNumber(manualFirNumber);
+    if (!normalized) {
+      toast.error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: manualFirDialog.user.id,
+        p_tenant_id: tenant.tenantId,
+        p_numero_fir: normalized,
+      });
+      if (error) throw error;
+      if (!draftId) throw new Error("Formulario non creato");
+      toast.success(`Formulario ${normalized} creato per ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
+      setManualFirDialog({ open: false, user: null });
+      setManualFirNumber("");
+    } catch (e: any) {
+      toast.error("Errore creazione FIR: " + e.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -238,8 +270,17 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleCreateFir}>
-                          FIR manuale
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => {
+                            setManualFirDialog({ open: true, user });
+                            setManualFirNumber("");
+                          }}
+                        >
+                          <FilePlus className="h-3.5 w-3.5" />
+                          Crea FIR manuale
                         </Button>
                         <Button
                           size="sm"
@@ -283,6 +324,33 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         onCreated={fetchUsers}
         tenant={tenant}
       />
+
+      <Dialog open={manualFirDialog.open} onOpenChange={(o) => setManualFirDialog({ open: o, user: o ? manualFirDialog.user : null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crea FIR manuale</DialogTitle>
+            <DialogDescription>
+              Inserisci il numero esatto per <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={manualFirNumber}
+            onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleCreateFir();
+            }}
+            placeholder="ZRZXR 000566 LG"
+            className="font-mono"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualFirDialog({ open: false, user: null })}>Annulla</Button>
+            <Button onClick={handleCreateFir} disabled={actionLoading || !manualFirNumber.trim()} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
+              Crea questo FIR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Password Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(o) => setPasswordDialog({ open: o, user: o ? passwordDialog.user : null })}>
