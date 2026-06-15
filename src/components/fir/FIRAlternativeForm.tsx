@@ -585,7 +585,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         const normalizedName = normalize(candidate.name || candidate.id);
         return normalizedName === wanted || normalizedName.includes(wanted) || wanted.includes(normalizedName);
       });
-      if (field && entry.value) nextValues[field.id] = entry.value;
+      if (!field || !entry.value) return;
+      // numero_fir is immutable — never accept it from OCR
+      if (hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"])) return;
+      nextValues[field.id] = entry.value;
     });
     if (Object.keys(nextValues).length > 0) setValues((prev) => ({ ...prev, ...nextValues }));
   }, [ocrEntries, fields]);
