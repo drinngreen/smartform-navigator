@@ -87,20 +87,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     },
   });
 
-  // Destinatari from DB (impianti accounts for Multyproget)
-  const { data: destinatari = [] } = useQuery({
-    queryKey: ["dev-multy-destinatari", MULTY_TENANT_ID],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("impianti_accounts")
-        .select("id, ragione_sociale")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .order("ragione_sociale", { ascending: true });
-      if (error) throw error;
-      return (data as any[]) || [];
-    },
-  });
-
   const { data: impianti = [] } = useQuery({
     queryKey: ["dev-multy-impianti", MULTY_TENANT_ID],
     queryFn: async () => {
@@ -211,21 +197,19 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   // Destinatario selection → fill fields via bridge
   useEffect(() => {
     if (!destSelected) return;
-    const dest = destinatari.find((d) => d.id === destSelected);
+    const dest = impianti.find((d) => d.id === destSelected);
     if (!dest) return;
-    const impianto = impianti.find((item) => item.id === impiantoId) || impianti[0];
-    const indirizzo = impianto
-      ? [impianto.indirizzo, impianto.comune, impianto.provincia ? `(${impianto.provincia})` : ""].filter(Boolean).join(" ")
-      : "";
+    setImpiantoId(dest.id);
+    const indirizzo = [dest.indirizzo, dest.comune, dest.provincia ? `(${dest.provincia})` : ""].filter(Boolean).join(" ");
     fillFields([
-      { id: "denominazione_destinatario", value: dest.ragione_sociale || "" },
-      { id: "destinatario_denominazione", value: dest.ragione_sociale || "" },
+      { id: "denominazione_destinatario", value: dest.nome || "" },
+      { id: "destinatario_denominazione", value: dest.nome || "" },
       { id: "unita_locale_destinatario", value: indirizzo },
       { id: "destinatario_indirizzo", value: indirizzo },
-      { id: "numero_aut_comunicazione_destinatario", value: impianto?.autorizzaz_regione || "" },
+      { id: "numero_aut_comunicazione_destinatario", value: dest.autorizzaz_regione || "" },
     ]);
-    toast.success(`Destinatario impostato: ${dest.ragione_sociale}`);
-  }, [destSelected, destinatari, impianti, impiantoId, fillFields]);
+    toast.success(`Destinatario impostato: ${dest.nome}`);
+  }, [destSelected, impianti, fillFields]);
 
   return (
     <Card className="border-emerald-500/30 bg-card/70">
@@ -279,9 +263,9 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground min-w-[220px]"
             >
               <option value="">Destinatario da database…</option>
-              {destinatari.map((d) => (
+              {impianti.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.ragione_sociale}
+                  {d.nome}
                 </option>
               ))}
             </select>
