@@ -125,11 +125,6 @@ export function useFIRForms() {
             }
             catch { /* already consumed */ }
             // [DISABLED] Auto-assegnazione di un nuovo numero FIR dopo la chiusura rimossa.
-                }
-                catch (e) {
-                    console.warn("Auto-assign failed:", e);
-                }
-            }
             return data;
         },
         onSuccess: () => {
