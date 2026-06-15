@@ -331,6 +331,10 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               disableRentriActions
               registryMovementType={registryMovementType}
               onSaved={() => {
+                // Refresh the active draft from DB so the canonical numero_fir is shown
+                if (activeDraftId) {
+                  loadDraft(activeDraftId).catch(() => undefined);
+                }
                 queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
                 queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
                 queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
