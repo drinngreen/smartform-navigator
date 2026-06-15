@@ -91,12 +91,21 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || "{}";
+    const rawContent = data?.choices?.[0]?.message?.content || "{}";
+    // Strip ```json ... ``` fences that some models (Nova) wrap around JSON
+    let content = rawContent.trim();
+    const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenceMatch) content = fenceMatch[1].trim();
+    // Fallback: extract first {...} block
+    if (!content.startsWith("{")) {
+      const objMatch = content.match(/\{[\s\S]*\}/);
+      if (objMatch) content = objMatch[0];
+    }
     let parsed: any;
     try {
       parsed = JSON.parse(content);
     } catch {
-      parsed = { fields: [], raw_text: content, confidence: "low" };
+      parsed = { fields: [], raw_text: rawContent, confidence: "low" };
     }
 
     return new Response(JSON.stringify({ ok: true, ...parsed }), {
