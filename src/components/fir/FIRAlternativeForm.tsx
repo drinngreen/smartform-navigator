@@ -490,6 +490,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
+  const [suppressProducerPreset, setSuppressProducerPreset] = useState(false);
   const location = useLocation();
   const params = useParams<{ context?: string }>();
 
@@ -593,6 +594,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   useEffect(() => {
     if (!ocrEntries?.length || !fields.length) return;
+    setSuppressProducerPreset(true);
     const normalize = (value: string) => normalizeFieldName(value);
     const nextValues: Record<string, string> = {};
     ocrEntries.forEach((entry) => {
@@ -826,6 +828,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
   useEffect(() => {
     if (fields.length === 0) return;
+    if (suppressProducerPreset) return;
     if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
     // Only auto-fill when the producer denomination is currently empty
     if (!produttoreDenomField) return;
@@ -835,7 +838,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     if (Object.keys(updates).length === 0) return;
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(tenantPreset);
-  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values]);
+  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values, suppressProducerPreset]);
 
 
   const isNumeroFirField = useCallback((field: TemplateField | undefined) => {
