@@ -565,6 +565,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         type: bridgeType,
         aliases: [field.id, normalizedName, label],
         getValue: () => {
+          if (isNumeroFirFieldName(field.name)) return canonicalNumeroFir;
           const current = values[field.id];
           if (field.type === "checkbox") {
             return current ? "true" : "false";
@@ -587,7 +588,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         },
       };
     }),
-    [fields, values],
+    [fields, values, canonicalNumeroFir],
   );
 
   useEffect(() => {
@@ -614,10 +615,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           merged[fieldId] = "";
         }
       }
-      for (const fieldId of Object.keys(nextValues)) {
-        setConfirmedFieldIds((prevConfirmed) => new Set(prevConfirmed).add(fieldId));
-      }
       return { ...merged, ...nextValues };
+    });
+    setConfirmedFieldIds((prevConfirmed) => {
+      const updated = new Set(prevConfirmed);
+      Object.keys(nextValues).forEach((fieldId) => updated.add(fieldId));
+      return updated;
     });
     setSelectedProduttore(null);
   }, [ocrEntries, fields, tenantPreset]);
