@@ -10,6 +10,7 @@ import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { getCodiceOperazione } from "@/lib/codiciRecuperoSmaltimento";
+import { useMNFIRStore } from "@/stores/mnFirStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -78,6 +79,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { fillFields } = useFormBridge();
+  const mnFirStore = useMNFIRStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [activeDraft, setActiveDraft] = useState<any | null>(null);
@@ -129,6 +131,10 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     if (!data) throw new Error("Formulario non trovato");
     setActiveDraft(data);
     setActiveDraftId(id);
+    mnFirStore.loadFromDatabase({
+      ...data,
+      form_data: data.form_data as Record<string, any> | null,
+    });
     return data;
   };
 
@@ -377,6 +383,28 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               </span>
             )}
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
+            <span className="text-xs font-mono text-muted-foreground">Tipo modulo:</span>
+            <Button
+              type="button"
+              size="sm"
+              variant={moduleType === "standard" ? "default" : "outline"}
+              onClick={() => setModuleType("standard")}
+              className="h-8"
+            >
+              Standard
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={moduleType === "alternative" ? "default" : "outline"}
+              onClick={() => setModuleType("alternative")}
+              className="h-8"
+            >
+              Alternativo
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -403,26 +431,29 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
 
         {activeDraftId ? (
           <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-            <FIRAlternativeForm
-              key={activeDraftId}
-              firFormId={activeDraftId}
-              presetNumeroFir={activeDraft?.numero_fir || undefined}
-              assignedUserId={activeDraft?.user_id || user?.id}
-              impiantoId={impiantoId}
-              draftData={activeDraft}
-              ocrEntries={ocrEntries}
-              disableRentriActions
-              registryMovementType={registryMovementType}
-              onSaved={() => {
-                // Refresh the active draft from DB so the canonical numero_fir is shown
-                if (activeDraftId) {
-                  loadDraft(activeDraftId).catch(() => undefined);
-                }
-                queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
-                queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
-                queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
-              }}
-            />
+            {moduleType === "alternative" ? (
+              <FIRAlternativeForm
+                key={`alternative-${activeDraftId}`}
+                firFormId={activeDraftId}
+                presetNumeroFir={activeDraft?.numero_fir || undefined}
+                assignedUserId={activeDraft?.user_id || user?.id}
+                impiantoId={impiantoId}
+                draftData={activeDraft}
+                ocrEntries={ocrEntries}
+                disableRentriActions
+                registryMovementType={registryMovementType}
+                onSaved={() => {
+                  if (activeDraftId) {
+                    loadDraft(activeDraftId).catch(() => undefined);
+                  }
+                  queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+                }}
+              />
+            ) : (
+              <MNFIRFormComplete key={`standard-${activeDraftId}`} tenantId={MULTY_TENANT_ID} mnContext="multyproget" />
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/50 p-4 text-sm text-muted-foreground">
