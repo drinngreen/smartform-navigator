@@ -155,9 +155,11 @@ const isTestFirNumberMN = (value?: string | null) => {
 interface MNFIRFormCompleteProps {
   tenantId?: string;
   mnContext?: string;
+  firFormId?: string;
+  draftData?: any | null;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }: MNFIRFormCompleteProps) {
   const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
@@ -175,9 +177,19 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
   const u = store.updateField;
   const d = store.data;
 
+  useEffect(() => {
+    if (!draftData?.id) return;
+    store.loadFromDatabase({
+      ...draftData,
+      form_data: draftData.form_data as Record<string, any> | null,
+    });
+    useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: draftData.status === "completato" ? "chiuso" : (draftData.status as any) || "bozza" });
+  }, [draftData?.id]);
+
   // ── Auto-restore + integrity check state locale ─────────────
   const hasAutoRestored = useRef(false);
   useEffect(() => {
+    if (firFormId || draftData?.id) return;
     if (!user?.id || hasAutoRestored.current) return;
     hasAutoRestored.current = true;
     let isCancelled = false;

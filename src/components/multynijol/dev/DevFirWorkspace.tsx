@@ -452,7 +452,13 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 }}
               />
             ) : (
-              <MNFIRFormComplete key={`standard-${activeDraftId}`} tenantId={MULTY_TENANT_ID} mnContext="multyproget" />
+              <MNFIRFormComplete
+                key={`standard-${activeDraftId}`}
+                tenantId={MULTY_TENANT_ID}
+                mnContext="multyproget"
+                firFormId={activeDraftId}
+                draftData={activeDraft}
+              />
             )}
           </div>
         ) : (
