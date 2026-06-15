@@ -63,7 +63,7 @@ serve(async (req) => {
         "X-Title": "Multyproget OCR Formulario",
       },
       body: JSON.stringify({
-        model: "amazon/nova-2-lite-v1",
+        model: "nvidia/nemotron-nano-12b-v2-vl:free",
         messages: [
           { role: "system", content: OCR_SYSTEM_PROMPT },
           {
