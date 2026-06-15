@@ -284,10 +284,49 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     <Card className="border-emerald-500/30 bg-card/70">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <CardTitle className="flex items-center gap-2 text-base text-emerald-400">
               <FileText className="h-5 w-5" /> Formulari FIR operativi {currentSectionLabel ? `· ${currentSectionLabel}` : ""}
             </CardTitle>
+            <div className="grid w-full gap-2 lg:w-auto lg:min-w-[520px]">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setModuleType("standard")}
+                  className={`rounded-md border px-4 py-3 text-left transition-colors ${moduleType === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Standard</span>
+                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModuleType("alternative")}
+                  className={`rounded-md border px-4 py-3 text-left transition-colors ${moduleType === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
+                  <span className="block text-xs text-muted-foreground">Editor alternativo FIR</span>
+                </button>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  value={manualFirNumber}
+                  onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleNewDraft();
+                  }}
+                  placeholder="NUMERO FIR MANUALE: ZRZXR 000566 LG"
+                  className="h-10 min-w-0 flex-1 rounded-md border border-emerald-500/60 bg-background px-3 text-sm font-mono text-foreground placeholder:text-muted-foreground"
+                />
+                <Button onClick={handleNewDraft} disabled={creating || !user?.id || !manualFirNumber.trim()} className="h-10 gap-2 bg-emerald-600 hover:bg-emerald-700">
+                  {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Crea formulario manuale
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={registryMovementType}
@@ -297,10 +336,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 <option value="Carico">Registro: Carico</option>
                 <option value="Scarico">Registro: Scarico</option>
               </select>
-              <Button onClick={handleNewDraft} disabled={creating || !user?.id || !manualFirNumber.trim()} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Crea / apri numero
-              </Button>
               <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={ocrBusy || !user?.id} className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
                 {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
                 Carica OCR
@@ -326,26 +361,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
           {/* Helper row: destinatari from DB + codice R/D autocomplete */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
             <span className="text-xs font-mono text-muted-foreground">Aiuti compilazione:</span>
-            <input
-              type="text"
-              value={manualFirNumber}
-              onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleOpenManualFir();
-              }}
-              placeholder="Apri FIR esatto: ZRZXR 000566 LG"
-              className="h-8 rounded-md border border-emerald-500/40 bg-background px-2 text-xs font-mono text-foreground w-64"
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleOpenManualFir}
-              disabled={!manualFirNumber.trim() || !user?.id}
-              className="h-8 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
-            >
-              Apri numero
-            </Button>
             <select
               value={destSelected}
               onChange={(e) => setDestSelected(e.target.value)}
@@ -384,27 +399,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
-            <span className="text-xs font-mono text-muted-foreground">Tipo modulo:</span>
-            <Button
-              type="button"
-              size="sm"
-              variant={moduleType === "standard" ? "default" : "outline"}
-              onClick={() => setModuleType("standard")}
-              className="h-8"
-            >
-              Standard
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={moduleType === "alternative" ? "default" : "outline"}
-              onClick={() => setModuleType("alternative")}
-              className="h-8"
-            >
-              Alternativo
-            </Button>
-          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
