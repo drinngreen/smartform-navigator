@@ -948,7 +948,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (eer) updates.codice_eer = eer;
       if (qta !== null) updates.quantita = qta;
       if (um) updates.unita_misura = um;
-      if (statoFisico) updates.stato_fisico = statoFisico;
+      const statoFisicoLabel = toStatoFisicoLabel(statoFisico);
+      if (statoFisicoLabel) updates.stato_fisico = statoFisicoLabel;
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
