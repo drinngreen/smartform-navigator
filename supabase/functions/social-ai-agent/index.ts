@@ -306,7 +306,7 @@ serve(async (req) => {
   try {
     const { messages } = await req.json();
 
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -361,7 +361,7 @@ serve(async (req) => {
           "X-Title": "Social Dragon AI",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "openai/gpt-oss-120b",
           messages: conversationMessages,
           tools,
           temperature: 0.4,

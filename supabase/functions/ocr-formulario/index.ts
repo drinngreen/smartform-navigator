@@ -30,7 +30,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) {
       return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY not configured" }), {
         status: 500,
@@ -63,7 +63,7 @@ serve(async (req) => {
         "X-Title": "Multyproget OCR Formulario",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
+        model: "amazon/nova-2-lite-v1:free",
         messages: [
           { role: "system", content: OCR_SYSTEM_PROMPT },
           {
