@@ -297,9 +297,9 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 <option value="Carico">Registro: Carico</option>
                 <option value="Scarico">Registro: Scarico</option>
               </select>
-              <Button onClick={handleNewDraft} disabled={creating || !user?.id} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={handleNewDraft} disabled={creating || !user?.id || !manualFirNumber.trim()} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Nuovo / carica FIR
+                Crea / apri numero
               </Button>
               <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={ocrBusy || !user?.id} className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
                 {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}

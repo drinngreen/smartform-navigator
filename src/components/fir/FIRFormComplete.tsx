@@ -399,7 +399,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       p_user_id: user.id,
     });
     if (ensureErr) throw ensureErr;
-    if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
+    if (!draftId) throw new Error("Nessuna bozza manuale trovata: crea il FIR inserendo prima il numero esatto");
 
     const { data: draft, error: draftErr } = await supabase
       .from("fir_forms")
@@ -410,7 +410,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       .maybeSingle();
 
     if (draftErr) throw draftErr;
-    if (!draft) throw new Error("Bozza FIR non trovata dopo assegnazione");
+    if (!draft) throw new Error("Bozza FIR manuale non trovata");
 
     store.loadFromDatabase({
       ...draft,
@@ -427,9 +427,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       const numero = await ensureAndLoadDraft();
       toast.success(`FIR ${numero || "assegnato"} inizializzato!`);
     } catch (error: any) {
-      toast.error(error?.message?.includes("Nessun numero FIR")
-        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
-        : "Errore nell'inizializzazione del FIR");
+      toast.error(error?.message || "Errore nell'apertura del FIR");
     }
   };
 
@@ -469,9 +467,7 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       const numero = await ensureAndLoadDraft();
       toast.success(`Nuovo FIR ${numero || "assegnato"} inizializzato!`);
     } catch (error: any) {
-      toast.error(error?.message?.includes("Nessun numero FIR")
-        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
-        : "Errore nell'inizializzazione del nuovo FIR");
+      toast.error(error?.message || "Errore nell'apertura del nuovo FIR");
     }
   };
 

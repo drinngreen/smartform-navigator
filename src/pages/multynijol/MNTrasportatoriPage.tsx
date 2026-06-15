@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus } from "lucide-react";
+import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,27 +105,8 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
 
   useEffect(() => { fetchUsers(); }, [contextKey]);
 
-  const handleCreateFir = async (user: UserEntry) => {
-    setActionLoading(true);
-    try {
-      const { data: draftId, error } = await supabase.rpc("create_extra_fir_draft" as any, {
-        p_user_id: user.id,
-      });
-      if (error) throw error;
-      if (!draftId) throw new Error("Nessun numero FIR disponibile nel serbatoio");
-      
-      const { data: draft } = await supabase
-        .from("fir_forms")
-        .select("numero_fir")
-        .eq("id", draftId)
-        .maybeSingle();
-      
-      toast.success(`✅ Bozza FIR ${draft?.numero_fir || ""} creata per ${user.profile?.nome} ${user.profile?.cognome}`);
-    } catch (e: any) {
-      toast.error("Errore creazione FIR: " + e.message);
-    } finally {
-      setActionLoading(false);
-    }
+  const handleCreateFir = () => {
+    toast.info("Creazione automatica disattivata: crea il FIR dal workspace inserendo il numero esatto.");
   };
 
   const handleResetPassword = async () => {
@@ -257,15 +238,8 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                     </td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5 text-xs border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                          onClick={() => handleCreateFir(user)}
-                          disabled={actionLoading}
-                        >
-                          <FilePlus className="h-3.5 w-3.5" />
-                          Crea FIR
+                        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleCreateFir}>
+                          FIR manuale
                         </Button>
                         <Button
                           size="sm"
