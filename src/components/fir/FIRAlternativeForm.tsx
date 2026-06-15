@@ -1103,13 +1103,22 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
         {(firFormId || activeDraftId) && (
-          <button
-            onClick={handleSaveDraft}
-            className="ml-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
-          </button>
+          <>
+            <button
+              onClick={() => void handleSaveDraft("draft")}
+              className="ml-2 px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-display text-xs tracking-wider hover:bg-amber-500/30 transition-colors flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" /> BOZZA
+            </button>
+            <button
+              onClick={() => void handleSaveDraft("final")}
+              className="px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" /> DEFINITIVO
+            </button>
+          </>
         )}
+
       </div>
 
       <div
