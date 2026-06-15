@@ -5255,6 +5255,10 @@ export type Database = {
       bootstrap_admin_role: { Args: never; Returns: undefined }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
+      create_manual_fir_draft_for_tenant: {
+        Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
+        Returns: string
+      }
       dragon_get_stock_balance: {
         Args: {
           p_company_id: string
