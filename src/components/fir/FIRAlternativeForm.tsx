@@ -159,6 +159,25 @@ const STATO_FISICO_CODE_MAP: Record<string, string> = {
   altro: "6",
 };
 
+const STATO_FISICO_LABEL_MAP: Record<string, string> = {
+  "1": "solido pulverulento",
+  "2": "solido non pulverulento",
+  "3": "fangoso palabile",
+  "4": "liquido",
+  "5": "aeriforme",
+  "6": "altro",
+};
+const ALLOWED_STATO_FISICO_LABELS = new Set(Object.values(STATO_FISICO_LABEL_MAP));
+function toStatoFisicoLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  if (!v) return null;
+  if (STATO_FISICO_LABEL_MAP[v]) return STATO_FISICO_LABEL_MAP[v];
+  const lower = v.toLowerCase();
+  if (ALLOWED_STATO_FISICO_LABELS.has(lower)) return lower;
+  return null;
+}
+
 interface FIRAlternativeDraftData {
   id?: string;
   numero_fir?: string | null;
