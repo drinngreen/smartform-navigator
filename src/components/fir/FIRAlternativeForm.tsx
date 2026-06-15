@@ -1023,16 +1023,30 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             toast.warning("Giacenze non aggiornate: nessun impianto Multyproget trovato");
           } else {
           const prevSnap = (mergedFormData as any).__giacenza_snapshot as
-            | { quantita: number; cer: string | null; segno: "+" | "-" }
+            | { quantita: number; cer: string | null; segno: "+" | "-"; impianto_id?: string | null }
             | undefined;
           const newSegno: "+" | "-" = registryMovementType === "Scarico" ? "-" : "+";
           const newQta = qta || 0;
           const newCer = eer || null;
+          const { data: existingFinalMovement, error: existingMovementError } = await supabase
+            .from("movimenti_impianto" as any)
+            .select("id")
+            .eq("fir_id", targetId)
+            .eq("origine", "fir_final")
+            .limit(1)
+            .maybeSingle();
+          if (existingMovementError) throw existingMovementError;
+          const movementChanged = !!prevSnap && (
+            prevSnap.quantita !== newQta
+            || prevSnap.cer !== newCer
+            || prevSnap.segno !== newSegno
+            || prevSnap.impianto_id !== movementImpiantoId
+          );
 
           // Compensatory inverse if a previous snapshot exists and data changed
-          if (prevSnap && (prevSnap.quantita !== newQta || prevSnap.cer !== newCer || prevSnap.segno !== newSegno)) {
-            await supabase.from("movimenti_impianto" as any).insert({
-              impianto_id: movementImpiantoId,
+          if (prevSnap && existingFinalMovement && movementChanged) {
+            const { error: inverseErr } = await supabase.from("movimenti_impianto" as any).insert({
+              impianto_id: prevSnap.impianto_id || movementImpiantoId,
               tenant_id: tenantId,
               cer: prevSnap.cer || newCer,
               quantita_kg: prevSnap.quantita,
@@ -1046,10 +1060,11 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               destinatario_denominazione: destDen || null,
               note: "Compensativo inverso (modifica FIR)",
             } as any);
+            if (inverseErr) throw inverseErr;
           }
 
-          if (newQta > 0 && newCer) {
-            await supabase.from("movimenti_impianto" as any).insert({
+          if (newQta > 0 && newCer && (!existingFinalMovement || movementChanged)) {
+            const { error: movementErr } = await supabase.from("movimenti_impianto" as any).insert({
               impianto_id: movementImpiantoId,
               tenant_id: tenantId,
               cer: newCer,
@@ -1065,10 +1080,11 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               destinatario_denominazione: destDen || null,
               note: "Salvataggio definitivo FIR",
             } as any);
+            if (movementErr) throw movementErr;
           }
 
           // Save snapshot in form_data
-          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno };
+          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno, impianto_id: movementImpiantoId };
           await supabase
             .from("fir_forms")
             .update({ form_data: { ...mergedFormData, __giacenza_snapshot: newSnap } })
