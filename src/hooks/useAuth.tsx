@@ -128,15 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole("user");
       }
 
-      if (profileData?.tenant_id) {
-        try {
-          await supabase.rpc("ensure_user_has_fir_draft" as any, {
-            p_user_id: userId,
-          });
-        } catch (ensureErr) {
-          console.warn("ensure_user_has_fir_draft failed:", ensureErr);
-        }
-      }
+      // [DISABLED] Auto-assegnazione FIR al login rimossa: i FIR ora si creano solo manualmente.
+      // if (profileData?.tenant_id) {
+      //   try {
+      //     await supabase.rpc("ensure_user_has_fir_draft" as any, { p_user_id: userId });
+      //   } catch (ensureErr) {
+      //     console.warn("ensure_user_has_fir_draft failed:", ensureErr);
+      //   }
+      // }
 
       await markPresence(userId, "online");
     } catch (error) {
