@@ -30,7 +30,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) {
       return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY not configured" }), {
         status: 500,
@@ -63,7 +63,7 @@ serve(async (req) => {
         "X-Title": "Multyproget OCR Formulario",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-001",
+        model: "amazon/nova-2-lite-v1",
         messages: [
           { role: "system", content: OCR_SYSTEM_PROMPT },
           {
@@ -91,12 +91,21 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || "{}";
+    const rawContent = data?.choices?.[0]?.message?.content || "{}";
+    // Strip ```json ... ``` fences that some models (Nova) wrap around JSON
+    let content = rawContent.trim();
+    const fenceMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenceMatch) content = fenceMatch[1].trim();
+    // Fallback: extract first {...} block
+    if (!content.startsWith("{")) {
+      const objMatch = content.match(/\{[\s\S]*\}/);
+      if (objMatch) content = objMatch[0];
+    }
     let parsed: any;
     try {
       parsed = JSON.parse(content);
     } catch {
-      parsed = { fields: [], raw_text: content, confidence: "low" };
+      parsed = { fields: [], raw_text: rawContent, confidence: "low" };
     }
 
     return new Response(JSON.stringify({ ok: true, ...parsed }), {
