@@ -48,6 +48,16 @@ function normalizeOcrKey(value: string) {
     .replace(/^_+|_+$/g, "");
 }
 
+function normalizeFirNumber(value: string) {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, " ");
+  return /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized) ? normalized : "";
+}
+
+function isFirNumberEntry(id: string) {
+  const normalized = normalizeOcrKey(id);
+  return normalized === "numero_fir" || normalized === "numero_formulario" || normalized === "numero_del_formulario";
+}
+
 function readFileAsBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -145,10 +155,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     if (!file) return;
     setOcrBusy(true);
     try {
-      if (!activeDraftId) {
-        await ensureDraft();
-      }
-
       const imageBase64 = await readFileAsBase64(file);
       const { data, error } = await supabase.functions.invoke("ocr-formulario", {
         body: {
@@ -168,8 +174,36 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         const aliases = OCR_FIELD_ALIASES[id] || [];
         return [{ id, value }, ...(field.label ? [{ id: field.label, value }] : []), ...aliases.map((alias) => ({ id: alias, value }))];
       });
-      setOcrEntries(entries);
-      const filled = fillFields(entries);
+      const ocrNumeroFir = normalizeFirNumber(entries.find((entry) => isFirNumberEntry(entry.id))?.value || "");
+      let targetDraft = activeDraft;
+
+      if (ocrNumeroFir) {
+        const { data: matchingDraft, error: matchingError } = await supabase
+          .from("fir_forms")
+          .select("*")
+          .eq("tenant_id", MULTY_TENANT_ID)
+          .eq("deleted_by_user", false)
+          .eq("numero_fir", ocrNumeroFir)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (matchingError) throw matchingError;
+        if (matchingDraft?.id) {
+          targetDraft = await loadDraft(matchingDraft.id);
+        } else if (targetDraft?.numero_fir && targetDraft.numero_fir !== ocrNumeroFir) {
+          toast.error(`OCR fermato: il documento è ${ocrNumeroFir}, ma il formulario aperto è ${targetDraft.numero_fir}`);
+          return;
+        }
+      }
+
+      if (!targetDraft?.id) {
+        const draftId = await ensureDraft();
+        targetDraft = await loadDraft(draftId);
+      }
+
+      const safeEntries = entries.filter((entry) => !isFirNumberEntry(entry.id));
+      setOcrEntries(safeEntries);
+      const filled = fillFields(safeEntries);
       toast.success(`OCR completato: ${fields.length} campi letti, ${filled} applicati`);
     } catch (error: any) {
       toast.error(error?.message || "Errore OCR formulario");
