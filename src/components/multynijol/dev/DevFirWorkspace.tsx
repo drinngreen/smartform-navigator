@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { getCodiceOperazione } from "@/lib/codiciRecuperoSmaltimento";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -81,6 +82,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [activeDraft, setActiveDraft] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
+  const [moduleType, setModuleType] = useState<"standard" | "alternative">("alternative");
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrEntries, setOcrEntries] = useState<{ id: string; value: string }[]>([]);
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
@@ -130,30 +132,20 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     return data;
   };
 
-  const ensureDraft = async () => {
-    if (!user?.id) throw new Error("Utente non autenticato");
+  const handleNewDraft = async () => {
+    if (!manualFirNumber.trim()) {
+      toast.error("Inserisci il numero FIR esatto prima di creare il formulario");
+      return;
+    }
     setCreating(true);
     try {
-      const { data: draftId, error } = await supabase.rpc("ensure_user_has_fir_draft_for_tenant" as any, {
-        p_user_id: user.id,
-        p_tenant_id: MULTY_TENANT_ID,
-      });
-      if (error) throw error;
-      if (!draftId) throw new Error("Nessun numero FIR disponibile nel serbatoio Multyproget");
-      await loadDraft(String(draftId));
-      await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
-      return String(draftId);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleNewDraft = async () => {
-    try {
-      const id = await ensureDraft();
-      toast.success(`Formulario pronto: ${id ? "bozza caricata" : "bozza creata"}`);
+      const draft = await openDraftByNumber(manualFirNumber);
+      setManualFirNumber("");
+      toast.success(`Formulario pronto: ${draft.numero_fir}`);
     } catch (error: any) {
       toast.error(error?.message || "Errore creazione formulario");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -162,7 +154,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     const normalized = normalizeFirNumber(numeroFir);
     if (!normalized) throw new Error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
 
-    const { data: draftId, error } = await supabase.rpc("ensure_fir_draft_by_number_for_tenant" as any, {
+    const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
       p_user_id: user.id,
       p_tenant_id: MULTY_TENANT_ID,
       p_numero_fir: normalized,
@@ -236,10 +228,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         }
       }
 
-      if (!targetDraft?.id) {
-        const draftId = await ensureDraft();
-        targetDraft = await loadDraft(draftId);
-      }
+      if (!targetDraft?.id) throw new Error("OCR fermato: il documento non contiene un numero FIR leggibile. Inserisci il numero e crea/apri il formulario manualmente.");
 
       const safeEntries = entries.filter((entry) => !isFirNumberEntry(entry.id));
       setOcrEntries(safeEntries);
