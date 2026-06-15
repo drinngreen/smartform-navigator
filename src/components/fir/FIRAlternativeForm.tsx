@@ -60,6 +60,10 @@ function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateF
   return fields.find((field) => hasTokens(field.name, tokens));
 }
 
+function isNumeroFirFieldName(fieldName: string): boolean {
+  return hasTokens(fieldName, ["numero", "fir"]) || hasTokens(fieldName, ["numero", "formulario"]);
+}
+
 function isProduttoreDenominationField(fieldName: string): boolean {
   return hasTokens(fieldName, ["denominazione", "produttore"]);
 }
@@ -567,8 +571,18 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           return typeof current === "string" ? current : current ? String(current) : "";
         },
         setValue: (nextValue: string) => {
+          // The AI/OCR bridge must not be able to mutate the canonical FIR number.
+          if (isNumeroFirFieldName(field.name)) return;
           const next = field.type === "checkbox" ? toCheckboxValue(nextValue) : nextValue;
           setValues((prev) => ({ ...prev, [field.id]: next }));
+          if (isProduttoreDenominationField(field.name) || isProduttoreCfField(field.name)) {
+            setSelectedProduttore(null);
+            setConfirmedFieldIds((prev) => {
+              const updated = new Set(prev);
+              updated.add(field.id);
+              return updated;
+            });
+          }
         },
       };
     }),
@@ -587,11 +601,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       });
       if (!field || !entry.value) return;
       // numero_fir is immutable — never accept it from OCR
-      if (hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"])) return;
+      if (isNumeroFirFieldName(field.name)) return;
       nextValues[field.id] = entry.value;
     });
-    if (Object.keys(nextValues).length > 0) setValues((prev) => ({ ...prev, ...nextValues }));
-  }, [ocrEntries, fields]);
+    setValues((prev) => {
+      const merged = { ...prev };
+      const presetProducerValues = buildSoggettoUpdates(fields, tenantPreset, "produttore");
+      for (const [fieldId, presetValue] of Object.entries(presetProducerValues)) {
+        if (!(fieldId in nextValues) && String(merged[fieldId] ?? "").trim() === presetValue.trim()) {
+          merged[fieldId] = "";
+        }
+      }
+      return { ...merged, ...nextValues };
+    });
+    setSelectedProduttore(null);
+  }, [ocrEntries, fields, tenantPreset]);
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
