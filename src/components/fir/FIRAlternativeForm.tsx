@@ -60,6 +60,10 @@ function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateF
   return fields.find((field) => hasTokens(field.name, tokens));
 }
 
+function isNumeroFirFieldName(fieldName: string): boolean {
+  return hasTokens(fieldName, ["numero", "fir"]) || hasTokens(fieldName, ["numero", "formulario"]);
+}
+
 function isProduttoreDenominationField(fieldName: string): boolean {
   return hasTokens(fieldName, ["denominazione", "produttore"]);
 }
@@ -486,6 +490,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
+  const [suppressProducerPreset, setSuppressProducerPreset] = useState(false);
   const location = useLocation();
   const params = useParams<{ context?: string }>();
 
@@ -521,6 +526,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   );
   const currentProduttoreNome = produttoreDenomField ? String(values[produttoreDenomField.id] ?? "").trim() : "";
   const currentProduttoreCf = produttoreCfField ? String(values[produttoreCfField.id] ?? "").trim() : "";
+  const canonicalNumeroFir = draftData?.numero_fir || presetNumeroFir || activeDraftNumero || "";
 
   const isOwnProduction = useMemo(() => {
     if (!currentProduttoreNome && !currentProduttoreCf && !selectedProduttore) return true;
@@ -560,6 +566,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         type: bridgeType,
         aliases: [field.id, normalizedName, label],
         getValue: () => {
+          if (isNumeroFirFieldName(field.name)) return canonicalNumeroFir;
           const current = values[field.id];
           if (field.type === "checkbox") {
             return current ? "true" : "false";
@@ -567,16 +574,27 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           return typeof current === "string" ? current : current ? String(current) : "";
         },
         setValue: (nextValue: string) => {
+          // The AI/OCR bridge must not be able to mutate the canonical FIR number.
+          if (isNumeroFirFieldName(field.name)) return;
           const next = field.type === "checkbox" ? toCheckboxValue(nextValue) : nextValue;
           setValues((prev) => ({ ...prev, [field.id]: next }));
+          if (isProduttoreDenominationField(field.name) || isProduttoreCfField(field.name)) {
+            setSelectedProduttore(null);
+            setConfirmedFieldIds((prev) => {
+              const updated = new Set(prev);
+              updated.add(field.id);
+              return updated;
+            });
+          }
         },
       };
     }),
-    [fields, values],
+    [fields, values, canonicalNumeroFir],
   );
 
   useEffect(() => {
     if (!ocrEntries?.length || !fields.length) return;
+    setSuppressProducerPreset(true);
     const normalize = (value: string) => normalizeFieldName(value);
     const nextValues: Record<string, string> = {};
     ocrEntries.forEach((entry) => {
@@ -587,11 +605,27 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       });
       if (!field || !entry.value) return;
       // numero_fir is immutable — never accept it from OCR
-      if (hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"])) return;
+      if (isNumeroFirFieldName(field.name)) return;
       nextValues[field.id] = entry.value;
     });
-    if (Object.keys(nextValues).length > 0) setValues((prev) => ({ ...prev, ...nextValues }));
-  }, [ocrEntries, fields]);
+    if (Object.keys(nextValues).length === 0) return;
+    setValues((prev) => {
+      const merged = { ...prev };
+      const presetProducerValues = buildSoggettoUpdates(fields, tenantPreset, "produttore");
+      for (const [fieldId, presetValue] of Object.entries(presetProducerValues)) {
+        if (!(fieldId in nextValues) && String(merged[fieldId] ?? "").trim() === presetValue.trim()) {
+          merged[fieldId] = "";
+        }
+      }
+      return { ...merged, ...nextValues };
+    });
+    setConfirmedFieldIds((prevConfirmed) => {
+      const updated = new Set(prevConfirmed);
+      Object.keys(nextValues).forEach((fieldId) => updated.add(fieldId));
+      return updated;
+    });
+    setSelectedProduttore(null);
+  }, [ocrEntries, fields, tenantPreset]);
 
   const dynamicFontSize = (text: string, baseMax = 11) => {
     const len = text.length;
@@ -794,6 +828,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
   useEffect(() => {
     if (fields.length === 0) return;
+    if (ocrEntries?.length) return;
+    if (suppressProducerPreset) return;
     if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
     // Only auto-fill when the producer denomination is currently empty
     if (!produttoreDenomField) return;
@@ -803,12 +839,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     if (Object.keys(updates).length === 0) return;
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(tenantPreset);
-  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values]);
+  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values, suppressProducerPreset, ocrEntries]);
 
 
   const isNumeroFirField = useCallback((field: TemplateField | undefined) => {
     if (!field) return false;
-    return hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"]);
+    return isNumeroFirFieldName(field.name);
   }, []);
 
   const handleChange = (id: string, val: string | boolean) => {
@@ -1375,19 +1411,24 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 );
               }
 
+              const isCanonicalNumeroField = isNumeroFirField(field);
+              const displayValue = isCanonicalNumeroField ? canonicalNumeroFir : String(values[field.id] || "");
+
               return (
                 <input
                   key={field.id}
                   type={field.type === "date" ? "date" : field.type === "time" ? "time" : "text"}
-                  value={(values[field.id] as string) || ""}
+                  value={displayValue}
+                  readOnly={isCanonicalNumeroField}
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   style={{
                     ...style,
                     background: "transparent",
                     border: "1px solid rgba(120, 120, 140, 0.35)",
                     borderRadius: "2px",
-                    color: "#1a1a2e",
-                    fontSize: dynamicFontSize(String(values[field.id] || "")),
+                    color: isCanonicalNumeroField ? "#000000" : "#1a1a2e",
+                    fontWeight: isCanonicalNumeroField ? 700 : undefined,
+                    fontSize: dynamicFontSize(displayValue),
                     fontFamily: "monospace",
                     padding: "1px 3px",
                     outline: "none",

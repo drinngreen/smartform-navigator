@@ -48,6 +48,22 @@ function normalizeOcrKey(value: string) {
     .replace(/^_+|_+$/g, "");
 }
 
+function normalizeFirNumber(value: string) {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, " ");
+  if (/^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized)) return normalized;
+  const compact = normalized.replace(/[^A-Z0-9]/g, "");
+  const match = compact.match(/([A-Z]{5})([0-9]{6})([A-Z]{2})/);
+  return match ? `${match[1]} ${match[2]} ${match[3]}` : "";
+}
+
+function isFirNumberEntry(id: string) {
+  const normalized = normalizeOcrKey(id);
+  return normalized === "numero_fir"
+    || normalized === "numero_formulario"
+    || normalized === "numero_del_formulario"
+    || (normalized.includes("numero") && (normalized.includes("fir") || normalized.includes("formulario")));
+}
+
 function readFileAsBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -71,6 +87,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [codiceOp, setCodiceOp] = useState("");
   const [destSelected, setDestSelected] = useState("");
   const [impiantoId, setImpiantoId] = useState<string | null>(null);
+  const [manualFirNumber, setManualFirNumber] = useState("");
 
   const { data: drafts = [], isLoading } = useQuery({
     queryKey: ["dev-multy-fir-workspace-drafts", MULTY_TENANT_ID],
@@ -140,15 +157,42 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     }
   };
 
+  const openDraftByNumber = async (numeroFir: string) => {
+    if (!user?.id) throw new Error("Utente non autenticato");
+    const normalized = normalizeFirNumber(numeroFir);
+    if (!normalized) throw new Error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
+
+    const { data: draftId, error } = await supabase.rpc("ensure_fir_draft_by_number_for_tenant" as any, {
+      p_user_id: user.id,
+      p_tenant_id: MULTY_TENANT_ID,
+      p_numero_fir: normalized,
+    });
+    if (error) throw error;
+    if (!draftId) throw new Error("Formulario non disponibile");
+
+    const loaded = await loadDraft(String(draftId));
+    if (loaded?.numero_fir !== normalized) {
+      throw new Error(`Blocco sicurezza: richiesto ${normalized}, aperto ${loaded?.numero_fir || "N/D"}`);
+    }
+    await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+    return loaded;
+  };
+
+  const handleOpenManualFir = async () => {
+    try {
+      const draft = await openDraftByNumber(manualFirNumber);
+      setManualFirNumber("");
+      toast.success(`Formulario aperto: ${draft.numero_fir}`);
+    } catch (error: any) {
+      toast.error(error?.message || "Errore apertura FIR");
+    }
+  };
+
   const handleOcrFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setOcrBusy(true);
     try {
-      if (!activeDraftId) {
-        await ensureDraft();
-      }
-
       const imageBase64 = await readFileAsBase64(file);
       const { data, error } = await supabase.functions.invoke("ocr-formulario", {
         body: {
@@ -168,8 +212,38 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         const aliases = OCR_FIELD_ALIASES[id] || [];
         return [{ id, value }, ...(field.label ? [{ id: field.label, value }] : []), ...aliases.map((alias) => ({ id: alias, value }))];
       });
-      setOcrEntries(entries);
-      const filled = fillFields(entries);
+      const ocrNumeroFir = normalizeFirNumber(entries.find((entry) => isFirNumberEntry(entry.id))?.value || "");
+      let targetDraft = activeDraft;
+
+      if (ocrNumeroFir) {
+        const { data: matchingDraft, error: matchingError } = await supabase
+          .from("fir_forms")
+          .select("*")
+          .eq("tenant_id", MULTY_TENANT_ID)
+          .eq("deleted_by_user", false)
+          .eq("numero_fir", ocrNumeroFir)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (matchingError) throw matchingError;
+        if (matchingDraft?.id) {
+          targetDraft = await loadDraft(matchingDraft.id);
+        } else if (targetDraft?.numero_fir && targetDraft.numero_fir !== ocrNumeroFir) {
+          toast.error(`OCR fermato: il documento è ${ocrNumeroFir}, ma il formulario aperto è ${targetDraft.numero_fir}`);
+          return;
+        } else {
+          targetDraft = await openDraftByNumber(ocrNumeroFir);
+        }
+      }
+
+      if (!targetDraft?.id) {
+        const draftId = await ensureDraft();
+        targetDraft = await loadDraft(draftId);
+      }
+
+      const safeEntries = entries.filter((entry) => !isFirNumberEntry(entry.id));
+      setOcrEntries(safeEntries);
+      const filled = fillFields(safeEntries);
       toast.success(`OCR completato: ${fields.length} campi letti, ${filled} applicati`);
     } catch (error: any) {
       toast.error(error?.message || "Errore OCR formulario");
@@ -257,6 +331,26 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
           {/* Helper row: destinatari from DB + codice R/D autocomplete */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
             <span className="text-xs font-mono text-muted-foreground">Aiuti compilazione:</span>
+            <input
+              type="text"
+              value={manualFirNumber}
+              onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleOpenManualFir();
+              }}
+              placeholder="Apri FIR esatto: ZRZXR 000566 LG"
+              className="h-8 rounded-md border border-emerald-500/40 bg-background px-2 text-xs font-mono text-foreground w-64"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleOpenManualFir}
+              disabled={!manualFirNumber.trim() || !user?.id}
+              className="h-8 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+            >
+              Apri numero
+            </Button>
             <select
               value={destSelected}
               onChange={(e) => setDestSelected(e.target.value)}

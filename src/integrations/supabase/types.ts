@@ -5267,6 +5267,10 @@ export type Database = {
         Args: { p_company_id: string; p_register_id: string }
         Returns: number
       }
+      ensure_fir_draft_by_number_for_tenant: {
+        Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
+        Returns: string
+      }
       ensure_user_has_fir_draft: {
         Args: { p_user_id: string }
         Returns: string
