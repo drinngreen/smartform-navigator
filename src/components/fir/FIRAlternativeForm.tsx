@@ -577,8 +577,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     return `clamp(4px, 1vw, 7px)`;
   };
 
-  // Auto-load user's active FIR draft if no preset provided
+  // Auto-load user's active FIR draft only when no firFormId (workspace ALWAYS passes one)
   useEffect(() => {
+    // PRIORITY: if firFormId provided by parent (workspace), never resolve another draft
     if (firFormId) return;
 
     // If we have a numero_fir but no draft id, try to resolve the draft by numero
