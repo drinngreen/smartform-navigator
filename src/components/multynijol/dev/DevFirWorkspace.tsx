@@ -325,6 +325,26 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
           {/* Helper row: destinatari from DB + codice R/D autocomplete */}
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
             <span className="text-xs font-mono text-muted-foreground">Aiuti compilazione:</span>
+            <input
+              type="text"
+              value={manualFirNumber}
+              onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleOpenManualFir();
+              }}
+              placeholder="Apri FIR esatto: ZRZXR 000566 LG"
+              className="h-8 rounded-md border border-emerald-500/40 bg-background px-2 text-xs font-mono text-foreground w-64"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleOpenManualFir}
+              disabled={!manualFirNumber.trim() || !user?.id}
+              className="h-8 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+            >
+              Apri numero
+            </Button>
             <select
               value={destSelected}
               onChange={(e) => setDestSelected(e.target.value)}
