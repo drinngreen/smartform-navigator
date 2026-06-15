@@ -803,7 +803,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   }, [fields, tenantContext, tenantPreset, produttoreDenomField, values]);
 
 
+  const isNumeroFirField = useCallback((field: TemplateField | undefined) => {
+    if (!field) return false;
+    return hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"]);
+  }, []);
+
   const handleChange = (id: string, val: string | boolean) => {
+    // numero_fir is immutable from the UI: silently ignore edits.
+    const field = fields.find((f) => f.id === id);
+    if (isNumeroFirField(field)) return;
+
     const isProducerField = produttoreDenomField?.id === id || produttoreCfField?.id === id;
 
     setValues((prev) => ({ ...prev, [id]: val }));
