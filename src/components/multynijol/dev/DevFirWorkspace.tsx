@@ -81,6 +81,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [codiceOp, setCodiceOp] = useState("");
   const [destSelected, setDestSelected] = useState("");
   const [impiantoId, setImpiantoId] = useState<string | null>(null);
+  const [manualFirNumber, setManualFirNumber] = useState("");
 
   const { data: drafts = [], isLoading } = useQuery({
     queryKey: ["dev-multy-fir-workspace-drafts", MULTY_TENANT_ID],
@@ -150,6 +151,37 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     }
   };
 
+  const openDraftByNumber = async (numeroFir: string) => {
+    if (!user?.id) throw new Error("Utente non autenticato");
+    const normalized = normalizeFirNumber(numeroFir);
+    if (!normalized) throw new Error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
+
+    const { data: draftId, error } = await supabase.rpc("ensure_fir_draft_by_number_for_tenant" as any, {
+      p_user_id: user.id,
+      p_tenant_id: MULTY_TENANT_ID,
+      p_numero_fir: normalized,
+    });
+    if (error) throw error;
+    if (!draftId) throw new Error("Formulario non disponibile");
+
+    const loaded = await loadDraft(String(draftId));
+    if (loaded?.numero_fir !== normalized) {
+      throw new Error(`Blocco sicurezza: richiesto ${normalized}, aperto ${loaded?.numero_fir || "N/D"}`);
+    }
+    await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+    return loaded;
+  };
+
+  const handleOpenManualFir = async () => {
+    try {
+      const draft = await openDraftByNumber(manualFirNumber);
+      setManualFirNumber("");
+      toast.success(`Formulario aperto: ${draft.numero_fir}`);
+    } catch (error: any) {
+      toast.error(error?.message || "Errore apertura FIR");
+    }
+  };
+
   const handleOcrFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -193,6 +225,8 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         } else if (targetDraft?.numero_fir && targetDraft.numero_fir !== ocrNumeroFir) {
           toast.error(`OCR fermato: il documento è ${ocrNumeroFir}, ma il formulario aperto è ${targetDraft.numero_fir}`);
           return;
+        } else {
+          targetDraft = await openDraftByNumber(ocrNumeroFir);
         }
       }
 
