@@ -1407,19 +1407,24 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 );
               }
 
+              const isCanonicalNumeroField = isNumeroFirField(field);
+              const displayValue = isCanonicalNumeroField ? canonicalNumeroFir : String(values[field.id] || "");
+
               return (
                 <input
                   key={field.id}
                   type={field.type === "date" ? "date" : field.type === "time" ? "time" : "text"}
-                  value={(values[field.id] as string) || ""}
+                  value={displayValue}
+                  readOnly={isCanonicalNumeroField}
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   style={{
                     ...style,
                     background: "transparent",
                     border: "1px solid rgba(120, 120, 140, 0.35)",
                     borderRadius: "2px",
-                    color: "#1a1a2e",
-                    fontSize: dynamicFontSize(String(values[field.id] || "")),
+                    color: isCanonicalNumeroField ? "#000000" : "#1a1a2e",
+                    fontWeight: isCanonicalNumeroField ? 700 : undefined,
+                    fontSize: dynamicFontSize(displayValue),
                     fontFamily: "monospace",
                     padding: "1px 3px",
                     outline: "none",
