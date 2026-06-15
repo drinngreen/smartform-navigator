@@ -767,6 +767,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     setTranslate({ x: 0, y: 0 });
   }, [activePage]);
 
+  // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
+  useEffect(() => {
+    if (fields.length === 0) return;
+    if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
+    // Only auto-fill when the producer denomination is currently empty
+    if (!produttoreDenomField) return;
+    const currentVal = String(values[produttoreDenomField.id] ?? "").trim();
+    if (currentVal) return;
+    const updates = buildSoggettoUpdates(fields, tenantPreset, "produttore");
+    if (Object.keys(updates).length === 0) return;
+    setValues((prev) => ({ ...prev, ...updates }));
+    setSelectedProduttore(tenantPreset);
+  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values]);
+
+
   const handleChange = (id: string, val: string | boolean) => {
     const isProducerField = produttoreDenomField?.id === id || produttoreCfField?.id === id;
 
