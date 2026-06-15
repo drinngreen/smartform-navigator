@@ -525,6 +525,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   );
   const currentProduttoreNome = produttoreDenomField ? String(values[produttoreDenomField.id] ?? "").trim() : "";
   const currentProduttoreCf = produttoreCfField ? String(values[produttoreCfField.id] ?? "").trim() : "";
+  const canonicalNumeroFir = draftData?.numero_fir || presetNumeroFir || activeDraftNumero || "";
 
   const isOwnProduction = useMemo(() => {
     if (!currentProduttoreNome && !currentProduttoreCf && !selectedProduttore) return true;
@@ -604,6 +605,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (isNumeroFirFieldName(field.name)) return;
       nextValues[field.id] = entry.value;
     });
+    if (Object.keys(nextValues).length === 0) return;
     setValues((prev) => {
       const merged = { ...prev };
       const presetProducerValues = buildSoggettoUpdates(fields, tenantPreset, "produttore");
@@ -611,6 +613,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         if (!(fieldId in nextValues) && String(merged[fieldId] ?? "").trim() === presetValue.trim()) {
           merged[fieldId] = "";
         }
+      }
+      for (const fieldId of Object.keys(nextValues)) {
+        setConfirmedFieldIds((prevConfirmed) => new Set(prevConfirmed).add(fieldId));
       }
       return { ...merged, ...nextValues };
     });
@@ -832,7 +837,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   const isNumeroFirField = useCallback((field: TemplateField | undefined) => {
     if (!field) return false;
-    return hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"]);
+    return isNumeroFirFieldName(field.name);
   }, []);
 
   const handleChange = (id: string, val: string | boolean) => {
