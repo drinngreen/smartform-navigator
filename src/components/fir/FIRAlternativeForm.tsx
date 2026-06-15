@@ -159,6 +159,25 @@ const STATO_FISICO_CODE_MAP: Record<string, string> = {
   altro: "6",
 };
 
+const STATO_FISICO_LABEL_MAP: Record<string, string> = {
+  "1": "solido pulverulento",
+  "2": "solido non pulverulento",
+  "3": "fangoso palabile",
+  "4": "liquido",
+  "5": "aeriforme",
+  "6": "altro",
+};
+const ALLOWED_STATO_FISICO_LABELS = new Set(Object.values(STATO_FISICO_LABEL_MAP));
+function toStatoFisicoLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  if (!v) return null;
+  if (STATO_FISICO_LABEL_MAP[v]) return STATO_FISICO_LABEL_MAP[v];
+  const lower = v.toLowerCase();
+  if (ALLOWED_STATO_FISICO_LABELS.has(lower)) return lower;
+  return null;
+}
+
 interface FIRAlternativeDraftData {
   id?: string;
   numero_fir?: string | null;
@@ -929,7 +948,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (eer) updates.codice_eer = eer;
       if (qta !== null) updates.quantita = qta;
       if (um) updates.unita_misura = um;
-      if (statoFisico) updates.stato_fisico = statoFisico;
+      const statoFisicoLabel = toStatoFisicoLabel(statoFisico);
+      if (statoFisicoLabel) updates.stato_fisico = statoFisicoLabel;
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
@@ -957,7 +977,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             peso_destino: qta,
             luogo_produzione: prodDen || null,
             destinazione: destDen || null,
-            stato_fisico: statoFisico || null,
+            stato_fisico: statoFisicoLabel || null,
             annotazioni: "Creato da workspace FIR Dev Multyproget",
             data_emissione_formulario: new Date().toISOString().slice(0, 10),
             raw: { fir_form_id: targetId, form_data: mergedFormData },
