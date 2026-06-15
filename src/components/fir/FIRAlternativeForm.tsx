@@ -1310,15 +1310,22 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       </div>
 
       {(firFormId || activeDraftId) && (
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end gap-2 pt-2">
           <button
-            onClick={handleSaveDraft}
-            className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            onClick={() => void handleSaveDraft("draft")}
+            className="px-5 py-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors flex items-center gap-2"
           >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
+            <Save className="h-4 w-4" /> SALVA BOZZA
+          </button>
+          <button
+            onClick={() => void handleSaveDraft("final")}
+            className="px-5 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" /> SALVA DEFINITIVO (giacenze)
           </button>
         </div>
       )}
+
 
       {printOnly ? (
         <div className="flex justify-end gap-3 pt-2">
