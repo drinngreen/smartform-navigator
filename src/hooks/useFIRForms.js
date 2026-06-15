@@ -124,35 +124,7 @@ export function useFIRForms() {
                 await consumeNumber.mutateAsync(id);
             }
             catch { /* already consumed */ }
-            // Auto-assign a new FIR number to the user
-            if (user?.id) {
-                try {
-                    const { data: result, error: assignErr } = await supabase.rpc("auto_assign_after_consume", { p_user_id: user.id });
-                    if (!assignErr && result) {
-                        const [newNumber, remainingStr] = result.split("|");
-                        const remaining = parseInt(remainingStr, 10);
-                        if (newNumber) {
-                            toast.info(`📋 Nuovo formulario assegnato: ${newNumber}`);
-                        }
-                        if (remaining <= 10) {
-                            toast.warning(`⚠️ Attenzione: solo ${remaining} formulari rimasti nel serbatoio!`, { duration: 10000 });
-                        }
-                        if (remaining === 0) {
-                            toast.error("🚨 SERBATOIO ESAURITO! Richiedere nuovi numeri FIR.", { duration: 15000 });
-                            // Alert tenant admin + super admin
-                            try {
-                                const profileRes = await supabase.from("profiles").select("tenant_id").eq("user_id", user.id).single();
-                                const tenantId = profileRes.data?.tenant_id || '167d07ad-9184-484e-85a6-da5ceafa42a3';
-                                await supabase.rpc("notify_fir_pool_empty", { p_tenant_id: tenantId, p_societa_id: "global" });
-                            }
-                            catch { /* silent */ }
-                        }
-                    }
-                }
-                catch (e) {
-                    console.warn("Auto-assign failed:", e);
-                }
-            }
+            // [DISABLED] Auto-assegnazione di un nuovo numero FIR dopo la chiusura rimossa.
             return data;
         },
         onSuccess: () => {
