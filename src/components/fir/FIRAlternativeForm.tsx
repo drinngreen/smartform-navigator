@@ -828,6 +828,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
   useEffect(() => {
     if (fields.length === 0) return;
+    if (ocrEntries?.length) return;
     if (suppressProducerPreset) return;
     if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
     // Only auto-fill when the producer denomination is currently empty
@@ -838,7 +839,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     if (Object.keys(updates).length === 0) return;
     setValues((prev) => ({ ...prev, ...updates }));
     setSelectedProduttore(tenantPreset);
-  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values, suppressProducerPreset]);
+  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values, suppressProducerPreset, ocrEntries]);
 
 
   const isNumeroFirField = useCallback((field: TemplateField | undefined) => {
