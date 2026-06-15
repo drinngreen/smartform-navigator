@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Loader2, Plus, ScanLine, Save, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
+import { getCodiceOperazione } from "@/lib/codiciRecuperoSmaltimento";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -67,6 +68,8 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrEntries, setOcrEntries] = useState<{ id: string; value: string }[]>([]);
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
+  const [codiceOp, setCodiceOp] = useState("");
+  const [destSelected, setDestSelected] = useState("");
 
   const { data: drafts = [], isLoading } = useQuery({
     queryKey: ["dev-multy-fir-workspace-drafts", MULTY_TENANT_ID],
@@ -80,6 +83,20 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         .limit(8);
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  // Destinatari from DB (impianti accounts for Multyproget)
+  const { data: destinatari = [] } = useQuery({
+    queryKey: ["dev-multy-destinatari", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impianti_accounts")
+        .select("id, ragione_sociale, codice_fiscale, partita_iva, indirizzo, comune, provincia, autorizzazione")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .order("ragione_sociale", { ascending: true });
+      if (error) throw error;
+      return (data as any[]) || [];
     },
   });
 
@@ -126,7 +143,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     try {
       if (!activeDraftId) {
         await ensureDraft();
-        await new Promise((resolve) => window.setTimeout(resolve, 700));
       }
 
       const imageBase64 = await readFileAsBase64(file);
@@ -150,7 +166,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
       });
       setOcrEntries(entries);
       const filled = fillFields(entries);
-      toast.success(`OCR completato: ${fields.length} campi letti, ${filled} applicati al formulario`);
+      toast.success(`OCR completato: ${fields.length} campi letti, ${filled} applicati`);
     } catch (error: any) {
       toast.error(error?.message || "Errore OCR formulario");
     } finally {
@@ -159,38 +175,109 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     }
   };
 
+  // R/D code → autofill descrizione operazione via form bridge
+  useEffect(() => {
+    const code = codiceOp.trim().toUpperCase();
+    if (!code) return;
+    const found = getCodiceOperazione(code);
+    if (!found) return;
+    fillFields([
+      { id: "codice_operazione", value: found.codice },
+      { id: "operazione_destinatario", value: found.codice },
+      { id: "descrizione_operazione", value: found.descrizione },
+      { id: "recupero", value: found.tipo === "R" ? "true" : "false" },
+      { id: "smaltimento", value: found.tipo === "D" ? "true" : "false" },
+    ]);
+  }, [codiceOp, fillFields]);
+
+  // Destinatario selection → fill fields via bridge
+  useEffect(() => {
+    if (!destSelected) return;
+    const dest = destinatari.find((d) => d.id === destSelected);
+    if (!dest) return;
+    const indirizzo = [dest.indirizzo, dest.comune, dest.provincia ? `(${dest.provincia})` : ""].filter(Boolean).join(" ");
+    fillFields([
+      { id: "denominazione_destinatario", value: dest.ragione_sociale || "" },
+      { id: "destinatario_denominazione", value: dest.ragione_sociale || "" },
+      { id: "codice_fiscale_destinatario", value: dest.codice_fiscale || dest.partita_iva || "" },
+      { id: "destinatario_codice_fiscale", value: dest.codice_fiscale || dest.partita_iva || "" },
+      { id: "unita_locale_destinatario", value: indirizzo },
+      { id: "destinatario_indirizzo", value: indirizzo },
+      { id: "numero_aut_comunicazione_destinatario", value: dest.autorizzazione || "" },
+    ]);
+    toast.success(`Destinatario impostato: ${dest.ragione_sociale}`);
+  }, [destSelected, destinatari, fillFields]);
+
   return (
     <Card className="border-emerald-500/30 bg-card/70">
       <CardHeader className="pb-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle className="flex items-center gap-2 text-base text-emerald-400">
-            <FileText className="h-5 w-5" /> Formulari FIR operativi {currentSectionLabel ? `· ${currentSectionLabel}` : ""}
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="flex items-center gap-2 text-base text-emerald-400">
+              <FileText className="h-5 w-5" /> Formulari FIR operativi {currentSectionLabel ? `· ${currentSectionLabel}` : ""}
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={registryMovementType}
+                onChange={(e) => setRegistryMovementType(e.target.value as "Carico" | "Scarico")}
+                className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+              >
+                <option value="Carico">Registro: Carico</option>
+                <option value="Scarico">Registro: Scarico</option>
+              </select>
+              <Button onClick={handleNewDraft} disabled={creating || !user?.id} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Nuovo / carica FIR
+              </Button>
+              <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={ocrBusy || !user?.id} className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
+                {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
+                Carica OCR
+              </Button>
+              <Button
+                onClick={() => window.dispatchEvent(new Event("dev-fir-save-draft"))}
+                disabled={!activeDraftId}
+                className="gap-2 bg-amber-600 hover:bg-amber-700"
+              >
+                <Save className="h-4 w-4" /> Salva BOZZA
+              </Button>
+              <Button
+                onClick={() => window.dispatchEvent(new Event("dev-fir-save-final"))}
+                disabled={!activeDraftId}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+              >
+                <Save className="h-4 w-4" /> Salva DEFINITIVO
+              </Button>
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleOcrFile} />
+            </div>
+          </div>
+
+          {/* Helper row: destinatari from DB + codice R/D autocomplete */}
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
+            <span className="text-xs font-mono text-muted-foreground">Aiuti compilazione:</span>
             <select
-              value={registryMovementType}
-              onChange={(event) => setRegistryMovementType(event.target.value as "Carico" | "Scarico")}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+              value={destSelected}
+              onChange={(e) => setDestSelected(e.target.value)}
+              className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground min-w-[220px]"
             >
-              <option value="Carico">Registro: Carico</option>
-              <option value="Scarico">Registro: Scarico</option>
+              <option value="">Destinatario da database…</option>
+              {destinatari.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.ragione_sociale}
+                </option>
+              ))}
             </select>
-            <Button onClick={handleNewDraft} disabled={creating || !user?.id} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Nuovo / carica FIR
-            </Button>
-            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={ocrBusy || !user?.id} className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
-              {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
-              Carica OCR
-            </Button>
-            <Button
-              onClick={() => window.dispatchEvent(new Event("dev-fir-save-active"))}
-              disabled={!activeDraftId}
-              className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-            >
-              <Save className="h-4 w-4" /> Salva formulario e registro
-            </Button>
-            <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleOcrFile} />
+            <input
+              type="text"
+              value={codiceOp}
+              onChange={(e) => setCodiceOp(e.target.value)}
+              placeholder="Codice op. (R12, R4, D15…)"
+              className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground w-44"
+            />
+            {codiceOp && getCodiceOperazione(codiceOp.trim().toUpperCase()) && (
+              <span className="text-xs text-emerald-400 truncate max-w-md">
+                → {getCodiceOperazione(codiceOp.trim().toUpperCase())!.descrizione}
+              </span>
+            )}
           </div>
         </div>
       </CardHeader>

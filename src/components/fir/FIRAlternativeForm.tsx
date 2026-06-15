@@ -306,7 +306,7 @@ function getDraftValueForField(
   if (field.type === "date") {
     if (normalized === "data_emissione" || normalized === "data_di_emissione_foglio_2") return draft.created_at || draft.updated_at;
     if (hasTokens(field.name, ["data", "inizio", "trasporto"])) return draft.data_partenza;
-    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return draft.data_arrivo;
+    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "data_accettazione") || draft.data_arrivo;
     if (normalized === "valida_al") return getFormDataValue(formData, "valida_al", "analisi_valida_al", "classificazione_valida_al");
     if (hasTokens(field.name, ["data", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
     if (normalized.includes("prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
@@ -321,7 +321,7 @@ function getDraftValueForField(
 
   if (field.type === "time") {
     if (hasTokens(field.name, ["ora", "inizio", "trasporto"])) return draft.data_partenza;
-    if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return draft.data_arrivo;
+    if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "ora_accettazione") || draft.data_arrivo;
     if (hasTokens(field.name, ["ora", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
     if (normalized.includes("ora_prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
     if (normalized.includes("ora_seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
@@ -577,8 +577,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     return `clamp(4px, 1vw, 7px)`;
   };
 
-  // Auto-load user's active FIR draft if no preset provided
+  // Auto-load user's active FIR draft only when no firFormId (workspace ALWAYS passes one)
   useEffect(() => {
+    // PRIORITY: if firFormId provided by parent (workspace), never resolve another draft
     if (firFormId) return;
 
     // If we have a numero_fir but no draft id, try to resolve the draft by numero
@@ -766,6 +767,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     setTranslate({ x: 0, y: 0 });
   }, [activePage]);
 
+  // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
+  useEffect(() => {
+    if (fields.length === 0) return;
+    if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
+    // Only auto-fill when the producer denomination is currently empty
+    if (!produttoreDenomField) return;
+    const currentVal = String(values[produttoreDenomField.id] ?? "").trim();
+    if (currentVal) return;
+    const updates = buildSoggettoUpdates(fields, tenantPreset, "produttore");
+    if (Object.keys(updates).length === 0) return;
+    setValues((prev) => ({ ...prev, ...updates }));
+    setSelectedProduttore(tenantPreset);
+  }, [fields, tenantContext, tenantPreset, produttoreDenomField, values]);
+
+
   const handleChange = (id: string, val: string | boolean) => {
     const isProducerField = produttoreDenomField?.id === id || produttoreCfField?.id === id;
 
@@ -857,16 +873,27 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     setScale((s) => Math.max(0.5, Math.min(4, s + delta)));
   };
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = async (mode: "draft" | "final" = "draft") => {
     const targetId = firFormId || activeDraftId;
     if (!targetId) { toast.error("Nessuna bozza attiva"); return; }
+    const formatErr = (err: unknown): string => {
+      if (!err) return "errore sconosciuto";
+      if (err instanceof Error) return err.message;
+      if (typeof err === "string") return err;
+      const obj = err as { message?: string; error_description?: string; details?: string; hint?: string };
+      return obj.message || obj.error_description || obj.details || obj.hint || JSON.stringify(err);
+    };
+
     try {
-      const { data: existing } = await supabase
+      const { data: existing, error: loadErr } = await supabase
         .from("fir_forms")
         .select("*")
         .eq("id", targetId)
         .maybeSingle();
-      const mergedFormData = { ...((existing?.form_data as Record<string, unknown>) || {}), ...values };
+      if (loadErr) throw loadErr;
+      if (!existing) throw new Error("Formulario non trovato");
+
+      const mergedFormData = { ...((existing.form_data as Record<string, unknown>) || {}), ...values };
 
       const valByTokens = (...tokens: string[]) => {
         const f = findFieldByTokens(fields, tokens);
@@ -886,10 +913,18 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const prodDen = valByTokens("denominazione", "produttore");
       const destDen = valByTokens("denominazione", "destinatario");
       const trasDen = valByTokens("denominazione", "trasportatore");
-      const numeroFir = presetNumeroFir || activeDraftNumero || existing?.numero_fir || valByTokens("numero", "fir") || valByTokens("numero", "formulario");
-      const tenantId = (existing?.tenant_id as string | undefined) || TENANT_ID_MAP[tenantContext] || TENANT_ID_MAP.global;
 
-      const updates: Record<string, unknown> = { form_data: mergedFormData, updated_at: new Date().toISOString() };
+      // CRITICAL: never overwrite an existing valid numero_fir.
+      // Only use the form value if the draft has no number at all (rare).
+      const existingNumero = (existing.numero_fir as string | null) || null;
+      const numeroFir = existingNumero
+        || presetNumeroFir
+        || activeDraftNumero
+        || valByTokens("numero", "fir")
+        || valByTokens("numero", "formulario");
+      const tenantId = (existing.tenant_id as string | undefined) || TENANT_ID_MAP[tenantContext] || TENANT_ID_MAP.global;
+
+      const updates: Record<string, unknown> = { form_data: mergedFormData };
       if (desc) updates.descrizione_rifiuto = desc;
       if (eer) updates.codice_eer = eer;
       if (qta !== null) updates.quantita = qta;
@@ -898,57 +933,128 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
-      if (numeroFir) updates.numero_fir = numeroFir;
+      // Only set numero_fir when it was previously missing
+      if (!existingNumero && numeroFir) updates.numero_fir = numeroFir;
+      if (mode === "final") updates.status = "completato";
 
-      const { error } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
-      if (error) throw error;
+      const { error: updateErr } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
+      if (updateErr) throw updateErr;
 
-      if (tenantId && numeroFir) {
-        const registryRow = {
-          tenant_id: tenantId,
-          data_movimento: new Date().toISOString().slice(0, 10),
-          cer: eer || null,
-          descrizione: desc || null,
-          carico_scarico: registryMovementType || "Carico",
-          tipo_operazione: registryMovementType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
-          al_rentri: false,
-          numero_formulario: numeroFir,
-          segno: registryMovementType === "Scarico" ? "-" : "+",
-          quantita: qta,
-          peso_destino: qta,
-          luogo_produzione: prodDen || null,
-          destinazione: destDen || null,
-          stato_fisico: statoFisico || null,
-          annotazioni: "Creato da workspace FIR Dev Multyproget",
-          data_emissione_formulario: new Date().toISOString().slice(0, 10),
-          raw: { fir_form_id: targetId, form_data: mergedFormData },
-        };
-        const { data: found } = await supabase
-          .from("registro_generale" as any)
-          .select("id")
-          .eq("tenant_id", tenantId)
-          .eq("numero_formulario", numeroFir)
-          .limit(1)
-          .maybeSingle();
-        const foundRow = found as { id?: string } | null;
-        const registryError = foundRow?.id
-          ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", foundRow.id)).error
-          : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
-        if (registryError) throw registryError;
+      // === REGISTRO (only on FINAL save) ===
+      if (mode === "final" && tenantId && numeroFir) {
+        try {
+          const registryRow = {
+            tenant_id: tenantId,
+            data_movimento: new Date().toISOString().slice(0, 10),
+            cer: eer || null,
+            descrizione: desc || null,
+            carico_scarico: registryMovementType || "Carico",
+            tipo_operazione: registryMovementType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
+            al_rentri: false,
+            numero_formulario: numeroFir,
+            segno: registryMovementType === "Scarico" ? "-" : "+",
+            quantita: qta,
+            peso_destino: qta,
+            luogo_produzione: prodDen || null,
+            destinazione: destDen || null,
+            stato_fisico: statoFisico || null,
+            annotazioni: "Creato da workspace FIR Dev Multyproget",
+            data_emissione_formulario: new Date().toISOString().slice(0, 10),
+            raw: { fir_form_id: targetId, form_data: mergedFormData },
+          };
+          const { data: found } = await supabase
+            .from("registro_generale" as any)
+            .select("id")
+            .eq("tenant_id", tenantId)
+            .eq("numero_formulario", numeroFir)
+            .limit(1)
+            .maybeSingle();
+          const foundRow = found as { id?: string } | null;
+          const registryError = foundRow?.id
+            ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", foundRow.id)).error
+            : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
+          if (registryError) throw registryError;
+        } catch (regErr) {
+          toast.warning("Formulario salvato, ma registro non aggiornato: " + formatErr(regErr));
+        }
+
+        // === GIACENZE (only on FINAL save) ===
+        try {
+          const prevSnap = (mergedFormData as any).__giacenza_snapshot as
+            | { quantita: number; cer: string | null; segno: "+" | "-" }
+            | undefined;
+          const newSegno: "+" | "-" = registryMovementType === "Scarico" ? "-" : "+";
+          const newQta = qta || 0;
+          const newCer = eer || null;
+
+          // Compensatory inverse if a previous snapshot exists and data changed
+          if (prevSnap && (prevSnap.quantita !== newQta || prevSnap.cer !== newCer || prevSnap.segno !== newSegno)) {
+            await supabase.from("movimenti_impianto" as any).insert({
+              tenant_id: tenantId,
+              cer: prevSnap.cer || newCer,
+              quantita_kg: prevSnap.quantita,
+              data_movimento: new Date().toISOString().slice(0, 10),
+              tipo_movimento: prevSnap.segno === "+" ? "SCARICO" : "CARICO",
+              ruolo_impianto: "DESTINATARIO",
+              origine: "fir_adjust",
+              fir_id: targetId,
+              numero_fir: numeroFir,
+              produttore_denominazione: prodDen || null,
+              destinatario_denominazione: destDen || null,
+              note: "Compensativo inverso (modifica FIR)",
+            } as any);
+          }
+
+          if (newQta > 0 && newCer) {
+            await supabase.from("movimenti_impianto" as any).insert({
+              tenant_id: tenantId,
+              cer: newCer,
+              descrizione_rifiuto: desc || null,
+              quantita_kg: newQta,
+              data_movimento: new Date().toISOString().slice(0, 10),
+              tipo_movimento: newSegno === "+" ? "CARICO" : "SCARICO",
+              ruolo_impianto: "DESTINATARIO",
+              origine: "fir_final",
+              fir_id: targetId,
+              numero_fir: numeroFir,
+              produttore_denominazione: prodDen || null,
+              destinatario_denominazione: destDen || null,
+              note: "Salvataggio definitivo FIR",
+            } as any);
+          }
+
+          // Save snapshot in form_data
+          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno };
+          await supabase
+            .from("fir_forms")
+            .update({ form_data: { ...mergedFormData, __giacenza_snapshot: newSnap } })
+            .eq("id", targetId);
+        } catch (gErr) {
+          toast.warning("Giacenze non aggiornate: " + formatErr(gErr));
+        }
       }
 
-      toast.success("✅ Formulario salvato e registrato");
+      toast.success(mode === "final" ? "✅ Formulario salvato DEFINITIVO (registro + giacenze)" : "💾 Bozza salvata");
       onSaved?.();
-    } catch (err: any) {
-      toast.error("Errore salvataggio: " + (err?.message || err));
+    } catch (err) {
+      toast.error("Errore salvataggio: " + formatErr(err));
     }
   };
 
   useEffect(() => {
-    const listener = () => { void handleSaveDraft(); };
-    window.addEventListener("dev-fir-save-active", listener);
-    return () => window.removeEventListener("dev-fir-save-active", listener);
+    const draftListener = () => { void handleSaveDraft("draft"); };
+    const finalListener = () => { void handleSaveDraft("final"); };
+    const legacyListener = () => { void handleSaveDraft("draft"); };
+    window.addEventListener("dev-fir-save-draft", draftListener);
+    window.addEventListener("dev-fir-save-final", finalListener);
+    window.addEventListener("dev-fir-save-active", legacyListener);
+    return () => {
+      window.removeEventListener("dev-fir-save-draft", draftListener);
+      window.removeEventListener("dev-fir-save-final", finalListener);
+      window.removeEventListener("dev-fir-save-active", legacyListener);
+    };
   });
+
 
   const pageFields = fields.filter((f) => f.page === activePage);
 
@@ -1012,13 +1118,22 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
         {(firFormId || activeDraftId) && (
-          <button
-            onClick={handleSaveDraft}
-            className="ml-2 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
-          </button>
+          <>
+            <button
+              onClick={() => void handleSaveDraft("draft")}
+              className="ml-2 px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-display text-xs tracking-wider hover:bg-amber-500/30 transition-colors flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" /> BOZZA
+            </button>
+            <button
+              onClick={() => void handleSaveDraft("final")}
+              className="px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-xs tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" /> DEFINITIVO
+            </button>
+          </>
         )}
+
       </div>
 
       <div
@@ -1210,15 +1325,22 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       </div>
 
       {(firFormId || activeDraftId) && (
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end gap-2 pt-2">
           <button
-            onClick={handleSaveDraft}
-            className="px-6 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+            onClick={() => void handleSaveDraft("draft")}
+            className="px-5 py-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors flex items-center gap-2"
           >
-            <Save className="h-4 w-4" /> SALVA FORMULARIO E REGISTRO
+            <Save className="h-4 w-4" /> SALVA BOZZA
+          </button>
+          <button
+            onClick={() => void handleSaveDraft("final")}
+            className="px-5 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-display text-sm tracking-wider hover:bg-emerald-500/30 transition-colors flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" /> SALVA DEFINITIVO (giacenze)
           </button>
         </div>
       )}
+
 
       {printOnly ? (
         <div className="flex justify-end gap-3 pt-2">
