@@ -155,9 +155,11 @@ const isTestFirNumberMN = (value?: string | null) => {
 interface MNFIRFormCompleteProps {
   tenantId?: string;
   mnContext?: string;
+  firFormId?: string;
+  draftData?: any | null;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }: MNFIRFormCompleteProps) {
   const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
@@ -175,9 +177,19 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
   const u = store.updateField;
   const d = store.data;
 
+  useEffect(() => {
+    if (!draftData?.id) return;
+    store.loadFromDatabase({
+      ...draftData,
+      form_data: draftData.form_data as Record<string, any> | null,
+    });
+    useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: draftData.status === "completato" ? "chiuso" : (draftData.status as any) || "bozza" });
+  }, [draftData?.id]);
+
   // ── Auto-restore + integrity check state locale ─────────────
   const hasAutoRestored = useRef(false);
   useEffect(() => {
+    if (firFormId || draftData?.id) return;
     if (!user?.id || hasAutoRestored.current) return;
     hasAutoRestored.current = true;
     let isCancelled = false;
@@ -279,7 +291,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
       ? await supabase.rpc("ensure_user_has_fir_draft_for_tenant" as any, { p_user_id: user.id, p_tenant_id: tenantId })
       : await supabase.rpc("ensure_user_has_fir_draft" as any, { p_user_id: user.id });
     if (ensureErr) throw ensureErr;
-    if (!draftId) throw new Error("Nessun numero FIR disponibile nel pool");
+    if (!draftId) throw new Error("Nessuna bozza manuale trovata: crea il FIR inserendo prima il numero esatto");
 
     let draftQuery = supabase
       .from("fir_forms")
@@ -291,7 +303,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
     const { data: draft, error: draftErr } = await draftQuery.maybeSingle();
 
     if (draftErr) throw draftErr;
-    if (!draft) throw new Error("Bozza FIR non trovata dopo assegnazione");
+    if (!draft) throw new Error("Bozza FIR manuale non trovata");
 
     store.loadFromDatabase({
       ...draft,
@@ -307,9 +319,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
       const numero = await ensureAndLoadDraft();
       toast.success(`FIR ${numero || "assegnato"} inizializzato!`);
     } catch (error: any) {
-      toast.error(error?.message?.includes("Nessun numero FIR")
-        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
-        : "Errore nell'inizializzazione del FIR");
+      toast.error(error?.message || "Errore nell'apertura del FIR");
     }
   };
 
@@ -342,9 +352,7 @@ export function MNFIRFormComplete({ tenantId, mnContext }: MNFIRFormCompleteProp
       const numero = await ensureAndLoadDraft();
       toast.success(`Nuovo FIR ${numero || "assegnato"} inizializzato!`);
     } catch (error: any) {
-      toast.error(error?.message?.includes("Nessun numero FIR")
-        ? "🚨 NESSUN NUMERO FIR DISPONIBILE — Contatta l'amministratore!"
-        : "Errore nell'inizializzazione del nuovo FIR");
+      toast.error(error?.message || "Errore nell'apertura del nuovo FIR");
     }
   };
 

@@ -8,7 +8,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { getCodiceOperazione } from "@/lib/codiciRecuperoSmaltimento";
+import { useMNFIRStore } from "@/stores/mnFirStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -77,10 +79,12 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { fillFields } = useFormBridge();
+  const mnFirStore = useMNFIRStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [activeDraft, setActiveDraft] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
+  const [moduleType, setModuleType] = useState<"standard" | "alternative">("alternative");
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrEntries, setOcrEntries] = useState<{ id: string; value: string }[]>([]);
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
@@ -127,33 +131,27 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     if (!data) throw new Error("Formulario non trovato");
     setActiveDraft(data);
     setActiveDraftId(id);
+    mnFirStore.loadFromDatabase({
+      ...data,
+      form_data: data.form_data as Record<string, any> | null,
+    });
     return data;
   };
 
-  const ensureDraft = async () => {
-    if (!user?.id) throw new Error("Utente non autenticato");
+  const handleNewDraft = async () => {
+    if (!manualFirNumber.trim()) {
+      toast.error("Inserisci il numero FIR esatto prima di creare il formulario");
+      return;
+    }
     setCreating(true);
     try {
-      const { data: draftId, error } = await supabase.rpc("ensure_user_has_fir_draft_for_tenant" as any, {
-        p_user_id: user.id,
-        p_tenant_id: MULTY_TENANT_ID,
-      });
-      if (error) throw error;
-      if (!draftId) throw new Error("Nessun numero FIR disponibile nel serbatoio Multyproget");
-      await loadDraft(String(draftId));
-      await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
-      return String(draftId);
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleNewDraft = async () => {
-    try {
-      const id = await ensureDraft();
-      toast.success(`Formulario pronto: ${id ? "bozza caricata" : "bozza creata"}`);
+      const draft = await openDraftByNumber(manualFirNumber);
+      setManualFirNumber("");
+      toast.success(`Formulario pronto: ${draft.numero_fir}`);
     } catch (error: any) {
       toast.error(error?.message || "Errore creazione formulario");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -162,7 +160,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     const normalized = normalizeFirNumber(numeroFir);
     if (!normalized) throw new Error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
 
-    const { data: draftId, error } = await supabase.rpc("ensure_fir_draft_by_number_for_tenant" as any, {
+    const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
       p_user_id: user.id,
       p_tenant_id: MULTY_TENANT_ID,
       p_numero_fir: normalized,
@@ -236,10 +234,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         }
       }
 
-      if (!targetDraft?.id) {
-        const draftId = await ensureDraft();
-        targetDraft = await loadDraft(draftId);
-      }
+      if (!targetDraft?.id) throw new Error("OCR fermato: il documento non contiene un numero FIR leggibile. Inserisci il numero e crea/apri il formulario manualmente.");
 
       const safeEntries = entries.filter((entry) => !isFirNumberEntry(entry.id));
       setOcrEntries(safeEntries);
@@ -302,9 +297,9 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 <option value="Carico">Registro: Carico</option>
                 <option value="Scarico">Registro: Scarico</option>
               </select>
-              <Button onClick={handleNewDraft} disabled={creating || !user?.id} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={handleNewDraft} disabled={creating || !user?.id || !manualFirNumber.trim()} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Nuovo / carica FIR
+                Crea / apri numero
               </Button>
               <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={ocrBusy || !user?.id} className="gap-2 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
                 {ocrBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
@@ -388,6 +383,28 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               </span>
             )}
           </div>
+
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/30 bg-background/40 p-2">
+            <span className="text-xs font-mono text-muted-foreground">Tipo modulo:</span>
+            <Button
+              type="button"
+              size="sm"
+              variant={moduleType === "standard" ? "default" : "outline"}
+              onClick={() => setModuleType("standard")}
+              className="h-8"
+            >
+              Standard
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={moduleType === "alternative" ? "default" : "outline"}
+              onClick={() => setModuleType("alternative")}
+              className="h-8"
+            >
+              Alternativo
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -414,26 +431,35 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
 
         {activeDraftId ? (
           <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-            <FIRAlternativeForm
-              key={activeDraftId}
-              firFormId={activeDraftId}
-              presetNumeroFir={activeDraft?.numero_fir || undefined}
-              assignedUserId={activeDraft?.user_id || user?.id}
-              impiantoId={impiantoId}
-              draftData={activeDraft}
-              ocrEntries={ocrEntries}
-              disableRentriActions
-              registryMovementType={registryMovementType}
-              onSaved={() => {
-                // Refresh the active draft from DB so the canonical numero_fir is shown
-                if (activeDraftId) {
-                  loadDraft(activeDraftId).catch(() => undefined);
-                }
-                queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
-                queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
-                queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
-              }}
-            />
+            {moduleType === "alternative" ? (
+              <FIRAlternativeForm
+                key={`alternative-${activeDraftId}`}
+                firFormId={activeDraftId}
+                presetNumeroFir={activeDraft?.numero_fir || undefined}
+                assignedUserId={activeDraft?.user_id || user?.id}
+                impiantoId={impiantoId}
+                draftData={activeDraft}
+                ocrEntries={ocrEntries}
+                disableRentriActions
+                registryMovementType={registryMovementType}
+                onSaved={() => {
+                  if (activeDraftId) {
+                    loadDraft(activeDraftId).catch(() => undefined);
+                  }
+                  queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+                }}
+              />
+            ) : (
+              <MNFIRFormComplete
+                key={`standard-${activeDraftId}`}
+                tenantId={MULTY_TENANT_ID}
+                mnContext="multyproget"
+                firFormId={activeDraftId}
+                draftData={activeDraft}
+              />
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg border border-dashed border-border/50 p-4 text-sm text-muted-foreground">
