@@ -50,12 +50,18 @@ function normalizeOcrKey(value: string) {
 
 function normalizeFirNumber(value: string) {
   const normalized = value.trim().toUpperCase().replace(/\s+/g, " ");
-  return /^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized) ? normalized : "";
+  if (/^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized)) return normalized;
+  const compact = normalized.replace(/[^A-Z0-9]/g, "");
+  const match = compact.match(/([A-Z]{5})([0-9]{6})([A-Z]{2})/);
+  return match ? `${match[1]} ${match[2]} ${match[3]}` : "";
 }
 
 function isFirNumberEntry(id: string) {
   const normalized = normalizeOcrKey(id);
-  return normalized === "numero_fir" || normalized === "numero_formulario" || normalized === "numero_del_formulario";
+  return normalized === "numero_fir"
+    || normalized === "numero_formulario"
+    || normalized === "numero_del_formulario"
+    || (normalized.includes("numero") && (normalized.includes("fir") || normalized.includes("formulario")));
 }
 
 function readFileAsBase64(file: File) {
