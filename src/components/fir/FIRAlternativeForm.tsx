@@ -468,15 +468,17 @@ interface FIRAlternativeFormProps {
   presetNumeroFir?: string;
   firFormId?: string;
   assignedUserId?: string;
+  impiantoId?: string | null;
   draftData?: FIRAlternativeDraftData | null;
   ocrEntries?: { id: string; value: string }[];
   printOnly?: boolean;
+  disableRentriActions?: boolean;
   registryMovementType?: "Carico" | "Scarico";
   onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, draftData, ocrEntries, printOnly, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, disableRentriActions, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
@@ -912,7 +914,11 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (loadErr) throw loadErr;
       if (!existing) throw new Error("Formulario non trovato");
 
-      const mergedFormData = { ...((existing.form_data as Record<string, unknown>) || {}), ...values };
+      const mergedFormData = {
+        ...((existing.form_data as Record<string, unknown>) || {}),
+        ...values,
+        ...(impiantoId ? { impianto_id: impiantoId } : {}),
+      };
 
       const valByTokens = (...tokens: string[]) => {
         const f = findFieldByTokens(fields, tokens);
@@ -1000,16 +1006,47 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
         // === GIACENZE (only on FINAL save) ===
         try {
+          const directImpiantoId = typeof impiantoId === "string" && impiantoId.trim()
+            ? impiantoId.trim()
+            : typeof (mergedFormData as any).impianto_id === "string"
+              ? String((mergedFormData as any).impianto_id).trim()
+              : "";
+          const movementImpiantoId = directImpiantoId || ((await supabase
+            .from("impianti" as any)
+            .select("id")
+            .eq("tenant_id", tenantId)
+            .order("created_at", { ascending: true })
+            .limit(1)
+            .maybeSingle()).data as { id?: string } | null)?.id || "";
+
+          if (!movementImpiantoId) {
+            toast.warning("Giacenze non aggiornate: nessun impianto Multyproget trovato");
+          } else {
           const prevSnap = (mergedFormData as any).__giacenza_snapshot as
-            | { quantita: number; cer: string | null; segno: "+" | "-" }
+            | { quantita: number; cer: string | null; segno: "+" | "-"; impianto_id?: string | null }
             | undefined;
           const newSegno: "+" | "-" = registryMovementType === "Scarico" ? "-" : "+";
           const newQta = qta || 0;
           const newCer = eer || null;
+          const { data: existingFinalMovement, error: existingMovementError } = await supabase
+            .from("movimenti_impianto" as any)
+            .select("id")
+            .eq("fir_id", targetId)
+            .eq("origine", "fir_final")
+            .limit(1)
+            .maybeSingle();
+          if (existingMovementError) throw existingMovementError;
+          const movementChanged = !!prevSnap && (
+            prevSnap.quantita !== newQta
+            || prevSnap.cer !== newCer
+            || prevSnap.segno !== newSegno
+            || prevSnap.impianto_id !== movementImpiantoId
+          );
 
           // Compensatory inverse if a previous snapshot exists and data changed
-          if (prevSnap && (prevSnap.quantita !== newQta || prevSnap.cer !== newCer || prevSnap.segno !== newSegno)) {
-            await supabase.from("movimenti_impianto" as any).insert({
+          if (prevSnap && existingFinalMovement && movementChanged) {
+            const { error: inverseErr } = await supabase.from("movimenti_impianto" as any).insert({
+              impianto_id: prevSnap.impianto_id || movementImpiantoId,
               tenant_id: tenantId,
               cer: prevSnap.cer || newCer,
               quantita_kg: prevSnap.quantita,
@@ -1023,10 +1060,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               destinatario_denominazione: destDen || null,
               note: "Compensativo inverso (modifica FIR)",
             } as any);
+            if (inverseErr) throw inverseErr;
           }
 
-          if (newQta > 0 && newCer) {
-            await supabase.from("movimenti_impianto" as any).insert({
+          if (newQta > 0 && newCer && (!existingFinalMovement || movementChanged)) {
+            const { error: movementErr } = await supabase.from("movimenti_impianto" as any).insert({
+              impianto_id: movementImpiantoId,
               tenant_id: tenantId,
               cer: newCer,
               descrizione_rifiuto: desc || null,
@@ -1041,14 +1080,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               destinatario_denominazione: destDen || null,
               note: "Salvataggio definitivo FIR",
             } as any);
+            if (movementErr) throw movementErr;
           }
 
           // Save snapshot in form_data
-          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno };
+          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno, impianto_id: movementImpiantoId };
           await supabase
             .from("fir_forms")
             .update({ form_data: { ...mergedFormData, __giacenza_snapshot: newSnap } })
             .eq("id", targetId);
+          }
         } catch (gErr) {
           toast.warning("Giacenze non aggiornate: " + formatErr(gErr));
         }
@@ -1419,7 +1460,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             <Printer className="h-4 w-4" /> STAMPA TUTTE LE PAGINE
           </button>
         </div>
-      ) : (
+      ) : !disableRentriActions ? (
         <FIRRentriActions
           cliente={rentriCliente}
           formData={values as Record<string, string | boolean>}
@@ -1429,7 +1470,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             console.log("[FIR] Emissione success:", res);
           }}
         />
-      )}
+      ) : null}
     </div>
   );
 }

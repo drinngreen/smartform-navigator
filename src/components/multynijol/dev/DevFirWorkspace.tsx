@@ -70,6 +70,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
   const [codiceOp, setCodiceOp] = useState("");
   const [destSelected, setDestSelected] = useState("");
+  const [impiantoId, setImpiantoId] = useState<string | null>(null);
 
   const { data: drafts = [], isLoading } = useQuery({
     queryKey: ["dev-multy-fir-workspace-drafts", MULTY_TENANT_ID],
@@ -86,19 +87,22 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     },
   });
 
-  // Destinatari from DB (impianti accounts for Multyproget)
-  const { data: destinatari = [] } = useQuery({
-    queryKey: ["dev-multy-destinatari", MULTY_TENANT_ID],
+  const { data: impianti = [] } = useQuery({
+    queryKey: ["dev-multy-impianti", MULTY_TENANT_ID],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("impianti_accounts")
-        .select("id, ragione_sociale, codice_fiscale, partita_iva, indirizzo, comune, provincia, autorizzazione")
+        .from("impianti")
+        .select("id, nome, indirizzo, comune, provincia, autorizzaz_regione")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("ragione_sociale", { ascending: true });
+        .order("nome", { ascending: true });
       if (error) throw error;
       return (data as any[]) || [];
     },
   });
+
+  useEffect(() => {
+    if (!impiantoId && impianti.length > 0) setImpiantoId(impianti[0].id);
+  }, [impiantoId, impianti]);
 
   const loadDraft = async (id: string) => {
     const { data, error } = await supabase.from("fir_forms").select("*").eq("id", id).maybeSingle();
@@ -193,20 +197,19 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   // Destinatario selection → fill fields via bridge
   useEffect(() => {
     if (!destSelected) return;
-    const dest = destinatari.find((d) => d.id === destSelected);
+    const dest = impianti.find((d) => d.id === destSelected);
     if (!dest) return;
+    setImpiantoId(dest.id);
     const indirizzo = [dest.indirizzo, dest.comune, dest.provincia ? `(${dest.provincia})` : ""].filter(Boolean).join(" ");
     fillFields([
-      { id: "denominazione_destinatario", value: dest.ragione_sociale || "" },
-      { id: "destinatario_denominazione", value: dest.ragione_sociale || "" },
-      { id: "codice_fiscale_destinatario", value: dest.codice_fiscale || dest.partita_iva || "" },
-      { id: "destinatario_codice_fiscale", value: dest.codice_fiscale || dest.partita_iva || "" },
+      { id: "denominazione_destinatario", value: dest.nome || "" },
+      { id: "destinatario_denominazione", value: dest.nome || "" },
       { id: "unita_locale_destinatario", value: indirizzo },
       { id: "destinatario_indirizzo", value: indirizzo },
-      { id: "numero_aut_comunicazione_destinatario", value: dest.autorizzazione || "" },
+      { id: "numero_aut_comunicazione_destinatario", value: dest.autorizzaz_regione || "" },
     ]);
-    toast.success(`Destinatario impostato: ${dest.ragione_sociale}`);
-  }, [destSelected, destinatari, fillFields]);
+    toast.success(`Destinatario impostato: ${dest.nome}`);
+  }, [destSelected, impianti, fillFields]);
 
   return (
     <Card className="border-emerald-500/30 bg-card/70">
@@ -260,9 +263,21 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground min-w-[220px]"
             >
               <option value="">Destinatario da database…</option>
-              {destinatari.map((d) => (
+              {impianti.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.ragione_sociale}
+                  {d.nome}
+                </option>
+              ))}
+            </select>
+            <select
+              value={impiantoId || ""}
+              onChange={(e) => setImpiantoId(e.target.value || null)}
+              className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground min-w-[220px]"
+            >
+              <option value="">Impianto giacenze…</option>
+              {impianti.map((impianto) => (
+                <option key={impianto.id} value={impianto.id}>
+                  {impianto.nome}
                 </option>
               ))}
             </select>
@@ -310,8 +325,10 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               firFormId={activeDraftId}
               presetNumeroFir={activeDraft?.numero_fir || undefined}
               assignedUserId={activeDraft?.user_id || user?.id}
+              impiantoId={impiantoId}
               draftData={activeDraft}
               ocrEntries={ocrEntries}
+              disableRentriActions
               registryMovementType={registryMovementType}
               onSaved={() => {
                 queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
