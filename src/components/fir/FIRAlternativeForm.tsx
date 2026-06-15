@@ -306,7 +306,7 @@ function getDraftValueForField(
   if (field.type === "date") {
     if (normalized === "data_emissione" || normalized === "data_di_emissione_foglio_2") return draft.created_at || draft.updated_at;
     if (hasTokens(field.name, ["data", "inizio", "trasporto"])) return draft.data_partenza;
-    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return draft.data_arrivo;
+    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "data_accettazione") || draft.data_arrivo;
     if (normalized === "valida_al") return getFormDataValue(formData, "valida_al", "analisi_valida_al", "classificazione_valida_al");
     if (hasTokens(field.name, ["data", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
     if (normalized.includes("prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
