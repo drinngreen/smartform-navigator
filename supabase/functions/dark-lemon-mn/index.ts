@@ -1744,10 +1744,7 @@ async function handleTool(
     }
 
     case "create_extra_draft": {
-      const { data, error } = await db.rpc("create_extra_fir_draft", { p_user_id: args.user_id });
-      if (error) return { error: error.message };
-      const { data: draft } = await db.from("fir_forms").select("id, numero_fir, status, user_id").eq("id", data).single();
-      return { success: true, draft: draft || { id: data } };
+      return { error: "Creazione automatica FIR disattivata. Serve il numero FIR esatto e la creazione manuale dal workspace." };
     }
 
     case "check_fir_pool": {
@@ -1779,8 +1776,7 @@ async function handleTool(
     }
 
     case "distribute_baseline": {
-      const { data, error } = await db.rpc("auto_distribute_baseline_fir", { p_societa: "multy" });
-      return error ? { error: error.message } : { success: true, drafts_created: data };
+      return { success: false, drafts_created: 0, message: "Distribuzione automatica FIR disattivata: solo creazione manuale con numero esatto." };
     }
 
     case "complete_fir": {
