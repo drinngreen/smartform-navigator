@@ -939,15 +939,18 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const destDen = valByTokens("denominazione", "destinatario");
       const trasDen = valByTokens("denominazione", "trasportatore");
 
-      // CRITICAL: never overwrite an existing valid numero_fir.
-      // Only use the form value if the draft has no number at all (rare).
+      // CRITICAL: numero_fir is IMMUTABLE. Never include it in the UPDATE payload.
+      // The DB has a trigger that rejects any change. We always use the value already in DB.
       const existingNumero = (existing.numero_fir as string | null) || null;
-      const numeroFir = existingNumero
-        || presetNumeroFir
-        || activeDraftNumero
-        || valByTokens("numero", "fir")
-        || valByTokens("numero", "formulario");
+      const numeroFir = existingNumero || presetNumeroFir || activeDraftNumero || null;
       const tenantId = (existing.tenant_id as string | undefined) || TENANT_ID_MAP[tenantContext] || TENANT_ID_MAP.global;
+
+      // Force the form-data snapshot to mirror the canonical numero_fir,
+      // so any OCR/manual edit of the visible field cannot leak back in.
+      if (existingNumero) {
+        (mergedFormData as Record<string, unknown>).numero_fir = existingNumero;
+        (mergedFormData as Record<string, unknown>).numero_formulario = existingNumero;
+      }
 
       const updates: Record<string, unknown> = { form_data: mergedFormData };
       if (desc) updates.descrizione_rifiuto = desc;
@@ -959,8 +962,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
-      // Only set numero_fir when it was previously missing
-      if (!existingNumero && numeroFir) updates.numero_fir = numeroFir;
+      // numero_fir is set ONCE at draft creation by the RPC. Never overwrite it from the form.
       if (mode === "final") updates.status = "completato";
 
       const { error: updateErr } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
