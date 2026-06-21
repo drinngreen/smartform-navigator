@@ -58,6 +58,7 @@ export default function MNFormulariPage() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
+  const [editorMode, setEditorMode] = useState<"standard" | "alternative">("alternative");
 
   const fetchForms = useCallback(async () => {
     if (!mnCtx) return;
