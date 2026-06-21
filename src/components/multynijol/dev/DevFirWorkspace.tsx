@@ -443,6 +443,11 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                   queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
                   queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
                   queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-giacenze"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-mag-giacenze"] });
+                  queryClient.invalidateQueries({ queryKey: ["dev-mag-movimenti"] });
+                  queryClient.invalidateQueries({ queryKey: ["movimenti-impianto"] });
                 }}
               />
             ) : (

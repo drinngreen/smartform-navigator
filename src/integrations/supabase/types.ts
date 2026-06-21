@@ -4225,6 +4225,7 @@ export type Database = {
           codice_fiscale: string
           cognome: string
           created_at: string | null
+          deactivated_at: string | null
           id: string
           invited_by: string | null
           is_social_only: boolean
@@ -4244,6 +4245,7 @@ export type Database = {
           codice_fiscale: string
           cognome: string
           created_at?: string | null
+          deactivated_at?: string | null
           id?: string
           invited_by?: string | null
           is_social_only?: boolean
@@ -4263,6 +4265,7 @@ export type Database = {
           codice_fiscale?: string
           cognome?: string
           created_at?: string | null
+          deactivated_at?: string | null
           id?: string
           invited_by?: string | null
           is_social_only?: boolean
