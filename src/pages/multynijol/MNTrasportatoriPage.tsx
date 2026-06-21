@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -74,11 +74,12 @@ function normalizeFirNumber(value: string) {
   if (/^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized)) return normalized;
   const compact = normalized.replace(/[^A-Z0-9]/g, "");
   const match = compact.match(/([A-Z]{5})([0-9]{6})([A-Z]{2})/);
-  return match ? `${match[1]} ${match[2]} ${match[3]}` : "";
+  return match ? `${match[1]} ${match[2]} ${match[3]}` : normalized;
 }
 
 export default function MNTrasportatoriPage({ embedded, context: contextProp }: MNTrasportatoriPageProps = {}) {
   const params = useParams<{ context: string }>();
+  const navigate = useNavigate();
   const contextKey = contextProp || params.context || "multyproget";
   const tenant = CONTEXT_MAP[contextKey] || CONTEXT_MAP.multyproget;
 
@@ -122,7 +123,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     if (!manualFirDialog.user) return;
     const normalized = normalizeFirNumber(manualFirNumber);
     if (!normalized) {
-      toast.error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
+      toast.error("Inserisci il numero FIR");
       return;
     }
     setActionLoading(true);
@@ -137,6 +138,12 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       toast.success(`Formulario ${normalized} creato per ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
       setManualFirDialog({ open: false, user: null });
       setManualFirNumber("");
+      if (embedded) {
+        window.dispatchEvent(new CustomEvent("dev-fir-open-draft", { detail: { draftId: String(draftId) } }));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        navigate(`/mn/admin/${contextKey}/formulari?fir=${draftId}`);
+      }
     } catch (e: any) {
       toast.error("Errore creazione FIR: " + e.message);
     } finally {

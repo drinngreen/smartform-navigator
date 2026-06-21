@@ -1,11 +1,11 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,10 +41,12 @@ const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 
 export default function MNFormulariPage() {
   const { context } = useParams<{ context: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
 
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) || MN_CONTEXTS[0];
+  const requestedFirId = searchParams.get("fir");
 
   useEffect(() => {
     if (isValid) setActiveContext(mnCtx);
@@ -72,12 +74,15 @@ export default function MNFormulariPage() {
       const scopedForms = await loadForms(mnCtx.tenantId);
       if (scopedForms.length > 0) {
         setForms(scopedForms);
+        const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
+        if (requested) setViewDialog({ open: true, form: requested });
         return;
       }
 
       const shouldFallbackToGlobal = context === "multyproget" || context === "dev-multyproget";
       if (shouldFallbackToGlobal && mnCtx.tenantId !== GLOBAL_FIR_TENANT_ID) {
-        setForms(await loadForms(GLOBAL_FIR_TENANT_ID));
+        const fallbackForms = await loadForms(GLOBAL_FIR_TENANT_ID);
+        setForms(fallbackForms);
         return;
       }
 
@@ -87,7 +92,23 @@ export default function MNFormulariPage() {
     } finally {
       setLoading(false);
     }
-  }, [context, mnCtx?.tenantId]);
+  }, [context, mnCtx?.tenantId, requestedFirId]);
+
+  const handleDeleteForm = async (form: FirForm) => {
+    if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: form.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setViewDialog({ open: false, form: null });
+      toast.success("Formulario eliminato dalla vista");
+      await fetchForms();
+    } catch (e: any) {
+      toast.error("Errore eliminazione FIR: " + e.message);
+    }
+  };
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
@@ -222,6 +243,12 @@ export default function MNFormulariPage() {
                             <><Eye className="h-4 w-4" /> Visualizza</>
                           )}
                         </button>
+                        <button
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
+                          onClick={() => void handleDeleteForm(form)}
+                        >
+                          <Trash2 className="h-4 w-4" /> Elimina
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -236,7 +263,7 @@ export default function MNFormulariPage() {
       )}
 
       {/* Full FIR Alternative Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { setViewDialog({ open: o, form: o ? viewDialog.form : null }); if (!o && searchParams.get("fir")) setSearchParams({}, { replace: true }); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
@@ -256,8 +283,14 @@ export default function MNFormulariPage() {
               presetNumeroFir={viewDialog.form.numero_fir || undefined}
               assignedUserId={viewDialog.form.user_id || undefined}
               draftData={viewDialog.form}
+                onSaved={fetchForms}
             />
           )}
+            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
+              <Button variant="destructive" className="gap-2" onClick={() => viewDialog.form && void handleDeleteForm(viewDialog.form)}>
+                <Trash2 className="h-4 w-4" /> Elimina formulario
+              </Button>
+            </div>
         </DialogContent>
       </Dialog>
     </MNAdminLayout>
