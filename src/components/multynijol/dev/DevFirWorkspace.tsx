@@ -389,6 +389,14 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               >
                 <Save className="h-4 w-4" /> Salva DEFINITIVO
               </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteActiveDraft}
+                disabled={!activeDraftId}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" /> Elimina FIR
+              </Button>
               <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleOcrFile} />
             </div>
           </div>
