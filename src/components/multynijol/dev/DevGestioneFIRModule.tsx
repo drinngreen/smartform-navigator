@@ -7,7 +7,7 @@ import { vidimaFIRAsync, emissioneFir } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import {
   Upload, RefreshCw, Database, Package, CheckCircle, Clock, AlertTriangle,
-  Zap, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users, Printer
+  Zap, XCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users, Printer, Plus
 } from "lucide-react";
 import { DevStampaFIREditor } from "./DevStampaFIREditor";
 
@@ -35,6 +35,8 @@ export function DevGestioneFIRModule() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string } | null>(null);
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
   const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
+  const [manualFirNumber, setManualFirNumber] = useState("");
+  const [isCreatingManual, setIsCreatingManual] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dev-fir-pool-stats", SOCIETA_ID],
@@ -88,6 +90,31 @@ export function DevGestioneFIRModule() {
   const invalidatePool = () => {
     queryClient.invalidateQueries({ queryKey: ["dev-fir-pool-stats"] });
     queryClient.invalidateQueries({ queryKey: ["dev-fir-pool-list"] });
+  };
+
+  const handleCreateManualFir = async () => {
+    if (!user?.id) return;
+    const normalized = manualFirNumber.trim().toUpperCase().replace(/\s+/g, " ");
+    if (!normalized) { toast.error("Inserisci il numero FIR"); return; }
+    setIsCreatingManual(true);
+    try {
+      const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: user.id,
+        p_tenant_id: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+        p_numero_fir: normalized,
+      });
+      if (error) throw error;
+      if (!draftId) throw new Error("Formulario non creato");
+      window.dispatchEvent(new CustomEvent("dev-fir-open-draft", { detail: { draftId: String(draftId) } }));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setManualFirNumber("");
+      queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+      toast.success(`Formulario ${normalized} creato e aperto`);
+    } catch (err: any) {
+      toast.error(`Errore creazione formulario: ${err.message}`);
+    } finally {
+      setIsCreatingManual(false);
+    }
   };
 
   const handleBulkImport = async () => {
