@@ -1,11 +1,11 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 
 export default function MNFormulariPage() {
   const { context } = useParams<{ context: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
 
   const isValid = !!context && validContexts.includes(context);
@@ -72,12 +73,16 @@ export default function MNFormulariPage() {
       const scopedForms = await loadForms(mnCtx.tenantId);
       if (scopedForms.length > 0) {
         setForms(scopedForms);
+        const requestedFirId = searchParams.get("fir");
+        const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
+        if (requested) setViewDialog({ open: true, form: requested });
         return;
       }
 
       const shouldFallbackToGlobal = context === "multyproget" || context === "dev-multyproget";
       if (shouldFallbackToGlobal && mnCtx.tenantId !== GLOBAL_FIR_TENANT_ID) {
-        setForms(await loadForms(GLOBAL_FIR_TENANT_ID));
+        const fallbackForms = await loadForms(GLOBAL_FIR_TENANT_ID);
+        setForms(fallbackForms);
         return;
       }
 
@@ -87,7 +92,23 @@ export default function MNFormulariPage() {
     } finally {
       setLoading(false);
     }
-  }, [context, mnCtx?.tenantId]);
+  }, [context, mnCtx?.tenantId, searchParams]);
+
+  const handleDeleteForm = async (form: FirForm) => {
+    if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: form.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setViewDialog({ open: false, form: null });
+      toast.success("Formulario eliminato dalla vista");
+      await fetchForms();
+    } catch (e: any) {
+      toast.error("Errore eliminazione FIR: " + e.message);
+    }
+  };
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
