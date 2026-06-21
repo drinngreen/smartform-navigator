@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 
 interface FirForm {
   id: string;
