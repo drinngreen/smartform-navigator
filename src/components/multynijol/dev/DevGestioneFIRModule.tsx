@@ -232,6 +232,23 @@ export function DevGestioneFIRModule() {
         <StatCard icon={<Printer className="h-5 w-5" />} label="Cartacei" value={stats?.cartacei ?? 0} color="text-violet-400" loading={statsLoading} />
       </div>
 
+      {/* Manual FIR Draft */}
+      <div className="rounded-2xl bg-card/60 border border-emerald-500/30 p-6 space-y-4">
+        <div className="flex items-center gap-2 text-emerald-400"><Plus className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Crea Formulario da Numero</h3></div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            value={manualFirNumber}
+            onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
+            onKeyDown={(e) => { if (e.key === "Enter") void handleCreateManualFir(); }}
+            placeholder="DIGITA IL NUMERO: 464364PROVA"
+            className="min-w-0 flex-1 bg-background/80 border border-emerald-500/40 rounded-xl px-4 py-3 text-foreground text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+          />
+          <button onClick={handleCreateManualFir} disabled={isCreatingManual || !manualFirNumber.trim()} className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-display text-sm tracking-wider hover:bg-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {isCreatingManual ? <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" /> : <Plus className="h-4 w-4" />} CREA FORMULARIO
+          </button>
+        </div>
+      </div>
+
       {/* Bulk Import */}
       <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
         <div className="flex items-center gap-2 text-primary"><Upload className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Carica Numeri nel Serbatoio</h3></div>
