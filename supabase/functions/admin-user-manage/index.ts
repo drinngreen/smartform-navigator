@@ -129,7 +129,8 @@ serve(async (req) => {
       });
     }
 
-    // ACTION: delete_user
+    // ACTION: delete_user — SOFT DELETE (policy: no physical deletes)
+    // Mantiene profilo/storico per audit; blocca l'accesso bannando l'utente auth.
     if (action === "delete_user") {
       const { user_id } = body;
       if (!user_id) {
@@ -138,14 +139,36 @@ serve(async (req) => {
         });
       }
 
-      // Delete profile and role first
-      await adminClient.from("profiles").delete().eq("user_id", user_id);
-      await adminClient.from("user_roles").delete().eq("user_id", user_id);
-      await adminClient.from("online_status").delete().eq("user_id", user_id);
+      // 1) Marca il profilo come disattivato (soft-delete)
+      await adminClient
+        .from("profiles")
+        .update({ deactivated_at: new Date().toISOString() })
+        .eq("user_id", user_id);
 
-      const { error } = await adminClient.auth.admin.deleteUser(user_id);
-      if (error) throw error;
+      // 2) Banna l'account auth per 100 anni così non può più loggare
+      const { error: banError } = await adminClient.auth.admin.updateUserById(user_id, {
+        ban_duration: "876000h", // ~100 anni
+      } as any);
 
+      if (banError) {
+        console.error("[delete_user] ban error:", banError);
+      }
+
+      return new Response(JSON.stringify({ success: true, soft_deleted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ACTION: restore_user — riattiva un utente soft-deleted
+    if (action === "restore_user") {
+      const { user_id } = body;
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await adminClient.from("profiles").update({ deactivated_at: null }).eq("user_id", user_id);
+      await adminClient.auth.admin.updateUserById(user_id, { ban_duration: "none" } as any);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
