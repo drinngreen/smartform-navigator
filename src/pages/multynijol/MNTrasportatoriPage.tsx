@@ -101,9 +101,12 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      // Filter to only show transporters for this mn_context
+      // Mostra solo trasportatori attivi del contesto corrente (esclude soft-deleted)
       const filtered = (data.users || []).filter(
-        (u: UserEntry) => u.role === "user" && u.profile?.mn_context === tenant.mnContext
+        (u: UserEntry) =>
+          u.role === "user" &&
+          u.profile?.mn_context === tenant.mnContext &&
+          !(u.profile as any)?.deactivated_at,
       );
       setUsers(filtered);
     } catch (e: any) {
