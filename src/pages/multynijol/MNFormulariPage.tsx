@@ -58,7 +58,12 @@ export default function MNFormulariPage() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
-  const [editorMode, setEditorMode] = useState<"standard" | "alternative">("alternative");
+  const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+
+  const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    setViewDialog({ open: true, form });
+  };
 
   const fetchForms = useCallback(async () => {
     if (!mnCtx) return;
@@ -77,7 +82,7 @@ export default function MNFormulariPage() {
       if (scopedForms.length > 0) {
         setForms(scopedForms);
         const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
-        if (requested) setViewDialog({ open: true, form: requested });
+        if (requested) openEditor(requested, "standard");
         return;
       }
 
@@ -237,14 +242,22 @@ export default function MNFormulariPage() {
                               ? "bg-blue-600 text-white border-blue-400 hover:bg-blue-500"
                               : "bg-secondary/50 text-foreground border-border/50 hover:bg-secondary"
                           }`}
-                          onClick={() => setViewDialog({ open: true, form })}
+                          onClick={() => openEditor(form, "standard")}
                         >
                           {form.status === "draft" || form.status === "bozza" ? (
-                            <><Edit className="h-4 w-4" /> Modifica</>
+                            <><Edit className="h-4 w-4" /> Standard</>
                           ) : (
                             <><Eye className="h-4 w-4" /> Visualizza</>
                           )}
                         </button>
+                        {(form.status === "draft" || form.status === "bozza") && (
+                          <button
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-400/60 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 transition-colors"
+                            onClick={() => openEditor(form, "alternative")}
+                          >
+                            <Edit className="h-4 w-4" /> Alternativo
+                          </button>
+                        )}
                         <button
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
                           onClick={() => void handleDeleteForm(form)}
