@@ -419,7 +419,7 @@ function ImpiantoFormulari() {
                           className={`gap-1 ${form.status === "bozza" || form.status === "draft" ? "text-emerald-400" : "text-muted-foreground"}`}
                         >
                           <Edit className="h-3 w-3" />
-                          Standard
+                          {form.status === "bozza" || form.status === "draft" ? "Standard" : "Visualizza Standard"}
                         </Button>
                         {(form.status === "bozza" || form.status === "draft") && (
                           <Button
@@ -432,14 +432,6 @@ function ImpiantoFormulari() {
                             Alternativo
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditor(form, "standard")}
-                          className="gap-1 text-muted-foreground"
-                        >
-                          {form.status === "bozza" || form.status === "draft" ? "Modifica" : "Visualizza"}
-                        </Button>
                       </td>
                     </tr>
                   ))}
