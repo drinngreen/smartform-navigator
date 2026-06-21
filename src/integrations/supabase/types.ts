@@ -422,6 +422,27 @@ export type Database = {
           },
         ]
       }
+      app_reset_flags: {
+        Row: {
+          note: string | null
+          reset_token: string
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          note?: string | null
+          reset_token: string
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          note?: string | null
+          reset_token?: string
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       appuntamenti_personale: {
         Row: {
           created_at: string
