@@ -7,11 +7,13 @@ import { FIRTrafficLight } from "@/components/fir/FIRTrafficLight";
 import { useAuth } from "@/hooks/useAuth";
 import { useMNFIRStore } from "@/stores/mnFirStore";
 import { supabase } from "@/lib/supabaseClient";
+import { useAppResetGuard } from "@/hooks/useAppResetGuard";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const BASE_PATH = "/mn/app/multyproget";
 
 export default function MNMultyprogetAppPage() {
+  useAppResetGuard("multyproget");
   const { profile, user, isLoading } = useAuth();
   const firstName = profile?.nome?.split(" ")[0] || "Utente";
   const editingFirId = useMNFIRStore((s) => s.editingFirId);
