@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Plus, ScanLine, Save, Upload } from "lucide-react";
+import { FileText, Loader2, Plus, ScanLine, Save, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +55,7 @@ function normalizeFirNumber(value: string) {
   if (/^[A-Z]{5} [0-9]{6} [A-Z]{2}$/.test(normalized)) return normalized;
   const compact = normalized.replace(/[^A-Z0-9]/g, "");
   const match = compact.match(/([A-Z]{5})([0-9]{6})([A-Z]{2})/);
-  return match ? `${match[1]} ${match[2]} ${match[3]}` : "";
+  return match ? `${match[1]} ${match[2]} ${match[3]}` : normalized;
 }
 
 function isFirNumberEntry(id: string) {
@@ -138,6 +138,18 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     return data;
   };
 
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const draftId = (event as CustomEvent<{ draftId?: string }>).detail?.draftId;
+      if (!draftId) return;
+      loadDraft(draftId)
+        .then((draft) => toast.success(`Formulario aperto: ${draft.numero_fir || "senza numero"}`))
+        .catch((error) => toast.error(error.message || "Errore apertura formulario"));
+    };
+    window.addEventListener("dev-fir-open-draft", listener as EventListener);
+    return () => window.removeEventListener("dev-fir-open-draft", listener as EventListener);
+  }, []);
+
   const handleNewDraft = async () => {
     if (!manualFirNumber.trim()) {
       toast.error("Inserisci il numero FIR esatto prima di creare il formulario");
@@ -158,7 +170,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const openDraftByNumber = async (numeroFir: string) => {
     if (!user?.id) throw new Error("Utente non autenticato");
     const normalized = normalizeFirNumber(numeroFir);
-    if (!normalized) throw new Error("Numero FIR non valido. Formato atteso: ZRZXR 000566 LG");
+    if (!normalized) throw new Error("Inserisci un numero FIR");
 
     const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
       p_user_id: user.id,
@@ -174,6 +186,29 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     }
     await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
     return loaded;
+  };
+
+  const handleDeleteActiveDraft = async () => {
+    if (!activeDraftId) return;
+    const label = activeDraft?.numero_fir || "questo formulario";
+    if (!window.confirm(`Eliminare dalla vista ${label}? I dati restano recuperabili nel database.`)) return;
+    try {
+      if (activeDraft?.status === "bozza") {
+        await supabase.rpc("release_fir_number" as any, { p_fir_id: activeDraftId });
+      }
+      const { error } = await supabase
+        .from("fir_forms")
+        .update({ deleted_by_user: true, updated_at: new Date().toISOString() })
+        .eq("id", activeDraftId);
+      if (error) throw error;
+      setActiveDraftId(null);
+      setActiveDraft(null);
+      mnFirStore.resetForm();
+      await queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+      toast.success(`Formulario ${label} eliminato dalla vista`);
+    } catch (error: any) {
+      toast.error(error?.message || "Errore eliminazione formulario");
+    }
   };
 
   const handleOpenManualFir = async () => {
