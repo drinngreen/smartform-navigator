@@ -46,6 +46,7 @@ export default function MNFormulariPage() {
 
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) || MN_CONTEXTS[0];
+  const requestedFirId = searchParams.get("fir");
 
   useEffect(() => {
     if (isValid) setActiveContext(mnCtx);
@@ -73,7 +74,6 @@ export default function MNFormulariPage() {
       const scopedForms = await loadForms(mnCtx.tenantId);
       if (scopedForms.length > 0) {
         setForms(scopedForms);
-        const requestedFirId = searchParams.get("fir");
         const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
         if (requested) setViewDialog({ open: true, form: requested });
         return;
@@ -92,7 +92,7 @@ export default function MNFormulariPage() {
     } finally {
       setLoading(false);
     }
-  }, [context, mnCtx?.tenantId, searchParams]);
+  }, [context, mnCtx?.tenantId, requestedFirId]);
 
   const handleDeleteForm = async (form: FirForm) => {
     if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
