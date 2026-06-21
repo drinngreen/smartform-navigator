@@ -155,8 +155,14 @@ function ImpiantoFormulari() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
+  const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
   const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});
+
+  const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
+    setEditorMode(mode);
+    setViewDialog({ open: true, form });
+  };
 
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
@@ -409,10 +415,29 @@ function ImpiantoFormulari() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setViewDialog({ open: true, form })}
+                          onClick={() => openEditor(form, "standard")}
                           className={`gap-1 ${form.status === "bozza" || form.status === "draft" ? "text-emerald-400" : "text-muted-foreground"}`}
                         >
                           <Edit className="h-3 w-3" />
+                          Standard
+                        </Button>
+                        {(form.status === "bozza" || form.status === "draft") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditor(form, "alternative")}
+                            className="gap-1 text-amber-400"
+                          >
+                            <Edit className="h-3 w-3" />
+                            Alternativo
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditor(form, "standard")}
+                          className="gap-1 text-muted-foreground"
+                        >
                           {form.status === "bozza" || form.status === "draft" ? "Modifica" : "Visualizza"}
                         </Button>
                       </td>
@@ -428,7 +453,7 @@ function ImpiantoFormulari() {
         </Card>
       )}
 
-      {/* Full FIR Alternative Form Dialog */}
+      {/* Full FIR Form Dialog */}
       <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
@@ -438,13 +463,43 @@ function ImpiantoFormulari() {
             </DialogTitle>
           </DialogHeader>
           {viewDialog.form && (
-            <FIRAlternativeForm
-              key={viewDialog.form.id}
-              firFormId={viewDialog.form.id}
-              presetNumeroFir={viewDialog.form.numero_fir || undefined}
-              assignedUserId={viewDialog.form.user_id || undefined}
-              draftData={viewDialog.form}
-            />
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setEditorMode("standard")}
+                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Standard</span>
+                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditorMode("alternative")}
+                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
+                  <span className="block text-xs text-muted-foreground">Editor su template FIR</span>
+                </button>
+              </div>
+              {editorMode === "alternative" ? (
+                <FIRAlternativeForm
+                  key={`alt-${viewDialog.form.id}`}
+                  firFormId={viewDialog.form.id}
+                  presetNumeroFir={viewDialog.form.numero_fir || undefined}
+                  assignedUserId={viewDialog.form.user_id || undefined}
+                  draftData={viewDialog.form}
+                />
+              ) : (
+                <MNFIRFormComplete
+                  key={`std-${viewDialog.form.id}`}
+                  tenantId={MULTY_TENANT_ID}
+                  mnContext="multyproget"
+                  firFormId={viewDialog.form.id}
+                  draftData={viewDialog.form}
+                />
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>
