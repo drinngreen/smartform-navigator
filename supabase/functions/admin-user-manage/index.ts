@@ -235,6 +235,43 @@ serve(async (req) => {
       });
     }
 
+    // ACTION: delete_fir_form — soft-delete a FIR from active views, without removing database history
+    if (action === "delete_fir_form") {
+      const { form_id } = body;
+      if (!form_id) {
+        return new Response(JSON.stringify({ error: "form_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: form, error: formError } = await adminClient
+        .from("fir_forms")
+        .select("id, status, numero_fir")
+        .eq("id", form_id)
+        .maybeSingle();
+      if (formError) throw formError;
+      if (!form) {
+        return new Response(JSON.stringify({ error: "Formulario non trovato" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (form.status === "bozza" || form.status === "draft") {
+        await adminClient.rpc("release_fir_number", { p_fir_id: form_id });
+      }
+
+      const { error } = await adminClient
+        .from("fir_forms")
+        .update({ deleted_by_user: true, updated_at: new Date().toISOString() })
+        .eq("id", form_id);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true, soft_deleted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ACTION: create_user - admin creates a transporter user
     if (action === "create_user") {
       const { nome, cognome, codice_fiscale, password, tenant_id: targetTenantId, mn_context, org_id, targa_automezzo } = body;
