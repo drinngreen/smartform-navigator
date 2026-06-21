@@ -279,14 +279,44 @@ export default function MNFormulariPage() {
             </DialogTitle>
           </DialogHeader>
           {viewDialog.form && (
-            <FIRAlternativeForm
-              key={viewDialog.form.id}
-              firFormId={viewDialog.form.id}
-              presetNumeroFir={viewDialog.form.numero_fir || undefined}
-              assignedUserId={viewDialog.form.user_id || undefined}
-              draftData={viewDialog.form}
-                onSaved={fetchForms}
-            />
+            <>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setEditorMode("standard")}
+                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Standard</span>
+                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditorMode("alternative")}
+                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
+                >
+                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
+                  <span className="block text-xs text-muted-foreground">Editor alternativo FIR</span>
+                </button>
+              </div>
+              {editorMode === "alternative" ? (
+                <FIRAlternativeForm
+                  key={`alt-${viewDialog.form.id}`}
+                  firFormId={viewDialog.form.id}
+                  presetNumeroFir={viewDialog.form.numero_fir || undefined}
+                  assignedUserId={viewDialog.form.user_id || undefined}
+                  draftData={viewDialog.form}
+                  onSaved={fetchForms}
+                />
+              ) : (
+                <MNFIRFormComplete
+                  key={`std-${viewDialog.form.id}`}
+                  tenantId={mnCtx.tenantId}
+                  mnContext={mnCtx.id}
+                  firFormId={viewDialog.form.id}
+                  draftData={viewDialog.form}
+                />
+              )}
+            </>
           )}
             <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
               <Button variant="destructive" className="gap-2" onClick={() => viewDialog.form && void handleDeleteForm(viewDialog.form)}>
