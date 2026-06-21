@@ -84,7 +84,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [activeDraft, setActiveDraft] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
-  const [moduleType, setModuleType] = useState<"standard" | "alternative">("alternative");
+  const [moduleType, setModuleType] = useState<"standard" | "alternative">("standard");
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrEntries, setOcrEntries] = useState<{ id: string; value: string }[]>([]);
   const [registryMovementType, setRegistryMovementType] = useState<"Carico" | "Scarico">("Carico");
@@ -131,6 +131,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     if (!data) throw new Error("Formulario non trovato");
     setActiveDraft(data);
     setActiveDraftId(id);
+    setModuleType("standard");
     mnFirStore.loadFromDatabase({
       ...data,
       form_data: data.form_data as Record<string, any> | null,
