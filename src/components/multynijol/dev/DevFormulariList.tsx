@@ -101,7 +101,12 @@ export function DevFormulariList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, mnContext, viewDialog.form?.id]);
 
-  const filtered = forms.filter((f: any) => {
+  const cfFilter = normalizeCf(filterByTrasportatoreCf);
+  const sourceForms = cfFilter
+    ? forms.filter((f: any) => normalizeCf(f.trasportatore_codice_fiscale) === cfFilter)
+    : forms;
+
+  const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
     const matchSearch =
       f.numero_fir?.toLowerCase().includes(q) ||
@@ -115,10 +120,10 @@ export function DevFormulariList({
   });
 
   const stats = {
-    total: forms.length,
-    draft: forms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+    total: sourceForms.length,
+    draft: sourceForms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
+    submitted: sourceForms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
+    completed: sourceForms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
   };
 
   const txt = `text-${accent}-400`;
