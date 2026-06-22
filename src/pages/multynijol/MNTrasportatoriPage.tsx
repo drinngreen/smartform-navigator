@@ -281,7 +281,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
 
   const content = (
     <>
-      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Trasportatori {tenant.label}</h2></div>}
+      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Ragazzi App {isDevHub ? "Multyproget / Niyol" : tenant.label}</h2></div>}
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
@@ -311,7 +311,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         </div>
         <Button onClick={() => setCreateDialog(true)} className="gap-2">
           <UserPlus className="h-4 w-4" />
-          <span className="hidden sm:inline">Crea Trasportatore</span>
+          <span className="hidden sm:inline">Crea Login App</span>
         </Button>
         <Button variant="outline" size="icon" onClick={fetchUsers} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -331,6 +331,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                 <tr className="border-b border-border/30">
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Stato</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Nome</th>
+                  <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">App</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">CF</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Targa</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Ultimo Login</th>
@@ -346,6 +347,11 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                     <td className="p-3 font-medium text-foreground">
                       {user.profile ? `${user.profile.nome} ${user.profile.cognome}` : "—"}
                     </td>
+                    <td className="p-3">
+                      <Badge variant="outline" className={user.profile?.mn_context === "niyol" ? "border-cyan-500/40 text-cyan-400" : "border-emerald-500/40 text-emerald-400"}>
+                        {user.profile?.mn_context === "niyol" ? "Niyol" : "Multyproget"}
+                      </Badge>
+                    </td>
                     <td className="p-3 text-muted-foreground font-mono text-xs">{user.profile?.codice_fiscale || "—"}</td>
                     <td className="p-3 text-muted-foreground font-mono text-xs">{user.profile?.targa_automezzo || "—"}</td>
                     <td className="p-3 text-muted-foreground text-xs">
@@ -360,6 +366,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                           onClick={() => {
                             setManualFirDialog({ open: true, user });
                             setManualFirNumber("");
+                            setManualFirContext(user.profile?.mn_context || tenant.mnContext || "multyproget");
                           }}
                         >
                           <FilePlus className="h-3.5 w-3.5" />
@@ -369,10 +376,10 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                           size="sm"
                           variant="outline"
                           className="gap-1.5 text-xs"
-                          onClick={() => { setPasswordDialog({ open: true, user }); setNewPassword(""); }}
+                          onClick={() => openAccessDialog(user)}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Password
+                          <UserCog className="h-3.5 w-3.5" />
+                          Modifica accessi
                         </Button>
                         <Button
                           size="sm"
@@ -389,8 +396,8 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Nessun trasportatore trovato per {tenant.label}
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      Nessun ragazzo app trovato per {isDevHub ? "Multyproget / Niyol" : tenant.label}
                     </td>
                   </tr>
                 )}
