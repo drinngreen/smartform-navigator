@@ -190,6 +190,15 @@ function ImpiantoFormulari() {
     }
   };
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("dev-impianto-fir-forms")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fir_forms" }, () => { void handleFormSaved(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewDialog.form?.id]);
+
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
     queryFn: async () => {
