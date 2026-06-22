@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus, UserCog } from "lucide-react";
+import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus, UserCog, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +115,29 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   });
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [historyDialog, setHistoryDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyForms, setHistoryForms] = useState<Array<{ id: string; numero_fir: string | null; status: string | null; tenant_id: string | null; updated_at: string | null; created_at: string | null }>>([]);
+
+  const openHistoryDialog = async (user: UserEntry) => {
+    setHistoryDialog({ open: true, user });
+    setHistoryLoading(true);
+    setHistoryForms([]);
+    try {
+      const { data, error } = await supabase
+        .from("fir_forms")
+        .select("id, numero_fir, status, tenant_id, updated_at, created_at")
+        .eq("user_id", user.id)
+        .eq("deleted_by_user", false)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      setHistoryForms((data as any) || []);
+    } catch (e: any) {
+      toast.error("Errore caricamento storico: " + (e.message || ""));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
   const isDevHub = contextKey === "dev-multyproget";
   const assignTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === manualFirContext) || tenant;
 
@@ -383,6 +406,15 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                         </Button>
                         <Button
                           size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10"
+                          onClick={() => openHistoryDialog(user)}
+                        >
+                          <History className="h-3.5 w-3.5" />
+                          Storico FIR
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="destructive"
                           className="gap-1.5 text-xs"
                           onClick={() => setDeleteDialog({ open: true, user })}
@@ -556,6 +588,75 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Storico FIR Dialog */}
+      <Dialog open={historyDialog.open} onOpenChange={(o) => setHistoryDialog({ open: o, user: o ? historyDialog.user : null })}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-sky-400" />
+              Storico assegnazioni FIR
+            </DialogTitle>
+            <DialogDescription>
+              Tutti i formulari assegnati a <strong>{historyDialog.user?.profile?.nome} {historyDialog.user?.profile?.cognome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            (() => {
+              const bozze = historyForms.filter((f) => (f.status || "").toLowerCase() === "bozza");
+              const inviati = historyForms.filter((f) => (f.status || "").toLowerCase() !== "bozza");
+              const tenantBadge = (tid: string | null) => {
+                if (tid === CONTEXT_MAP.niyol.tenantId) return <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 text-[10px]">Niyol</Badge>;
+                if (tid === CONTEXT_MAP.multyproget.tenantId) return <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">Multyproget</Badge>;
+                return <Badge variant="outline" className="text-[10px]">—</Badge>;
+              };
+              const renderList = (list: typeof historyForms, emptyLabel: string) =>
+                list.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-4 text-center">{emptyLabel}</div>
+                ) : (
+                  <ul className="divide-y divide-border/30 rounded-lg border border-border/30 bg-card/40 overflow-hidden">
+                    {list.map((f) => (
+                      <li key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {tenantBadge(f.tenant_id)}
+                          <span className="font-mono text-xs truncate">{f.numero_fir || "(senza numero)"}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {f.updated_at ? new Date(f.updated_at).toLocaleString("it-IT") : "—"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              return (
+                <div className="overflow-y-auto space-y-4 pr-1">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="border-amber-500/40 text-amber-400">Bozze</Badge>
+                      <span className="text-xs text-muted-foreground">{bozze.length}</span>
+                    </div>
+                    {renderList(bozze, "Nessuna bozza in sospeso")}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-400">Inviati / Completati</Badge>
+                      <span className="text-xs text-muted-foreground">{inviati.length}</span>
+                    </div>
+                    {renderList(inviati, "Nessun FIR inviato")}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHistoryDialog({ open: false, user: null })}>Chiudi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
