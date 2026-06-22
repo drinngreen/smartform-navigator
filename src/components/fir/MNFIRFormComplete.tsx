@@ -285,6 +285,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }:
     }
   };
 
+  const handleOpenAssignedFir = (form: any) => {
+    store.loadFromDatabase({
+      ...form,
+      form_data: form.form_data as Record<string, any> | null,
+    });
+    useMNFIRStore.setState({ editingFirId: form.id, workflowStatus: form.status === "completato" ? "chiuso" : (form.status as any) || "bozza" });
+    if (!form.trasportatore_targa_automezzo && profile?.targa_automezzo) {
+      store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
+    }
+    if (!form.trasportatore_conducente && profile?.nome) {
+      store.updateField("conducenteNomeCognome", profile.nome.trim());
+    }
+    toast.success(`FIR ${form.numero_fir || "senza numero"} aperto`);
+  };
+
   const validateDeparture = (): string[] => {
     const errors: string[] = [];
     if (!d.targaAutomezzo.trim()) errors.push("Targa Automezzo");
@@ -517,10 +532,22 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }:
           <span className="text-xs font-mono uppercase tracking-widest text-neon-green">Formulari Disponibili</span>
         </div>
         {!isStarted && !store.editingFirId ? (
-          <button onClick={handleStart} disabled={createFIR.isPending} className="w-full py-5 rounded-2xl border-2 border-neon-green/40 bg-neon-green/5 text-neon-green font-display text-xl tracking-widest hover:bg-neon-green/10 transition-all disabled:opacity-50 flex items-center justify-center gap-3 animate-pulse-subtle">
-            <FileText className="h-6 w-6 icon-led" />
-            INIZIA
-          </button>
+          <div className="w-full space-y-2">
+            {isLoadingMyForms ? (
+              <div className="w-full py-4 rounded-2xl border border-border/40 bg-card/40 text-center text-xs font-mono text-muted-foreground">Caricamento FIR assegnati...</div>
+            ) : (myForms ?? []).length > 0 ? (
+              (myForms ?? []).map((form: any) => (
+                <button key={form.id} onClick={() => handleOpenAssignedFir(form)} className="w-full rounded-2xl border border-neon-green/30 bg-neon-green/5 px-4 py-4 text-left hover:bg-neon-green/10 transition-colors">
+                  <span className="block text-sm font-display text-neon-green tracking-wider">{form.numero_fir || "FIR senza numero"}</span>
+                  <span className="block text-[10px] font-mono uppercase text-white/50">{form.status || "bozza"}</span>
+                </button>
+              ))
+            ) : (
+              <div className="w-full py-5 rounded-2xl border-2 border-dashed border-border/50 bg-card/30 text-center text-sm font-mono text-muted-foreground">
+                Nessun FIR assegnato.
+              </div>
+            )}
+          </div>
         ) : (
           <div className="w-full space-y-2">
             {d.selectedFirNumber && (
