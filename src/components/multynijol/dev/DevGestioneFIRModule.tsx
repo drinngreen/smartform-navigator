@@ -191,15 +191,21 @@ export function DevGestioneFIRModule() {
     setIsAssigning(true);
     try {
       const { data: available, error: fetchErr } = await supabase.from("fir_number_pool")
-        .select("id").eq("societa_id", SOCIETA_ID).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
+        .select("id, fir_number").eq("societa_id", SOCIETA_ID).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
       if (fetchErr) throw fetchErr;
       if (!available || available.length === 0) { toast.error("Nessun numero disponibile"); setIsAssigning(false); return; }
-      const ids = available.map(r => r.id);
-      const { error: updateErr } = await supabase.from("fir_number_pool")
-        .update({ user_id: assignUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() }).in("id", ids);
-      if (updateErr) throw updateErr;
+      for (const row of available) {
+        const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+          p_user_id: assignUserId,
+          p_tenant_id: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+          p_numero_fir: row.fir_number,
+        });
+        if (error) throw error;
+      }
       invalidatePool();
-      toast.success(`✅ ${ids.length} numeri assegnati`);
+      queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-impianto-formulari"] });
+      toast.success(`✅ ${available.length} FIR creati e assegnati`);
       setAssignUserId(null); setAssignSearch(""); setAssignQty(1);
     } catch (err: any) {
       toast.error(`Errore: ${err.message}`);
@@ -208,13 +214,17 @@ export function DevGestioneFIRModule() {
 
   const handleInlineAssign = async (poolId: string, firNumber: string, targetUserId: string) => {
     try {
-      const { error } = await supabase.from("fir_number_pool")
-        .update({ user_id: targetUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() })
-        .eq("id", poolId);
+      const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: targetUserId,
+        p_tenant_id: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+        p_numero_fir: firNumber,
+      });
       if (error) throw error;
       const targetName = profileMap[targetUserId] || targetUserId;
-      toast.success(`✅ ${firNumber} assegnato a ${targetName}`);
+      toast.success(`✅ ${firNumber} creato e assegnato a ${targetName}`);
       invalidatePool();
+      queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-impianto-formulari"] });
       setAssignDropdownId(null);
     } catch (err: any) {
       toast.error(`Errore: ${err.message}`);
