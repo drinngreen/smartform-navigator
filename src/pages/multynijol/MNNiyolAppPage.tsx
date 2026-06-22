@@ -11,6 +11,7 @@ import { useAppResetGuard } from "@/hooks/useAppResetGuard";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const BASE_PATH = "/mn/app/niyol";
+const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 
 export default function MNNiyolAppPage() {
   useAppResetGuard("niyol");
@@ -54,7 +55,7 @@ export default function MNNiyolAppPage() {
         <FIRTrafficLight />
       </div>
       <div className="flex-1 overflow-y-auto pb-20">
-        <MNFIRFormComplete />
+        <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" />
       </div>
       <MNBottomNav basePath={BASE_PATH} />
     </MobileShell>
