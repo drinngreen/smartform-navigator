@@ -525,6 +525,7 @@ function ImpiantoFormulari() {
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
+                  onSaved={handleFormSaved}
                 />
               ) : (
                 <MNFIRFormComplete
@@ -536,6 +537,13 @@ function ImpiantoFormulari() {
                 />
               )}
             </>
+          )}
+          {viewDialog.form && (
+            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
+              <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
+                <Trash2 className="h-4 w-4" /> Elimina formulario
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
