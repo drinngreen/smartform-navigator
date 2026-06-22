@@ -406,6 +406,15 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                         </Button>
                         <Button
                           size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-xs border-sky-500/30 text-sky-400 hover:bg-sky-500/10"
+                          onClick={() => openHistoryDialog(user)}
+                        >
+                          <History className="h-3.5 w-3.5" />
+                          Storico FIR
+                        </Button>
+                        <Button
+                          size="sm"
                           variant="destructive"
                           className="gap-1.5 text-xs"
                           onClick={() => setDeleteDialog({ open: true, user })}
