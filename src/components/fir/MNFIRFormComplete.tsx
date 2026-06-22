@@ -160,7 +160,7 @@ interface MNFIRFormCompleteProps {
 }
 
 export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }: MNFIRFormCompleteProps) {
-  const { createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
+  const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
@@ -186,87 +186,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }:
     useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: draftData.status === "completato" ? "chiuso" : (draftData.status as any) || "bozza" });
   }, [draftData?.id]);
 
-  // ── Auto-restore + integrity check state locale ─────────────
+  // ── Driver app starts clean: assigned FIRs are opened only by explicit click ─────────────
   const hasAutoRestored = useRef(false);
   useEffect(() => {
     if (firFormId || draftData?.id) return;
     if (!user?.id || hasAutoRestored.current) return;
     hasAutoRestored.current = true;
-    let isCancelled = false;
-
-    (async () => {
-      try {
-        if (store.editingFirId) {
-          let persistedQuery = supabase
-            .from("fir_forms")
-            .select("*")
-            .eq("id", store.editingFirId)
-            .eq("user_id", user.id)
-            .eq("deleted_by_user", false);
-          if (tenantId) persistedQuery = persistedQuery.eq("tenant_id", tenantId);
-          const { data: persistedFir } = await persistedQuery.maybeSingle();
-
-          if (isCancelled) return;
-
-          if (!persistedFir) {
-            store.resetForm();
-            return;
-          }
-
-          if (
-            isTestFirNumberMN(store.data.selectedFirNumber) ||
-            (store.data.selectedFirNumber || "") !== (persistedFir.numero_fir || "")
-          ) {
-            store.loadFromDatabase({
-              ...persistedFir,
-              form_data: persistedFir.form_data as Record<string, any> | null,
-            });
-            if (!persistedFir.trasportatore_targa_automezzo && profile?.targa_automezzo) {
-              store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
-            }
-            if (!persistedFir.trasportatore_conducente && profile?.nome) {
-              store.updateField("conducenteNomeCognome", profile.nome.trim());
-            }
-          }
-          return;
-        }
-
-        let activeQuery = supabase
-          .from("fir_forms")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("deleted_by_user", false)
-          .in("status", ["bozza", "inviato"]);
-        if (tenantId) activeQuery = activeQuery.eq("tenant_id", tenantId);
-        const { data: activeFirs } = await activeQuery.order("updated_at", { ascending: false }).limit(1);
-
-        if (isCancelled) return;
-
-        if (activeFirs && activeFirs.length > 0) {
-          const fir = activeFirs[0];
-          store.loadFromDatabase({
-            ...fir,
-            form_data: fir.form_data as Record<string, any> | null,
-          });
-          if (!fir.trasportatore_targa_automezzo && profile?.targa_automezzo) {
-            store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
-          }
-          if (!fir.trasportatore_conducente && profile?.nome) {
-            store.updateField("conducenteNomeCognome", profile.nome.trim());
-          }
-          console.log("[MN-FIR] Auto-restored active FIR:", fir.numero_fir, "status:", fir.status);
-        } else if (isTestFirNumberMN(store.data.selectedFirNumber)) {
-          store.updateMultipleFields({ selectedFirNumber: "", numeroRegistro: "" });
-        }
-      } catch (err) {
-        console.warn("[MN-FIR] Auto-restore failed:", err);
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [user?.id, store.editingFirId, store.data.selectedFirNumber]);
+    if (store.editingFirId || store.data.selectedFirNumber || isTestFirNumberMN(store.data.selectedFirNumber)) {
+      store.resetForm();
+    }
+  }, [user?.id, firFormId, draftData?.id]);
 
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
