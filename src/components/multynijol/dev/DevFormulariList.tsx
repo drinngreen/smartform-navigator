@@ -22,7 +22,12 @@ interface Props {
   /** color name used in classNames (emerald/cyan/etc) */
   accent?: "emerald" | "cyan" | "blue" | "amber";
   title?: string;
+  /** Filtra solo i FIR il cui trasportatore_codice_fiscale combacia (es. solo Conto Proprio Multyproget) */
+  filterByTrasportatoreCf?: string;
 }
+
+const normalizeCf = (v: string | null | undefined) =>
+  (v || "").toString().replace(/\s+/g, "").toUpperCase();
 
 export function DevFormulariList({
   tenantId,
@@ -30,14 +35,17 @@ export function DevFormulariList({
   fallbackTenantId,
   accent = "emerald",
   title = "Formulari FIR",
+  filterByTrasportatoreCf,
 }: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [registryMovementType, setRegistryMovementType] = useState<"" | "Carico" | "Scarico">("");
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
+    setRegistryMovementType("");
     setViewDialog({ open: true, form });
   };
 
