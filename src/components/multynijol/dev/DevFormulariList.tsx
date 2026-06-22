@@ -295,7 +295,7 @@ export function DevFormulariList({
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
-                  registryMovementType={registryMovementType || undefined}
+                  registryMovementType={detectedMovement || undefined}
                   onSaved={handleFormSaved}
                 />
               ) : (
