@@ -458,6 +458,15 @@ function ImpiantoFormulari() {
                             Alternativo
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleDeleteForm(form)}
+                          className="gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          title="Elimina riga"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
