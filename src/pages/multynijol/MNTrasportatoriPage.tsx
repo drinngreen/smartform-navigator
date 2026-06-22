@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus } from "lucide-react";
+import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,8 @@ const CONTEXT_MAP: Record<string, TenantConfig> = {
   },
 };
 
+const APP_TENANT_OPTIONS: TenantConfig[] = [CONTEXT_MAP.multyproget, CONTEXT_MAP.niyol];
+
 interface UserEntry {
   id: string;
   email: string;
@@ -59,9 +61,19 @@ interface UserEntry {
     codice_fiscale: string;
     targa_automezzo: string | null;
     mn_context: string | null;
+    deactivated_at?: string | null;
   } | null;
   role: string;
   online_status: string;
+}
+
+interface AccessForm {
+  nome: string;
+  cognome: string;
+  codiceFiscale: string;
+  password: string;
+  targaAutomezzo: string;
+  mnContext: string;
 }
 
 interface MNTrasportatoriPageProps {
