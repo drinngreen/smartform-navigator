@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
@@ -23,7 +23,7 @@ import {
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
   Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
-  ClipboardList, Truck,
+  ClipboardList, Truck, Trash2,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
@@ -163,6 +163,41 @@ function ImpiantoFormulari() {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
   };
+
+  const handleDeleteForm = async (form: any) => {
+    if (!form) return;
+    if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: form.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setViewDialog({ open: false, form: null });
+      toast.success("Formulario eliminato dalla vista");
+      await refetch();
+    } catch (e: any) {
+      toast.error("Errore eliminazione FIR: " + (e?.message ?? "sconosciuto"));
+    }
+  };
+
+  const handleFormSaved = async () => {
+    const res = await refetch();
+    const list = (res.data as any[]) || [];
+    if (viewDialog.form) {
+      const updated = list.find((f: any) => f.id === viewDialog.form.id);
+      if (updated) setViewDialog({ open: true, form: updated });
+    }
+  };
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("dev-impianto-fir-forms")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fir_forms" }, () => { void handleFormSaved(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewDialog.form?.id]);
 
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
@@ -432,6 +467,15 @@ function ImpiantoFormulari() {
                             Alternativo
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleDeleteForm(form)}
+                          className="gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          title="Elimina riga"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -481,6 +525,7 @@ function ImpiantoFormulari() {
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
+                  onSaved={handleFormSaved}
                 />
               ) : (
                 <MNFIRFormComplete
@@ -492,6 +537,13 @@ function ImpiantoFormulari() {
                 />
               )}
             </>
+          )}
+          {viewDialog.form && (
+            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
+              <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
+                <Trash2 className="h-4 w-4" /> Elimina formulario
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
