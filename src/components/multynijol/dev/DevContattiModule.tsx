@@ -14,13 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer, ListChecks,
+  BookUser, MessageSquare, Phone, Users, Building2, Search, PhoneCall, Plus, Edit, Trash2, FileSpreadsheet, Printer, ListChecks, FileText,
 } from "lucide-react";
 import { AnagraficaCompletaMP } from "./AnagraficaCompletaMP";
+import { DevFormulariList } from "./DevFormulariList";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 
 export function DevContattiModule() {
   return (
@@ -43,6 +45,9 @@ export function DevContattiModule() {
         </TabsTrigger>
         <TabsTrigger value="anagrafica-completa" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <ListChecks className="h-4 w-4" /> Anagrafica Completa
+        </TabsTrigger>
+        <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <FileText className="h-4 w-4" /> Formulari
         </TabsTrigger>
       </TabsList>
 
@@ -70,6 +75,17 @@ export function DevContattiModule() {
       <TabsContent value="anagrafica-completa">
         <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
           <AnagraficaCompletaMP />
+        </div>
+      </TabsContent>
+      <TabsContent value="formulari">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <DevFormulariList
+            tenantId={MULTY_TENANT_ID}
+            mnContext="multyproget"
+            fallbackTenantId={GLOBAL_FIR_TENANT_ID}
+            accent="emerald"
+            title="Formulari collegati ai contatti — modifica / elimina / scegli modulo"
+          />
         </div>
       </TabsContent>
     </Tabs>
