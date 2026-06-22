@@ -413,6 +413,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         onOpenChange={setCreateDialog}
         onCreated={fetchUsers}
         tenant={tenant}
+        tenantOptions={isDevHub ? APP_TENANT_OPTIONS : undefined}
       />
 
       <Dialog open={manualFirDialog.open} onOpenChange={(o) => setManualFirDialog({ open: o, user: o ? manualFirDialog.user : null })}>
@@ -420,9 +421,21 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           <DialogHeader>
             <DialogTitle>Assegna FIR all'app autista</DialogTitle>
             <DialogDescription>
-              Inserisci il numero esatto: verrà creato il formulario e comparirà nell'app di <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
+              Scegli Multyproget o Niyol: il FIR comparirà solo nell'app scelta per <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
             </DialogDescription>
           </DialogHeader>
+          <div>
+            <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App di destinazione</label>
+            <select
+              value={manualFirContext}
+              onChange={(e) => setManualFirContext(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {APP_TENANT_OPTIONS.map((option) => (
+                <option key={option.mnContext || option.label} value={option.mnContext || ""}>{option.label}</option>
+              ))}
+            </select>
+          </div>
           <Input
             value={manualFirNumber}
             onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
@@ -430,7 +443,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
               if (e.key === "Enter") void handleCreateFir();
             }}
             placeholder="ZRZXR 000566 LG"
-            className="font-mono"
+            className="font-mono mt-3"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setManualFirDialog({ open: false, user: null })}>Annulla</Button>
