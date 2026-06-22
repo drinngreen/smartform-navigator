@@ -311,19 +311,18 @@ export function DevFormulariList({
           )}
           {viewDialog.form && (
             <div className="sticky bottom-0 mt-4 space-y-3 border-t border-border/30 bg-card/95 pt-3">
-              {editorMode === "alternative" && (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground uppercase tracking-wider">Impatto giacenze impianto:</span>
-                  {(["", "Carico", "Scarico"] as const).map((opt) => (
-                    <button
-                      key={opt || "none"}
-                      type="button"
-                      onClick={() => setRegistryMovementType(opt)}
-                      className={`rounded-md border px-3 py-1 transition-colors ${registryMovementType === opt ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-muted-foreground hover:bg-secondary/40"}`}
-                    >
-                      {opt === "" ? "Nessuno" : opt}
-                    </button>
-                  ))}
+              {editorMode === "alternative" && filterByTrasportatoreCf && (
+                <div className="text-xs px-3 py-2 rounded-md border border-border/30 bg-background/40">
+                  <span className="text-muted-foreground uppercase tracking-wider mr-2">Impatto giacenze impianto Multyproget:</span>
+                  {detectedMovement === "Carico" && (
+                    <span className="text-emerald-300 font-semibold">CARICO automatico (Multyproget è destinatario)</span>
+                  )}
+                  {detectedMovement === "Scarico" && (
+                    <span className="text-amber-300 font-semibold">SCARICO automatico (Multyproget è produttore)</span>
+                  )}
+                  {!detectedMovement && (
+                    <span className="text-muted-foreground italic">Nessun impatto — Multyproget non è né produttore né destinatario (solo trasporto per terzi)</span>
+                  )}
                 </div>
               )}
               <div className="flex justify-between items-center gap-2">
@@ -340,11 +339,10 @@ export function DevFormulariList({
                   {editorMode === "alternative" && (
                     <Button
                       className="bg-emerald-600 hover:bg-emerald-700"
-                      disabled={!registryMovementType}
-                      title={!registryMovementType ? "Scegli Carico o Scarico per aggiornare le giacenze" : ""}
                       onClick={() => window.dispatchEvent(new Event("dev-fir-save-final"))}
+                      title={detectedMovement ? `Salva e registra ${detectedMovement} in giacenza` : "Salva senza impatto giacenze"}
                     >
-                      ✅ Salva DEFINITIVO (aggiorna giacenze)
+                      ✅ Salva DEFINITIVO {detectedMovement ? `(${detectedMovement} giacenze)` : "(no giacenze)"}
                     </Button>
                   )}
                 </div>
