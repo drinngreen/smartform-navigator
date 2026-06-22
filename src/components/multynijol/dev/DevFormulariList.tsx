@@ -22,7 +22,12 @@ interface Props {
   /** color name used in classNames (emerald/cyan/etc) */
   accent?: "emerald" | "cyan" | "blue" | "amber";
   title?: string;
+  /** Filtra solo i FIR il cui trasportatore_codice_fiscale combacia (es. solo Conto Proprio Multyproget) */
+  filterByTrasportatoreCf?: string;
 }
+
+const normalizeCf = (v: string | null | undefined) =>
+  (v || "").toString().replace(/\s+/g, "").toUpperCase();
 
 export function DevFormulariList({
   tenantId,
@@ -30,14 +35,17 @@ export function DevFormulariList({
   fallbackTenantId,
   accent = "emerald",
   title = "Formulari FIR",
+  filterByTrasportatoreCf,
 }: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [registryMovementType, setRegistryMovementType] = useState<"" | "Carico" | "Scarico">("");
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
+    setRegistryMovementType("");
     setViewDialog({ open: true, form });
   };
 
@@ -93,7 +101,12 @@ export function DevFormulariList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, mnContext, viewDialog.form?.id]);
 
-  const filtered = forms.filter((f: any) => {
+  const cfFilter = normalizeCf(filterByTrasportatoreCf);
+  const sourceForms = cfFilter
+    ? forms.filter((f: any) => normalizeCf(f.trasportatore_codice_fiscale) === cfFilter)
+    : forms;
+
+  const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
     const matchSearch =
       f.numero_fir?.toLowerCase().includes(q) ||
@@ -107,10 +120,10 @@ export function DevFormulariList({
   });
 
   const stats = {
-    total: forms.length,
-    draft: forms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+    total: sourceForms.length,
+    draft: sourceForms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
+    submitted: sourceForms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
+    completed: sourceForms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
   };
 
   const txt = `text-${accent}-400`;
@@ -269,6 +282,7 @@ export function DevFormulariList({
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
+                  registryMovementType={registryMovementType || undefined}
                   onSaved={handleFormSaved}
                 />
               ) : (
@@ -283,10 +297,45 @@ export function DevFormulariList({
             </>
           )}
           {viewDialog.form && (
-            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
-              <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
-                <Trash2 className="h-4 w-4" /> Elimina formulario
-              </Button>
+            <div className="sticky bottom-0 mt-4 space-y-3 border-t border-border/30 bg-card/95 pt-3">
+              {editorMode === "alternative" && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Impatto giacenze impianto:</span>
+                  {(["", "Carico", "Scarico"] as const).map((opt) => (
+                    <button
+                      key={opt || "none"}
+                      type="button"
+                      onClick={() => setRegistryMovementType(opt)}
+                      className={`rounded-md border px-3 py-1 transition-colors ${registryMovementType === opt ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-muted-foreground hover:bg-secondary/40"}`}
+                    >
+                      {opt === "" ? "Nessuno" : opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-between items-center gap-2">
+                <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
+                  <Trash2 className="h-4 w-4" /> Elimina formulario
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.dispatchEvent(new Event("dev-fir-save-draft"))}
+                  >
+                    💾 Salva bozza
+                  </Button>
+                  {editorMode === "alternative" && (
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!registryMovementType}
+                      title={!registryMovementType ? "Scegli Carico o Scarico per aggiornare le giacenze" : ""}
+                      onClick={() => window.dispatchEvent(new Event("dev-fir-save-final"))}
+                    >
+                      ✅ Salva DEFINITIVO (aggiorna giacenze)
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
