@@ -455,6 +455,64 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         </DialogContent>
       </Dialog>
 
+      <Dialog open={accessDialog.open} onOpenChange={(o) => setAccessDialog({ open: o, user: o ? accessDialog.user : null })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-primary" />
+              Modifica accessi app
+            </DialogTitle>
+            <DialogDescription>
+              Cambia dati login, password, targa e app abilitata per <strong>{accessDialog.user?.profile?.nome} {accessDialog.user?.profile?.cognome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App abilitata</label>
+              <select
+                value={accessForm.mnContext}
+                onChange={(e) => setAccessForm((f) => ({ ...f, mnContext: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                {APP_TENANT_OPTIONS.map((option) => (
+                  <option key={option.mnContext || option.label} value={option.mnContext || ""}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome" value={accessForm.nome} onChange={(e) => setAccessForm((f) => ({ ...f, nome: e.target.value }))} />
+              <Input placeholder="Cognome" value={accessForm.cognome} onChange={(e) => setAccessForm((f) => ({ ...f, cognome: e.target.value }))} />
+            </div>
+            <Input
+              placeholder="Codice Fiscale"
+              value={accessForm.codiceFiscale}
+              maxLength={16}
+              onChange={(e) => setAccessForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+            <Input
+              placeholder="Nuova password (lascia vuoto per non cambiarla)"
+              type="password"
+              value={accessForm.password}
+              onChange={(e) => setAccessForm((f) => ({ ...f, password: e.target.value }))}
+            />
+            <Input
+              placeholder="Targa automezzo"
+              value={accessForm.targaAutomezzo}
+              onChange={(e) => setAccessForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null })}>Annulla</Button>
+            <Button onClick={handleUpdateAccess} disabled={actionLoading} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+              Salva accessi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Password Dialog */}
       <Dialog open={passwordDialog.open} onOpenChange={(o) => setPasswordDialog({ open: o, user: o ? passwordDialog.user : null })}>
         <DialogContent>
