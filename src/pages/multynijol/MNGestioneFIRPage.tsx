@@ -83,9 +83,13 @@ export default function MNGestioneFIRPage() {
   });
 
   const { data: profiles } = useQuery({
-    queryKey: ["mn-profiles", mnCtx?.orgId],
+    queryKey: ["mn-profiles", mnCtx?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("user_id, nome, cognome").order("cognome");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome")
+        .eq("mn_context", mnCtx.id)
+        .order("cognome");
       if (error) throw error;
       return data as ProfileInfo[];
     },
@@ -153,15 +157,20 @@ export default function MNGestioneFIRPage() {
     setIsAssigning(true);
     try {
       const { data: available, error: fetchErr } = await supabase.from("fir_number_pool")
-        .select("id").eq("societa_id", societaId).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
+        .select("id, fir_number").eq("societa_id", societaId).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
       if (fetchErr) throw fetchErr;
       if (!available || available.length === 0) { toast.error("Nessun numero disponibile"); setIsAssigning(false); return; }
-      const ids = available.map(r => r.id);
-      const { error: updateErr } = await supabase.from("fir_number_pool")
-        .update({ user_id: assignUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() }).in("id", ids);
-      if (updateErr) throw updateErr;
+      for (const row of available) {
+        const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+          p_user_id: assignUserId,
+          p_tenant_id: mnCtx.tenantId,
+          p_numero_fir: row.fir_number,
+        });
+        if (error) throw error;
+      }
       invalidatePool();
-      toast.success(`✅ ${ids.length} numeri assegnati`);
+      queryClient.invalidateQueries({ queryKey: ["mn-fir-forms"] });
+      toast.success(`✅ ${available.length} FIR creati e assegnati`);
       setAssignUserId(null); setAssignSearch(""); setAssignQty(1);
     } catch (err: any) {
       toast.error(`Errore: ${err.message}`);
