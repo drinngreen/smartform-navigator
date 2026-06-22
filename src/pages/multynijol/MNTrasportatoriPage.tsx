@@ -588,6 +588,75 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Storico FIR Dialog */}
+      <Dialog open={historyDialog.open} onOpenChange={(o) => setHistoryDialog({ open: o, user: o ? historyDialog.user : null })}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-sky-400" />
+              Storico assegnazioni FIR
+            </DialogTitle>
+            <DialogDescription>
+              Tutti i formulari assegnati a <strong>{historyDialog.user?.profile?.nome} {historyDialog.user?.profile?.cognome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            (() => {
+              const bozze = historyForms.filter((f) => (f.status || "").toLowerCase() === "bozza");
+              const inviati = historyForms.filter((f) => (f.status || "").toLowerCase() !== "bozza");
+              const tenantBadge = (tid: string | null) => {
+                if (tid === CONTEXT_MAP.niyol.tenantId) return <Badge variant="outline" className="border-cyan-500/40 text-cyan-400 text-[10px]">Niyol</Badge>;
+                if (tid === CONTEXT_MAP.multyproget.tenantId) return <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">Multyproget</Badge>;
+                return <Badge variant="outline" className="text-[10px]">—</Badge>;
+              };
+              const renderList = (list: typeof historyForms, emptyLabel: string) =>
+                list.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-4 text-center">{emptyLabel}</div>
+                ) : (
+                  <ul className="divide-y divide-border/30 rounded-lg border border-border/30 bg-card/40 overflow-hidden">
+                    {list.map((f) => (
+                      <li key={f.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {tenantBadge(f.tenant_id)}
+                          <span className="font-mono text-xs truncate">{f.numero_fir || "(senza numero)"}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {f.updated_at ? new Date(f.updated_at).toLocaleString("it-IT") : "—"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+              return (
+                <div className="overflow-y-auto space-y-4 pr-1">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="border-amber-500/40 text-amber-400">Bozze</Badge>
+                      <span className="text-xs text-muted-foreground">{bozze.length}</span>
+                    </div>
+                    {renderList(bozze, "Nessuna bozza in sospeso")}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-400">Inviati / Completati</Badge>
+                      <span className="text-xs text-muted-foreground">{inviati.length}</span>
+                    </div>
+                    {renderList(inviati, "Nessun FIR inviato")}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHistoryDialog({ open: false, user: null })}>Chiudi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
