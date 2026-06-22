@@ -41,11 +41,24 @@ export function DevFormulariList({
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
-  const [registryMovementType, setRegistryMovementType] = useState<"" | "Carico" | "Scarico">("");
+
+  // Per Conto Proprio: auto-rileva il ruolo Multyproget (CF filtro) nel FIR per decidere l'impatto giacenze.
+  // - Multy = destinatario  -> CARICO  (rifiuto entra nell'impianto Multy)
+  // - Multy = produttore    -> SCARICO (rifiuto esce dall'impianto Multy)
+  // - né l'uno né l'altro   -> nessun impatto (solo trasporto per terzi)
+  const detectMovement = (form: any | null): "Carico" | "Scarico" | null => {
+    if (!form || !filterByTrasportatoreCf) return null;
+    const target = normalizeCf(filterByTrasportatoreCf);
+    const isDest = normalizeCf(form.destinatario_codice_fiscale) === target;
+    const isProd = normalizeCf(form.produttore_codice_fiscale) === target;
+    if (isDest) return "Carico";
+    if (isProd) return "Scarico";
+    return null;
+  };
+  const detectedMovement = detectMovement(viewDialog.form);
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
-    setRegistryMovementType("");
     setViewDialog({ open: true, form });
   };
 
