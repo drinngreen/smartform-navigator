@@ -41,7 +41,8 @@ export function DevContoProprioModule() {
             mnContext="multyproget"
             fallbackTenantId={GLOBAL_FIR_TENANT_ID}
             accent="emerald"
-            title="Formulari Conto Proprio — modifica / elimina / scegli modulo"
+            title="Formulari Conto Proprio Multyproget — solo trasporti propri (CF 12347770013)"
+            filterByTrasportatoreCf="12347770013"
           />
         </div>
       </TabsContent>
