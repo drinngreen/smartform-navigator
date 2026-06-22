@@ -290,7 +290,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }:
       ...form,
       form_data: form.form_data as Record<string, any> | null,
     });
-    useMNFIRStore.setState({ editingFirId: form.id, workflowStatus: form.status === "completato" ? "chiuso" : (form.status as any) || "bozza" });
+    const mappedStatus = form.status === "completato" || form.status === "completed" ? "chiuso" : form.status === "inviato" || form.status === "submitted" ? "inviato" : "bozza";
+    useMNFIRStore.setState({ editingFirId: form.id, workflowStatus: mappedStatus });
     if (!form.trasportatore_targa_automezzo && profile?.targa_automezzo) {
       store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
     }
