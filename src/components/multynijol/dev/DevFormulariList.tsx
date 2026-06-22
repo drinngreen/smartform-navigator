@@ -282,6 +282,7 @@ export function DevFormulariList({
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
+                  registryMovementType={registryMovementType || undefined}
                   onSaved={handleFormSaved}
                 />
               ) : (
@@ -296,10 +297,45 @@ export function DevFormulariList({
             </>
           )}
           {viewDialog.form && (
-            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
-              <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
-                <Trash2 className="h-4 w-4" /> Elimina formulario
-              </Button>
+            <div className="sticky bottom-0 mt-4 space-y-3 border-t border-border/30 bg-card/95 pt-3">
+              {editorMode === "alternative" && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground uppercase tracking-wider">Impatto giacenze impianto:</span>
+                  {(["", "Carico", "Scarico"] as const).map((opt) => (
+                    <button
+                      key={opt || "none"}
+                      type="button"
+                      onClick={() => setRegistryMovementType(opt)}
+                      className={`rounded-md border px-3 py-1 transition-colors ${registryMovementType === opt ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-muted-foreground hover:bg-secondary/40"}`}
+                    >
+                      {opt === "" ? "Nessuno" : opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-between items-center gap-2">
+                <Button variant="destructive" className="gap-2" onClick={() => void handleDeleteForm(viewDialog.form)}>
+                  <Trash2 className="h-4 w-4" /> Elimina formulario
+                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.dispatchEvent(new Event("dev-fir-save-draft"))}
+                  >
+                    💾 Salva bozza
+                  </Button>
+                  {editorMode === "alternative" && (
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                      disabled={!registryMovementType}
+                      title={!registryMovementType ? "Scegli Carico o Scarico per aggiornare le giacenze" : ""}
+                      onClick={() => window.dispatchEvent(new Event("dev-fir-save-final"))}
+                    >
+                      ✅ Salva DEFINITIVO (aggiorna giacenze)
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
