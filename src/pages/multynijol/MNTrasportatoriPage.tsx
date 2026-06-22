@@ -154,22 +154,71 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     try {
       const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
         p_user_id: manualFirDialog.user.id,
-        p_tenant_id: tenant.tenantId,
+        p_tenant_id: assignTenant.tenantId,
         p_numero_fir: normalized,
       });
       if (error) throw error;
       if (!draftId) throw new Error("Formulario non creato");
-      toast.success(`Formulario ${normalized} creato per ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
+      toast.success(`Formulario ${normalized} assegnato su app ${assignTenant.label} a ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
       setManualFirDialog({ open: false, user: null });
       setManualFirNumber("");
-      if (embedded) {
-        window.dispatchEvent(new CustomEvent("dev-fir-open-draft", { detail: { draftId: String(draftId) } }));
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        navigate(`/mn/admin/${contextKey}/formulari?fir=${draftId}`);
+      if (!embedded) {
+        const targetContext = assignTenant.mnContext || contextKey;
+        navigate(`/mn/admin/${targetContext}/formulari?fir=${draftId}`);
       }
     } catch (e: any) {
       toast.error("Errore creazione FIR: " + e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openAccessDialog = (user: UserEntry) => {
+    setAccessForm({
+      nome: user.profile?.nome || "",
+      cognome: user.profile?.cognome || "",
+      codiceFiscale: user.profile?.codice_fiscale || "",
+      password: "",
+      targaAutomezzo: user.profile?.targa_automezzo || "",
+      mnContext: user.profile?.mn_context || tenant.mnContext || "multyproget",
+    });
+    setAccessDialog({ open: true, user });
+  };
+
+  const handleUpdateAccess = async () => {
+    if (!accessDialog.user) return;
+    const targetTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === accessForm.mnContext) || tenant;
+    if (accessForm.nome.trim().length < 2 || accessForm.cognome.trim().length < 2 || accessForm.codiceFiscale.trim().length !== 16) {
+      toast.error("Nome, cognome e codice fiscale sono obbligatori");
+      return;
+    }
+    if (accessForm.password && accessForm.password.length < 6) {
+      toast.error("La nuova password deve avere almeno 6 caratteri");
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_user_access",
+          user_id: accessDialog.user.id,
+          nome: accessForm.nome.trim(),
+          cognome: accessForm.cognome.trim(),
+          codice_fiscale: accessForm.codiceFiscale.toUpperCase().trim(),
+          password: accessForm.password || undefined,
+          tenant_id: targetTenant.tenantId,
+          mn_context: targetTenant.mnContext,
+          org_id: targetTenant.orgId,
+          targa_automezzo: accessForm.targaAutomezzo.trim().toUpperCase() || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Accessi aggiornati per app ${targetTenant.label}`);
+      setAccessDialog({ open: false, user: null });
+      fetchUsers();
+    } catch (e: any) {
+      toast.error("Errore modifica accessi: " + (e.message || "operazione fallita"));
     } finally {
       setActionLoading(false);
     }
