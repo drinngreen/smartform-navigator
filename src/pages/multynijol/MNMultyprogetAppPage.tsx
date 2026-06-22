@@ -11,6 +11,7 @@ import { useAppResetGuard } from "@/hooks/useAppResetGuard";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const BASE_PATH = "/mn/app/multyproget";
+const MULTYPROGET_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 export default function MNMultyprogetAppPage() {
   useAppResetGuard("multyproget");
@@ -54,7 +55,7 @@ export default function MNMultyprogetAppPage() {
         <FIRTrafficLight />
       </div>
       <div className="flex-1 overflow-y-auto pb-20">
-        <MNFIRFormComplete />
+        <MNFIRFormComplete tenantId={MULTYPROGET_TENANT_ID} mnContext="multyproget" />
       </div>
       <MNBottomNav basePath={BASE_PATH} />
     </MobileShell>

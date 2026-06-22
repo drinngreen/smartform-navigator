@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus } from "lucide-react";
+import { Users, Search, RefreshCw, Loader2, UserPlus, Trash2, Pencil, FilePlus, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,8 @@ const CONTEXT_MAP: Record<string, TenantConfig> = {
   },
 };
 
+const APP_TENANT_OPTIONS: TenantConfig[] = [CONTEXT_MAP.multyproget, CONTEXT_MAP.niyol];
+
 interface UserEntry {
   id: string;
   email: string;
@@ -59,9 +61,19 @@ interface UserEntry {
     codice_fiscale: string;
     targa_automezzo: string | null;
     mn_context: string | null;
+    deactivated_at?: string | null;
   } | null;
   role: string;
   online_status: string;
+}
+
+interface AccessForm {
+  nome: string;
+  cognome: string;
+  codiceFiscale: string;
+  password: string;
+  targaAutomezzo: string;
+  mnContext: string;
 }
 
 interface MNTrasportatoriPageProps {
@@ -89,10 +101,22 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   const [createDialog, setCreateDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [accessDialog, setAccessDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [manualFirDialog, setManualFirDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [manualFirNumber, setManualFirNumber] = useState("");
+  const [manualFirContext, setManualFirContext] = useState(tenant.mnContext || "multyproget");
+  const [accessForm, setAccessForm] = useState<AccessForm>({
+    nome: "",
+    cognome: "",
+    codiceFiscale: "",
+    password: "",
+    targaAutomezzo: "",
+    mnContext: tenant.mnContext || "multyproget",
+  });
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const isDevHub = contextKey === "dev-multyproget";
+  const assignTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === manualFirContext) || tenant;
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -106,7 +130,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       const filtered = (data.users || []).filter(
         (u: UserEntry) =>
           u.role === "user" &&
-          u.profile?.mn_context === tenant.mnContext &&
+          (isDevHub ? ["multyproget", "niyol"].includes(u.profile?.mn_context || "") : u.profile?.mn_context === tenant.mnContext) &&
           !(u.profile as any)?.deactivated_at,
       );
       setUsers(filtered);
@@ -130,22 +154,71 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     try {
       const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
         p_user_id: manualFirDialog.user.id,
-        p_tenant_id: tenant.tenantId,
+        p_tenant_id: assignTenant.tenantId,
         p_numero_fir: normalized,
       });
       if (error) throw error;
       if (!draftId) throw new Error("Formulario non creato");
-      toast.success(`Formulario ${normalized} creato per ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
+      toast.success(`Formulario ${normalized} assegnato su app ${assignTenant.label} a ${manualFirDialog.user.profile?.nome || "trasportatore"}`);
       setManualFirDialog({ open: false, user: null });
       setManualFirNumber("");
-      if (embedded) {
-        window.dispatchEvent(new CustomEvent("dev-fir-open-draft", { detail: { draftId: String(draftId) } }));
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        navigate(`/mn/admin/${contextKey}/formulari?fir=${draftId}`);
+      if (!embedded) {
+        const targetContext = assignTenant.mnContext || contextKey;
+        navigate(`/mn/admin/${targetContext}/formulari?fir=${draftId}`);
       }
     } catch (e: any) {
       toast.error("Errore creazione FIR: " + e.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openAccessDialog = (user: UserEntry) => {
+    setAccessForm({
+      nome: user.profile?.nome || "",
+      cognome: user.profile?.cognome || "",
+      codiceFiscale: user.profile?.codice_fiscale || "",
+      password: "",
+      targaAutomezzo: user.profile?.targa_automezzo || "",
+      mnContext: user.profile?.mn_context || tenant.mnContext || "multyproget",
+    });
+    setAccessDialog({ open: true, user });
+  };
+
+  const handleUpdateAccess = async () => {
+    if (!accessDialog.user) return;
+    const targetTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === accessForm.mnContext) || tenant;
+    if (accessForm.nome.trim().length < 2 || accessForm.cognome.trim().length < 2 || accessForm.codiceFiscale.trim().length !== 16) {
+      toast.error("Nome, cognome e codice fiscale sono obbligatori");
+      return;
+    }
+    if (accessForm.password && accessForm.password.length < 6) {
+      toast.error("La nuova password deve avere almeno 6 caratteri");
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_user_access",
+          user_id: accessDialog.user.id,
+          nome: accessForm.nome.trim(),
+          cognome: accessForm.cognome.trim(),
+          codice_fiscale: accessForm.codiceFiscale.toUpperCase().trim(),
+          password: accessForm.password || undefined,
+          tenant_id: targetTenant.tenantId,
+          mn_context: targetTenant.mnContext,
+          org_id: targetTenant.orgId,
+          targa_automezzo: accessForm.targaAutomezzo.trim().toUpperCase() || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Accessi aggiornati per app ${targetTenant.label}`);
+      setAccessDialog({ open: false, user: null });
+      fetchUsers();
+    } catch (e: any) {
+      toast.error("Errore modifica accessi: " + (e.message || "operazione fallita"));
     } finally {
       setActionLoading(false);
     }
@@ -208,7 +281,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
 
   const content = (
     <>
-      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Trasportatori {tenant.label}</h2></div>}
+      {!embedded && <div className="mb-4"><h2 className="text-lg font-semibold">Ragazzi App {isDevHub ? "Multyproget / Niyol" : tenant.label}</h2></div>}
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
@@ -238,7 +311,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         </div>
         <Button onClick={() => setCreateDialog(true)} className="gap-2">
           <UserPlus className="h-4 w-4" />
-          <span className="hidden sm:inline">Crea Trasportatore</span>
+          <span className="hidden sm:inline">Crea Login App</span>
         </Button>
         <Button variant="outline" size="icon" onClick={fetchUsers} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -258,6 +331,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                 <tr className="border-b border-border/30">
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Stato</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Nome</th>
+                  <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">App</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">CF</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Targa</th>
                   <th className="text-left p-3 font-mono text-xs text-muted-foreground uppercase">Ultimo Login</th>
@@ -273,6 +347,11 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                     <td className="p-3 font-medium text-foreground">
                       {user.profile ? `${user.profile.nome} ${user.profile.cognome}` : "—"}
                     </td>
+                    <td className="p-3">
+                      <Badge variant="outline" className={user.profile?.mn_context === "niyol" ? "border-cyan-500/40 text-cyan-400" : "border-emerald-500/40 text-emerald-400"}>
+                        {user.profile?.mn_context === "niyol" ? "Niyol" : "Multyproget"}
+                      </Badge>
+                    </td>
                     <td className="p-3 text-muted-foreground font-mono text-xs">{user.profile?.codice_fiscale || "—"}</td>
                     <td className="p-3 text-muted-foreground font-mono text-xs">{user.profile?.targa_automezzo || "—"}</td>
                     <td className="p-3 text-muted-foreground text-xs">
@@ -287,6 +366,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                           onClick={() => {
                             setManualFirDialog({ open: true, user });
                             setManualFirNumber("");
+                            setManualFirContext(user.profile?.mn_context || tenant.mnContext || "multyproget");
                           }}
                         >
                           <FilePlus className="h-3.5 w-3.5" />
@@ -296,10 +376,10 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                           size="sm"
                           variant="outline"
                           className="gap-1.5 text-xs"
-                          onClick={() => { setPasswordDialog({ open: true, user }); setNewPassword(""); }}
+                          onClick={() => openAccessDialog(user)}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Password
+                          <UserCog className="h-3.5 w-3.5" />
+                          Modifica accessi
                         </Button>
                         <Button
                           size="sm"
@@ -316,8 +396,8 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      Nessun trasportatore trovato per {tenant.label}
+                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                      Nessun ragazzo app trovato per {isDevHub ? "Multyproget / Niyol" : tenant.label}
                     </td>
                   </tr>
                 )}
@@ -333,6 +413,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
         onOpenChange={setCreateDialog}
         onCreated={fetchUsers}
         tenant={tenant}
+        tenantOptions={isDevHub ? APP_TENANT_OPTIONS : undefined}
       />
 
       <Dialog open={manualFirDialog.open} onOpenChange={(o) => setManualFirDialog({ open: o, user: o ? manualFirDialog.user : null })}>
@@ -340,9 +421,21 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           <DialogHeader>
             <DialogTitle>Assegna FIR all'app autista</DialogTitle>
             <DialogDescription>
-              Inserisci il numero esatto: verrà creato il formulario e comparirà nell'app di <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
+              Scegli Multyproget o Niyol: il FIR comparirà solo nell'app scelta per <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
             </DialogDescription>
           </DialogHeader>
+          <div>
+            <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App di destinazione</label>
+            <select
+              value={manualFirContext}
+              onChange={(e) => setManualFirContext(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {APP_TENANT_OPTIONS.map((option) => (
+                <option key={option.mnContext || option.label} value={option.mnContext || ""}>{option.label}</option>
+              ))}
+            </select>
+          </div>
           <Input
             value={manualFirNumber}
             onChange={(e) => setManualFirNumber(e.target.value.toUpperCase())}
@@ -350,13 +443,71 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
               if (e.key === "Enter") void handleCreateFir();
             }}
             placeholder="ZRZXR 000566 LG"
-            className="font-mono"
+            className="font-mono mt-3"
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setManualFirDialog({ open: false, user: null })}>Annulla</Button>
             <Button onClick={handleCreateFir} disabled={actionLoading || !manualFirNumber.trim()} className="gap-2">
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
               Assegna questo FIR
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={accessDialog.open} onOpenChange={(o) => setAccessDialog({ open: o, user: o ? accessDialog.user : null })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-primary" />
+              Modifica accessi app
+            </DialogTitle>
+            <DialogDescription>
+              Cambia dati login, password, targa e app abilitata per <strong>{accessDialog.user?.profile?.nome} {accessDialog.user?.profile?.cognome}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App abilitata</label>
+              <select
+                value={accessForm.mnContext}
+                onChange={(e) => setAccessForm((f) => ({ ...f, mnContext: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                {APP_TENANT_OPTIONS.map((option) => (
+                  <option key={option.mnContext || option.label} value={option.mnContext || ""}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome" value={accessForm.nome} onChange={(e) => setAccessForm((f) => ({ ...f, nome: e.target.value }))} />
+              <Input placeholder="Cognome" value={accessForm.cognome} onChange={(e) => setAccessForm((f) => ({ ...f, cognome: e.target.value }))} />
+            </div>
+            <Input
+              placeholder="Codice Fiscale"
+              value={accessForm.codiceFiscale}
+              maxLength={16}
+              onChange={(e) => setAccessForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+            <Input
+              placeholder="Nuova password (lascia vuoto per non cambiarla)"
+              type="password"
+              value={accessForm.password}
+              onChange={(e) => setAccessForm((f) => ({ ...f, password: e.target.value }))}
+            />
+            <Input
+              placeholder="Targa automezzo"
+              value={accessForm.targaAutomezzo}
+              onChange={(e) => setAccessForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccessDialog({ open: false, user: null })}>Annulla</Button>
+            <Button onClick={handleUpdateAccess} disabled={actionLoading} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
+              Salva accessi
             </Button>
           </DialogFooter>
         </DialogContent>

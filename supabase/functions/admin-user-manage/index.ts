@@ -129,6 +129,69 @@ serve(async (req) => {
       });
     }
 
+    // ACTION: update_user_access - modifica login/profilo/app di un trasportatore
+    if (action === "update_user_access") {
+      const { user_id, nome, cognome, codice_fiscale, password, tenant_id, mn_context, org_id, targa_automezzo } = body;
+      if (!user_id || !nome || !cognome || !codice_fiscale || !tenant_id || !mn_context) {
+        return new Response(JSON.stringify({ error: "user_id, nome, cognome, codice_fiscale, tenant_id, mn_context required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const normalizedCf = String(codice_fiscale).toUpperCase().trim();
+      const { data: duplicate } = await adminClient
+        .from("profiles")
+        .select("user_id")
+        .eq("codice_fiscale", normalizedCf)
+        .neq("user_id", user_id)
+        .maybeSingle();
+      if (duplicate) {
+        return new Response(JSON.stringify({ error: "Codice fiscale già assegnato a un altro utente" }), {
+          status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const authUpdates: Record<string, any> = {
+        email: `${normalizedCf.toLowerCase()}@zoli.internal`,
+        email_confirm: true,
+        user_metadata: { nome, cognome, codice_fiscale: normalizedCf },
+      };
+      if (password) authUpdates.password = password;
+
+      const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(user_id, authUpdates);
+      if (authUpdateError) throw authUpdateError;
+
+      const { error: profileError } = await adminClient
+        .from("profiles")
+        .update({
+          nome,
+          cognome,
+          codice_fiscale: normalizedCf,
+          tenant_id,
+          mn_context,
+          targa_automezzo: targa_automezzo || null,
+          deactivated_at: null,
+        })
+        .eq("user_id", user_id);
+      if (profileError) throw profileError;
+
+      if (org_id) {
+        const { data: existingMembership } = await adminClient
+          .from("memberships")
+          .select("user_id")
+          .eq("user_id", user_id)
+          .eq("organization_id", org_id)
+          .maybeSingle();
+        if (!existingMembership) {
+          await adminClient.from("memberships").insert({ user_id, organization_id: org_id, role: "operator" });
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ACTION: delete_user — SOFT DELETE (policy: no physical deletes)
     // Mantiene profilo/storico per audit; blocca l'accesso bannando l'utente auth.
     if (action === "delete_user") {

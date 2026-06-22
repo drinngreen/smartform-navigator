@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
@@ -25,10 +25,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
   tenant: TenantConfig;
+  tenantOptions?: TenantConfig[];
 }
 
-export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant }: Props) {
+export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant, tenantOptions }: Props) {
   const [loading, setLoading] = useState(false);
+  const availableTenants = tenantOptions?.length ? tenantOptions : [tenant];
+  const [selectedContext, setSelectedContext] = useState(tenant.mnContext || "");
+  const activeTenant = availableTenants.find((option) => option.mnContext === selectedContext) || tenant;
   const [form, setForm] = useState({
     nome: "",
     cognome: "",
@@ -43,6 +47,10 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant 
     form.codiceFiscale.length === 16 &&
     form.password.length >= 6;
 
+  useEffect(() => {
+    if (open) setSelectedContext(tenant.mnContext || "");
+  }, [open, tenant.mnContext]);
+
   const handleCreate = async () => {
     if (!isValid) return;
     setLoading(true);
@@ -54,15 +62,15 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant 
           cognome: form.cognome.trim(),
           codice_fiscale: form.codiceFiscale.toUpperCase().trim(),
           password: form.password,
-          tenant_id: tenant.tenantId,
-          mn_context: tenant.mnContext,
-          org_id: tenant.orgId,
+          tenant_id: activeTenant.tenantId,
+          mn_context: activeTenant.mnContext,
+          org_id: activeTenant.orgId,
           targa_automezzo: form.targaAutomezzo.trim() || null,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Trasportatore ${form.nome} ${form.cognome} creato per ${tenant.label}`);
+      toast.success(`Trasportatore ${form.nome} ${form.cognome} creato per ${activeTenant.label}`);
       setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "" });
       onOpenChange(false);
       onCreated();
@@ -79,14 +87,30 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
-            Crea Trasportatore — {tenant.label}
+            Crea Login App — {availableTenants.length > 1 ? "Multyproget / Niyol" : activeTenant.label}
           </DialogTitle>
           <DialogDescription>
-            Registra un nuovo autista/trasportatore per {tenant.label}.
+            Registra un nuovo ragazzo/autista e scegli l'app a cui abilitarlo.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
+          {availableTenants.length > 1 && (
+            <div>
+              <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App / società</label>
+              <select
+                value={selectedContext}
+                onChange={(e) => setSelectedContext(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                {availableTenants.map((option) => (
+                  <option key={option.mnContext || option.label} value={option.mnContext || ""}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Input
               placeholder="Nome *"
@@ -126,7 +150,7 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant 
           </Button>
           <Button onClick={handleCreate} disabled={loading || !isValid}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-            Crea Trasportatore
+            Crea Login App
           </Button>
         </DialogFooter>
       </DialogContent>
