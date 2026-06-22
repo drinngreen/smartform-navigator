@@ -44,6 +44,7 @@ export default function MNGestioneFIRPage() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string; qrCode?: string; numeroFir?: string } | null>(null);
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
+  const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
 
   const invalidatePool = () => {
     queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
@@ -83,9 +84,13 @@ export default function MNGestioneFIRPage() {
   });
 
   const { data: profiles } = useQuery({
-    queryKey: ["mn-profiles", mnCtx?.orgId],
+    queryKey: ["mn-profiles", mnCtx?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("user_id, nome, cognome").order("cognome");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, nome, cognome")
+        .eq("mn_context", mnCtx.id)
+        .order("cognome");
       if (error) throw error;
       return data as ProfileInfo[];
     },
@@ -153,20 +158,42 @@ export default function MNGestioneFIRPage() {
     setIsAssigning(true);
     try {
       const { data: available, error: fetchErr } = await supabase.from("fir_number_pool")
-        .select("id").eq("societa_id", societaId).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
+        .select("id, fir_number").eq("societa_id", societaId).eq("status", "available").eq("user_id", SHARED_POOL_USER_ID).limit(assignQty);
       if (fetchErr) throw fetchErr;
       if (!available || available.length === 0) { toast.error("Nessun numero disponibile"); setIsAssigning(false); return; }
-      const ids = available.map(r => r.id);
-      const { error: updateErr } = await supabase.from("fir_number_pool")
-        .update({ user_id: assignUserId, assigned_by: user!.id, assigned_at: new Date().toISOString() }).in("id", ids);
-      if (updateErr) throw updateErr;
+      for (const row of available) {
+        const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+          p_user_id: assignUserId,
+          p_tenant_id: mnCtx.tenantId,
+          p_numero_fir: row.fir_number,
+        });
+        if (error) throw error;
+      }
       invalidatePool();
-      toast.success(`✅ ${ids.length} numeri assegnati`);
+      queryClient.invalidateQueries({ queryKey: ["mn-fir-forms"] });
+      toast.success(`✅ ${available.length} FIR creati e assegnati`);
       setAssignUserId(null); setAssignSearch(""); setAssignQty(1);
     } catch (err: any) {
       toast.error(`Errore: ${err.message}`);
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleInlineAssign = async (rowId: string, firNumber: string, targetUserId: string) => {
+    try {
+      const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: targetUserId,
+        p_tenant_id: mnCtx.tenantId,
+        p_numero_fir: firNumber,
+      });
+      if (error) throw error;
+      toast.success(`✅ ${firNumber} creato e assegnato a ${profileMap[targetUserId] || "trasportatore"}`);
+      setAssignDropdownId(null);
+      invalidatePool();
+      queryClient.invalidateQueries({ queryKey: ["mn-fir-forms"] });
+    } catch (err: any) {
+      toast.error(`Errore: ${err.message}`);
     }
   };
 
@@ -319,11 +346,27 @@ export default function MNGestioneFIRPage() {
                     <td className="py-2 px-3 text-foreground text-xs">{row.status !== "available" ? (profileMap[row.user_id] || "—") : "—"}</td>
                     <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">{new Date(row.created_at).toLocaleDateString("it-IT")}</td>
                     <td className="py-2 px-3 text-center">
-                      {row.status === "available" && (
-                        <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
-                          <Printer className="h-3 w-3" /> Stampa
-                        </button>
-                      )}
+                      <div className="flex items-center justify-center gap-1 relative">
+                        {row.status === "available" && (
+                          <>
+                            <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
+                              <Printer className="h-3 w-3" /> Stampa
+                            </button>
+                            <button onClick={() => setAssignDropdownId(assignDropdownId === row.id ? null : row.id)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors">
+                              <UserPlus className="h-3 w-3" /> Assegna
+                            </button>
+                            {assignDropdownId === row.id && (
+                              <div className="absolute z-30 top-full mt-1 right-0 bg-card border border-border/30 rounded-xl shadow-lg max-h-48 overflow-y-auto w-48">
+                                {(profiles ?? []).map(p => (
+                                  <button key={p.user_id} onClick={() => handleInlineAssign(row.id, row.fir_number, p.user_id)} className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/10 text-foreground transition-colors">
+                                    {p.cognome} {p.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

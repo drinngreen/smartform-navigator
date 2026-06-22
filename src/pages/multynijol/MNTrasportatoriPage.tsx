@@ -290,7 +290,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
                           }}
                         >
                           <FilePlus className="h-3.5 w-3.5" />
-                          Crea FIR manuale
+                          Assegna FIR all'app
                         </Button>
                         <Button
                           size="sm"
@@ -338,9 +338,9 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       <Dialog open={manualFirDialog.open} onOpenChange={(o) => setManualFirDialog({ open: o, user: o ? manualFirDialog.user : null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Crea FIR manuale</DialogTitle>
+            <DialogTitle>Assegna FIR all'app autista</DialogTitle>
             <DialogDescription>
-              Inserisci il numero esatto per <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
+              Inserisci il numero esatto: verrà creato il formulario e comparirà nell'app di <strong>{manualFirDialog.user?.profile?.nome} {manualFirDialog.user?.profile?.cognome}</strong>.
             </DialogDescription>
           </DialogHeader>
           <Input
@@ -356,7 +356,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
             <Button variant="outline" onClick={() => setManualFirDialog({ open: false, user: null })}>Annulla</Button>
             <Button onClick={handleCreateFir} disabled={actionLoading || !manualFirNumber.trim()} className="gap-2">
               {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FilePlus className="h-4 w-4" />}
-              Crea questo FIR
+              Assegna questo FIR
             </Button>
           </DialogFooter>
         </DialogContent>
