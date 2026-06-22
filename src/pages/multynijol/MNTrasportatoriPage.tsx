@@ -101,10 +101,22 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   const [createDialog, setCreateDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [passwordDialog, setPasswordDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [accessDialog, setAccessDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [manualFirDialog, setManualFirDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
   const [manualFirNumber, setManualFirNumber] = useState("");
+  const [manualFirContext, setManualFirContext] = useState(tenant.mnContext || "multyproget");
+  const [accessForm, setAccessForm] = useState<AccessForm>({
+    nome: "",
+    cognome: "",
+    codiceFiscale: "",
+    password: "",
+    targaAutomezzo: "",
+    mnContext: tenant.mnContext || "multyproget",
+  });
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const isDevHub = contextKey === "dev-multyproget";
+  const assignTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === manualFirContext) || tenant;
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -118,7 +130,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       const filtered = (data.users || []).filter(
         (u: UserEntry) =>
           u.role === "user" &&
-          u.profile?.mn_context === tenant.mnContext &&
+          (isDevHub ? ["multyproget", "niyol"].includes(u.profile?.mn_context || "") : u.profile?.mn_context === tenant.mnContext) &&
           !(u.profile as any)?.deactivated_at,
       );
       setUsers(filtered);
