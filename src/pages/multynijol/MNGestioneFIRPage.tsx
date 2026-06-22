@@ -44,6 +44,7 @@ export default function MNGestioneFIRPage() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; details?: string; qrCode?: string; numeroFir?: string } | null>(null);
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
+  const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
 
   const invalidatePool = () => {
     queryClient.invalidateQueries({ queryKey: ["mn-fir-pool-stats"] });
@@ -176,6 +177,23 @@ export default function MNGestioneFIRPage() {
       toast.error(`Errore: ${err.message}`);
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleInlineAssign = async (rowId: string, firNumber: string, targetUserId: string) => {
+    try {
+      const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: targetUserId,
+        p_tenant_id: mnCtx.tenantId,
+        p_numero_fir: firNumber,
+      });
+      if (error) throw error;
+      toast.success(`✅ ${firNumber} creato e assegnato a ${profileMap[targetUserId] || "trasportatore"}`);
+      setAssignDropdownId(null);
+      invalidatePool();
+      queryClient.invalidateQueries({ queryKey: ["mn-fir-forms"] });
+    } catch (err: any) {
+      toast.error(`Errore: ${err.message}`);
     }
   };
 
