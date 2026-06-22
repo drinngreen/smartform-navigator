@@ -115,6 +115,29 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
   });
   const [newPassword, setNewPassword] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [historyDialog, setHistoryDialog] = useState<{ open: boolean; user: UserEntry | null }>({ open: false, user: null });
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyForms, setHistoryForms] = useState<Array<{ id: string; numero_fir: string | null; status: string | null; tenant_id: string | null; updated_at: string | null; created_at: string | null }>>([]);
+
+  const openHistoryDialog = async (user: UserEntry) => {
+    setHistoryDialog({ open: true, user });
+    setHistoryLoading(true);
+    setHistoryForms([]);
+    try {
+      const { data, error } = await supabase
+        .from("fir_forms")
+        .select("id, numero_fir, status, tenant_id, updated_at, created_at")
+        .eq("user_id", user.id)
+        .eq("deleted_by_user", false)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      setHistoryForms((data as any) || []);
+    } catch (e: any) {
+      toast.error("Errore caricamento storico: " + (e.message || ""));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
   const isDevHub = contextKey === "dev-multyproget";
   const assignTenant = APP_TENANT_OPTIONS.find((option) => option.mnContext === manualFirContext) || tenant;
 
