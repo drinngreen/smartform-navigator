@@ -178,7 +178,7 @@ serve(async (req) => {
       if (org_id) {
         const { data: existingMembership } = await adminClient
           .from("memberships")
-          .select("id")
+          .select("user_id")
           .eq("user_id", user_id)
           .eq("organization_id", org_id)
           .maybeSingle();
