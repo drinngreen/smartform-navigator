@@ -164,6 +164,32 @@ function ImpiantoFormulari() {
     setViewDialog({ open: true, form });
   };
 
+  const handleDeleteForm = async (form: any) => {
+    if (!form) return;
+    if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: form.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setViewDialog({ open: false, form: null });
+      toast.success("Formulario eliminato dalla vista");
+      await refetch();
+    } catch (e: any) {
+      toast.error("Errore eliminazione FIR: " + (e?.message ?? "sconosciuto"));
+    }
+  };
+
+  const handleFormSaved = async () => {
+    const res = await refetch();
+    const list = (res.data as any[]) || [];
+    if (viewDialog.form) {
+      const updated = list.find((f: any) => f.id === viewDialog.form.id);
+      if (updated) setViewDialog({ open: true, form: updated });
+    }
+  };
+
   const { data: forms = [], isLoading, refetch } = useQuery({
     queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
     queryFn: async () => {
