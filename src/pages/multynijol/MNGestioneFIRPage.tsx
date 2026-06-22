@@ -346,11 +346,27 @@ export default function MNGestioneFIRPage() {
                     <td className="py-2 px-3 text-foreground text-xs">{row.status !== "available" ? (profileMap[row.user_id] || "—") : "—"}</td>
                     <td className="py-2 px-3 hidden md:table-cell text-muted-foreground font-mono text-xs">{new Date(row.created_at).toLocaleDateString("it-IT")}</td>
                     <td className="py-2 px-3 text-center">
-                      {row.status === "available" && (
-                        <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
-                          <Printer className="h-3 w-3" /> Stampa
-                        </button>
-                      )}
+                      <div className="flex items-center justify-center gap-1 relative">
+                        {row.status === "available" && (
+                          <>
+                            <button onClick={() => setPrintFirNumber(row.fir_number)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors">
+                              <Printer className="h-3 w-3" /> Stampa
+                            </button>
+                            <button onClick={() => setAssignDropdownId(assignDropdownId === row.id ? null : row.id)} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors">
+                              <UserPlus className="h-3 w-3" /> Assegna
+                            </button>
+                            {assignDropdownId === row.id && (
+                              <div className="absolute z-30 top-full mt-1 right-0 bg-card border border-border/30 rounded-xl shadow-lg max-h-48 overflow-y-auto w-48">
+                                {(profiles ?? []).map(p => (
+                                  <button key={p.user_id} onClick={() => handleInlineAssign(row.id, row.fir_number, p.user_id)} className="w-full text-left px-3 py-1.5 text-xs hover:bg-primary/10 text-foreground transition-colors">
+                                    {p.cognome} {p.nome}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
