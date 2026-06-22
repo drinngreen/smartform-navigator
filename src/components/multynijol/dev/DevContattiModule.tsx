@@ -77,6 +77,17 @@ export function DevContattiModule() {
           <AnagraficaCompletaMP />
         </div>
       </TabsContent>
+      <TabsContent value="formulari">
+        <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
+          <DevFormulariList
+            tenantId={MULTY_TENANT_ID}
+            mnContext="multyproget"
+            fallbackTenantId={GLOBAL_FIR_TENANT_ID}
+            accent="emerald"
+            title="Formulari collegati ai contatti — modifica / elimina / scegli modulo"
+          />
+        </div>
+      </TabsContent>
     </Tabs>
   );
 }
