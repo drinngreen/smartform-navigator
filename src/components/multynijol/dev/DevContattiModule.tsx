@@ -46,6 +46,9 @@ export function DevContattiModule() {
         <TabsTrigger value="anagrafica-completa" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
           <ListChecks className="h-4 w-4" /> Anagrafica Completa
         </TabsTrigger>
+        <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+          <FileText className="h-4 w-4" /> Formulari
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="rubrica">
