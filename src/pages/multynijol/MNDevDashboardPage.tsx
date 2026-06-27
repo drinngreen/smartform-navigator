@@ -33,6 +33,7 @@ import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigi
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
+import { PerElisabettaDialog } from "@/components/multynijol/dev/PerElisabettaDialog";
 
 const DEV_TAB_LABELS: Record<string, string> = {
   impianto: "Impianto",
@@ -78,6 +79,9 @@ export default function MNDevDashboardPage() {
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
+      {/* Pulsante per Elisabetta — approvazione import dati Excel */}
+      <PerElisabettaDialog />
+
       {/* Link Modulo Alternativo */}
       <button
         onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
