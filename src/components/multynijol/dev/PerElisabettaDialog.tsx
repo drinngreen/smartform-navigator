@@ -93,7 +93,7 @@ export function PerElisabettaDialog() {
                 <div className="flex items-center gap-2 font-bold text-emerald-300">
                   <CheckCircle2 size={18} /> Import completato
                 </div>
-                <div className="text-muted-foreground">Inseriti: <b>{result.inserted}</b> · Saltati (doppioni): <b>{result.skipped}</b></div>
+                <div className="text-muted-foreground">Inseriti: <b>{result.inserted}</b> · Instradati a Niyol: <b>{result.routedToNiyol ?? 0}</b> · Saltati (doppioni): <b>{result.skipped}</b></div>
                 {result.errors?.length > 0 && (
                   <details className="text-xs mt-2">
                     <summary className="cursor-pointer text-yellow-300">Errori riscontrati ({result.errors.length})</summary>
