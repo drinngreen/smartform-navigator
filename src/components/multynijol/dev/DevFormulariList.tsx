@@ -24,7 +24,11 @@ interface Props {
   title?: string;
   /** Filtra solo i FIR il cui trasportatore_codice_fiscale combacia (es. solo Conto Proprio Multyproget) */
   filterByTrasportatoreCf?: string;
+  /** Include anche FIR di un altro tenant in cui il trasportatore ha questo CF (vista cross Multy/Niyol) */
+  crossTenantId?: string;
+  crossTransporterCf?: string;
 }
+
 
 const normalizeCf = (v: string | null | undefined) =>
   (v || "").toString().replace(/\s+/g, "").toUpperCase();
