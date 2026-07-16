@@ -70,7 +70,7 @@ export function DevFormulariList({
   };
 
   const { data: forms = [], isLoading, refetch } = useQuery({
-    queryKey: ["dev-formulari-list", tenantId, fallbackTenantId],
+    queryKey: ["dev-formulari-list", tenantId, fallbackTenantId, crossTenantId, crossTransporterCf],
     queryFn: async () => {
       const loadForms = async (tid: string) => {
         const { data, error } = await supabase.functions.invoke("admin-user-manage", {
@@ -81,10 +81,21 @@ export function DevFormulariList({
         return data.forms || [];
       };
       const main = await loadForms(tenantId);
-      if (main.length > 0 || !fallbackTenantId) return main;
-      return await loadForms(fallbackTenantId);
+      let base = main;
+      if (main.length === 0 && fallbackTenantId) {
+        base = await loadForms(fallbackTenantId);
+      }
+      if (crossTenantId && crossTransporterCf) {
+        const cf = normalizeCf(crossTransporterCf);
+        const cross = await loadForms(crossTenantId);
+        const extras = cross.filter((f: any) => normalizeCf(f.trasportatore_codice_fiscale) === cf);
+        const seen = new Set(base.map((f: any) => f.id));
+        for (const f of extras) if (!seen.has(f.id)) base.push({ ...f, _cross_tenant: true });
+      }
+      return base;
     },
   });
+
 
   const handleDeleteForm = async (form: any) => {
     if (!form) return;
