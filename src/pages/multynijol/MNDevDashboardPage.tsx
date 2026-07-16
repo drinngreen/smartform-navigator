@@ -34,6 +34,8 @@ import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModu
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 import { PerElisabettaDialog } from "@/components/multynijol/dev/PerElisabettaDialog";
+import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
+
 
 const DEV_TAB_LABELS: Record<string, string> = {
   impianto: "Impianto",
