@@ -40,7 +40,10 @@ export function DevFormulariList({
   accent = "emerald",
   title = "Formulari FIR",
   filterByTrasportatoreCf,
+  crossTenantId,
+  crossTransporterCf,
 }: Props) {
+
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
