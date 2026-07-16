@@ -229,7 +229,7 @@ export function DevFormulariList({
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
-                      <td className={`p-3 font-mono`}>{form.numero_fir || "—"}</td>
+                      <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
                       <td className="p-3 font-mono">{form.codice_eer || "—"}</td>
                       <td className="p-3">{form.produttore_denominazione || "—"}</td>
                       <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
