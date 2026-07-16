@@ -103,6 +103,10 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
           </TabsTrigger>
+          <TabsTrigger value="niyol" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
+            <Truck className="h-4 w-4" />Niyol
+          </TabsTrigger>
+
           <TabsTrigger value="magazzino-dev" className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400">
             <img src={logoDragon} alt="Dragon" className="h-5 w-5" />Magazzino Dev
           </TabsTrigger>
