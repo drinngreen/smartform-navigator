@@ -126,7 +126,9 @@ export function DevGiacenzeModule() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dev-giacenze"] });
+      ["dev-giacenze", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: [k] })
+      );
       toast.success("Giacenze ricalcolate dai movimenti");
     },
     onError: (e: any) => toast.error("Errore: " + e.message),

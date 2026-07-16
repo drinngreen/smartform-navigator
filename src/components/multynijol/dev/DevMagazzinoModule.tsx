@@ -87,9 +87,9 @@ export function DevMagazzinoModule() {
   });
 
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["dev-mag-giacenze"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-mag-movimenti"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-cernite"] });
+    ["dev-mag-giacenze", "dev-mag-movimenti", "dev-cernite", "dev-giacenze", "dev-movimenti-multy", "dev-registro-movimenti"].forEach((k) =>
+      queryClient.invalidateQueries({ queryKey: [k] })
+    );
   };
 
   // Recalculate
