@@ -213,6 +213,7 @@ export function DevRegistroCaricoScaricoModule() {
 
     setSaving(true);
     try {
+      const qty = parseFloat(form.quantita_kg);
       const { error } = await supabase.from("movimenti_impianto").insert({
         tenant_id: MULTY_TENANT_ID,
         impianto_id: impianto.id,
@@ -220,7 +221,7 @@ export function DevRegistroCaricoScaricoModule() {
         ruolo_impianto: form.ruolo_impianto,
         cer: form.cer,
         descrizione_rifiuto: form.descrizione_rifiuto || null,
-        quantita_kg: parseFloat(form.quantita_kg),
+        quantita_kg: qty,
         quantita_presunta: form.quantita_presunta ? parseFloat(form.quantita_presunta) : null,
         produttore_denominazione: form.produttore_denominazione || null,
         trasportatore_denominazione: form.trasportatore_denominazione || null,
@@ -233,10 +234,39 @@ export function DevRegistroCaricoScaricoModule() {
         created_by: user?.id || null,
       });
       if (error) throw error;
-      toast.success("Movimento registrato");
+
+      // Aggiorna giacenza corrispondente
+      const { data: current } = await supabase
+        .from("magazzino_giacenze")
+        .select("quantita_kg")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("impianto_id", impianto.id)
+        .eq("cer", form.cer)
+        .maybeSingle();
+      const delta = form.tipo_movimento === "CARICO" ? qty : -qty;
+      const newQty = (Number(current?.quantita_kg) || 0) + delta;
+      const nowIso = new Date().toISOString();
+      const { error: gErr } = await supabase.from("magazzino_giacenze").upsert(
+        {
+          tenant_id: MULTY_TENANT_ID,
+          impianto_id: impianto.id,
+          cer: form.cer,
+          quantita_kg: newQty,
+          ...(form.tipo_movimento === "CARICO"
+            ? { ultimo_carico_at: nowIso }
+            : { ultimo_scarico_at: nowIso }),
+        },
+        { onConflict: "tenant_id,impianto_id,cer" }
+      );
+      if (gErr) console.warn("Giacenza upsert error:", gErr.message);
+
+      toast.success("Movimento registrato e giacenza aggiornata");
       setForm({ ...emptyForm });
       setAddOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+      // Invalida tutte le viste che leggono movimenti/giacenze
+      ["dev-registro-movimenti", "dev-movimenti-multy", "dev-mag-movimenti", "dev-mag-giacenze", "dev-giacenze"].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: [k] })
+      );
     } catch (e: any) {
       toast.error("Errore: " + e.message);
     } finally {
