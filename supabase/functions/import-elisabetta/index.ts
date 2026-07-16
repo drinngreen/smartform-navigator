@@ -130,9 +130,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, inserted, skipped, errors: errors.slice(0, 10) }),
+      JSON.stringify({ ok: true, inserted, skipped, routedToNiyol, errors: errors.slice(0, 10) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
