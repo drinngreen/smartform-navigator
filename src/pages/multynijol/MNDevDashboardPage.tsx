@@ -39,6 +39,7 @@ import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 
 const DEV_TAB_LABELS: Record<string, string> = {
   impianto: "Impianto",
+  niyol: "Niyol",
   "magazzino-dev": "Magazzino Dev",
   "conto-proprio": "Conto Proprio",
   registri: "Registri",
@@ -48,6 +49,7 @@ const DEV_TAB_LABELS: Record<string, string> = {
   "aree-riservate": "Aree Riservate",
   "cer-preferiti": "CER Preferiti",
   "gestione-fir": "Gestione FIR",
+
   "firma-digitale": "Firma Digitale",
   personale: "Personale",
 };
