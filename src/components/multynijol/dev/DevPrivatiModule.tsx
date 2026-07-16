@@ -179,6 +179,19 @@ export function DevPrivatiModule() {
     return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
   }, [cerSearch]);
 
+  const invalidateInventoryQueries = () => {
+    [
+      "dev-conferimenti-anno",
+      "dev-ricevute",
+      "dev-ricevute-registro",
+      "dev-registro-movimenti",
+      "dev-movimenti-multy",
+      "dev-mag-movimenti",
+      "dev-mag-giacenze",
+      "dev-giacenze",
+    ].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
+  };
+
   const handleSaveConferimento = async () => {
     const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
     if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
@@ -186,7 +199,13 @@ export function DevPrivatiModule() {
     if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
 
     const kg = parseFloat(confForm.kg_pesati);
-    const warning = await checkLimits(targetPrivatoId, confForm.cer, kg);
+    if (!Number.isFinite(kg) || kg <= 0) { toast.error("Inserisci un peso valido"); return; }
+
+    const rawCer = confForm.cer.trim();
+    const cerInfo = CER_DATA.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
+    const cerFinale = cerInfo?.codice || rawCer.toUpperCase();
+
+    const warning = await checkLimits(targetPrivatoId, cerFinale, kg);
     if (warning && (warning.includes("LIMITE SUPERATO") || warning.includes("LIMITE ANNUO GLOBALE"))) {
       setLimitWarning(warning);
       toast.error("Conferimento BLOCCATO: limite superato");
@@ -200,8 +219,9 @@ export function DevPrivatiModule() {
     const { data: confData, error } = await supabase
       .from("privati_conferimenti")
       .insert({
+        tenant_id: MULTY_TENANT_ID,
         impianto_id: impiantoId,
-        cer: confForm.cer,
+        cer: cerFinale,
         kg_pesati: kg,
         nome_privato: nomeFinale,
         cf_pi: privato?.codice_fiscale || null,
@@ -226,7 +246,7 @@ export function DevPrivatiModule() {
         tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: conf.id,
         privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
-        note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
+        note: `${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
     }
 
@@ -236,9 +256,7 @@ export function DevPrivatiModule() {
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
     setCerSearch("");
     setLimitWarning(null);
-    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
+    invalidateInventoryQueries();
   };
 
   const handleSaveRicevutaManuale = async () => {
