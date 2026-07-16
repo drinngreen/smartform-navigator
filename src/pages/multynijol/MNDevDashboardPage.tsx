@@ -145,7 +145,9 @@ export default function MNDevDashboardPage() {
         {tab !== "personale" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
+        <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
+
 
         <TabsContent value="registri">
           <Tabs value={registriSub} onValueChange={setRegistriSub} className="space-y-4">
