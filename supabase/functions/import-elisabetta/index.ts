@@ -10,6 +10,18 @@ const corsHeaders = {
 };
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
+const MULTY_CF = "12347770013";
+const NIYOL_CF = "09879800010";
+const compactCf = (s: any) => (s || "").toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
+const routeTenant = (r: any): string => {
+  const prod = compactCf(r.cf_produttore);
+  const dest = compactCf(r.cf_destinatario);
+  const trasp = compactCf(r.cf_trasportatore);
+  if (prod === MULTY_CF || dest === MULTY_CF) return MULTY_TENANT;
+  if (prod === NIYOL_CF || dest === NIYOL_CF || trasp === NIYOL_CF) return NIYOL_TENANT;
+  return MULTY_TENANT;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
