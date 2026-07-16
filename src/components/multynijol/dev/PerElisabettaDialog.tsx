@@ -77,11 +77,12 @@ export function PerElisabettaDialog() {
                 Si conferma di procedere con:
               </p>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
-                <li>Inserire <b>~446 nuovi FIR</b> (88 impianto + 358 conto proprio) come bozze nel tenant <b>Multyproget</b>, saltando i 3 doppioni.</li>
-                <li>Aggiungere il tab <b>"Niyol"</b> alla dashboard Dev Multy (vista parallela per gestire i dati Niyol da qui).</li>
-                <li>Le righe in cui Niyol è solo trasportatore restano sul FIR Multy (Niyol vedrà i suoi propri formulari quando arriveranno).</li>
+                <li>Instradare ogni FIR nella <b>giusta collocazione</b>: se Multyproget è produttore o destinatario → tenant Multyproget; altrimenti se Niyol figura come produttore/destinatario/trasportatore → tenant Niyol.</li>
+                <li>Aggiungere il tab <b>"Niyol"</b> alla dashboard Dev Multy (vista parallela con gli stessi strumenti).</li>
+                <li>Le righe in cui Niyol è <b>solo trasportatore</b> restano sul tenant Multy ma vengono mostrate anche nel tab Niyol (etichetta "cross").</li>
                 <li>Le 57 righe Cernite restano in attesa: vanno mappate su Dragon con Riccardo.</li>
               </ol>
+
               <p className="text-xs text-yellow-300/90">
                 ⚠️ Nessun dato esistente verrà eliminato o modificato. Solo inserimento di nuovi record.
               </p>
