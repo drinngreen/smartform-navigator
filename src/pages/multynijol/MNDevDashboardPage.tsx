@@ -34,9 +34,12 @@ import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModu
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 import { PerElisabettaDialog } from "@/components/multynijol/dev/PerElisabettaDialog";
+import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
+
 
 const DEV_TAB_LABELS: Record<string, string> = {
   impianto: "Impianto",
+  niyol: "Niyol",
   "magazzino-dev": "Magazzino Dev",
   "conto-proprio": "Conto Proprio",
   registri: "Registri",
@@ -46,6 +49,7 @@ const DEV_TAB_LABELS: Record<string, string> = {
   "aree-riservate": "Aree Riservate",
   "cer-preferiti": "CER Preferiti",
   "gestione-fir": "Gestione FIR",
+
   "firma-digitale": "Firma Digitale",
   personale: "Personale",
 };
@@ -99,6 +103,10 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
           </TabsTrigger>
+          <TabsTrigger value="niyol" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
+            <Truck className="h-4 w-4" />Niyol
+          </TabsTrigger>
+
           <TabsTrigger value="magazzino-dev" className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400">
             <img src={logoDragon} alt="Dragon" className="h-5 w-5" />Magazzino Dev
           </TabsTrigger>
@@ -137,7 +145,9 @@ export default function MNDevDashboardPage() {
         {tab !== "personale" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
+        <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
+
 
         <TabsContent value="registri">
           <Tabs value={registriSub} onValueChange={setRegistriSub} className="space-y-4">

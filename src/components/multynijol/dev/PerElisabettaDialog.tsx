@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export function PerElisabettaDialog() {
   const [open, setOpen] = useState(false);
   const [decision, setDecision] = useState<"none" | "no" | "yes-loading" | "yes-done">("none");
-  const [result, setResult] = useState<{ inserted: number; skipped: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ inserted: number; skipped: number; routedToNiyol?: number; errors: string[] } | null>(null);
 
   const handleYes = async () => {
     setDecision("yes-loading");
@@ -18,7 +18,7 @@ export function PerElisabettaDialog() {
       setResult(data);
       setDecision("yes-done");
       localStorage.setItem("mn_niyol_tab_enabled", "1");
-      toast.success(`Import completato: ${data.inserted} nuovi FIR inseriti, ${data.skipped} doppioni saltati.`);
+      toast.success(`Import completato: ${data.inserted} nuovi FIR (${data.routedToNiyol ?? 0} instradati a Niyol), ${data.skipped} doppioni saltati.`);
       window.dispatchEvent(new Event("mn-niyol-tab-toggle"));
     } catch (e: any) {
       toast.error("Errore import: " + e.message);
@@ -77,11 +77,12 @@ export function PerElisabettaDialog() {
                 Si conferma di procedere con:
               </p>
               <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
-                <li>Inserire <b>~446 nuovi FIR</b> (88 impianto + 358 conto proprio) come bozze nel tenant <b>Multyproget</b>, saltando i 3 doppioni.</li>
-                <li>Aggiungere il tab <b>"Niyol"</b> alla dashboard Dev Multy (vista parallela per gestire i dati Niyol da qui).</li>
-                <li>Le righe in cui Niyol è solo trasportatore restano sul FIR Multy (Niyol vedrà i suoi propri formulari quando arriveranno).</li>
+                <li>Instradare ogni FIR nella <b>giusta collocazione</b>: se Multyproget è produttore o destinatario → tenant Multyproget; altrimenti se Niyol figura come produttore/destinatario/trasportatore → tenant Niyol.</li>
+                <li>Aggiungere il tab <b>"Niyol"</b> alla dashboard Dev Multy (vista parallela con gli stessi strumenti).</li>
+                <li>Le righe in cui Niyol è <b>solo trasportatore</b> restano sul tenant Multy ma vengono mostrate anche nel tab Niyol (etichetta "cross").</li>
                 <li>Le 57 righe Cernite restano in attesa: vanno mappate su Dragon con Riccardo.</li>
               </ol>
+
               <p className="text-xs text-yellow-300/90">
                 ⚠️ Nessun dato esistente verrà eliminato o modificato. Solo inserimento di nuovi record.
               </p>
@@ -92,7 +93,7 @@ export function PerElisabettaDialog() {
                 <div className="flex items-center gap-2 font-bold text-emerald-300">
                   <CheckCircle2 size={18} /> Import completato
                 </div>
-                <div className="text-muted-foreground">Inseriti: <b>{result.inserted}</b> · Saltati (doppioni): <b>{result.skipped}</b></div>
+                <div className="text-muted-foreground">Inseriti: <b>{result.inserted}</b> · Instradati a Niyol: <b>{result.routedToNiyol ?? 0}</b> · Saltati (doppioni): <b>{result.skipped}</b></div>
                 {result.errors?.length > 0 && (
                   <details className="text-xs mt-2">
                     <summary className="cursor-pointer text-yellow-300">Errori riscontrati ({result.errors.length})</summary>

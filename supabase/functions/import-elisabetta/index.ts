@@ -10,6 +10,18 @@ const corsHeaders = {
 };
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
+const MULTY_CF = "12347770013";
+const NIYOL_CF = "09879800010";
+const compactCf = (s: any) => (s || "").toString().toUpperCase().replace(/[^A-Z0-9]/g, "");
+const routeTenant = (r: any): string => {
+  const prod = compactCf(r.cf_produttore);
+  const dest = compactCf(r.cf_destinatario);
+  const trasp = compactCf(r.cf_trasportatore);
+  if (prod === MULTY_CF || dest === MULTY_CF) return MULTY_TENANT;
+  if (prod === NIYOL_CF || dest === NIYOL_CF || trasp === NIYOL_CF) return NIYOL_TENANT;
+  return MULTY_TENANT;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -30,11 +42,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Numeri già presenti nel tenant
+    // Numeri già presenti su entrambi i tenant (evita duplicati cross-tenant)
     const { data: existing } = await admin
       .from("fir_forms")
       .select("numero_fir")
-      .eq("tenant_id", MULTY_TENANT)
+      .in("tenant_id", [MULTY_TENANT, NIYOL_TENANT])
       .not("numero_fir", "is", null);
     const compact = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
     const existingSet = new Set((existing || []).map((r: any) => compact(r.numero_fir || "")));
@@ -46,15 +58,18 @@ Deno.serve(async (req) => {
 
     const toInsert: any[] = [];
     let skipped = 0;
+    let routedToNiyol = 0;
     const seen = new Set<string>();
     for (const r of allRows) {
       const c = compact(r.numero_fir);
       if (!c) continue;
       if (existingSet.has(c) || seen.has(c)) { skipped++; continue; }
       seen.add(c);
+      const target = routeTenant(r);
+      if (target === NIYOL_TENANT) routedToNiyol++;
       toInsert.push({
         user_id: uid,
-        tenant_id: MULTY_TENANT,
+        tenant_id: target,
         status: "bozza",
         numero_fir: r.numero_fir,
         form_data: {
@@ -72,12 +87,21 @@ Deno.serve(async (req) => {
           destinatario_codice_fiscale: r.cf_destinatario,
           targa_automezzo: r.targa,
           _import_source: r._src,
+          _import_target_tenant: target === NIYOL_TENANT ? "niyol" : "multy",
           _import_full: r.form_data,
         },
+        // Colonne top-level per filtri cross-tenant (trasportatore, ecc.)
+        produttore_denominazione: r.produttore,
+        trasportatore_denominazione: r.trasportatore,
+        destinatario_denominazione: r.destinatario,
+        produttore_codice_fiscale: r.cf_produttore,
+        trasportatore_codice_fiscale: r.cf_trasportatore,
+        destinatario_codice_fiscale: r.cf_destinatario,
         allegati: [],
         deleted_by_user: false,
       });
     }
+
 
     // Insert in batch da 50
     let inserted = 0;
@@ -106,9 +130,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, inserted, skipped, errors: errors.slice(0, 10) }),
+      JSON.stringify({ ok: true, inserted, skipped, routedToNiyol, errors: errors.slice(0, 10) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }

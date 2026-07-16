@@ -24,7 +24,11 @@ interface Props {
   title?: string;
   /** Filtra solo i FIR il cui trasportatore_codice_fiscale combacia (es. solo Conto Proprio Multyproget) */
   filterByTrasportatoreCf?: string;
+  /** Include anche FIR di un altro tenant in cui il trasportatore ha questo CF (vista cross Multy/Niyol) */
+  crossTenantId?: string;
+  crossTransporterCf?: string;
 }
+
 
 const normalizeCf = (v: string | null | undefined) =>
   (v || "").toString().replace(/\s+/g, "").toUpperCase();
@@ -36,7 +40,10 @@ export function DevFormulariList({
   accent = "emerald",
   title = "Formulari FIR",
   filterByTrasportatoreCf,
+  crossTenantId,
+  crossTransporterCf,
 }: Props) {
+
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
@@ -63,7 +70,7 @@ export function DevFormulariList({
   };
 
   const { data: forms = [], isLoading, refetch } = useQuery({
-    queryKey: ["dev-formulari-list", tenantId, fallbackTenantId],
+    queryKey: ["dev-formulari-list", tenantId, fallbackTenantId, crossTenantId, crossTransporterCf],
     queryFn: async () => {
       const loadForms = async (tid: string) => {
         const { data, error } = await supabase.functions.invoke("admin-user-manage", {
@@ -74,10 +81,21 @@ export function DevFormulariList({
         return data.forms || [];
       };
       const main = await loadForms(tenantId);
-      if (main.length > 0 || !fallbackTenantId) return main;
-      return await loadForms(fallbackTenantId);
+      let base = main;
+      if (main.length === 0 && fallbackTenantId) {
+        base = await loadForms(fallbackTenantId);
+      }
+      if (crossTenantId && crossTransporterCf) {
+        const cf = normalizeCf(crossTransporterCf);
+        const cross = await loadForms(crossTenantId);
+        const extras = cross.filter((f: any) => normalizeCf(f.trasportatore_codice_fiscale) === cf);
+        const seen = new Set(base.map((f: any) => f.id));
+        for (const f of extras) if (!seen.has(f.id)) base.push({ ...f, _cross_tenant: true });
+      }
+      return base;
     },
   });
+
 
   const handleDeleteForm = async (form: any) => {
     if (!form) return;
@@ -211,7 +229,7 @@ export function DevFormulariList({
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
-                      <td className={`p-3 font-mono`}>{form.numero_fir || "—"}</td>
+                      <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
                       <td className="p-3 font-mono">{form.codice_eer || "—"}</td>
                       <td className="p-3">{form.produttore_denominazione || "—"}</td>
                       <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
