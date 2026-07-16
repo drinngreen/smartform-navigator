@@ -18,7 +18,7 @@ export function PerElisabettaDialog() {
       setResult(data);
       setDecision("yes-done");
       localStorage.setItem("mn_niyol_tab_enabled", "1");
-      toast.success(`Import completato: ${data.inserted} nuovi FIR inseriti, ${data.skipped} doppioni saltati.`);
+      toast.success(`Import completato: ${data.inserted} nuovi FIR (${data.routedToNiyol ?? 0} instradati a Niyol), ${data.skipped} doppioni saltati.`);
       window.dispatchEvent(new Event("mn-niyol-tab-toggle"));
     } catch (e: any) {
       toast.error("Errore import: " + e.message);
