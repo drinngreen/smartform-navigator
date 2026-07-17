@@ -26,6 +26,16 @@ type RicevutaRow = {
   note: string | null;
   data_emissione: string;
   privato_id: string | null;
+  conferimento_id?: string | null;
+  conferimento?: {
+    cer: string | null;
+    kg_pesati: number | null;
+    data: string | null;
+    targa_automezzo: string | null;
+    modello_automezzo: string | null;
+    metodo_pag: string | null;
+    note: string | null;
+  } | null;
 };
 
 type RicevutaEnriched = RicevutaRow & {
