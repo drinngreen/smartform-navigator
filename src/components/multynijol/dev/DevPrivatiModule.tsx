@@ -44,7 +44,7 @@ export function DevPrivatiModule() {
   const [showCerDropdown, setShowCerDropdown] = useState(false);
 
   // Forms
-  const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+  const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
   const [ricevutaForm, setRicevutaForm] = useState({ importo: "", note: "" });
   const [privatoForm, setPrivatoForm] = useState({ ...EMPTY_PRIVATO_FORM });
   const [scadenzaDate, setScadenzaDate] = useState<Date | undefined>();
