@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
     const allRows: any[] = [
       ...(data as any).impianto.map((r: any) => ({ ...r, _src: "impianto" })),
       ...(data as any).conto_proprio.map((r: any) => ({ ...r, _src: "conto_proprio" })),
+      ...(data2 as any).fir_niyol.map((r: any) => ({ ...r, _src: "niyol_24_06", _force_tenant: NIYOL_TENANT })),
+      ...(data2 as any).fir_conto_proprio.map((r: any) => ({ ...r, _src: "conto_proprio_24_06", _force_tenant: MULTY_TENANT })),
     ];
 
     const toInsert: any[] = [];
