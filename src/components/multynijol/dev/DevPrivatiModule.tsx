@@ -446,6 +446,7 @@ export function DevPrivatiModule() {
       cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "",
       targa_automezzo: (p as any)?.targa_automezzo || "",
       modello_automezzo: (p as any)?.modello_automezzo || (p as any)?.automezzo || "",
+      data: new Date().toISOString().slice(0, 10),
     });
     setCerSearch("");
     setShowNewConferimento(true);
