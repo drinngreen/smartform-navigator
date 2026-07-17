@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       if (!c) continue;
       if (existingSet.has(c) || seen.has(c)) { skipped++; continue; }
       seen.add(c);
-      const target = routeTenant(r);
+      const target = r._force_tenant || routeTenant(r);
       if (target === NIYOL_TENANT) routedToNiyol++;
       toInsert.push({
         user_id: uid,
