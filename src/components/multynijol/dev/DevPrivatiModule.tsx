@@ -294,7 +294,7 @@ export function DevPrivatiModule() {
     toast.success("✅ Conferimento e ricevuta registrati!");
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
-    setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+    setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
