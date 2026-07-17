@@ -55,11 +55,14 @@ export function PerElisabettaDialog() {
             </div>
 
             <div className="rounded-lg border border-border/50 bg-card/40 p-4 space-y-2">
-              <h3 className="font-semibold text-base text-cyan-400">Cosa contengono i 3 file Excel allegati</h3>
+              <h3 className="font-semibold text-base text-cyan-400">Cosa contengono gli Excel allegati</h3>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• <b>MULTY_PROGET_IMPIANTO</b>: 89 formulari ufficiali (Multy come produttore o destinatario; molti trasportati da Niyol Eticons).</li>
                 <li>• <b>CONTO_PROPRIO</b>: 360 bozze formulario con targa <code>DL163FW</code> (Multy come produttore/trasportatore/destinatario).</li>
-                <li>• <b>CERNITE_MULTY_PROGET</b>: 57 movimenti di registro lavorazione (NON importati ora — il modulo Magazzino Dragon richiede mappatura specifica con Riccardo).</li>
+                <li>• <b>NIYOL_DAL_24_GIUGNO</b>: 38 formulari con Niyol trasportatore → tenant Niyol.</li>
+                <li>• <b>CONTO_PROPRIO_DAL_24_GIUGNO</b>: 380 formulari Multy conto proprio → tenant Multy.</li>
+                <li>• <b>REGISTRO_MULTYPROGET_DAL_24_GIUGNO_2026</b>: 162 movimenti di registro impianto Multy (carichi/scarichi con FIR).</li>
+                <li>• <b>CERNITE_MULTY_PROGET</b>: 57 movimenti lavorazione (NON importati — Dragon richiede mappatura con Riccardo).</li>
               </ul>
             </div>
 
