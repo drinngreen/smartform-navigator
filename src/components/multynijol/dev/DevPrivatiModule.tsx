@@ -44,7 +44,7 @@ export function DevPrivatiModule() {
   const [showCerDropdown, setShowCerDropdown] = useState(false);
 
   // Forms
-  const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "" });
+  const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
   const [ricevutaForm, setRicevutaForm] = useState({ importo: "", note: "" });
   const [privatoForm, setPrivatoForm] = useState({ ...EMPTY_PRIVATO_FORM });
   const [scadenzaDate, setScadenzaDate] = useState<Date | undefined>();
@@ -272,6 +272,7 @@ export function DevPrivatiModule() {
         tipo_utenza: privato?.tipo_utenza || "domestica",
         targa_automezzo: confForm.targa_automezzo || null,
         modello_automezzo: confForm.modello_automezzo || null,
+        data: confForm.data ? new Date(confForm.data).toISOString() : new Date().toISOString(),
       } as any)
       .select()
       .single();
@@ -869,6 +870,7 @@ export function DevPrivatiModule() {
             </div>
             <div><Label>Targa Automezzo</Label><Input value={confForm.targa_automezzo} onChange={(e) => setConfForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
             <div><Label>Modello</Label><Input value={confForm.modello_automezzo} onChange={(e) => setConfForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
+            <div><Label>Data Conferimento *</Label><Input type="date" value={confForm.data} onChange={(e) => setConfForm(p => ({ ...p, data: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>

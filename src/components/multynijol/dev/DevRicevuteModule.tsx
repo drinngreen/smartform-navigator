@@ -209,8 +209,10 @@ export function DevRicevuteModule() {
 </head>
 <body>
   ${aziendaHtml}
-  <h1>${escHtml(title)}</h1>
-  <div class="meta">Data: ${escHtml(new Date(r.data_emissione).toLocaleString("it-IT"))}</div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:18px;">
+    <h1 style="margin:0;font-size:26px;font-weight:800;">${escHtml(title)}</h1>
+    <div style="font-size:26px;font-weight:800;">${escHtml(new Date(r.data_emissione).toLocaleDateString("it-IT"))}</div>
+  </div>
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>

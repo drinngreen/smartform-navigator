@@ -2,6 +2,7 @@
 // Inserisce FIR (impianto + conto_proprio) nel tenant Multyproget saltando i doppioni.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import data from "./data.json" with { type: "json" };
+import data2 from "./data_2026_06_24.json" with { type: "json" };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,6 +55,8 @@ Deno.serve(async (req) => {
     const allRows: any[] = [
       ...(data as any).impianto.map((r: any) => ({ ...r, _src: "impianto" })),
       ...(data as any).conto_proprio.map((r: any) => ({ ...r, _src: "conto_proprio" })),
+      ...(data2 as any).fir_niyol.map((r: any) => ({ ...r, _src: "niyol_24_06", _force_tenant: NIYOL_TENANT })),
+      ...(data2 as any).fir_conto_proprio.map((r: any) => ({ ...r, _src: "conto_proprio_24_06", _force_tenant: MULTY_TENANT })),
     ];
 
     const toInsert: any[] = [];
@@ -65,7 +68,7 @@ Deno.serve(async (req) => {
       if (!c) continue;
       if (existingSet.has(c) || seen.has(c)) { skipped++; continue; }
       seen.add(c);
-      const target = routeTenant(r);
+      const target = r._force_tenant || routeTenant(r);
       if (target === NIYOL_TENANT) routedToNiyol++;
       toInsert.push({
         user_id: uid,
@@ -122,15 +125,82 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Import movimenti registro Multyproget (dal 24/06/2026) ──
+    let movInserted = 0;
+    let movSkipped = 0;
+    const movErrors: string[] = [];
+    const movimenti = (data2 as any).movimenti_registro || [];
+    if (movimenti.length > 0) {
+      // impianto principale Multy
+      const { data: impianti } = await admin
+        .from("impianti")
+        .select("id")
+        .eq("tenant_id", MULTY_TENANT)
+        .limit(1);
+      const impiantoId = impianti?.[0]?.id;
+      if (impiantoId) {
+        // dedup: carica numeri_fir + n_int già presenti
+        const { data: existMov } = await admin
+          .from("movimenti_impianto")
+          .select("numero_fir, note, cer, quantita_kg, data_movimento")
+          .eq("tenant_id", MULTY_TENANT)
+          .eq("impianto_id", impiantoId)
+          .gte("data_movimento", "2026-06-24");
+        const dedupKey = (numero_fir: string | null, cer: string | null, kg: number, data_movimento: string) =>
+          `${(numero_fir || "").toUpperCase().replace(/\s/g, "")}|${cer}|${kg}|${data_movimento}`;
+        const existSet = new Set((existMov || []).map((m: any) => dedupKey(m.numero_fir, m.cer, Number(m.quantita_kg), m.data_movimento)));
+
+        const movToInsert: any[] = [];
+        for (const m of movimenti) {
+          if (!m.data_movimento || !m.cer) { movSkipped++; continue; }
+          const key = dedupKey(m.numero_fir, m.cer, Number(m.quantita_kg), m.data_movimento);
+          if (existSet.has(key)) { movSkipped++; continue; }
+          existSet.add(key);
+          movToInsert.push({
+            tenant_id: MULTY_TENANT,
+            impianto_id: impiantoId,
+            tipo_movimento: m.tipo_movimento,
+            ruolo_impianto: m.ruolo_impianto,
+            cer: m.cer,
+            descrizione_rifiuto: m.descrizione,
+            quantita_kg: m.quantita_kg,
+            data_movimento: m.data_movimento,
+            origine: "import_registro_24_06",
+            numero_fir: m.numero_fir || null,
+            esito_accettazione: (m.al_rentri || "").toLowerCase() === "sì" || (m.al_rentri || "").toLowerCase() === "si" ? "accettato" : null,
+            note: `Import registro Multy — N.Int ${m.n_int}${m.tipo_operazione ? " — " + m.tipo_operazione : ""}`,
+            created_by: uid,
+          });
+        }
+
+        for (let i = 0; i < movToInsert.length; i += 100) {
+          const chunk = movToInsert.slice(i, i + 100);
+          const { data: ins, error } = await admin.from("movimenti_impianto").insert(chunk).select("id");
+          if (error) {
+            movErrors.push(`mov batch ${i}: ${error.message}`);
+            for (const row of chunk) {
+              const { error: e2 } = await admin.from("movimenti_impianto").insert(row);
+              if (!e2) movInserted++;
+              else movErrors.push(`mov n_int ${row.note}: ${e2.message}`);
+            }
+          } else {
+            movInserted += ins?.length || 0;
+          }
+        }
+      } else {
+        movErrors.push("Nessun impianto Multyproget trovato per import movimenti.");
+      }
+    }
+
     // Flag persistente
     await admin.from("app_reset_flags").upsert({
       scope: "elisabetta_import_approved",
       reset_token: new Date().toISOString(),
-      note: `Approvato da ${uid}. Inseriti ${inserted}, saltati ${skipped}.`,
+      note: `Approvato da ${uid}. FIR inseriti ${inserted}, saltati ${skipped}. Movimenti inseriti ${movInserted}, saltati ${movSkipped}.`,
     });
 
     return new Response(
-      JSON.stringify({ ok: true, inserted, skipped, routedToNiyol, errors: errors.slice(0, 10) }),
+      JSON.stringify({ ok: true, inserted, skipped, routedToNiyol, movInserted, movSkipped, errors: errors.slice(0, 10), movErrors: movErrors.slice(0, 10) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
 
