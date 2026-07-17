@@ -113,6 +113,46 @@ export function DevPrivatiModule() {
     enabled: !!selectedPrivatoId,
   });
 
+  const { data: conferimentiPrivato } = useQuery({
+    queryKey: ["dev-conferimenti-privato", selectedPrivatoId],
+    queryFn: async () => {
+      if (!selectedPrivatoId) return [];
+      const { data, error } = await supabase
+        .from("privati_conferimenti")
+        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("privato_id", selectedPrivatoId)
+        .order("data", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedPrivatoId,
+  });
+
+  const [editDateConfId, setEditDateConfId] = useState<string | null>(null);
+  const [editDateValue, setEditDateValue] = useState<Date | undefined>();
+
+  const handleUpdateConfDate = async (confId: string, newDate: Date) => {
+    const iso = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 12, 0, 0).toISOString();
+    const { error } = await supabase.from("privati_conferimenti").update({ data: iso } as any).eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Data conferimento aggiornata");
+    setEditDateConfId(null);
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    invalidateInventoryQueries();
+  };
+
+  const handleDeleteConferimento = async (confId: string) => {
+    if (!window.confirm("Eliminare questo conferimento? Le giacenze verranno stornate automaticamente.")) return;
+    const { error } = await supabase.from("privati_conferimenti").delete().eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("✅ Conferimento eliminato e giacenza aggiornata");
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    invalidateInventoryQueries();
+  };
+
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
