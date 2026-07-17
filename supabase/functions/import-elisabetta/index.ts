@@ -2,6 +2,7 @@
 // Inserisce FIR (impianto + conto_proprio) nel tenant Multyproget saltando i doppioni.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import data from "./data.json" with { type: "json" };
+import data2 from "./data_2026_06_24.json" with { type: "json" };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
