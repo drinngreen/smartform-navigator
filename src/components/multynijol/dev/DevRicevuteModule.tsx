@@ -26,6 +26,16 @@ type RicevutaRow = {
   note: string | null;
   data_emissione: string;
   privato_id: string | null;
+  conferimento_id?: string | null;
+  conferimento?: {
+    cer: string | null;
+    kg_pesati: number | null;
+    data: string | null;
+    targa_automezzo: string | null;
+    modello_automezzo: string | null;
+    metodo_pag: string | null;
+    note: string | null;
+  } | null;
 };
 
 type RicevutaEnriched = RicevutaRow & {
@@ -70,7 +80,7 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note)")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
@@ -204,6 +214,13 @@ export function DevRicevuteModule() {
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+    ${r.conferimento ? `
+      <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
+      <div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
+      <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>
+      ${r.conferimento.targa_automezzo ? `<div class="row"><div class="label">Targa automezzo</div><div class="val">${escHtml(r.conferimento.targa_automezzo)}${r.conferimento.modello_automezzo ? ` — ${escHtml(r.conferimento.modello_automezzo)}` : ""}</div></div>` : ""}
+      ${r.conferimento.metodo_pag ? `<div class="row"><div class="label">Metodo pagamento</div><div class="val">${escHtml(r.conferimento.metodo_pag)}</div></div>` : ""}
+    ` : ""}
     <div class="row"><div class="label">Importo</div><div class="val">&euro; ${escHtml(
       Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
     )}</div></div>

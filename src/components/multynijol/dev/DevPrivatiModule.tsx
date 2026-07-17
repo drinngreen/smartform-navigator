@@ -113,6 +113,46 @@ export function DevPrivatiModule() {
     enabled: !!selectedPrivatoId,
   });
 
+  const { data: conferimentiPrivato } = useQuery({
+    queryKey: ["dev-conferimenti-privato", selectedPrivatoId],
+    queryFn: async () => {
+      if (!selectedPrivatoId) return [];
+      const { data, error } = await supabase
+        .from("privati_conferimenti")
+        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("privato_id", selectedPrivatoId)
+        .order("data", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    enabled: !!selectedPrivatoId,
+  });
+
+  const [editDateConfId, setEditDateConfId] = useState<string | null>(null);
+  const [editDateValue, setEditDateValue] = useState<Date | undefined>();
+
+  const handleUpdateConfDate = async (confId: string, newDate: Date) => {
+    const iso = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 12, 0, 0).toISOString();
+    const { error } = await supabase.from("privati_conferimenti").update({ data: iso } as any).eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Data conferimento aggiornata");
+    setEditDateConfId(null);
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    invalidateInventoryQueries();
+  };
+
+  const handleDeleteConferimento = async (confId: string) => {
+    if (!window.confirm("Eliminare questo conferimento? Le giacenze verranno stornate automaticamente.")) return;
+    const { error } = await supabase.from("privati_conferimenti").delete().eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("✅ Conferimento eliminato e giacenza aggiornata");
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
+    invalidateInventoryQueries();
+  };
+
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
@@ -575,6 +615,58 @@ export function DevPrivatiModule() {
                   })()}
                 </CardContent>
               </Card>
+
+              {/* Conferimenti del privato */}
+              <Card className="bg-card/60 border-border/30">
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Scale className="h-4 w-4" /> Conferimenti ({conferimentiPrivato?.length ?? 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="max-h-80 overflow-y-auto">
+                  {!conferimentiPrivato?.length ? (
+                    <p className="text-muted-foreground text-xs">Nessun conferimento registrato</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {conferimentiPrivato.map((c: any) => (
+                        <div key={c.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs">{c.cer}</span>
+                              <span className="font-medium">{Number(c.kg_pesati).toLocaleString("it-IT")} kg</span>
+                              {c.importo_pagato != null && (
+                                <span className="text-xs text-emerald-400">€ {Number(c.importo_pagato).toFixed(2)}</span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {c.data ? new Date(c.data).toLocaleDateString("it-IT") : "—"}
+                              {c.targa_automezzo ? ` · ${c.targa_automezzo}` : ""}
+                            </div>
+                          </div>
+                          <Popover open={editDateConfId === c.id} onOpenChange={(o) => { if (!o) setEditDateConfId(null); }}>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                                onClick={() => { setEditDateConfId(c.id); setEditDateValue(c.data ? new Date(c.data) : undefined); }}
+                                title="Modifica data">
+                                <CalendarIcon className="h-3 w-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                              <Calendar mode="single" selected={editDateValue} onSelect={(d) => { if (d) handleUpdateConfDate(c.id, d); }} initialFocus className={cn("p-3 pointer-events-auto")} />
+                            </PopoverContent>
+                          </Popover>
+                          <Button variant="outline" size="sm" className="h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteConferimento(c.id)}
+                            title="Elimina conferimento">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
 
               {/* Documenti */}
               <Card className="bg-card/60 border-border/30">
