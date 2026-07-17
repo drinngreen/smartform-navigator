@@ -870,6 +870,7 @@ export function DevPrivatiModule() {
             </div>
             <div><Label>Targa Automezzo</Label><Input value={confForm.targa_automezzo} onChange={(e) => setConfForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
             <div><Label>Modello</Label><Input value={confForm.modello_automezzo} onChange={(e) => setConfForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
+            <div><Label>Data Conferimento *</Label><Input type="date" value={confForm.data} onChange={(e) => setConfForm(p => ({ ...p, data: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>
