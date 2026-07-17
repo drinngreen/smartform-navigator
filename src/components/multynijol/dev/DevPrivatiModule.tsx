@@ -272,6 +272,7 @@ export function DevPrivatiModule() {
         tipo_utenza: privato?.tipo_utenza || "domestica",
         targa_automezzo: confForm.targa_automezzo || null,
         modello_automezzo: confForm.modello_automezzo || null,
+        data: confForm.data ? new Date(confForm.data).toISOString() : new Date().toISOString(),
       } as any)
       .select()
       .single();
