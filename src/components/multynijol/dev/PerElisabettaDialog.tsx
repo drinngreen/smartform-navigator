@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export function PerElisabettaDialog() {
   const [open, setOpen] = useState(false);
   const [decision, setDecision] = useState<"none" | "no" | "yes-loading" | "yes-done">("none");
-  const [result, setResult] = useState<{ inserted: number; skipped: number; routedToNiyol?: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ inserted: number; skipped: number; routedToNiyol?: number; movInserted?: number; movSkipped?: number; errors: string[] } | null>(null);
 
   const handleYes = async () => {
     setDecision("yes-loading");
