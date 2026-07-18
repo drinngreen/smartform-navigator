@@ -123,10 +123,10 @@ export function DevRicevuteModule() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; importo: number; note: string | null }) => {
+    mutationFn: async (payload: { id: string; importo: number; note: string | null; data_emissione: string }) => {
       const { error } = await supabase
         .from("ricevute_privati" as any)
-        .update({ importo: payload.importo, note: payload.note })
+        .update({ importo: payload.importo, note: payload.note, data_emissione: payload.data_emissione })
         .eq("id", payload.id);
       if (error) throw error;
     },
@@ -144,6 +144,7 @@ export function DevRicevuteModule() {
     setEditForm({
       importo: String(r.importo ?? 0),
       note: r.note ?? "",
+      data_emissione: r.data_emissione ? String(r.data_emissione).slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
   };
 
