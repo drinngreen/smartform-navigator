@@ -254,7 +254,15 @@ function ImpiantoFormulari() {
     refetchInterval: 30000,
   });
 
-  const filtered = forms.filter((f: any) => {
+  const MULTY_CF = "12347770013";
+  const normCf = (v: any) => String(v || "").replace(/\s+/g, "").toUpperCase();
+  const impiantoForms = forms.filter((f: any) => {
+    const fd = f.form_data || {};
+    const prod = normCf(f.produttore_codice_fiscale ?? fd.produttore_codice_fiscale ?? fd.produttoreCodiceFiscale);
+    const dest = normCf(f.destinatario_codice_fiscale ?? fd.destinatario_codice_fiscale ?? fd.destinatarioCodiceFiscale);
+    return prod === MULTY_CF || dest === MULTY_CF;
+  });
+  const filtered = impiantoForms.filter((f: any) => {
     const q = search.toLowerCase();
     const display = firDisplayData(f);
     const matchSearch =
@@ -269,10 +277,10 @@ function ImpiantoFormulari() {
   });
 
   const stats = {
-    total: forms.length,
-    draft: forms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+    total: impiantoForms.length,
+    draft: impiantoForms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
+    submitted: impiantoForms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
+    completed: impiantoForms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
   };
 
   const selectedIncomingEvents = selectedIncoming
