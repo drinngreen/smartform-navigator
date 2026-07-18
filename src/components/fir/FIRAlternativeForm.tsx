@@ -983,6 +983,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const desc = valByTokens("descrizione", "rifiuto");
       const eer = valByTokens("codice", "eer") || valByTokens("cer");
       const qta = numToken("quantita") ?? numToken("peso");
+      const qtaDestino = numToken("quantita", "accettata")
+        ?? numToken("quantita", "destino")
+        ?? numToken("peso", "ricevuto")
+        ?? numToken("peso", "destino");
       const um = valByTokens("unita", "misura") || "kg";
       const statoFisico = valByTokens("stato", "fisico");
       const prodDen = valByTokens("denominazione", "produttore");
@@ -1014,6 +1018,14 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
       if (dataEmissione) (mergedFormData as Record<string, unknown>).data_emissione = dataEmissione;
+      if (qta !== null) {
+        (mergedFormData as Record<string, unknown>).quantita_origine = qta;
+        (mergedFormData as Record<string, unknown>).quantita_partenza = qta;
+      }
+      if (qtaDestino !== null) {
+        (mergedFormData as Record<string, unknown>).quantita_destino = qtaDestino;
+        (mergedFormData as Record<string, unknown>).peso_ricevuto = qtaDestino;
+      }
       // numero_fir is set ONCE at draft creation by the RPC. Never overwrite it from the form.
       if (mode === "final") updates.status = "completato";
 
