@@ -35,6 +35,32 @@ const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const SOCIETA_ID = "multy";
 const IMPIANTO_RGB = "16, 185, 129";
 
+const firstFirValue = (...values: unknown[]) =>
+  values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+
+const formatFirDate = (value: unknown) => {
+  if (!value) return "—";
+  const raw = String(value);
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString("it-IT");
+};
+
+const firDisplayData = (form: any) => {
+  const fd = form.form_data || {};
+  return {
+    cer: firstFirValue(form.codice_eer, fd.cer, fd.codice_eer, fd.codiceEER) || "—",
+    produttore: firstFirValue(form.produttore_denominazione, fd.produttore_denominazione, fd.produttoreDenominazione) || "—",
+    destinatario: firstFirValue(form.destinatario_denominazione, fd.destinatario_denominazione, fd.destinatarioDenominazione) || "—",
+    trasportatore: firstFirValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—",
+    qPartenza: firstFirValue(form.quantita, fd.quantita_origine, fd.quantita_partenza, fd.quantita, fd.peso_partenza),
+    qDestino: firstFirValue(fd.quantita_destino, fd.peso_ricevuto, fd.pesoRicevuto, fd.quantita_arrivo, fd.quantita_accettata),
+    unita: firstFirValue(form.unita_misura, fd.unita_misura, fd.unitaMisura) || "kg",
+    data: firstFirValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo),
+  };
+};
+
 async function loadImpiantoPoolStats() {
   const [totalRes, disponibiliRes, inUsoRes, usatiRes] = await Promise.all([
     supabase.from("fir_number_pool").select("id", { count: "exact", head: true }).eq("societa_id", SOCIETA_ID),
@@ -230,10 +256,11 @@ function ImpiantoFormulari() {
 
   const filtered = forms.filter((f: any) => {
     const q = search.toLowerCase();
+    const display = firDisplayData(f);
     const matchSearch =
       f.numero_fir?.toLowerCase().includes(q) ||
-      f.codice_eer?.toLowerCase().includes(q) ||
-      f.produttore_denominazione?.toLowerCase().includes(q) ||
+      String(display.cer).toLowerCase().includes(q) ||
+      String(display.produttore).toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
     if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
     if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
@@ -428,13 +455,18 @@ function ImpiantoFormulari() {
                     <th className="text-left p-3 text-xs uppercase">N° FIR</th>
                     <th className="text-left p-3 text-xs uppercase">CER</th>
                     <th className="text-left p-3 text-xs uppercase">Produttore</th>
-                    <th className="text-left p-3 text-xs uppercase">Quantità</th>
+                    <th className="text-left p-3 text-xs uppercase">Destinatario</th>
+                    <th className="text-left p-3 text-xs uppercase">Trasportatore</th>
+                    <th className="text-left p-3 text-xs uppercase">Q. Partenza</th>
+                    <th className="text-left p-3 text-xs uppercase">Q. Destino</th>
                     <th className="text-left p-3 text-xs uppercase">Data</th>
                     <th className="text-right p-3 text-xs uppercase">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((form: any) => (
+                  {filtered.map((form: any) => {
+                    const display = firDisplayData(form);
+                    return (
                     <tr key={form.id} className="border-b border-border/10 hover:bg-white/5">
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">
@@ -442,10 +474,13 @@ function ImpiantoFormulari() {
                         </Badge>
                       </td>
                       <td className="p-3 font-mono text-emerald-300">{form.numero_fir || "—"}</td>
-                      <td className="p-3 font-mono">{form.codice_eer || "—"}</td>
-                      <td className="p-3">{form.produttore_denominazione || "—"}</td>
-                      <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{new Date(form.updated_at).toLocaleDateString("it-IT")}</td>
+                      <td className="p-3 font-mono">{String(display.cer)}</td>
+                      <td className="p-3">{String(display.produttore)}</td>
+                      <td className="p-3">{String(display.destinatario)}</td>
+                      <td className="p-3">{String(display.trasportatore)}</td>
+                      <td className="p-3 font-mono">{display.qPartenza != null ? `${display.qPartenza} ${display.unita}` : "—"}</td>
+                      <td className="p-3 font-mono">{display.qDestino != null ? `${display.qDestino} ${display.unita}` : "—"}</td>
+                      <td className="p-3 text-muted-foreground text-xs">{formatFirDate(display.data)}</td>
                       <td className="p-3 text-right">
                         <Button
                           variant="ghost"
@@ -478,7 +513,7 @@ function ImpiantoFormulari() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                   {filtered.length === 0 && (
                     <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
                   )}
