@@ -218,22 +218,35 @@ export function DevFormulariList({
                     <th className="text-left p-3 text-xs uppercase">N° FIR</th>
                     <th className="text-left p-3 text-xs uppercase">CER</th>
                     <th className="text-left p-3 text-xs uppercase">Produttore</th>
-                    <th className="text-left p-3 text-xs uppercase">Quantità</th>
+                    <th className="text-left p-3 text-xs uppercase">Destinatario</th>
+                    <th className="text-left p-3 text-xs uppercase">Trasportatore</th>
+                    <th className="text-left p-3 text-xs uppercase">Q. Partenza</th>
+                    <th className="text-left p-3 text-xs uppercase">Q. Destino</th>
                     <th className="text-left p-3 text-xs uppercase">Data</th>
                     <th className="text-right p-3 text-xs uppercase">Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((form: any) => (
+                  {filtered.map((form: any) => {
+                    const fd = form.form_data || {};
+                    const cer = form.codice_eer || fd.cer || fd.codice_eer || "—";
+                    const um = form.unita_misura || fd.unita_misura || "kg";
+                    const qPartenza = form.quantita ?? fd.quantita_origine ?? fd.quantita_partenza ?? null;
+                    const qDestino = fd.quantita_destino ?? fd.peso_ricevuto ?? fd.quantita_arrivo ?? null;
+                    const dataRaw = fd.data_emissione || form.data_partenza || fd.data_partenza || form.data_arrivo || fd.data_arrivo || form.updated_at;
+                    return (
                     <tr key={form.id} className="border-b border-border/10 hover:bg-white/5">
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
                       <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
-                      <td className="p-3 font-mono">{form.codice_eer || "—"}</td>
-                      <td className="p-3">{form.produttore_denominazione || "—"}</td>
-                      <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{(() => { const d = form.data_partenza || form.data_arrivo || form.form_data?.data_partenza || form.form_data?.data_arrivo || form.form_data?.data_emissione || form.updated_at; return d ? new Date(d).toLocaleDateString("it-IT") : "—"; })()}</td>
+                      <td className="p-3 font-mono">{cer}</td>
+                      <td className="p-3">{form.produttore_denominazione || fd.produttore_denominazione || "—"}</td>
+                      <td className="p-3">{form.destinatario_denominazione || fd.destinatario_denominazione || "—"}</td>
+                      <td className="p-3">{form.trasportatore_denominazione || fd.trasportatore_denominazione || "—"}</td>
+                      <td className="p-3 font-mono">{qPartenza != null && qPartenza !== "" ? `${qPartenza} ${um}` : "—"}</td>
+                      <td className="p-3 font-mono">{qDestino != null && qDestino !== "" ? `${qDestino} ${um}` : "—"}</td>
+                      <td className="p-3 text-muted-foreground text-xs">{dataRaw ? new Date(dataRaw).toLocaleDateString("it-IT") : "—"}</td>
                       <td className="p-3 text-right">
                         <Button
                           variant="ghost"
