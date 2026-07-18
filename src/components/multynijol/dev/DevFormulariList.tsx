@@ -233,7 +233,7 @@ export function DevFormulariList({
                       <td className="p-3 font-mono">{form.codice_eer || "—"}</td>
                       <td className="p-3">{form.produttore_denominazione || "—"}</td>
                       <td className="p-3 font-mono">{form.quantita ? `${form.quantita} ${form.unita_misura || "kg"}` : "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{new Date(form.updated_at).toLocaleDateString("it-IT")}</td>
+                      <td className="p-3 text-muted-foreground text-xs">{(() => { const d = form.data_partenza || form.data_arrivo || form.form_data?.data_partenza || form.form_data?.data_arrivo || form.form_data?.data_emissione || form.updated_at; return d ? new Date(d).toLocaleDateString("it-IT") : "—"; })()}</td>
                       <td className="p-3 text-right">
                         <Button
                           variant="ghost"
