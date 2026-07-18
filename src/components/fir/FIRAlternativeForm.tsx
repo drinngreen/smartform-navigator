@@ -327,7 +327,9 @@ function getDraftValueForField(
   }
 
   if (field.type === "date") {
-    if (normalized === "data_emissione" || normalized === "data_di_emissione_foglio_2") return draft.created_at || draft.updated_at;
+    if (normalized === "data_emissione" || normalized === "data_di_emissione_foglio_2") {
+      return getFormDataValue(formData, "data_emissione", "dataEmissione") || draft.data_partenza || draft.data_arrivo;
+    }
     if (hasTokens(field.name, ["data", "inizio", "trasporto"])) return draft.data_partenza;
     if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "data_accettazione") || draft.data_arrivo;
     if (normalized === "valida_al") return getFormDataValue(formData, "valida_al", "analisi_valida_al", "classificazione_valida_al");
@@ -981,11 +983,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const desc = valByTokens("descrizione", "rifiuto");
       const eer = valByTokens("codice", "eer") || valByTokens("cer");
       const qta = numToken("quantita") ?? numToken("peso");
+      const qtaDestino = numToken("quantita", "accettata")
+        ?? numToken("quantita", "destino")
+        ?? numToken("peso", "ricevuto")
+        ?? numToken("peso", "destino");
       const um = valByTokens("unita", "misura") || "kg";
       const statoFisico = valByTokens("stato", "fisico");
       const prodDen = valByTokens("denominazione", "produttore");
       const destDen = valByTokens("denominazione", "destinatario");
       const trasDen = valByTokens("denominazione", "trasportatore");
+      const dataEmissione = valByTokens("data", "emissione");
 
       // CRITICAL: numero_fir is IMMUTABLE. Never include it in the UPDATE payload.
       // The DB has a trigger that rejects any change. We always use the value already in DB.
@@ -1010,6 +1017,15 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
+      if (dataEmissione) (mergedFormData as Record<string, unknown>).data_emissione = dataEmissione;
+      if (qta !== null) {
+        (mergedFormData as Record<string, unknown>).quantita_origine = qta;
+        (mergedFormData as Record<string, unknown>).quantita_partenza = qta;
+      }
+      if (qtaDestino !== null) {
+        (mergedFormData as Record<string, unknown>).quantita_destino = qtaDestino;
+        (mergedFormData as Record<string, unknown>).peso_ricevuto = qtaDestino;
+      }
       // numero_fir is set ONCE at draft creation by the RPC. Never overwrite it from the form.
       if (mode === "final") updates.status = "completato";
 

@@ -33,6 +33,18 @@ interface Props {
 const normalizeCf = (v: string | null | undefined) =>
   (v || "").toString().replace(/\s+/g, "").toUpperCase();
 
+const firstValue = (...values: unknown[]) =>
+  values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+
+const formatFirDate = (value: unknown) => {
+  if (!value) return "—";
+  const raw = String(value);
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString("it-IT");
+};
+
 export function DevFormulariList({
   tenantId,
   mnContext,
@@ -141,8 +153,8 @@ export function DevFormulariList({
     const q = search.toLowerCase();
     const matchSearch =
       f.numero_fir?.toLowerCase().includes(q) ||
-      f.codice_eer?.toLowerCase().includes(q) ||
-      f.produttore_denominazione?.toLowerCase().includes(q) ||
+      String(firstValue(f.codice_eer, f.form_data?.cer, f.form_data?.codice_eer, f.form_data?.codiceEER) || "").toLowerCase().includes(q) ||
+      String(firstValue(f.produttore_denominazione, f.form_data?.produttore_denominazione, f.form_data?.produttoreDenominazione) || "").toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
     if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
     if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
@@ -229,24 +241,27 @@ export function DevFormulariList({
                 <tbody>
                   {filtered.map((form: any) => {
                     const fd = form.form_data || {};
-                    const cer = form.codice_eer || fd.cer || fd.codice_eer || "—";
-                    const um = form.unita_misura || fd.unita_misura || "kg";
-                    const qPartenza = form.quantita ?? fd.quantita_origine ?? fd.quantita_partenza ?? null;
-                    const qDestino = fd.quantita_destino ?? fd.peso_ricevuto ?? fd.quantita_arrivo ?? null;
-                    const dataRaw = fd.data_emissione || form.data_partenza || fd.data_partenza || form.data_arrivo || fd.data_arrivo || form.updated_at;
+                    const cer = firstValue(form.codice_eer, fd.cer, fd.codice_eer, fd.codiceEER) || "—";
+                    const um = firstValue(form.unita_misura, fd.unita_misura, fd.unitaMisura) || "kg";
+                    const qPartenza = firstValue(form.quantita, fd.quantita_origine, fd.quantita_partenza, fd.quantita, fd.peso_partenza);
+                    const qDestino = firstValue(fd.quantita_destino, fd.peso_ricevuto, fd.pesoRicevuto, fd.quantita_arrivo, fd.quantita_accettata);
+                    const produttore = firstValue(form.produttore_denominazione, fd.produttore_denominazione, fd.produttoreDenominazione) || "—";
+                    const destinatario = firstValue(form.destinatario_denominazione, fd.destinatario_denominazione, fd.destinatarioDenominazione) || "—";
+                    const trasportatore = firstValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—";
+                    const dataRaw = firstValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo);
                     return (
                     <tr key={form.id} className="border-b border-border/10 hover:bg-white/5">
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
                       <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
-                      <td className="p-3 font-mono">{cer}</td>
-                      <td className="p-3">{form.produttore_denominazione || fd.produttore_denominazione || "—"}</td>
-                      <td className="p-3">{form.destinatario_denominazione || fd.destinatario_denominazione || "—"}</td>
-                      <td className="p-3">{form.trasportatore_denominazione || fd.trasportatore_denominazione || "—"}</td>
+                       <td className="p-3 font-mono">{String(cer)}</td>
+                       <td className="p-3">{String(produttore)}</td>
+                       <td className="p-3">{String(destinatario)}</td>
+                       <td className="p-3">{String(trasportatore)}</td>
                       <td className="p-3 font-mono">{qPartenza != null && qPartenza !== "" ? `${qPartenza} ${um}` : "—"}</td>
                       <td className="p-3 font-mono">{qDestino != null && qDestino !== "" ? `${qDestino} ${um}` : "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{dataRaw ? new Date(dataRaw).toLocaleDateString("it-IT") : "—"}</td>
+                       <td className="p-3 text-muted-foreground text-xs">{formatFirDate(dataRaw)}</td>
                       <td className="p-3 text-right">
                         <Button
                           variant="ghost"

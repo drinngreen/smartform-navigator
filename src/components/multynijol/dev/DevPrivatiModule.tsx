@@ -22,6 +22,12 @@ import { CER_DATA } from "./DevCERPreferitiModule";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
 
+const toLocalDateLabel = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : new Date(value).toLocaleDateString("it-IT");
+};
+
 
 const EMPTY_PRIVATO_FORM = {
   nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
@@ -133,9 +139,14 @@ export function DevPrivatiModule() {
   const [editDateValue, setEditDateValue] = useState<Date | undefined>();
 
   const handleUpdateConfDate = async (confId: string, newDate: Date) => {
-    const iso = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 12, 0, 0).toISOString();
+    const iso = format(newDate, "yyyy-MM-dd");
     const { error } = await supabase.from("privati_conferimenti").update({ data: iso } as any).eq("id", confId);
     if (error) { toast.error(error.message); return; }
+    const { error: ricevutaError } = await supabase
+      .from("ricevute_privati" as any)
+      .update({ data_emissione: iso } as any)
+      .eq("conferimento_id", confId);
+    if (ricevutaError) { toast.error(ricevutaError.message); return; }
     toast.success("Data conferimento aggiornata");
     setEditDateConfId(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
@@ -272,7 +283,7 @@ export function DevPrivatiModule() {
         tipo_utenza: privato?.tipo_utenza || "domestica",
         targa_automezzo: confForm.targa_automezzo || null,
         modello_automezzo: confForm.modello_automezzo || null,
-        data: confForm.data ? new Date(confForm.data).toISOString() : new Date().toISOString(),
+        data: confForm.data || format(new Date(), "yyyy-MM-dd"),
       } as any)
       .select()
       .single();
@@ -281,11 +292,13 @@ export function DevPrivatiModule() {
 
     const conf = confData as any;
     if (conf) {
-      const anno = new Date().getFullYear();
+      const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
+      const anno = Number(dataRegistrazione.slice(0, 4));
       const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
         tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: conf.id,
         privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+        data_emissione: dataRegistrazione,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
@@ -641,7 +654,7 @@ export function DevPrivatiModule() {
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {c.data ? new Date(c.data).toLocaleDateString("it-IT") : "—"}
+                               Data registrazione: {toLocalDateLabel(c.data)}
                               {c.targa_automezzo ? ` · ${c.targa_automezzo}` : ""}
                             </div>
                           </div>
