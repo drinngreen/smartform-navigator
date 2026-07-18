@@ -279,9 +279,10 @@ export function DevFormulariList({
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
+                    <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
                   )}
                 </tbody>
               </table>
