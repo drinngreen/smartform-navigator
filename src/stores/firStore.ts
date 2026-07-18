@@ -590,7 +590,13 @@ export const useFIRStore = create<FIRStore>()(
           data: {
             ...initialFIRData,
             selectedFirNumber: dbData.numero_fir || "",
-            dataEmissione: new Date().toISOString().split("T")[0],
+            dataEmissione: String(
+              dbData.form_data?.data_emissione ||
+              dbData.form_data?.dataEmissione ||
+              dbData.data_partenza ||
+              dbData.data_arrivo ||
+              ""
+            ).slice(0, 10),
             numeroRegistro: dbData.numero_fir || "",
             produttoreDenominazione: f(dbData.produttore_denominazione, "produttoreDenominazione"),
             produttoreUnitaLocale: f(dbData.produttore_indirizzo, "produttoreUnitaLocale"),

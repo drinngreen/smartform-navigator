@@ -238,6 +238,7 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     intermediario_iscrizione_albo: storeData.intermediarioNumeroAlbo || null,
     note: storeData.annotazioni || null,
     form_data: {
+      data_emissione: storeData.dataEmissione || null,
       registro_no: storeData.registroSi ? "SI" : "NO",
       numero_registro: storeData.numeroRegistro || null,
       produttore_luogo_produzione: storeData.produttoreLuogoProduzioneDiverso || null,
