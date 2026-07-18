@@ -255,7 +255,7 @@ export function DevFormulariList({
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
                       <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
-                      <td className="p-3 font-mono">{cer}</td>
+                       <td className="p-3 font-mono">{String(cer)}</td>
                        <td className="p-3">{String(produttore)}</td>
                        <td className="p-3">{String(destinatario)}</td>
                        <td className="p-3">{String(trasportatore)}</td>
