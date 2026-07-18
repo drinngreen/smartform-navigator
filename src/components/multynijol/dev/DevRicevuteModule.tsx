@@ -450,6 +450,14 @@ export function DevRicevuteModule() {
 
           <div className="space-y-3">
             <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">Data emissione</div>
+              <Input
+                type="date"
+                value={editForm.data_emissione}
+                onChange={(e) => setEditForm((s) => ({ ...s, data_emissione: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Importo (€)</div>
               <Input
                 value={editForm.importo}
@@ -478,6 +486,7 @@ export function DevRicevuteModule() {
                   id: editing.id,
                   importo: imp,
                   note: editForm.note?.trim() ? editForm.note.trim() : null,
+                  data_emissione: editForm.data_emissione,
                 });
               }}
             >
