@@ -54,7 +54,7 @@ export function DevRicevuteModule() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<RicevutaRow | null>(null);
-  const [editForm, setEditForm] = useState({ importo: "", note: "" });
+  const [editForm, setEditForm] = useState({ importo: "", note: "", data_emissione: "" });
 
   const { data: privati = [] } = useQuery({
     queryKey: ["dev-privati-lite", MULTY_TENANT_ID],
