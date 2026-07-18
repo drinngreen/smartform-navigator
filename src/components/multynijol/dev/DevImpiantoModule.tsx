@@ -277,10 +277,10 @@ function ImpiantoFormulari() {
   });
 
   const stats = {
-    total: forms.length,
-    draft: forms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+    total: impiantoForms.length,
+    draft: impiantoForms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
+    submitted: impiantoForms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
+    completed: impiantoForms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
   };
 
   const selectedIncomingEvents = selectedIncoming
