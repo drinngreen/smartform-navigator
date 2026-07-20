@@ -853,7 +853,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
 
-          <Section title="4. Trasportatore">
+          <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
