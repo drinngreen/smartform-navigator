@@ -501,6 +501,8 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 mnContext="multyproget"
                 firFormId={activeDraftId}
                 draftData={activeDraft}
+                impiantoId={impiantoId}
+                registryMovementType={registryMovementType}
               />
             )}
           </div>
