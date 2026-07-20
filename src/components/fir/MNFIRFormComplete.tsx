@@ -158,9 +158,11 @@ interface MNFIRFormCompleteProps {
   mnContext?: string;
   firFormId?: string;
   draftData?: any | null;
+  impiantoId?: string | null;
+  registryMovementType?: "Carico" | "Scarico";
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
