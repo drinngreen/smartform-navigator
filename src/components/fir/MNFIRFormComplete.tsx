@@ -199,6 +199,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const u = store.updateField;
   const d = store.data;
 
+  const clearFields = useCallback((keys: string[]) => {
+    const cur: any = useMNFIRStore.getState().data;
+    keys.forEach((k) => {
+      const v = cur[k];
+      let nv: any = "";
+      if (Array.isArray(v)) nv = [];
+      else if (typeof v === "boolean") nv = false;
+      else if (typeof v === "number") nv = 0;
+      (u as any)(k, nv);
+    });
+  }, [u]);
+
   useEffect(() => {
     if (!draftData?.id) return;
     store.loadFromDatabase({
