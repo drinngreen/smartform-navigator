@@ -995,7 +995,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Check label="In attesa di verifica analitica" checked={d.inAttesaVerificaAnalitica} onChange={(v) => u("inAttesaVerificaAnalitica", v)} />
           </Section>
 
-          <Section title="17. Annotazioni">
+          <Section title="17. Annotazioni" onClear={() => clearFields(["annotazioni"])}>
             <TextArea label="Annotazioni" value={d.annotazioni} onChange={(v) => u("annotazioni", v)} rows={3} />
           </Section>
         </div>
