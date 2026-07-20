@@ -11,6 +11,7 @@ import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getR
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST } from "@/lib/firFinalSync";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
