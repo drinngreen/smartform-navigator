@@ -216,6 +216,75 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     return () => { if (autosaveRef.current) clearInterval(autosaveRef.current); };
   }, [store.editingFirId, store.workflowStatus, doAutosave]);
 
+  // ── Autofill Multyproget company data when tenant is Multy ─────────
+  useEffect(() => {
+    if (!store.editingFirId) return;
+    if (activeTenantId !== MULTY_TENANT_ID_CONST) return;
+    const preset = COMPANY_PRESETS.multy;
+    const updates: Partial<typeof store.data> = {};
+    // If Multy is not yet assigned to any role, prefill as PRODUTTORE by default
+    // (most common case in DevMulty workspace: outbound trip from Multy plant).
+    if (!store.data.produttoreDenominazione.trim() && !store.data.destinatarioDenominazione.trim()) {
+      updates.produttoreDenominazione = preset.ragione_sociale;
+      updates.produttoreCF = preset.codice_fiscale;
+      updates.produttoreUnitaLocale = preset.indirizzo;
+    } else if (
+      store.data.produttoreDenominazione.trim() === preset.ragione_sociale &&
+      !store.data.produttoreCF.trim()
+    ) {
+      updates.produttoreCF = preset.codice_fiscale;
+      updates.produttoreUnitaLocale = updates.produttoreUnitaLocale || (store.data.produttoreUnitaLocale || preset.indirizzo);
+    } else if (
+      store.data.destinatarioDenominazione.trim() === preset.ragione_sociale &&
+      !store.data.destinatarioCF.trim()
+    ) {
+      updates.destinatarioCF = preset.codice_fiscale;
+      updates.destinatarioUnitaLocale = store.data.destinatarioUnitaLocale || preset.indirizzo;
+    }
+    if (Object.keys(updates).length > 0) store.updateMultipleFields(updates);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.editingFirId, activeTenantId]);
+
+  // ── Salva BOZZA / DEFINITIVO from DevFirWorkspace toolbar ──────────
+  useEffect(() => {
+    const saveDraft = async () => {
+      if (!store.editingFirId) return;
+      try {
+        const dbFields = mapStoreToDatabaseFields(store.data);
+        await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+        toast.success("💾 Bozza salvata");
+      } catch (e: any) {
+        toast.error("Errore salvataggio bozza: " + (e?.message || String(e)));
+      }
+    };
+    const saveFinal = async () => {
+      if (!store.editingFirId) return;
+      try {
+        const dbFields = mapStoreToDatabaseFields(store.data);
+        await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields, status: "completato", completed_at: new Date().toISOString() } as any);
+        useMNFIRStore.setState({ workflowStatus: 'chiuso' });
+        const result = await syncFirFinalToRegistryAndInventory({
+          firId: store.editingFirId,
+          impiantoId: impiantoId || null,
+          registryMovementType: registryMovementType || "Carico",
+        });
+        if (result.warning) toast.warning(result.warning);
+        else toast.success("✅ FIR salvato DEFINITIVO (registro + giacenze)");
+      } catch (e: any) {
+        toast.error("Errore salvataggio definitivo: " + (e?.message || String(e)));
+      }
+    };
+    const draftHandler = () => { void saveDraft(); };
+    const finalHandler = () => { void saveFinal(); };
+    window.addEventListener("dev-fir-save-draft", draftHandler);
+    window.addEventListener("dev-fir-save-final", finalHandler);
+    return () => {
+      window.removeEventListener("dev-fir-save-draft", draftHandler);
+      window.removeEventListener("dev-fir-save-final", finalHandler);
+    };
+  }, [store.editingFirId, store.data, silentSaveFIR, impiantoId, registryMovementType]);
+
+
   const ensureAndLoadDraft = async () => {
     if (!user?.id) throw new Error("Utente non autenticato");
 
