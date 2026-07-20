@@ -1015,7 +1015,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Trasbordo Totale">
+          <Section title="Trasbordo Totale" onClear={() => clearFields(["trasbordoTotDenominazione","trasbordoTotCF","trasbordoTotAlbo","trasbordoTotTarga","trasbordoTotRimorchio","trasbordoTotConducente","trasbordoTotDataPresaCarico"])}>
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoTotDenominazione} onChange={(v) => u("trasbordoTotDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoTotCF} onChange={(v) => u("trasbordoTotCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.trasbordoTotAlbo} onChange={(v) => u("trasbordoTotAlbo", v)} />
