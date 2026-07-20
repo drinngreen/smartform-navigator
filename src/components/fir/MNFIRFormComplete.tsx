@@ -798,7 +798,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {activeTab === 0 && (
         <div className="space-y-3">
           {/* ALL FIELDS EDITABLE — NO LOCKS */}
-          <Section title="1. Produttore / Detentore" defaultOpen>
+          <Section title="1. Produttore / Detentore" defaultOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
             <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" />
             <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
