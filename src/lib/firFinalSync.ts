@@ -1,18 +1,42 @@
 import { supabase } from "@/lib/supabaseClient";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const MULTY_CF = "12347770013";
 const NIYOL_CF = "09879800010";
 
 const norm = (v: unknown) => String(v || "").replace(/\s+/g, "").toUpperCase();
 
+async function upsertRegistro(
+  tenantId: string,
+  numeroFir: string,
+  row: Record<string, any>
+) {
+  const { data: found } = await supabase
+    .from("registro_generale" as any)
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("numero_formulario", numeroFir)
+    .limit(1)
+    .maybeSingle();
+  const foundRow = found as { id?: string } | null;
+  const payload = { ...row, tenant_id: tenantId };
+  const { error } = foundRow?.id
+    ? await supabase.from("registro_generale" as any).update(payload).eq("id", foundRow.id)
+    : await supabase.from("registro_generale" as any).insert(payload);
+  if (error) throw error;
+}
+
 /**
- * After a FIR is saved as "final/completato", ensure that:
- *  - registro_generale has a row for it (upsert by numero_formulario)
- *  - movimenti_impianto has a fir_final row iff the tenant (Multy) is
- *    producer or destinatario. Role determines CARICO vs SCARICO on inventory.
+ * After a FIR is saved as "final/completato":
+ *  - upsert registro_generale for EACH tenant involved (Multy producer/dest,
+ *    Niyol producer/dest/transporter), independently of the tenant that
+ *    owns the fir_forms row.
+ *  - upsert movimenti_impianto (giacenze) for Multyproget when it is
+ *    producer or destinatario.
  *
- * Idempotent: if a fir_final movement already exists it is left alone.
+ * Idempotent per tenant (upsert by tenant_id + numero_formulario) and per
+ * inventory movement (unique on fir_id + origine='fir_final').
  */
 export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
@@ -30,7 +54,6 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   if (error) throw error;
   if (!fir) throw new Error("Formulario non trovato");
 
-  const tenantId = (fir as any).tenant_id as string | undefined;
   const numeroFir = (fir as any).numero_fir as string | null;
   const formData = ((fir as any).form_data || {}) as Record<string, any>;
 
@@ -40,71 +63,103 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   const qta = typeof qtaRaw === "number" ? qtaRaw : parseFloat(String(qtaRaw || "").replace(",", "."));
   const qtaValid = Number.isFinite(qta) ? qta : 0;
 
-  const prodDen = (fir as any).produttore_denominazione || null;
-  const destDen = (fir as any).destinatario_denominazione || null;
+  const prodDen = (fir as any).produttore_denominazione || formData.produttore_denominazione || null;
+  const destDen = (fir as any).destinatario_denominazione || formData.destinatario_denominazione || null;
+  const trspDen = (fir as any).trasportatore_denominazione || formData.trasportatore_denominazione || null;
   const prodCf = norm((fir as any).produttore_codice_fiscale || formData.produttore_codice_fiscale);
   const destCf = norm((fir as any).destinatario_codice_fiscale || formData.destinatario_codice_fiscale);
+  const trspCf = norm((fir as any).trasportatore_codice_fiscale || formData.trasportatore_codice_fiscale);
 
-  // Determine role of the OWNING tenant (currently only Multyproget owns inventory)
-  const isMultyProducer = tenantId === MULTY_TENANT_ID && (prodCf === MULTY_CF);
-  const isMultyDestinatario = tenantId === MULTY_TENANT_ID && (destCf === MULTY_CF);
+  // CF-based role detection (independent of the owning tenant)
+  const isMultyProducer = prodCf === MULTY_CF;
+  const isMultyDestinatario = destCf === MULTY_CF;
+  const isMultyInvolved = isMultyProducer || isMultyDestinatario;
 
-  // Registry movement type: from param or inferred
-  const inferredRegType: "Carico" | "Scarico" = params.registryMovementType
-    ?? (isMultyDestinatario ? "Carico" : isMultyProducer ? "Scarico" : "Carico");
+  const isNiyolProducer = prodCf === NIYOL_CF;
+  const isNiyolDestinatario = destCf === NIYOL_CF;
+  const isNiyolTransporter = trspCf === NIYOL_CF;
+  const isNiyolInvolved = isNiyolProducer || isNiyolDestinatario || isNiyolTransporter;
 
   let registryOk = false;
   let inventoryOk = false;
   let warning: string | undefined;
 
-  // === REGISTRO ===
-  if (tenantId && numeroFir) {
+  const today = new Date().toISOString().slice(0, 10);
+  const baseRow = (regType: "Carico" | "Scarico"): Record<string, any> => ({
+    data_movimento: today,
+    cer,
+    descrizione: desc,
+    carico_scarico: regType,
+    tipo_operazione: regType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
+    al_rentri: false,
+    numero_formulario: numeroFir,
+    segno: regType === "Scarico" ? "-" : "+",
+    quantita: qtaValid,
+    peso_destino: qtaValid,
+    luogo_produzione: prodDen,
+    destinazione: destDen,
+    annotazioni: "Salvataggio definitivo FIR (Modulo Standard)",
+    data_emissione_formulario: today,
+    raw: { fir_form_id: firId, form_data: formData },
+  });
+
+  // === REGISTRO — Multyproget (producer o destinatario) ===
+  if (numeroFir && isMultyInvolved) {
     try {
-      const row: Record<string, any> = {
-        tenant_id: tenantId,
-        data_movimento: new Date().toISOString().slice(0, 10),
-        cer: cer,
-        descrizione: desc,
-        carico_scarico: inferredRegType,
-        tipo_operazione: inferredRegType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
-        al_rentri: false,
-        numero_formulario: numeroFir,
-        segno: inferredRegType === "Scarico" ? "-" : "+",
-        quantita: qtaValid,
-        peso_destino: qtaValid,
-        luogo_produzione: prodDen,
-        destinazione: destDen,
-        annotazioni: "Salvataggio definitivo FIR (Modulo Standard)",
-        data_emissione_formulario: new Date().toISOString().slice(0, 10),
-        raw: { fir_form_id: firId, form_data: formData },
-      };
-      const { data: found } = await supabase
-        .from("registro_generale" as any)
-        .select("id")
-        .eq("tenant_id", tenantId)
-        .eq("numero_formulario", numeroFir)
-        .limit(1)
-        .maybeSingle();
-      const foundRow = found as { id?: string } | null;
-      const regErr = foundRow?.id
-        ? (await supabase.from("registro_generale" as any).update(row).eq("id", foundRow.id)).error
-        : (await supabase.from("registro_generale" as any).insert(row)).error;
-      if (regErr) throw regErr;
+      const regType: "Carico" | "Scarico" =
+        params.registryMovementType ?? (isMultyDestinatario ? "Carico" : "Scarico");
+      await upsertRegistro(MULTY_TENANT_ID, numeroFir, baseRow(regType));
       registryOk = true;
     } catch (e: any) {
-      warning = "Registro non aggiornato: " + (e?.message || String(e));
+      warning = "Registro Multy non aggiornato: " + (e?.message || String(e));
     }
   }
 
-  // === GIACENZE (only if Multy is producer or destinatario) ===
-  if ((isMultyProducer || isMultyDestinatario) && qtaValid > 0 && cer) {
+  // === REGISTRO — Niyol (producer / destinatario / trasportatore) ===
+  if (numeroFir && isNiyolInvolved) {
     try {
-      const directImpiantoId = params.impiantoId?.trim() || (formData.impianto_id ? String(formData.impianto_id) : "");
-      const impiantoId = directImpiantoId || (
-        ((await supabase.from("impianti" as any).select("id").eq("tenant_id", MULTY_TENANT_ID).order("created_at", { ascending: true }).limit(1).maybeSingle()).data as any)?.id
-      );
+      const regType: "Carico" | "Scarico" = isNiyolDestinatario
+        ? "Carico"
+        : isNiyolProducer
+        ? "Scarico"
+        : "Carico";
+      const row = baseRow(regType);
+      if (!isNiyolProducer && !isNiyolDestinatario) {
+        row.annotazioni = `Transito come trasportatore (${trspDen || "Niyol"}) — FIR Standard`;
+      }
+      await upsertRegistro(NIYOL_TENANT_ID, numeroFir, row);
+      registryOk = true;
+    } catch (e: any) {
+      warning =
+        (warning ? warning + " · " : "") +
+        "Registro Niyol non aggiornato: " +
+        (e?.message || String(e));
+    }
+  }
+
+  // === GIACENZE (Multy inventory only when Multy is producer or destinatario) ===
+  if (isMultyInvolved && qtaValid > 0 && cer) {
+    try {
+      const directImpiantoId =
+        params.impiantoId?.trim() ||
+        (formData.impianto_id ? String(formData.impianto_id) : "");
+      const impiantoId =
+        directImpiantoId ||
+        (
+          (
+            await supabase
+              .from("impianti" as any)
+              .select("id")
+              .eq("tenant_id", MULTY_TENANT_ID)
+              .order("created_at", { ascending: true })
+              .limit(1)
+              .maybeSingle()
+          ).data as any
+        )?.id;
       if (!impiantoId) {
-        warning = (warning ? warning + " · " : "") + "Nessun impianto Multyproget disponibile per giacenze";
+        warning =
+          (warning ? warning + " · " : "") +
+          "Nessun impianto Multyproget disponibile per giacenze";
       } else {
         const { data: existing } = await supabase
           .from("movimenti_impianto" as any)
@@ -122,7 +177,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             cer,
             descrizione_rifiuto: desc,
             quantita_kg: qtaValid,
-            data_movimento: new Date().toISOString().slice(0, 10),
+            data_movimento: today,
             tipo_movimento: tipo,
             ruolo_impianto: ruolo,
             origine: "fir_final",
@@ -137,7 +192,10 @@ export async function syncFirFinalToRegistryAndInventory(params: {
         inventoryOk = true;
       }
     } catch (e: any) {
-      warning = (warning ? warning + " · " : "") + "Giacenze non aggiornate: " + (e?.message || String(e));
+      warning =
+        (warning ? warning + " · " : "") +
+        "Giacenze non aggiornate: " +
+        (e?.message || String(e));
     }
   }
 
@@ -164,3 +222,4 @@ export const COMPANY_PRESETS = {
 } as const;
 
 export const MULTY_TENANT_ID_CONST = MULTY_TENANT_ID;
+export const NIYOL_TENANT_ID_CONST = NIYOL_TENANT_ID;
