@@ -871,7 +871,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
           </Section>
 
-          <Section title="6. Caratteristiche del Rifiuto" defaultOpen>
+          <Section title="6. Caratteristiche del Rifiuto" defaultOpen onClear={() => clearFields(["codiceEER","descrizione","statoFisico","provenienza","quantita","quantitaLitri","aspettoEsteriore","numeroColli","verificatoPartenza","caratteristicheHP"])}>
             <Field label="Codice EER" value={d.codiceEER} onChange={(v) => u("codiceEER", v)} placeholder="es. 17 04 05" />
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
             <Row>
