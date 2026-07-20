@@ -35,18 +35,37 @@ function getSectionNeon(title: string) {
   return { border: "border-primary/20", text: "text-primary", glow: "shadow-[0_0_8px_hsl(47_38%_58%/0.2)]", bg: "bg-primary/5" };
 }
 
-function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+function Section({ title, defaultOpen = false, onClear, children }: { title: string; defaultOpen?: boolean; onClear?: () => void; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   const neon = getSectionNeon(title);
   return (
     <div className={`rounded-2xl glass-card ${neon.border} border ${neon.bg} overflow-hidden transition-shadow ${open ? neon.glow : ""}`}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left">
-        <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
-          <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
-          {title}
-        </span>
-        {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
-      </button>
+      <div className="w-full flex items-center justify-between p-4 text-left">
+        <button onClick={() => setOpen(!open)} className="flex-1 flex items-center gap-2 text-left">
+          <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
+            <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
+            {title}
+          </span>
+        </button>
+        <div className="flex items-center gap-2">
+          {onClear && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Cancellare tutti i campi della sezione "${title}"?`)) onClear();
+              }}
+              title="Pulisci sezione"
+              className="p-1.5 rounded-md border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button onClick={() => setOpen(!open)} type="button" className="p-1">
+            {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
+          </button>
+        </div>
+      </div>
       {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
     </div>
   );
