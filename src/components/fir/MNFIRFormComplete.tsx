@@ -1027,7 +1027,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data/Ora Presa in Carico" value={d.trasbordoTotDataPresaCarico} onChange={(v) => u("trasbordoTotDataPresaCarico", v)} type="datetime-local" />
           </Section>
 
-          <Section title="14. Soste Tecniche">
+          <Section title="14. Soste Tecniche" onClear={() => clearFields(["sosta1Luogo","sosta1Inizio","sosta1Fine","sosta2Luogo","sosta2Inizio","sosta2Fine","sosta3Luogo","sosta3Inizio","sosta3Fine"])}>
             <p className="text-xs text-white/60 mb-2">Sosta 1</p>
             <Field label="Luogo" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
             <Row>
