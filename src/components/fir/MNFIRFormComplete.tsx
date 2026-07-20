@@ -930,7 +930,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="7. Trasporto ADR / Merci Pericolose">
+          <Section title="7. Trasporto ADR / Merci Pericolose" onClear={() => clearFields(["trasportoADR","adrClassePericolo","adrNumeroONU","adrNote"])}>
             <Check label="Trasporto soggetto a normativa ADR" checked={d.trasportoADR} onChange={(v) => u("trasportoADR", v)} />
             {d.trasportoADR && (
               <>
