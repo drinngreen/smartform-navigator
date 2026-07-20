@@ -1078,7 +1078,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* ═══════ PAGINA 3 - INTERMODALE ═══════ */}
       {activeTab === 2 && (
         <div className="space-y-3">
-          <Section title="Intermodale Terrestre" defaultOpen>
+          <Section title="Intermodale Terrestre" defaultOpen onClear={() => clearFields(["interTerrDenominazione","interTerrCF","interTerrAlbo","interTerrConducente","interTerrTarga","interTerrRimorchio"])}>
             <Field label="Denominazione" value={d.interTerrDenominazione} onChange={(v) => u("interTerrDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.interTerrCF} onChange={(v) => u("interTerrCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.interTerrAlbo} onChange={(v) => u("interTerrAlbo", v)} />
