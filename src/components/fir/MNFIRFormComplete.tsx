@@ -943,7 +943,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="8-9. Conducente e Trasporto">
+          <Section title="8-9. Conducente e Trasporto" onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
             <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => u("conducenteNomeCognome", v)} />
             <Row>
               <Field label="Data Inizio Trasporto" value={d.oraDataInizioTrasporto} onChange={(v) => u("oraDataInizioTrasporto", v)} type="date" />
