@@ -1004,7 +1004,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* ═══════ PAGINA 2 - TRASBORDO ═══════ */}
       {activeTab === 1 && (
         <div className="space-y-3">
-          <Section title="13. Trasbordo Parziale">
+          <Section title="13. Trasbordo Parziale" onClear={() => clearFields(["trasbordoParzDenominazione","trasbordoParzCF","trasbordoParzAlbo","trasbordoParzCausale","trasbordoParzQuantitaResidua","trasbordoParzNuovoFir"])}>
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoParzDenominazione} onChange={(v) => u("trasbordoParzDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoParzCF} onChange={(v) => u("trasbordoParzCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.trasbordoParzAlbo} onChange={(v) => u("trasbordoParzAlbo", v)} />
