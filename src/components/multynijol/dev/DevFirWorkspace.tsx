@@ -151,6 +151,22 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     return () => window.removeEventListener("dev-fir-open-draft", listener as EventListener);
   }, []);
 
+  // Invalidate registry/inventory queries after Standard form save-final
+  useEffect(() => {
+    const savedHandler = () => {
+      queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-giacenze"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-mag-giacenze"] });
+      queryClient.invalidateQueries({ queryKey: ["dev-mag-movimenti"] });
+      queryClient.invalidateQueries({ queryKey: ["movimenti-impianto"] });
+    };
+    window.addEventListener("dev-fir-saved", savedHandler);
+    return () => window.removeEventListener("dev-fir-saved", savedHandler);
+  }, [queryClient]);
+
   const handleNewDraft = async () => {
     if (!manualFirNumber.trim()) {
       toast.error("Inserisci il numero FIR esatto prima di creare il formulario");
