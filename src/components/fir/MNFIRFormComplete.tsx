@@ -956,7 +956,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Percorso diverso dal più breve" value={d.percorsoDiverso} onChange={(v) => u("percorsoDiverso", v)} />
           </Section>
 
-          <Section title="10. Allegati">
+          <Section title="10. Allegati" onClear={() => clearFields(["allegatoMicroraccolta","allegatoIntermodale"])}>
             <Check label="Allegato microraccolta" checked={d.allegatoMicroraccolta} onChange={(v) => u("allegatoMicroraccolta", v)} />
             <Check label="Allegato intermodale" checked={d.allegatoIntermodale} onChange={(v) => u("allegatoIntermodale", v)} />
           </Section>
