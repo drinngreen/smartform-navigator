@@ -822,7 +822,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="Cantiere (se applicabile)">
+          <Section title="Cantiere (se applicabile)" onClear={() => clearFields(["cantiereIndirizzo","cantiereComune","cantiereProvincia","cantiereCAP"])}>
             <Field label="Indirizzo" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} />
             <Row>
               <Field label="Comune" value={d.cantiereComune} onChange={(v) => u("cantiereComune", v)} />
