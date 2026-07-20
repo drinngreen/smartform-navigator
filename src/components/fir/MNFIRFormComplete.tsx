@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download } from "lucide-react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser } from "lucide-react";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useMNFIRStore } from "@/stores/mnFirStore";
@@ -35,18 +35,37 @@ function getSectionNeon(title: string) {
   return { border: "border-primary/20", text: "text-primary", glow: "shadow-[0_0_8px_hsl(47_38%_58%/0.2)]", bg: "bg-primary/5" };
 }
 
-function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
+function Section({ title, defaultOpen = false, onClear, children }: { title: string; defaultOpen?: boolean; onClear?: () => void; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   const neon = getSectionNeon(title);
   return (
     <div className={`rounded-2xl glass-card ${neon.border} border ${neon.bg} overflow-hidden transition-shadow ${open ? neon.glow : ""}`}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 text-left">
-        <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
-          <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
-          {title}
-        </span>
-        {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
-      </button>
+      <div className="w-full flex items-center justify-between p-4 text-left">
+        <button onClick={() => setOpen(!open)} className="flex-1 flex items-center gap-2 text-left">
+          <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
+            <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
+            {title}
+          </span>
+        </button>
+        <div className="flex items-center gap-2">
+          {onClear && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm(`Cancellare tutti i campi della sezione "${title}"?`)) onClear();
+              }}
+              title="Pulisci sezione"
+              className="p-1.5 rounded-md border border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button onClick={() => setOpen(!open)} type="button" className="p-1">
+            {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
+          </button>
+        </div>
+      </div>
       {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
     </div>
   );
@@ -179,6 +198,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+
+  const clearFields = useCallback((keys: string[]) => {
+    const cur: any = useMNFIRStore.getState().data;
+    keys.forEach((k) => {
+      const v = cur[k];
+      let nv: any = "";
+      if (Array.isArray(v)) nv = [];
+      else if (typeof v === "boolean") nv = false;
+      else if (typeof v === "number") nv = 0;
+      (u as any)(k, nv);
+    });
+  }, [u]);
 
   useEffect(() => {
     if (!draftData?.id) return;
@@ -767,7 +798,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {activeTab === 0 && (
         <div className="space-y-3">
           {/* ALL FIELDS EDITABLE — NO LOCKS */}
-          <Section title="1. Produttore / Detentore" defaultOpen>
+          <Section title="1. Produttore / Detentore" defaultOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
             <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" />
             <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
@@ -791,7 +822,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="Cantiere (se applicabile)">
+          <Section title="Cantiere (se applicabile)" onClear={() => clearFields(["cantiereIndirizzo","cantiereComune","cantiereProvincia","cantiereCAP"])}>
             <Field label="Indirizzo" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} />
             <Row>
               <Field label="Comune" value={d.cantiereComune} onChange={(v) => u("cantiereComune", v)} />
@@ -800,7 +831,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="CAP" value={d.cantiereCAP} onChange={(v) => u("cantiereCAP", v)} />
           </Section>
 
-          <Section title="3. Destinatario">
+          <Section title="3. Destinatario" onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
             <DestinatarioSelector onSelect={handleDestinatarioSelect} />
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
@@ -822,7 +853,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
 
-          <Section title="4. Trasportatore">
+          <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
@@ -834,13 +865,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
-          <Section title="5. Intermediario / Commerciante">
+          <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
             <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
             <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
           </Section>
 
-          <Section title="6. Caratteristiche del Rifiuto" defaultOpen>
+          <Section title="6. Caratteristiche del Rifiuto" defaultOpen onClear={() => clearFields(["codiceEER","descrizione","statoFisico","provenienza","quantita","quantitaLitri","aspettoEsteriore","numeroColli","verificatoPartenza","caratteristicheHP"])}>
             <Field label="Codice EER" value={d.codiceEER} onChange={(v) => u("codiceEER", v)} placeholder="es. 17 04 05" />
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
             <Row>
@@ -882,7 +913,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Caratteristiche HP (separate da virgola)" value={d.caratteristicheHP.join(", ")} onChange={(v) => u("caratteristicheHP", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="HP4, HP5..." />
           </Section>
 
-          <Section title="Analisi e Classificazione">
+          <Section title="Analisi e Classificazione" onClear={() => clearFields(["analisiRapportiProva","analisiNumero","analisiValidaAl","classificazione","classificazioneNumero","classificazioneValidaAl"])}>
             <Check label="Analisi / Rapporti di prova" checked={d.analisiRapportiProva} onChange={(v) => u("analisiRapportiProva", v)} />
             {d.analisiRapportiProva && (
               <Row>
@@ -899,7 +930,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="7. Trasporto ADR / Merci Pericolose">
+          <Section title="7. Trasporto ADR / Merci Pericolose" onClear={() => clearFields(["trasportoADR","adrClassePericolo","adrNumeroONU","adrNote"])}>
             <Check label="Trasporto soggetto a normativa ADR" checked={d.trasportoADR} onChange={(v) => u("trasportoADR", v)} />
             {d.trasportoADR && (
               <>
@@ -912,7 +943,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="8-9. Conducente e Trasporto">
+          <Section title="8-9. Conducente e Trasporto" onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
             <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => u("conducenteNomeCognome", v)} />
             <Row>
               <Field label="Data Inizio Trasporto" value={d.oraDataInizioTrasporto} onChange={(v) => u("oraDataInizioTrasporto", v)} type="date" />
@@ -925,18 +956,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Percorso diverso dal più breve" value={d.percorsoDiverso} onChange={(v) => u("percorsoDiverso", v)} />
           </Section>
 
-          <Section title="10. Allegati">
+          <Section title="10. Allegati" onClear={() => clearFields(["allegatoMicroraccolta","allegatoIntermodale"])}>
             <Check label="Allegato microraccolta" checked={d.allegatoMicroraccolta} onChange={(v) => u("allegatoMicroraccolta", v)} />
             <Check label="Allegato intermodale" checked={d.allegatoIntermodale} onChange={(v) => u("allegatoIntermodale", v)} />
           </Section>
 
-          <Section title="11. Registro">
+          <Section title="11. Registro" onClear={() => clearFields(["registroSi","numeroRegistro","dataEmissione"])}>
             <Check label="Registro cronologico SI" checked={d.registroSi} onChange={(v) => u("registroSi", v)} />
             <Field label="N° Annotazione Registro" value={d.numeroRegistro} onChange={(v) => u("numeroRegistro", v)} />
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
           </Section>
 
-          <Section title="12. Accettazione Destinatario">
+          <Section title="12. Accettazione Destinatario" onClear={() => clearFields(["dataOraArrivo","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
               <div>
@@ -964,7 +995,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Check label="In attesa di verifica analitica" checked={d.inAttesaVerificaAnalitica} onChange={(v) => u("inAttesaVerificaAnalitica", v)} />
           </Section>
 
-          <Section title="17. Annotazioni">
+          <Section title="17. Annotazioni" onClear={() => clearFields(["annotazioni"])}>
             <TextArea label="Annotazioni" value={d.annotazioni} onChange={(v) => u("annotazioni", v)} rows={3} />
           </Section>
         </div>
@@ -973,7 +1004,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* ═══════ PAGINA 2 - TRASBORDO ═══════ */}
       {activeTab === 1 && (
         <div className="space-y-3">
-          <Section title="13. Trasbordo Parziale">
+          <Section title="13. Trasbordo Parziale" onClear={() => clearFields(["trasbordoParzDenominazione","trasbordoParzCF","trasbordoParzAlbo","trasbordoParzCausale","trasbordoParzQuantitaResidua","trasbordoParzNuovoFir"])}>
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoParzDenominazione} onChange={(v) => u("trasbordoParzDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoParzCF} onChange={(v) => u("trasbordoParzCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.trasbordoParzAlbo} onChange={(v) => u("trasbordoParzAlbo", v)} />
@@ -984,7 +1015,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Trasbordo Totale">
+          <Section title="Trasbordo Totale" onClear={() => clearFields(["trasbordoTotDenominazione","trasbordoTotCF","trasbordoTotAlbo","trasbordoTotTarga","trasbordoTotRimorchio","trasbordoTotConducente","trasbordoTotDataPresaCarico"])}>
             <Field label="Nuovo Trasportatore - Denominazione" value={d.trasbordoTotDenominazione} onChange={(v) => u("trasbordoTotDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.trasbordoTotCF} onChange={(v) => u("trasbordoTotCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.trasbordoTotAlbo} onChange={(v) => u("trasbordoTotAlbo", v)} />
@@ -996,7 +1027,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data/Ora Presa in Carico" value={d.trasbordoTotDataPresaCarico} onChange={(v) => u("trasbordoTotDataPresaCarico", v)} type="datetime-local" />
           </Section>
 
-          <Section title="14. Soste Tecniche">
+          <Section title="14. Soste Tecniche" onClear={() => clearFields(["sosta1Luogo","sosta1Inizio","sosta1Fine","sosta2Luogo","sosta2Inizio","sosta2Fine","sosta3Luogo","sosta3Inizio","sosta3Fine"])}>
             <p className="text-xs text-white/60 mb-2">Sosta 1</p>
             <Field label="Luogo" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
             <Row>
@@ -1017,7 +1048,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="15. Secondo Destinatario">
+          <Section title="15. Secondo Destinatario" onClear={() => clearFields(["dest2Denominazione","dest2UnitaLocale","dest2CF","dest2Autorizzazione","dest2TipoAut","dest2DataAut","dest2Operazione","dest2CodiceOperazione"])}>
             <Field label="Denominazione" value={d.dest2Denominazione} onChange={(v) => u("dest2Denominazione", v)} />
             <Field label="Unità Locale" value={d.dest2UnitaLocale} onChange={(v) => u("dest2UnitaLocale", v)} />
             <Field label="Codice Fiscale" value={d.dest2CF} onChange={(v) => u("dest2CF", v)} />
@@ -1038,7 +1069,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="16-17. Annotazioni (continuazione)">
+          <Section title="16-17. Annotazioni (continuazione)" onClear={() => clearFields(["annotazioniContinuazione"])}>
             <TextArea label="Annotazioni aggiuntive" value={d.annotazioniContinuazione} onChange={(v) => u("annotazioniContinuazione", v)} rows={4} />
           </Section>
         </div>
@@ -1047,7 +1078,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* ═══════ PAGINA 3 - INTERMODALE ═══════ */}
       {activeTab === 2 && (
         <div className="space-y-3">
-          <Section title="Intermodale Terrestre" defaultOpen>
+          <Section title="Intermodale Terrestre" defaultOpen onClear={() => clearFields(["interTerrDenominazione","interTerrCF","interTerrAlbo","interTerrConducente","interTerrTarga","interTerrRimorchio"])}>
             <Field label="Denominazione" value={d.interTerrDenominazione} onChange={(v) => u("interTerrDenominazione", v)} />
             <Field label="Codice Fiscale" value={d.interTerrCF} onChange={(v) => u("interTerrCF", v)} />
             <Field label="N° Iscrizione Albo" value={d.interTerrAlbo} onChange={(v) => u("interTerrAlbo", v)} />
@@ -1058,7 +1089,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Intermodale Ferroviario">
+          <Section title="Intermodale Ferroviario" onClear={() => clearFields(["interFerroDenominazione","interFerroIdTreno","interFerroCF","interFerroTratta","interFerroRid","interFerroStazionePartenza","interFerroStazioneArrivo","interFerroDataPartenza","interFerroDataArrivo"])}>
             <Field label="Denominazione" value={d.interFerroDenominazione} onChange={(v) => u("interFerroDenominazione", v)} />
             <Field label="ID Treno" value={d.interFerroIdTreno} onChange={(v) => u("interFerroIdTreno", v)} />
             <Field label="Codice Fiscale" value={d.interFerroCF} onChange={(v) => u("interFerroCF", v)} />
@@ -1074,7 +1105,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Intermodale Marittimo">
+          <Section title="Intermodale Marittimo" onClear={() => clearFields(["interMareDenominazione","interMareIdNave","interMareCF","interMareImdg","interMarePortoPartenza","interMarePortoArrivo","interMareDataPartenza","interMareDataArrivo"])}>
             <Field label="Denominazione" value={d.interMareDenominazione} onChange={(v) => u("interMareDenominazione", v)} />
             <Field label="ID Nave" value={d.interMareIdNave} onChange={(v) => u("interMareIdNave", v)} />
             <Field label="Codice Fiscale" value={d.interMareCF} onChange={(v) => u("interMareCF", v)} />
