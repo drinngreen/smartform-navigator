@@ -1089,7 +1089,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Intermodale Ferroviario">
+          <Section title="Intermodale Ferroviario" onClear={() => clearFields(["interFerroDenominazione","interFerroIdTreno","interFerroCF","interFerroTratta","interFerroRid","interFerroStazionePartenza","interFerroStazioneArrivo","interFerroDataPartenza","interFerroDataArrivo"])}>
             <Field label="Denominazione" value={d.interFerroDenominazione} onChange={(v) => u("interFerroDenominazione", v)} />
             <Field label="ID Treno" value={d.interFerroIdTreno} onChange={(v) => u("interFerroIdTreno", v)} />
             <Field label="Codice Fiscale" value={d.interFerroCF} onChange={(v) => u("interFerroCF", v)} />
