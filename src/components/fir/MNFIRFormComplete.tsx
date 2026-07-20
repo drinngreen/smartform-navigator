@@ -865,7 +865,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
-          <Section title="5. Intermediario / Commerciante">
+          <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
             <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
             <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
