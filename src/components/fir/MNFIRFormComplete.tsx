@@ -270,6 +270,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         });
         if (result.warning) toast.warning(result.warning);
         else toast.success("✅ FIR salvato DEFINITIVO (registro + giacenze)");
+        window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
       } catch (e: any) {
         toast.error("Errore salvataggio definitivo: " + (e?.message || String(e)));
       }
