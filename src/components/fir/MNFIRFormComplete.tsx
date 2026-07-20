@@ -967,7 +967,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
           </Section>
 
-          <Section title="12. Accettazione Destinatario">
+          <Section title="12. Accettazione Destinatario" onClear={() => clearFields(["dataOraArrivo","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
               <div>
