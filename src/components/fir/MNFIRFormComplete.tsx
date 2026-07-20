@@ -1069,7 +1069,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="16-17. Annotazioni (continuazione)">
+          <Section title="16-17. Annotazioni (continuazione)" onClear={() => clearFields(["annotazioniContinuazione"])}>
             <TextArea label="Annotazioni aggiuntive" value={d.annotazioniContinuazione} onChange={(v) => u("annotazioniContinuazione", v)} rows={4} />
           </Section>
         </div>
