@@ -1105,7 +1105,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="Intermodale Marittimo">
+          <Section title="Intermodale Marittimo" onClear={() => clearFields(["interMareDenominazione","interMareIdNave","interMareCF","interMareImdg","interMarePortoPartenza","interMarePortoArrivo","interMareDataPartenza","interMareDataArrivo"])}>
             <Field label="Denominazione" value={d.interMareDenominazione} onChange={(v) => u("interMareDenominazione", v)} />
             <Field label="ID Nave" value={d.interMareIdNave} onChange={(v) => u("interMareIdNave", v)} />
             <Field label="Codice Fiscale" value={d.interMareCF} onChange={(v) => u("interMareCF", v)} />
