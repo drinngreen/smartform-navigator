@@ -83,8 +83,6 @@ export default function MNDevDashboardPage() {
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
-      {/* Pulsante per Elisabetta — approvazione import dati Excel */}
-      <PerElisabettaDialog />
 
       {/* Link Modulo Alternativo */}
       <button
