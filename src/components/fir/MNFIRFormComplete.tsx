@@ -961,7 +961,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Check label="Allegato intermodale" checked={d.allegatoIntermodale} onChange={(v) => u("allegatoIntermodale", v)} />
           </Section>
 
-          <Section title="11. Registro">
+          <Section title="11. Registro" onClear={() => clearFields(["registroSi","numeroRegistro","dataEmissione"])}>
             <Check label="Registro cronologico SI" checked={d.registroSi} onChange={(v) => u("registroSi", v)} />
             <Field label="N° Annotazione Registro" value={d.numeroRegistro} onChange={(v) => u("numeroRegistro", v)} />
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
