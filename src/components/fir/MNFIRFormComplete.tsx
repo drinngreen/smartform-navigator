@@ -1048,7 +1048,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
           </Section>
 
-          <Section title="15. Secondo Destinatario">
+          <Section title="15. Secondo Destinatario" onClear={() => clearFields(["dest2Denominazione","dest2UnitaLocale","dest2CF","dest2Autorizzazione","dest2TipoAut","dest2DataAut","dest2Operazione","dest2CodiceOperazione"])}>
             <Field label="Denominazione" value={d.dest2Denominazione} onChange={(v) => u("dest2Denominazione", v)} />
             <Field label="Unità Locale" value={d.dest2UnitaLocale} onChange={(v) => u("dest2UnitaLocale", v)} />
             <Field label="Codice Fiscale" value={d.dest2CF} onChange={(v) => u("dest2CF", v)} />
