@@ -913,7 +913,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Caratteristiche HP (separate da virgola)" value={d.caratteristicheHP.join(", ")} onChange={(v) => u("caratteristicheHP", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="HP4, HP5..." />
           </Section>
 
-          <Section title="Analisi e Classificazione">
+          <Section title="Analisi e Classificazione" onClear={() => clearFields(["analisiRapportiProva","analisiNumero","analisiValidaAl","classificazione","classificazioneNumero","classificazioneValidaAl"])}>
             <Check label="Analisi / Rapporti di prova" checked={d.analisiRapportiProva} onChange={(v) => u("analisiRapportiProva", v)} />
             {d.analisiRapportiProva && (
               <Row>
