@@ -75,7 +75,7 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
       const { data, error } = await supabase.from("anagrafica_aziende_mp" as any)
         .select("*").eq("id", clienteId).maybeSingle();
       if (error) throw error;
-      return data as Cliente | null;
+      return (data as any) as Cliente | null;
     },
     enabled: !!clienteId,
   });
