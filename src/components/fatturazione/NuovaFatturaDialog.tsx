@@ -63,7 +63,7 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
       if (clienteSearch) q = q.ilike("ragione_sociale", `%${clienteSearch}%`);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as Cliente[];
+      return ((data as any) || []) as Cliente[];
     },
     enabled: !initialClienteId,
   });
