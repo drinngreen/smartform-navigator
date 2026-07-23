@@ -59,6 +59,7 @@ const DEV_TAB_LABELS: Record<string, string> = {
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Persisted tab + sub-tab via URL params (so reload keeps the user where they were)
