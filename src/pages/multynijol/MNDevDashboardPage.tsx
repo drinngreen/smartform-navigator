@@ -35,6 +35,9 @@ import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoD
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
+import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
+import { useAuth } from "@/hooks/useAuth";
+import { Euro } from "lucide-react";
 
 
 const DEV_TAB_LABELS: Record<string, string> = {
@@ -49,7 +52,7 @@ const DEV_TAB_LABELS: Record<string, string> = {
   "aree-riservate": "Aree Riservate",
   "cer-preferiti": "CER Preferiti",
   "gestione-fir": "Gestione FIR",
-
+  fatturazione: "Fatturazione",
   "firma-digitale": "Firma Digitale",
   personale: "Personale",
 };
