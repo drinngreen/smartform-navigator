@@ -59,7 +59,7 @@ export function FatturaViewerDialog({ fatturaId, onClose }: Props) {
 
     // Righe
     y += 6;
-    doc.setFillColor(240);
+    doc.setFillColor(240, 240, 240);
     doc.rect(10, y - 4, w - 20, 7, "F");
     doc.setFont("helvetica", "bold"); doc.setFontSize(8);
     doc.text("DESCRIZIONE", 12, y);
