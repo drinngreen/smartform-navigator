@@ -139,6 +139,9 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="firma-digitale" className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
             <PenTool className="h-4 w-4" />Firma Digitale
           </TabsTrigger>
+          <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-300">
+            <Euro className="h-4 w-4" />Fatturazione
+          </TabsTrigger>
           <TabsTrigger value="personale" className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400">
             <Users className="h-4 w-4" />Personale
           </TabsTrigger>
