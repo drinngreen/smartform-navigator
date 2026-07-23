@@ -2397,6 +2397,164 @@ export type Database = {
           },
         ]
       }
+      fatture: {
+        Row: {
+          anno: number
+          cliente_codice_fiscale: string | null
+          cliente_id: string | null
+          cliente_indirizzo: string | null
+          cliente_partita_iva: string | null
+          cliente_ragione_sociale: string
+          cliente_unita_locale: string | null
+          cortesia_pdf_url: string | null
+          created_at: string
+          created_by: string | null
+          data_emissione: string
+          id: string
+          imponibile: number
+          inviata_at: string | null
+          iva: number
+          locked: boolean
+          note: string | null
+          numero: number
+          numero_completo: string | null
+          reverse_charge: boolean
+          stato: string
+          tenant_id: string
+          tipo: string
+          totale: number
+          updated_at: string
+          xml_generato_at: string | null
+          xml_url: string | null
+        }
+        Insert: {
+          anno?: number
+          cliente_codice_fiscale?: string | null
+          cliente_id?: string | null
+          cliente_indirizzo?: string | null
+          cliente_partita_iva?: string | null
+          cliente_ragione_sociale: string
+          cliente_unita_locale?: string | null
+          cortesia_pdf_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissione?: string
+          id?: string
+          imponibile?: number
+          inviata_at?: string | null
+          iva?: number
+          locked?: boolean
+          note?: string | null
+          numero: number
+          numero_completo?: string | null
+          reverse_charge?: boolean
+          stato?: string
+          tenant_id: string
+          tipo?: string
+          totale?: number
+          updated_at?: string
+          xml_generato_at?: string | null
+          xml_url?: string | null
+        }
+        Update: {
+          anno?: number
+          cliente_codice_fiscale?: string | null
+          cliente_id?: string | null
+          cliente_indirizzo?: string | null
+          cliente_partita_iva?: string | null
+          cliente_ragione_sociale?: string
+          cliente_unita_locale?: string | null
+          cortesia_pdf_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissione?: string
+          id?: string
+          imponibile?: number
+          inviata_at?: string | null
+          iva?: number
+          locked?: boolean
+          note?: string | null
+          numero?: number
+          numero_completo?: string | null
+          reverse_charge?: boolean
+          stato?: string
+          tenant_id?: string
+          tipo?: string
+          totale?: number
+          updated_at?: string
+          xml_generato_at?: string | null
+          xml_url?: string | null
+        }
+        Relationships: []
+      }
+      fatture_righe: {
+        Row: {
+          aliquota_iva: number
+          cer: string | null
+          created_at: string
+          descrizione: string
+          fattura_id: string
+          fir_form_id: string | null
+          id: string
+          imponibile: number
+          iva: number
+          numero_fir: string | null
+          ordine: number
+          prezzo_unitario: number
+          quantita: number
+          reverse_charge: boolean
+          tipo_riga: string
+          totale: number
+          unita_misura: string
+        }
+        Insert: {
+          aliquota_iva?: number
+          cer?: string | null
+          created_at?: string
+          descrizione: string
+          fattura_id: string
+          fir_form_id?: string | null
+          id?: string
+          imponibile?: number
+          iva?: number
+          numero_fir?: string | null
+          ordine?: number
+          prezzo_unitario?: number
+          quantita?: number
+          reverse_charge?: boolean
+          tipo_riga?: string
+          totale?: number
+          unita_misura?: string
+        }
+        Update: {
+          aliquota_iva?: number
+          cer?: string | null
+          created_at?: string
+          descrizione?: string
+          fattura_id?: string
+          fir_form_id?: string | null
+          id?: string
+          imponibile?: number
+          iva?: number
+          numero_fir?: string | null
+          ordine?: number
+          prezzo_unitario?: number
+          quantita?: number
+          reverse_charge?: boolean
+          tipo_riga?: string
+          totale?: number
+          unita_misura?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatture_righe_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "fatture"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fir: {
         Row: {
           caratteristiche_hp: string[] | null
@@ -5339,6 +5497,10 @@ export type Database = {
       is_superadmin: { Args: never; Returns: boolean }
       is_valid_fir_number: { Args: { p_value: string }; Returns: boolean }
       map_tenant_to_societa: { Args: { p_tenant_id: string }; Returns: string }
+      next_fattura_number: {
+        Args: { p_anno: number; p_tenant_id: string }
+        Returns: number
+      }
       next_prima_nota_number: {
         Args: { p_anno: number; p_tenant_id: string }
         Returns: number

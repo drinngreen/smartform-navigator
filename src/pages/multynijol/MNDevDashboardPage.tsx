@@ -35,6 +35,9 @@ import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoD
 import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
+import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
+import { useAuth } from "@/hooks/useAuth";
+import { Euro } from "lucide-react";
 
 
 const DEV_TAB_LABELS: Record<string, string> = {
@@ -49,13 +52,14 @@ const DEV_TAB_LABELS: Record<string, string> = {
   "aree-riservate": "Aree Riservate",
   "cer-preferiti": "CER Preferiti",
   "gestione-fir": "Gestione FIR",
-
+  fatturazione: "Fatturazione",
   "firma-digitale": "Firma Digitale",
   personale: "Personale",
 };
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Persisted tab + sub-tab via URL params (so reload keeps the user where they were)
@@ -135,12 +139,15 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="firma-digitale" className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
             <PenTool className="h-4 w-4" />Firma Digitale
           </TabsTrigger>
+          <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-300">
+            <Euro className="h-4 w-4" />Fatturazione
+          </TabsTrigger>
           <TabsTrigger value="personale" className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400">
             <Users className="h-4 w-4" />Personale
           </TabsTrigger>
         </TabsList>
 
-        {tab !== "personale" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
+        {tab !== "personale" && tab !== "fatturazione" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
@@ -175,6 +182,7 @@ export default function MNDevDashboardPage() {
         <TabsContent value="firma-digitale"><DevFirmaDigitaleModule /></TabsContent>
         <TabsContent value="personale"><DevPersonaleModule /></TabsContent>
         <TabsContent value="magazzino-dev"><DevMagazzinoDevModule /></TabsContent>
+        <TabsContent value="fatturazione"><FatturazioneModule tenantId={profile?.tenant_id || undefined} /></TabsContent>
       </Tabs>
     </MNAdminLayout>
   );
