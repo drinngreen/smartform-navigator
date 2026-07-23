@@ -147,7 +147,7 @@ export default function MNDevDashboardPage() {
           </TabsTrigger>
         </TabsList>
 
-        {tab !== "personale" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
+        {tab !== "personale" && tab !== "fatturazione" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
