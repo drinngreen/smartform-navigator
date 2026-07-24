@@ -398,6 +398,15 @@ export default function MNFormulariPage() {
             </div>
         </DialogContent>
       </Dialog>
+
+      <MassiveFirGeneratorDialog
+        open={massiveOpen}
+        onClose={() => setMassiveOpen(false)}
+        tenantId={mnCtx.tenantId}
+        contextLabel={contextLabel}
+        onCreated={fetchForms}
+      />
     </MNAdminLayout>
+
   );
 }
