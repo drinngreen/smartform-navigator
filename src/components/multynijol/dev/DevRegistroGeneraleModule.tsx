@@ -254,7 +254,11 @@ export function DevRegistroGeneraleModule() {
                 onScroll={handleBottomScroll}
                 className="overflow-auto max-h-[70vh]"
               >
-                <table ref={tableRef} className="min-w-max text-sm">
+                <table
+                  ref={tableRef}
+                  className="min-w-max text-sm"
+                  onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }); }}
+                >
                   <thead className="sticky top-0 z-10 bg-card">
                     <tr className="border-b border-border/30 text-muted-foreground">
                       {registroColumns.map((column) => (
