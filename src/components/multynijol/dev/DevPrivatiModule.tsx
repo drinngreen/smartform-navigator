@@ -125,7 +125,7 @@ export function DevPrivatiModule() {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
         .from("privati_conferimenti")
-        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note")
+        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note, numero_progressivo, anno_dbt")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
         .order("data", { ascending: false });
