@@ -4280,6 +4280,7 @@ export type Database = {
       }
       privati_conferimenti: {
         Row: {
+          anno_dbt: number | null
           cer: string
           cf_pi: string | null
           codice_ce: string | null
@@ -4295,6 +4296,7 @@ export type Database = {
           nome_privato: string
           note: string | null
           numero_fir: string | null
+          numero_progressivo: number | null
           privato_id: string | null
           quantita_presunta: number | null
           stato_rifiuto: string | null
@@ -4304,6 +4306,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anno_dbt?: number | null
           cer: string
           cf_pi?: string | null
           codice_ce?: string | null
@@ -4319,6 +4322,7 @@ export type Database = {
           nome_privato: string
           note?: string | null
           numero_fir?: string | null
+          numero_progressivo?: number | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
@@ -4328,6 +4332,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anno_dbt?: number | null
           cer?: string
           cf_pi?: string | null
           codice_ce?: string | null
@@ -4343,6 +4348,7 @@ export type Database = {
           nome_privato?: string
           note?: string | null
           numero_fir?: string | null
+          numero_progressivo?: number | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
@@ -5502,6 +5508,10 @@ export type Database = {
         Returns: number
       }
       next_prima_nota_number: {
+        Args: { p_anno: number; p_tenant_id: string }
+        Returns: number
+      }
+      next_progressivo_dbt: {
         Args: { p_anno: number; p_tenant_id: string }
         Returns: number
       }
