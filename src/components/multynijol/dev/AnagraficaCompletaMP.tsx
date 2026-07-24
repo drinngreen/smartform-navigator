@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import {
-  Search, Plus, Edit, Trash2, FileSpreadsheet, Printer, Upload, Building2,
+  Search, Plus, Edit, Trash2, FileSpreadsheet, Printer, Upload, Building2, FolderOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
