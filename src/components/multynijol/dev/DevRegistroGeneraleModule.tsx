@@ -69,6 +69,12 @@ export function DevRegistroGeneraleModule() {
   const [page, setPage] = useState(0);
   const [cerFilter, setCerFilter] = useState("all");
   const [csFilter, setCsFilter] = useState("all");
+  const [dataFilter, setDataFilter] = useState<string>("");
+  const [contoTerziOpen, setContoTerziOpen] = useState(false);
+  const [scaricoLavOpen, setScaricoLavOpen] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["dev-registro-generale", MULTY_TENANT_ID],
