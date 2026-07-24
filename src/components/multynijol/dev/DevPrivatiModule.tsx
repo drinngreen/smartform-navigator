@@ -886,14 +886,12 @@ export function DevPrivatiModule() {
             <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
             <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
             <div>
-              <Label>Metodo Pagamento</Label>
+              <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleziona metodo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="contanti">Contanti</SelectItem>
-                  <SelectItem value="pos">POS</SelectItem>
-                  <SelectItem value="bonifico">Bonifico</SelectItem>
-                  <SelectItem value="gratuito">Gratuito</SelectItem>
+                  <SelectItem value="tracciabile_politico">Metodi Tracciabili / Politici</SelectItem>
                 </SelectContent>
               </Select>
             </div>
