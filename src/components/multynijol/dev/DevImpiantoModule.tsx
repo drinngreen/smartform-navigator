@@ -260,7 +260,10 @@ function ImpiantoFormulari() {
     const fd = f.form_data || {};
     const prod = normCf(f.produttore_codice_fiscale ?? fd.produttore_codice_fiscale ?? fd.produttoreCodiceFiscale);
     const dest = normCf(f.destinatario_codice_fiscale ?? fd.destinatario_codice_fiscale ?? fd.destinatarioCodiceFiscale);
-    return prod === MULTY_CF || dest === MULTY_CF;
+    const trasportatore = normCf(f.trasportatore_codice_fiscale ?? fd.trasportatore_codice_fiscale ?? fd.trasportatoreCodiceFiscale);
+    const isMovimentoImpianto = prod === MULTY_CF || dest === MULTY_CF;
+    const isContoProprio = trasportatore === MULTY_CF;
+    return isMovimentoImpianto && !isContoProprio;
   });
   const filtered = impiantoForms.filter((f: any) => {
     const q = search.toLowerCase();

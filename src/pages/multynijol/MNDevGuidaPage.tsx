@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2, Printer } from "lucide-react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
+import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 
 export default function MNDevGuidaPage() {
@@ -28,13 +29,20 @@ export default function MNDevGuidaPage() {
 
   return (
     <MNAdminLayout title="📘 Guida Dev Multy" subtitle="Multyproget · Istruzioni operative complete">
-      <button
-        onClick={() => navigate("/mn/admin/dev-multyproget")}
-        className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Torna al Centro di Comando
-      </button>
+      <div className="mb-4 flex items-center justify-between gap-3 print:hidden">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/mn/admin/dev-multyproget")}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft size={16} />
+          Torna al Centro di Comando
+        </Button>
+        <Button variant="outline" onClick={() => window.print()} className="gap-2 border-emerald-500/40 text-emerald-300">
+          <Printer size={16} />
+          Stampa guida
+        </Button>
+      </div>
 
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-6 md:p-8 shadow-sm">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/30">
