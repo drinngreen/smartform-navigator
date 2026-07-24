@@ -7,6 +7,42 @@ const NIYOL_CF = "09879800010";
 
 const norm = (v: unknown) => String(v || "").replace(/\s+/g, "").toUpperCase();
 
+const firstValue = (...values: unknown[]) =>
+  values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
+
+const numberValue = (...values: unknown[]) => {
+  const value = firstValue(...values);
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const parsed = parseFloat(String(value || "").replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+async function recalculateMultyStock(impiantoId: string, cer: string) {
+  const { data, error } = await supabase
+    .from("movimenti_impianto" as any)
+    .select("tipo_movimento, quantita_kg")
+    .eq("tenant_id", MULTY_TENANT_ID)
+    .eq("impianto_id", impiantoId)
+    .eq("cer", cer);
+  if (error) throw error;
+
+  const quantity = ((data || []) as Array<{ tipo_movimento: string; quantita_kg: number | string }>).reduce(
+    (total, movement) => total + (movement.tipo_movimento === "CARICO" ? 1 : -1) * (Number(movement.quantita_kg) || 0),
+    0
+  );
+  const { error: stockError } = await supabase.from("magazzino_giacenze").upsert(
+    {
+      tenant_id: MULTY_TENANT_ID,
+      impianto_id: impiantoId,
+      cer,
+      quantita_kg: quantity,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "tenant_id,impianto_id,cer" }
+  );
+  if (stockError) throw stockError;
+}
+
 async function upsertRegistro(
   tenantId: string,
   numeroFir: string,
@@ -57,18 +93,22 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   const numeroFir = (fir as any).numero_fir as string | null;
   const formData = ((fir as any).form_data || {}) as Record<string, any>;
 
-  const cer = (fir as any).codice_eer || formData.codice_eer || formData.cer || null;
-  const desc = (fir as any).descrizione_rifiuto || formData.descrizione_rifiuto || null;
-  const qtaRaw = (fir as any).quantita ?? formData.quantita ?? formData.quantita_partenza ?? null;
-  const qta = typeof qtaRaw === "number" ? qtaRaw : parseFloat(String(qtaRaw || "").replace(",", "."));
-  const qtaValid = Number.isFinite(qta) ? qta : 0;
+  const cer = firstValue((fir as any).codice_eer, formData.codice_eer, formData.codiceEER, formData.cer) as string | undefined;
+  const desc = firstValue((fir as any).descrizione_rifiuto, formData.descrizione_rifiuto, formData.descrizione) as string | undefined;
+  const qtaValid = numberValue((fir as any).quantita, formData.quantita, formData.quantita_partenza, formData.quantita_origine);
+  const qtaDestinazione = numberValue(
+    formData.quantita_destino,
+    formData.quantita_accettata,
+    formData.peso_ricevuto,
+    formData.peso_destino
+  );
 
   const prodDen = (fir as any).produttore_denominazione || formData.produttore_denominazione || null;
   const destDen = (fir as any).destinatario_denominazione || formData.destinatario_denominazione || null;
   const trspDen = (fir as any).trasportatore_denominazione || formData.trasportatore_denominazione || null;
-  const prodCf = norm((fir as any).produttore_codice_fiscale || formData.produttore_codice_fiscale);
-  const destCf = norm((fir as any).destinatario_codice_fiscale || formData.destinatario_codice_fiscale);
-  const trspCf = norm((fir as any).trasportatore_codice_fiscale || formData.trasportatore_codice_fiscale);
+  const prodCf = norm(firstValue((fir as any).produttore_codice_fiscale, formData.produttore_codice_fiscale, formData.produttoreCodiceFiscale, formData.produttoreCF));
+  const destCf = norm(firstValue((fir as any).destinatario_codice_fiscale, formData.destinatario_codice_fiscale, formData.destinatarioCodiceFiscale, formData.destinatarioCF));
+  const trspCf = norm(firstValue((fir as any).trasportatore_codice_fiscale, formData.trasportatore_codice_fiscale, formData.trasportatoreCodiceFiscale, formData.trasportatoreCF));
 
   // CF-based role detection (independent of the owning tenant)
   const isMultyProducer = prodCf === MULTY_CF;
@@ -85,8 +125,9 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   let warning: string | undefined;
 
   const today = new Date().toISOString().slice(0, 10);
+  const movementDate = String(firstValue(formData.data_emissione, formData.dataEmissione, today)).slice(0, 10);
   const baseRow = (regType: "Carico" | "Scarico"): Record<string, any> => ({
-    data_movimento: today,
+    data_movimento: movementDate,
     cer,
     descrizione: desc,
     carico_scarico: regType,
@@ -95,19 +136,18 @@ export async function syncFirFinalToRegistryAndInventory(params: {
     numero_formulario: numeroFir,
     segno: regType === "Scarico" ? "-" : "+",
     quantita: qtaValid,
-    peso_destino: qtaValid,
+    peso_destino: qtaDestinazione || qtaValid,
     luogo_produzione: prodDen,
     destinazione: destDen,
     annotazioni: "Salvataggio definitivo FIR (Modulo Standard)",
-    data_emissione_formulario: today,
+    data_emissione_formulario: movementDate,
     raw: { fir_form_id: firId, form_data: formData },
   });
 
   // === REGISTRO — Multyproget (producer o destinatario) ===
   if (numeroFir && isMultyInvolved) {
     try {
-      const regType: "Carico" | "Scarico" =
-        params.registryMovementType ?? (isMultyDestinatario ? "Carico" : "Scarico");
+      const regType: "Carico" | "Scarico" = isMultyDestinatario ? "Carico" : "Scarico";
       await upsertRegistro(MULTY_TENANT_ID, numeroFir, baseRow(regType));
       registryOk = true;
     } catch (e: any) {
@@ -138,7 +178,8 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   }
 
   // === GIACENZE (Multy inventory only when Multy is producer or destinatario) ===
-  if (isMultyInvolved && qtaValid > 0 && cer) {
+  const inventoryQuantity = isMultyDestinatario && qtaDestinazione > 0 ? qtaDestinazione : qtaValid;
+  if (isMultyInvolved && inventoryQuantity > 0 && cer) {
     try {
       const directImpiantoId =
         params.impiantoId?.trim() ||
@@ -163,21 +204,22 @@ export async function syncFirFinalToRegistryAndInventory(params: {
       } else {
         const { data: existing } = await supabase
           .from("movimenti_impianto" as any)
-          .select("id")
+          .select("id, impianto_id, cer, quantita_kg, tipo_movimento")
           .eq("fir_id", firId)
           .eq("origine", "fir_final")
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+        const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
+        const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
         if (!existing) {
-          const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
-          const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
           const { error: mErr } = await supabase.from("movimenti_impianto" as any).insert({
             impianto_id: impiantoId,
             tenant_id: MULTY_TENANT_ID,
             cer,
             descrizione_rifiuto: desc,
-            quantita_kg: qtaValid,
-            data_movimento: today,
+            quantita_kg: inventoryQuantity,
+            data_movimento: movementDate,
             tipo_movimento: tipo,
             ruolo_impianto: ruolo,
             origine: "fir_final",
@@ -188,7 +230,45 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             note: "Salvataggio definitivo FIR (Modulo Standard)",
           } as any);
           if (mErr) throw mErr;
+        } else {
+          const previous = existing as any;
+          const changed = previous.impianto_id !== impiantoId
+            || previous.cer !== cer
+            || Number(previous.quantita_kg) !== inventoryQuantity
+            || previous.tipo_movimento !== tipo;
+          if (changed) {
+            const { error: inverseError } = await supabase.from("movimenti_impianto" as any).insert({
+              impianto_id: previous.impianto_id,
+              tenant_id: MULTY_TENANT_ID,
+              cer: previous.cer,
+              quantita_kg: Number(previous.quantita_kg) || 0,
+              data_movimento: movementDate,
+              tipo_movimento: previous.tipo_movimento === "CARICO" ? "SCARICO" : "CARICO",
+              ruolo_impianto: ruolo,
+              origine: "fir_adjust",
+              fir_id: firId,
+              numero_fir: numeroFir,
+              note: "Compensazione automatica modifica FIR",
+            } as any);
+            if (inverseError) throw inverseError;
+
+            const { error: updateError } = await supabase.from("movimenti_impianto" as any).update({
+              impianto_id: impiantoId,
+              cer,
+              descrizione_rifiuto: desc,
+              quantita_kg: inventoryQuantity,
+              data_movimento: movementDate,
+              tipo_movimento: tipo,
+              ruolo_impianto: ruolo,
+              produttore_denominazione: prodDen,
+              destinatario_denominazione: destDen,
+            } as any).eq("id", previous.id);
+            if (updateError) throw updateError;
+
+            await recalculateMultyStock(previous.impianto_id, previous.cer);
+          }
         }
+        await recalculateMultyStock(impiantoId, cer);
         inventoryOk = true;
       }
     } catch (e: any) {

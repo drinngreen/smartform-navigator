@@ -10,6 +10,7 @@ import { GLOBAL_RECO, MULTYPROGET, NIYOL, DESTINATARI, type Soggetto } from "@/d
 import { FIRRentriActions } from "./FIRRentriActions";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
+import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 
 interface TemplateField {
   id: string;
@@ -992,6 +993,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const prodDen = valByTokens("denominazione", "produttore");
       const destDen = valByTokens("denominazione", "destinatario");
       const trasDen = valByTokens("denominazione", "trasportatore");
+      const prodCf = valByTokens("codice", "fiscale", "produttore") || valByTokens("cf", "produttore");
+      const destCf = valByTokens("codice", "fiscale", "destinatario") || valByTokens("cf", "destinatario");
+      const trasCf = valByTokens("codice", "fiscale", "trasportatore") || valByTokens("cf", "trasportatore");
       const dataEmissione = valByTokens("data", "emissione");
 
       // CRITICAL: numero_fir is IMMUTABLE. Never include it in the UPDATE payload.
@@ -1017,6 +1021,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (prodDen) updates.produttore_denominazione = prodDen;
       if (destDen) updates.destinatario_denominazione = destDen;
       if (trasDen) updates.trasportatore_denominazione = trasDen;
+      if (prodCf) updates.produttore_codice_fiscale = prodCf;
+      if (destCf) updates.destinatario_codice_fiscale = destCf;
+      if (trasCf) updates.trasportatore_codice_fiscale = trasCf;
       if (dataEmissione) (mergedFormData as Record<string, unknown>).data_emissione = dataEmissione;
       if (qta !== null) {
         (mergedFormData as Record<string, unknown>).quantita_origine = qta;
@@ -1032,132 +1039,18 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const { error: updateErr } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
       if (updateErr) throw updateErr;
 
-      // === REGISTRO (only on FINAL save) ===
+      // Sincronizzazione unica per entrambe le viste: instrada il FIR nei registri
+      // coinvolti e aggiorna le giacenze Multy in base al suo ruolo effettivo.
       if (mode === "final" && tenantId && numeroFir) {
         try {
-          const registryRow = {
-            tenant_id: tenantId,
-            data_movimento: new Date().toISOString().slice(0, 10),
-            cer: eer || null,
-            descrizione: desc || null,
-            carico_scarico: registryMovementType || "Carico",
-            tipo_operazione: registryMovementType === "Scarico" ? "Scarico da formulario FIR" : "Carico da formulario FIR",
-            al_rentri: false,
-            numero_formulario: numeroFir,
-            segno: registryMovementType === "Scarico" ? "-" : "+",
-            quantita: qta,
-            peso_destino: qta,
-            luogo_produzione: prodDen || null,
-            destinazione: destDen || null,
-            stato_fisico: statoFisicoLabel || null,
-            annotazioni: "Creato da workspace FIR Dev Multyproget",
-            data_emissione_formulario: new Date().toISOString().slice(0, 10),
-            raw: { fir_form_id: targetId, form_data: mergedFormData },
-          };
-          const { data: found } = await supabase
-            .from("registro_generale" as any)
-            .select("id")
-            .eq("tenant_id", tenantId)
-            .eq("numero_formulario", numeroFir)
-            .limit(1)
-            .maybeSingle();
-          const foundRow = found as { id?: string } | null;
-          const registryError = foundRow?.id
-            ? (await supabase.from("registro_generale" as any).update(registryRow).eq("id", foundRow.id)).error
-            : (await supabase.from("registro_generale" as any).insert(registryRow)).error;
-          if (registryError) throw registryError;
-        } catch (regErr) {
-          toast.warning("Formulario salvato, ma registro non aggiornato: " + formatErr(regErr));
-        }
-
-        // === GIACENZE (only on FINAL save) ===
-        try {
-          const directImpiantoId = typeof impiantoId === "string" && impiantoId.trim()
-            ? impiantoId.trim()
-            : typeof (mergedFormData as any).impianto_id === "string"
-              ? String((mergedFormData as any).impianto_id).trim()
-              : "";
-          const movementImpiantoId = directImpiantoId || ((await supabase
-            .from("impianti" as any)
-            .select("id")
-            .eq("tenant_id", tenantId)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle()).data as { id?: string } | null)?.id || "";
-
-          if (!movementImpiantoId) {
-            toast.warning("Giacenze non aggiornate: nessun impianto Multyproget trovato");
-          } else {
-          const prevSnap = (mergedFormData as any).__giacenza_snapshot as
-            | { quantita: number; cer: string | null; segno: "+" | "-"; impianto_id?: string | null }
-            | undefined;
-          const newSegno: "+" | "-" = registryMovementType === "Scarico" ? "-" : "+";
-          const newQta = qta || 0;
-          const newCer = eer || null;
-          const { data: existingFinalMovement, error: existingMovementError } = await supabase
-            .from("movimenti_impianto" as any)
-            .select("id")
-            .eq("fir_id", targetId)
-            .eq("origine", "fir_final")
-            .limit(1)
-            .maybeSingle();
-          if (existingMovementError) throw existingMovementError;
-          const movementChanged = !!prevSnap && (
-            prevSnap.quantita !== newQta
-            || prevSnap.cer !== newCer
-            || prevSnap.segno !== newSegno
-            || prevSnap.impianto_id !== movementImpiantoId
-          );
-
-          // Compensatory inverse if a previous snapshot exists and data changed
-          if (prevSnap && existingFinalMovement && movementChanged) {
-            const { error: inverseErr } = await supabase.from("movimenti_impianto" as any).insert({
-              impianto_id: prevSnap.impianto_id || movementImpiantoId,
-              tenant_id: tenantId,
-              cer: prevSnap.cer || newCer,
-              quantita_kg: prevSnap.quantita,
-              data_movimento: new Date().toISOString().slice(0, 10),
-              tipo_movimento: prevSnap.segno === "+" ? "SCARICO" : "CARICO",
-              ruolo_impianto: "DESTINATARIO",
-              origine: "fir_adjust",
-              fir_id: targetId,
-              numero_fir: numeroFir,
-              produttore_denominazione: prodDen || null,
-              destinatario_denominazione: destDen || null,
-              note: "Compensativo inverso (modifica FIR)",
-            } as any);
-            if (inverseErr) throw inverseErr;
-          }
-
-          if (newQta > 0 && newCer && (!existingFinalMovement || movementChanged)) {
-            const { error: movementErr } = await supabase.from("movimenti_impianto" as any).insert({
-              impianto_id: movementImpiantoId,
-              tenant_id: tenantId,
-              cer: newCer,
-              descrizione_rifiuto: desc || null,
-              quantita_kg: newQta,
-              data_movimento: new Date().toISOString().slice(0, 10),
-              tipo_movimento: newSegno === "+" ? "CARICO" : "SCARICO",
-              ruolo_impianto: "DESTINATARIO",
-              origine: "fir_final",
-              fir_id: targetId,
-              numero_fir: numeroFir,
-              produttore_denominazione: prodDen || null,
-              destinatario_denominazione: destDen || null,
-              note: "Salvataggio definitivo FIR",
-            } as any);
-            if (movementErr) throw movementErr;
-          }
-
-          // Save snapshot in form_data
-          const newSnap = { quantita: newQta, cer: newCer, segno: newSegno, impianto_id: movementImpiantoId };
-          await supabase
-            .from("fir_forms")
-            .update({ form_data: { ...mergedFormData, __giacenza_snapshot: newSnap } })
-            .eq("id", targetId);
-          }
-        } catch (gErr) {
-          toast.warning("Giacenze non aggiornate: " + formatErr(gErr));
+          const result = await syncFirFinalToRegistryAndInventory({
+            firId: targetId,
+            impiantoId: impiantoId || null,
+            registryMovementType,
+          });
+          if (result.warning) toast.warning(result.warning);
+        } catch (syncError) {
+          toast.warning("Formulario salvato, ma sincronizzazione incompleta: " + formatErr(syncError));
         }
       }
 
