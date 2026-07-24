@@ -16,6 +16,7 @@ import {
   Users,
   Globe,
   Send,
+  HelpCircle,
 } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
