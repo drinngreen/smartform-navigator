@@ -193,6 +193,8 @@ export default function MNDevDashboardPage() {
         <TabsContent value="personale"><DevPersonaleModule /></TabsContent>
         <TabsContent value="magazzino-dev"><DevMagazzinoDevModule /></TabsContent>
         <TabsContent value="fatturazione"><FatturazioneModule tenantId={profile?.tenant_id || undefined} /></TabsContent>
+        <TabsContent value="mud"><DevMudExportModule /></TabsContent>
+        <TabsContent value="ddt"><DevDdtModule /></TabsContent>
       </Tabs>
     </MNAdminLayout>
   );
