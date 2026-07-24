@@ -301,7 +301,7 @@ export function DevPrivatiModule() {
         privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         data_emissione: dataRegistrazione,
         importo: conf.importo_pagato || 0,
-        note: `${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
+        note: `DBT #${conf.numero_progressivo ?? "-"}/${conf.anno_dbt ?? anno} — ${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg — Pag.: ${conf.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
     }
 
