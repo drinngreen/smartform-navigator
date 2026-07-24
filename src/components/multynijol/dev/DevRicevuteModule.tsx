@@ -35,6 +35,8 @@ type RicevutaRow = {
     modello_automezzo: string | null;
     metodo_pag: string | null;
     note: string | null;
+    numero_progressivo: number | null;
+    anno_dbt: number | null;
   } | null;
 };
 
