@@ -236,9 +236,13 @@ export default function MNFormulariPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Cerca per numero FIR, CER, produttore, autista..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card/60 border-border/30" />
         </div>
+        <Button variant="outline" onClick={() => setMassiveOpen(true)} className="gap-2 border-sky-400/50 text-sky-200 hover:bg-sky-500/10">
+          <Layers className="h-4 w-4" /> Generazione massiva
+        </Button>
         <Button variant="outline" size="icon" onClick={fetchForms} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
+
       </div>
 
       {/* Tabs */}
