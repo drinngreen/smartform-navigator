@@ -149,9 +149,15 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="personale" className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400">
             <Users className="h-4 w-4" />Personale
           </TabsTrigger>
+          <TabsTrigger value="mud" className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+            <FileSpreadsheet className="h-4 w-4" />MUD
+          </TabsTrigger>
+          <TabsTrigger value="ddt" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
+            <ClipboardList className="h-4 w-4" />DDT
+          </TabsTrigger>
         </TabsList>
 
-        {tab !== "personale" && tab !== "fatturazione" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
+        {tab !== "personale" && tab !== "fatturazione" && tab !== "mud" && tab !== "ddt" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
