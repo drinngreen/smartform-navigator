@@ -248,6 +248,7 @@ const App = () => (
                 {/* MultyNijol Admin Routes - PROTECTED */}
                 <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/dev-multyproget" element={<ProtectedRoute><MNDevDashboardPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/dev-multyproget/guida" element={<ProtectedRoute><MNDevGuidaPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context" element={<ProtectedRoute><MNContextDashboardPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/registro" element={<ProtectedRoute><MNRegistroFIRPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/rentri" element={<ProtectedRoute><MNRENTRIPage /></ProtectedRoute>} />
