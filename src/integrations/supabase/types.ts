@@ -651,6 +651,291 @@ export type Database = {
           },
         ]
       }
+      cliente_autorizzazioni: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_inizio: string | null
+          data_scadenza: string | null
+          documento_url: string | null
+          ente_rilascio: string | null
+          id: string
+          note: string | null
+          numero_autorizzazione: string
+          tenant_id: string | null
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_inizio?: string | null
+          data_scadenza?: string | null
+          documento_url?: string | null
+          ente_rilascio?: string | null
+          id?: string
+          note?: string | null
+          numero_autorizzazione: string
+          tenant_id?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_inizio?: string | null
+          data_scadenza?: string | null
+          documento_url?: string | null
+          ente_rilascio?: string | null
+          id?: string
+          note?: string | null
+          numero_autorizzazione?: string
+          tenant_id?: string | null
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_autorizzazioni_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_autorizzazioni_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_cantieri: {
+        Row: {
+          attivo: boolean
+          cliente_id: string
+          comune: string | null
+          created_at: string
+          denominazione: string
+          id: string
+          indirizzo: string | null
+          note: string | null
+          provincia: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          cliente_id: string
+          comune?: string | null
+          created_at?: string
+          denominazione: string
+          id?: string
+          indirizzo?: string | null
+          note?: string | null
+          provincia?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          cliente_id?: string
+          comune?: string | null
+          created_at?: string
+          denominazione?: string
+          id?: string
+          indirizzo?: string | null
+          note?: string | null
+          provincia?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_cantieri_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_cantieri_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_documenti: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          data_documento: string | null
+          data_scadenza: string | null
+          descrizione: string | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          storage_path: string | null
+          tenant_id: string | null
+          tipo: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          data_documento?: string | null
+          data_scadenza?: string | null
+          descrizione?: string | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          storage_path?: string | null
+          tenant_id?: string | null
+          tipo: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          data_documento?: string | null
+          data_scadenza?: string | null
+          descrizione?: string | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          storage_path?: string | null
+          tenant_id?: string | null
+          tipo?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_documenti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_documenti_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_targhe: {
+        Row: {
+          cliente_id: string
+          conducente_default: string | null
+          created_at: string
+          id: string
+          note: string | null
+          targa: string
+          tenant_id: string | null
+          tipo_mezzo: string | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          conducente_default?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          targa: string
+          tenant_id?: string | null
+          tipo_mezzo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          conducente_default?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          targa?: string
+          tenant_id?: string | null
+          tipo_mezzo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_targhe_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_targhe_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_unita_locali: {
+        Row: {
+          cap: string | null
+          cliente_id: string
+          comune: string | null
+          created_at: string
+          denominazione: string
+          id: string
+          indirizzo: string | null
+          note: string | null
+          provincia: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cap?: string | null
+          cliente_id: string
+          comune?: string | null
+          created_at?: string
+          denominazione: string
+          id?: string
+          indirizzo?: string | null
+          note?: string | null
+          provincia?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cap?: string | null
+          cliente_id?: string
+          comune?: string | null
+          created_at?: string
+          denominazione?: string
+          id?: string
+          indirizzo?: string | null
+          note?: string | null
+          provincia?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_unita_locali_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_unita_locali_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comunicazioni_log: {
         Row: {
           canale: string

@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import {
-  Search, Plus, Edit, Trash2, FileSpreadsheet, Printer, Upload, Building2,
+  Search, Plus, Edit, Trash2, FileSpreadsheet, Printer, Upload, Building2, FolderOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import * as XLSX from "xlsx";
+import { AnagraficaDettaglioDialog } from "./AnagraficaDettaglioDialog";
 
 const MULTY_TENANT_CANDIDATES = [
   "77ec9a3d-602e-438f-97bf-1c69abd8f691",
@@ -76,6 +77,7 @@ export function AnagraficaCompletaMP() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<{ id: string; nome: string } | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [importing, setImporting] = useState(false);
   const tenantId = MULTY_TENANT_CANDIDATES[0];
@@ -402,6 +404,9 @@ export function AnagraficaCompletaMP() {
                       <td className="p-3 text-muted-foreground text-xs">{a.telefono || a.cellulare || "—"}</td>
                       <td className="p-3 text-right">
                         <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => setDetailId({ id: a.id, nome: a.ragione_sociale || a.email || "Cliente" })} className="text-blue-400 h-7 w-7 p-0" title="Dettaglio (UL, targhe, cantieri, autorizzazioni, documenti)">
+                            <FolderOpen className="h-3 w-3" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => openEdit(a)} className="text-emerald-400 h-7 w-7 p-0">
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -491,6 +496,14 @@ export function AnagraficaCompletaMP() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {detailId && (
+        <AnagraficaDettaglioDialog
+          clienteId={detailId.id}
+          clienteNome={detailId.nome}
+          onClose={() => setDetailId(null)}
+        />
+      )}
     </div>
   );
 }

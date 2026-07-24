@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
+import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
@@ -468,6 +469,7 @@ export function DevPrivatiModule() {
 
   return (
     <div className="space-y-4">
+      <PrivatiLimitiWidget tenantId={MULTY_TENANT_ID} />
       {/* Global Limit Alert */}
       <Card className="bg-red-950/30 border-red-500/30">
         <CardHeader>
