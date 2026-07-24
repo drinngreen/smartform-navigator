@@ -57,6 +57,8 @@ const DEV_TAB_LABELS: Record<string, string> = {
   fatturazione: "Fatturazione",
   "firma-digitale": "Firma Digitale",
   personale: "Personale",
+  mud: "MUD",
+  ddt: "DDT",
 };
 
 export default function MNDevDashboardPage() {
