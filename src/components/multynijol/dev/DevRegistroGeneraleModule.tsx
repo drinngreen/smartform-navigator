@@ -206,13 +206,34 @@ export function DevRegistroGeneraleModule() {
             <SelectItem value="Scarico">Scarico</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-1">
+          <Input
+            type="date"
+            value={dataFilter}
+            onChange={(e) => { setDataFilter(e.target.value); setPage(0); }}
+            className="w-40 bg-card/60 border-border/50"
+            title="Filtra per singolo giorno"
+          />
+          {dataFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setDataFilter("")} className="h-8 w-8 p-0" title="Rimuovi filtro data">
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToExcel(filtered, exportCols, "registro-generale-multy", "Registro Generale")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <FileSpreadsheet className="h-3 w-3" /> Excel
         </Button>
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, "registro-generale-multy", "Registro Generale Multyproget")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <Printer className="h-3 w-3" /> PDF
         </Button>
+        <Button size="sm" onClick={() => setContoTerziOpen(true)} className="gap-1 bg-amber-500 text-black hover:bg-amber-400">
+          <Truck className="h-3 w-3" /> Conto Terzi (cartaceo)
+        </Button>
+        <Button size="sm" onClick={() => setScaricoLavOpen(true)} className="gap-1 bg-purple-500 text-white hover:bg-purple-400">
+          <Scissors className="h-3 w-3" /> Scarico Lavorazione
+        </Button>
       </div>
+
 
       {/* Table */}
       <Card className="bg-card/60 border-border/30">
