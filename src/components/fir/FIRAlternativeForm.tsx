@@ -1441,10 +1441,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                   onChange={(e) => handleChange(field.id, e.target.value)}
                   style={{
                     ...style,
-                    background: "transparent",
-                    border: "1px solid rgba(120, 120, 140, 0.35)",
+                    background: printOnly ? "transparent" : (isCanonicalNumeroField ? "rgba(255, 255, 255, 0.9)" : "rgba(56, 189, 248, 0.14)"),
+                    border: printOnly ? "1px solid rgba(120, 120, 140, 0.35)" : "1px solid rgba(56, 189, 248, 0.55)",
                     borderRadius: "2px",
-                    color: isCanonicalNumeroField ? "#000000" : "#1a1a2e",
+                    color: isCanonicalNumeroField ? "#000000" : "#0b2540",
                     fontWeight: isCanonicalNumeroField ? 700 : undefined,
                     fontSize: dynamicFontSize(displayValue),
                     fontFamily: "monospace",
@@ -1452,6 +1452,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                     outline: "none",
                   }}
                 />
+
               );
             })}
           </div>
