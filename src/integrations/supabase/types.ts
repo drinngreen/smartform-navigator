@@ -993,6 +993,71 @@ export type Database = {
           },
         ]
       }
+      ddt_forms: {
+        Row: {
+          anno: number
+          causale_trasporto: string
+          cliente_destinatario: string
+          conducente: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          descrizione_bene: string
+          id: string
+          indirizzo_destinazione: string | null
+          note: string | null
+          numero_ddt: string
+          quantita: string | null
+          targa_mezzo: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          anno?: number
+          causale_trasporto?: string
+          cliente_destinatario: string
+          conducente?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descrizione_bene: string
+          id?: string
+          indirizzo_destinazione?: string | null
+          note?: string | null
+          numero_ddt: string
+          quantita?: string | null
+          targa_mezzo?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          anno?: number
+          causale_trasporto?: string
+          cliente_destinatario?: string
+          conducente?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descrizione_bene?: string
+          id?: string
+          indirizzo_destinazione?: string | null
+          note?: string | null
+          numero_ddt?: string
+          quantita?: string | null
+          targa_mezzo?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ddt_forms_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documenti_privati: {
         Row: {
           anagrafica_id: string
@@ -5864,6 +5929,10 @@ export type Database = {
       is_superadmin: { Args: never; Returns: boolean }
       is_valid_fir_number: { Args: { p_value: string }; Returns: boolean }
       map_tenant_to_societa: { Args: { p_tenant_id: string }; Returns: string }
+      next_ddt_number: {
+        Args: { p_anno: number; p_tenant_id: string }
+        Returns: string
+      }
       next_fattura_number: {
         Args: { p_anno: number; p_tenant_id: string }
         Returns: number
