@@ -1374,16 +1374,17 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                       style={{
                         width: "100%",
                         height: "100%",
-                        background: "transparent",
-                        border: "1px solid rgba(120, 120, 140, 0.35)",
+                        background: printOnly ? "transparent" : "rgba(56, 189, 248, 0.14)",
+                        border: printOnly ? "1px solid rgba(120, 120, 140, 0.35)" : "1px solid rgba(56, 189, 248, 0.55)",
                         borderRadius: "2px",
-                        color: "#1a1a2e",
+                        color: "#0b2540",
                         fontSize: dynamicFontSize(rawValue),
                         fontFamily: "monospace",
                         padding: "1px 3px",
                         outline: "none",
                       }}
                     />
+
 
                     {shouldShowAutocomplete && (
                       <div className="absolute left-0 right-0 top-full z-[80] mt-0.5 max-h-32 overflow-y-auto rounded-md border border-border/40 bg-popover shadow-lg">
