@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen } from "lucide-react";
+import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen, Truck, Scissors, X } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
+import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
