@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import * as XLSX from "xlsx";
+import { AnagraficaDettaglioDialog } from "./AnagraficaDettaglioDialog";
 
 const MULTY_TENANT_CANDIDATES = [
   "77ec9a3d-602e-438f-97bf-1c69abd8f691",
