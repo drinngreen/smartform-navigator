@@ -80,7 +80,7 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note)")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
