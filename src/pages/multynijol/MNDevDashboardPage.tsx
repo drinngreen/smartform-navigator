@@ -93,17 +93,30 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
-      {/* Link Modulo Alternativo */}
-      <button
-        onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
-        className="w-full flex items-center gap-3 px-5 py-4 mb-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left"
-      >
-        <FileText size={20} className="text-amber-400" />
-        <div>
-          <div className="font-semibold text-sm text-amber-300">Modulo Alternativo FIR</div>
-          <div className="text-xs text-muted-foreground">Vista sperimentale del formulario</div>
-        </div>
-      </button>
+      {/* Link rapidi in testa */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left"
+        >
+          <FileText size={20} className="text-amber-400" />
+          <div>
+            <div className="font-semibold text-sm text-amber-300">Modulo Alternativo FIR</div>
+            <div className="text-xs text-muted-foreground">Vista sperimentale del formulario</div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/guida")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-emerald-500/30 bg-card hover:bg-emerald-500/10 transition-all text-left"
+        >
+          <HelpCircle size={20} className="text-emerald-400" />
+          <div>
+            <div className="font-semibold text-sm text-emerald-300">Guida Dev Multy</div>
+            <div className="text-xs text-muted-foreground">Istruzioni operative complete di ogni modulo</div>
+          </div>
+        </button>
+      </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
