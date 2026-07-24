@@ -64,26 +64,42 @@ export function FatturazioneModule({ tenantId }: Props) {
 
   const sendXmlMut = useMutation({
     mutationFn: async (f: any) => {
-      // Regola: minimo 24h in cortesia
       const created = new Date(f.created_at).getTime();
       if (Date.now() - created < 24 * 3600 * 1000) {
         throw new Error("Attendere 24 ore dalla generazione prima dell'invio al Cassetto Fiscale");
       }
-      // Genera XML (placeholder minimale FatturaPA-like)
-      const xml = buildFatturaXml(f);
+      const { buildFatturaPAXml, creaPrimaNotaDaFattura } = await import("@/lib/fatturaPA");
+
+      const { data: righe } = await supabase.from("fatture_righe" as any).select("*").eq("fattura_id", f.id).order("ordine");
+      const rows = (righe || []) as any[];
+
+      const xml = buildFatturaPAXml(f, rows.map(r => ({
+        descrizione: r.descrizione, quantita: Number(r.quantita || 1),
+        unita_misura: r.unita_misura || "n", prezzo_unitario: Number(r.prezzo_unitario || r.imponibile),
+        imponibile: Number(r.imponibile), aliquota_iva: Number(r.aliquota_iva || 22),
+        reverse_charge: !!r.reverse_charge,
+      })));
+
       const blob = new Blob([xml], { type: "application/xml" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = `${f.numero_completo.replace('/', '_')}.xml`;
+      a.href = url; a.download = `IT${f.cliente_partita_iva || "00000000000"}_${String(f.numero).padStart(5, "0")}.xml`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
+
+      const tipo = (f.note || "").toLowerCase().includes("noleggio") ? "noleggio" : "servizi";
+      try {
+        await creaPrimaNotaDaFattura(f, tipo as any);
+      } catch (e: any) {
+        toast.warning(`XML generato ma Prima Nota non registrata: ${e.message}`);
+      }
 
       const { error } = await supabase.from("fatture" as any).update({
         stato: "inviata", locked: true, inviata_at: new Date().toISOString(), xml_generato_at: new Date().toISOString(),
       }).eq("id", f.id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["fatture"] }); toast.success("XML generato e fattura bloccata"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["fatture"] }); toast.success("XML FatturaPA generato, Prima Nota registrata, fattura bloccata"); },
     onError: (e: any) => toast.error(e.message || "Errore invio"),
   });
 
