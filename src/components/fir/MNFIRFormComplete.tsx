@@ -75,7 +75,7 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
   return (
     <div>
       <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all" />
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-sky-400/10 border border-sky-400/40 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-sky-300 focus:border-sky-300/60 focus:bg-sky-400/15 focus:shadow-[0_0_10px_rgba(56,189,248,0.35)] transition-all" />
     </div>
   );
 }
@@ -84,10 +84,11 @@ function TextArea({ label, value, onChange, placeholder, rows = 2 }: { label: st
   return (
     <div>
       <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-background/80 border border-primary/15 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary/40 focus:shadow-[0_0_8px_hsl(47_38%_58%/0.2)] transition-all resize-none" />
+      <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} className="w-full bg-sky-400/10 border border-sky-400/40 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-sky-300 focus:border-sky-300/60 focus:bg-sky-400/15 focus:shadow-[0_0_10px_rgba(56,189,248,0.35)] transition-all resize-none" />
     </div>
   );
 }
+
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (

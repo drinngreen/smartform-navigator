@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2, Layers, Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { MassiveFirGeneratorDialog } from "@/components/multynijol/dev/MassiveFirGeneratorDialog";
+
 
 interface FirForm {
   id: string;
@@ -59,6 +61,8 @@ export default function MNFormulariPage() {
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [massiveOpen, setMassiveOpen] = useState(false);
+
 
   const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
     setEditorMode(mode);
@@ -116,6 +120,50 @@ export default function MNFormulariPage() {
       toast.error("Errore eliminazione FIR: " + e.message);
     }
   };
+
+  const handleDuplicateForm = async (form: FirForm) => {
+    const nuovoNumero = window.prompt(
+      `Duplica FIR ${form.numero_fir || ""}\nInserisci il NUOVO numero formulario:`,
+      ""
+    );
+    if (!nuovoNumero || !nuovoNumero.trim()) return;
+    const categoria = window.prompt(
+      "Categoria di vidimazione (conto_proprio / miol / multy):",
+      "multy"
+    );
+    if (!categoria) return;
+    try {
+      const { data: newId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant", {
+        p_user_id: form.user_id,
+        p_tenant_id: mnCtx.tenantId,
+        p_numero_fir: nuovoNumero.trim(),
+      });
+      if (error) throw error;
+      const clonedFormData = { ...(form as any).form_data, numero_fir: nuovoNumero.trim(), numero_formulario: nuovoNumero.trim(), categoria_vidimazione: categoria };
+      await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_fir_form",
+          form_id: newId,
+          updates: {
+            form_data: clonedFormData,
+            codice_eer: form.codice_eer,
+            descrizione_rifiuto: form.descrizione_rifiuto,
+            quantita: form.quantita,
+            unita_misura: form.unita_misura,
+            stato_fisico: form.stato_fisico,
+            produttore_denominazione: form.produttore_denominazione,
+            trasportatore_denominazione: form.trasportatore_denominazione,
+            destinatario_denominazione: form.destinatario_denominazione,
+          },
+        },
+      });
+      toast.success(`FIR duplicato come ${nuovoNumero.trim()} (${categoria.toUpperCase()})`);
+      await fetchForms();
+    } catch (e: any) {
+      toast.error("Errore duplicazione FIR: " + e.message);
+    }
+  };
+
 
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
@@ -188,9 +236,13 @@ export default function MNFormulariPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Cerca per numero FIR, CER, produttore, autista..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card/60 border-border/30" />
         </div>
+        <Button variant="outline" onClick={() => setMassiveOpen(true)} className="gap-2 border-sky-400/50 text-sky-200 hover:bg-sky-500/10">
+          <Layers className="h-4 w-4" /> Generazione massiva
+        </Button>
         <Button variant="outline" size="icon" onClick={fetchForms} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
+
       </div>
 
       {/* Tabs */}
@@ -259,6 +311,13 @@ export default function MNFormulariPage() {
                           </button>
                         )}
                         <button
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                          onClick={() => void handleDuplicateForm(form)}
+                          title="Duplica con scelta categoria"
+                        >
+                          <Copy className="h-4 w-4" /> Duplica
+                        </button>
+                        <button
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
                           onClick={() => void handleDeleteForm(form)}
                         >
@@ -267,6 +326,7 @@ export default function MNFormulariPage() {
                       </div>
                     </td>
                   </tr>
+
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
@@ -338,6 +398,15 @@ export default function MNFormulariPage() {
             </div>
         </DialogContent>
       </Dialog>
+
+      <MassiveFirGeneratorDialog
+        open={massiveOpen}
+        onClose={() => setMassiveOpen(false)}
+        tenantId={mnCtx.tenantId}
+        contextLabel={contextLabel}
+        onCreated={fetchForms}
+      />
     </MNAdminLayout>
+
   );
 }
