@@ -48,7 +48,7 @@ export function DevDdtModule({ tenantId = MULTY_TENANT_ID, tenantLabel = "Multyp
     queryFn: async () => {
       const { data, error } = await supabase.from("ddt_forms" as any).select("*").eq("tenant_id", tenantId).order("data", { ascending: false });
       if (error) throw error;
-      return (data || []) as Ddt[];
+      return ((data || []) as unknown) as Ddt[];
     },
   });
 
