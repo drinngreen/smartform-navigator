@@ -298,6 +298,40 @@ export function DevRegistroGeneraleModule() {
           )}
         </CardContent>
       </Card>
+
+      {/* Right-click context menu → export filtered rows to Excel */}
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+          <div
+            className="fixed z-50 min-w-[220px] rounded-md border border-border/50 bg-card shadow-xl py-1 text-sm"
+            style={{ top: ctxMenu.y, left: ctxMenu.x }}
+          >
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2 text-emerald-300"
+              onClick={() => {
+                if (filtered.length) exportToExcel(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale");
+                setCtxMenu(null);
+              }}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Esporta Excel ({filtered.length} righe filtrate)
+            </button>
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2"
+              onClick={() => {
+                if (filtered.length) exportToPdf(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale Multyproget");
+                setCtxMenu(null);
+              }}
+            >
+              <FileText className="h-4 w-4" /> Esporta PDF (righe filtrate)
+            </button>
+          </div>
+        </>
+      )}
+
+      <ContoTerziManualDialog open={contoTerziOpen} onClose={() => setContoTerziOpen(false)} />
+      <ScaricoLavorazioneDialog open={scaricoLavOpen} onClose={() => setScaricoLavOpen(false)} />
     </div>
   );
 }
