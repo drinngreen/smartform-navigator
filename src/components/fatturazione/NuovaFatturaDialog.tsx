@@ -96,6 +96,16 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     enabled: showFirPicker,
   });
 
+  const { data: erpIva = [] } = useQuery({
+    queryKey: ["erp-iva", tenantId],
+    queryFn: async () => {
+      let q = supabase.from("erp_codici_iva" as any).select("codice,descrizione,aliquota,natura").eq("attivo", true);
+      if (tenantId) q = q.eq("tenant_id", tenantId);
+      const { data } = await q;
+      return (data || []) as any[];
+    },
+  });
+
   const cliente = clienteSelezionato || (clienteFallback as any);
   const hasPIva = !!cliente?.partita_iva;
 
