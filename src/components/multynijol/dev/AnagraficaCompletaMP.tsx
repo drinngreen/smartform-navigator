@@ -403,6 +403,9 @@ export function AnagraficaCompletaMP() {
                       <td className="p-3 text-muted-foreground text-xs">{a.telefono || a.cellulare || "—"}</td>
                       <td className="p-3 text-right">
                         <div className="flex gap-1 justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => setDetailId({ id: a.id, nome: a.ragione_sociale || a.email || "Cliente" })} className="text-blue-400 h-7 w-7 p-0" title="Dettaglio (UL, targhe, cantieri, autorizzazioni, documenti)">
+                            <FolderOpen className="h-3 w-3" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => openEdit(a)} className="text-emerald-400 h-7 w-7 p-0">
                             <Edit className="h-3 w-3" />
                           </Button>
