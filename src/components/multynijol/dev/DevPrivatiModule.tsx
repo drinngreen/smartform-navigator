@@ -125,7 +125,7 @@ export function DevPrivatiModule() {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
         .from("privati_conferimenti")
-        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note")
+        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note, numero_progressivo, anno_dbt")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
         .order("data", { ascending: false });
@@ -248,6 +248,7 @@ export function DevPrivatiModule() {
     if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
     if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
     if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
+    if (!confForm.metodo_pag) { toast.error("Seleziona il metodo di pagamento"); return; }
 
     const kg = parseFloat(confForm.kg_pesati);
     if (!Number.isFinite(kg) || kg <= 0) { toast.error("Inserisci un peso valido"); return; }
@@ -300,7 +301,7 @@ export function DevPrivatiModule() {
         privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         data_emissione: dataRegistrazione,
         importo: conf.importo_pagato || 0,
-        note: `${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
+        note: `DBT #${conf.numero_progressivo ?? "-"}/${conf.anno_dbt ?? anno} — ${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg — Pag.: ${conf.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
     }
 
@@ -646,11 +647,26 @@ export function DevPrivatiModule() {
                       {conferimentiPrivato.map((c: any) => (
                         <div key={c.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {c.numero_progressivo != null && (
+                                <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                  DBT #{c.numero_progressivo}/{c.anno_dbt ?? new Date(c.data).getFullYear()}
+                                </span>
+                              )}
                               <span className="font-mono text-xs">{c.cer}</span>
                               <span className="font-medium">{Number(c.kg_pesati).toLocaleString("it-IT")} kg</span>
                               {c.importo_pagato != null && (
                                 <span className="text-xs text-emerald-400">€ {Number(c.importo_pagato).toFixed(2)}</span>
+                              )}
+                              {c.metodo_pag && (
+                                <span className={cn(
+                                  "text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border",
+                                  c.metodo_pag === "contanti"
+                                    ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                    : "bg-sky-500/10 text-sky-300 border-sky-500/30"
+                                )}>
+                                  {c.metodo_pag === "contanti" ? "Contanti" : "Tracciabile"}
+                                </span>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -871,14 +887,12 @@ export function DevPrivatiModule() {
             <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
             <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
             <div>
-              <Label>Metodo Pagamento</Label>
+              <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Seleziona metodo" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="contanti">Contanti</SelectItem>
-                  <SelectItem value="pos">POS</SelectItem>
-                  <SelectItem value="bonifico">Bonifico</SelectItem>
-                  <SelectItem value="gratuito">Gratuito</SelectItem>
+                  <SelectItem value="tracciabile_politico">Metodi Tracciabili / Politici</SelectItem>
                 </SelectContent>
               </Select>
             </div>
