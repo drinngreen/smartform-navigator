@@ -61,6 +61,8 @@ export default function MNFormulariPage() {
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [massiveOpen, setMassiveOpen] = useState(false);
+
 
   const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
     setEditorMode(mode);
