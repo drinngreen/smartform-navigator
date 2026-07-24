@@ -91,7 +91,7 @@ export function NoleggiTab({ tenantId, onCreated }: Props) {
 
       const { data: fatt, error: fErr } = await supabase.from("fatture" as any).insert({
         tenant_id: cliente.tenant_id,
-        numero, anno, numero_completo: `${numero}/${anno}`,
+        numero, anno,
         data_emissione: new Date().toISOString().slice(0, 10),
         cliente_id: cliente.cliente_id,
         cliente_ragione_sociale: cliente.cliente_ragione_sociale,
