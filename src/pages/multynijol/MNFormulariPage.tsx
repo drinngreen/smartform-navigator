@@ -121,6 +121,50 @@ export default function MNFormulariPage() {
     }
   };
 
+  const handleDuplicateForm = async (form: FirForm) => {
+    const nuovoNumero = window.prompt(
+      `Duplica FIR ${form.numero_fir || ""}\nInserisci il NUOVO numero formulario:`,
+      ""
+    );
+    if (!nuovoNumero || !nuovoNumero.trim()) return;
+    const categoria = window.prompt(
+      "Categoria di vidimazione (conto_proprio / miol / multy):",
+      "multy"
+    );
+    if (!categoria) return;
+    try {
+      const { data: newId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant", {
+        p_user_id: form.user_id,
+        p_tenant_id: mnCtx.tenantId,
+        p_numero_fir: nuovoNumero.trim(),
+      });
+      if (error) throw error;
+      const clonedFormData = { ...(form as any).form_data, numero_fir: nuovoNumero.trim(), numero_formulario: nuovoNumero.trim(), categoria_vidimazione: categoria };
+      await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_fir_form",
+          form_id: newId,
+          updates: {
+            form_data: clonedFormData,
+            codice_eer: form.codice_eer,
+            descrizione_rifiuto: form.descrizione_rifiuto,
+            quantita: form.quantita,
+            unita_misura: form.unita_misura,
+            stato_fisico: form.stato_fisico,
+            produttore_denominazione: form.produttore_denominazione,
+            trasportatore_denominazione: form.trasportatore_denominazione,
+            destinatario_denominazione: form.destinatario_denominazione,
+          },
+        },
+      });
+      toast.success(`FIR duplicato come ${nuovoNumero.trim()} (${categoria.toUpperCase()})`);
+      await fetchForms();
+    } catch (e: any) {
+      toast.error("Errore duplicazione FIR: " + e.message);
+    }
+  };
+
+
   useEffect(() => { fetchForms(); }, [fetchForms]);
 
   useEffect(() => {
