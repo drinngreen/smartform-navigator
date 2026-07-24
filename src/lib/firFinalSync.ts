@@ -253,18 +253,23 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             } as any);
             if (inverseError) throw inverseError;
 
-            const { error: updateError } = await supabase.from("movimenti_impianto" as any).update({
+            const { error: replacementError } = await supabase.from("movimenti_impianto" as any).insert({
               impianto_id: impiantoId,
+              tenant_id: MULTY_TENANT_ID,
               cer,
               descrizione_rifiuto: desc,
               quantita_kg: inventoryQuantity,
               data_movimento: movementDate,
               tipo_movimento: tipo,
               ruolo_impianto: ruolo,
+              origine: "fir_final",
+              fir_id: firId,
+              numero_fir: numeroFir,
               produttore_denominazione: prodDen,
               destinatario_denominazione: destDen,
-            } as any).eq("id", previous.id);
-            if (updateError) throw updateError;
+              note: "Rettifica automatica FIR",
+            } as any);
+            if (replacementError) throw replacementError;
 
             await recalculateMultyStock(previous.impianto_id, previous.cer);
           }
