@@ -646,11 +646,26 @@ export function DevPrivatiModule() {
                       {conferimentiPrivato.map((c: any) => (
                         <div key={c.id} className="flex items-center gap-2 text-sm p-2 rounded bg-card/30 border border-border/20">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {c.numero_progressivo != null && (
+                                <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                  DBT #{c.numero_progressivo}/{c.anno_dbt ?? new Date(c.data).getFullYear()}
+                                </span>
+                              )}
                               <span className="font-mono text-xs">{c.cer}</span>
                               <span className="font-medium">{Number(c.kg_pesati).toLocaleString("it-IT")} kg</span>
                               {c.importo_pagato != null && (
                                 <span className="text-xs text-emerald-400">€ {Number(c.importo_pagato).toFixed(2)}</span>
+                              )}
+                              {c.metodo_pag && (
+                                <span className={cn(
+                                  "text-[10px] font-mono uppercase px-1.5 py-0.5 rounded border",
+                                  c.metodo_pag === "contanti"
+                                    ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                                    : "bg-sky-500/10 text-sky-300 border-sky-500/30"
+                                )}>
+                                  {c.metodo_pag === "contanti" ? "Contanti" : "Tracciabile"}
+                                </span>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground">
