@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
+import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
