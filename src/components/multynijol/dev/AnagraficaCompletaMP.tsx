@@ -76,6 +76,7 @@ export function AnagraficaCompletaMP() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<{ id: string; nome: string } | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [importing, setImporting] = useState(false);
   const tenantId = MULTY_TENANT_CANDIDATES[0];
