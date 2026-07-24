@@ -1327,10 +1327,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                     onChange={(e) => handleChange(field.id, e.target.value)}
                     style={{
                       ...style,
-                      background: "transparent",
-                      border: "1px solid rgba(120, 120, 140, 0.35)",
+                      background: printOnly ? "transparent" : "rgba(56, 189, 248, 0.14)",
+                      border: printOnly ? "1px solid rgba(120, 120, 140, 0.35)" : "1px solid rgba(56, 189, 248, 0.55)",
                       borderRadius: "2px",
-                      color: "#1a1a2e",
+                      color: "#0b2540",
                       fontSize: "clamp(7px, 1.8vw, 11px)",
                       fontFamily: "monospace",
                       padding: "2px 3px",
@@ -1341,6 +1341,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                   />
                 );
               }
+
 
               const isProduttoreAutocomplete = isProduttoreDenominationField(field.name);
               const isDestinatarioAutocomplete = isDestinatarioDenominationField(field.name);
