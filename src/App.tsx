@@ -109,6 +109,7 @@ const DragonIngressoPage = React.lazy(() => import("./pages/dragon/DragonIngress
 const DragonScaricoUscitaPage = React.lazy(() => import("./pages/dragon/DragonScaricoUscitaPage"));
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
+const MNDevGuidaPage = React.lazy(() => import("./pages/multynijol/MNDevGuidaPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
 const ImpiantoLoginPage = React.lazy(() => import("./pages/ImpiantoLoginPage"));
 const ImpiantoDashboardPage = React.lazy(() => import("./pages/ImpiantoDashboardPage"));
@@ -247,6 +248,7 @@ const App = () => (
                 {/* MultyNijol Admin Routes - PROTECTED */}
                 <Route path="/mn/admin" element={<ProtectedRoute><MNDashboardPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/dev-multyproget" element={<ProtectedRoute><MNDevDashboardPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/dev-multyproget/guida" element={<ProtectedRoute><MNDevGuidaPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context" element={<ProtectedRoute><MNContextDashboardPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/registro" element={<ProtectedRoute><MNRegistroFIRPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/rentri" element={<ProtectedRoute><MNRENTRIPage /></ProtectedRoute>} />
