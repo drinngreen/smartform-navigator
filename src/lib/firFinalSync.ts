@@ -26,7 +26,8 @@ async function recalculateMultyStock(impiantoId: string, cer: string) {
     .eq("cer", cer);
   if (error) throw error;
 
-  const quantity = ((data || []) as Array<{ tipo_movimento: string; quantita_kg: number | string }>).reduce(
+  const movements = (data || []) as unknown as Array<{ tipo_movimento: string; quantita_kg: number | string }>;
+  const quantity = movements.reduce(
     (total, movement) => total + (movement.tipo_movimento === "CARICO" ? 1 : -1) * (Number(movement.quantita_kg) || 0),
     0
   );
