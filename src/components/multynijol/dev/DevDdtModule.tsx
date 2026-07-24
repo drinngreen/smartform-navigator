@@ -63,7 +63,7 @@ export function DevDdtModule({ tenantId = MULTY_TENANT_ID, tenantLabel = "Multyp
       const payload = { ...p, tenant_id: tenantId, anno, numero_ddt: numData as string };
       const { data, error } = await supabase.from("ddt_forms" as any).insert(payload).select().single();
       if (error) throw error;
-      return data as Ddt;
+      return (data as unknown) as Ddt;
     },
     onSuccess: (d) => {
       toast.success(`DDT ${d.numero_ddt} creato`);
