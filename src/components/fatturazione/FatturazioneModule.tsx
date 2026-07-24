@@ -270,33 +270,3 @@ function SummaryCard({ label, value, tone }: { label: string; value: string; ton
   );
 }
 
-function buildFatturaXml(f: any): string {
-  const esc = (s: any) => String(s ?? "").replace(/[<>&"']/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c]!));
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<FatturaElettronica versione="FPR12">
-  <FatturaElettronicaHeader>
-    <DatiTrasmissione>
-      <ProgressivoInvio>${esc(f.numero_completo)}</ProgressivoInvio>
-      <FormatoTrasmissione>FPR12</FormatoTrasmissione>
-      <CodiceDestinatario>${esc(f.cliente_codice_destinatario || "0000000")}</CodiceDestinatario>
-    </DatiTrasmissione>
-    <CessionarioCommittente>
-      <DatiAnagrafici>
-        <IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>${esc(f.cliente_partita_iva || "")}</IdCodice></IdFiscaleIVA>
-        <Anagrafica><Denominazione>${esc(f.cliente_ragione_sociale)}</Denominazione></Anagrafica>
-      </DatiAnagrafici>
-    </CessionarioCommittente>
-  </FatturaElettronicaHeader>
-  <FatturaElettronicaBody>
-    <DatiGenerali>
-      <DatiGeneraliDocumento>
-        <TipoDocumento>TD01</TipoDocumento>
-        <Divisa>EUR</Divisa>
-        <Data>${esc(f.data_emissione)}</Data>
-        <Numero>${esc(f.numero_completo)}</Numero>
-        <ImportoTotaleDocumento>${Number(f.totale).toFixed(2)}</ImportoTotaleDocumento>
-      </DatiGeneraliDocumento>
-    </DatiGenerali>
-  </FatturaElettronicaBody>
-</FatturaElettronica>`;
-}
