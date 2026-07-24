@@ -31,6 +31,7 @@ import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
 const SOCIETA_ID = "multy";
 const IMPIANTO_RGB = "16, 185, 129";
@@ -226,7 +227,7 @@ function ImpiantoFormulari() {
   }, [viewDialog.form?.id]);
 
   const { data: forms = [], isLoading, refetch } = useQuery({
-    queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, GLOBAL_FIR_TENANT_ID],
+    queryKey: ["dev-impianto-formulari", MULTY_TENANT_ID, NIYOL_TENANT_ID, GLOBAL_FIR_TENANT_ID],
     queryFn: async () => {
       const loadForms = async (tenantId: string) => {
         const { data, error } = await supabase.functions.invoke("admin-user-manage", {
@@ -237,8 +238,14 @@ function ImpiantoFormulari() {
         return data.forms || [];
       };
 
-      const multyForms = await loadForms(MULTY_TENANT_ID);
-      if (multyForms.length > 0) return multyForms;
+      const [multyForms, niyolForms] = await Promise.all([
+        loadForms(MULTY_TENANT_ID),
+        loadForms(NIYOL_TENANT_ID),
+      ]);
+      const combined = [...multyForms, ...niyolForms];
+      if (combined.length > 0) {
+        return Array.from(new Map(combined.map((form: any) => [form.id, form])).values());
+      }
 
       return await loadForms(GLOBAL_FIR_TENANT_ID);
     },
