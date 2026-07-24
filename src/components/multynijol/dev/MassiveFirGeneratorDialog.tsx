@@ -115,7 +115,7 @@ export function MassiveFirGeneratorDialog({ open, onClose, tenantId, contextLabe
         <div className="space-y-4">
           <div>
             <Label className="text-xs uppercase font-mono">Anagrafica / Autista</Label>
-            <Select value={driverId} onValueChange={setDriverId} disabled={loadingDrivers}>
+            <Select value={driverId} onValueChange={setDriverId}>
               <SelectTrigger className="bg-background/60 border-border/40 mt-1">
                 <SelectValue placeholder={loadingDrivers ? "Caricamento…" : "Seleziona anagrafica"} />
               </SelectTrigger>
