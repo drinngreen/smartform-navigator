@@ -114,6 +114,7 @@ export function DevRegistroGeneraleModule() {
     return rows.filter((r: any) => {
       if (cerFilter !== "all" && r.cer !== cerFilter) return false;
       if (csFilter !== "all" && r.carico_scarico !== csFilter) return false;
+      if (dataFilter && r.data_movimento !== dataFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         return (
@@ -129,7 +130,7 @@ export function DevRegistroGeneraleModule() {
       }
       return true;
     });
-  }, [rows, search, cerFilter, csFilter]);
+  }, [rows, search, cerFilter, csFilter, dataFilter]);
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
