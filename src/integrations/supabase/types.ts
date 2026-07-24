@@ -4006,6 +4006,82 @@ export type Database = {
           },
         ]
       }
+      noleggi: {
+        Row: {
+          cassone_descrizione: string | null
+          cassone_id: string | null
+          cliente_id: string | null
+          cliente_partita_iva: string | null
+          cliente_ragione_sociale: string
+          created_at: string
+          created_by: string | null
+          fattura_id: string | null
+          fatturato_stato: string
+          id: string
+          mese_riferimento: string
+          note: string | null
+          tariffa_mensile: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cassone_descrizione?: string | null
+          cassone_id?: string | null
+          cliente_id?: string | null
+          cliente_partita_iva?: string | null
+          cliente_ragione_sociale: string
+          created_at?: string
+          created_by?: string | null
+          fattura_id?: string | null
+          fatturato_stato?: string
+          id?: string
+          mese_riferimento: string
+          note?: string | null
+          tariffa_mensile?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cassone_descrizione?: string | null
+          cassone_id?: string | null
+          cliente_id?: string | null
+          cliente_partita_iva?: string | null
+          cliente_ragione_sociale?: string
+          created_at?: string
+          created_by?: string | null
+          fattura_id?: string | null
+          fatturato_stato?: string
+          id?: string
+          mese_riferimento?: string
+          note?: string | null
+          tariffa_mensile?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "noleggi_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "noleggi_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "fatture"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "noleggi_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           app_context: string | null
