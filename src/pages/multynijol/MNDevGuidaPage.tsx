@@ -38,9 +38,13 @@ export default function MNDevGuidaPage() {
           <ArrowLeft size={16} />
           Torna al Centro di Comando
         </Button>
-        <Button variant="outline" onClick={() => window.print()} className="gap-2 border-emerald-500/40 text-emerald-300">
-          <Printer size={16} />
-          Stampa guida
+        <Button
+          onClick={() => window.print()}
+          className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg"
+          size="lg"
+        >
+          <Printer size={18} />
+          🖨️ Stampa guida
         </Button>
       </div>
 
