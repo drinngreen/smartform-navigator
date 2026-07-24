@@ -495,6 +495,14 @@ export function AnagraficaCompletaMP() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {detailId && (
+        <AnagraficaDettaglioDialog
+          clienteId={detailId.id}
+          clienteNome={detailId.nome}
+          onClose={() => setDetailId(null)}
+        />
+      )}
     </div>
   );
 }
