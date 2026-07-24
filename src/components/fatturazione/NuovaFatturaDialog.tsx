@@ -338,6 +338,11 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
                 </div>
               ))}
             </div>
+            <datalist id="erp-iva-list">
+              {erpIva.map((x: any) => (
+                <option key={x.codice} value={x.aliquota}>{x.codice} — {x.descrizione}</option>
+              ))}
+            </datalist>
           </section>
 
           {/* Totali */}
