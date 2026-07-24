@@ -23,7 +23,8 @@ async function recalculateMultyStock(impiantoId: string, cer: string) {
     .select("tipo_movimento, quantita_kg")
     .eq("tenant_id", MULTY_TENANT_ID)
     .eq("impianto_id", impiantoId)
-    .eq("cer", cer);
+    .eq("cer", cer)
+    .lte("data_movimento", new Date().toISOString().slice(0, 10));
   if (error) throw error;
 
   const movements = (data || []) as unknown as Array<{ tipo_movimento: string; quantita_kg: number | string }>;
