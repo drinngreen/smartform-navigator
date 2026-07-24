@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { toast } from "sonner";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Eye, Trash2, Layers, Copy,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { MassiveFirGeneratorDialog } from "@/components/multynijol/dev/MassiveFirGeneratorDialog";
+
 
 interface FirForm {
   id: string;
