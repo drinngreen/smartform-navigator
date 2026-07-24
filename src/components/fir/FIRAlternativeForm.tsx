@@ -1522,8 +1522,31 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 });
                 return pageContainer.outerHTML;
               }).join("");
-              printWindow.document.write(`<html><head><title>FIR ${presetNumeroFir || ""}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}</body></html>`);
+              const signatureBlock = `
+                <div style="position:relative;page-break-before:always;padding:24mm 15mm;font-family:Arial,Helvetica,sans-serif;color:#111;">
+                  <h2 style="margin:0 0 6mm 0;font-size:16pt;letter-spacing:1px;">FIR N. ${presetNumeroFir || ""} — Timbri e Firme</h2>
+                  <p style="margin:0 0 10mm 0;font-size:10pt;color:#333;">Spazi riservati alla firma autografa e all'apposizione dei timbri dei soggetti coinvolti nel trasporto.</p>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12mm 10mm;">
+                    ${["Produttore / Detentore","Trasportatore","Destinatario","Intermediario / Commerciante"].map(role => `
+                      <div style="border:1px dashed #555;border-radius:4px;padding:6mm 5mm;min-height:45mm;display:flex;flex-direction:column;justify-content:space-between;">
+                        <div style="font-size:9pt;text-transform:uppercase;letter-spacing:1px;color:#444;">${role}</div>
+                        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:6mm;">
+                          <div style="flex:1;">
+                            <div style="border-bottom:1px solid #222;height:14mm;"></div>
+                            <div style="font-size:8pt;color:#555;margin-top:1mm;">Firma</div>
+                          </div>
+                          <div style="width:38mm;height:38mm;border:1px dashed #777;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#777;text-align:center;">
+                            Timbro
+                          </div>
+                        </div>
+                        <div style="font-size:8pt;color:#555;margin-top:2mm;">Data ________________</div>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>`;
+              printWindow.document.write(`<html><head><title>FIR ${presetNumeroFir || ""}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}${signatureBlock}</body></html>`);
               printWindow.document.close();
+
               setTimeout(() => {
                 printWindow.print();
                 onPrinted?.();
