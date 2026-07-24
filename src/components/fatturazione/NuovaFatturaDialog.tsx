@@ -325,7 +325,7 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
                   <input type="number" step="0.0001" value={r.prezzo_unitario} onChange={e => updRiga(i, { prezzo_unitario: Number(e.target.value) })}
                     placeholder="Prezzo"
                     className="col-span-2 px-2 py-1.5 rounded-lg bg-background/60 border border-border/30 text-xs" />
-                  <input type="number" step="0.01" value={r.aliquota_iva} onChange={e => updRiga(i, { aliquota_iva: Number(e.target.value) })} disabled={r.reverse_charge}
+                  <input type="number" step="0.01" list="erp-iva-list" value={r.aliquota_iva} onChange={e => updRiga(i, { aliquota_iva: Number(e.target.value) })} disabled={r.reverse_charge}
                     placeholder="IVA %"
                     className="col-span-1 px-2 py-1.5 rounded-lg bg-background/60 border border-border/30 text-xs disabled:opacity-40" />
                   <label className="col-span-2 flex items-center gap-1 text-[10px] px-1">
