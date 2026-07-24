@@ -5,8 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen } from "lucide-react";
+import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen, Truck, Scissors, X } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
+import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
@@ -67,6 +69,12 @@ export function DevRegistroGeneraleModule() {
   const [page, setPage] = useState(0);
   const [cerFilter, setCerFilter] = useState("all");
   const [csFilter, setCsFilter] = useState("all");
+  const [dataFilter, setDataFilter] = useState<string>("");
+  const [contoTerziOpen, setContoTerziOpen] = useState(false);
+  const [scaricoLavOpen, setScaricoLavOpen] = useState(false);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["dev-registro-generale", MULTY_TENANT_ID],
@@ -106,6 +114,7 @@ export function DevRegistroGeneraleModule() {
     return rows.filter((r: any) => {
       if (cerFilter !== "all" && r.cer !== cerFilter) return false;
       if (csFilter !== "all" && r.carico_scarico !== csFilter) return false;
+      if (dataFilter && r.data_movimento !== dataFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         return (
@@ -121,7 +130,7 @@ export function DevRegistroGeneraleModule() {
       }
       return true;
     });
-  }, [rows, search, cerFilter, csFilter]);
+  }, [rows, search, cerFilter, csFilter, dataFilter]);
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -197,13 +206,34 @@ export function DevRegistroGeneraleModule() {
             <SelectItem value="Scarico">Scarico</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-1">
+          <Input
+            type="date"
+            value={dataFilter}
+            onChange={(e) => { setDataFilter(e.target.value); setPage(0); }}
+            className="w-40 bg-card/60 border-border/50"
+            title="Filtra per singolo giorno"
+          />
+          {dataFilter && (
+            <Button variant="ghost" size="sm" onClick={() => setDataFilter("")} className="h-8 w-8 p-0" title="Rimuovi filtro data">
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToExcel(filtered, exportCols, "registro-generale-multy", "Registro Generale")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <FileSpreadsheet className="h-3 w-3" /> Excel
         </Button>
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, "registro-generale-multy", "Registro Generale Multyproget")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <Printer className="h-3 w-3" /> PDF
         </Button>
+        <Button size="sm" onClick={() => setContoTerziOpen(true)} className="gap-1 bg-amber-500 text-black hover:bg-amber-400">
+          <Truck className="h-3 w-3" /> Conto Terzi (cartaceo)
+        </Button>
+        <Button size="sm" onClick={() => setScaricoLavOpen(true)} className="gap-1 bg-purple-500 text-white hover:bg-purple-400">
+          <Scissors className="h-3 w-3" /> Scarico Lavorazione
+        </Button>
       </div>
+
 
       {/* Table */}
       <Card className="bg-card/60 border-border/30">
@@ -224,7 +254,11 @@ export function DevRegistroGeneraleModule() {
                 onScroll={handleBottomScroll}
                 className="overflow-auto max-h-[70vh]"
               >
-                <table ref={tableRef} className="min-w-max text-sm">
+                <table
+                  ref={tableRef}
+                  className="min-w-max text-sm"
+                  onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }); }}
+                >
                   <thead className="sticky top-0 z-10 bg-card">
                     <tr className="border-b border-border/30 text-muted-foreground">
                       {registroColumns.map((column) => (
@@ -264,6 +298,40 @@ export function DevRegistroGeneraleModule() {
           )}
         </CardContent>
       </Card>
+
+      {/* Right-click context menu → export filtered rows to Excel */}
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null); }} />
+          <div
+            className="fixed z-50 min-w-[220px] rounded-md border border-border/50 bg-card shadow-xl py-1 text-sm"
+            style={{ top: ctxMenu.y, left: ctxMenu.x }}
+          >
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2 text-emerald-300"
+              onClick={() => {
+                if (filtered.length) exportToExcel(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale");
+                setCtxMenu(null);
+              }}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Esporta Excel ({filtered.length} righe filtrate)
+            </button>
+            <button
+              className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2"
+              onClick={() => {
+                if (filtered.length) exportToPdf(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale Multyproget");
+                setCtxMenu(null);
+              }}
+            >
+              <FileText className="h-4 w-4" /> Esporta PDF (righe filtrate)
+            </button>
+          </div>
+        </>
+      )}
+
+      <ContoTerziManualDialog open={contoTerziOpen} onClose={() => setContoTerziOpen(false)} />
+      <ScaricoLavorazioneDialog open={scaricoLavOpen} onClose={() => setScaricoLavOpen(false)} />
     </div>
   );
 }
