@@ -36,8 +36,10 @@ import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
+import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
+import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList } from "lucide-react";
 
 
 const DEV_TAB_LABELS: Record<string, string> = {
