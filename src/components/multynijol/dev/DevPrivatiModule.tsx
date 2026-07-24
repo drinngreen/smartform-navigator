@@ -248,6 +248,7 @@ export function DevPrivatiModule() {
     if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
     if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
     if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
+    if (!confForm.metodo_pag) { toast.error("Seleziona il metodo di pagamento"); return; }
 
     const kg = parseFloat(confForm.kg_pesati);
     if (!Number.isFinite(kg) || kg <= 0) { toast.error("Inserisci un peso valido"); return; }
