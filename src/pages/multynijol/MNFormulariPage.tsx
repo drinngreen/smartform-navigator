@@ -311,6 +311,13 @@ export default function MNFormulariPage() {
                           </button>
                         )}
                         <button
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors"
+                          onClick={() => void handleDuplicateForm(form)}
+                          title="Duplica con scelta categoria"
+                        >
+                          <Copy className="h-4 w-4" /> Duplica
+                        </button>
+                        <button
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
                           onClick={() => void handleDeleteForm(form)}
                         >
@@ -319,6 +326,7 @@ export default function MNFormulariPage() {
                       </div>
                     </td>
                   </tr>
+
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nessun formulario trovato</td></tr>
