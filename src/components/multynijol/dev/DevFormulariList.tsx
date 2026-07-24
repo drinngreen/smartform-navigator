@@ -249,8 +249,11 @@ export function DevFormulariList({
                     const destinatario = firstValue(form.destinatario_denominazione, fd.destinatario_denominazione, fd.destinatarioDenominazione) || "—";
                     const trasportatore = firstValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—";
                     const dataRaw = firstValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo);
+                    const missingDestino = form.status === "completato" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
-                    <tr key={form.id} className="border-b border-border/10 hover:bg-white/5">
+                    <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : undefined}
+                      className={`border-b border-border/10 ${missingDestino ? "bg-amber-500/15 hover:bg-amber-500/25 border-l-4 border-l-amber-400" : "hover:bg-white/5"}`}>
+                      
                       <td className="p-3">
                         <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
                       </td>
