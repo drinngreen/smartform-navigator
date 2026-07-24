@@ -33,7 +33,6 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
-import { DevFirWorkspace } from "@/components/multynijol/dev/DevFirWorkspace";
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
@@ -41,26 +40,6 @@ import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModu
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
 import { Euro, FileSpreadsheet, ClipboardList } from "lucide-react";
-
-
-const DEV_TAB_LABELS: Record<string, string> = {
-  impianto: "Impianto",
-  niyol: "Niyol",
-  "magazzino-dev": "Magazzino Dev",
-  "conto-proprio": "Conto Proprio",
-  registri: "Registri",
-  contatti: "Contatti",
-  privati: "Privati",
-  ricevute: "Ricevute",
-  "aree-riservate": "Aree Riservate",
-  "cer-preferiti": "CER Preferiti",
-  "gestione-fir": "Gestione FIR",
-  fatturazione: "Fatturazione",
-  "firma-digitale": "Firma Digitale",
-  personale: "Personale",
-  mud: "MUD",
-  ddt: "DDT",
-};
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -170,8 +149,6 @@ export default function MNDevDashboardPage() {
             <ClipboardList className="h-4 w-4" />DDT
           </TabsTrigger>
         </TabsList>
-
-        {tab !== "personale" && tab !== "fatturazione" && tab !== "mud" && tab !== "ddt" && <DevFirWorkspace currentSectionLabel={DEV_TAB_LABELS[tab] || tab} />}
 
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
