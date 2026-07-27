@@ -209,12 +209,11 @@ function ImpiantoFormulari() {
   };
 
   const handleFormSaved = async () => {
-    const res = await refetch();
-    const list = (res.data as any[]) || [];
-    if (viewDialog.form) {
-      const updated = list.find((f: any) => f.id === viewDialog.form.id);
-      if (updated) setViewDialog({ open: true, form: updated });
-    }
+    // Se un formulario e' aperto in modifica NON lo ricarichiamo: l'utente sta
+    // compilando e i dati non salvati andrebbero persi. Aggiorniamo solo la lista
+    // quando il dialog e' chiuso.
+    if (viewDialog.open) return;
+    await refetch();
   };
 
   useEffect(() => {

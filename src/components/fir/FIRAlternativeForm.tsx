@@ -703,8 +703,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       });
   }, [presetNumeroFir, activeDraftNumero]);
 
+  const hydratedDraftKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (fields.length === 0) return;
+
+    // Idrata i valori dal DB UNA SOLA VOLTA per bozza: evita che refetch/realtime
+    // sovrascrivano quello che l'utente sta compilando.
+    const hydrationKey = draftData?.id || activeDraftId || presetNumeroFir || activeDraftNumero || null;
+    if (hydrationKey && hydratedDraftKeyRef.current === hydrationKey) return;
+    if (hydrationKey) hydratedDraftKeyRef.current = hydrationKey;
 
     let cancelled = false;
 
