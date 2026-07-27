@@ -11,6 +11,7 @@ import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getR
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
 import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST } from "@/lib/firFinalSync";
 
 // ── Neon color map per section ──────────────────────────────
@@ -800,6 +801,19 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         <div className="space-y-3">
           {/* ALL FIELDS EDITABLE — NO LOCKS */}
           <Section title="1. Produttore / Detentore" defaultOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
+            <PresetAziendaSelector
+              label="Preset Multyproget / Niyol"
+              onSelectAzienda={(a) => {
+                u("produttoreDenominazione", a.nome);
+                u("produttoreUnitaLocale", a.indirizzo);
+                u("produttoreCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("produttoreNumeroAut", aut.numero);
+                u("produttoreTipoAut", aut.tipo);
+                u("produttoreDataAut", aut.data);
+              }}
+            />
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
             <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" />
             <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
@@ -855,6 +869,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
+            <PresetAziendaSelector
+              label="Preset Multyproget / Niyol"
+              onSelectAzienda={(a) => {
+                u("trasportatoreDenominazione", a.nome);
+                u("trasportatoreCF", a.piva || a.cf);
+                u("trasportatoreSituatoIn", a.indirizzo);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("trasportatoreNumeroAlbo", aut.numero);
+                u("trasportatoreDataAlbo", aut.data);
+              }}
+            />
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
