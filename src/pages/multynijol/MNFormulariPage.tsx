@@ -72,6 +72,7 @@ export default function MNFormulariPage() {
   };
 
   const closeEditor = () => {
+    if (viewDialog.form?.id) sessionStorage.removeItem(`fir-alternative-working-draft:${viewDialog.form.id}`);
     sessionStorage.removeItem(editorStorageKey);
     setViewDialog({ open: false, form: null });
     if (searchParams.get("fir")) setSearchParams({}, { replace: true });
