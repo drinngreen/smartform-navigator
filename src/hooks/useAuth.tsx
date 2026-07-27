@@ -25,6 +25,7 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   isLoading: boolean;
+  isRoleReady: boolean;
   isAdmin: boolean;
   refreshUserData: () => Promise<void>;
   signUp: (email: string, password: string, nome: string, cognome: string, codiceFiscale: string) => Promise<{ error: Error | null }>;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRoleReady, setIsRoleReady] = useState(false);
 
   const ADMIN_TENANT_EMAILS = [
     "globalreco@zolisoftware.cloud",
@@ -127,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRole("user");
       }
+      setIsRoleReady(true);
 
       // [DISABLED] Auto-assegnazione FIR al login rimossa: i FIR ora si creano solo manualmente.
       // if (profileData?.tenant_id) {
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await markPresence(userId, "online");
     } catch (error) {
       console.error("Error fetching user data:", error);
+      setIsRoleReady(true);
     }
   };
 
@@ -168,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!session?.user) {
           setProfile(null);
           setRole(null);
+          setIsRoleReady(true);
           setIsLoading(false);
           return;
         }
@@ -190,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
 
+        if (!session?.user) setIsRoleReady(true);
         if (session?.user) {
           try {
             await fetchUserData(session.user.id, session.user.email);
@@ -287,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setProfile(null);
     setRole(null);
+    setIsRoleReady(true);
   };
 
   return (
@@ -297,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         role,
         isLoading,
+        isRoleReady,
         isAdmin: role === "admin",
         refreshUserData,
         signUp,

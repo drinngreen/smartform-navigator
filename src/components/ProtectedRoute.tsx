@@ -31,14 +31,14 @@ const SUPER_GLOBAL_EMAILS = [
 ];
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isAdmin, profile } = useAuth() as any;
+  const { user, isLoading, isRoleReady, isAdmin, profile } = useAuth() as any;
   const location = useLocation();
   const path = location.pathname;
 
   // Mantieni montata la pagina durante i refresh silenziosi della sessione.
   // Mostra il loader soltanto durante il bootstrap, quando l'utente non è
   // ancora disponibile.
-  if (isLoading && !user) {
+  if ((isLoading && !user) || (user && !isRoleReady)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-primary animate-pulse text-lg tracking-wider font-display">ZOLI DRAGON</div>
