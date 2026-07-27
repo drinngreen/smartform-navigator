@@ -108,11 +108,40 @@ function Row({ children }: { children: React.ReactNode }) {
 function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => void }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [dbResults, setDbResults] = useState<Soggetto[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   const filtered = search.length >= 1
     ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase()))
     : DESTINATARI;
+
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) { setDbResults([]); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+        .or(`ragione_sociale.ilike.%${q}%,codice_fiscale.ilike.%${q}%,partita_iva.ilike.%${q}%`)
+        .order("ragione_sociale")
+        .limit(25);
+      if (cancelled) return;
+      setDbResults(
+        (data || []).map((r: any) => ({
+          nome: r.ragione_sociale || "",
+          indirizzo: [r.indirizzo, [r.cap, r.citta, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
+            .filter(Boolean).join(" - "),
+          cf: r.codice_fiscale || r.partita_iva || "",
+          tipo: "IMPIANTO",
+        })) as Soggetto[]
+      );
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [search]);
+
+  const staticNames = new Set(filtered.map(d => d.nome.toLowerCase()));
+  const extraResults = dbResults.filter(d => !staticNames.has(d.nome.toLowerCase()));
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -127,15 +156,21 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
       <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">🔍 Seleziona Destinatario / Impianto</label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neon-green/60" />
-        <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }} onFocus={() => setIsOpen(true)} placeholder="Cerca tra ~200 impianti..." className="w-full bg-background/80 border-2 border-neon-green/30 rounded-lg pl-9 pr-3 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-neon-green/50 focus:border-neon-green/60 transition-all" />
+        <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }} onFocus={() => setIsOpen(true)} placeholder="Cerca impianti e anagrafica (nome, P.IVA, CF)..." className="w-full bg-background/80 border-2 border-neon-green/30 rounded-lg pl-9 pr-3 py-2.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-neon-green/50 focus:border-neon-green/60 transition-all" />
       </div>
-      {isOpen && filtered.length > 0 && (
+      {isOpen && (filtered.length > 0 || extraResults.length > 0) && (
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.map((d, i) => (
-            <button key={i} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
+            <button key={`s-${i}`} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome}</span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
               {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
+            </button>
+          ))}
+          {extraResults.map((d, i) => (
+            <button key={`db-${i}`} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
+              <span className="text-xs text-white font-medium block">{d.nome} <span className="text-[9px] text-neon-green/70">· anagrafica</span></span>
+              <span className="text-[10px] text-white/50 block">{[d.indirizzo, d.cf].filter(Boolean).join(" · ")}</span>
             </button>
           ))}
         </div>
@@ -148,6 +183,7 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
     </div>
   );
 }
+
 
 function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) => void; onCancel: () => void }) {
   const [peso, setPeso] = useState("");
