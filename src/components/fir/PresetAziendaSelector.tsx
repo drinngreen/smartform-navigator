@@ -125,6 +125,41 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
         ))}
       </select>
 
+      <div className="relative">
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
+          <Search className="h-3.5 w-3.5 text-primary shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cerca in anagrafica (es. ITALCONCIMI, P.IVA, CF)…"
+            className="w-full bg-transparent py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
+          />
+          {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+        </div>
+        {results.length > 0 && (
+          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => selectAnagrafica(r)}
+                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-primary/15"
+              >
+                <span className="font-semibold">{r.ragione_sociale}</span>
+                <span className="block text-[10px] text-white/50">
+                  {[r.indirizzo, r.citta, r.partita_iva || r.codice_fiscale].filter(Boolean).join(" · ")}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {query.trim().length >= 2 && !searching && results.length === 0 && (
+          <p className="mt-1 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
+        )}
+      </div>
+
+
+
       {aziendaKey && (
         <div className="space-y-2">
           <div className="flex gap-2">
