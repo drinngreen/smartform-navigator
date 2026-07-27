@@ -25,6 +25,7 @@ interface AuthContextType {
   profile: Profile | null;
   role: AppRole | null;
   isLoading: boolean;
+  isRoleReady: boolean;
   isAdmin: boolean;
   refreshUserData: () => Promise<void>;
   signUp: (email: string, password: string, nome: string, cognome: string, codiceFiscale: string) => Promise<{ error: Error | null }>;
