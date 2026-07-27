@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2, Edit2, CalendarIcon } from "lucide-react";
+import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2, Edit2, CalendarIcon, Truck } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -126,7 +126,7 @@ export function DevPrivatiModule() {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
         .from("privati_conferimenti")
-        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, note, numero_progressivo, anno_dbt")
+        .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, note, numero_progressivo, anno_dbt")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
         .order("data", { ascending: false });
@@ -138,6 +138,23 @@ export function DevPrivatiModule() {
 
   const [editDateConfId, setEditDateConfId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState<Date | undefined>();
+  const [editVeicoloConfId, setEditVeicoloConfId] = useState<string | null>(null);
+  const [editVeicoloForm, setEditVeicoloForm] = useState({ targa_automezzo: "", modello_automezzo: "" });
+
+  const handleUpdateConfVeicolo = async (confId: string) => {
+    const { error } = await supabase
+      .from("privati_conferimenti")
+      .update({
+        targa_automezzo: editVeicoloForm.targa_automezzo.trim().toUpperCase() || null,
+        modello_automezzo: editVeicoloForm.modello_automezzo.trim() || null,
+      } as any)
+      .eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Targa/veicolo aggiornati");
+    setEditVeicoloConfId(null);
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+  };
+
 
   const handleUpdateConfDate = async (confId: string, newDate: Date) => {
     const iso = format(newDate, "yyyy-MM-dd");
@@ -674,8 +691,34 @@ export function DevPrivatiModule() {
                             <div className="text-xs text-muted-foreground">
                                Data registrazione: {toLocalDateLabel(c.data)}
                               {c.targa_automezzo ? ` · ${c.targa_automezzo}` : ""}
+                              {c.modello_automezzo ? ` · ${c.modello_automezzo}` : ""}
                             </div>
                           </div>
+                          <Popover open={editVeicoloConfId === c.id} onOpenChange={(o) => { if (!o) setEditVeicoloConfId(null); }}>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 border-sky-500/30 text-sky-400 hover:bg-sky-500/10"
+                                onClick={() => {
+                                  setEditVeicoloConfId(c.id);
+                                  setEditVeicoloForm({ targa_automezzo: c.targa_automezzo || "", modello_automezzo: c.modello_automezzo || "" });
+                                }}
+                                title="Modifica targa / veicolo">
+                                <Truck className="h-3 w-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-3 space-y-2" align="end">
+                              <div>
+                                <Label className="text-xs">Targa Automezzo</Label>
+                                <Input className="font-mono" value={editVeicoloForm.targa_automezzo}
+                                  onChange={(e) => setEditVeicoloForm(f => ({ ...f, targa_automezzo: e.target.value.toUpperCase() }))} />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Modello Veicolo</Label>
+                                <Input value={editVeicoloForm.modello_automezzo}
+                                  onChange={(e) => setEditVeicoloForm(f => ({ ...f, modello_automezzo: e.target.value }))} />
+                              </div>
+                              <Button size="sm" className="w-full" onClick={() => handleUpdateConfVeicolo(c.id)}>Salva</Button>
+                            </PopoverContent>
+                          </Popover>
                           <Popover open={editDateConfId === c.id} onOpenChange={(o) => { if (!o) setEditDateConfId(null); }}>
                             <PopoverTrigger asChild>
                               <Button variant="outline" size="sm" className="h-7 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
@@ -688,6 +731,7 @@ export function DevPrivatiModule() {
                               <Calendar mode="single" selected={editDateValue} onSelect={(d) => { if (d) handleUpdateConfDate(c.id, d); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                             </PopoverContent>
                           </Popover>
+
                           <Button variant="outline" size="sm" className="h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteConferimento(c.id)}
                             title="Elimina conferimento">
