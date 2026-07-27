@@ -691,8 +691,34 @@ export function DevPrivatiModule() {
                             <div className="text-xs text-muted-foreground">
                                Data registrazione: {toLocalDateLabel(c.data)}
                               {c.targa_automezzo ? ` · ${c.targa_automezzo}` : ""}
+                              {c.modello_automezzo ? ` · ${c.modello_automezzo}` : ""}
                             </div>
                           </div>
+                          <Popover open={editVeicoloConfId === c.id} onOpenChange={(o) => { if (!o) setEditVeicoloConfId(null); }}>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 border-sky-500/30 text-sky-400 hover:bg-sky-500/10"
+                                onClick={() => {
+                                  setEditVeicoloConfId(c.id);
+                                  setEditVeicoloForm({ targa_automezzo: c.targa_automezzo || "", modello_automezzo: c.modello_automezzo || "" });
+                                }}
+                                title="Modifica targa / veicolo">
+                                <Truck className="h-3 w-3" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-3 space-y-2" align="end">
+                              <div>
+                                <Label className="text-xs">Targa Automezzo</Label>
+                                <Input className="font-mono" value={editVeicoloForm.targa_automezzo}
+                                  onChange={(e) => setEditVeicoloForm(f => ({ ...f, targa_automezzo: e.target.value.toUpperCase() }))} />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Modello Veicolo</Label>
+                                <Input value={editVeicoloForm.modello_automezzo}
+                                  onChange={(e) => setEditVeicoloForm(f => ({ ...f, modello_automezzo: e.target.value }))} />
+                              </div>
+                              <Button size="sm" className="w-full" onClick={() => handleUpdateConfVeicolo(c.id)}>Salva</Button>
+                            </PopoverContent>
+                          </Popover>
                           <Popover open={editDateConfId === c.id} onOpenChange={(o) => { if (!o) setEditDateConfId(null); }}>
                             <PopoverTrigger asChild>
                               <Button variant="outline" size="sm" className="h-7 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
@@ -705,6 +731,7 @@ export function DevPrivatiModule() {
                               <Calendar mode="single" selected={editDateValue} onSelect={(d) => { if (d) handleUpdateConfDate(c.id, d); }} initialFocus className={cn("p-3 pointer-events-auto")} />
                             </PopoverContent>
                           </Popover>
+
                           <Button variant="outline" size="sm" className="h-7 border-destructive/30 text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteConferimento(c.id)}
                             title="Elimina conferimento">
