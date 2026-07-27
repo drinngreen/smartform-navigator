@@ -185,10 +185,17 @@ function ImpiantoFormulari() {
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
   const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});
+  const editorStorageKey = "dev-fir-editor:impianto-multyproget";
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
   };
 
   const handleDeleteForm = async (form: any) => {
@@ -249,6 +256,19 @@ function ImpiantoFormulari() {
       return await loadForms(GLOBAL_FIR_TENANT_ID);
     },
   });
+
+  useEffect(() => {
+    if (viewDialog.open || forms.length === 0) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null") as { formId?: string; mode?: "standard" | "alternative" } | null;
+      if (!saved?.formId) return;
+      const form = forms.find((item: any) => item.id === saved.formId);
+      if (form) openEditor(form, saved.mode || "standard");
+    } catch {
+      sessionStorage.removeItem(editorStorageKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forms]);
 
   const { data: incomingItems = [], isLoading: incomingLoading, refetch: refetchIncoming } = useQuery({
     queryKey: ["dev-impianto-fir-in-arrivo", SOCIETA_ID],
@@ -542,7 +562,7 @@ function ImpiantoFormulari() {
       )}
 
       {/* Full FIR Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">

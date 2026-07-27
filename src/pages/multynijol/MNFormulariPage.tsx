@@ -62,11 +62,19 @@ export default function MNFormulariPage() {
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [massiveOpen, setMassiveOpen] = useState(false);
+  const editorStorageKey = `mn-fir-editor:${context || "unknown"}`;
 
 
   const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
+    if (searchParams.get("fir")) setSearchParams({}, { replace: true });
   };
 
   const fetchForms = useCallback(async () => {
@@ -86,7 +94,15 @@ export default function MNFormulariPage() {
       if (scopedForms.length > 0) {
         setForms(scopedForms);
         const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
+        let persisted: { formId?: string; mode?: "standard" | "alternative" } | null = null;
+        try {
+          persisted = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null");
+        } catch {
+          sessionStorage.removeItem(editorStorageKey);
+        }
+        const restored = persisted?.formId ? scopedForms.find((f: FirForm) => f.id === persisted?.formId) : null;
         if (requested) openEditor(requested, "standard");
+        else if (restored) openEditor(restored, persisted?.mode || "standard");
         return;
       }
 
@@ -338,7 +354,7 @@ export default function MNFormulariPage() {
       )}
 
       {/* Full FIR Alternative Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => { setViewDialog({ open: o, form: o ? viewDialog.form : null }); if (!o && searchParams.get("fir")) setSearchParams({}, { replace: true }); }}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">

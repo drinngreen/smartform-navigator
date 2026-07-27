@@ -215,6 +215,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   useEffect(() => {
     if (!draftData?.id) return;
+    // Lo store è persistente: se questa stessa bozza era già aperta, contiene
+    // i valori più recenti digitati dall'utente. Non sovrascriverli con la
+    // copia DB quando la pagina viene rimontata o la sessione si rinnova.
+    if (useMNFIRStore.getState().editingFirId === draftData.id) return;
     store.loadFromDatabase({
       ...draftData,
       form_data: draftData.form_data as Record<string, any> | null,

@@ -60,6 +60,7 @@ export function DevFormulariList({
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const editorStorageKey = `dev-fir-editor:${tenantId}:${mnContext}`;
 
   // Per Conto Proprio: auto-rileva il ruolo Multyproget (CF filtro) nel FIR per decidere l'impatto giacenze.
   // - Multy = destinatario  -> CARICO  (rifiuto entra nell'impianto Multy)
@@ -79,6 +80,12 @@ export function DevFormulariList({
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
   };
 
   const { data: forms = [], isLoading, refetch } = useQuery({
@@ -107,6 +114,20 @@ export function DevFormulariList({
       return base;
     },
   });
+
+  useEffect(() => {
+    if (viewDialog.open || forms.length === 0) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null") as { formId?: string; mode?: "standard" | "alternative" } | null;
+      if (!saved?.formId) return;
+      const form = forms.find((item: any) => item.id === saved.formId);
+      if (form) openEditor(form, saved.mode || "standard");
+    } catch {
+      sessionStorage.removeItem(editorStorageKey);
+    }
+    // Il ripristino deve avvenire solo quando arrivano i formulari.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forms]);
 
 
   const handleDeleteForm = async (form: any) => {
@@ -309,7 +330,7 @@ export function DevFormulariList({
       )}
 
       {/* Full FIR Dialog with Standard/Alternative toggle */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">

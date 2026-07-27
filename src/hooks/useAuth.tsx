@@ -174,14 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // For initial load, getSession handles it below
         if (!initialLoad) {
-          setIsLoading(true);
+          // Un rinnovo silenzioso del token non deve smontare l'intera UI:
+          // i formulari aperti contengono lavoro locale non ancora salvato.
           fetchUserData(session.user.id, session.user.email)
             .catch((error) => {
               console.error("[Auth] onAuthStateChange fetchUserData failed:", error);
             })
-            .finally(() => {
-              if (mounted) setIsLoading(false);
-            });
         }
       }
     );

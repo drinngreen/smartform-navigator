@@ -35,7 +35,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
 
-  if (isLoading) {
+  // Mantieni montata la pagina durante i refresh silenziosi della sessione.
+  // Mostra il loader soltanto durante il bootstrap, quando l'utente non è
+  // ancora disponibile.
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-primary animate-pulse text-lg tracking-wider font-display">ZOLI DRAGON</div>
