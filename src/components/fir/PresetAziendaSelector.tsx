@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Trash2, Search, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 import {
   AZIENDE_PRESETS,
   TIPI_AUTORIZZAZIONE,
