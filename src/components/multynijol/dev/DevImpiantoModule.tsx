@@ -185,10 +185,25 @@ function ImpiantoFormulari() {
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
   const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});
+  const editorStorageKey = "dev-fir-editor:impianto-multyproget";
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    if (viewDialog.form?.id) sessionStorage.removeItem(`fir-alternative-working-draft:${viewDialog.form.id}`);
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
+  };
+
+  const changeEditorMode = (mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    if (viewDialog.form?.id) {
+      sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
+    }
   };
 
   const handleDeleteForm = async (form: any) => {
@@ -200,6 +215,7 @@ function ImpiantoFormulari() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      sessionStorage.removeItem(editorStorageKey);
       setViewDialog({ open: false, form: null });
       toast.success("Formulario eliminato dalla vista");
       await refetch();
@@ -249,6 +265,19 @@ function ImpiantoFormulari() {
       return await loadForms(GLOBAL_FIR_TENANT_ID);
     },
   });
+
+  useEffect(() => {
+    if (viewDialog.open || forms.length === 0) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null") as { formId?: string; mode?: "standard" | "alternative" } | null;
+      if (!saved?.formId) return;
+      const form = forms.find((item: any) => item.id === saved.formId);
+      if (form) openEditor(form, saved.mode || "standard");
+    } catch {
+      sessionStorage.removeItem(editorStorageKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forms]);
 
   const { data: incomingItems = [], isLoading: incomingLoading, refetch: refetchIncoming } = useQuery({
     queryKey: ["dev-impianto-fir-in-arrivo", SOCIETA_ID],
@@ -542,7 +571,7 @@ function ImpiantoFormulari() {
       )}
 
       {/* Full FIR Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
@@ -555,7 +584,7 @@ function ImpiantoFormulari() {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
-                  onClick={() => setEditorMode("standard")}
+                  onClick={() => changeEditorMode("standard")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Standard</span>
@@ -563,7 +592,7 @@ function ImpiantoFormulari() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode("alternative")}
+                  onClick={() => changeEditorMode("alternative")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Alternativo</span>

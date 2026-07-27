@@ -494,6 +494,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const [activePage, setActivePage] = useState(1);
   const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
   const [suppressProducerPreset, setSuppressProducerPreset] = useState(false);
+  const localDraftHydratedRef = useRef(false);
   const location = useLocation();
   const params = useParams<{ context?: string }>();
 
@@ -705,6 +706,11 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   const hydratedDraftKeyRef = useRef<string | null>(null);
 
+  const localDraftKey = useMemo(() => {
+    const identity = draftData?.id || activeDraftId || firFormId || presetNumeroFir || activeDraftNumero;
+    return identity ? `fir-alternative-working-draft:${identity}` : null;
+  }, [draftData?.id, activeDraftId, firFormId, presetNumeroFir, activeDraftNumero]);
+
   useEffect(() => {
     if (fields.length === 0) return;
 
@@ -734,6 +740,18 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const hydratedValues = buildDraftFieldValues(fields, draft);
       const effectiveNumero = draft.numero_fir || presetNumeroFir || activeDraftNumero;
 
+      // La sessione locale è la fonte più recente finché l'utente non chiude
+      // la pagina del browser: recupera anche dati non ancora arrivati al DB.
+      let localValues: Record<string, string | boolean> = {};
+      if (localDraftKey) {
+        try {
+          const saved = sessionStorage.getItem(localDraftKey);
+          if (saved) localValues = JSON.parse(saved) as Record<string, string | boolean>;
+        } catch {
+          localValues = {};
+        }
+      }
+
       if (effectiveNumero) {
         fields.forEach((field) => {
           if (hasTokens(field.name, ["numero", "fir"]) || hasTokens(field.name, ["numero", "formulario"])) {
@@ -743,7 +761,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       }
 
       if (!cancelled) {
-        setValues((prev) => ({ ...prev, ...hydratedValues }));
+        setValues((prev) => ({ ...prev, ...hydratedValues, ...localValues }));
+        localDraftHydratedRef.current = true;
       }
     };
 
@@ -752,7 +771,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     return () => {
       cancelled = true;
     };
-  }, [fields, draftData, activeDraftId, presetNumeroFir, activeDraftNumero]);
+  }, [fields, draftData, activeDraftId, presetNumeroFir, activeDraftNumero, localDraftKey]);
+
+  useEffect(() => {
+    if (!localDraftKey || !localDraftHydratedRef.current) return;
+    try {
+      sessionStorage.setItem(localDraftKey, JSON.stringify(values));
+    } catch {
+      // Lo storage può essere disabilitato: il formulario continua a funzionare.
+    }
+  }, [localDraftKey, values]);
 
   // Auto-prefill trasportatore fields from the assigned user's profile
   useEffect(() => {

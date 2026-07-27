@@ -60,6 +60,7 @@ export function DevFormulariList({
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const editorStorageKey = `dev-fir-editor:${tenantId}:${mnContext}`;
 
   // Per Conto Proprio: auto-rileva il ruolo Multyproget (CF filtro) nel FIR per decidere l'impatto giacenze.
   // - Multy = destinatario  -> CARICO  (rifiuto entra nell'impianto Multy)
@@ -79,6 +80,20 @@ export function DevFormulariList({
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    if (viewDialog.form?.id) sessionStorage.removeItem(`fir-alternative-working-draft:${viewDialog.form.id}`);
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
+  };
+
+  const changeEditorMode = (mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    if (viewDialog.form?.id) {
+      sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
+    }
   };
 
   const { data: forms = [], isLoading, refetch } = useQuery({
@@ -108,6 +123,20 @@ export function DevFormulariList({
     },
   });
 
+  useEffect(() => {
+    if (viewDialog.open || forms.length === 0) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null") as { formId?: string; mode?: "standard" | "alternative" } | null;
+      if (!saved?.formId) return;
+      const form = forms.find((item: any) => item.id === saved.formId);
+      if (form) openEditor(form, saved.mode || "standard");
+    } catch {
+      sessionStorage.removeItem(editorStorageKey);
+    }
+    // Il ripristino deve avvenire solo quando arrivano i formulari.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forms]);
+
 
   const handleDeleteForm = async (form: any) => {
     if (!form) return;
@@ -118,6 +147,7 @@ export function DevFormulariList({
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      sessionStorage.removeItem(editorStorageKey);
       setViewDialog({ open: false, form: null });
       toast.success("Formulario eliminato dalla vista");
       await refetch();
@@ -309,7 +339,7 @@ export function DevFormulariList({
       )}
 
       {/* Full FIR Dialog with Standard/Alternative toggle */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => setViewDialog({ open: o, form: o ? viewDialog.form : null })}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
@@ -322,7 +352,7 @@ export function DevFormulariList({
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
-                  onClick={() => setEditorMode("standard")}
+                  onClick={() => changeEditorMode("standard")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Standard</span>
@@ -330,7 +360,7 @@ export function DevFormulariList({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode("alternative")}
+                  onClick={() => changeEditorMode("alternative")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Alternativo</span>

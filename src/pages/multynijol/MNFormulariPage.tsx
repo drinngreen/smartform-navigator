@@ -62,11 +62,27 @@ export default function MNFormulariPage() {
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: FirForm | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [massiveOpen, setMassiveOpen] = useState(false);
+  const editorStorageKey = `mn-fir-editor:${context || "unknown"}`;
 
 
   const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
     setEditorMode(mode);
     setViewDialog({ open: true, form });
+    sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
+  };
+
+  const closeEditor = () => {
+    if (viewDialog.form?.id) sessionStorage.removeItem(`fir-alternative-working-draft:${viewDialog.form.id}`);
+    sessionStorage.removeItem(editorStorageKey);
+    setViewDialog({ open: false, form: null });
+    if (searchParams.get("fir")) setSearchParams({}, { replace: true });
+  };
+
+  const changeEditorMode = (mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    if (viewDialog.form?.id) {
+      sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
+    }
   };
 
   const fetchForms = useCallback(async () => {
@@ -86,7 +102,15 @@ export default function MNFormulariPage() {
       if (scopedForms.length > 0) {
         setForms(scopedForms);
         const requested = requestedFirId ? scopedForms.find((f: FirForm) => f.id === requestedFirId) : null;
+        let persisted: { formId?: string; mode?: "standard" | "alternative" } | null = null;
+        try {
+          persisted = JSON.parse(sessionStorage.getItem(editorStorageKey) || "null");
+        } catch {
+          sessionStorage.removeItem(editorStorageKey);
+        }
+        const restored = persisted?.formId ? scopedForms.find((f: FirForm) => f.id === persisted?.formId) : null;
         if (requested) openEditor(requested, "standard");
+        else if (restored) openEditor(restored, persisted?.mode || "standard");
         return;
       }
 
@@ -113,6 +137,7 @@ export default function MNFormulariPage() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      sessionStorage.removeItem(editorStorageKey);
       setViewDialog({ open: false, form: null });
       toast.success("Formulario eliminato dalla vista");
       await fetchForms();
@@ -338,7 +363,7 @@ export default function MNFormulariPage() {
       )}
 
       {/* Full FIR Alternative Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => { setViewDialog({ open: o, form: o ? viewDialog.form : null }); if (!o && searchParams.get("fir")) setSearchParams({}, { replace: true }); }}>
+      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
@@ -356,7 +381,7 @@ export default function MNFormulariPage() {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
-                  onClick={() => setEditorMode("standard")}
+                  onClick={() => changeEditorMode("standard")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Standard</span>
@@ -364,7 +389,7 @@ export default function MNFormulariPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode("alternative")}
+                  onClick={() => changeEditorMode("alternative")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Alternativo</span>

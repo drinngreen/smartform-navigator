@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser } from "lucide-react";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
@@ -187,6 +188,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<0 | 1 | 2>(0);
   const isStarted = !!store.editingFirId;
   const activeTenantId = tenantId || profile?.tenant_id;
@@ -215,6 +217,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   useEffect(() => {
     if (!draftData?.id) return;
+    // Lo store è persistente: se questa stessa bozza era già aperta, contiene
+    // i valori più recenti digitati dall'utente. Non sovrascriverli con la
+    // copia DB quando la pagina viene rimontata o la sessione si rinnova.
+    if (useMNFIRStore.getState().editingFirId === draftData.id) return;
     store.loadFromDatabase({
       ...draftData,
       form_data: draftData.form_data as Record<string, any> | null,
@@ -226,12 +232,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const hasAutoRestored = useRef(false);
   useEffect(() => {
     if (firFormId || draftData?.id) return;
+    // La pulizia automatica serve solo all'ingresso iniziale delle app autisti.
+    // Nel gestionale Dev Multy il lavoro in corso deve restare fissato anche
+    // dopo un rimontaggio della pagina o un cambio di scheda del browser.
+    if (location.pathname.startsWith("/mn/admin") || location.pathname.startsWith("/admin")) return;
     if (!user?.id || hasAutoRestored.current) return;
     hasAutoRestored.current = true;
     if (store.editingFirId || store.data.selectedFirNumber || isTestFirNumberMN(store.data.selectedFirNumber)) {
       store.resetForm();
     }
-  }, [user?.id, firFormId, draftData?.id]);
+  }, [user?.id, firFormId, draftData?.id, location.pathname]);
 
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
