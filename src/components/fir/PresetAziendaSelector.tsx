@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Trash2, Search, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 import {
   AZIENDE_PRESETS,
   TIPI_AUTORIZZAZIONE,
@@ -30,6 +31,49 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
   const [autId, setAutId] = useState("");
   const [adding, setAdding] = useState(false);
   const [nuovo, setNuovo] = useState({ numero: "", tipo: TIPI_AUTORIZZAZIONE[0], data: "" });
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+        .or(`ragione_sociale.ilike.%${q}%,codice_fiscale.ilike.%${q}%,partita_iva.ilike.%${q}%`)
+        .order("ragione_sociale")
+        .limit(25);
+      if (!cancelled) {
+        setResults(data || []);
+        setSearching(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query]);
+
+  const selectAnagrafica = (r: any) => {
+    const indirizzo = [r.indirizzo, [r.cap, r.citta, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(" - ");
+    onSelectAzienda({
+      nome: r.ragione_sociale || "",
+      indirizzo,
+      cf: r.codice_fiscale || "",
+      piva: r.partita_iva || r.codice_fiscale || "",
+    });
+    setQuery(r.ragione_sociale || "");
+    setResults([]);
+  };
 
   const selectAzienda = (key: string) => {
     setAziendaKey(key);
@@ -38,6 +82,7 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
     const az = AZIENDE_PRESETS.find((a) => a.key === key);
     if (az) onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
   };
+
 
   const selectAut = (id: string) => {
     setAutId(id);
@@ -79,6 +124,41 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
           <option key={a.key} value={a.key}>{a.nome}</option>
         ))}
       </select>
+
+      <div className="relative">
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
+          <Search className="h-3.5 w-3.5 text-primary shrink-0" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Cerca in anagrafica (es. ITALCONCIMI, P.IVA, CF)…"
+            className="w-full bg-transparent py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
+          />
+          {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+        </div>
+        {results.length > 0 && (
+          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => selectAnagrafica(r)}
+                className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-primary/15"
+              >
+                <span className="font-semibold">{r.ragione_sociale}</span>
+                <span className="block text-[10px] text-white/50">
+                  {[r.indirizzo, r.citta, r.partita_iva || r.codice_fiscale].filter(Boolean).join(" · ")}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        {query.trim().length >= 2 && !searching && results.length === 0 && (
+          <p className="mt-1 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
+        )}
+      </div>
+
+
 
       {aziendaKey && (
         <div className="space-y-2">
