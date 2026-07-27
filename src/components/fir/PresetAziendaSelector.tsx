@@ -31,6 +31,49 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
   const [autId, setAutId] = useState("");
   const [adding, setAdding] = useState(false);
   const [nuovo, setNuovo] = useState({ numero: "", tipo: TIPI_AUTORIZZAZIONE[0], data: "" });
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+        .or(`ragione_sociale.ilike.%${q}%,codice_fiscale.ilike.%${q}%,partita_iva.ilike.%${q}%`)
+        .order("ragione_sociale")
+        .limit(25);
+      if (!cancelled) {
+        setResults(data || []);
+        setSearching(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query]);
+
+  const selectAnagrafica = (r: any) => {
+    const indirizzo = [r.indirizzo, [r.cap, r.citta, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(" - ");
+    onSelectAzienda({
+      nome: r.ragione_sociale || "",
+      indirizzo,
+      cf: r.codice_fiscale || "",
+      piva: r.partita_iva || r.codice_fiscale || "",
+    });
+    setQuery(r.ragione_sociale || "");
+    setResults([]);
+  };
 
   const selectAzienda = (key: string) => {
     setAziendaKey(key);
@@ -39,6 +82,7 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
     const az = AZIENDE_PRESETS.find((a) => a.key === key);
     if (az) onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
   };
+
 
   const selectAut = (id: string) => {
     setAutId(id);
