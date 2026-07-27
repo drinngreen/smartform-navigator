@@ -198,6 +198,13 @@ function ImpiantoFormulari() {
     setViewDialog({ open: false, form: null });
   };
 
+  const changeEditorMode = (mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    if (viewDialog.form?.id) {
+      sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
+    }
+  };
+
   const handleDeleteForm = async (form: any) => {
     if (!form) return;
     if (!window.confirm(`Eliminare dalla vista il FIR ${form.numero_fir || "senza numero"}? I dati restano recuperabili nel database.`)) return;
@@ -207,6 +214,7 @@ function ImpiantoFormulari() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      sessionStorage.removeItem(editorStorageKey);
       setViewDialog({ open: false, form: null });
       toast.success("Formulario eliminato dalla vista");
       await refetch();
@@ -575,7 +583,7 @@ function ImpiantoFormulari() {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
-                  onClick={() => setEditorMode("standard")}
+                  onClick={() => changeEditorMode("standard")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Standard</span>
@@ -583,7 +591,7 @@ function ImpiantoFormulari() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode("alternative")}
+                  onClick={() => changeEditorMode("alternative")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Alternativo</span>

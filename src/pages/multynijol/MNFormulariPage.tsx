@@ -77,6 +77,13 @@ export default function MNFormulariPage() {
     if (searchParams.get("fir")) setSearchParams({}, { replace: true });
   };
 
+  const changeEditorMode = (mode: "standard" | "alternative") => {
+    setEditorMode(mode);
+    if (viewDialog.form?.id) {
+      sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
+    }
+  };
+
   const fetchForms = useCallback(async () => {
     if (!mnCtx) return;
     setLoading(true);
@@ -129,6 +136,7 @@ export default function MNFormulariPage() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      sessionStorage.removeItem(editorStorageKey);
       setViewDialog({ open: false, form: null });
       toast.success("Formulario eliminato dalla vista");
       await fetchForms();
@@ -372,7 +380,7 @@ export default function MNFormulariPage() {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
-                  onClick={() => setEditorMode("standard")}
+                  onClick={() => changeEditorMode("standard")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Standard</span>
@@ -380,7 +388,7 @@ export default function MNFormulariPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setEditorMode("alternative")}
+                  onClick={() => changeEditorMode("alternative")}
                   className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
                 >
                   <span className="block text-sm font-semibold">Modulo Alternativo</span>
