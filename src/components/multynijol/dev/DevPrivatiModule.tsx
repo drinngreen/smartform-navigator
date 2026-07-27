@@ -138,6 +138,23 @@ export function DevPrivatiModule() {
 
   const [editDateConfId, setEditDateConfId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState<Date | undefined>();
+  const [editVeicoloConfId, setEditVeicoloConfId] = useState<string | null>(null);
+  const [editVeicoloForm, setEditVeicoloForm] = useState({ targa_automezzo: "", modello_automezzo: "" });
+
+  const handleUpdateConfVeicolo = async (confId: string) => {
+    const { error } = await supabase
+      .from("privati_conferimenti")
+      .update({
+        targa_automezzo: editVeicoloForm.targa_automezzo.trim().toUpperCase() || null,
+        modello_automezzo: editVeicoloForm.modello_automezzo.trim() || null,
+      } as any)
+      .eq("id", confId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Targa/veicolo aggiornati");
+    setEditVeicoloConfId(null);
+    queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+  };
+
 
   const handleUpdateConfDate = async (confId: string, newDate: Date) => {
     const iso = format(newDate, "yyyy-MM-dd");
