@@ -144,6 +144,7 @@ export function useFIRForms() {
   const deleteFIR = useMutation({
     mutationFn: async (id: string) => {
       const { data: firData } = await supabase.from("fir_forms").select("status").eq("id", id).single();
+      await revertFirFromRegistryAndInventory(id);
       if (firData?.status === "bozza") {
         await releaseNumber.mutateAsync(id);
       }
