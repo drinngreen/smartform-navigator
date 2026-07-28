@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
+import { revertFirFromRegistryAndInventory } from "@/lib/firFinalSync";
 import { useAuth } from "@/hooks/useAuth";
 import { useFormBridge } from "@/hooks/useFormBridge";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
@@ -210,6 +211,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     const label = activeDraft?.numero_fir || "questo formulario";
     if (!window.confirm(`Eliminare dalla vista ${label}? I dati restano recuperabili nel database.`)) return;
     try {
+      await revertFirFromRegistryAndInventory(activeDraftId);
       if (activeDraft?.status === "bozza") {
         await supabase.rpc("release_fir_number" as any, { p_fir_id: activeDraftId });
       }

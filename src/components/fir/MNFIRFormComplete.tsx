@@ -331,7 +331,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       try {
         const dbFields = mapStoreToDatabaseFields(store.data);
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
-        toast.success("💾 Bozza salvata");
+        // Le giacenze devono aggiornarsi già al salvataggio in bozza.
+        const result = await syncFirFinalToRegistryAndInventory({
+          firId: store.editingFirId,
+          impiantoId: impiantoId || null,
+          registryMovementType: registryMovementType || "Carico",
+        });
+        if (result.warning) toast.warning(result.warning);
+        else toast.success("💾 Bozza salvata (registro + giacenze aggiornati)");
       } catch (e: any) {
         toast.error("Errore salvataggio bozza: " + (e?.message || String(e)));
       }

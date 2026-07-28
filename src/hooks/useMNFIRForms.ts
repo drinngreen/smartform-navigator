@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { revertFirFromRegistryAndInventory } from "@/lib/firFinalSync";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -71,6 +72,7 @@ export function useMNFIRForms(overrideTenantId?: string) {
   const deleteFIR = useMutation({
     mutationFn: async (id: string) => {
       const { data: firData } = await supabase.from("fir_forms").select("status").eq("id", id).single();
+      await revertFirFromRegistryAndInventory(id);
       if (firData?.status === "bozza") await releaseNumber.mutateAsync(id);
       const { error } = await supabase.from("fir_forms").update({ deleted_by_user: true }).eq("id", id);
       if (error) throw error;
