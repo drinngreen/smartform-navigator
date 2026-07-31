@@ -268,6 +268,7 @@ export function DevRicevuteModule() {
     },
     { header: "Privato", key: "privato_display", width: 22 },
     { header: "CF", key: "privato_cf", width: 18 },
+    { header: "Indirizzo", key: "privato_indirizzo", width: 34 },
     {
       header: "Importo",
       key: "importo",
@@ -284,9 +285,11 @@ export function DevRicevuteModule() {
         ...r,
         privato_display: p ? `${p.cognome} ${p.nome}` : "—",
         privato_cf: p?.codice_fiscale ?? "—",
+        privato_indirizzo: formatIndirizzoPrivato(p) || "—",
       };
     });
   }, [filtered, privatiMap]);
+
 
   const aziendaHeaderLines = [
     AZIENDA.nome,
