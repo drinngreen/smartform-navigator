@@ -31,7 +31,7 @@ const toLocalDateLabel = (value: string | null | undefined) => {
 
 
 const EMPTY_PRIVATO_FORM = {
-  nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
+  nome: "", cognome: "", codice_fiscale: "", indirizzo: "", cap: "", comune_residenza: "", provincia: "",
   numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
 };
 
