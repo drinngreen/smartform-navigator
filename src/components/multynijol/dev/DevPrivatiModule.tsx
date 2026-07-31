@@ -31,7 +31,7 @@ const toLocalDateLabel = (value: string | null | undefined) => {
 
 
 const EMPTY_PRIVATO_FORM = {
-  nome: "", cognome: "", codice_fiscale: "", comune_residenza: "",
+  nome: "", cognome: "", codice_fiscale: "", indirizzo: "", cap: "", comune_residenza: "", provincia: "",
   numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
 };
 
@@ -399,7 +399,10 @@ export function DevPrivatiModule() {
       nome: p.nome || "",
       cognome: p.cognome || "",
       codice_fiscale: p.codice_fiscale || "",
+      indirizzo: p.indirizzo || "",
+      cap: p.cap || "",
       comune_residenza: p.comune_residenza || "",
+      provincia: p.provincia || "",
       numero_documento: p.numero_documento || "",
       scadenza_documento: p.scadenza_documento || "",
       modello_automezzo: p.modello_automezzo || p.automezzo || "",
@@ -426,7 +429,10 @@ export function DevPrivatiModule() {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
       codice_fiscale: privatoForm.codice_fiscale,
+      indirizzo: privatoForm.indirizzo || null,
+      cap: privatoForm.cap || null,
       comune_residenza: privatoForm.comune_residenza || null,
+      provincia: privatoForm.provincia ? privatoForm.provincia.toUpperCase() : null,
       numero_documento: privatoForm.numero_documento || null,
       scadenza_documento: scadenzaStr,
       modello_automezzo: privatoForm.modello_automezzo || null,
@@ -855,7 +861,10 @@ export function DevPrivatiModule() {
             <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div><Label>Cognome *</Label><Input value={privatoForm.cognome} onChange={(e) => setPrivatoForm(p => ({ ...p, cognome: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Codice Fiscale *</Label><Input value={privatoForm.codice_fiscale} onChange={(e) => setPrivatoForm(p => ({ ...p, codice_fiscale: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div className="col-span-2"><Label>Indirizzo (via e numero civico)</Label><Input value={privatoForm.indirizzo} onChange={(e) => setPrivatoForm(p => ({ ...p, indirizzo: e.target.value }))} placeholder="Es. Via Roma 12" /></div>
+            <div><Label>CAP</Label><Input value={privatoForm.cap} onChange={(e) => setPrivatoForm(p => ({ ...p, cap: e.target.value }))} placeholder="10060" /></div>
             <div><Label>Comune</Label><Input value={privatoForm.comune_residenza} onChange={(e) => setPrivatoForm(p => ({ ...p, comune_residenza: e.target.value }))} /></div>
+            <div><Label>Provincia</Label><Input value={privatoForm.provincia} onChange={(e) => setPrivatoForm(p => ({ ...p, provincia: e.target.value.toUpperCase() }))} maxLength={2} placeholder="TO" className="font-mono" /></div>
             <div><Label>N° Documento</Label><Input value={privatoForm.numero_documento} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_documento: e.target.value }))} /></div>
             <div>
               <Label>Scadenza Documento</Label>
