@@ -43,6 +43,7 @@ type RicevutaRow = {
 type RicevutaEnriched = RicevutaRow & {
   privato_display: string;
   privato_cf: string;
+  privato_indirizzo: string;
 };
 
 type PrivatoLite = {
@@ -50,6 +51,16 @@ type PrivatoLite = {
   nome: string;
   cognome: string;
   codice_fiscale: string;
+  indirizzo: string | null;
+  comune_residenza: string | null;
+  cap: string | null;
+  provincia: string | null;
+};
+
+const formatIndirizzoPrivato = (p?: PrivatoLite) => {
+  if (!p) return "";
+  const cittaParts = [p.cap, p.comune_residenza, p.provincia ? `(${p.provincia})` : ""].filter(Boolean).join(" ").trim();
+  return [p.indirizzo, cittaParts].filter(Boolean).join(" - ");
 };
 
 export function DevRicevuteModule() {
@@ -63,13 +74,14 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("anagrafica_privati")
-        .select("id, nome, cognome, codice_fiscale")
+        .select("id, nome, cognome, codice_fiscale, indirizzo, comune_residenza, cap, provincia")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("attivo", true);
       if (error) throw error;
       return (data ?? []) as PrivatoLite[];
     },
   });
+
 
   const privatiMap = useMemo(() => {
     const m = new Map<string, PrivatoLite>();
