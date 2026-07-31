@@ -376,7 +376,9 @@ export function DevRicevuteModule() {
                       ...r,
                       privato_display: p ? `${p.cognome} ${p.nome}` : "—",
                       privato_cf: p?.codice_fiscale ?? "—",
+                      privato_indirizzo: formatIndirizzoPrivato(p) || "—",
                     };
+
 
                     return (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
