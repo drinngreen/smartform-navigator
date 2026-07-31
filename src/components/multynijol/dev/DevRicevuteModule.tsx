@@ -230,7 +230,9 @@ export function DevRicevuteModule() {
   </div>
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
+    <div class="row"><div class="label">Indirizzo</div><div class="val">${escHtml(formatIndirizzoPrivato(p) || "—")}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+
     ${r.conferimento ? `
       ${r.conferimento.numero_progressivo != null ? `<div class="row"><div class="label">N° Registro DBT</div><div class="val">#${escHtml(String(r.conferimento.numero_progressivo))}/${escHtml(String(r.conferimento.anno_dbt ?? ""))}</div></div>` : ""}
       <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
