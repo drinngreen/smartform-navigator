@@ -861,7 +861,10 @@ export function DevPrivatiModule() {
             <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
             <div><Label>Cognome *</Label><Input value={privatoForm.cognome} onChange={(e) => setPrivatoForm(p => ({ ...p, cognome: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Codice Fiscale *</Label><Input value={privatoForm.codice_fiscale} onChange={(e) => setPrivatoForm(p => ({ ...p, codice_fiscale: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div className="col-span-2"><Label>Indirizzo (via e numero civico)</Label><Input value={privatoForm.indirizzo} onChange={(e) => setPrivatoForm(p => ({ ...p, indirizzo: e.target.value }))} placeholder="Es. Via Roma 12" /></div>
+            <div><Label>CAP</Label><Input value={privatoForm.cap} onChange={(e) => setPrivatoForm(p => ({ ...p, cap: e.target.value }))} placeholder="10060" /></div>
             <div><Label>Comune</Label><Input value={privatoForm.comune_residenza} onChange={(e) => setPrivatoForm(p => ({ ...p, comune_residenza: e.target.value }))} /></div>
+            <div><Label>Provincia</Label><Input value={privatoForm.provincia} onChange={(e) => setPrivatoForm(p => ({ ...p, provincia: e.target.value.toUpperCase() }))} maxLength={2} placeholder="TO" className="font-mono" /></div>
             <div><Label>N° Documento</Label><Input value={privatoForm.numero_documento} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_documento: e.target.value }))} /></div>
             <div>
               <Label>Scadenza Documento</Label>
