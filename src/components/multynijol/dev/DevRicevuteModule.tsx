@@ -43,6 +43,7 @@ type RicevutaRow = {
 type RicevutaEnriched = RicevutaRow & {
   privato_display: string;
   privato_cf: string;
+  privato_indirizzo: string;
 };
 
 type PrivatoLite = {
@@ -50,6 +51,16 @@ type PrivatoLite = {
   nome: string;
   cognome: string;
   codice_fiscale: string;
+  indirizzo: string | null;
+  comune_residenza: string | null;
+  cap: string | null;
+  provincia: string | null;
+};
+
+const formatIndirizzoPrivato = (p?: PrivatoLite) => {
+  if (!p) return "";
+  const cittaParts = [p.cap, p.comune_residenza, p.provincia ? `(${p.provincia})` : ""].filter(Boolean).join(" ").trim();
+  return [p.indirizzo, cittaParts].filter(Boolean).join(" - ");
 };
 
 export function DevRicevuteModule() {
@@ -63,13 +74,14 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("anagrafica_privati")
-        .select("id, nome, cognome, codice_fiscale")
+        .select("id, nome, cognome, codice_fiscale, indirizzo, comune_residenza, cap, provincia")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("attivo", true);
       if (error) throw error;
       return (data ?? []) as PrivatoLite[];
     },
   });
+
 
   const privatiMap = useMemo(() => {
     const m = new Map<string, PrivatoLite>();
@@ -218,7 +230,9 @@ export function DevRicevuteModule() {
   </div>
   <div class="box">
     <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
+    <div class="row"><div class="label">Indirizzo</div><div class="val">${escHtml(formatIndirizzoPrivato(p) || "—")}</div></div>
     <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
+
     ${r.conferimento ? `
       ${r.conferimento.numero_progressivo != null ? `<div class="row"><div class="label">N° Registro DBT</div><div class="val">#${escHtml(String(r.conferimento.numero_progressivo))}/${escHtml(String(r.conferimento.anno_dbt ?? ""))}</div></div>` : ""}
       <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
@@ -256,6 +270,7 @@ export function DevRicevuteModule() {
     },
     { header: "Privato", key: "privato_display", width: 22 },
     { header: "CF", key: "privato_cf", width: 18 },
+    { header: "Indirizzo", key: "privato_indirizzo", width: 34 },
     {
       header: "Importo",
       key: "importo",
@@ -272,9 +287,11 @@ export function DevRicevuteModule() {
         ...r,
         privato_display: p ? `${p.cognome} ${p.nome}` : "—",
         privato_cf: p?.codice_fiscale ?? "—",
+        privato_indirizzo: formatIndirizzoPrivato(p) || "—",
       };
     });
   }, [filtered, privatiMap]);
+
 
   const aziendaHeaderLines = [
     AZIENDA.nome,
@@ -361,7 +378,9 @@ export function DevRicevuteModule() {
                       ...r,
                       privato_display: p ? `${p.cognome} ${p.nome}` : "—",
                       privato_cf: p?.codice_fiscale ?? "—",
+                      privato_indirizzo: formatIndirizzoPrivato(p) || "—",
                     };
+
 
                     return (
                       <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
@@ -372,7 +391,9 @@ export function DevRicevuteModule() {
                         <td className="px-3 py-2">
                           <div className="font-medium">{p ? `${p.cognome} ${p.nome}` : "—"}</div>
                           <div className="text-xs text-muted-foreground font-mono">{p?.codice_fiscale ?? ""}</div>
+                          <div className="text-xs text-muted-foreground">{formatIndirizzoPrivato(p) || "—"}</div>
                         </td>
+
                         <td className="px-3 py-2 text-xs">€ {Number(r.importo ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap items-center gap-2">
