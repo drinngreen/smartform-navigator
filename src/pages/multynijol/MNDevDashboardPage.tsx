@@ -95,6 +95,17 @@ export default function MNDevDashboardPage() {
             <div className="text-xs text-muted-foreground">Istruzioni operative complete di ogni modulo</div>
           </div>
         </button>
+
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/analisi")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-sky-500/30 bg-card hover:bg-sky-500/10 transition-all text-left"
+        >
+          <HelpCircle size={20} className="text-sky-400" />
+          <div>
+            <div className="font-semibold text-sm text-sky-300">Analisi Prometeo</div>
+            <div className="text-xs text-muted-foreground">Cosa c'è già e cosa manca rispetto al software precedente</div>
+          </div>
+        </button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
