@@ -110,6 +110,7 @@ const DragonScaricoUscitaPage = React.lazy(() => import("./pages/dragon/DragonSc
 const MNSystemPromptPage = React.lazy(() => import("./pages/multynijol/MNSystemPromptPage"));
 const MNDevDashboardPage = React.lazy(() => import("./pages/multynijol/MNDevDashboardPage"));
 const MNDevGuidaPage = React.lazy(() => import("./pages/multynijol/MNDevGuidaPage"));
+const MNDevAnalisiPage = React.lazy(() => import("./pages/multynijol/MNDevAnalisiPage"));
 const MNAreeRiservateImpiantiPage = React.lazy(() => import("./pages/multynijol/MNAreeRiservateImpiantiPage"));
 const ImpiantoLoginPage = React.lazy(() => import("./pages/ImpiantoLoginPage"));
 const ImpiantoDashboardPage = React.lazy(() => import("./pages/ImpiantoDashboardPage"));
