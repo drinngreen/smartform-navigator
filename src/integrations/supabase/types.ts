@@ -2905,6 +2905,63 @@ export type Database = {
           },
         ]
       }
+      fatture_sibill_sync: {
+        Row: {
+          created_at: string
+          delivery_status: string | null
+          document_status: string | null
+          error_detail: string | null
+          error_title: string | null
+          fattura_id: string
+          id: string
+          last_sync_at: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_status: string | null
+          raw_response: Json | null
+          sibill_document_id: string | null
+          sync_status: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_status?: string | null
+          document_status?: string | null
+          error_detail?: string | null
+          error_title?: string | null
+          fattura_id: string
+          id?: string
+          last_sync_at?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          raw_response?: Json | null
+          sibill_document_id?: string | null
+          sync_status?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivery_status?: string | null
+          document_status?: string | null
+          error_detail?: string | null
+          error_title?: string | null
+          fattura_id?: string
+          id?: string
+          last_sync_at?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          raw_response?: Json | null
+          sibill_document_id?: string | null
+          sync_status?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fir: {
         Row: {
           caratteristiche_hp: string[] | null
@@ -5351,6 +5408,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sibill_counterparts: {
+        Row: {
+          azienda_id: string | null
+          company_name: string
+          created_at: string
+          id: string
+          raw_payload: Json | null
+          sibill_counterpart_id: string
+          tax_number: string | null
+          tenant_id: string | null
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          azienda_id?: string | null
+          company_name: string
+          created_at?: string
+          id?: string
+          raw_payload?: Json | null
+          sibill_counterpart_id: string
+          tax_number?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          azienda_id?: string | null
+          company_name?: string
+          created_at?: string
+          id?: string
+          raw_payload?: Json | null
+          sibill_counterpart_id?: string
+          tax_number?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: []
       }
       signals: {
         Row: {
