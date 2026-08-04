@@ -21,6 +21,8 @@ interface Props {
   label?: string;
   /** Ruolo della sezione: filtra le autorizzazioni pertinenti (mostra comunque tutte) */
   ruolo?: "PRODUTTORE" | "TRASPORTATORE" | "DESTINATARIO" | "INTERMEDIARIO";
+  /** CF/P.IVA già presente nel form: precarica automaticamente i dati collegati */
+  initialCf?: string;
   /** Chiamato quando si sceglie l'azienda: compila denominazione, indirizzo, CF/P.IVA */
   onSelectAzienda: (data: PresetFill) => void;
   /** Chiamato quando si sceglie l'autorizzazione: numero, tipo, data */
@@ -40,6 +42,7 @@ interface Props {
   /** Opzionale: controparte predefinita importata da Prometeo (es. vettore tipico) */
   onSelectPartnerDefault?: (p: PresetFill & { ruolo: string }) => void;
 }
+
 
 const fmtIndirizzo = (r: any) =>
   [r.indirizzo, [r.cap, r.citta ?? r.comune, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
