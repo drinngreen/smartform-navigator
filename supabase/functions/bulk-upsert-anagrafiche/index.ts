@@ -30,11 +30,13 @@ Deno.serve(async (req) => {
       table: string;
       rows?: any[];
       onConflict?: string;
-      select?: { columns: string; filter?: Record<string, string>; limit?: number };
+      select?: { columns: string; filter?: Record<string, string>; limit?: number; offset?: number };
     };
 
     if (select) {
-      let q = supabase.from(table).select(select.columns).limit(select.limit ?? 5000);
+      const off = select.offset ?? 0;
+      const lim = select.limit ?? 1000;
+      let q = supabase.from(table).select(select.columns).range(off, off + lim - 1);
       for (const [k, v] of Object.entries(select.filter ?? {})) q = q.eq(k, v);
       const { data, error } = await q;
       if (error) throw error;
