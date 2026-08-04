@@ -936,7 +936,29 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           <Section title="Cantiere (se applicabile)" onClear={() => clearFields(["cantiereIndirizzo","cantiereComune","cantiereProvincia","cantiereCAP"])}>
+            <PresetAziendaSelector
+              label="Preset cantieri / luoghi di produzione"
+              ruolo="PRODUTTORE"
+              initialCf={d.produttoreCF}
+              onSelectAzienda={(a) => {
+                u("produttoreDenominazione", a.nome);
+                u("produttoreUnitaLocale", a.indirizzo);
+                u("produttoreCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("produttoreNumeroAut", aut.numero);
+                u("produttoreTipoAut", aut.tipo);
+                u("produttoreDataAut", aut.data);
+              }}
+              onSelectCantiere={(c) => {
+                u("cantiereIndirizzo", c.indirizzo || c.denominazione);
+                u("cantiereComune", c.comune);
+                u("cantiereProvincia", c.provincia);
+                u("cantiereCAP", c.cap);
+              }}
+            />
             <Field label="Indirizzo" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} />
+
             <Row>
               <Field label="Comune" value={d.cantiereComune} onChange={(v) => u("cantiereComune", v)} />
               <Field label="Provincia" value={d.cantiereProvincia} onChange={(v) => u("cantiereProvincia", v)} />
