@@ -26,9 +26,15 @@ interface Props {
   /** Chiamato quando si sceglie l'autorizzazione: numero, tipo, data */
   onSelectAutorizzazione: (aut: { numero: string; tipo: string; data: string }) => void;
   /** Opzionale: cantiere / unità locale del cliente selezionato */
-  onSelectCantiere?: (c: { denominazione: string; indirizzo: string }) => void;
+  onSelectCantiere?: (c: {
+    denominazione: string;
+    indirizzo: string;
+    comune: string;
+    provincia: string;
+    cap: string;
+  }) => void;
   /** Opzionale: targa del cliente selezionato */
-  onSelectTarga?: (t: { targa: string; conducente: string }) => void;
+  onSelectTarga?: (t: { targa: string; rimorchio: string; tipoMezzo: string; conducente: string }) => void;
   /** Opzionale: conducente del cliente selezionato */
   onSelectConducente?: (c: { cognome: string; nome: string }) => void;
   /** Opzionale: controparte predefinita importata da Prometeo (es. vettore tipico) */
@@ -201,7 +207,7 @@ export function PresetAziendaSelector({
           .limit(1000),
         supabase
           .from("cliente_targhe")
-          .select("id,targa,tipo_mezzo,conducente_default")
+          .select("id,targa,tipo_mezzo,conducente_default,note")
           .in("cliente_id", ids)
           .order("targa")
           .limit(1000),
@@ -466,7 +472,10 @@ export function PresetAziendaSelector({
                 if (c)
                   onSelectCantiere({
                     denominazione: c.denominazione || "",
-                    indirizzo: [c.indirizzo, c.comune, c.provincia ? `(${c.provincia})` : ""].filter(Boolean).join(" "),
+                    indirizzo: c.indirizzo || "",
+                    comune: c.comune || "",
+                    provincia: c.provincia || "",
+                    cap: c.note?.match(/(?:^|\s)CAP[:\s]+([0-9]{5})(?:\s|$)/i)?.[1] || "",
                   });
               }}
             >
@@ -485,7 +494,12 @@ export function PresetAziendaSelector({
               defaultValue=""
               onChange={(e) => {
                 const t = targhe.find((x) => x.id === e.target.value);
-                if (t) onSelectTarga({ targa: t.targa || "", conducente: t.conducente_default || "" });
+                if (t) onSelectTarga({
+                  targa: t.targa || "",
+                  rimorchio: t.note?.match(/RIMORCHIO(?:\s+DEFAULT)?[:\s]+([^;|]+)/i)?.[1]?.trim() || "",
+                  tipoMezzo: t.tipo_mezzo || "",
+                  conducente: t.conducente_default || "",
+                });
               }}
             >
               <option value="">-- Targa mezzo ({targhe.length}) --</option>
