@@ -414,10 +414,25 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const handleSaveDraft = async () => {
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
+      let savedId = store.editingFirId;
       if (store.editingFirId) {
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       } else {
-        await createFIR.mutateAsync(dbFields);
+        const created: any = await createFIR.mutateAsync(dbFields);
+        savedId = created?.id || null;
+      }
+      // Anche il salvataggio in bozza deve aggiornare registro e giacenze.
+      if (savedId) {
+        try {
+          const result = await syncFirFinalToRegistryAndInventory({
+            firId: savedId,
+            impiantoId: impiantoId || null,
+            registryMovementType: registryMovementType || "Carico",
+          });
+          if (result.warning) toast.warning(result.warning);
+        } catch (e: any) {
+          toast.warning("Bozza salvata, giacenze non aggiornate: " + (e?.message || String(e)));
+        }
       }
       toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
       setTimeout(() => { store.resetForm(); }, 300);
@@ -425,6 +440,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.error("Errore nel salvataggio");
     }
   };
+
 
   const handleNewFIR = async () => {
     if (store.editingFirId && store.workflowStatus !== 'chiuso') {
