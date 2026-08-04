@@ -886,6 +886,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               onSelectCantiere={(c) => {
                 u("cantiereIndirizzo", [c.denominazione, c.indirizzo].filter(Boolean).join(" - "));
               }}
+              onSelectPartnerDefault={(p) => {
+                if (!p.ruolo.startsWith("VETTORE")) return;
+                u("trasportatoreDenominazione", p.nome);
+                u("trasportatoreSituatoIn", p.indirizzo);
+              }}
             />
 
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
