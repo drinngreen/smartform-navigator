@@ -975,7 +975,19 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
           <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
+            <PresetAziendaSelector
+              label="Preset anagrafica intermediari"
+              ruolo="INTERMEDIARIO"
+              onSelectAzienda={(a) => {
+                u("intermediarioDenominazione", a.nome);
+                u("intermediarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("intermediarioNumeroAlbo", aut.numero);
+              }}
+            />
             <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
+
             <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
             <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
           </Section>
