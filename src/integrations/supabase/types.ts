@@ -4034,6 +4034,8 @@ export type Database = {
           id: string
           impianto_id: string | null
           quantita_kg: number
+          saldo_iniziale_kg: number
+          saldo_snapshot_at: string | null
           stato: string | null
           tenant_id: string | null
           tipo_conferente: string | null
@@ -4049,6 +4051,8 @@ export type Database = {
           id?: string
           impianto_id?: string | null
           quantita_kg?: number
+          saldo_iniziale_kg?: number
+          saldo_snapshot_at?: string | null
           stato?: string | null
           tenant_id?: string | null
           tipo_conferente?: string | null
@@ -4064,6 +4068,8 @@ export type Database = {
           id?: string
           impianto_id?: string | null
           quantita_kg?: number
+          saldo_iniziale_kg?: number
+          saldo_snapshot_at?: string | null
           stato?: string | null
           tenant_id?: string | null
           tipo_conferente?: string | null
