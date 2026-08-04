@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Plus, Search, Eye, Trash2, FileCode, Send, Lock, Clock, Loader2,
-  AlertCircle, FileText, Package,
+  AlertCircle, FileText, Package, CloudUpload, CheckCircle2, XCircle, BadgeEuro,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
+import { inviaFatturaASibill, fetchSibillSync, type SibillSync } from "@/lib/sibill";
+
 
 interface Props { tenantId?: string; }
 
