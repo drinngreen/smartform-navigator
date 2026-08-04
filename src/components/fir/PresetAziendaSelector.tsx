@@ -219,7 +219,9 @@ export function PresetAziendaSelector({
           return true;
         });
       };
-      setDbAuts(dedup(a.data, (r) => `${r.numero_autorizzazione}|${r.tipo}`));
+      // Non deduplicare le autorizzazioni: righe con lo stesso numero possono
+      // avere date/validità differenti e devono restare tutte selezionabili.
+      setDbAuts(a.data || []);
       setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
       setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
       setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
