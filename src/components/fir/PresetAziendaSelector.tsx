@@ -31,6 +31,8 @@ interface Props {
   onSelectTarga?: (t: { targa: string; conducente: string }) => void;
   /** Opzionale: conducente del cliente selezionato */
   onSelectConducente?: (c: { cognome: string; nome: string }) => void;
+  /** Opzionale: controparte predefinita importata da Prometeo (es. vettore tipico) */
+  onSelectPartnerDefault?: (p: PresetFill & { ruolo: string }) => void;
 }
 
 const fmtIndirizzo = (r: any) =>
@@ -46,6 +48,7 @@ export function PresetAziendaSelector({
   onSelectCantiere,
   onSelectTarga,
   onSelectConducente,
+  onSelectPartnerDefault,
 }: Props) {
   const [aziendaKey, setAziendaKey] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export function PresetAziendaSelector({
   const [cantieri, setCantieri] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
+  const [partnerDefaults, setPartnerDefaults] = useState<any[]>([]);
   const [loadingDeps, setLoadingDeps] = useState(false);
   const [auts, setAuts] = useState<AutorizzazionePreset[]>([]);
   const [autId, setAutId] = useState("");
@@ -176,12 +180,13 @@ export function PresetAziendaSelector({
       setCantieri([]);
       setTarghe([]);
       setConducenti([]);
+      setPartnerDefaults([]);
       return;
     }
     let cancelled = false;
     setLoadingDeps(true);
     (async () => {
-      const [a, c, t, k] = await Promise.all([
+      const [a, c, t, k, p] = await Promise.all([
         supabase
           .from("cliente_autorizzazioni")
           .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
@@ -206,9 +211,15 @@ export function PresetAziendaSelector({
           .in("cliente_id", ids)
           .order("cognome")
           .limit(1000),
+        supabase
+          .from("cliente_partner_default")
+          .select("id,ruolo,ragione_sociale,indirizzo,cap,citta,provincia")
+          .in("cliente_id", ids)
+          .order("ruolo")
+          .limit(500),
       ]);
       if (cancelled) return;
-      const failed = [a, c, t, k].find((response) => response.error);
+      const failed = [a, c, t, k, p].find((response) => response.error);
       if (failed) setLoadError("Alcuni dati collegati non sono leggibili");
       const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
         const seen = new Set<string>();
@@ -225,6 +236,7 @@ export function PresetAziendaSelector({
       setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
       setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
       setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
+      setPartnerDefaults(dedup(p.data, (r) => `${r.ruolo}|${r.ragione_sociale}|${r.indirizzo}`.toUpperCase()));
       setLoadingDeps(false);
     })();
     return () => {
@@ -395,7 +407,7 @@ export function PresetAziendaSelector({
           {loadingDeps ? "Caricamento dati collegati…" : (
             <>
               {clienteNome}: {autsOrdinate.length} autorizzazioni · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
-              {conducenti.length} conducenti
+              {conducenti.length} conducenti · {partnerDefaults.length} dati predefiniti
             </>
           )}
         </p>
@@ -500,6 +512,31 @@ export function PresetAziendaSelector({
               {conducenti.map((c) => (
                 <option key={c.id} value={c.id}>
                   {[c.cognome, c.nome].filter(Boolean).join(" ")}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {onSelectPartnerDefault && partnerDefaults.length > 0 && (
+            <select
+              className={selectCls}
+              defaultValue=""
+              onChange={(e) => {
+                const p = partnerDefaults.find((x) => x.id === e.target.value);
+                if (!p) return;
+                onSelectPartnerDefault({
+                  nome: p.ragione_sociale || "",
+                  indirizzo: [p.indirizzo, p.cap, p.citta, p.provincia ? `(${p.provincia})` : ""].filter(Boolean).join(" "),
+                  cf: "",
+                  piva: "",
+                  ruolo: p.ruolo || "",
+                });
+              }}
+            >
+              <option value="">-- Dati vettore / partner predefinito ({partnerDefaults.length}) --</option>
+              {partnerDefaults.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.ruolo} — {p.ragione_sociale} — {[p.indirizzo, p.citta].filter(Boolean).join(" · ")}
                 </option>
               ))}
             </select>
