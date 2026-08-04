@@ -390,6 +390,12 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Genera Cortesia
           </button>
+          <button disabled={saving || !hasPIva} onClick={salvaEInviaSibill}
+            className="px-4 py-2 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 disabled:opacity-50 flex items-center gap-2"
+            title="Crea la fattura e la invia immediatamente a Sibill">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+            Salva e invia a Sibill
+          </button>
         </div>
       </div>
     </div>
