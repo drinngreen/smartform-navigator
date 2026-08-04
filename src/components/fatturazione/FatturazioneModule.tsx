@@ -305,6 +305,41 @@ export function FatturazioneModule({ tenantId }: Props) {
   );
 }
 
+function SibillBadge({ sync }: { sync?: SibillSync }) {
+  if (!sync) {
+    return <span className="text-xs text-muted-foreground">Non inviata</span>;
+  }
+  if (sync.sync_status === "errore") {
+    return (
+      <span
+        title={`${sync.error_title || "Errore"}: ${sync.error_detail || ""}`}
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-red-500/15 border-red-500/40 text-red-300"
+      >
+        <XCircle className="h-3 w-3" /> Errore Invio
+      </span>
+    );
+  }
+  if (sync.payment_status === "PAID" || sync.sync_status === "incassata") {
+    return (
+      <span
+        title={`Incassata ${sync.payment_date || ""} ${sync.payment_method || ""}`}
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+      >
+        <BadgeEuro className="h-3 w-3" /> Incassata
+      </span>
+    );
+  }
+  return (
+    <span
+      title={`Doc ${sync.sibill_document_id || "—"} • ${sync.document_status || ""} ${sync.delivery_status || ""}`}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-blue-600/20 border-blue-500/60 text-blue-200"
+    >
+      <CheckCircle2 className="h-3 w-3" /> Sincronizzata
+    </span>
+  );
+}
+
+
 function SummaryCard({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="p-3 rounded-xl bg-card/60 border border-border/30 backdrop-blur-xl">
