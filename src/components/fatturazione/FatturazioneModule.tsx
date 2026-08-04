@@ -216,6 +216,8 @@ export function FatturazioneModule({ tenantId }: Props) {
                     {filtered.map(f => {
                       const stato = (f.stato || "cortesia") as Stato;
                       const canSendXml = stato === "cortesia" && (Date.now() - new Date(f.created_at).getTime()) >= 24 * 3600 * 1000;
+                      const sib: SibillSync | undefined = (sibillMap as any)[f.id];
+
                       return (
                         <tr key={f.id} className={`border-b border-border/10 transition-colors ${STATO_ROW[stato]}`}>
                           <td className="px-4 py-3 font-mono font-semibold text-foreground">{f.numero_completo}</td>
