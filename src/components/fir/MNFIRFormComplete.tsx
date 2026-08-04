@@ -995,10 +995,15 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               onSelectTarga={(t) => {
                 u("targaAutomezzo", t.targa);
                 if (t.rimorchio) u("targaRimorchio", t.rimorchio);
-                if (t.conducente) u("conducenteNomeCognome", t.conducente);
+                if (t.conducente) {
+                  u("conducenteNomeCognome", t.conducente);
+                  u("trasportatoreNomeAutista", t.conducente);
+                }
               }}
               onSelectConducente={(c) => {
-                u("conducenteNomeCognome", [c.cognome, c.nome].filter(Boolean).join(" "));
+                const nomeCompleto = [c.cognome, c.nome].filter(Boolean).join(" ");
+                u("conducenteNomeCognome", nomeCompleto);
+                u("trasportatoreNomeAutista", nomeCompleto);
               }}
             />
 
@@ -1009,7 +1014,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <Field label="Data Iscrizione" value={d.trasportatoreDataAlbo} onChange={(v) => u("trasportatoreDataAlbo", v)} type="date" />
             </Row>
             <Field label="Situato in" value={d.trasportatoreSituatoIn} onChange={(v) => u("trasportatoreSituatoIn", v)} />
-            <Field label="Nome Autista" value={d.trasportatoreNomeAutista} onChange={(v) => u("trasportatoreNomeAutista", v)} />
+            <Field label="Nome Autista" value={d.trasportatoreNomeAutista} onChange={(v) => {
+              u("trasportatoreNomeAutista", v);
+              u("conducenteNomeCognome", v);
+            }} />
           </Section>
 
           {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
@@ -1104,7 +1112,36 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           <Section title="8-9. Conducente e Trasporto" onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
-            <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => u("conducenteNomeCognome", v)} />
+            <PresetAziendaSelector
+              label="Conducenti e mezzi del trasportatore"
+              ruolo="TRASPORTATORE"
+              onSelectAzienda={(a) => {
+                u("trasportatoreDenominazione", a.nome);
+                u("trasportatoreCF", a.piva || a.cf);
+                u("trasportatoreSituatoIn", a.indirizzo);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("trasportatoreNumeroAlbo", aut.numero);
+                u("trasportatoreDataAlbo", aut.data);
+              }}
+              onSelectTarga={(t) => {
+                u("targaAutomezzo", t.targa);
+                if (t.rimorchio) u("targaRimorchio", t.rimorchio);
+                if (t.conducente) {
+                  u("conducenteNomeCognome", t.conducente);
+                  u("trasportatoreNomeAutista", t.conducente);
+                }
+              }}
+              onSelectConducente={(c) => {
+                const nomeCompleto = [c.cognome, c.nome].filter(Boolean).join(" ");
+                u("conducenteNomeCognome", nomeCompleto);
+                u("trasportatoreNomeAutista", nomeCompleto);
+              }}
+            />
+            <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => {
+              u("conducenteNomeCognome", v);
+              u("trasportatoreNomeAutista", v);
+            }} />
             <Row>
               <Field label="Data Inizio Trasporto" value={d.oraDataInizioTrasporto} onChange={(v) => u("oraDataInizioTrasporto", v)} type="date" />
               <Field label="Ora Inizio" value={d.oraInizioTrasporto} onChange={(v) => u("oraInizioTrasporto", v)} type="time" />
