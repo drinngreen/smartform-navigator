@@ -148,63 +148,90 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     setShowFirPicker(false);
   };
 
+  const doSalva = async (sendToSibill = false) => {
+    if (!tenantId) { toast.error("Tenant mancante"); return null; }
+    if (!cliente) { toast.error("Selezionare un cliente"); return null; }
+    if (!hasPIva) { toast.error("Partita IVA cliente mancante: aggiornare l'anagrafica prima di fatturare"); return null; }
+    if (righe.length === 0 || righe.every(r => !r.descrizione)) { toast.error("Aggiungere almeno una riga"); return null; }
+
+    const anno = new Date(dataEmissione).getFullYear();
+    const { data: numRes, error: numErr } = await supabase.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
+    if (numErr) throw numErr;
+    const numero = numRes as number;
+
+    const rc = righe.every(r => r.reverse_charge);
+    const { data: fatt, error: fErr } = await supabase.from("fatture" as any).insert({
+      tenant_id: tenantId,
+      numero, anno,
+      data_emissione: dataEmissione,
+      cliente_id: cliente.id,
+      cliente_ragione_sociale: cliente.ragione_sociale,
+      cliente_partita_iva: cliente.partita_iva,
+      cliente_codice_fiscale: cliente.codice_fiscale,
+      cliente_indirizzo: [cliente.indirizzo, cliente.cap, cliente.citta, cliente.provincia].filter(Boolean).join(" "),
+      cliente_unita_locale: unitaLocale || null,
+      tipo: righe.some(r => r.tipo_riga === "noleggio") ? "noleggio" : "servizi",
+      stato: sendToSibill ? "inviata" : "cortesia",
+      imponibile: totals.imponibile,
+      iva: totals.iva,
+      totale: totals.totale,
+      reverse_charge: rc,
+      note,
+    }).select().single();
+    if (fErr) throw fErr;
+
+    const righeInsert = righe.map((r, i) => ({
+      fattura_id: (fatt as any).id,
+      ordine: i,
+      descrizione: r.descrizione,
+      cer: r.cer || null,
+      fir_form_id: r.fir_form_id,
+      numero_fir: r.numero_fir || null,
+      quantita: r.quantita,
+      unita_misura: r.unita_misura,
+      prezzo_unitario: r.prezzo_unitario,
+      imponibile: Number(r.quantita) * Number(r.prezzo_unitario),
+      aliquota_iva: r.reverse_charge ? 0 : r.aliquota_iva,
+      iva: r.reverse_charge ? 0 : Number(r.quantita) * Number(r.prezzo_unitario) * (Number(r.aliquota_iva) / 100),
+      totale: Number(r.quantita) * Number(r.prezzo_unitario) * (r.reverse_charge ? 1 : 1 + Number(r.aliquota_iva) / 100),
+      reverse_charge: r.reverse_charge,
+      tipo_riga: r.tipo_riga,
+    }));
+    const { error: rErr } = await supabase.from("fatture_righe" as any).insert(righeInsert);
+    if (rErr) throw rErr;
+
+    return { fattura: fatt as any, numero, anno };
+  };
+
   const salva = async () => {
-    if (!tenantId) { toast.error("Tenant mancante"); return; }
-    if (!cliente) { toast.error("Selezionare un cliente"); return; }
-    if (!hasPIva) { toast.error("Partita IVA cliente mancante: aggiornare l'anagrafica prima di fatturare"); return; }
-    if (righe.length === 0 || righe.every(r => !r.descrizione)) { toast.error("Aggiungere almeno una riga"); return; }
     setSaving(true);
     try {
-      const anno = new Date(dataEmissione).getFullYear();
-      const { data: numRes, error: numErr } = await supabase.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
-      if (numErr) throw numErr;
-      const numero = numRes as number;
-
-      const rc = righe.every(r => r.reverse_charge);
-      const { data: fatt, error: fErr } = await supabase.from("fatture" as any).insert({
-        tenant_id: tenantId,
-        numero, anno,
-        data_emissione: dataEmissione,
-        cliente_id: cliente.id,
-        cliente_ragione_sociale: cliente.ragione_sociale,
-        cliente_partita_iva: cliente.partita_iva,
-        cliente_codice_fiscale: cliente.codice_fiscale,
-        cliente_indirizzo: [cliente.indirizzo, cliente.cap, cliente.citta, cliente.provincia].filter(Boolean).join(" "),
-        cliente_unita_locale: unitaLocale || null,
-        tipo: righe.some(r => r.tipo_riga === "noleggio") ? "noleggio" : "servizi",
-        stato: "cortesia",
-        imponibile: totals.imponibile,
-        iva: totals.iva,
-        totale: totals.totale,
-        reverse_charge: rc,
-        note,
-      }).select().single();
-      if (fErr) throw fErr;
-
-      const righeInsert = righe.map((r, i) => ({
-        fattura_id: (fatt as any).id,
-        ordine: i,
-        descrizione: r.descrizione,
-        cer: r.cer || null,
-        fir_form_id: r.fir_form_id,
-        numero_fir: r.numero_fir || null,
-        quantita: r.quantita,
-        unita_misura: r.unita_misura,
-        prezzo_unitario: r.prezzo_unitario,
-        imponibile: Number(r.quantita) * Number(r.prezzo_unitario),
-        aliquota_iva: r.reverse_charge ? 0 : r.aliquota_iva,
-        iva: r.reverse_charge ? 0 : Number(r.quantita) * Number(r.prezzo_unitario) * (Number(r.aliquota_iva) / 100),
-        totale: Number(r.quantita) * Number(r.prezzo_unitario) * (r.reverse_charge ? 1 : 1 + Number(r.aliquota_iva) / 100),
-        reverse_charge: r.reverse_charge,
-        tipo_riga: r.tipo_riga,
-      }));
-      const { error: rErr } = await supabase.from("fatture_righe" as any).insert(righeInsert);
-      if (rErr) throw rErr;
-
-      toast.success(`Fattura ${numero}/${anno} creata in Cortesia`);
+      const res = await doSalva(false);
+      if (!res) return;
+      toast.success(`Fattura ${res.numero}/${res.anno} creata in Cortesia`);
       onCreated();
     } catch (e: any) {
       toast.error(e.message || "Errore salvataggio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const salvaEInviaSibill = async () => {
+    setSaving(true);
+    try {
+      const res = await doSalva(true);
+      if (!res) return;
+      toast.info(`Fattura ${res.numero}/${res.anno} creata, invio a Sibill in corso...`);
+      await inviaFatturaASibill(res.fattura);
+      toast.success(`Fattura ${res.numero}/${res.anno} trasmessa a Sibill`);
+      onCreated();
+    } catch (e: any) {
+      toast.error(e.message || "Errore invio a Sibill", { duration: 8000 });
+      // se l'invio fallisce lasciamo la fattura in stato inviata? No, meglio tornarla in cortesia
+      try {
+        await supabase.from("fatture" as any).update({ stato: "cortesia" }).eq("id", res?.fattura?.id);
+      } catch {}
     } finally {
       setSaving(false);
     }
