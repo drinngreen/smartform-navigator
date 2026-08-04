@@ -18,19 +18,35 @@ const numberValue = (...values: unknown[]) => {
 };
 
 async function recalculateMultyStock(impiantoId: string, cer: string) {
-  const { data, error } = await supabase
+  // Baseline: saldo ufficiale fotografato (riepilogo giacenze). Sui saldi
+  // si sommano SOLO i movimenti registrati dopo lo scatto, perché lo storico
+  // caricato non è completo e ricalcolare da zero falserebbe le giacenze.
+  const { data: current } = await supabase
+    .from("magazzino_giacenze")
+    .select("saldo_iniziale_kg, saldo_snapshot_at")
+    .eq("tenant_id", MULTY_TENANT_ID)
+    .eq("impianto_id", impiantoId)
+    .eq("cer", cer)
+    .maybeSingle();
+
+  const baseline = Number((current as any)?.saldo_iniziale_kg) || 0;
+  const snapshotAt = (current as any)?.saldo_snapshot_at as string | null | undefined;
+
+  let query = supabase
     .from("movimenti_impianto" as any)
     .select("tipo_movimento, quantita_kg")
     .eq("tenant_id", MULTY_TENANT_ID)
     .eq("impianto_id", impiantoId)
-    .eq("cer", cer)
-    .lte("data_movimento", new Date().toISOString().slice(0, 10));
+    .eq("cer", cer);
+  if (snapshotAt) query = query.gt("created_at", snapshotAt);
+
+  const { data, error } = await query;
   if (error) throw error;
 
   const movements = (data || []) as unknown as Array<{ tipo_movimento: string; quantita_kg: number | string }>;
   const quantity = movements.reduce(
     (total, movement) => total + (movement.tipo_movimento === "CARICO" ? 1 : -1) * (Number(movement.quantita_kg) || 0),
-    0
+    baseline
   );
   const { error: stockError } = await supabase.from("magazzino_giacenze").upsert(
     {
@@ -38,12 +54,15 @@ async function recalculateMultyStock(impiantoId: string, cer: string) {
       impianto_id: impiantoId,
       cer,
       quantita_kg: quantity,
+      saldo_iniziale_kg: baseline,
+      saldo_snapshot_at: snapshotAt || new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "tenant_id,impianto_id,cer" }
   );
   if (stockError) throw stockError;
 }
+
 
 async function upsertRegistro(
   tenantId: string,
