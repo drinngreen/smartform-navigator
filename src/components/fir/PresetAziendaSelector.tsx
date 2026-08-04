@@ -81,6 +81,64 @@ export function PresetAziendaSelector({
   const [roleCompanies, setRoleCompanies] = useState<any[]>([]);
   const [loadingRoleCompanies, setLoadingRoleCompanies] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [allCompanies, setAllCompanies] = useState<any[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
+
+  // Tendina con TUTTA l'anagrafica (in aggiunta alla ricerca testuale)
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingAll(true);
+    (async () => {
+      const rows: any[] = [];
+      for (let page = 0; page < 20; page++) {
+        const { data, error } = await supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+          .order("ragione_sociale")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (cancelled) return;
+      const seen = new Set<string>();
+      setAllCompanies(
+        rows.filter((r) => {
+          const k = `${r.codice_fiscale || r.partita_iva || r.id}|${r.ragione_sociale || ""}`.toUpperCase();
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+      );
+      setLoadingAll(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Precarica i dati collegati per l'azienda già presente nel form (es. Multy/Niyol produttore)
+  useEffect(() => {
+    const cf = (initialCf || "").trim();
+    if (!cf || cf.length < 5 || clienteId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("id,ragione_sociale,codice_fiscale,partita_iva")
+        .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
+        .limit(200);
+      if (cancelled || !data || data.length === 0) return;
+      setClienteId(data[0].id);
+      setClienteNome(data[0].ragione_sociale || "");
+      setClienteIds(data.map((x: any) => x.id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialCf, clienteId]);
+
+
 
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
    *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
