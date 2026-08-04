@@ -3,12 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Plus, Search, Eye, Trash2, FileCode, Send, Lock, Clock, Loader2,
-  AlertCircle, FileText, Package,
+  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
+import { inviaFatturaASibill, fetchSibillSync, type SibillSync } from "@/lib/sibill";
+
 
 interface Props { tenantId?: string; }
 
@@ -52,6 +54,34 @@ export function FatturazioneModule({ tenantId }: Props) {
       return (data || []) as any[];
     },
   });
+
+  const { data: sibillMap = {} } = useQuery({
+    queryKey: ["fatture-sibill", fatture.map((f: any) => f.id).join(",")],
+    enabled: fatture.length > 0,
+    refetchInterval: 60000,
+    queryFn: async () => fetchSibillSync(fatture.map((f: any) => f.id)),
+  });
+
+  const sibillMut = useMutation({
+    mutationFn: async (f: any) => {
+      const res = await inviaFatturaASibill(f);
+      if (f.stato !== "inviata") {
+        await supabase.from("fatture" as any).update({
+          stato: "inviata", locked: true, inviata_at: new Date().toISOString(),
+        }).eq("id", f.id);
+      }
+      return res;
+    },
+
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
+      qc.invalidateQueries({ queryKey: ["fatture"] });
+      toast.success("Fattura trasmessa a Sibill");
+    },
+    onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
+  });
+
+
 
   const delMut = useMutation({
     mutationFn: async (id: string) => {
@@ -177,7 +207,7 @@ export function FatturazioneModule({ tenantId }: Props) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/30 text-left">
-                      {["Numero", "Data", "Cliente", "P.IVA", "Imponibile", "IVA", "Totale", "Stato", "Azioni"].map(h => (
+                      {["Numero", "Data", "Cliente", "P.IVA", "Imponibile", "IVA", "Totale", "Stato", "Sibill", "Azioni"].map(h => (
                         <th key={h} className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">{h}</th>
                       ))}
                     </tr>
@@ -186,6 +216,8 @@ export function FatturazioneModule({ tenantId }: Props) {
                     {filtered.map(f => {
                       const stato = (f.stato || "cortesia") as Stato;
                       const canSendXml = stato === "cortesia" && (Date.now() - new Date(f.created_at).getTime()) >= 24 * 3600 * 1000;
+                      const sib: SibillSync | undefined = (sibillMap as any)[f.id];
+
                       return (
                         <tr key={f.id} className={`border-b border-border/10 transition-colors ${STATO_ROW[stato]}`}>
                           <td className="px-4 py-3 font-mono font-semibold text-foreground">{f.numero_completo}</td>
@@ -202,11 +234,23 @@ export function FatturazioneModule({ tenantId }: Props) {
                             </span>
                           </td>
                           <td className="px-4 py-3">
+                            <SibillBadge sync={sib} />
+                          </td>
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               <button onClick={() => setViewId(f.id)} className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground" title="Visualizza / PDF">
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
+                              <button
+                                onClick={() => confirm(`Inviare la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
+                                disabled={sibillMut.isPending || sib?.sync_status === "sincronizzata" || sib?.sync_status === "incassata"}
+                                className="p-1.5 rounded-lg text-xs flex items-center gap-1 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Invia a Sibill"
+                              >
+                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} Sibill
+                              </button>
                               {stato === "cortesia" && (
+
                                 <>
                                   <button
                                     onClick={() => canSendXml
@@ -260,6 +304,41 @@ export function FatturazioneModule({ tenantId }: Props) {
     </div>
   );
 }
+
+function SibillBadge({ sync }: { sync?: SibillSync }) {
+  if (!sync) {
+    return <span className="text-xs text-muted-foreground">Non inviata</span>;
+  }
+  if (sync.sync_status === "errore") {
+    return (
+      <span
+        title={`${sync.error_title || "Errore"}: ${sync.error_detail || ""}`}
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-red-500/15 border-red-500/40 text-red-300"
+      >
+        <XCircle className="h-3 w-3" /> Errore Invio
+      </span>
+    );
+  }
+  if (sync.payment_status === "PAID" || sync.sync_status === "incassata") {
+    return (
+      <span
+        title={`Incassata ${sync.payment_date || ""} ${sync.payment_method || ""}`}
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+      >
+        <BadgeEuro className="h-3 w-3" /> Incassata
+      </span>
+    );
+  }
+  return (
+    <span
+      title={`Doc ${sync.sibill_document_id || "—"} • ${sync.document_status || ""} ${sync.delivery_status || ""}`}
+      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium bg-blue-600/20 border-blue-500/60 text-blue-200"
+    >
+      <CheckCircle2 className="h-3 w-3" /> Sincronizzata
+    </span>
+  );
+}
+
 
 function SummaryCard({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
