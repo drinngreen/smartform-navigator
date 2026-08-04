@@ -219,8 +219,9 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
 
   const salvaEInviaSibill = async () => {
     setSaving(true);
+    let res: { fattura: any; numero: number; anno: number } | null = null;
     try {
-      const res = await doSalva(true);
+      res = await doSalva(true);
       if (!res) return;
       toast.info(`Fattura ${res.numero}/${res.anno} creata, invio a Sibill in corso...`);
       await inviaFatturaASibill(res.fattura);
@@ -228,10 +229,11 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
       onCreated();
     } catch (e: any) {
       toast.error(e.message || "Errore invio a Sibill", { duration: 8000 });
-      // se l'invio fallisce lasciamo la fattura in stato inviata? No, meglio tornarla in cortesia
-      try {
-        await supabase.from("fatture" as any).update({ stato: "cortesia" }).eq("id", res?.fattura?.id);
-      } catch {}
+      if (res?.fattura?.id) {
+        try {
+          await supabase.from("fatture" as any).update({ stato: "cortesia" }).eq("id", res.fattura.id);
+        } catch {}
+      }
     } finally {
       setSaving(false);
     }
