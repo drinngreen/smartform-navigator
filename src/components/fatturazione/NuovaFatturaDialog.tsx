@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2 } from "lucide-react";
+import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
+import { inviaFatturaASibill } from "@/lib/sibill";
 
 interface Props {
   tenantId?: string;
