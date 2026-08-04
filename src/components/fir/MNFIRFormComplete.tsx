@@ -856,6 +856,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           <Section title="1. Produttore / Detentore" defaultOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
+              ruolo="PRODUTTORE"
               onSelectAzienda={(a) => {
                 u("produttoreDenominazione", a.nome);
                 u("produttoreUnitaLocale", a.indirizzo);
@@ -866,7 +867,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 u("produttoreTipoAut", aut.tipo);
                 u("produttoreDataAut", aut.data);
               }}
+              onSelectCantiere={(c) => {
+                u("cantiereIndirizzo", [c.denominazione, c.indirizzo].filter(Boolean).join(" - "));
+              }}
             />
+
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
             <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" />
             <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
@@ -901,6 +906,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           <Section title="3. Destinatario" onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
             <DestinatarioSelector onSelect={handleDestinatarioSelect} />
+            <PresetAziendaSelector
+              label="Preset anagrafica destinatari"
+              ruolo="DESTINATARIO"
+              onSelectAzienda={(a) => {
+                u("destinatarioDenominazione", a.nome);
+                u("destinatarioUnitaLocale", a.indirizzo);
+                u("destinatarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("destinatarioNumeroAut", aut.numero);
+                u("destinatarioTipoAut", aut.tipo);
+                u("destinatarioDataAut", aut.data);
+              }}
+            />
+
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
@@ -924,6 +944,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
+              ruolo="TRASPORTATORE"
               onSelectAzienda={(a) => {
                 u("trasportatoreDenominazione", a.nome);
                 u("trasportatoreCF", a.piva || a.cf);
@@ -933,7 +954,15 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 u("trasportatoreNumeroAlbo", aut.numero);
                 u("trasportatoreDataAlbo", aut.data);
               }}
+              onSelectTarga={(t) => {
+                u("targaAutomezzo", t.targa);
+                if (t.conducente) u("conducenteNomeCognome", t.conducente);
+              }}
+              onSelectConducente={(c) => {
+                u("conducenteNomeCognome", [c.cognome, c.nome].filter(Boolean).join(" "));
+              }}
             />
+
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
@@ -946,7 +975,19 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
           <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
+            <PresetAziendaSelector
+              label="Preset anagrafica intermediari"
+              ruolo="INTERMEDIARIO"
+              onSelectAzienda={(a) => {
+                u("intermediarioDenominazione", a.nome);
+                u("intermediarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("intermediarioNumeroAlbo", aut.numero);
+              }}
+            />
             <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
+
             <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
             <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
           </Section>

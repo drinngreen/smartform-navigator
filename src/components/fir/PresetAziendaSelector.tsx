@@ -19,14 +19,42 @@ export interface PresetFill {
 
 interface Props {
   label?: string;
+  /** Ruolo della sezione: filtra le autorizzazioni pertinenti (mostra comunque tutte) */
+  ruolo?: "PRODUTTORE" | "TRASPORTATORE" | "DESTINATARIO" | "INTERMEDIARIO";
   /** Chiamato quando si sceglie l'azienda: compila denominazione, indirizzo, CF/P.IVA */
   onSelectAzienda: (data: PresetFill) => void;
   /** Chiamato quando si sceglie l'autorizzazione: numero, tipo, data */
   onSelectAutorizzazione: (aut: { numero: string; tipo: string; data: string }) => void;
+  /** Opzionale: cantiere / unità locale del cliente selezionato */
+  onSelectCantiere?: (c: { denominazione: string; indirizzo: string }) => void;
+  /** Opzionale: targa del cliente selezionato */
+  onSelectTarga?: (t: { targa: string; conducente: string }) => void;
+  /** Opzionale: conducente del cliente selezionato */
+  onSelectConducente?: (c: { cognome: string; nome: string }) => void;
 }
 
-export function PresetAziendaSelector({ label = "Preset azienda", onSelectAzienda, onSelectAutorizzazione }: Props) {
+const fmtIndirizzo = (r: any) =>
+  [r.indirizzo, [r.cap, r.citta ?? r.comune, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(" - ");
+
+export function PresetAziendaSelector({
+  label = "Preset azienda",
+  ruolo,
+  onSelectAzienda,
+  onSelectAutorizzazione,
+  onSelectCantiere,
+  onSelectTarga,
+  onSelectConducente,
+}: Props) {
   const [aziendaKey, setAziendaKey] = useState("");
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clienteNome, setClienteNome] = useState("");
+  const [dbAuts, setDbAuts] = useState<any[]>([]);
+  const [cantieri, setCantieri] = useState<any[]>([]);
+  const [targhe, setTarghe] = useState<any[]>([]);
+  const [conducenti, setConducenti] = useState<any[]>([]);
+  const [loadingDeps, setLoadingDeps] = useState(false);
   const [auts, setAuts] = useState<AutorizzazionePreset[]>([]);
   const [autId, setAutId] = useState("");
   const [adding, setAdding] = useState(false);
@@ -49,7 +77,7 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
         .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
         .or(`ragione_sociale.ilike.%${q}%,codice_fiscale.ilike.%${q}%,partita_iva.ilike.%${q}%`)
         .order("ragione_sociale")
-        .limit(25);
+        .limit(50);
       if (!cancelled) {
         setResults(data || []);
         setSearching(false);
@@ -61,43 +89,119 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
     };
   }, [query]);
 
+  // Carica tutti i dati collegati (autorizzazioni, cantieri, targhe, conducenti) del cliente scelto
+  useEffect(() => {
+    if (!clienteId) {
+      setDbAuts([]);
+      setCantieri([]);
+      setTarghe([]);
+      setConducenti([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDeps(true);
+    (async () => {
+      const [a, c, t, k] = await Promise.all([
+        supabase
+          .from("cliente_autorizzazioni")
+          .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
+          .eq("cliente_id", clienteId)
+          .order("data_scadenza", { ascending: false })
+          .limit(500),
+        supabase
+          .from("cliente_cantieri")
+          .select("id,denominazione,indirizzo,comune,provincia,note")
+          .eq("cliente_id", clienteId)
+          .order("denominazione")
+          .limit(1000),
+        supabase
+          .from("cliente_targhe")
+          .select("id,targa,tipo_mezzo,conducente_default")
+          .eq("cliente_id", clienteId)
+          .order("targa")
+          .limit(1000),
+        supabase
+          .from("cliente_conducenti")
+          .select("id,cognome,nome")
+          .eq("cliente_id", clienteId)
+          .order("cognome")
+          .limit(1000),
+      ]);
+      if (cancelled) return;
+      setDbAuts(a.data || []);
+      setCantieri(c.data || []);
+      setTarghe(t.data || []);
+      setConducenti(k.data || []);
+      setLoadingDeps(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clienteId]);
+
   const selectAnagrafica = (r: any) => {
-    const indirizzo = [r.indirizzo, [r.cap, r.citta, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
-      .filter(Boolean)
-      .join(" - ");
     onSelectAzienda({
       nome: r.ragione_sociale || "",
-      indirizzo,
+      indirizzo: fmtIndirizzo(r),
       cf: r.codice_fiscale || "",
       piva: r.partita_iva || r.codice_fiscale || "",
     });
+    setClienteId(r.id);
+    setClienteNome(r.ragione_sociale || "");
+    setAziendaKey("");
+    setAuts([]);
+    setAutId("");
     setQuery(r.ragione_sociale || "");
     setResults([]);
   };
 
-  const selectAzienda = (key: string) => {
+  const selectAzienda = async (key: string) => {
     setAziendaKey(key);
     setAutId("");
     setAuts(key ? getAutorizzazioni(key) : []);
     const az = AZIENDE_PRESETS.find((a) => a.key === key);
-    if (az) onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
+    if (!az) {
+      setClienteId(null);
+      setClienteNome("");
+      return;
+    }
+    onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
+    setClienteNome(az.nome);
+    const { data } = await supabase
+      .from("anagrafica_aziende_mp")
+      .select("id")
+      .or(`codice_fiscale.eq.${az.cf},partita_iva.eq.${az.piva}`)
+      .limit(1)
+      .maybeSingle();
+    setClienteId(data?.id ?? null);
   };
-
 
   const selectAut = (id: string) => {
     setAutId(id);
-    const aut = auts.find((a) => a.id === id);
-    if (aut) onSelectAutorizzazione({ numero: aut.numero, tipo: aut.tipo, data: aut.data });
+    const local = auts.find((a) => a.id === id);
+    if (local) {
+      onSelectAutorizzazione({ numero: local.numero, tipo: local.tipo, data: local.data });
+      return;
+    }
+    const db = dbAuts.find((a) => a.id === id);
+    if (db) {
+      onSelectAutorizzazione({
+        numero: db.numero_autorizzazione || "",
+        tipo: db.ente_rilascio || db.tipo || "",
+        data: db.data_scadenza || db.data_inizio || "",
+      });
+    }
   };
 
   const salvaNuovo = () => {
-    if (!aziendaKey || !nuovo.numero.trim()) return;
-    const entry = addAutorizzazione(aziendaKey, {
+    const key = aziendaKey || clienteId;
+    if (!key || !nuovo.numero.trim()) return;
+    const entry = addAutorizzazione(key, {
       numero: nuovo.numero.trim(),
       tipo: nuovo.tipo,
       data: nuovo.data,
     });
-    setAuts(getAutorizzazioni(aziendaKey));
+    setAuts(getAutorizzazioni(key));
     setAdding(false);
     setNuovo({ numero: "", tipo: TIPI_AUTORIZZAZIONE[0], data: "" });
     setAutId(entry.id);
@@ -105,11 +209,17 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
   };
 
   const eliminaSelezionata = () => {
-    if (!aziendaKey || !autId) return;
-    removeAutorizzazione(aziendaKey, autId);
-    setAuts(getAutorizzazioni(aziendaKey));
+    const key = aziendaKey || clienteId;
+    if (!key || !autId) return;
+    removeAutorizzazione(key, autId);
+    setAuts(getAutorizzazioni(key));
     setAutId("");
   };
+
+  // autorizzazioni del ruolo prima, poi tutte le altre
+  const autsOrdinate = ruolo
+    ? [...dbAuts].sort((a, b) => (a.tipo === ruolo ? -1 : 0) - (b.tipo === ruolo ? -1 : 0))
+    : dbAuts;
 
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
@@ -158,13 +268,29 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
         )}
       </div>
 
+      {clienteId && (
+        <p className="text-[10px] text-white/50">
+          {loadingDeps ? "Caricamento dati collegati…" : (
+            <>
+              {clienteNome}: {autsOrdinate.length} autorizzazioni · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
+              {conducenti.length} conducenti
+            </>
+          )}
+        </p>
+      )}
 
-
-      {aziendaKey && (
+      {(aziendaKey || clienteId) && (
         <div className="space-y-2">
           <div className="flex gap-2">
             <select value={autId} onChange={(e) => selectAut(e.target.value)} className={selectCls}>
-              <option value="">-- Autorizzazione (numero / tipo / data) --</option>
+              <option value="">-- Autorizzazione (numero / tipo / scadenza) --</option>
+              {autsOrdinate.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.numero_autorizzazione} — {a.tipo}
+                  {a.ente_rilascio ? ` ${a.ente_rilascio}` : ""}
+                  {a.data_scadenza ? ` (scad. ${a.data_scadenza})` : ""}
+                </option>
+              ))}
               {auts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.numero} — {a.tipo}{a.data ? ` (${a.data})` : ""}
@@ -179,7 +305,7 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
             >
               <Plus className="h-4 w-4" />
             </button>
-            {autId && (
+            {autId && auts.some((a) => a.id === autId) && (
               <button
                 type="button"
                 onClick={eliminaSelezionata}
@@ -191,10 +317,70 @@ export function PresetAziendaSelector({ label = "Preset azienda", onSelectAziend
             )}
           </div>
 
-          {auts.length === 0 && !adding && (
+          {autsOrdinate.length === 0 && auts.length === 0 && !adding && (
             <p className="text-[10px] text-white/50">
-              Nessuna autorizzazione salvata: usa ＋ per aggiungere i codici di autorizzazione.
+              Nessuna autorizzazione in archivio per questa azienda: usa ＋ per aggiungerla.
             </p>
+          )}
+
+          {onSelectCantiere && cantieri.length > 0 && (
+            <select
+              className={selectCls}
+              defaultValue=""
+              onChange={(e) => {
+                const c = cantieri.find((x) => x.id === e.target.value);
+                if (c)
+                  onSelectCantiere({
+                    denominazione: c.denominazione || "",
+                    indirizzo: [c.indirizzo, c.comune, c.provincia ? `(${c.provincia})` : ""].filter(Boolean).join(" "),
+                  });
+              }}
+            >
+              <option value="">-- Cantiere / luogo di produzione ({cantieri.length}) --</option>
+              {cantieri.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {[c.denominazione, c.indirizzo, c.comune, c.provincia].filter(Boolean).join(" · ")}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {onSelectTarga && targhe.length > 0 && (
+            <select
+              className={selectCls}
+              defaultValue=""
+              onChange={(e) => {
+                const t = targhe.find((x) => x.id === e.target.value);
+                if (t) onSelectTarga({ targa: t.targa || "", conducente: t.conducente_default || "" });
+              }}
+            >
+              <option value="">-- Targa mezzo ({targhe.length}) --</option>
+              {targhe.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.targa}
+                  {t.tipo_mezzo ? ` (${t.tipo_mezzo})` : ""}
+                  {t.conducente_default ? ` — ${t.conducente_default}` : ""}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {onSelectConducente && conducenti.length > 0 && (
+            <select
+              className={selectCls}
+              defaultValue=""
+              onChange={(e) => {
+                const c = conducenti.find((x) => x.id === e.target.value);
+                if (c) onSelectConducente({ cognome: c.cognome || "", nome: c.nome || "" });
+              }}
+            >
+              <option value="">-- Conducente ({conducenti.length}) --</option>
+              {conducenti.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {[c.cognome, c.nome].filter(Boolean).join(" ")}
+                </option>
+              ))}
+            </select>
           )}
 
           {adding && (
