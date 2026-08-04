@@ -49,6 +49,7 @@ export function PresetAziendaSelector({
 }: Props) {
   const [aziendaKey, setAziendaKey] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clienteIds, setClienteIds] = useState<string[]>([]);
   const [clienteNome, setClienteNome] = useState("");
   const [dbAuts, setDbAuts] = useState<any[]>([]);
   const [cantieri, setCantieri] = useState<any[]>([]);
@@ -62,6 +63,21 @@ export function PresetAziendaSelector({
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+
+  /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
+   *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
+   *  cantieri, targhe, conducenti) vanno quindi raccolti su TUTTI i duplicati. */
+  const resolveClienteIds = async (r: { id: string; codice_fiscale?: string | null; partita_iva?: string | null }) => {
+    const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
+    if (keys.length === 0) return [r.id];
+    const filters = keys
+      .flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`])
+      .join(",");
+    const { data } = await supabase.from("anagrafica_aziende_mp").select("id").or(filters).limit(200);
+    const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
+    return ids;
+  };
+
 
   useEffect(() => {
     const q = query.trim();
@@ -91,7 +107,8 @@ export function PresetAziendaSelector({
 
   // Carica tutti i dati collegati (autorizzazioni, cantieri, targhe, conducenti) del cliente scelto
   useEffect(() => {
-    if (!clienteId) {
+    const ids = clienteIds.length ? clienteIds : clienteId ? [clienteId] : [];
+    if (ids.length === 0) {
       setDbAuts([]);
       setCantieri([]);
       setTarghe([]);
@@ -105,41 +122,50 @@ export function PresetAziendaSelector({
         supabase
           .from("cliente_autorizzazioni")
           .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
-          .eq("cliente_id", clienteId)
+          .in("cliente_id", ids)
           .order("data_scadenza", { ascending: false })
           .limit(500),
         supabase
           .from("cliente_cantieri")
           .select("id,denominazione,indirizzo,comune,provincia,note")
-          .eq("cliente_id", clienteId)
+          .in("cliente_id", ids)
           .order("denominazione")
           .limit(1000),
         supabase
           .from("cliente_targhe")
           .select("id,targa,tipo_mezzo,conducente_default")
-          .eq("cliente_id", clienteId)
+          .in("cliente_id", ids)
           .order("targa")
           .limit(1000),
         supabase
           .from("cliente_conducenti")
           .select("id,cognome,nome")
-          .eq("cliente_id", clienteId)
+          .in("cliente_id", ids)
           .order("cognome")
           .limit(1000),
       ]);
       if (cancelled) return;
-      setDbAuts(a.data || []);
-      setCantieri(c.data || []);
-      setTarghe(t.data || []);
-      setConducenti(k.data || []);
+      const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
+        const seen = new Set<string>();
+        return (rows || []).filter((r) => {
+          const k = keyFn(r);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      };
+      setDbAuts(dedup(a.data, (r) => `${r.numero_autorizzazione}|${r.tipo}`));
+      setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
+      setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
+      setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
       setLoadingDeps(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [clienteId]);
+  }, [clienteId, clienteIds]);
 
-  const selectAnagrafica = (r: any) => {
+  const selectAnagrafica = async (r: any) => {
     onSelectAzienda({
       nome: r.ragione_sociale || "",
       indirizzo: fmtIndirizzo(r),
@@ -153,6 +179,7 @@ export function PresetAziendaSelector({
     setAutId("");
     setQuery(r.ragione_sociale || "");
     setResults([]);
+    setClienteIds(await resolveClienteIds(r));
   };
 
   const selectAzienda = async (key: string) => {
@@ -162,6 +189,7 @@ export function PresetAziendaSelector({
     const az = AZIENDE_PRESETS.find((a) => a.key === key);
     if (!az) {
       setClienteId(null);
+      setClienteIds([]);
       setClienteNome("");
       return;
     }
@@ -171,10 +199,12 @@ export function PresetAziendaSelector({
       .from("anagrafica_aziende_mp")
       .select("id")
       .or(`codice_fiscale.eq.${az.cf},partita_iva.eq.${az.piva}`)
-      .limit(1)
-      .maybeSingle();
-    setClienteId(data?.id ?? null);
+      .limit(200);
+    const ids = (data || []).map((x: any) => x.id);
+    setClienteId(ids[0] ?? null);
+    setClienteIds(ids);
   };
+
 
   const selectAut = (id: string) => {
     setAutId(id);
