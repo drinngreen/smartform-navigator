@@ -768,6 +768,44 @@ export type Database = {
           },
         ]
       }
+      cliente_conducenti: {
+        Row: {
+          cliente_id: string | null
+          cognome: string | null
+          created_at: string
+          id: string
+          nome: string | null
+          note: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          cognome?: string | null
+          created_at?: string
+          id?: string
+          nome?: string | null
+          note?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          cognome?: string | null
+          created_at?: string
+          id?: string
+          nome?: string | null
+          note?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_conducenti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_documenti: {
         Row: {
           cliente_id: string
@@ -824,6 +862,53 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_partner_default: {
+        Row: {
+          cap: string | null
+          citta: string | null
+          cliente_id: string | null
+          created_at: string
+          id: string
+          indirizzo: string | null
+          provincia: string | null
+          ragione_sociale: string | null
+          ruolo: string
+          tenant_id: string | null
+        }
+        Insert: {
+          cap?: string | null
+          citta?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          id?: string
+          indirizzo?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          ruolo: string
+          tenant_id?: string | null
+        }
+        Update: {
+          cap?: string | null
+          citta?: string | null
+          cliente_id?: string | null
+          created_at?: string
+          id?: string
+          indirizzo?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          ruolo?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_partner_default_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
             referencedColumns: ["id"]
           },
         ]
