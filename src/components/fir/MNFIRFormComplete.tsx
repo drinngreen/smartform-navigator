@@ -906,6 +906,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           <Section title="3. Destinatario" onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
             <DestinatarioSelector onSelect={handleDestinatarioSelect} />
+            <PresetAziendaSelector
+              label="Preset anagrafica destinatari"
+              ruolo="DESTINATARIO"
+              onSelectAzienda={(a) => {
+                u("destinatarioDenominazione", a.nome);
+                u("destinatarioUnitaLocale", a.indirizzo);
+                u("destinatarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("destinatarioNumeroAut", aut.numero);
+                u("destinatarioTipoAut", aut.tipo);
+                u("destinatarioDataAut", aut.data);
+              }}
+            />
+
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
