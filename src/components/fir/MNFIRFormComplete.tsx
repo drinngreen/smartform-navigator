@@ -929,6 +929,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
+              ruolo="TRASPORTATORE"
               onSelectAzienda={(a) => {
                 u("trasportatoreDenominazione", a.nome);
                 u("trasportatoreCF", a.piva || a.cf);
@@ -938,7 +939,15 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 u("trasportatoreNumeroAlbo", aut.numero);
                 u("trasportatoreDataAlbo", aut.data);
               }}
+              onSelectTarga={(t) => {
+                u("targaAutomezzo", t.targa);
+                if (t.conducente) u("conducenteNomeCognome", t.conducente);
+              }}
+              onSelectConducente={(c) => {
+                u("conducenteNomeCognome", [c.cognome, c.nome].filter(Boolean).join(" "));
+              }}
             />
+
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
