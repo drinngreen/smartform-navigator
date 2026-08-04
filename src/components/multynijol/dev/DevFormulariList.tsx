@@ -178,8 +178,15 @@ export function DevFormulariList({
 
   const cfFilter = normalizeCf(filterByTrasportatoreCf);
   const sourceForms = cfFilter
-    ? forms.filter((f: any) => normalizeCf(f.trasportatore_codice_fiscale) === cfFilter)
+    ? forms.filter((f: any) => {
+        const cf = normalizeCf(f.trasportatore_codice_fiscale);
+        // Le bozze appena create (numero manuale, nessun dato compilato) non hanno
+        // ancora il trasportatore: devono restare visibili altrimenti "spariscono".
+        if (!cf) return f.status === "bozza" || f.status === "draft";
+        return cf === cfFilter;
+      })
     : forms;
+
 
   const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
