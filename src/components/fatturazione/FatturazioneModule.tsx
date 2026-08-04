@@ -234,11 +234,23 @@ export function FatturazioneModule({ tenantId }: Props) {
                             </span>
                           </td>
                           <td className="px-4 py-3">
+                            <SibillBadge sync={sib} />
+                          </td>
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               <button onClick={() => setViewId(f.id)} className="p-1.5 rounded-lg hover:bg-muted/20 text-muted-foreground hover:text-foreground" title="Visualizza / PDF">
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
+                              <button
+                                onClick={() => confirm(`Inviare la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
+                                disabled={sibillMut.isPending || sib?.sync_status === "sincronizzata" || sib?.sync_status === "incassata"}
+                                className="p-1.5 rounded-lg text-xs flex items-center gap-1 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Invia a Sibill"
+                              >
+                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} Sibill
+                              </button>
                               {stato === "cortesia" && (
+
                                 <>
                                   <button
                                     onClick={() => canSendXml
