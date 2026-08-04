@@ -55,6 +55,25 @@ export function FatturazioneModule({ tenantId }: Props) {
     },
   });
 
+  const { data: sibillMap = {} } = useQuery({
+    queryKey: ["fatture-sibill", fatture.map((f: any) => f.id).join(",")],
+    enabled: fatture.length > 0,
+    refetchInterval: 60000,
+    queryFn: async () => fetchSibillSync(fatture.map((f: any) => f.id)),
+  });
+
+  const sibillMut = useMutation({
+    mutationFn: async (f: any) => inviaFatturaASibill(f),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
+      qc.invalidateQueries({ queryKey: ["fatture"] });
+      toast.success("Fattura trasmessa a Sibill");
+    },
+    onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
+  });
+
+
+
   const delMut = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("fatture" as any).delete().eq("id", id);
