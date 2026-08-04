@@ -21,6 +21,8 @@ interface Props {
   label?: string;
   /** Ruolo della sezione: filtra le autorizzazioni pertinenti (mostra comunque tutte) */
   ruolo?: "PRODUTTORE" | "TRASPORTATORE" | "DESTINATARIO" | "INTERMEDIARIO";
+  /** CF/P.IVA già presente nel form: precarica automaticamente i dati collegati */
+  initialCf?: string;
   /** Chiamato quando si sceglie l'azienda: compila denominazione, indirizzo, CF/P.IVA */
   onSelectAzienda: (data: PresetFill) => void;
   /** Chiamato quando si sceglie l'autorizzazione: numero, tipo, data */
@@ -41,6 +43,7 @@ interface Props {
   onSelectPartnerDefault?: (p: PresetFill & { ruolo: string }) => void;
 }
 
+
 const fmtIndirizzo = (r: any) =>
   [r.indirizzo, [r.cap, r.citta ?? r.comune, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
     .filter(Boolean)
@@ -49,7 +52,9 @@ const fmtIndirizzo = (r: any) =>
 export function PresetAziendaSelector({
   label = "Preset azienda",
   ruolo,
+  initialCf,
   onSelectAzienda,
+
   onSelectAutorizzazione,
   onSelectCantiere,
   onSelectTarga,
@@ -76,6 +81,64 @@ export function PresetAziendaSelector({
   const [roleCompanies, setRoleCompanies] = useState<any[]>([]);
   const [loadingRoleCompanies, setLoadingRoleCompanies] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [allCompanies, setAllCompanies] = useState<any[]>([]);
+  const [loadingAll, setLoadingAll] = useState(false);
+
+  // Tendina con TUTTA l'anagrafica (in aggiunta alla ricerca testuale)
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingAll(true);
+    (async () => {
+      const rows: any[] = [];
+      for (let page = 0; page < 20; page++) {
+        const { data, error } = await supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+          .order("ragione_sociale")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (cancelled) return;
+      const seen = new Set<string>();
+      setAllCompanies(
+        rows.filter((r) => {
+          const k = `${r.codice_fiscale || r.partita_iva || r.id}|${r.ragione_sociale || ""}`.toUpperCase();
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+      );
+      setLoadingAll(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Precarica i dati collegati per l'azienda già presente nel form (es. Multy/Niyol produttore)
+  useEffect(() => {
+    const cf = (initialCf || "").trim();
+    if (!cf || cf.length < 5 || clienteId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("id,ragione_sociale,codice_fiscale,partita_iva")
+        .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
+        .limit(200);
+      if (cancelled || !data || data.length === 0) return;
+      setClienteId(data[0].id);
+      setClienteNome(data[0].ragione_sociale || "");
+      setClienteIds(data.map((x: any) => x.id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialCf, clienteId]);
+
+
 
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
    *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
@@ -372,6 +435,28 @@ export function PresetAziendaSelector({
           ))}
         </select>
       )}
+
+      <select
+        value=""
+        onChange={(e) => {
+          const selected = allCompanies.find((c) => c.id === e.target.value);
+          if (selected) void selectAnagrafica(selected);
+        }}
+        className={selectCls}
+        disabled={loadingAll}
+      >
+        <option value="">
+          {loadingAll ? "-- Caricamento anagrafica completa… --" : `-- Tutta l'anagrafica (${allCompanies.length}) --`}
+        </option>
+        {allCompanies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.ragione_sociale}
+            {c.citta ? ` — ${c.citta}` : ""}
+            {c.partita_iva || c.codice_fiscale ? ` — ${c.partita_iva || c.codice_fiscale}` : ""}
+          </option>
+        ))}
+      </select>
+
 
       <div className="relative">
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
