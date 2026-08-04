@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2 } from "lucide-react";
+import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
+import { inviaFatturaASibill } from "@/lib/sibill";
 
 interface Props {
   tenantId?: string;
@@ -147,63 +148,92 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     setShowFirPicker(false);
   };
 
+  const doSalva = async (sendToSibill = false) => {
+    if (!tenantId) { toast.error("Tenant mancante"); return null; }
+    if (!cliente) { toast.error("Selezionare un cliente"); return null; }
+    if (!hasPIva) { toast.error("Partita IVA cliente mancante: aggiornare l'anagrafica prima di fatturare"); return null; }
+    if (righe.length === 0 || righe.every(r => !r.descrizione)) { toast.error("Aggiungere almeno una riga"); return null; }
+
+    const anno = new Date(dataEmissione).getFullYear();
+    const { data: numRes, error: numErr } = await supabase.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
+    if (numErr) throw numErr;
+    const numero = numRes as number;
+
+    const rc = righe.every(r => r.reverse_charge);
+    const { data: fatt, error: fErr } = await supabase.from("fatture" as any).insert({
+      tenant_id: tenantId,
+      numero, anno,
+      data_emissione: dataEmissione,
+      cliente_id: cliente.id,
+      cliente_ragione_sociale: cliente.ragione_sociale,
+      cliente_partita_iva: cliente.partita_iva,
+      cliente_codice_fiscale: cliente.codice_fiscale,
+      cliente_indirizzo: [cliente.indirizzo, cliente.cap, cliente.citta, cliente.provincia].filter(Boolean).join(" "),
+      cliente_unita_locale: unitaLocale || null,
+      tipo: righe.some(r => r.tipo_riga === "noleggio") ? "noleggio" : "servizi",
+      stato: sendToSibill ? "inviata" : "cortesia",
+      imponibile: totals.imponibile,
+      iva: totals.iva,
+      totale: totals.totale,
+      reverse_charge: rc,
+      note,
+    }).select().single();
+    if (fErr) throw fErr;
+
+    const righeInsert = righe.map((r, i) => ({
+      fattura_id: (fatt as any).id,
+      ordine: i,
+      descrizione: r.descrizione,
+      cer: r.cer || null,
+      fir_form_id: r.fir_form_id,
+      numero_fir: r.numero_fir || null,
+      quantita: r.quantita,
+      unita_misura: r.unita_misura,
+      prezzo_unitario: r.prezzo_unitario,
+      imponibile: Number(r.quantita) * Number(r.prezzo_unitario),
+      aliquota_iva: r.reverse_charge ? 0 : r.aliquota_iva,
+      iva: r.reverse_charge ? 0 : Number(r.quantita) * Number(r.prezzo_unitario) * (Number(r.aliquota_iva) / 100),
+      totale: Number(r.quantita) * Number(r.prezzo_unitario) * (r.reverse_charge ? 1 : 1 + Number(r.aliquota_iva) / 100),
+      reverse_charge: r.reverse_charge,
+      tipo_riga: r.tipo_riga,
+    }));
+    const { error: rErr } = await supabase.from("fatture_righe" as any).insert(righeInsert);
+    if (rErr) throw rErr;
+
+    return { fattura: fatt as any, numero, anno };
+  };
+
   const salva = async () => {
-    if (!tenantId) { toast.error("Tenant mancante"); return; }
-    if (!cliente) { toast.error("Selezionare un cliente"); return; }
-    if (!hasPIva) { toast.error("Partita IVA cliente mancante: aggiornare l'anagrafica prima di fatturare"); return; }
-    if (righe.length === 0 || righe.every(r => !r.descrizione)) { toast.error("Aggiungere almeno una riga"); return; }
     setSaving(true);
     try {
-      const anno = new Date(dataEmissione).getFullYear();
-      const { data: numRes, error: numErr } = await supabase.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
-      if (numErr) throw numErr;
-      const numero = numRes as number;
-
-      const rc = righe.every(r => r.reverse_charge);
-      const { data: fatt, error: fErr } = await supabase.from("fatture" as any).insert({
-        tenant_id: tenantId,
-        numero, anno,
-        data_emissione: dataEmissione,
-        cliente_id: cliente.id,
-        cliente_ragione_sociale: cliente.ragione_sociale,
-        cliente_partita_iva: cliente.partita_iva,
-        cliente_codice_fiscale: cliente.codice_fiscale,
-        cliente_indirizzo: [cliente.indirizzo, cliente.cap, cliente.citta, cliente.provincia].filter(Boolean).join(" "),
-        cliente_unita_locale: unitaLocale || null,
-        tipo: righe.some(r => r.tipo_riga === "noleggio") ? "noleggio" : "servizi",
-        stato: "cortesia",
-        imponibile: totals.imponibile,
-        iva: totals.iva,
-        totale: totals.totale,
-        reverse_charge: rc,
-        note,
-      }).select().single();
-      if (fErr) throw fErr;
-
-      const righeInsert = righe.map((r, i) => ({
-        fattura_id: (fatt as any).id,
-        ordine: i,
-        descrizione: r.descrizione,
-        cer: r.cer || null,
-        fir_form_id: r.fir_form_id,
-        numero_fir: r.numero_fir || null,
-        quantita: r.quantita,
-        unita_misura: r.unita_misura,
-        prezzo_unitario: r.prezzo_unitario,
-        imponibile: Number(r.quantita) * Number(r.prezzo_unitario),
-        aliquota_iva: r.reverse_charge ? 0 : r.aliquota_iva,
-        iva: r.reverse_charge ? 0 : Number(r.quantita) * Number(r.prezzo_unitario) * (Number(r.aliquota_iva) / 100),
-        totale: Number(r.quantita) * Number(r.prezzo_unitario) * (r.reverse_charge ? 1 : 1 + Number(r.aliquota_iva) / 100),
-        reverse_charge: r.reverse_charge,
-        tipo_riga: r.tipo_riga,
-      }));
-      const { error: rErr } = await supabase.from("fatture_righe" as any).insert(righeInsert);
-      if (rErr) throw rErr;
-
-      toast.success(`Fattura ${numero}/${anno} creata in Cortesia`);
+      const res = await doSalva(false);
+      if (!res) return;
+      toast.success(`Fattura ${res.numero}/${res.anno} creata in Cortesia`);
       onCreated();
     } catch (e: any) {
       toast.error(e.message || "Errore salvataggio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const salvaEInviaSibill = async () => {
+    setSaving(true);
+    let res: { fattura: any; numero: number; anno: number } | null = null;
+    try {
+      res = await doSalva(true);
+      if (!res) return;
+      toast.info(`Fattura ${res.numero}/${res.anno} creata, invio a Sibill in corso...`);
+      await inviaFatturaASibill(res.fattura);
+      toast.success(`Fattura ${res.numero}/${res.anno} trasmessa a Sibill`);
+      onCreated();
+    } catch (e: any) {
+      toast.error(e.message || "Errore invio a Sibill", { duration: 8000 });
+      if (res?.fattura?.id) {
+        try {
+          await supabase.from("fatture" as any).update({ stato: "cortesia" }).eq("id", res.fattura.id);
+        } catch {}
+      }
     } finally {
       setSaving(false);
     }
@@ -359,6 +389,12 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
             className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Genera Cortesia
+          </button>
+          <button disabled={saving || !hasPIva} onClick={salvaEInviaSibill}
+            className="px-4 py-2 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 text-sm font-medium hover:bg-indigo-500/30 disabled:opacity-50 flex items-center gap-2"
+            title="Crea la fattura e la invia immediatamente a Sibill">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+            Salva e invia a Sibill
           </button>
         </div>
       </div>
