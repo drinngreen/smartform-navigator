@@ -207,7 +207,7 @@ export function FatturazioneModule({ tenantId }: Props) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/30 text-left">
-                      {["Numero", "Data", "Cliente", "P.IVA", "Imponibile", "IVA", "Totale", "Stato", "Azioni"].map(h => (
+                      {["Numero", "Data", "Cliente", "P.IVA", "Imponibile", "IVA", "Totale", "Stato", "Sibill", "Azioni"].map(h => (
                         <th key={h} className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">{h}</th>
                       ))}
                     </tr>
