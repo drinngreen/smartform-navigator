@@ -63,6 +63,9 @@ export function PresetAziendaSelector({
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [roleCompanies, setRoleCompanies] = useState<any[]>([]);
+  const [loadingRoleCompanies, setLoadingRoleCompanies] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
    *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
@@ -78,6 +81,65 @@ export function PresetAziendaSelector({
     return ids;
   };
 
+  // I file Prometeo classificano destinatari/trasportatori/intermediari tramite
+  // le rispettive autorizzazioni. Le vecchie flag dell'anagrafica non sono
+  // affidabili, quindi la tendina viene costruita dai collegamenti importati.
+  useEffect(() => {
+    if (!ruolo || ruolo === "PRODUTTORE") {
+      setRoleCompanies([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingRoleCompanies(true);
+    setLoadError("");
+    (async () => {
+      const { data: links, error: linksError } = await supabase
+        .from("cliente_autorizzazioni")
+        .select("cliente_id")
+        .eq("tipo", ruolo)
+        .limit(1000);
+      if (linksError) {
+        if (!cancelled) setLoadError("Impossibile caricare i preset autorizzati");
+        if (!cancelled) setLoadingRoleCompanies(false);
+        return;
+      }
+      const ids = Array.from(new Set((links || []).map((x: any) => x.cliente_id).filter(Boolean)));
+      const chunks: string[][] = [];
+      for (let i = 0; i < ids.length; i += 150) chunks.push(ids.slice(i, i + 150));
+      const responses = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from("anagrafica_aziende_mp")
+            .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+            .in("id", chunk)
+            .order("ragione_sociale")
+        )
+      );
+      if (cancelled) return;
+      const failed = responses.find((response) => response.error);
+      if (failed) {
+        setLoadError("Impossibile leggere l'anagrafica dei preset");
+        setLoadingRoleCompanies(false);
+        return;
+      }
+      const seen = new Set<string>();
+      const rows = responses
+        .flatMap((response) => response.data || [])
+        .filter((row: any) => {
+          const key = `${row.codice_fiscale || row.partita_iva || row.id}|${row.ragione_sociale || ""}`.toUpperCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a: any, b: any) => String(a.ragione_sociale || "").localeCompare(String(b.ragione_sociale || ""), "it"));
+      setRoleCompanies(rows);
+      setLoadingRoleCompanies(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ruolo]);
+
 
   useEffect(() => {
     const q = query.trim();
@@ -88,7 +150,7 @@ export function PresetAziendaSelector({
     let cancelled = false;
     setSearching(true);
     const t = setTimeout(async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("anagrafica_aziende_mp")
         .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
         .or(`ragione_sociale.ilike.%${q}%,codice_fiscale.ilike.%${q}%,partita_iva.ilike.%${q}%`)
@@ -96,6 +158,7 @@ export function PresetAziendaSelector({
         .limit(50);
       if (!cancelled) {
         setResults(data || []);
+        setLoadError(error ? "Ricerca anagrafica non disponibile" : "");
         setSearching(false);
       }
     }, 300);
@@ -145,6 +208,8 @@ export function PresetAziendaSelector({
           .limit(1000),
       ]);
       if (cancelled) return;
+      const failed = [a, c, t, k].find((response) => response.error);
+      if (failed) setLoadError("Alcuni dati collegati non sono leggibili");
       const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
         const seen = new Set<string>();
         return (rows || []).filter((r) => {
@@ -247,8 +312,8 @@ export function PresetAziendaSelector({
   };
 
   // autorizzazioni del ruolo prima, poi tutte le altre
-  const autsOrdinate = ruolo
-    ? [...dbAuts].sort((a, b) => (a.tipo === ruolo ? -1 : 0) - (b.tipo === ruolo ? -1 : 0))
+  const autsOrdinate = ruolo && ruolo !== "PRODUTTORE"
+    ? dbAuts.filter((a) => a.tipo === ruolo)
     : dbAuts;
 
   const selectCls =
@@ -259,11 +324,34 @@ export function PresetAziendaSelector({
       <label className="text-[10px] text-primary font-mono uppercase tracking-wider block">⚙ {label}</label>
 
       <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
-        <option value="">-- Seleziona azienda (compila indirizzo, CF/P.IVA) --</option>
+        <option value="">-- Preset Multyproget / Niyol --</option>
         {AZIENDE_PRESETS.map((a) => (
           <option key={a.key} value={a.key}>{a.nome}</option>
         ))}
       </select>
+
+      {ruolo && ruolo !== "PRODUTTORE" && (
+        <select
+          value=""
+          onChange={(e) => {
+            const selected = roleCompanies.find((company) => company.id === e.target.value);
+            if (selected) void selectAnagrafica(selected);
+          }}
+          className={selectCls}
+          disabled={loadingRoleCompanies}
+        >
+          <option value="">
+            {loadingRoleCompanies
+              ? `-- Caricamento ${ruolo.toLowerCase()}… --`
+              : `-- Tutti i ${ruolo.toLowerCase()} (${roleCompanies.length}) --`}
+          </option>
+          {roleCompanies.map((company) => (
+            <option key={company.id} value={company.id}>
+              {company.ragione_sociale} — {company.partita_iva || company.codice_fiscale || "senza P.IVA"}
+            </option>
+          ))}
+        </select>
+      )}
 
       <div className="relative">
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
@@ -297,6 +385,8 @@ export function PresetAziendaSelector({
           <p className="mt-1 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
         )}
       </div>
+
+      {loadError && <p className="text-[10px] text-destructive">{loadError}</p>}
 
       {clienteId && (
         <p className="text-[10px] text-white/50">
@@ -353,7 +443,7 @@ export function PresetAziendaSelector({
             </p>
           )}
 
-          {onSelectCantiere && cantieri.length > 0 && (
+          {onSelectCantiere && (
             <select
               className={selectCls}
               defaultValue=""
@@ -375,7 +465,7 @@ export function PresetAziendaSelector({
             </select>
           )}
 
-          {onSelectTarga && targhe.length > 0 && (
+          {onSelectTarga && (
             <select
               className={selectCls}
               defaultValue=""
@@ -395,7 +485,7 @@ export function PresetAziendaSelector({
             </select>
           )}
 
-          {onSelectConducente && conducenti.length > 0 && (
+          {onSelectConducente && (
             <select
               className={selectCls}
               defaultValue=""
