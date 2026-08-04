@@ -436,6 +436,28 @@ export function PresetAziendaSelector({
         </select>
       )}
 
+      <select
+        value=""
+        onChange={(e) => {
+          const selected = allCompanies.find((c) => c.id === e.target.value);
+          if (selected) void selectAnagrafica(selected);
+        }}
+        className={selectCls}
+        disabled={loadingAll}
+      >
+        <option value="">
+          {loadingAll ? "-- Caricamento anagrafica completa… --" : `-- Tutta l'anagrafica (${allCompanies.length}) --`}
+        </option>
+        {allCompanies.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.ragione_sociale}
+            {c.citta ? ` — ${c.citta}` : ""}
+            {c.partita_iva || c.codice_fiscale ? ` — ${c.partita_iva || c.codice_fiscale}` : ""}
+          </option>
+        ))}
+      </select>
+
+
       <div className="relative">
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
           <Search className="h-3.5 w-3.5 text-primary shrink-0" />
