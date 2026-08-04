@@ -49,6 +49,7 @@ export function PresetAziendaSelector({
 }: Props) {
   const [aziendaKey, setAziendaKey] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clienteIds, setClienteIds] = useState<string[]>([]);
   const [clienteNome, setClienteNome] = useState("");
   const [dbAuts, setDbAuts] = useState<any[]>([]);
   const [cantieri, setCantieri] = useState<any[]>([]);
@@ -62,6 +63,21 @@ export function PresetAziendaSelector({
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+
+  /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
+   *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
+   *  cantieri, targhe, conducenti) vanno quindi raccolti su TUTTI i duplicati. */
+  const resolveClienteIds = async (r: { id: string; codice_fiscale?: string | null; partita_iva?: string | null }) => {
+    const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
+    if (keys.length === 0) return [r.id];
+    const filters = keys
+      .flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`])
+      .join(",");
+    const { data } = await supabase.from("anagrafica_aziende_mp").select("id").or(filters).limit(200);
+    const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
+    return ids;
+  };
+
 
   useEffect(() => {
     const q = query.trim();
