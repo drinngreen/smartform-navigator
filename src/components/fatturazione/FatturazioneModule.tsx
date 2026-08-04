@@ -63,7 +63,16 @@ export function FatturazioneModule({ tenantId }: Props) {
   });
 
   const sibillMut = useMutation({
-    mutationFn: async (f: any) => inviaFatturaASibill(f),
+    mutationFn: async (f: any) => {
+      const res = await inviaFatturaASibill(f);
+      if (f.stato !== "inviata") {
+        await supabase.from("fatture" as any).update({
+          stato: "inviata", locked: true, inviata_at: new Date().toISOString(),
+        }).eq("id", f.id);
+      }
+      return res;
+    },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
       qc.invalidateQueries({ queryKey: ["fatture"] });
