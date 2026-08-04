@@ -873,7 +873,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
               ruolo="PRODUTTORE"
+              initialCf={d.produttoreCF}
               onSelectAzienda={(a) => {
+
                 u("produttoreDenominazione", a.nome);
                 u("produttoreUnitaLocale", a.indirizzo);
                 u("produttoreCF", a.piva || a.cf);
