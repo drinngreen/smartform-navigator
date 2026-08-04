@@ -52,7 +52,9 @@ const fmtIndirizzo = (r: any) =>
 export function PresetAziendaSelector({
   label = "Preset azienda",
   ruolo,
+  initialCf,
   onSelectAzienda,
+
   onSelectAutorizzazione,
   onSelectCantiere,
   onSelectTarga,
