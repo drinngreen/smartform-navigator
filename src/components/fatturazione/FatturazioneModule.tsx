@@ -176,10 +176,17 @@ export function FatturazioneModule({ tenantId }: Props) {
               <option value="inviata">🔵 Inviate SdI</option>
               <option value="annullata">Annullate</option>
             </select>
-            <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
-            <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Da (gg/mm/aaaa)</span>
+              <input type="date" lang="it-IT" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">A (gg/mm/aaaa)</span>
+              <input type="date" lang="it-IT" value={filterTo} onChange={e => setFilterTo(e.target.value)}
+                className="px-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
+            </div>
+
             <button onClick={() => setShowNew(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
               <Plus className="h-4 w-4" /> Nuova Fattura
