@@ -38,7 +38,10 @@ async function recalculateMultyStock(impiantoId: string, cer: string) {
     .eq("tenant_id", MULTY_TENANT_ID)
     .eq("impianto_id", impiantoId)
     .eq("cer", cer);
-  if (snapshotAt) query = query.gt("created_at", snapshotAt);
+  // Il confronto va fatto sulla DATA del movimento (non su created_at): i
+  // movimenti storici sono stati importati dopo lo scatto del saldo e
+  // verrebbero altrimenti conteggiati due volte.
+  if (snapshotAt) query = query.gt("data_movimento", snapshotAt.slice(0, 10));
 
   const { data, error } = await query;
   if (error) throw error;
