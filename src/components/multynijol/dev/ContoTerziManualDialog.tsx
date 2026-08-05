@@ -141,37 +141,6 @@ export function ContoTerziManualDialog({ open, onClose, onSaved }: Props) {
       } as any);
       if (movErr) throw movErr;
 
-      // 3) magazzino_giacenze — upsert additivo
-      const { data: existing } = await supabase
-        .from("magazzino_giacenze")
-        .select("id, quantita_kg")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .eq("impianto_id", impiantoId)
-        .eq("cer", cerNorm)
-        .maybeSingle();
-      if (existing) {
-        await supabase
-          .from("magazzino_giacenze")
-          .update({
-            quantita_kg: Number((existing as any).quantita_kg || 0) + qta,
-            ultimo_carico_at: new Date().toISOString(),
-            descrizione_cer: form.descrizione || undefined,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", (existing as any).id);
-      } else {
-        await supabase.from("magazzino_giacenze").insert({
-          tenant_id: MULTY_TENANT_ID,
-          impianto_id: impiantoId,
-          cer: cerNorm,
-          descrizione_cer: form.descrizione || null,
-          quantita_kg: qta,
-          ultimo_carico_at: new Date().toISOString(),
-          tipo_conferente: "conto_terzi",
-          stato: "stoccato",
-        } as any);
-      }
-
       toast.success(`FIR cartaceo ${numFir} registrato — +${qta} kg su ${cerNorm}`);
       queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
       queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });

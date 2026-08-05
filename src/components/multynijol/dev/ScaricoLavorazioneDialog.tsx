@@ -108,31 +108,6 @@ export function ScaricoLavorazioneDialog({ open, onClose }: Props) {
       const { error: movErr } = await supabase.from("movimenti_impianto").insert(movRows as any);
       if (movErr) throw movErr;
 
-      // magazzino_giacenze: decrementa from
-      const rowFrom = await supabase.from("magazzino_giacenze")
-        .select("id, quantita_kg").eq("tenant_id", MULTY_TENANT_ID)
-        .eq("impianto_id", impiantoId).eq("cer", from).maybeSingle();
-      if (rowFrom.data) {
-        await supabase.from("magazzino_giacenze")
-          .update({ quantita_kg: Math.max(0, Number((rowFrom.data as any).quantita_kg) - qta), ultimo_scarico_at: nowIso, updated_at: nowIso })
-          .eq("id", (rowFrom.data as any).id);
-      }
-      // incrementa to
-      const rowTo = await supabase.from("magazzino_giacenze")
-        .select("id, quantita_kg").eq("tenant_id", MULTY_TENANT_ID)
-        .eq("impianto_id", impiantoId).eq("cer", to).maybeSingle();
-      if (rowTo.data) {
-        await supabase.from("magazzino_giacenze")
-          .update({ quantita_kg: Number((rowTo.data as any).quantita_kg) + qta, ultimo_carico_at: nowIso, updated_at: nowIso, descrizione_cer: descTo || undefined })
-          .eq("id", (rowTo.data as any).id);
-      } else {
-        await supabase.from("magazzino_giacenze").insert({
-          tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, cer: to,
-          descrizione_cer: descTo || null, quantita_kg: qta,
-          ultimo_carico_at: nowIso, tipo_conferente: "lavorazione", stato: "stoccato",
-        } as any);
-      }
-
       toast.success(`Scaricati ${qta} kg da ${from} → ${to} (${causale})`);
       queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
       queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
