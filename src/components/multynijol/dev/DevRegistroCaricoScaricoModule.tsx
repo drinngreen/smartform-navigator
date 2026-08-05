@@ -235,31 +235,6 @@ export function DevRegistroCaricoScaricoModule() {
       });
       if (error) throw error;
 
-      // Aggiorna giacenza corrispondente
-      const { data: current } = await supabase
-        .from("magazzino_giacenze")
-        .select("quantita_kg")
-        .eq("tenant_id", MULTY_TENANT_ID)
-        .eq("impianto_id", impianto.id)
-        .eq("cer", form.cer)
-        .maybeSingle();
-      const delta = form.tipo_movimento === "CARICO" ? qty : -qty;
-      const newQty = (Number(current?.quantita_kg) || 0) + delta;
-      const nowIso = new Date().toISOString();
-      const { error: gErr } = await supabase.from("magazzino_giacenze").upsert(
-        {
-          tenant_id: MULTY_TENANT_ID,
-          impianto_id: impianto.id,
-          cer: form.cer,
-          quantita_kg: newQty,
-          ...(form.tipo_movimento === "CARICO"
-            ? { ultimo_carico_at: nowIso }
-            : { ultimo_scarico_at: nowIso }),
-        },
-        { onConflict: "tenant_id,impianto_id,cer" }
-      );
-      if (gErr) console.warn("Giacenza upsert error:", gErr.message);
-
       toast.success("Movimento registrato e giacenza aggiornata");
       setForm({ ...emptyForm });
       setAddOpen(false);

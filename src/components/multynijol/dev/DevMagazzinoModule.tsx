@@ -95,19 +95,14 @@ export function DevMagazzinoModule() {
   // Recalculate
   const recalculate = useMutation({
     mutationFn: async () => {
-      if (!movimenti) return;
-      const stock: Record<string, { cer: string; impianto_id: string; carico: number; scarico: number }> = {};
-      for (const m of movimenti) {
-        const key = `${m.impianto_id}_${m.cer}`;
-        if (!stock[key]) stock[key] = { cer: m.cer, impianto_id: m.impianto_id, carico: 0, scarico: 0 };
-        if (m.tipo_movimento === "CARICO") stock[key].carico += Number(m.quantita_kg);
-        else stock[key].scarico += Number(m.quantita_kg);
-      }
-      for (const [, v] of Object.entries(stock)) {
-        const qty = v.carico - v.scarico;
-        await supabase.from("magazzino_giacenze").upsert({
-          tenant_id: MULTY_TENANT_ID, impianto_id: v.impianto_id, cer: v.cer, quantita_kg: qty, ultimo_carico_at: new Date().toISOString(),
-        }, { onConflict: "tenant_id,impianto_id,cer" });
+      for (const row of giacenze ?? []) {
+        if (!row.impianto_id) continue;
+        const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
+          p_tenant_id: MULTY_TENANT_ID,
+          p_impianto_id: row.impianto_id,
+          p_cer: row.cer,
+        });
+        if (error) throw error;
       }
     },
     onSuccess: () => { invalidateAll(); toast.success("Giacenze ricalcolate"); },
@@ -125,14 +120,6 @@ export function DevMagazzinoModule() {
     } as any);
     if (movErr) throw movErr;
 
-    // Upsert giacenza
-    const current = giacenze?.find(g => g.cer === cer);
-    const newQty = (Number(current?.quantita_kg) || 0) + (tipo === "CARICO" ? quantita : -quantita);
-    const { error: gErr } = await supabase.from("magazzino_giacenze").upsert({
-      tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, cer, quantita_kg: newQty,
-      ...(tipo === "CARICO" ? { ultimo_carico_at: new Date().toISOString() } : { ultimo_scarico_at: new Date().toISOString() }),
-    }, { onConflict: "tenant_id,impianto_id,cer" });
-    if (gErr) throw gErr;
     invalidateAll();
   };
 

@@ -100,28 +100,18 @@ export function DevGiacenzeModule() {
   // Sync giacenze (ricalcolo magazzino_giacenze dai movimenti, alla data odierna)
   const recalculate = useMutation({
     mutationFn: async () => {
-      if (!movimenti) return;
-      const today = new Date().toISOString().slice(0, 10);
-      const stock: Record<string, { cer: string; impianto_id: string; carico: number; scarico: number }> = {};
-      for (const m of movimenti) {
-        if (m.data_movimento > today) continue;
-        const key = `${m.impianto_id}_${m.cer}`;
-        if (!stock[key]) stock[key] = { cer: m.cer, impianto_id: m.impianto_id, carico: 0, scarico: 0 };
-        if (m.tipo_movimento === "CARICO") stock[key].carico += Number(m.quantita_kg);
-        else stock[key].scarico += Number(m.quantita_kg);
-      }
-      for (const v of Object.values(stock)) {
-        const qty = v.carico - v.scarico;
-        const { error } = await supabase.from("magazzino_giacenze").upsert(
-          {
-            tenant_id: MULTY_TENANT_ID,
-            impianto_id: v.impianto_id,
-            cer: v.cer,
-            quantita_kg: qty,
-            ultimo_carico_at: new Date().toISOString(),
-          },
-          { onConflict: "tenant_id,impianto_id,cer" }
-        );
+      const { data: stockRows, error: stockError } = await supabase
+        .from("magazzino_giacenze")
+        .select("impianto_id, cer")
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (stockError) throw stockError;
+      for (const row of stockRows ?? []) {
+        if (!row.impianto_id) continue;
+        const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
+          p_tenant_id: MULTY_TENANT_ID,
+          p_impianto_id: row.impianto_id,
+          p_cer: row.cer,
+        });
         if (error) throw error;
       }
     },

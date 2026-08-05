@@ -6152,6 +6152,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_magazzino_giacenza: {
+        Args: { p_cer: string; p_impianto_id: string; p_tenant_id: string }
+        Returns: undefined
+      }
       release_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       reserve_fir_number: {
         Args: { p_fir_id: string; p_fir_number: string }
