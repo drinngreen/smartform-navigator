@@ -65,7 +65,6 @@ export function ScaricoLavorazioneDialog({ open, onClose }: Props) {
     try {
       const from = cerFrom.trim().toUpperCase();
       const to = cerTo.trim().toUpperCase();
-      const nowIso = new Date().toISOString();
       const noteFull = `Scarico lavorazione ${causale} — ${from} → ${to}${note ? " — " + note : ""}`;
 
       // registro_generale: 2 righe
