@@ -313,14 +313,26 @@ export function DevPrivatiModule() {
     if (conf) {
       const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
       const anno = Number(dataRegistrazione.slice(0, 4));
-      const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
-      await supabase.from("ricevute_privati" as any).insert({
+      const { data: numData, error: numberError } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+      if (numberError) {
+        await supabase.from("privati_conferimenti").delete().eq("id", conf.id);
+        toast.error(`Conferimento annullato: impossibile generare il numero ricevuta (${numberError.message})`);
+        invalidateInventoryQueries();
+        return;
+      }
+      const { error: receiptError } = await supabase.from("ricevute_privati" as any).insert({
         tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: conf.id,
         privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         data_emissione: dataRegistrazione,
         importo: conf.importo_pagato || 0,
         note: `DBT #${conf.numero_progressivo ?? "-"}/${conf.anno_dbt ?? anno} — ${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg — Pag.: ${conf.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
       } as any);
+      if (receiptError) {
+        await supabase.from("privati_conferimenti").delete().eq("id", conf.id);
+        toast.error(`Conferimento annullato: ricevuta non salvata (${receiptError.message})`);
+        invalidateInventoryQueries();
+        return;
+      }
     }
 
     toast.success("✅ Conferimento e ricevuta registrati!");
