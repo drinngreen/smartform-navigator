@@ -596,7 +596,35 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, conversation_id, currentFirData } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(JSON.stringify({ error: "Richiesta non valida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { messages, conversation_id, currentFirData } = body as any;
+
+    // --- Input validation ---
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 80) {
+      return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    for (const m of messages) {
+      if (!m || typeof m !== "object") {
+        return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!["user", "assistant", "system", "tool"].includes(m.role)) {
+        return new Response(JSON.stringify({ error: "Ruolo messaggio non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (typeof m.content === "string" && m.content.length > 20000) {
+        return new Response(JSON.stringify({ error: "Messaggio troppo lungo" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+    if (conversation_id !== undefined && conversation_id !== null && typeof conversation_id !== "string") {
+      return new Response(JSON.stringify({ error: "conversation_id non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (currentFirData !== undefined && currentFirData !== null) {
+      if (typeof currentFirData !== "object" || Array.isArray(currentFirData) || JSON.stringify(currentFirData).length > 50000) {
+        return new Response(JSON.stringify({ error: "Dati FIR non validi" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
@@ -605,33 +633,36 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract user from JWT
+    // --- Authentication required ---
     const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace("Bearer ", "").trim();
     let userId = "";
     let userName = "Utente";
     let userRole = "trasportatore";
 
-    if (token) {
-      const { data: { user } } = await createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-        global: { headers: { Authorization: `Bearer ${token}` } }
-      }).auth.getUser();
-      if (user) {
-        userId = user.id;
-        const { data: profile } = await db.from("profiles").select("nome, cognome, ruolo").eq("user_id", user.id).single();
-        if (profile) {
-          userName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente";
-          userRole = profile.ruolo || "trasportatore";
-        }
-      }
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Autenticazione richiesta" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: { user } } = await createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    }).auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Autenticazione richiesta" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    userId = user.id;
+    const { data: profile } = await db.from("profiles").select("nome, cognome, ruolo").eq("user_id", user.id).single();
+    if (profile) {
+      userName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Utente";
+      userRole = profile.ruolo || "trasportatore";
     }
 
     // Load user memories
     let memories: any[] = [];
-    if (userId) {
+    {
       const { data } = await db.from("ai_user_memory").select("fact_key, fact_value").eq("user_id", userId).order("updated_at", { ascending: false }).limit(30);
       memories = data || [];
     }
+
 
     const systemPrompt = buildSystemPrompt(userName, userRole, memories, currentFirData);
 
