@@ -79,7 +79,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (path.startsWith("/superglobal")) {
     if (!isAdmin || !SUPER_GLOBAL_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Super Admin Global");
-      return <Navigate to="/" replace />;
+      return <Navigate to="/superadmin" state={{ from: location }} replace />;
     }
   }
 
@@ -87,7 +87,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (path.startsWith("/super") && !path.startsWith("/superglobal")) {
     if (!isAdmin || !SUPER_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Super Admin");
-      return <Navigate to="/" replace />;
+      return <Navigate to="/superadmin" state={{ from: location }} replace />;
     }
   }
 
@@ -95,17 +95,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (path.startsWith("/mn/admin")) {
     if (!isAdmin || !MN_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Admin Multy Niyol");
-      return <Navigate to="/" replace />;
+      return <Navigate to="/adminmn" state={{ from: location }} replace />;
     }
   }
 
   // ── GLOBAL ADMIN: only authorized admin emails ──
-  if (path.startsWith("/admin")) {
+  if (path.startsWith("/admin") && !path.startsWith("/adminmn")) {
     if (!isAdmin || !GLOBAL_ADMIN_EMAILS.includes(email)) {
       toast.error("Accesso non autorizzato: area Admin");
-      return <Navigate to="/" replace />;
+      return <Navigate to="/auth" state={{ from: location }} replace />;
     }
   }
+
 
   // Social-only users can ONLY access /social and /social/ai routes
   if (profile?.is_social_only) {
