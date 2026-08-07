@@ -59,11 +59,47 @@ export function DevGiacenzeModule() {
     },
   });
 
-  // Aggregazione per CER (saldo storico filtrato per data)
+  // Saldi iniziali ufficiali (snapshot) — indispensabili per la giacenza reale
+  const { data: baseline } = useQuery({
+    queryKey: ["dev-giacenze-baseline", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("magazzino_giacenze")
+        .select("cer, descrizione_cer, saldo_iniziale_kg, saldo_snapshot_at")
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (error) throw error;
+      return data as {
+        cer: string;
+        descrizione_cer: string | null;
+        saldo_iniziale_kg: number | null;
+        saldo_snapshot_at: string | null;
+      }[];
+    },
+  });
+
+  // Aggregazione per CER: saldo iniziale (snapshot) + movimenti successivi allo snapshot
   const rows: CerRow[] = useMemo(() => {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
+    const snapshotByCer: Record<string, string> = {};
+
+    for (const b of baseline ?? []) {
+      const snapDay = b.saldo_snapshot_at ? b.saldo_snapshot_at.slice(0, 10) : "";
+      if (snapDay) snapshotByCer[b.cer] = snapDay;
+      const iniziale = Number(b.saldo_iniziale_kg) || 0;
+      if (!map[b.cer]) {
+        map[b.cer] = { cer: b.cer, descrizione: b.descrizione_cer || "", carico: 0, scarico: 0, saldo: 0 };
+      }
+      // Il saldo iniziale entra nel periodo solo se lo snapshot ricade nell'intervallo scelto
+      const dentroPeriodo =
+        (!snapDay || !dataAl || snapDay <= dataAl) && (!snapDay || !dataDal || snapDay >= dataDal);
+      if (dentroPeriodo) map[b.cer].carico += iniziale;
+    }
+
     for (const m of movimenti) {
+      const snapDay = snapshotByCer[m.cer];
+      // I movimenti antecedenti/uguali allo snapshot sono già inclusi nel saldo iniziale
+      if (snapDay && m.data_movimento <= snapDay) continue;
       if (dataAl && m.data_movimento > dataAl) continue;
       if (dataDal && m.data_movimento < dataDal) continue;
       const key = m.cer;
@@ -76,8 +112,11 @@ export function DevGiacenzeModule() {
       if (!map[key].descrizione && m.descrizione_rifiuto) map[key].descrizione = m.descrizione_rifiuto;
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
-    return Object.values(map).sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, dataAl, dataDal]);
+    return Object.values(map)
+      .filter((r) => r.carico !== 0 || r.scarico !== 0)
+      .sort((a, b) => a.cer.localeCompare(b.cer));
+  }, [movimenti, baseline, dataAl, dataDal]);
+
 
   const filtered = useMemo(
     () => rows.filter((r) => !searchCer || r.cer.toLowerCase().includes(searchCer.toLowerCase())),
