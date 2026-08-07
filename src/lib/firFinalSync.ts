@@ -5,7 +5,10 @@ const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const MULTY_CF = "12347770013";
 const NIYOL_CF = "09879800010";
 
-const norm = (v: unknown) => String(v || "").replace(/\s+/g, "").toUpperCase();
+const norm = (v: unknown) => {
+  const compact = String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return /^IT\d{11}$/.test(compact) ? compact.slice(2) : compact;
+};
 
 const firstValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
