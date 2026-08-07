@@ -148,19 +148,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Autenticazione utente
-    const authHeader = req.headers.get("Authorization") || "";
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData } = await userClient.auth.getUser();
-    if (!userData?.user) {
-      return json({ error: { title: "Non autorizzato", detail: "Sessione non valida" } }, 401);
+    // Autenticazione utente (bypass solo per diagnostica interna con token dedicato)
+    const diagToken = Deno.env.get("SIBILL_DIAG_TOKEN") || "";
+    const isDiag = !!diagToken && req.headers.get("x-diag-token") === diagToken;
+
+    if (!isDiag) {
+      const authHeader = req.headers.get("Authorization") || "";
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      if (!userData?.user) {
+        return json({ error: { title: "Non autorizzato", detail: "Sessione non valida" } }, 401);
+      }
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const body = await req.json().catch(() => ({}));
     const action = body?.action || "send_invoice";
+
+    if (isDiag && action !== "ping") {
+      return json({ error: { title: "Non autorizzato", detail: "Diagnostica: solo ping" } }, 403);
+    }
+
 
     if (action === "ping") {
       const res = await fetch(`${BASE_URL}/api/v1/companies`, { headers: sibillHeaders() });
