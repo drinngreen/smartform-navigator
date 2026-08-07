@@ -390,6 +390,32 @@ export function DevFormulariList({
                             Alternativo
                           </Button>
                         )}
+                        {(fattureByFir as any)[form.id] ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewFatturaId((fattureByFir as any)[form.id].id)}
+                            className="gap-1 text-blue-300 hover:bg-blue-500/10"
+                            title="Apri la fattura collegata"
+                          >
+                            <BadgeEuro className="h-3 w-3" />
+                            Fattura {(fattureByFir as any)[form.id].numero
+                              ? `${(fattureByFir as any)[form.id].numero}/${(fattureByFir as any)[form.id].anno}`
+                              : ""}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void openFatturaFromFir(form)}
+                            className="gap-1 text-emerald-300 hover:bg-emerald-500/10"
+                            title="Crea e invia fattura da questo formulario"
+                          >
+                            <Receipt className="h-3 w-3" />
+                            Fattura
+                          </Button>
+                        )}
+
                         <Button
                           variant="ghost"
                           size="sm"
