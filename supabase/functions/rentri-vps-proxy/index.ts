@@ -6,7 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const VPS_BASE = Deno.env.get("RENTRI_VPS_URL") ?? "http://167.235.29.27:3000";
+const VPS_BASE = Deno.env.get("RENTRI_BRIDGE_URL") ?? "https://rentri-bridge.dragonrifiuti.space";
+const BRIDGE_KEY = Deno.env.get("RENTRI_BRIDGE_KEY") ?? "";
 const VPS_FETCH_TIMEOUT_MS = Number(Deno.env.get("RENTRI_VPS_TIMEOUT_MS") ?? 6000);
 const VPS_OFFLINE_TTL_MS = Number(Deno.env.get("RENTRI_VPS_OFFLINE_TTL_MS") ?? 180000);
 let vpsOfflineUntil = 0;
@@ -306,7 +307,10 @@ serve(async (req) => {
       try {
         res = await fetch(targetUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(BRIDGE_KEY ? { "x-bridge-key": BRIDGE_KEY } : {}),
+          },
           body: JSON.stringify(upstream),
           signal: controller.signal,
         });
