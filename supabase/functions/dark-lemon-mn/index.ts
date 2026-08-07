@@ -3017,7 +3017,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { messages, context } = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(JSON.stringify({ error: "Richiesta non valida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { messages, context } = body as any;
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 80) {
+      return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    for (const m of messages) {
+      if (!m || typeof m !== "object" || !["user", "assistant", "system", "tool"].includes(m.role)) {
+        return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (typeof m.content === "string" && m.content.length > 20000) {
+        return new Response(JSON.stringify({ error: "Messaggio troppo lungo" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+    if (context !== undefined && context !== null && typeof context !== "string" && typeof context !== "object") {
+      return new Response(JSON.stringify({ error: "Contesto non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
@@ -3026,22 +3044,27 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract admin user from JWT
+    // Extract admin user from JWT — autenticazione obbligatoria
     const authHeader = req.headers.get("authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace("Bearer ", "").trim();
     let adminUserId = "";
     let adminName = "Admin";
 
-    if (token) {
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Autenticazione richiesta" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    {
       const { data: { user } } = await createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: `Bearer ${token}` } }
       }).auth.getUser();
-      if (user) {
-        adminUserId = user.id;
-        const { data: profile } = await db.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
-        if (profile) adminName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Admin";
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Autenticazione richiesta" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      adminUserId = user.id;
+      const { data: profile } = await db.from("profiles").select("nome, cognome").eq("user_id", user.id).single();
+      if (profile) adminName = `${profile.nome || ""} ${profile.cognome || ""}`.trim() || "Admin";
     }
+
 
     // Load recent memories (max 10 for context efficiency)
     let memories: any[] = [];
