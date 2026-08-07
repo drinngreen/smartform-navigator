@@ -510,6 +510,23 @@ export function DevFormulariList({
                   <Trash2 className="h-4 w-4" /> Elimina formulario
                 </Button>
                 <div className="flex gap-2">
+                  {(fattureByFir as any)[viewDialog.form.id] ? (
+                    <Button
+                      variant="outline"
+                      className="gap-2 text-blue-300 border-blue-500/40"
+                      onClick={() => setViewFatturaId((fattureByFir as any)[viewDialog.form.id].id)}
+                    >
+                      <BadgeEuro className="h-4 w-4" /> Apri fattura
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="gap-2 text-emerald-300 border-emerald-500/40"
+                      onClick={() => void openFatturaFromFir(viewDialog.form)}
+                    >
+                      <Receipt className="h-4 w-4" /> Fattura questo FIR
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => window.dispatchEvent(new Event("dev-fir-save-draft"))}
@@ -531,6 +548,22 @@ export function DevFormulariList({
           )}
         </DialogContent>
       </Dialog>
+
+      {fatturaFrom && (
+        <NuovaFatturaDialog
+          tenantId={tenantId}
+          preselectedRighe={fatturaFrom.righe}
+          clienteId={fatturaFrom.clienteFallback?.id}
+          clienteFallback={fatturaFrom.clienteFallback}
+          onClose={() => setFatturaFrom(null)}
+          onCreated={() => { setFatturaFrom(null); void refetchFatture(); }}
+        />
+      )}
+
+      {viewFatturaId && (
+        <FatturaViewerDialog fatturaId={viewFatturaId} onClose={() => setViewFatturaId(null)} />
+      )}
     </div>
   );
+
 }
