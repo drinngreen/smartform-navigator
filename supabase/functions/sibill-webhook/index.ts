@@ -61,6 +61,8 @@ Deno.serve(async (req) => {
       });
     }
 
+
+
     const payload = JSON.parse(rawBody || "{}");
     const event = payload?.event || payload?.type;
     const data = payload?.data || payload?.object || {};

@@ -162,6 +162,8 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action || "send_invoice";
 
+
+
     if (action === "ping") {
       const res = await fetch(`${BASE_URL}/api/v1/companies`, { headers: sibillHeaders() });
       if (!res.ok) {
