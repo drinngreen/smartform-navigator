@@ -1085,9 +1085,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             impiantoId: impiantoId || null,
             registryMovementType,
           });
-          if (result.warning) toast.warning(result.warning);
+          if (result.warning) throw new Error(result.warning);
+          if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
         } catch (syncError) {
-          toast.warning("Formulario salvato, ma sincronizzazione incompleta: " + formatErr(syncError));
+          throw new Error("Dati FIR salvati, ma giacenze non aggiornate: " + formatErr(syncError));
         }
       }
 

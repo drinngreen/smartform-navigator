@@ -163,6 +163,11 @@ export async function syncFirFinalToRegistryAndInventory(params: {
 
   // === GIACENZE (Multy inventory only when Multy is producer or destinatario) ===
   const inventoryQuantity = isMultyDestinatario && qtaDestinazione > 0 ? qtaDestinazione : qtaValid;
+  if (isMultyInvolved && !cer) {
+    warning = (warning ? warning + " · " : "") + "Codice CER mancante: giacenze non aggiornate";
+  } else if (isMultyInvolved && inventoryQuantity <= 0) {
+    warning = (warning ? warning + " · " : "") + "Quantità valida mancante: giacenze non aggiornate";
+  }
   if (isMultyInvolved && inventoryQuantity > 0 && cer) {
     try {
       const directImpiantoId =
