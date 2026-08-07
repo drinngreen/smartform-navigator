@@ -337,8 +337,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           impiantoId: impiantoId || null,
           registryMovementType: registryMovementType || "Carico",
         });
-        if (result.warning) toast.warning(result.warning);
-        else toast.success("💾 Bozza salvata (registro + giacenze aggiornati)");
+        if (result.warning) throw new Error(result.warning);
+        if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
+        toast.success("💾 Bozza salvata (registro + giacenze aggiornati)");
+        window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
       } catch (e: any) {
         toast.error("Errore salvataggio bozza: " + (e?.message || String(e)));
       }
@@ -354,8 +356,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           impiantoId: impiantoId || null,
           registryMovementType: registryMovementType || "Carico",
         });
-        if (result.warning) toast.warning(result.warning);
-        else toast.success("✅ FIR salvato DEFINITIVO (registro + giacenze)");
+        if (result.warning) throw new Error(result.warning);
+        if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
+        toast.success("✅ FIR salvato DEFINITIVO (registro + giacenze)");
         window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
       } catch (e: any) {
         toast.error("Errore salvataggio definitivo: " + (e?.message || String(e)));
@@ -429,9 +432,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             impiantoId: impiantoId || null,
             registryMovementType: registryMovementType || "Carico",
           });
-          if (result.warning) toast.warning(result.warning);
+          if (result.warning) throw new Error(result.warning);
+          if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
         } catch (e: any) {
-          toast.warning("Bozza salvata, giacenze non aggiornate: " + (e?.message || String(e)));
+          throw new Error("Dati FIR salvati, ma giacenze non aggiornate: " + (e?.message || String(e)));
         }
       }
       toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");

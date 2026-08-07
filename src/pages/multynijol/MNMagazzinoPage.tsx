@@ -105,6 +105,9 @@ const RIC_COLS = [
 
 export default function MNMagazzinoPage() {
   const { context } = useParams<{ context: string }>();
+  const TENANT_ID = context === "niyol"
+    ? "819c783e-78dd-4080-8265-802e75b0d813"
+    : "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
   const [activeTab, setActiveTab] = useState("conferimenti");
   const [impianti, setImpianti] = useState<Impianto[]>([]);
@@ -131,12 +134,19 @@ export default function MNMagazzinoPage() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("impianti").select("id, nome").order("nome");
+      const { data, error } = await supabase
+        .from("impianti")
+        .select("id, nome")
+        .eq("tenant_id", TENANT_ID)
+        .order("nome");
+      if (error) {
+        toast.error("Errore caricamento impianti: " + error.message);
+        return;
+      }
       if (data && data.length > 0) { setImpianti(data); setSelectedImpianto(data[0].id); }
+      else { setImpianti([]); setSelectedImpianto(""); }
     })();
-  }, []);
-
-  const TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
+  }, [TENANT_ID]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -197,7 +207,7 @@ export default function MNMagazzinoPage() {
 
   const savePrivato = async () => {
     if (!privatoForm.nome || !privatoForm.cognome || !privatoForm.codice_fiscale) { toast.error("Nome, cognome e CF obbligatori"); return; }
-    const { error } = await supabase.from("anagrafica_privati" as any).insert({ ...privatoForm, impianto_id: selectedImpianto } as any);
+    const { error } = await supabase.from("anagrafica_privati" as any).insert({ ...privatoForm, tenant_id: TENANT_ID, impianto_id: selectedImpianto } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Privato registrato");
     setShowNewPrivato(false);
@@ -249,7 +259,7 @@ export default function MNMagazzinoPage() {
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : confForm.cognome_privato ? `${confForm.cognome_privato} ${confForm.nome_privato}`.trim() : "Anonimo";
     const cfFinale = privato?.codice_fiscale || confForm.cf_privato || null;
     const { data: confData, error } = await supabase.from("privati_conferimenti").insert({
-      impianto_id: selectedImpianto, cer: confForm.cer, kg_pesati: kg,
+      tenant_id: TENANT_ID, impianto_id: selectedImpianto, cer: confForm.cer, kg_pesati: kg,
       nome_privato: nomeFinale,
       cf_pi: cfFinale,
       importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
@@ -272,7 +282,7 @@ export default function MNMagazzinoPage() {
       const anno = new Date().getFullYear();
       const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
       await supabase.from("ricevute_privati" as any).insert({
-        impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
+        tenant_id: TENANT_ID, impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
         numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
         importo: conf.importo_pagato || 0,
         note: `${nomeFinale} — CER ${conf.cer} — ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}${conf.modello_automezzo ? ` — Modello: ${conf.modello_automezzo}` : ""}`,
@@ -290,7 +300,7 @@ export default function MNMagazzinoPage() {
   const saveLimite = async () => {
     if (!limiteForm.cer) { toast.error("CER obbligatorio"); return; }
     const { error } = await supabase.from("limiti_privati" as any).insert({
-      impianto_id: selectedImpianto, cer: limiteForm.cer, tipo_utenza: limiteForm.tipo_utenza,
+      tenant_id: TENANT_ID, impianto_id: selectedImpianto, cer: limiteForm.cer, tipo_utenza: limiteForm.tipo_utenza,
       limite_conferimento_kg: limiteForm.limite_conferimento_kg ? parseFloat(limiteForm.limite_conferimento_kg) : null,
       limite_annuo_kg: limiteForm.limite_annuo_kg ? parseFloat(limiteForm.limite_annuo_kg) : null,
       limite_mensile_kg: limiteForm.limite_mensile_kg ? parseFloat(limiteForm.limite_mensile_kg) : null,
@@ -308,7 +318,7 @@ export default function MNMagazzinoPage() {
     const anno = new Date().getFullYear();
     const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
+      tenant_id: TENANT_ID, impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: conf.importo_pagato || 0, note: `CER ${conf.cer} - ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}${conf.modello_automezzo ? ` — Modello: ${conf.modello_automezzo}` : ""}`,
     } as any);
@@ -324,7 +334,7 @@ export default function MNMagazzinoPage() {
     const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : ricevutaForm.nome_manuale || "";
     const noteFinale = [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ");
     const { error } = await supabase.from("ricevute_privati" as any).insert({
-      impianto_id: selectedImpianto, privato_id: ricevutaForm.privato_id || null,
+      tenant_id: TENANT_ID, impianto_id: selectedImpianto, privato_id: ricevutaForm.privato_id || null,
       numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
       importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
       note: noteFinale || null,

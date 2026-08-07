@@ -11,6 +11,7 @@ import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -435,12 +436,24 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
   const handleSaveDraft = async () => {
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
+      let savedId = store.editingFirId;
       if (store.editingFirId) {
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       } else {
-        await createFIR.mutateAsync(dbFields);
+        const created = await createFIR.mutateAsync(dbFields);
+        savedId = created?.id || null;
       }
-      toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
+      if (savedId) {
+        const result = await syncFirFinalToRegistryAndInventory({ firId: savedId });
+        if (result.warning) throw new Error(result.warning);
+        const involvesMulty = [d.produttoreCF, d.destinatarioCF]
+          .map((value) => value.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^IT(?=\d{11}$)/, ""))
+          .includes("12347770013");
+        if (involvesMulty && !result.inventory) {
+          throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla CER, quantità e impianto");
+        }
+      }
+      toast.success("Bozza salvata e sincronizzata");
       // Reset local state so user is free to leave - delay to ensure save completes
       setPdfBlobUrl(null);
       setHasPersistedRentriPdf(false);
@@ -690,6 +703,8 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
       }
 
       await closeFIR.mutateAsync(store.editingFirId);
+      const syncResult = await syncFirFinalToRegistryAndInventory({ firId: store.editingFirId });
+      if (syncResult.warning) throw new Error(syncResult.warning);
       useFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
       toast.success("🏁 FIR chiuso definitivamente!");

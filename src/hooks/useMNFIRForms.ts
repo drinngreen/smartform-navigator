@@ -41,6 +41,7 @@ export function useMNFIRForms(overrideTenantId?: string) {
         .select()
         .single();
       if (error) throw error;
+      if (!data) throw new Error("Salvataggio FIR fallito: nessun record trovato o permessi insufficienti");
       return data;
     },
     onSuccess: () => {
@@ -117,6 +118,7 @@ export function useMNFIRForms(overrideTenantId?: string) {
         .select()
         .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Salvataggio FIR fallito: nessun record trovato o permessi insufficienti");
       return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["mn-fir-forms"] }),
