@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 
 /**
  * Reset guard per le app autisti Multyproget / Niyol.
