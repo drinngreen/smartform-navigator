@@ -11,10 +11,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2, Receipt, BadgeEuro,
 } from "lucide-react";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
+import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
+
 
 interface Props {
   tenantId: string;
@@ -61,7 +64,10 @@ export function DevFormulariList({
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [fatturaFrom, setFatturaFrom] = useState<{ righe: Riga[]; clienteFallback?: any } | null>(null);
+  const [viewFatturaId, setViewFatturaId] = useState<string | null>(null);
   const editorStorageKey = `dev-fir-editor:${tenantId}:${mnContext}`;
+
 
   // Per Conto Proprio: auto-rileva il ruolo Multyproget (CF filtro) nel FIR per decidere l'impatto giacenze.
   // - Multy = destinatario  -> CARICO  (rifiuto entra nell'impianto Multy)
@@ -123,6 +129,65 @@ export function DevFormulariList({
       return base;
     },
   });
+
+  // Fatture già collegate ai formulari (per "pescarla" direttamente dalla riga)
+  const firIds = forms.map((f: any) => f.id);
+  const { data: fattureByFir = {}, refetch: refetchFatture } = useQuery({
+    queryKey: ["dev-formulari-fatture", firIds.join(",")],
+    enabled: firIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fatture_righe" as any)
+        .select("fir_form_id, fattura_id, fatture!inner(id,numero,anno,stato)")
+        .in("fir_form_id", firIds);
+      if (error) throw error;
+      const map: Record<string, any> = {};
+      for (const r of (data || []) as any[]) {
+        if (r.fir_form_id && !map[r.fir_form_id]) map[r.fir_form_id] = r.fatture || { id: r.fattura_id };
+      }
+      return map;
+    },
+  });
+
+  const buildRigaFromFir = (form: any): Riga => {
+    const fd = form.form_data || {};
+    const cer = String(firstValue(form.codice_eer, fd.cer, fd.codice_eer, fd.codiceEER) || "");
+    const qta = Number(
+      firstValue(fd.quantita_destino, fd.peso_ricevuto, form.quantita, fd.quantita_origine, fd.quantita_partenza, fd.quantita) || 0
+    );
+    return {
+      descrizione: `Smaltimento CER ${cer} - FIR ${form.numero_fir || ""}`.trim(),
+      cer,
+      fir_form_id: form.id,
+      numero_fir: form.numero_fir || "",
+      quantita: qta || 1,
+      unita_misura: String(firstValue(form.unita_misura, fd.unita_misura, fd.unitaMisura) || "kg"),
+      prezzo_unitario: 0,
+      aliquota_iva: 22,
+      reverse_charge: false,
+      tipo_riga: "servizio",
+    };
+  };
+
+  const openFatturaFromFir = async (form: any) => {
+    const fd = form.form_data || {};
+    const cf = normalizeCf(
+      firstValue(form.produttore_codice_fiscale, fd.produttore_codice_fiscale, fd.produttoreCodiceFiscale) as string
+    );
+    let clienteFallback: any = undefined;
+    if (cf) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp" as any)
+        .select("id,ragione_sociale,partita_iva,codice_fiscale,indirizzo,citta,cap,provincia,codice_destinatario")
+        .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
+        .limit(1)
+        .maybeSingle();
+      if (data) clienteFallback = data;
+    }
+    setFatturaFrom({ righe: [buildRigaFromFir(form)], clienteFallback });
+  };
+
+
 
   useEffect(() => {
     if (viewDialog.open || forms.length === 0) return;
@@ -325,6 +390,32 @@ export function DevFormulariList({
                             Alternativo
                           </Button>
                         )}
+                        {(fattureByFir as any)[form.id] ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewFatturaId((fattureByFir as any)[form.id].id)}
+                            className="gap-1 text-blue-300 hover:bg-blue-500/10"
+                            title="Apri la fattura collegata"
+                          >
+                            <BadgeEuro className="h-3 w-3" />
+                            Fattura {(fattureByFir as any)[form.id].numero
+                              ? `${(fattureByFir as any)[form.id].numero}/${(fattureByFir as any)[form.id].anno}`
+                              : ""}
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void openFatturaFromFir(form)}
+                            className="gap-1 text-emerald-300 hover:bg-emerald-500/10"
+                            title="Crea e invia fattura da questo formulario"
+                          >
+                            <Receipt className="h-3 w-3" />
+                            Fattura
+                          </Button>
+                        )}
+
                         <Button
                           variant="ghost"
                           size="sm"
@@ -419,6 +510,23 @@ export function DevFormulariList({
                   <Trash2 className="h-4 w-4" /> Elimina formulario
                 </Button>
                 <div className="flex gap-2">
+                  {(fattureByFir as any)[viewDialog.form.id] ? (
+                    <Button
+                      variant="outline"
+                      className="gap-2 text-blue-300 border-blue-500/40"
+                      onClick={() => setViewFatturaId((fattureByFir as any)[viewDialog.form.id].id)}
+                    >
+                      <BadgeEuro className="h-4 w-4" /> Apri fattura
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="gap-2 text-emerald-300 border-emerald-500/40"
+                      onClick={() => void openFatturaFromFir(viewDialog.form)}
+                    >
+                      <Receipt className="h-4 w-4" /> Fattura questo FIR
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => window.dispatchEvent(new Event("dev-fir-save-draft"))}
@@ -440,6 +548,22 @@ export function DevFormulariList({
           )}
         </DialogContent>
       </Dialog>
+
+      {fatturaFrom && (
+        <NuovaFatturaDialog
+          tenantId={tenantId}
+          preselectedRighe={fatturaFrom.righe}
+          clienteId={fatturaFrom.clienteFallback?.id}
+          clienteFallback={fatturaFrom.clienteFallback}
+          onClose={() => setFatturaFrom(null)}
+          onCreated={() => { setFatturaFrom(null); void refetchFatture(); }}
+        />
+      )}
+
+      {viewFatturaId && (
+        <FatturaViewerDialog fatturaId={viewFatturaId} onClose={() => setViewFatturaId(null)} />
+      )}
     </div>
   );
+
 }
