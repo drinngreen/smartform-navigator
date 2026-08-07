@@ -161,6 +161,19 @@ function AdminOverlays() {
   );
 }
 
+// Normalizza URL con slash duplicati (es. //mn) verso il percorso corretto (/mn)
+function SlashNormalizer() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const clean = location.pathname.replace(/\/{2,}/g, "/");
+    if (clean !== location.pathname) {
+      navigate(clean + location.search + location.hash, { replace: true });
+    }
+  }, [location.pathname, location.search, location.hash, navigate]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -171,9 +184,11 @@ const App = () => (
             <Toaster position="top-right" theme="dark" />
             <CallManager />
             <GlobalNotificationBell />
+            <SlashNormalizer />
 
             <Suspense fallback={<LoadingScreen />}>
               <Routes>
+
                 {/* Auth */}
                 <Route path="/auth" element={<AuthPage />} />
 
