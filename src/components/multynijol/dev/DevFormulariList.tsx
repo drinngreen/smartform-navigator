@@ -64,7 +64,10 @@ export function DevFormulariList({
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
+  const [fatturaFrom, setFatturaFrom] = useState<{ righe: Riga[]; clienteFallback?: any } | null>(null);
+  const [viewFatturaId, setViewFatturaId] = useState<string | null>(null);
   const editorStorageKey = `dev-fir-editor:${tenantId}:${mnContext}`;
+
 
   // Per Conto Proprio: auto-rileva il ruolo Multyproget (CF filtro) nel FIR per decidere l'impatto giacenze.
   // - Multy = destinatario  -> CARICO  (rifiuto entra nell'impianto Multy)
