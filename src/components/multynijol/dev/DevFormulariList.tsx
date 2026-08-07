@@ -11,10 +11,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2,
+  FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2, Receipt, BadgeEuro,
 } from "lucide-react";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
+import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
+
 
 interface Props {
   tenantId: string;
