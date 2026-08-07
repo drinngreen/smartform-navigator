@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      _stress_log: {
+        Row: {
+          at: string | null
+          id: number
+          step: string | null
+          val: string | null
+        }
+        Insert: {
+          at?: string | null
+          id?: number
+          step?: string | null
+          val?: string | null
+        }
+        Update: {
+          at?: string | null
+          id?: number
+          step?: string | null
+          val?: string | null
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           context: Json | null
