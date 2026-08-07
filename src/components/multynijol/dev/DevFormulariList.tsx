@@ -130,6 +130,65 @@ export function DevFormulariList({
     },
   });
 
+  // Fatture già collegate ai formulari (per "pescarla" direttamente dalla riga)
+  const firIds = forms.map((f: any) => f.id);
+  const { data: fattureByFir = {}, refetch: refetchFatture } = useQuery({
+    queryKey: ["dev-formulari-fatture", firIds.join(",")],
+    enabled: firIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fatture_righe" as any)
+        .select("fir_form_id, fattura_id, fatture!inner(id,numero,anno,stato)")
+        .in("fir_form_id", firIds);
+      if (error) throw error;
+      const map: Record<string, any> = {};
+      for (const r of (data || []) as any[]) {
+        if (r.fir_form_id && !map[r.fir_form_id]) map[r.fir_form_id] = r.fatture || { id: r.fattura_id };
+      }
+      return map;
+    },
+  });
+
+  const buildRigaFromFir = (form: any): Riga => {
+    const fd = form.form_data || {};
+    const cer = String(firstValue(form.codice_eer, fd.cer, fd.codice_eer, fd.codiceEER) || "");
+    const qta = Number(
+      firstValue(fd.quantita_destino, fd.peso_ricevuto, form.quantita, fd.quantita_origine, fd.quantita_partenza, fd.quantita) || 0
+    );
+    return {
+      descrizione: `Smaltimento CER ${cer} - FIR ${form.numero_fir || ""}`.trim(),
+      cer,
+      fir_form_id: form.id,
+      numero_fir: form.numero_fir || "",
+      quantita: qta || 1,
+      unita_misura: String(firstValue(form.unita_misura, fd.unita_misura, fd.unitaMisura) || "kg"),
+      prezzo_unitario: 0,
+      aliquota_iva: 22,
+      reverse_charge: false,
+      tipo_riga: "servizio",
+    };
+  };
+
+  const openFatturaFromFir = async (form: any) => {
+    const fd = form.form_data || {};
+    const cf = normalizeCf(
+      firstValue(form.produttore_codice_fiscale, fd.produttore_codice_fiscale, fd.produttoreCodiceFiscale) as string
+    );
+    let clienteFallback: any = undefined;
+    if (cf) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp" as any)
+        .select("id,ragione_sociale,partita_iva,codice_fiscale,indirizzo,citta,cap,provincia,codice_destinatario")
+        .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
+        .limit(1)
+        .maybeSingle();
+      if (data) clienteFallback = data;
+    }
+    setFatturaFrom({ righe: [buildRigaFromFir(form)], clienteFallback });
+  };
+
+
+
   useEffect(() => {
     if (viewDialog.open || forms.length === 0) return;
     try {
