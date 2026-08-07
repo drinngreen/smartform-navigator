@@ -6075,6 +6075,7 @@ export type Database = {
       }
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
+      can_access_tenant: { Args: { _tenant: string }; Returns: boolean }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
       create_manual_fir_draft_for_tenant: {
