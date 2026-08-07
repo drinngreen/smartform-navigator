@@ -198,6 +198,7 @@ export function useFIRForms() {
         .select()
         .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("Salvataggio FIR fallito: nessun record trovato o permessi insufficienti");
       return data;
     },
     onSuccess: () => {
