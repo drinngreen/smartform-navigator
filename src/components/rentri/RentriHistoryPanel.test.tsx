@@ -46,7 +46,7 @@ describe("RentriHistoryPanel", () => {
   });
 
   it("mostra l'errore di caricamento", async () => {
-    fetchRentriHistory.mockImplementation(async () => { throw new Error("permission denied"); });
+    fetchRentriHistory.mockImplementation(() => { throw new Error("permission denied"); });
     render(<RentriHistoryPanel />);
     expect(await screen.findByTestId("history-error")).toBeInTheDocument();
   });
