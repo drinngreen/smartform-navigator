@@ -63,7 +63,7 @@ describe("inviaOperazioneRentri — gestione errori", () => {
   });
 
   it("timeout: trattato come servizio non disponibile", async () => {
-    invoke.mockImplementation(() => Promise.reject(new Error("The signal has been aborted: timeout")));
+    invoke.mockImplementation(async () => { throw new Error("The signal has been aborted: timeout"); });
     const res = await inviaOperazioneRentri(baseRequest);
     expect(res.success).toBe(false);
     expect(res.status).toBe(503);

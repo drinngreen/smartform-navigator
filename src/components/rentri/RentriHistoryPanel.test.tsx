@@ -30,10 +30,13 @@ const row = (over: Record<string, unknown> = {}) => ({
 beforeEach(() => fetchRentriHistory.mockReset());
 
 describe("RentriHistoryPanel", () => {
-  it("mostra lo stato di caricamento", () => {
-    fetchRentriHistory.mockReturnValue(new Promise(() => {}));
+  it("mostra lo stato di caricamento", async () => {
+    let resolve!: (v: unknown[]) => void;
+    fetchRentriHistory.mockImplementation(() => new Promise((r) => { resolve = r; }));
     render(<RentriHistoryPanel />);
     expect(screen.getByTestId("history-loading")).toBeInTheDocument();
+    resolve([]);
+    await screen.findByTestId("history-empty");
   });
 
   it("mostra il messaggio di cronologia vuota", async () => {
@@ -43,7 +46,7 @@ describe("RentriHistoryPanel", () => {
   });
 
   it("mostra l'errore di caricamento", async () => {
-    fetchRentriHistory.mockRejectedValue(new Error("permission denied"));
+    fetchRentriHistory.mockImplementation(async () => { throw new Error("permission denied"); });
     render(<RentriHistoryPanel />);
     expect(await screen.findByTestId("history-error")).toBeInTheDocument();
   });
