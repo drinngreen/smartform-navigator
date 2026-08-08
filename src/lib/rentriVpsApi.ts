@@ -75,6 +75,20 @@ export interface RentriAccettazionePayload {
   motivazione?: string;
 }
 
+/** Legge il body strutturato dalla Response allegata agli errori non-2xx di functions.invoke */
+async function readInvokeErrorBody(error: unknown): Promise<Record<string, unknown> | null> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context && typeof (context as Response).json === "function") {
+    try {
+      const parsed = await (context as Response).clone().json();
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function inviaOperazioneRentri(
   request: RentriVpsRequest
 ): Promise<RentriVpsResponse> {
@@ -84,12 +98,24 @@ export async function inviaOperazioneRentri(
     });
 
     if (error) {
+      // Errori HTTP non-2xx: la Edge Function restituisce comunque un body strutturato
+      const structured = await readInvokeErrorBody(error);
+      if (structured) {
+        const normalized = normalizeRentriResponse(structured);
+        return {
+          ...normalized,
+          success: false,
+          error: normalized.error ?? `Errore RENTRI (HTTP ${normalized.status || "?"})`,
+        };
+      }
+
+      const offline = isRentriConnectivityError(error.message);
       return {
         success: false,
-        status: isRentriConnectivityError(error.message) ? 503 : 0,
+        status: offline ? 503 : 0,
         data: null,
-        error: isRentriConnectivityError(error.message) ? RENTRI_OFFLINE_MESSAGE : error.message,
-        rentri_offline: isRentriConnectivityError(error.message),
+        error: offline ? RENTRI_OFFLINE_MESSAGE : error.message,
+        rentri_offline: offline,
       };
     }
 
@@ -105,6 +131,7 @@ export async function inviaOperazioneRentri(
     };
   }
 }
+
 
 /* ── Helper functions ── */
 
