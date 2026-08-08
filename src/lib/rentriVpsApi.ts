@@ -213,7 +213,29 @@ export async function inviaOperazioneRentri(
 }
 
 
+/* ── Dry-run: verifica configurazione, nessun invio ── */
+
+/**
+ * Verifica la configurazione RENTRI senza inviare nulla al bridge.
+ * La Edge Function in modalità dry_run non esegue alcuna fetch esterna.
+ */
+export function verificaConfigurazioneRentri(
+  cliente: RentriCliente,
+  tipoOperazione: RentriTipoOperazione = "LISTA_BLOCCHI",
+  payload: Record<string, unknown> | null = null,
+  route?: { method: RentriMethod; path: string },
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: tipoOperazione,
+    payload,
+    dry_run: true,
+    ...(route ? { rentri_method: route.method, rentri_path: route.path } : {}),
+  });
+}
+
 /* ── Helper functions ── */
+
 
 export function listaBlocchi(cliente: RentriCliente) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "LISTA_BLOCCHI", payload: {} });
