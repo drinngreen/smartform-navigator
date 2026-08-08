@@ -280,7 +280,11 @@ export function sanitizeMessage(raw: string, secret?: string): string {
   if (secret) out = out.split(secret).join("***");
   return out
     .replace(/x-bridge-key\s*[:=]\s*\S+/gi, "x-bridge-key: ***")
-    .replace(/(authorization|bearer|password|passphrase|apikey|api_key|token)\s*[:=]\s*\S+/gi, "$1: ***");
+    .replace(
+      /(authorization|password|passphrase|apikey|api_key|token)\s*[:=]\s*(bearer\s+)?\S+/gi,
+      "$1: ***",
+    )
+    .replace(/bearer\s+[A-Za-z0-9._~+/=-]+/gi, "bearer ***");
 }
 
 
