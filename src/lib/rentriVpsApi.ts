@@ -1,4 +1,11 @@
 import { supabase } from "@/lib/supabaseClient";
+import {
+  rentriErrorCodeForStatus,
+  rentriUserMessage,
+  sanitizeRentriMessage,
+  type RentriErrorCode,
+} from "@/lib/rentriErrorMessages";
+
 
 export type RentriCliente = "multy" | "niyol" | "global";
 export type RentriTipoOperazione =
