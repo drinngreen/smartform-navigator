@@ -190,19 +190,33 @@ export default function MNRENTRIPage() {
             />
           </div>
 
-          {/* Submit */}
-          <button
-            disabled={loading}
-            onClick={handleInvia}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/80 transition-all disabled:opacity-40"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            Invia a RENTRI
-          </button>
+          {/* Azioni */}
+          <div className="flex flex-wrap gap-3">
+            <button
+              disabled={verifying || loading}
+              onClick={handleVerifica}
+              data-testid="btn-verifica-config"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-secondary text-foreground border border-border font-semibold hover:bg-secondary/70 transition-all disabled:opacity-40"
+            >
+              {verifying ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+              Verifica configurazione (nessun invio)
+            </button>
+            <button
+              disabled={loading || verifying}
+              onClick={handleInvia}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/80 transition-all disabled:opacity-40"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              Invia a RENTRI
+            </button>
+          </div>
 
-          <ResultBanner result={result} />
+          <RentriResultBanner result={result} />
         </div>
+
+        <RentriHistoryPanel key={historyKey} defaultCliente={cliente} />
       </div>
+
     </MNAdminLayout>
   );
 }
