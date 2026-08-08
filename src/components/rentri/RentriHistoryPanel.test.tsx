@@ -27,7 +27,9 @@ const row = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-beforeEach(() => fetchRentriHistory.mockReset());
+beforeEach(() => {
+  fetchRentriHistory.mockReset();
+});
 
 describe("RentriHistoryPanel", () => {
   it("mostra lo stato di caricamento", async () => {

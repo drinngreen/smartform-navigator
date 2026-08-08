@@ -22,7 +22,9 @@ const baseRequest = {
   payload: null,
 };
 
-beforeEach(() => invoke.mockReset());
+beforeEach(() => {
+  invoke.mockReset();
+});
 
 describe("inviaOperazioneRentri — gestione errori", () => {
   it("FunctionsHttpError con body JSON strutturato: propaga status ed error_code", async () => {
