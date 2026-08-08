@@ -498,7 +498,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     console.log(`[rentri-vps] Risposta bridge: status=${res.status}, cliente=${upstream.cliente}, rentri_path=${route.path}`);
 
     if (res.ok) {
-      return json({ success: true, status: res.status, data, attempts }, res.status);
+      return json({ success: true, status: res.status, mode: "real", error_code: null, data, attempts }, res.status);
     }
 
     if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break;
@@ -511,12 +511,18 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     {
       success: false,
       status: primaryStatus,
-      error: extractMsg(primaryData) || `Il bridge RENTRI ha risposto con errore HTTP ${primaryStatus}`,
+      mode: "real",
+      error_code: errorCodeForStatus(primaryStatus),
+      error: sanitizeMessage(
+        extractMsg(primaryData) || `Il bridge RENTRI ha risposto con errore HTTP ${primaryStatus}`,
+        bridgeKey,
+      ),
       data: primaryData,
       attempts,
       fallback_last_status: lastStatus,
       fallback_last_data: lastData,
     },
+
     outStatus,
   );
 }
