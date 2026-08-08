@@ -260,6 +260,34 @@ function json(body: unknown, status: number): Response {
   });
 }
 
+/** Codice errore stabile e non sensibile, derivato dallo status HTTP. */
+export function errorCodeForStatus(status: number): string {
+  if (status === 400) return "BAD_REQUEST";
+  if (status === 401) return "UNAUTHORIZED";
+  if (status === 403) return "FORBIDDEN";
+  if (status === 404) return "NOT_FOUND";
+  if (status === 422) return "INVALID_DATA";
+  if (status === 429) return "RATE_LIMITED";
+  if (status === 502 || status === 503 || status === 504) return "BRIDGE_UNAVAILABLE";
+  if (status >= 500) return "BRIDGE_ERROR";
+  if (status >= 400) return "CLIENT_ERROR";
+  return "OK";
+}
+
+/** Rimuove eventuali tracce di segreti/stack trace dai messaggi propagati alla UI. */
+export function sanitizeMessage(raw: string, secret?: string): string {
+  let out = String(raw ?? "").split("\n")[0].slice(0, 500);
+  if (secret) out = out.split(secret).join("***");
+  return out
+    .replace(/x-bridge-key\s*[:=]\s*\S+/gi, "x-bridge-key: ***")
+    .replace(
+      /(authorization|password|passphrase|apikey|api_key|token)\s*[:=]\s*(bearer\s+)?\S+/gi,
+      "$1: ***",
+    )
+    .replace(/bearer\s+[A-Za-z0-9._~+/=-]+/gi, "bearer ***");
+}
+
+
 export async function handleRentriProxy(req: Request, options: HandlerOptions = {}): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -278,10 +306,11 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     return json({ success: false, status: 400, error: "Body JSON non valido" }, 400);
   }
 
-  const { cliente, tipo_operazione, payload, rentri_method, rentri_path } = body as {
+  const { cliente, tipo_operazione, payload, rentri_method, rentri_path, dry_run } = body as {
     cliente?: string; tipo_operazione?: string; payload?: unknown;
-    rentri_method?: unknown; rentri_path?: unknown;
+    rentri_method?: unknown; rentri_path?: unknown; dry_run?: unknown;
   };
+  const isDryRun = dry_run === true || dry_run === "true";
   const directMethod = normalizeMethod(rentri_method);
   const directPath = normalizePath(rentri_path);
   const hasDirectRoute = Boolean(directMethod && directPath);
@@ -291,7 +320,13 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
       {
         success: false,
         status: 400,
+        mode: isDryRun ? "dry_run" : "real",
+        error_code: errorCodeForStatus(400),
         error: "cliente e tipo_operazione oppure rentri_method/rentri_path sono obbligatori",
+        validation: {
+          cliente_presente: Boolean(norm(cliente ?? "")),
+          route_presente: hasDirectRoute || Boolean(String(tipo_operazione ?? "").trim()),
+        },
       },
       400,
     );
@@ -301,6 +336,69 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
   const candidates = getCandidates(cliente!);
   // Nessun retry per le route dirette (es. GET esplicita).
   const allowFallback = !hasDirectRoute && (tipoOp === "VIDIMAZIONE" || tipoOp === "LOTTO") && candidates.length > 1;
+
+  /* ── DRY RUN: nessuna fetch esterna, nessuna scrittura DB ── */
+  if (isDryRun) {
+    const primary = candidates[0];
+    const safePayload = normalizePayload(payload);
+    const route = hasDirectRoute
+      ? { method: directMethod!, path: directPath! }
+      : resolveRoute(tipoOp, primary, safePayload);
+    const upstream = buildUpstreamBody(primary, tipoOp, payload, route);
+    const key = configKey(primary);
+
+    const clienteRiconosciuto = Boolean(ISSUER_MAP[norm(primary)]);
+    const preview = {
+      cliente: upstream.cliente,
+      config_key: key,
+      tipo_operazione: tipoOp,
+      rentri_method: route.method,
+      rentri_path: route.path,
+      has_num_iscr_sito: Boolean(upstream.num_iscr_sito),
+      has_issuer: Boolean(upstream.issuer),
+      has_registry_id: Boolean(REGISTRY_ID_MAP[key]),
+      has_codice_blocco: Boolean(upstream.codice_blocco),
+      blocchi_configurati: (BLOCK_CODES[key] ?? []).length,
+      bridge_key_configurata: Boolean(bridgeKey),
+      bridge_endpoint: `${bridgeUrl}/invia-operazione`,
+    };
+
+    const validation = {
+      cliente_riconosciuto: clienteRiconosciuto,
+      route_valida: Boolean(route.path && route.path !== "/invia-operazione"),
+      num_iscr_sito_presente: preview.has_num_iscr_sito,
+      registro_presente: preview.has_registry_id,
+      blocco_presente: preview.has_codice_blocco,
+    };
+    const errori: string[] = [];
+    if (!clienteRiconosciuto) errori.push("Cliente non riconosciuto nella configurazione");
+    if (!validation.route_valida) errori.push("Tipo operazione o path RENTRI non risolvibile");
+    if (!validation.num_iscr_sito_presente) errori.push("num_iscr_sito non configurato");
+    if (!preview.bridge_key_configurata) errori.push("Chiave del bridge non configurata sul server");
+
+    console.log(
+      `[rentri-vps][dry-run] cliente=${preview.cliente}, config_key=${key}, tipo=${tipoOp}, ` +
+        `rentri_path=${route.path}, num_iscr_sito=${preview.has_num_iscr_sito ? "present" : "missing"}, ` +
+        `bridge_key=${preview.bridge_key_configurata ? "present" : "missing"} — NESSUN INVIO`,
+    );
+
+    return json(
+      {
+        success: errori.length === 0,
+        status: errori.length === 0 ? 200 : 422,
+        mode: "dry_run",
+        dry_run: true,
+        sent_to_bridge: false,
+        error_code: errori.length === 0 ? null : errorCodeForStatus(422),
+        error: errori.length === 0 ? null : errori.join("; "),
+        preview,
+        validation,
+        errori,
+      },
+      errori.length === 0 ? 200 : 422,
+    );
+  }
+
 
   const attempts: Array<{
     cliente: string; company: string; status: number; success: boolean;
@@ -341,7 +439,8 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         signal: controller.signal,
       });
     } catch (fetchErr) {
-      const message = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      const message = sanitizeMessage(rawMessage, bridgeKey);
       console.error("[rentri-vps] CONNECTIVITY:", message);
       attempts.push({
         cliente: upstream.cliente, company: upstream.company,
@@ -351,9 +450,11 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         {
           success: false,
           status: 502,
-          error: isConnectivityError(message)
+          mode: "real",
+          error_code: errorCodeForStatus(502),
+          error: isConnectivityError(rawMessage)
             ? "Bridge RENTRI non raggiungibile o timeout. Puoi continuare a compilare e salvare i FIR localmente."
-            : `Errore di comunicazione con il bridge RENTRI: ${message}`,
+            : "Errore di comunicazione con il bridge RENTRI",
           data: { error: message, bridge_unreachable: true },
           rentri_offline: true,
           attempts,
@@ -368,10 +469,11 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     try {
       text = await res.text();
     } catch (readErr) {
-      const message = readErr instanceof Error ? readErr.message : String(readErr);
+      const message = sanitizeMessage(readErr instanceof Error ? readErr.message : String(readErr), bridgeKey);
       return json(
         {
-          success: false, status: 502,
+          success: false, status: 502, mode: "real",
+          error_code: errorCodeForStatus(502),
           error: "Risposta del bridge RENTRI non valida",
           data: { error: message, bridge_invalid_response: true },
           attempts,
@@ -379,6 +481,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         502,
       );
     }
+
 
     const data = parseBody(text);
     const msg = extractMsg(data);
@@ -399,7 +502,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     console.log(`[rentri-vps] Risposta bridge: status=${res.status}, cliente=${upstream.cliente}, rentri_path=${route.path}`);
 
     if (res.ok) {
-      return json({ success: true, status: res.status, data, attempts }, res.status);
+      return json({ success: true, status: res.status, mode: "real", error_code: null, data, attempts }, res.status);
     }
 
     if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break;
@@ -412,12 +515,18 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     {
       success: false,
       status: primaryStatus,
-      error: extractMsg(primaryData) || `Il bridge RENTRI ha risposto con errore HTTP ${primaryStatus}`,
+      mode: "real",
+      error_code: errorCodeForStatus(primaryStatus),
+      error: sanitizeMessage(
+        extractMsg(primaryData) || `Il bridge RENTRI ha risposto con errore HTTP ${primaryStatus}`,
+        bridgeKey,
+      ),
       data: primaryData,
       attempts,
       fallback_last_status: lastStatus,
       fallback_last_data: lastData,
     },
+
     outStatus,
   );
 }

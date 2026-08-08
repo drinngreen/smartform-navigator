@@ -1,6 +1,15 @@
 import { supabase } from "@/lib/supabaseClient";
+import {
+  rentriErrorCodeForStatus,
+  rentriUserMessage,
+  sanitizeRentriMessage,
+  type RentriErrorCode,
+} from "@/lib/rentriErrorMessages";
 
-export type RentriCliente = "multy" | "niyol" | "global";
+
+/** "multyproget" è il tenant esposto dal bridge, alias configurativo di "multy". */
+export type RentriCliente = "multy" | "multyproget" | "niyol" | "global";
+
 export type RentriTipoOperazione =
   | "REGISTRO"
   | "FIR_EMISSIONE"
@@ -24,13 +33,38 @@ export interface RentriVpsRequest {
   payload: Record<string, unknown> | null;
   rentri_method?: RentriMethod;
   rentri_path?: string;
+  /** true = solo verifica configurazione, nessun invio al bridge */
+  dry_run?: boolean;
+}
+
+export interface RentriDryRunPreview {
+  cliente: string;
+  config_key: string;
+  tipo_operazione: string;
+  rentri_method: string;
+  rentri_path: string;
+  has_num_iscr_sito: boolean;
+  has_issuer: boolean;
+  has_registry_id: boolean;
+  has_codice_blocco: boolean;
+  blocchi_configurati: number;
+  bridge_key_configurata: boolean;
+  bridge_endpoint: string;
 }
 
 export interface RentriVpsResponse {
   success: boolean;
   status: number;
   data: unknown;
+  /** Messaggio tecnico (già sanitizzato) — sezione "Dettagli tecnici" */
   error?: string;
+  /** Messaggio leggibile da mostrare all'utente */
+  userMessage?: string;
+  errorCode?: RentriErrorCode;
+  mode?: "dry_run" | "real";
+  preview?: RentriDryRunPreview;
+  validation?: Record<string, boolean>;
+  errori?: string[];
   rentri_offline?: boolean;
   retry_after_ms?: number;
 }
@@ -38,7 +72,7 @@ export interface RentriVpsResponse {
 const RENTRI_OFFLINE_MESSAGE = "RENTRI momentaneamente non raggiungibile: puoi continuare a compilare, modificare e salvare i FIR localmente.";
 
 export function isRentriConnectivityError(message: string): boolean {
-  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|Edge function returned 500|network|aborted|timeout|offline/i.test(message);
+  return /No route to host|Connection timed out|tcp connect error|Connection refused|client error \(Connect\)|Edge function returned 500|network|aborted|timeout|offline|failed to fetch|relay/i.test(message);
 }
 
 export function isRentriOfflineResponse(response: Pick<RentriVpsResponse, "data" | "error" | "rentri_offline"> | null | undefined): boolean {
@@ -51,17 +85,36 @@ function normalizeRentriResponse(data: unknown): RentriVpsResponse {
   if (data && typeof data === "object" && "success" in data) {
     const record = data as Record<string, unknown>;
     const nested = record.data as Record<string, unknown> | null | undefined;
+    const success = Boolean(record.success);
+    const status = Number(record.status ?? (record.rentri_offline ? 503 : success ? 200 : 0));
+    const technical = typeof record.error === "string" ? sanitizeRentriMessage(record.error) : undefined;
+
     return {
-      success: Boolean(record.success),
-      status: Number(record.status ?? (record.rentri_offline ? 503 : 0)),
+      success,
+      status,
       data: record.data ?? null,
-      error: typeof record.error === "string" ? record.error : undefined,
+      error: technical,
+      userMessage: success ? "Operazione completata." : rentriUserMessage(status, technical),
+      errorCode: (typeof record.error_code === "string"
+        ? (record.error_code as RentriErrorCode)
+        : rentriErrorCodeForStatus(status)),
+      mode: record.mode === "dry_run" ? "dry_run" : "real",
+      preview: (record.preview as RentriDryRunPreview) ?? undefined,
+      validation: (record.validation as Record<string, boolean>) ?? undefined,
+      errori: Array.isArray(record.errori) ? (record.errori as string[]) : undefined,
       rentri_offline: Boolean(record.rentri_offline || nested?.rentri_offline),
       retry_after_ms: typeof record.retry_after_ms === "number" ? record.retry_after_ms : undefined,
     };
   }
 
-  return { success: false, status: 0, data: data ?? null, error: "Risposta RENTRI non valida" };
+  return {
+    success: false,
+    status: 0,
+    data: data ?? null,
+    error: "Risposta RENTRI non valida",
+    userMessage: "Risposta del servizio non valida. Riprovare più tardi.",
+    errorCode: "UNKNOWN",
+  };
 }
 
 export interface RentriAccettazionePayload {
@@ -76,17 +129,29 @@ export interface RentriAccettazionePayload {
 }
 
 /** Legge il body strutturato dalla Response allegata agli errori non-2xx di functions.invoke */
-async function readInvokeErrorBody(error: unknown): Promise<Record<string, unknown> | null> {
-  const context = (error as { context?: unknown } | null)?.context;
-  if (context && typeof (context as Response).json === "function") {
-    try {
-      const parsed = await (context as Response).clone().json();
-      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
-    } catch {
-      return null;
-    }
+async function readInvokeError(
+  error: unknown,
+): Promise<{ status: number; body: Record<string, unknown> | null; text: string | null }> {
+  const context = (error as { context?: unknown } | null)?.context as Response | undefined;
+  if (!context || typeof context.text !== "function") {
+    return { status: 0, body: null, text: null };
   }
-  return null;
+  const status = Number(context.status ?? 0);
+  try {
+    const text = await context.clone().text();
+    try {
+      const parsed = JSON.parse(text);
+      return {
+        status,
+        body: parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null,
+        text,
+      };
+    } catch {
+      return { status, body: null, text };
+    }
+  } catch {
+    return { status, body: null, text: null };
+  }
 }
 
 export async function inviaOperazioneRentri(
@@ -98,23 +163,36 @@ export async function inviaOperazioneRentri(
     });
 
     if (error) {
-      // Errori HTTP non-2xx: la Edge Function restituisce comunque un body strutturato
-      const structured = await readInvokeErrorBody(error);
-      if (structured) {
-        const normalized = normalizeRentriResponse(structured);
+      const { status, body } = await readInvokeError(error);
+
+      // FunctionsHttpError con body JSON strutturato dalla Edge Function
+      if (body && "success" in body) {
+        const normalized = normalizeRentriResponse(body);
+        return { ...normalized, success: false, status: normalized.status || status };
+      }
+
+      // FunctionsHttpError con body non JSON → status HTTP ancora utilizzabile
+      if (status >= 400) {
         return {
-          ...normalized,
           success: false,
-          error: normalized.error ?? `Errore RENTRI (HTTP ${normalized.status || "?"})`,
+          status,
+          data: null,
+          error: sanitizeRentriMessage(error.message),
+          userMessage: rentriUserMessage(status),
+          errorCode: rentriErrorCodeForStatus(status),
+          rentri_offline: status === 502 || status === 503 || status === 504,
         };
       }
 
-      const offline = isRentriConnectivityError(error.message);
+      // FunctionsRelayError / FunctionsFetchError: nessuna Response utilizzabile
+      const offline = isRentriConnectivityError(error.message ?? "");
       return {
         success: false,
         status: offline ? 503 : 0,
         data: null,
-        error: offline ? RENTRI_OFFLINE_MESSAGE : error.message,
+        error: sanitizeRentriMessage(error.message),
+        userMessage: offline ? RENTRI_OFFLINE_MESSAGE : "Operazione non riuscita: servizio non raggiungibile.",
+        errorCode: offline ? "BRIDGE_UNAVAILABLE" : "NETWORK_ERROR",
         rentri_offline: offline,
       };
     }
@@ -122,18 +200,44 @@ export async function inviaOperazioneRentri(
     return normalizeRentriResponse(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    const offline = isRentriConnectivityError(message);
     return {
       success: false,
-      status: isRentriConnectivityError(message) ? 503 : 0,
+      status: offline ? 503 : 0,
       data: null,
-      error: isRentriConnectivityError(message) ? RENTRI_OFFLINE_MESSAGE : message,
-      rentri_offline: isRentriConnectivityError(message),
+      error: sanitizeRentriMessage(message),
+      userMessage: offline ? RENTRI_OFFLINE_MESSAGE : "Operazione non riuscita.",
+      errorCode: offline ? "BRIDGE_UNAVAILABLE" : "NETWORK_ERROR",
+      rentri_offline: offline,
     };
   }
+
 }
 
 
+/* ── Dry-run: verifica configurazione, nessun invio ── */
+
+/**
+ * Verifica la configurazione RENTRI senza inviare nulla al bridge.
+ * La Edge Function in modalità dry_run non esegue alcuna fetch esterna.
+ */
+export function verificaConfigurazioneRentri(
+  cliente: RentriCliente,
+  tipoOperazione: RentriTipoOperazione = "LISTA_BLOCCHI",
+  payload: Record<string, unknown> | null = null,
+  route?: { method: RentriMethod; path: string },
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: tipoOperazione,
+    payload,
+    dry_run: true,
+    ...(route ? { rentri_method: route.method, rentri_path: route.path } : {}),
+  });
+}
+
 /* ── Helper functions ── */
+
 
 export function listaBlocchi(cliente: RentriCliente) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "LISTA_BLOCCHI", payload: {} });
