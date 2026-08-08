@@ -58,6 +58,6 @@ describe("RentriHistoryPanel", () => {
     await waitFor(() => expect(screen.getAllByTestId("history-row")).toHaveLength(3));
     expect(screen.getByText(/Operazione completata/)).toBeInTheDocument();
     expect(screen.getByText(/nessun invio confermato/i)).toBeInTheDocument();
-    expect(screen.getByText(/verifica/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/verifica/i).length).toBeGreaterThan(0);
   });
 });
