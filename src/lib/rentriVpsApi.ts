@@ -7,7 +7,9 @@ import {
 } from "@/lib/rentriErrorMessages";
 
 
-export type RentriCliente = "multy" | "niyol" | "global";
+/** "multyproget" è il tenant esposto dal bridge, alias configurativo di "multy". */
+export type RentriCliente = "multy" | "multyproget" | "niyol" | "global";
+
 export type RentriTipoOperazione =
   | "REGISTRO"
   | "FIR_EMISSIONE"
