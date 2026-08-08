@@ -5360,6 +5360,54 @@ export type Database = {
         }
         Relationships: []
       }
+      rentri_operation_history: {
+        Row: {
+          cliente: string
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          http_status: number | null
+          id: string
+          mode: string
+          rentri_method: string | null
+          rentri_path: string | null
+          success: boolean
+          tenant_id: string | null
+          tipo_operazione: string
+          user_id: string | null
+        }
+        Insert: {
+          cliente: string
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          mode?: string
+          rentri_method?: string | null
+          rentri_path?: string | null
+          success?: boolean
+          tenant_id?: string | null
+          tipo_operazione: string
+          user_id?: string | null
+        }
+        Update: {
+          cliente?: string
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          mode?: string
+          rentri_method?: string | null
+          rentri_path?: string | null
+          success?: boolean
+          tenant_id?: string | null
+          tipo_operazione?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ricevute_privati: {
         Row: {
           anno: number
