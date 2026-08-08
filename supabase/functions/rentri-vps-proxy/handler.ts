@@ -435,7 +435,8 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         signal: controller.signal,
       });
     } catch (fetchErr) {
-      const message = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      const message = sanitizeMessage(rawMessage, bridgeKey);
       console.error("[rentri-vps] CONNECTIVITY:", message);
       attempts.push({
         cliente: upstream.cliente, company: upstream.company,
@@ -445,9 +446,11 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         {
           success: false,
           status: 502,
-          error: isConnectivityError(message)
+          mode: "real",
+          error_code: errorCodeForStatus(502),
+          error: isConnectivityError(rawMessage)
             ? "Bridge RENTRI non raggiungibile o timeout. Puoi continuare a compilare e salvare i FIR localmente."
-            : `Errore di comunicazione con il bridge RENTRI: ${message}`,
+            : "Errore di comunicazione con il bridge RENTRI",
           data: { error: message, bridge_unreachable: true },
           rentri_offline: true,
           attempts,
@@ -462,10 +465,11 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
     try {
       text = await res.text();
     } catch (readErr) {
-      const message = readErr instanceof Error ? readErr.message : String(readErr);
+      const message = sanitizeMessage(readErr instanceof Error ? readErr.message : String(readErr), bridgeKey);
       return json(
         {
-          success: false, status: 502,
+          success: false, status: 502, mode: "real",
+          error_code: errorCodeForStatus(502),
           error: "Risposta del bridge RENTRI non valida",
           data: { error: message, bridge_invalid_response: true },
           attempts,
@@ -473,6 +477,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         502,
       );
     }
+
 
     const data = parseBody(text);
     const msg = extractMsg(data);
