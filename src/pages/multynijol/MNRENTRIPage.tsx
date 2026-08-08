@@ -15,11 +15,10 @@ import { RentriHistoryPanel } from "@/components/rentri/RentriHistoryPanel";
 import {
   Loader2,
   Send,
-  CheckCircle2,
-  XCircle,
   FileText,
   Truck,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
@@ -38,33 +37,6 @@ const TIPO_OPTIONS: { value: RentriTipoOperazione; label: string; icon: React.Re
   { value: "DETTAGLIO_FIR", label: "Dettaglio FIR", icon: <FileText size={14} /> },
   { value: "FIRMA_RICEZIONE", label: "Firma Ricezione", icon: <Truck size={14} /> },
 ];
-
-function ResultBanner({ result }: { result: RentriVpsResponse | null }) {
-  if (!result) return null;
-  return (
-    <div
-      className={`mt-4 rounded-xl p-4 text-xs font-mono whitespace-pre-wrap max-h-64 overflow-auto border ${
-        result.success
-          ? "bg-green-500/10 border-green-500/30 text-green-300"
-          : "bg-red-500/10 border-red-500/30 text-red-300"
-      }`}
-    >
-      <div className="flex items-center gap-2 mb-2 font-semibold text-sm font-sans">
-        {result.success ? (
-          <CheckCircle2 size={16} className="text-green-400" />
-        ) : (
-          <XCircle size={16} className="text-red-400" />
-        )}
-        {result.success ? "Invio riuscito" : "Errore"}
-        {result.status > 0 && (
-          <span className="text-muted-foreground ml-auto">HTTP {result.status}</span>
-        )}
-      </div>
-      {result.error && <p className="text-red-400 mb-2">{result.error}</p>}
-      {result.data && JSON.stringify(result.data, null, 2)}
-    </div>
-  );
-}
 
 export default function MNRENTRIPage() {
   const { activeContext } = useMNContextStore();
