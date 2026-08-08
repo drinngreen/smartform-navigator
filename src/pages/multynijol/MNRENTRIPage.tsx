@@ -68,19 +68,58 @@ export default function MNRENTRIPage() {
   const [tipoOperazione, setTipoOperazione] = useState<RentriTipoOperazione>("REGISTRO");
   const [payloadText, setPayloadText] = useState("{}");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
 
+  const parsePayload = (): Record<string, unknown> | null => {
+    try {
+      return JSON.parse(payloadText);
+    } catch {
+      setResult({
+        success: false,
+        status: 400,
+        data: null,
+        error: "JSON payload non valido",
+        userMessage: "Dati della richiesta non validi o incompleti.",
+        errorCode: "BAD_REQUEST",
+        mode: "real",
+      });
+      return null;
+    }
+  };
+
+  const registra = async (res: RentriVpsResponse, mode: "dry_run" | "real") => {
+    await logRentriOperation({
+      cliente,
+      tipo_operazione: tipoOperazione,
+      rentri_method: res.preview?.rentri_method ?? null,
+      rentri_path: res.preview?.rentri_path ?? null,
+      mode,
+      http_status: res.status,
+      success: res.success,
+      error_code: res.errorCode ?? null,
+      error_message: res.error ?? null,
+    });
+    setHistoryKey((k) => k + 1);
+  };
+
+  const handleVerifica = async () => {
+    const payload = parsePayload();
+    if (!payload) return;
+    setVerifying(true);
+    setResult(null);
+    const res = await verificaConfigurazioneRentri(cliente, tipoOperazione, payload);
+    setResult(res);
+    setVerifying(false);
+    await registra(res, "dry_run");
+  };
+
   const handleInvia = async () => {
+    const payload = parsePayload();
+    if (!payload) return;
     setLoading(true);
     setResult(null);
-    let payload: Record<string, unknown>;
-    try {
-      payload = JSON.parse(payloadText);
-    } catch {
-      setResult({ success: false, status: 0, data: null, error: "JSON payload non valido" });
-      setLoading(false);
-      return;
-    }
     const res = await inviaOperazioneRentri({
       cliente,
       tipo_operazione: tipoOperazione,
@@ -88,7 +127,9 @@ export default function MNRENTRIPage() {
     });
     setResult(res);
     setLoading(false);
+    await registra(res, "real");
   };
+
 
   return (
     <MNAdminLayout title="RENTRI" subtitle="Invio operazioni al server RENTRI">
