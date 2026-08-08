@@ -3,10 +3,15 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore } from "@/stores/mnContextStore";
 import {
   inviaOperazioneRentri,
+  verificaConfigurazioneRentri,
   type RentriCliente,
   type RentriTipoOperazione,
   type RentriVpsResponse,
 } from "@/lib/rentriVpsApi";
+import { logRentriOperation } from "@/lib/rentriHistory";
+import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
+import { RentriHistoryPanel } from "@/components/rentri/RentriHistoryPanel";
+
 import {
   Loader2,
   Send,
