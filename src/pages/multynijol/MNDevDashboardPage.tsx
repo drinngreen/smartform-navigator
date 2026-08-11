@@ -39,7 +39,7 @@ import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule
 import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro, FileSpreadsheet, ClipboardList } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList, Radar } from "lucide-react";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -96,7 +96,19 @@ export default function MNDevDashboardPage() {
           </div>
         </button>
 
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/rentri-console")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-cyan-500/30 bg-card hover:bg-cyan-500/10 transition-all text-left"
+        >
+          <Radar size={20} className="text-cyan-400" />
+          <div>
+            <div className="font-semibold text-sm text-cyan-300">Console RENTRI</div>
+            <div className="text-xs text-muted-foreground">Stato bridge, numeri FIR, invio registri, Dark Lemon</div>
+          </div>
+        </button>
+
       </div>
+
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
