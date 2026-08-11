@@ -184,7 +184,7 @@ export function resolveRoute(
 ): RouteInfo {
   const key = configKey(cliente);
   const issuer = ISSUER_MAP[norm(cliente)] ?? "";
-  const registryId = REGISTRY_ID_MAP[key] ?? "";
+  const registryId = resolveRegistryId(cliente, payload);
   const blocks = BLOCK_CODES[key] ?? [];
   const codiceBlocco = String(payload.codice_blocco ?? payload.blocco ?? blocks[0]?.code ?? "");
   const progressivo = formatProgressivo(payload.progressivo);
