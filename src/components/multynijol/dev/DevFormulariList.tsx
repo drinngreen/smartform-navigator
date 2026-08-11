@@ -468,6 +468,25 @@ export function DevFormulariList({
                   <span className="block text-xs text-muted-foreground">Editor su template FIR</span>
                 </button>
               </div>
+              {viewDialog.form.numero_fir && (
+                <div className="mb-3 flex items-center gap-4 rounded-md border border-border/40 bg-background/40 p-3">
+                  <FirQrCode
+                    numero_fir={viewDialog.form.numero_fir}
+                    cer={(viewDialog.form as any).cer || (viewDialog.form as any).codice_eer}
+                    produttore={(viewDialog.form as any).produttore_denominazione}
+                    trasportatore={(viewDialog.form as any).trasportatore_denominazione}
+                    destinatario={(viewDialog.form as any).destinatario_denominazione}
+                    quantita={(viewDialog.form as any).quantita || (viewDialog.form as any).quantita_kg}
+                    data_partenza={(viewDialog.form as any).data_trasporto || (viewDialog.form as any).data_partenza}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    <div className="font-semibold text-foreground mb-1">QR code per i controlli su strada</div>
+                    Contiene numero FIR e dati sintetici (EER, produttore, trasportatore, destinatario, quantità, data).
+                    Stampa in formato 28×28 mm.
+                  </div>
+                </div>
+              )}
+
               {editorMode === "alternative" ? (
                 <FIRAlternativeForm
                   key={`alt-${viewDialog.form.id}`}
