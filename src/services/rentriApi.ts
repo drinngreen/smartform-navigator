@@ -232,7 +232,7 @@ export async function chiudiFirRentri(
     },
   };
 
-  const cliente = ((payload.societaId || "global").toLowerCase()) as RentriCliente;
+  const cliente = ((payload.societaId || "multy").toLowerCase()) as RentriCliente;
   const res = await firmaRicezione(cliente, firPayload);
 
   if (!res.success) {
