@@ -39,7 +39,7 @@ import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule
 import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro, FileSpreadsheet, ClipboardList } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList, Radar } from "lucide-react";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
