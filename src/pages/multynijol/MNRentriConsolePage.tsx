@@ -62,9 +62,9 @@ export default function MNRentriConsolePage() {
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) ?? MN_CONTEXTS.find((c) => c.id === "multyproget") ?? MN_CONTEXTS[0];
-  const cliente = CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy";
+  const [cliente, setCliente] = useState<RentriCliente>(CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy");
   const configKey = rentriConfigKey(cliente);
-  const societaId = configKey === "niyol" ? "niyol" : "multyproget";
+  const societaId = configKey === "niyol" ? "niyol" : "multy";
 
   useEffect(() => {
     if (isValid) setActiveContext(mnCtx);
@@ -104,11 +104,18 @@ export default function MNRentriConsolePage() {
 
   /* ── Numeri FIR ── */
   const [pool, setPool] = useState<{ id: string; fir_number: string; status: string; user_id: string | null }[]>([]);
-  const [personale, setPersonale] = useState<{ id: string; nome: string | null; cognome: string | null; mn_context: string | null }[]>([]);
+  const [personale, setPersonale] = useState<
+    { id: string; nome: string | null; cognome: string | null; mn_context: string | null; tenant_id: string | null }[]
+  >([]);
   const [qty, setQty] = useState(5);
   const [pescando, setPescando] = useState(false);
   const [assegnando, setAssegnando] = useState(false);
-  const [assignApp, setAssignApp] = useState<"multyproget" | "niyol">(societaId as any);
+  const [assignApp, setAssignApp] = useState<"multyproget" | "niyol">(
+    configKey === "niyol" ? "niyol" : "multyproget",
+  );
+
+  const appDiProfilo = (u: { mn_context: string | null; tenant_id: string | null }) =>
+    u.mn_context === "niyol" || u.tenant_id === "819c783e-78dd-4080-8265-802e75b0d813" ? "niyol" : "multyproget";
 
   const loadPool = async () => {
     const [{ data: poolRows }, { data: profs }] = await Promise.all([
@@ -118,7 +125,13 @@ export default function MNRentriConsolePage() {
         .eq("societa_id", societaId)
         .order("created_at", { ascending: false })
         .limit(200),
-      supabase.from("profiles").select("id, nome, cognome, mn_context").not("mn_context", "is", null),
+      supabase
+        .from("profiles")
+        .select("id, nome, cognome, mn_context, tenant_id")
+        .or(
+          "mn_context.in.(multyproget,niyol),tenant_id.in.(77ec9a3d-602e-438f-97bf-1c69abd8f691,819c783e-78dd-4080-8265-802e75b0d813)",
+        )
+        .order("cognome", { ascending: true }),
     ]);
     setPool((poolRows ?? []) as any);
     setPersonale((profs ?? []) as any);
@@ -256,12 +269,28 @@ export default function MNRentriConsolePage() {
   };
 
   if (!isValid) return <Navigate to="/mn/admin" replace />;
-  const label = context === "niyol" ? "Niyol" : "Multyproget";
+  const label = configKey === "niyol" ? "Niyol" : "Multyproget";
 
   return (
     <MNAdminLayout title={`Console RENTRI — ${label}`} subtitle="Stato, numeri FIR, registri e invii">
       <div className="space-y-6">
         {/* Barra stato */}
+        <div className="flex flex-wrap items-center gap-2">
+          {(["multy", "niyol"] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setCliente(c)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                configKey === c
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
+              }`}
+            >
+              {c === "niyol" ? "Niyol" : "Multyproget"}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-card/60 border border-border/30">
           <span
             className={`h-2.5 w-2.5 rounded-full ${
@@ -388,7 +417,7 @@ export default function MNRentriConsolePage() {
                     >
                       <option value="">Assegna a…</option>
                       {personale
-                        .filter((u) => !u.mn_context || u.mn_context === assignApp)
+                        .filter((u) => appDiProfilo(u) === assignApp)
                         .map((u) => (
                           <option key={u.id} value={u.id}>
                             {[u.nome, u.cognome].filter(Boolean).join(" ") || u.id.slice(0, 8)}
