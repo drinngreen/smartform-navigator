@@ -5327,6 +5327,60 @@ export type Database = {
           },
         ]
       }
+      rentri_invii_registri: {
+        Row: {
+          cliente: string
+          created_at: string
+          error_message: string | null
+          http_status: number | null
+          id: string
+          movimenti: Json
+          num_movimenti: number
+          registro_id: string
+          registro_nome: string | null
+          stato: string
+          tenant_id: string | null
+          tipo: string | null
+          transazione_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cliente: string
+          created_at?: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          movimenti?: Json
+          num_movimenti?: number
+          registro_id: string
+          registro_nome?: string | null
+          stato?: string
+          tenant_id?: string | null
+          tipo?: string | null
+          transazione_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          cliente?: string
+          created_at?: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          movimenti?: Json
+          num_movimenti?: number
+          registro_id?: string
+          registro_nome?: string | null
+          stato?: string
+          tenant_id?: string | null
+          tipo?: string | null
+          transazione_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       rentri_logs: {
         Row: {
           cliente: string | null

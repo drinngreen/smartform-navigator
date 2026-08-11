@@ -65,6 +65,7 @@ const MNDashboardPage = React.lazy(() => import("./pages/multynijol/MNDashboardP
 const MNContextDashboardPage = React.lazy(() => import("./pages/multynijol/MNContextDashboardPage"));
 const MNRegistroFIRPage = React.lazy(() => import("./pages/multynijol/MNRegistroFIRPage"));
 const MNRENTRIPage = React.lazy(() => import("./pages/multynijol/MNRENTRIPage"));
+const MNRentriConsolePage = React.lazy(() => import("./pages/multynijol/MNRentriConsolePage"));
 const MNTrasportatoriPage = React.lazy(() => import("./pages/multynijol/MNTrasportatoriPage"));
 const MNTransporterAppPage = React.lazy(() => import("./pages/multynijol/MNTransporterAppPage"));
 const MNPersonalePage = React.lazy(() => import("./pages/multynijol/MNPersonalePage"));
@@ -270,6 +271,7 @@ const App = () => (
                 <Route path="/mn/admin/:context" element={<ProtectedRoute><MNContextDashboardPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/registro" element={<ProtectedRoute><MNRegistroFIRPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/rentri" element={<ProtectedRoute><MNRENTRIPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/rentri-console" element={<ProtectedRoute><MNRentriConsolePage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/trasportatori" element={<ProtectedRoute><MNTrasportatoriPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/transporter-app" element={<ProtectedRoute><MNTransporterAppPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/personale" element={<ProtectedRoute><MNPersonalePage /></ProtectedRoute>} />

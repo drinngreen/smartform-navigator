@@ -111,16 +111,30 @@ export default function MNRENTRIPage() {
   return (
     <MNAdminLayout title="RENTRI" subtitle="Invio operazioni al server RENTRI">
       <div className="space-y-6">
+        <a
+          href={`/mn/admin/${activeContext.id}/rentri-console`}
+          className="flex items-center gap-3 p-4 rounded-xl bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all"
+        >
+          <ShieldCheck size={18} className="text-primary" />
+          <div>
+            <div className="text-sm font-semibold">Apri Console RENTRI</div>
+            <div className="text-xs text-muted-foreground">
+              Stato bridge, numeri FIR, assegnazioni, invio registri e storico invii
+            </div>
+          </div>
+        </a>
+
         {/* Status bar */}
         <div className="flex items-center gap-3 p-4 rounded-xl bg-card/60 border border-border/30">
           <div className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />
           <span className="text-sm text-muted-foreground">
-            Server VPS: <strong className="text-foreground">178.104.22.197:3000</strong>
+            Bridge RENTRI: <strong className="text-foreground">rentri-bridge.dragonrifiuti.space</strong>
           </span>
           <span className="ml-auto text-xs px-2 py-1 rounded-md bg-primary/10 text-primary font-semibold uppercase tracking-wider">
             {cliente}
           </span>
         </div>
+
 
         {/* Form */}
         <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-5">
