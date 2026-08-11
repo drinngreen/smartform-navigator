@@ -272,6 +272,8 @@ export function buildUpstreamBody(
     codice_blocco: codiceBlocco,
     num_iscr_sito: numIscrSito ?? unitId,
     progressivo: safe.progressivo ?? null,
+    registro_id: resolveRegistryId(n, safe),
+
     identificativo: safe.identificativo ?? issuer,
     payload: safe,
     dati_inviati: safe,
