@@ -33,7 +33,7 @@ export function resolveSocietaId(
   if (tenantId && TENANT_MAP[tenantId]) {
     return TENANT_MAP[tenantId];
   }
-  return "global";
+  return "multy";
 }
 
 // ─── Types ───────────────────────────────────────────────────
@@ -107,7 +107,7 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
   try {
     // Use a lightweight VPS call to check health
     const res = await inviaOperazioneRentri({
-      cliente: "global",
+      cliente: "multy",
       tipo_operazione: "LISTA_BLOCCHI",
       payload: {},
     });
@@ -232,7 +232,7 @@ export async function chiudiFirRentri(
     },
   };
 
-  const cliente = ((payload.societaId || "global").toLowerCase()) as RentriCliente;
+  const cliente = ((payload.societaId || "multy").toLowerCase()) as RentriCliente;
   const res = await firmaRicezione(cliente, firPayload);
 
   if (!res.success) {

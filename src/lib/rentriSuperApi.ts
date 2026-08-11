@@ -69,7 +69,7 @@ async function callVps(operazione: string, tenant: string, body: any) {
 export async function healthCheck() {
   try {
     const res = await inviaOperazioneRentri({
-      cliente: "global",
+      cliente: "multy",
       tipo_operazione: "LISTA_BLOCCHI",
       payload: {},
     });
