@@ -5,7 +5,6 @@ import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import {
-  healthCheckVps,
   listaBlocchi,
   vidimaFIRAsync,
   registriDisponibili,
@@ -16,6 +15,7 @@ import {
   type RentriCliente,
   type RentriVpsResponse,
 } from "@/lib/rentriVpsApi";
+import { healthCheck as vpsHealthCheck } from "@/lib/rentriSuperApi";
 import {
   caricaMovimentiCandidati,
   mapMovimentiToRentri,
@@ -81,9 +81,9 @@ export default function MNRentriConsolePage() {
     setLoadingStato(true);
     setResult(null);
     try {
-      const health = await healthCheckVps();
+      const health = await vpsHealthCheck();
       setVpsUp(!!health?.ok);
-      const res = await listaBlocchi(cliente, RENTRI_ISSUERS[configKey]);
+      const res = await listaBlocchi(cliente);
       setResult(res);
       const raw = res.data as any;
       const list = Array.isArray(raw) ? raw : raw?.blocchi ?? raw?.items ?? raw?.content ?? [];
