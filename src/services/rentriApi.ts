@@ -33,7 +33,7 @@ export function resolveSocietaId(
   if (tenantId && TENANT_MAP[tenantId]) {
     return TENANT_MAP[tenantId];
   }
-  return "global";
+  return "multy";
 }
 
 // ─── Types ───────────────────────────────────────────────────
