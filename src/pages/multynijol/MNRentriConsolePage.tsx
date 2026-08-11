@@ -38,13 +38,14 @@ import {
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
   multyproget: "multy",
+  "dev-multyproget": "multy",
   "multyproget-intermediario": "multy",
   "multyproget-impianto": "multy",
   niyol: "niyol",
 };
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
-const validContexts = ["multyproget", "niyol"];
+const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
 type TabId = "stato" | "numeri" | "registri" | "invii" | "lemon";
 
@@ -60,7 +61,7 @@ export default function MNRentriConsolePage() {
   const { context } = useParams<{ context: string }>();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
   const isValid = !!context && validContexts.includes(context);
-  const mnCtx = MN_CONTEXTS.find((c) => c.id === context) ?? MN_CONTEXTS[0];
+  const mnCtx = MN_CONTEXTS.find((c) => c.id === context) ?? MN_CONTEXTS.find((c) => c.id === "multyproget") ?? MN_CONTEXTS[0];
   const cliente = CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy";
   const configKey = rentriConfigKey(cliente);
   const societaId = configKey === "niyol" ? "niyol" : "multyproget";
