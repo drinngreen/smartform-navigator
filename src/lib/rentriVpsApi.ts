@@ -279,21 +279,95 @@ export function ricercaFir(cliente: RentriCliente, numeroFir: string) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "RICERCA_FIR", payload: { numero_fir: numeroFir } });
 }
 
-export function inserimentoMovimento(cliente: RentriCliente, movimenti: unknown[]) {
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "REGISTRO", payload: { movimenti } });
+/* ── Catalogo registri RENTRI e unità locali (dati ufficiali) ── */
+
+export interface RentriRegistro {
+  id: string;
+  nome: string;
+  tipo: "IMPIANTO" | "TRASPORTO" | "INTERMEDIARIO";
 }
 
-export function ricercaMovimenti(cliente: RentriCliente, dataDa: string, dataA: string) {
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "RICERCA_MOVIMENTI", payload: { data_da: dataDa, data_a: dataA } });
+export const RENTRI_UNITA_LOCALI: Record<string, string> = {
+  multy: "OP2501XMQ021914-TO0001",
+  niyol: "OP2501SXW021767-TO0001",
+  global: "OP2501RMK022692-TO0001",
+};
+
+export const RENTRI_ISSUERS: Record<string, string> = {
+  multy: "12347770013",
+  niyol: "09879800010",
+  global: "08934760961",
+};
+
+/** Blocco di vidimazione corrente per ciascuna società. */
+export const RENTRI_BLOCCO_CORRENTE: Record<string, string> = {
+  multy: "ZRZXR",
+  niyol: "BPJMG",
+};
+
+export const RENTRI_REGISTRI: Record<string, RentriRegistro[]> = {
+  multy: [
+    { id: "RAH20NP7O40", nome: "Registro Impianto / Produttore", tipo: "IMPIANTO" },
+    { id: "RQCTGTP7NT0", nome: "Registro Trasporto (Conto Proprio)", tipo: "TRASPORTO" },
+    { id: "RQEL39R7NS0", nome: "Registro Intermediario", tipo: "INTERMEDIARIO" },
+  ],
+  niyol: [{ id: "RTR31497PX0", nome: "Registro Trasporto", tipo: "TRASPORTO" }],
+  global: [{ id: "R6QSWHZ6HJV", nome: "Registro Global Reco", tipo: "IMPIANTO" }],
+};
+
+/** Normalizza `multyproget` → `multy` per la lettura del catalogo. */
+export function rentriConfigKey(cliente: RentriCliente): string {
+  const n = String(cliente).toLowerCase();
+  if (n === "multyproget") return "multy";
+  if (n === "globalreco") return "global";
+  return n;
 }
 
-export function statoTransazioneRegistro(cliente: RentriCliente, transazioneId: string) {
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "TRANSAZIONE_REGISTRO", payload: { transazione_id: transazioneId } });
+export function registriDisponibili(cliente: RentriCliente): RentriRegistro[] {
+  return RENTRI_REGISTRI[rentriConfigKey(cliente)] ?? [];
+}
+
+export function inserimentoMovimento(
+  cliente: RentriCliente,
+  movimenti: unknown[],
+  registroId?: string,
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "REGISTRO",
+    payload: { movimenti, ...(registroId ? { registro_id: registroId } : {}) },
+  });
+}
+
+export function ricercaMovimenti(
+  cliente: RentriCliente,
+  dataDa: string,
+  dataA: string,
+  registroId?: string,
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "RICERCA_MOVIMENTI",
+    payload: { data_da: dataDa, data_a: dataA, ...(registroId ? { registro_id: registroId } : {}) },
+  });
+}
+
+export function statoTransazioneRegistro(
+  cliente: RentriCliente,
+  transazioneId: string,
+  registroId?: string,
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "TRANSAZIONE_REGISTRO",
+    payload: { transazione_id: transazioneId, ...(registroId ? { registro_id: registroId } : {}) },
+  });
 }
 
 export function statoTransazioneFir(cliente: RentriCliente, transazioneId: string) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "TRANSAZIONE_FIR", payload: { transazione_id: transazioneId } });
 }
+
 
 export function firmaRicezione(cliente: RentriCliente, firPayload: Record<string, unknown>) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "FIRMA_RICEZIONE", payload: firPayload });
