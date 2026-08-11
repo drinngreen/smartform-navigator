@@ -107,7 +107,7 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
   try {
     // Use a lightweight VPS call to check health
     const res = await inviaOperazioneRentri({
-      cliente: "global",
+      cliente: "multy",
       tipo_operazione: "LISTA_BLOCCHI",
       payload: {},
     });
