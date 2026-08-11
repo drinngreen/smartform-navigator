@@ -40,7 +40,9 @@ const TIPO_OPTIONS: { value: RentriTipoOperazione; label: string; icon: React.Re
 
 export default function MNRENTRIPage() {
   const { activeContext } = useMNContextStore();
-  const cliente = CONTEXT_TO_CLIENTE[activeContext.id] ?? "global";
+  // Il bridge RENTRI ha certificati solo per Multyproget e Niyol:
+  // "global" non è supportato e restituirebbe 400 "Cliente non supportato".
+  const cliente = CONTEXT_TO_CLIENTE[activeContext.id] ?? "multy";
 
   const [tipoOperazione, setTipoOperazione] = useState<RentriTipoOperazione>("REGISTRO");
   const [payloadText, setPayloadText] = useState("{}");
