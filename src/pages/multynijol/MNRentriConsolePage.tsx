@@ -114,6 +114,10 @@ export default function MNRentriConsolePage() {
     configKey === "niyol" ? "niyol" : "multyproget",
   );
 
+  useEffect(() => {
+    setAssignApp(configKey === "niyol" ? "niyol" : "multyproget");
+  }, [configKey]);
+
   const appDiProfilo = (u: { mn_context: string | null; tenant_id: string | null }) =>
     u.mn_context === "niyol" || u.tenant_id === "819c783e-78dd-4080-8265-802e75b0d813" ? "niyol" : "multyproget";
 
@@ -405,6 +409,12 @@ export default function MNRentriConsolePage() {
                   </button>
                 ))}
               </div>
+              {personale.filter((u) => appDiProfilo(u) === assignApp).length === 0 && (
+                <p className="text-xs text-amber-400">
+                  Nessun dipendente collegato all'app {assignApp === "niyol" ? "Niyol" : "Multyproget"}: creane uno da
+                  Dashboard → Gestione utenti app.
+                </p>
+              )}
               <div className="space-y-2 max-h-[420px] overflow-auto">
                 {disponibili.map((p) => (
                   <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/40 border border-border/30">
