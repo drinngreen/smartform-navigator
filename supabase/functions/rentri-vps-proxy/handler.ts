@@ -76,11 +76,39 @@ const UNIT_ID_MAP: Record<string, string> = {
   niyol: "OP2501SXW021767-TO0001",
 };
 
-const REGISTRY_ID_MAP: Record<string, string | null> = {
-  global: "R6QSWHZ6HJV",
-  multy: "RQEL39R7NS0",
-  niyol: "01-250210-00079463",
+/**
+ * Registri RENTRI attivi per unità locale (dati ufficiali forniti dall'operatore).
+ * La chiave è la config key (multy | niyol | global).
+ */
+export const REGISTRIES: Record<string, { id: string; nome: string; tipo: string }[]> = {
+  multy: [
+    { id: "RAH20NP7O40", nome: "Registro Impianto / Produttore", tipo: "IMPIANTO" },
+    { id: "RQCTGTP7NT0", nome: "Registro Trasporto (Conto Proprio)", tipo: "TRASPORTO" },
+    { id: "RQEL39R7NS0", nome: "Registro Intermediario", tipo: "INTERMEDIARIO" },
+  ],
+  niyol: [
+    { id: "RTR31497PX0", nome: "Registro Trasporto", tipo: "TRASPORTO" },
+  ],
+  global: [
+    { id: "R6QSWHZ6HJV", nome: "Registro Global Reco", tipo: "IMPIANTO" },
+  ],
 };
+
+const REGISTRY_ID_MAP: Record<string, string | null> = {
+  global: REGISTRIES.global[0].id,
+  multy: REGISTRIES.multy[0].id,
+  niyol: REGISTRIES.niyol[0].id,
+};
+
+/** Registro effettivo: `payload.registro_id` se valido per il cliente, altrimenti il default. */
+export function resolveRegistryId(cliente: string, payload: Record<string, unknown>): string {
+  const key = configKey(cliente);
+  const requested = String(payload?.registro_id ?? payload?.registro ?? "").trim();
+  const list = REGISTRIES[key] ?? [];
+  if (requested && list.some((r) => r.id === requested)) return requested;
+  return REGISTRY_ID_MAP[key] ?? "";
+}
+
 
 const BLOCK_CODES: Record<string, { code: string; sito: string | null }[]> = {
   global: [
