@@ -117,7 +117,8 @@ export async function inviaRegistroRentri(params: {
       stato: response.success ? (transazioneId ? "IN_ATTESA" : "INVIATO") : "ERRORE",
       http_status: response.status,
       error_message: response.success ? null : response.error ?? response.userMessage ?? null,
-    })
+    } as never)
+
     .select("id")
     .maybeSingle();
 
