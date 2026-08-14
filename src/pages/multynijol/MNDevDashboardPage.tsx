@@ -107,7 +107,19 @@ export default function MNDevDashboardPage() {
           </div>
         </button>
 
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/centro-app-fir")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-violet-500/30 bg-card hover:bg-violet-500/10 transition-all text-left"
+        >
+          <Users size={20} className="text-violet-400" />
+          <div>
+            <div className="font-semibold text-sm text-violet-300">Centro App &amp; FIR</div>
+            <div className="text-xs text-muted-foreground">Dipendenti Multyproget/Niyol con formulario sempre pronto</div>
+          </div>
+        </button>
+
       </div>
+
 
 
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
