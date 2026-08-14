@@ -11,29 +11,38 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, RefreshCw, Loader2, FilePlus, Pencil, Trash2, ShieldCheck, ShieldAlert,
-  Hash, Zap, CheckCircle2, AlertTriangle,
+  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle,
 } from "lucide-react";
 import { vidimaFIRAsync } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { CreateTransporterDialog, type TenantConfig } from "@/components/admin/CreateTransporterDialog";
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 type CompanyKey = "multy" | "niyol";
 
-const COMPANIES: Record<CompanyKey, { label: string; tenantId: string; mnContext: string; accent: string }> = {
+const COMPANIES: Record<CompanyKey, { label: string; tenantId: string; mnContext: string; accent: string; orgId: string }> = {
   multy: {
     label: "Multyproget",
     tenantId: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
     mnContext: "multyproget",
     accent: "text-neon-green",
+    orgId: "0d9cd11c-4ca8-4e5f-90ab-1529899124b5",
   },
   niyol: {
     label: "Niyol",
     tenantId: "819c783e-78dd-4080-8265-802e75b0d813",
     mnContext: "niyol",
     accent: "text-neon-cyan",
+    orgId: "b3eae77a-e973-425d-b7fb-283007583e72",
   },
 };
+
+const TENANT_OPTIONS: TenantConfig[] = [
+  { label: "Multyproget", tenantId: COMPANIES.multy.tenantId, mnContext: COMPANIES.multy.mnContext, orgId: COMPANIES.multy.orgId },
+  { label: "Niyol", tenantId: COMPANIES.niyol.tenantId, mnContext: COMPANIES.niyol.mnContext, orgId: COMPANIES.niyol.orgId },
+];
+
 
 const validContexts = ["multyproget", "dev-multyproget", "niyol"];
 
@@ -83,6 +92,13 @@ export default function MNCentroAppFirPage() {
   const [vidimaQty, setVidimaQty] = useState(10);
   const [manualDialog, setManualDialog] = useState<{ open: boolean; emp: Employee | null }>({ open: false, emp: null });
   const [manualNumber, setManualNumber] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [poolNumber, setPoolNumber] = useState("");
+  const [poolBusy, setPoolBusy] = useState(false);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; emp: Employee | null }>({ open: false, emp: null });
+  const [editForm, setEditForm] = useState({ nome: "", cognome: "", codiceFiscale: "", password: "", targa: "", mnContext: "multyproget" });
+  const [editBusy, setEditBusy] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -265,7 +281,92 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const addPoolNumber = async () => {
+    const numero = normalizeFirNumber(poolNumber);
+    if (!numero) return;
+    setPoolBusy(true);
+    try {
+      const { error } = await supabase.from("fir_number_pool").insert({
+        fir_number: numero,
+        user_id: SHARED_POOL_USER_ID,
+        status: "available",
+        societa_id: company,
+      } as any);
+      if (error) throw error;
+      toast.success(`Numero ${numero} aggiunto al serbatoio ${cfg.label}`);
+      setPoolNumber("");
+      await load();
+    } catch (e: any) {
+      toast.error("Errore inserimento numero: " + (e.message || ""));
+    } finally {
+      setPoolBusy(false);
+    }
+  };
+
+  const openEdit = (emp: Employee) => {
+    setEditForm({
+      nome: emp.nome,
+      cognome: emp.cognome,
+      codiceFiscale: emp.codice_fiscale,
+      password: "",
+      targa: emp.targa ?? "",
+      mnContext: cfg.mnContext,
+    });
+    setEditDialog({ open: true, emp });
+  };
+
+  const saveEdit = async () => {
+    const emp = editDialog.emp;
+    if (!emp) return;
+    const target = TENANT_OPTIONS.find((t) => t.mnContext === editForm.mnContext) || TENANT_OPTIONS[0];
+    setEditBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_user_access",
+          user_id: emp.user_id,
+          nome: editForm.nome.trim(),
+          cognome: editForm.cognome.trim(),
+          codice_fiscale: editForm.codiceFiscale.toUpperCase().trim(),
+          password: editForm.password || undefined,
+          tenant_id: target.tenantId,
+          mn_context: target.mnContext,
+          org_id: target.orgId,
+          targa_automezzo: editForm.targa.trim() || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Accesso app aggiornato");
+      setEditDialog({ open: false, emp: null });
+      await load();
+    } catch (e: any) {
+      toast.error("Errore aggiornamento: " + (e.message || ""));
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const removeEmployee = async (emp: Employee) => {
+    if (!window.confirm(`Eliminare l'accesso app e il dipendente ${emp.cognome} ${emp.nome}? Lo storico resta per audit.`)) return;
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_user", user_id: emp.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Dipendente e app disattivati");
+      await load();
+    } catch (e: any) {
+      toast.error("Errore eliminazione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const openForm = (draftId: string) => {
+
     const routeCtx = company === "niyol" ? "niyol" : "multyproget";
     navigate(`/mn/admin/${routeCtx}/formulari?fir=${draftId}`);
   };
@@ -323,6 +424,22 @@ export default function MNCentroAppFirPage() {
               Vidima numeri {cfg.label}
             </Button>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono">Numero già in tuo possesso:</span>
+            <Input
+              value={poolNumber}
+              onChange={(e) => setPoolNumber(e.target.value)}
+              placeholder="ZRZXR 000123 AB"
+              className="w-44 h-9 font-mono"
+            />
+            <Button variant="outline" onClick={addPoolNumber} disabled={poolBusy || !poolNumber.trim()}>
+              {poolBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+              Aggiungi al serbatoio
+            </Button>
+          </div>
+          <Button className="ml-auto" onClick={() => setCreateOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" /> Nuovo dipendente + app
+          </Button>
         </div>
 
         {/* Elenco */}
@@ -331,8 +448,9 @@ export default function MNCentroAppFirPage() {
             <div className="p-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : employees.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              Nessun dipendente con accesso app per {cfg.label}. Creali da Dashboard → Personale.
+              Nessun dipendente con accesso app per {cfg.label}. Creane uno con "Nuovo dipendente + app".
             </div>
+
           ) : (
             <div className="divide-y divide-border/20">
               {employees.map((emp) => {
@@ -398,6 +516,19 @@ export default function MNCentroAppFirPage() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                      <Button size="sm" variant="outline" onClick={() => openEdit(emp)}>
+                        <UserCog className="h-3.5 w-3.5 mr-1.5" /> Login / App
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        disabled={busy === emp.user_id}
+                        onClick={() => removeEmployee(emp)}
+                      >
+                        <UserX className="h-3.5 w-3.5" />
+                      </Button>
+
                     </div>
                   </div>
                 );
@@ -438,7 +569,73 @@ export default function MNCentroAppFirPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CreateTransporterDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={load}
+        tenant={TENANT_OPTIONS.find((t) => t.mnContext === cfg.mnContext) || TENANT_OPTIONS[0]}
+        tenantOptions={TENANT_OPTIONS}
+      />
+
+      <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ open: o, emp: o ? editDialog.emp : null })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login e app dipendente</DialogTitle>
+            <DialogDescription>
+              Modifica credenziali di accesso e app assegnata a {editDialog.emp?.cognome} {editDialog.emp?.nome}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App / società</label>
+              <select
+                value={editForm.mnContext}
+                onChange={(e) => setEditForm((f) => ({ ...f, mnContext: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                {TENANT_OPTIONS.map((t) => (
+                  <option key={t.mnContext || t.label} value={t.mnContext || ""}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome" value={editForm.nome} onChange={(e) => setEditForm((f) => ({ ...f, nome: e.target.value }))} />
+              <Input placeholder="Cognome" value={editForm.cognome} onChange={(e) => setEditForm((f) => ({ ...f, cognome: e.target.value }))} />
+            </div>
+            <Input
+              placeholder="Codice fiscale (login)"
+              maxLength={16}
+              value={editForm.codiceFiscale}
+              onChange={(e) => setEditForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+            <Input
+              type="password"
+              placeholder="Nuova password (lascia vuoto per non cambiarla)"
+              value={editForm.password}
+              onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+            />
+            <Input
+              placeholder="Targa automezzo"
+              value={editForm.targa}
+              onChange={(e) => setEditForm((f) => ({ ...f, targa: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, emp: null })}>Annulla</Button>
+            <Button
+              onClick={saveEdit}
+              disabled={editBusy || editForm.nome.trim().length < 2 || editForm.cognome.trim().length < 2 || editForm.codiceFiscale.trim().length !== 16}
+            >
+              {editBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCog className="h-4 w-4 mr-2" />}
+              Salva
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MNAdminLayout>
+
   );
 }
 
