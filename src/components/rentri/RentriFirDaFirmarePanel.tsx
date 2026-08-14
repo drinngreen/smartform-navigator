@@ -276,7 +276,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
           onClick={() => setDetail(null)}
           onKeyDown={(e) => e.key === "Escape" && setDetail(null)}
-ሴ        >
+>
           <div
             className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-lg border border-border bg-card p-4"
             onClick={(e) => e.stopPropagation()}
