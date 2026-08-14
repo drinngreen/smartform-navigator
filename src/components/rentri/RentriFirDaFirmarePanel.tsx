@@ -272,14 +272,26 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       </div>
 
       {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-lg border border-border bg-card p-4">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setDetail(null)}
+          onKeyDown={(e) => e.key === "Escape" && setDetail(null)}
+ሴ        >
+          <div
+            className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-lg border border-border bg-card p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-bold">Dettaglio RENTRI · {detail.numero}</h3>
-              <button onClick={() => setDetail(null)} className="rounded border border-border px-2 py-1 text-xs">
-                Chiudi
+              <button
+                type="button"
+                onClick={() => setDetail(null)}
+                className="rounded border border-border bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground"
+              >
+                ✕ Chiudi
               </button>
             </div>
+
             {detailLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="animate-spin" size={14} /> Caricamento…
