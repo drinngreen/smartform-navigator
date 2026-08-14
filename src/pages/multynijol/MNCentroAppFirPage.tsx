@@ -11,29 +11,38 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, RefreshCw, Loader2, FilePlus, Pencil, Trash2, ShieldCheck, ShieldAlert,
-  Hash, Zap, CheckCircle2, AlertTriangle,
+  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle,
 } from "lucide-react";
 import { vidimaFIRAsync } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { CreateTransporterDialog, type TenantConfig } from "@/components/admin/CreateTransporterDialog";
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 type CompanyKey = "multy" | "niyol";
 
-const COMPANIES: Record<CompanyKey, { label: string; tenantId: string; mnContext: string; accent: string }> = {
+const COMPANIES: Record<CompanyKey, { label: string; tenantId: string; mnContext: string; accent: string; orgId: string }> = {
   multy: {
     label: "Multyproget",
     tenantId: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
     mnContext: "multyproget",
     accent: "text-neon-green",
+    orgId: "0d9cd11c-4ca8-4e5f-90ab-1529899124b5",
   },
   niyol: {
     label: "Niyol",
     tenantId: "819c783e-78dd-4080-8265-802e75b0d813",
     mnContext: "niyol",
     accent: "text-neon-cyan",
+    orgId: "b3eae77a-e973-425d-b7fb-283007583e72",
   },
 };
+
+const TENANT_OPTIONS: TenantConfig[] = [
+  { label: "Multyproget", tenantId: COMPANIES.multy.tenantId, mnContext: COMPANIES.multy.mnContext, orgId: COMPANIES.multy.orgId },
+  { label: "Niyol", tenantId: COMPANIES.niyol.tenantId, mnContext: COMPANIES.niyol.mnContext, orgId: COMPANIES.niyol.orgId },
+];
+
 
 const validContexts = ["multyproget", "dev-multyproget", "niyol"];
 
