@@ -547,12 +547,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           }
         }
       }
+      toast.success(`📤 FIR ${officialNumeroFir || d.selectedFirNumber || ""} inviato e firmato su RENTRI`);
+      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
     } catch (error: any) {
       toast.error(`Errore firma RENTRI: ${error.message}`);
     } finally {
       setIsSigning(false);
     }
   };
+
+  // La toolbar admin (DevFirWorkspace) invia l'evento: qui si esegue l'invio reale a RENTRI.
+  const inviaRentriRef = useRef<() => void>(() => {});
+  inviaRentriRef.current = () => { void handleInviaFirma(); };
+  useEffect(() => {
+    const handler = () => inviaRentriRef.current();
+    window.addEventListener("dev-fir-send-rentri", handler);
+    return () => window.removeEventListener("dev-fir-send-rentri", handler);
+  }, []);
 
   const handleControlloPolizia = async () => {
     try {

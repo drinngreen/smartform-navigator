@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Plus, ScanLine, Save, Trash2, Upload } from "lucide-react";
+import { FileText, Loader2, Plus, ScanLine, Save, Send, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -407,6 +407,17 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 className="gap-2 bg-emerald-600 hover:bg-emerald-700"
               >
                 <Save className="h-4 w-4" /> Salva DEFINITIVO
+              </Button>
+              <Button
+                onClick={() => {
+                  if (window.confirm("Confermi l'invio del formulario a RENTRI? L'operazione è definitiva.")) {
+                    window.dispatchEvent(new Event("dev-fir-send-rentri"));
+                  }
+                }}
+                disabled={!activeDraftId}
+                className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-background"
+              >
+                <Send className="h-4 w-4" /> Invia a RENTRI
               </Button>
               <Button
                 variant="destructive"
