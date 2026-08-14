@@ -92,6 +92,13 @@ export default function MNCentroAppFirPage() {
   const [vidimaQty, setVidimaQty] = useState(10);
   const [manualDialog, setManualDialog] = useState<{ open: boolean; emp: Employee | null }>({ open: false, emp: null });
   const [manualNumber, setManualNumber] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [poolNumber, setPoolNumber] = useState("");
+  const [poolBusy, setPoolBusy] = useState(false);
+  const [editDialog, setEditDialog] = useState<{ open: boolean; emp: Employee | null }>({ open: false, emp: null });
+  const [editForm, setEditForm] = useState({ nome: "", cognome: "", codiceFiscale: "", password: "", targa: "", mnContext: "multyproget" });
+  const [editBusy, setEditBusy] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
