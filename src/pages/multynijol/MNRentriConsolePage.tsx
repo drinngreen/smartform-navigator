@@ -228,8 +228,19 @@ export default function MNRentriConsolePage() {
     }
   };
 
-  const handleInviaRegistro = async () => {
-    const payload = mapMovimentiToRentri(movimenti, cliente);
+  /* movimenti già inviati (riferimento_interno presente in rentri_invii_registri) */
+  const [inviatiIds, setInviatiIds] = useState<Set<string>>(new Set());
+  const [selezione, setSelezione] = useState<Set<string>>(new Set());
+
+  const toggleSel = (id: string) =>
+    setSelezione((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const inviaMovimenti = async (rows: MovimentoImpiantoRow[]) => {
+    const payload = mapMovimentiToRentri(rows, cliente);
     if (payload.length === 0) {
       toast.error("Nessun movimento valido da inviare");
       return;
@@ -244,8 +255,10 @@ export default function MNRentriConsolePage() {
         movimenti: payload,
       });
       setResult(response);
-      if (response.success) toast.success(`Registro inviato: ${payload.length} movimenti`);
-      else toast.error(response.userMessage ?? "Invio registro fallito");
+      if (response.success) {
+        toast.success(`Registro inviato: ${payload.length} movimenti`);
+        setSelezione(new Set());
+      } else toast.error(response.userMessage ?? "Invio registro fallito");
       loadInvii();
     } catch (e: any) {
       toast.error(`Errore invio: ${e.message}`);
@@ -253,6 +266,9 @@ export default function MNRentriConsolePage() {
       setInviando(false);
     }
   };
+
+  const handleInviaTutti = () => inviaMovimenti(movimenti.filter((m) => !inviatiIds.has(m.id)));
+  const handleInviaSelezionati = () => inviaMovimenti(movimenti.filter((m) => selezione.has(m.id)));
 
   /* ── Invii effettuati ── */
   const [invii, setInvii] = useState<any[]>([]);
@@ -262,11 +278,21 @@ export default function MNRentriConsolePage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
-    setInvii(data ?? []);
+    const rows = data ?? [];
+    setInvii(rows);
+    const ids = new Set<string>();
+    for (const r of rows as any[]) {
+      if (r.stato === "ERRORE") continue;
+      for (const m of (r.movimenti ?? []) as any[]) {
+        if (m?.riferimento_interno) ids.add(String(m.riferimento_interno));
+      }
+    }
+    setInviatiIds(ids);
   };
   useEffect(() => {
     loadInvii();
   }, []);
+
 
   const handleAggiorna = async (row: any) => {
     if (!row.transazione_id) return;
