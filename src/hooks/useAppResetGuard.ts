@@ -42,7 +42,7 @@ export function useAppResetGuard(scope: 'multyproget' | 'niyol') {
           try { localStorage.removeItem(key); } catch { /* ignore */ }
         }
 
-        localStorage.setItem(localKey, data.reset_token);
+        localStorage.setItem(localKey, token);
 
         // Reload una sola volta, dopo aver impostato il token: niente loop.
         window.location.reload();
