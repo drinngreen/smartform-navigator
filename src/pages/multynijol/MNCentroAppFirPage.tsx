@@ -281,7 +281,92 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const addPoolNumber = async () => {
+    const numero = normalizeFirNumber(poolNumber);
+    if (!numero) return;
+    setPoolBusy(true);
+    try {
+      const { error } = await supabase.from("fir_number_pool").insert({
+        fir_number: numero,
+        user_id: SHARED_POOL_USER_ID,
+        status: "available",
+        societa_id: company,
+      } as any);
+      if (error) throw error;
+      toast.success(`Numero ${numero} aggiunto al serbatoio ${cfg.label}`);
+      setPoolNumber("");
+      await load();
+    } catch (e: any) {
+      toast.error("Errore inserimento numero: " + (e.message || ""));
+    } finally {
+      setPoolBusy(false);
+    }
+  };
+
+  const openEdit = (emp: Employee) => {
+    setEditForm({
+      nome: emp.nome,
+      cognome: emp.cognome,
+      codiceFiscale: emp.codice_fiscale,
+      password: "",
+      targa: emp.targa ?? "",
+      mnContext: cfg.mnContext,
+    });
+    setEditDialog({ open: true, emp });
+  };
+
+  const saveEdit = async () => {
+    const emp = editDialog.emp;
+    if (!emp) return;
+    const target = TENANT_OPTIONS.find((t) => t.mnContext === editForm.mnContext) || TENANT_OPTIONS[0];
+    setEditBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: {
+          action: "update_user_access",
+          user_id: emp.user_id,
+          nome: editForm.nome.trim(),
+          cognome: editForm.cognome.trim(),
+          codice_fiscale: editForm.codiceFiscale.toUpperCase().trim(),
+          password: editForm.password || undefined,
+          tenant_id: target.tenantId,
+          mn_context: target.mnContext,
+          org_id: target.orgId,
+          targa_automezzo: editForm.targa.trim() || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Accesso app aggiornato");
+      setEditDialog({ open: false, emp: null });
+      await load();
+    } catch (e: any) {
+      toast.error("Errore aggiornamento: " + (e.message || ""));
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const removeEmployee = async (emp: Employee) => {
+    if (!window.confirm(`Eliminare l'accesso app e il dipendente ${emp.cognome} ${emp.nome}? Lo storico resta per audit.`)) return;
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_user", user_id: emp.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Dipendente e app disattivati");
+      await load();
+    } catch (e: any) {
+      toast.error("Errore eliminazione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const openForm = (draftId: string) => {
+
     const routeCtx = company === "niyol" ? "niyol" : "multyproget";
     navigate(`/mn/admin/${routeCtx}/formulari?fir=${draftId}`);
   };
