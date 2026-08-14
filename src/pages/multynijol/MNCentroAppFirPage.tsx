@@ -516,6 +516,19 @@ export default function MNCentroAppFirPage() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                      <Button size="sm" variant="outline" onClick={() => openEdit(emp)}>
+                        <UserCog className="h-3.5 w-3.5 mr-1.5" /> Login / App
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        disabled={busy === emp.user_id}
+                        onClick={() => removeEmployee(emp)}
+                      >
+                        <UserX className="h-3.5 w-3.5" />
+                      </Button>
+
                     </div>
                   </div>
                 );
