@@ -28,17 +28,13 @@ export default function SocialGuestAuthPage() {
   // Validate invite code if present (optional)
   useEffect(() => {
     if (!inviteCode) return;
-    supabase
-      .from("social_invites")
-      .select("*")
-      .eq("invite_code", inviteCode)
-      .is("used_by", null)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle()
-      .then(({ data }) => {
-        setInviteData(data);
-        if (data?.guest_name) setNome(data.guest_name);
-        if (data?.guest_cf) setCodiceFiscale(data.guest_cf);
+    (supabase as any)
+      .rpc("lookup_social_invite", { p_code: inviteCode })
+      .then(({ data }: any) => {
+        const invite = Array.isArray(data) ? data[0] : data;
+        setInviteData(invite ?? null);
+        if (invite?.guest_name) setNome(invite.guest_name);
+        if (invite?.guest_cf) setCodiceFiscale(invite.guest_cf);
       });
   }, [inviteCode]);
 
