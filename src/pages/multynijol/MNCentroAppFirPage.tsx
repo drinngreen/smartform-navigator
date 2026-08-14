@@ -569,7 +569,73 @@ export default function MNCentroAppFirPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CreateTransporterDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={load}
+        tenant={TENANT_OPTIONS.find((t) => t.mnContext === cfg.mnContext) || TENANT_OPTIONS[0]}
+        tenantOptions={TENANT_OPTIONS}
+      />
+
+      <Dialog open={editDialog.open} onOpenChange={(o) => setEditDialog({ open: o, emp: o ? editDialog.emp : null })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Login e app dipendente</DialogTitle>
+            <DialogDescription>
+              Modifica credenziali di accesso e app assegnata a {editDialog.emp?.cognome} {editDialog.emp?.nome}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-mono uppercase text-muted-foreground">App / società</label>
+              <select
+                value={editForm.mnContext}
+                onChange={(e) => setEditForm((f) => ({ ...f, mnContext: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+              >
+                {TENANT_OPTIONS.map((t) => (
+                  <option key={t.mnContext || t.label} value={t.mnContext || ""}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Input placeholder="Nome" value={editForm.nome} onChange={(e) => setEditForm((f) => ({ ...f, nome: e.target.value }))} />
+              <Input placeholder="Cognome" value={editForm.cognome} onChange={(e) => setEditForm((f) => ({ ...f, cognome: e.target.value }))} />
+            </div>
+            <Input
+              placeholder="Codice fiscale (login)"
+              maxLength={16}
+              value={editForm.codiceFiscale}
+              onChange={(e) => setEditForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+            <Input
+              type="password"
+              placeholder="Nuova password (lascia vuoto per non cambiarla)"
+              value={editForm.password}
+              onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+            />
+            <Input
+              placeholder="Targa automezzo"
+              value={editForm.targa}
+              onChange={(e) => setEditForm((f) => ({ ...f, targa: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, emp: null })}>Annulla</Button>
+            <Button
+              onClick={saveEdit}
+              disabled={editBusy || editForm.nome.trim().length < 2 || editForm.cognome.trim().length < 2 || editForm.codiceFiscale.trim().length !== 16}
+            >
+              {editBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserCog className="h-4 w-4 mr-2" />}
+              Salva
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MNAdminLayout>
+
   );
 }
 
