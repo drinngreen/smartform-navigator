@@ -65,9 +65,10 @@ function normalizeFirNumber(value: string) {
 }
 
 export default function MNCentroAppFirPage() {
-  const { context } = useParams<{ context: string }>();
+  const params = useParams<{ context: string }>();
   const navigate = useNavigate();
-  const isValid = !!context && validContexts.includes(context);
+  const context = params.context ?? "dev-multyproget";
+  const isValid = validContexts.includes(context);
 
   const [company, setCompany] = useState<CompanyKey>(context === "niyol" ? "niyol" : "multy");
   const cfg = COMPANIES[company];
