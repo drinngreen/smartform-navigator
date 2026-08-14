@@ -6215,6 +6215,7 @@ export type Database = {
         Returns: undefined
       }
       get_admin_user_id: { Args: never; Returns: string }
+      get_app_reset_token: { Args: { p_scope: string }; Returns: string }
       get_online_admins: {
         Args: never
         Returns: {
@@ -6239,6 +6240,17 @@ export type Database = {
       is_multy_niyol_admin: { Args: never; Returns: boolean }
       is_superadmin: { Args: never; Returns: boolean }
       is_valid_fir_number: { Args: { p_value: string }; Returns: boolean }
+      lookup_social_invite: {
+        Args: { p_code: string }
+        Returns: {
+          expires_at: string
+          guest_cf: string
+          guest_name: string
+          id: string
+          invite_code: string
+          invited_by: string
+        }[]
+      }
       map_tenant_to_societa: { Args: { p_tenant_id: string }; Returns: string }
       next_ddt_number: {
         Args: { p_anno: number; p_tenant_id: string }
