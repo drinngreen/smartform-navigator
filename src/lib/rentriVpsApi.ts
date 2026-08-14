@@ -388,28 +388,70 @@ export function inviaOperazioneRentriCustom(
   });
 }
 
+/** Codice fiscale ufficiale usato come `identificativo_soggetto` nelle API Formulari RENTRI */
+export const RENTRI_CF_SOGGETTO: Record<string, string> = {
+  multy: "12347770013",
+  niyol: "09879800010",
+  global: "08934760961",
+};
+
+function soggettoQuery(cliente: RentriCliente, codiceFiscale?: string, numIscrSito?: string) {
+  const key = rentriConfigKey(cliente);
+  return new URLSearchParams({
+    identificativo_soggetto: codiceFiscale || RENTRI_CF_SOGGETTO[key] || "",
+    num_iscr_sito: numIscrSito || RENTRI_UNITA_LOCALI[key] || "",
+  });
+}
+
+/** Elenco formulari RENTRI visibili al soggetto (produttore/destinatario/trasportatore) */
+export function elencoFormulariRentri(
+  cliente: RentriCliente,
+  codiceFiscale?: string,
+  numIscrSito?: string,
+) {
+  return inviaOperazioneRentriCustom(
+    cliente,
+    "GET",
+    `/formulari/v1.0?${soggettoQuery(cliente, codiceFiscale, numIscrSito).toString()}`,
+    null,
+  );
+}
+
+/** Dettaglio completo di un formulario RENTRI (numero senza spazi) */
+export function dettaglioFormularioRentri(
+  cliente: RentriCliente,
+  numeroFir: string,
+  codiceFiscale?: string,
+  numIscrSito?: string,
+) {
+  const id = numeroFir.replace(/\s+/g, "");
+  return inviaOperazioneRentriCustom(
+    cliente,
+    "GET",
+    `/formulari/v1.0/${id}?${soggettoQuery(cliente, codiceFiscale, numIscrSito).toString()}`,
+    null,
+  );
+}
+
 export function listaFirInArrivoDestinatario(
   cliente: RentriCliente,
-  identificativoSoggetto: string,
+  codiceFiscale?: string,
+  numIscrSito?: string,
 ) {
-  const query = new URLSearchParams({
-    identificativo_soggetto: identificativoSoggetto,
-    ruolo: "DESTINATARIO",
-    pendenza_arrivo: "true",
-  });
-
-  return inviaOperazioneRentriCustom(cliente, "GET", `/formulari/v1.0?${query.toString()}`, null);
+  return elencoFormulariRentri(cliente, codiceFiscale, numIscrSito);
 }
 
 export function accettaFirInArrivoDestinatario(
   cliente: RentriCliente,
-  uuidFir: string,
+  idFir: string,
   payload: RentriAccettazionePayload,
+  codiceFiscale?: string,
 ) {
+  const id = idFir.replace(/\s+/g, "");
   return inviaOperazioneRentriCustom(
     cliente,
     "POST",
-    `/formulari/v1.0/${uuidFir}/accettazione`,
+    `/formulari/v1.0/${id}/accettazione?${soggettoQuery(cliente, codiceFiscale, payload.num_iscr_sito).toString()}`,
     payload as unknown as Record<string, unknown>,
   );
 }
