@@ -594,6 +594,41 @@ export default function MNRentriConsolePage() {
               </table>
             </div>
             <RentriResultBanner result={result} />
+
+            {movDetail && (
+              <div
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+                onClick={() => setMovDetail(null)}
+              >
+                <div
+                  className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl border border-border bg-card p-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="font-bold">Dettagli movimento</h3>
+                    <button
+                      type="button"
+                      onClick={() => setMovDetail(null)}
+                      className="rounded border border-border bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground"
+                    >
+                      ✕ Chiudi
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-muted-foreground">Data:</span> {movDetail.data_movimento}</div>
+                    <div><span className="text-muted-foreground">Tipo:</span> {movDetail.tipo_movimento}</div>
+                    <div><span className="text-muted-foreground">CER:</span> {movDetail.cer}</div>
+                    <div><span className="text-muted-foreground">Kg:</span> {Number(movDetail.quantita_kg ?? 0).toLocaleString("it-IT")}</div>
+                    <div><span className="text-muted-foreground">FIR:</span> {movDetail.numero_fir ?? "—"}</div>
+                    <div><span className="text-muted-foreground">Stato:</span> {inviatiIds.has(movDetail.id) ? "INVIATO" : "Da inviare"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Descrizione:</span> {movDetail.descrizione_rifiuto ?? "—"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Produttore:</span> {movDetail.produttore_denominazione ?? "—"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Destinatario:</span> {movDetail.destinatario_denominazione ?? "—"}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
