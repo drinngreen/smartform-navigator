@@ -471,6 +471,7 @@ export type Database = {
           messaggio_disponibilita: string | null
           nome: string
           risposta_riccardo: string | null
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -479,6 +480,7 @@ export type Database = {
           messaggio_disponibilita?: string | null
           nome: string
           risposta_riccardo?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -487,6 +489,7 @@ export type Database = {
           messaggio_disponibilita?: string | null
           nome?: string
           risposta_riccardo?: string | null
+          tenant_id?: string | null
           updated_at?: string
         }
         Relationships: []
