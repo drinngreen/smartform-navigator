@@ -83,6 +83,7 @@ const MNMultyprogetAppPage = React.lazy(() => import("./pages/multynijol/MNMulty
 const MNNiyolAppPage = React.lazy(() => import("./pages/multynijol/MNNiyolAppPage"));
 const MNFormulariPage = React.lazy(() => import("./pages/multynijol/MNFormulariPage"));
 const MNGestioneFIRPage = React.lazy(() => import("./pages/multynijol/MNGestioneFIRPage"));
+const MNCentroAppFirPage = React.lazy(() => import("./pages/multynijol/MNCentroAppFirPage"));
 const MNGPSFlottaPage = React.lazy(() => import("./pages/multynijol/MNGPSFlottaPage"));
 const MNZoliDarkLemonPage = React.lazy(() => import("./pages/multynijol/MNZoliDarkLemonPage"));
 const MNFatturazionePage = React.lazy(() => import("./pages/multynijol/MNFatturazionePage"));
@@ -288,6 +289,8 @@ const App = () => (
                 <Route path="/mn/admin/:context/registro-kg" element={<ProtectedRoute><MNRegistroKgPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/fir-digitali" element={<ProtectedRoute><MNFirDigitaliPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/formulari" element={<ProtectedRoute><MNFormulariPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/dev-multyproget/centro-app-fir" element={<ProtectedRoute><MNCentroAppFirPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/centro-app-fir" element={<ProtectedRoute><MNCentroAppFirPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/gestione-fir" element={<ProtectedRoute><MNGestioneFIRPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/gps" element={<ProtectedRoute><MNGPSFlottaPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/zoli-dark-lemon" element={<ProtectedRoute><MNZoliDarkLemonPage /></ProtectedRoute>} />
