@@ -23,6 +23,7 @@ import {
   aggiornaStatoInvio,
   type MovimentoImpiantoRow,
 } from "@/lib/rentriRegistroSync";
+import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
 import {
@@ -34,6 +35,7 @@ import {
   Sparkles,
   Ticket,
   Users,
+  PenLine,
 } from "lucide-react";
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
@@ -47,11 +49,12 @@ const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "dafirmare" | "registri" | "invii" | "lemon";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "stato", label: "Stato RENTRI", icon: <Activity size={14} /> },
   { id: "numeri", label: "Numeri FIR", icon: <Ticket size={14} /> },
+  { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
   { id: "lemon", label: "Dark Lemon", icon: <Sparkles size={14} /> },
@@ -514,6 +517,13 @@ export default function MNRentriConsolePage() {
               </table>
             </div>
             <RentriResultBanner result={result} />
+          </div>
+        )}
+
+        {tab === "dafirmare" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Formulari su RENTRI da firmare come destinatario</h3>
+            <RentriFirDaFirmarePanel cliente={cliente} />
           </div>
         )}
 
