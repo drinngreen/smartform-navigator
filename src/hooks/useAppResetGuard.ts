@@ -25,18 +25,17 @@ export function useAppResetGuard(scope: 'multyproget' | 'niyol') {
 
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from('app_reset_flags')
-          .select('reset_token')
-          .eq('scope', scope)
-          .maybeSingle();
+        const { data, error } = await (supabase as any).rpc('get_app_reset_token', {
+          p_scope: scope,
+        });
 
-        if (cancelled || error || !data?.reset_token) return;
+        const token = typeof data === 'string' ? data : null;
+        if (cancelled || error || !token) return;
 
         const localKey = `${LOCAL_KEY_PREFIX}${scope}`;
         const current = localStorage.getItem(localKey);
 
-        if (current === data.reset_token) return;
+        if (current === token) return;
 
         // Purge store keys
         for (const key of STORAGE_KEYS_TO_CLEAR) {
