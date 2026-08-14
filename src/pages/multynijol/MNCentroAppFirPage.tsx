@@ -424,6 +424,22 @@ export default function MNCentroAppFirPage() {
               Vidima numeri {cfg.label}
             </Button>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono">Numero già in tuo possesso:</span>
+            <Input
+              value={poolNumber}
+              onChange={(e) => setPoolNumber(e.target.value)}
+              placeholder="ZRZXR 000123 AB"
+              className="w-44 h-9 font-mono"
+            />
+            <Button variant="outline" onClick={addPoolNumber} disabled={poolBusy || !poolNumber.trim()}>
+              {poolBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <PlusCircle className="h-4 w-4 mr-2" />}
+              Aggiungi al serbatoio
+            </Button>
+          </div>
+          <Button className="ml-auto" onClick={() => setCreateOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" /> Nuovo dipendente + app
+          </Button>
         </div>
 
         {/* Elenco */}
@@ -432,8 +448,9 @@ export default function MNCentroAppFirPage() {
             <div className="p-10 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : employees.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              Nessun dipendente con accesso app per {cfg.label}. Creali da Dashboard → Personale.
+              Nessun dipendente con accesso app per {cfg.label}. Creane uno con "Nuovo dipendente + app".
             </div>
+
           ) : (
             <div className="divide-y divide-border/20">
               {employees.map((emp) => {
