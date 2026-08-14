@@ -560,14 +560,23 @@ export default function MNRentriConsolePage() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <button
-                            onClick={() => inviaMovimenti([m])}
-                            disabled={inviando}
-                            className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold disabled:opacity-40"
-                          >
-                            {inviato ? "Reinvia" : "Invia"}
-                          </button>
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => setMovDetail(m)}
+                              className="rounded-lg border border-border px-3 py-1 text-xs font-semibold"
+                            >
+                              Dettagli
+                            </button>
+                            <button
+                              onClick={() => inviaMovimenti([m])}
+                              disabled={inviando}
+                              className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold disabled:opacity-40"
+                            >
+                              {inviato ? "Reinvia" : "Invia"}
+                            </button>
+                          </div>
                         </td>
+
                       </tr>
                     );
                   })}
