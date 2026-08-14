@@ -231,6 +231,8 @@ export default function MNRentriConsolePage() {
   /* movimenti già inviati (riferimento_interno presente in rentri_invii_registri) */
   const [inviatiIds, setInviatiIds] = useState<Set<string>>(new Set());
   const [selezione, setSelezione] = useState<Set<string>>(new Set());
+  const [movDetail, setMovDetail] = useState<MovimentoImpiantoRow | null>(null);
+
 
   const toggleSel = (id: string) =>
     setSelezione((prev) => {
@@ -560,14 +562,23 @@ export default function MNRentriConsolePage() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <button
-                            onClick={() => inviaMovimenti([m])}
-                            disabled={inviando}
-                            className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold disabled:opacity-40"
-                          >
-                            {inviato ? "Reinvia" : "Invia"}
-                          </button>
+                          <div className="flex justify-end gap-1">
+                            <button
+                              onClick={() => setMovDetail(m)}
+                              className="rounded-lg border border-border px-3 py-1 text-xs font-semibold"
+                            >
+                              Dettagli
+                            </button>
+                            <button
+                              onClick={() => inviaMovimenti([m])}
+                              disabled={inviando}
+                              className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold disabled:opacity-40"
+                            >
+                              {inviato ? "Reinvia" : "Invia"}
+                            </button>
+                          </div>
                         </td>
+
                       </tr>
                     );
                   })}
@@ -583,6 +594,41 @@ export default function MNRentriConsolePage() {
               </table>
             </div>
             <RentriResultBanner result={result} />
+
+            {movDetail && (
+              <div
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+                onClick={() => setMovDetail(null)}
+              >
+                <div
+                  className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-xl border border-border bg-card p-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="font-bold">Dettagli movimento</h3>
+                    <button
+                      type="button"
+                      onClick={() => setMovDetail(null)}
+                      className="rounded border border-border bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground"
+                    >
+                      ✕ Chiudi
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-muted-foreground">Data:</span> {movDetail.data_movimento}</div>
+                    <div><span className="text-muted-foreground">Tipo:</span> {movDetail.tipo_movimento}</div>
+                    <div><span className="text-muted-foreground">CER:</span> {movDetail.cer}</div>
+                    <div><span className="text-muted-foreground">Kg:</span> {Number(movDetail.quantita_kg ?? 0).toLocaleString("it-IT")}</div>
+                    <div><span className="text-muted-foreground">FIR:</span> {movDetail.numero_fir ?? "—"}</div>
+                    <div><span className="text-muted-foreground">Stato:</span> {inviatiIds.has(movDetail.id) ? "INVIATO" : "Da inviare"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Descrizione:</span> {movDetail.descrizione_rifiuto ?? "—"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Produttore:</span> {movDetail.produttore_denominazione ?? "—"}</div>
+                    <div className="col-span-2"><span className="text-muted-foreground">Destinatario:</span> {movDetail.destinatario_denominazione ?? "—"}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
