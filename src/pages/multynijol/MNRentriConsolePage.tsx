@@ -505,9 +505,13 @@ export default function MNRentriConsolePage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary font-semibold disabled:opacity-40">
                 {caricando ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />} Carica movimenti
               </button>
-              <button onClick={handleInviaRegistro} disabled={inviando || movimenti.length === 0}
+              <button onClick={handleInviaSelezionati} disabled={inviando || selezione.size === 0}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary border border-primary/50 font-semibold disabled:opacity-40">
+                {inviando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Invia selezionati ({selezione.size})
+              </button>
+              <button onClick={handleInviaTutti} disabled={inviando || movimenti.filter((m) => !inviatiIds.has(m.id)).length === 0}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold disabled:opacity-40">
-                {inviando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Invia a RENTRI
+                {inviando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Invia tutti i non inviati
               </button>
             </div>
 
@@ -515,30 +519,66 @@ export default function MNRentriConsolePage() {
               <table className="w-full text-sm">
                 <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
                   <tr>
+                    <th className="px-3 py-2 w-8">
+                      <input
+                        type="checkbox"
+                        checked={movimenti.length > 0 && selezione.size === movimenti.filter((m) => !inviatiIds.has(m.id)).length && selezione.size > 0}
+                        onChange={(e) =>
+                          setSelezione(e.target.checked ? new Set(movimenti.filter((m) => !inviatiIds.has(m.id)).map((m) => m.id)) : new Set())
+                        }
+                      />
+                    </th>
                     <th className="text-left px-3 py-2">Data</th>
                     <th className="text-left px-3 py-2">Tipo</th>
                     <th className="text-left px-3 py-2">CER</th>
                     <th className="text-right px-3 py-2">Kg</th>
                     <th className="text-left px-3 py-2">FIR</th>
+                    <th className="text-left px-3 py-2">Stato</th>
+                    <th className="text-right px-3 py-2">Azione</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {movimenti.map((m) => (
-                    <tr key={m.id} className="border-t border-border/20">
-                      <td className="px-3 py-2">{m.data_movimento}</td>
-                      <td className="px-3 py-2">{m.tipo_movimento}</td>
-                      <td className="px-3 py-2 font-mono">{m.cer}</td>
-                      <td className="px-3 py-2 text-right">{Number(m.quantita_kg ?? 0).toLocaleString("it-IT")}</td>
-                      <td className="px-3 py-2 font-mono text-xs">{m.numero_fir ?? "—"}</td>
-                    </tr>
-                  ))}
+                  {movimenti.map((m) => {
+                    const inviato = inviatiIds.has(m.id);
+                    return (
+                      <tr key={m.id} className={`border-t border-border/20 ${inviato ? "bg-emerald-500/5" : ""}`}>
+                        <td className="px-3 py-2">
+                          <input type="checkbox" checked={selezione.has(m.id)} onChange={() => toggleSel(m.id)} />
+                        </td>
+                        <td className="px-3 py-2">{m.data_movimento}</td>
+                        <td className="px-3 py-2">{m.tipo_movimento}</td>
+                        <td className="px-3 py-2 font-mono">{m.cer}</td>
+                        <td className="px-3 py-2 text-right">{Number(m.quantita_kg ?? 0).toLocaleString("it-IT")}</td>
+                        <td className="px-3 py-2 font-mono text-xs">{m.numero_fir ?? "—"}</td>
+                        <td className="px-3 py-2">
+                          {inviato ? (
+                            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">
+                              ✓ INVIATO
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Da inviare</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            onClick={() => inviaMovimenti([m])}
+                            disabled={inviando}
+                            className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold disabled:opacity-40"
+                          >
+                            {inviato ? "Reinvia" : "Invia"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                   {movimenti.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                         Nessun movimento caricato.
                       </td>
                     </tr>
                   )}
+
                 </tbody>
               </table>
             </div>
