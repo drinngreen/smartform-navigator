@@ -231,6 +231,8 @@ export default function MNRentriConsolePage() {
   /* movimenti già inviati (riferimento_interno presente in rentri_invii_registri) */
   const [inviatiIds, setInviatiIds] = useState<Set<string>>(new Set());
   const [selezione, setSelezione] = useState<Set<string>>(new Set());
+  const [movDetail, setMovDetail] = useState<MovimentoImpiantoRow | null>(null);
+
 
   const toggleSel = (id: string) =>
     setSelezione((prev) => {
