@@ -409,6 +409,17 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 <Save className="h-4 w-4" /> Salva DEFINITIVO
               </Button>
               <Button
+                onClick={() => {
+                  if (window.confirm("Confermi l'invio del formulario a RENTRI? L'operazione è definitiva.")) {
+                    window.dispatchEvent(new Event("dev-fir-send-rentri"));
+                  }
+                }}
+                disabled={!activeDraftId}
+                className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-background"
+              >
+                <Send className="h-4 w-4" /> Invia a RENTRI
+              </Button>
+              <Button
                 variant="destructive"
                 onClick={handleDeleteActiveDraft}
                 disabled={!activeDraftId}
