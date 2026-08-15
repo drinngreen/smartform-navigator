@@ -186,20 +186,47 @@ export default function SibillSandboxPage() {
           </p>
         </header>
 
+        {/* Modalità */}
+        <section className={`rounded-2xl border p-5 space-y-3 ${mock ? "border-amber-500/40 bg-amber-500/10" : "border-emerald-500/40 bg-emerald-500/10"}`}>
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <input type="checkbox" checked={mock} onChange={(e) => setMock(e.target.checked)} />
+              Modalità MOCK (nessuna chiamata reale a Sibill)
+            </label>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Scenario simulato</Label>
+              <Select value={scenario} onValueChange={setScenario} disabled={!mock}>
+                <SelectTrigger className="w-56 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="success">✅ Successo (201 Created)</SelectItem>
+                  <SelectItem value="validation_error">⚠️ Errore validazione (422)</SelectItem>
+                  <SelectItem value="auth_error">🔒 Chiave non valida (401)</SelectItem>
+                  <SelectItem value="rate_limit">⏳ Rate limit (429)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            In MOCK le risposte hanno la stessa struttura di quelle reali Sibill (<code className="font-mono">data.id</code>, <code className="font-mono">status</code>, <code className="font-mono">delivery_status</code>, <code className="font-mono">errors[]</code>),
+            così il passaggio alla chiave reale non richiede alcuna modifica: basta togliere la spunta.
+          </p>
+        </section>
+
         {/* Credenziali */}
         <section className="rounded-2xl border border-border/30 bg-card/60 p-5 grid gap-4 md:grid-cols-2">
           <div>
-            <Label className="text-xs text-muted-foreground">Sandbox API Key (Bearer Token)</Label>
-            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk_dev_..." className="font-mono" />
+            <Label className="text-xs text-muted-foreground">Sandbox API Key (Bearer Token){mock && " — non richiesta in MOCK"}</Label>
+            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder={mock ? "non necessaria in MOCK" : "sk_dev_..."} className="font-mono" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Sandbox Company ID</Label>
-            <Input value={companyId} onChange={(e) => setCompanyId(e.target.value)} placeholder="cmp_..." className="font-mono" />
+            <Label className="text-xs text-muted-foreground">Sandbox Company ID{mock && " — non richiesto in MOCK"}</Label>
+            <Input value={companyId} onChange={(e) => setCompanyId(e.target.value)} placeholder={mock ? "non necessario in MOCK" : "cmp_..."} className="font-mono" />
           </div>
           <p className="md:col-span-2 text-[11px] text-muted-foreground">
             Le credenziali restano solo in memoria per questa sessione: non vengono salvate né inviate al database.
           </p>
         </section>
+
 
         <Tabs defaultValue="counterpart">
           <TabsList>
