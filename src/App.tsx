@@ -195,6 +195,10 @@ const App = () => (
                 {/* Auth */}
                 <Route path="/auth" element={<AuthPage />} />
 
+                {/* Sandbox isolata di test Sibill (nessun dato reale) */}
+                <Route path="/dev/sibill-sandbox" element={<SibillSandboxPage />} />
+
+
                 {/* MultyNiyol auth pages - app login only */}
                 <Route path="/mn" element={<MNAuthPage />} />
                 <Route path="/ni" element={<MNAuthPage />} />
