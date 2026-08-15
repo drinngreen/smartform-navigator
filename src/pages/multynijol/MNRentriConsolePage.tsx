@@ -83,6 +83,21 @@ export default function MNRentriConsolePage() {
   const [loadingStato, setLoadingStato] = useState(false);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
 
+  /** Filtra i blocchi restituiti dal bridge tenendo solo quelli della società selezionata. */
+  const filtraBlocchiPerCliente = (list: any[], key: string) => {
+    const cf = RENTRI_ISSUERS[key];
+    const ul = RENTRI_UNITA_LOCALI[key];
+    const allowed = ALLOWED_BLOCCHI[key] ?? [];
+    return list.filter((b: any) => {
+      const codice = String(b?.codice ?? b?.blocco ?? b?.identificativo ?? "").toUpperCase();
+      const bCf = String(b?.identificativo_soggetto ?? b?.cf_soggetto ?? b?.codice_fiscale ?? b?.issuer ?? "");
+      const bUl = String(b?.num_iscr_sito ?? b?.numero_iscrizione_sito ?? b?.unita_locale ?? "");
+      if (bCf) return bCf.replace(/^IT/i, "") === cf;
+      if (bUl) return bUl === ul;
+      return allowed.length === 0 || allowed.includes(codice);
+    });
+  };
+
   const refreshStato = async () => {
     setLoadingStato(true);
     setResult(null);
@@ -93,7 +108,7 @@ export default function MNRentriConsolePage() {
       setResult(res);
       const raw = res.data as any;
       const list = Array.isArray(raw) ? raw : raw?.blocchi ?? raw?.items ?? raw?.content ?? [];
-      setBlocchi(Array.isArray(list) ? list : []);
+      setBlocchi(Array.isArray(list) ? filtraBlocchiPerCliente(list, configKey) : []);
     } catch (e: any) {
       setVpsUp(false);
       toast.error(`Errore stato RENTRI: ${e.message}`);
@@ -101,6 +116,7 @@ export default function MNRentriConsolePage() {
       setLoadingStato(false);
     }
   };
+
 
   useEffect(() => {
     refreshStato();
