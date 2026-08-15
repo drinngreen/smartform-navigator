@@ -1136,6 +1136,36 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "run_system_test",
+      description: "Esegue una diagnostica completa del gestionale (app dipendenti, pool FIR, formulari, giacenze vs movimenti, invii registri RENTRI, fatturazione/Sibill) e restituisce esiti PASS/WARN/FAIL con i numeri reali. Usalo quando l'utente chiede test, verifiche o controlli di funzionamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          area: {
+            type: "string",
+            description: "Area da testare: all | app | fir | giacenze | rentri | fatturazione",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cleanup_test_data",
+      description: "Elimina i dati di test/demo creati durante le prove (numeri FIR is_demo, formulari e movimenti marcati [DEMO]/TEST). Con dry_run=true mostra solo cosa verrebbe eliminato.",
+      parameters: {
+        type: "object",
+        properties: {
+          dry_run: { type: "boolean", description: "Se true non elimina, mostra solo il conteggio (default true)" },
+          scope: { type: "string", description: "all | fir | movimenti | privati | fatture" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "distribute_baseline",
       description: "Esegui la distribuzione automatica baseline dei FIR: 1 bozza per ogni trasportatore.",
       parameters: { type: "object", properties: {} }
@@ -1936,6 +1966,115 @@ async function handleTool(
       const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
       return error ? { error: error.message } : data;
     }
+
+    // ---------- DIAGNOSTICA / TEST ----------
+    case "run_system_test": {
+      const area = String(args.area || "all").toLowerCase();
+      const runSql = async (sql: string) => {
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+        return error ? { error: error.message } : data;
+      };
+
+      const report: Record<string, unknown> = { area, eseguito_il: new Date().toISOString() };
+
+      if (area === "all" || area === "app") {
+        report.app_dipendenti = await runSql(`
+          SELECT
+            (SELECT count(*) FROM profiles WHERE mn_context = 'multyproget') AS profili_multyproget,
+            (SELECT count(*) FROM profiles WHERE mn_context = 'niyol') AS profili_niyol,
+            (SELECT count(*) FROM profiles WHERE mn_context IN ('multyproget','niyol') AND codice_fiscale IS NULL) AS profili_senza_cf
+        `);
+      }
+
+      if (area === "all" || area === "fir") {
+        report.pool_fir = await runSql(`
+          SELECT societa_id, status, count(*) AS totale
+          FROM fir_number_pool GROUP BY 1,2 ORDER BY 1,2
+        `);
+        report.formulari = await runSql(`
+          SELECT status, count(*) AS totale FROM fir_forms GROUP BY 1 ORDER BY 1
+        `);
+      }
+
+      if (area === "all" || area === "giacenze") {
+        report.giacenze = await runSql(`
+          WITH calc AS (
+            SELECT g.cer, g.quantita_kg,
+              COALESCE(g.saldo_iniziale_kg,0) + COALESCE((
+                SELECT sum(CASE WHEN m.tipo_movimento = 'CARICO' THEN m.quantita_kg ELSE -m.quantita_kg END)
+                FROM movimenti_impianto m
+                WHERE m.tenant_id = g.tenant_id AND m.impianto_id = g.impianto_id AND m.cer = g.cer
+                  AND (g.saldo_snapshot_at IS NULL OR m.data_movimento > g.saldo_snapshot_at)
+              ),0) AS atteso
+            FROM magazzino_giacenze g
+          )
+          SELECT count(*) AS righe,
+                 count(*) FILTER (WHERE abs(quantita_kg - atteso) > 0.001) AS disallineate,
+                 count(*) FILTER (WHERE quantita_kg < 0) AS negative,
+                 round(sum(quantita_kg)::numeric,3) AS kg_totali,
+                 COALESCE(round(sum(quantita_kg - atteso) FILTER (WHERE abs(quantita_kg - atteso) > 0.001)::numeric,3),0) AS delta_kg
+          FROM calc
+        `);
+      }
+
+      if (area === "all" || area === "rentri") {
+        report.invii_rentri = await runSql(`
+          SELECT COALESCE(stato,'nessuno') AS stato, count(*) AS totale, max(created_at) AS ultimo
+          FROM rentri_invii_registri GROUP BY 1
+        `);
+      }
+
+      if (area === "all" || area === "fatturazione") {
+        report.fatturazione = await runSql(`
+          SELECT (SELECT count(*) FROM fatture) AS fatture,
+                 (SELECT count(*) FROM fatture_sibill_sync) AS sync_sibill,
+                 (SELECT count(*) FROM fatture_sibill_sync WHERE sync_status = 'error') AS sync_in_errore
+        `);
+      }
+
+      return report;
+    }
+
+    case "cleanup_test_data": {
+      const dryRun = args.dry_run !== false;
+      const scope = String(args.scope || "all").toLowerCase();
+      const like = `%[DEMO]%`;
+      const results: Record<string, unknown> = { dry_run: dryRun, scope };
+
+      const countOrDelete = async (label: string, table: string, where: string) => {
+        const { data: countData, error: countErr } = await db
+          .rpc("exec_sql_readonly", { query: `SELECT count(*) AS totale FROM ${table} WHERE ${where}` })
+          .maybeSingle();
+        if (countErr) { results[label] = { error: countErr.message }; return; }
+        const totale = (countData as any)?.[0]?.totale ?? (countData as any)?.totale ?? 0;
+        if (dryRun || Number(totale) === 0) { results[label] = { da_eliminare: totale, eliminati: 0 }; return; }
+        const { error: delErr } = await db
+          .rpc("exec_sql_write", { query: `DELETE FROM ${table} WHERE ${where}` })
+          .maybeSingle();
+        results[label] = delErr ? { error: delErr.message } : { da_eliminare: totale, eliminati: totale };
+      };
+
+      if (scope === "all" || scope === "fir") {
+        await countOrDelete("formulari_test", "fir_forms", `(note ILIKE '${like}' OR numero_fir ILIKE 'TEST-%')`);
+        await countOrDelete("numeri_fir_demo", "fir_number_pool", `(is_demo = true OR fir_number ILIKE 'TEST-%')`);
+      }
+      if (scope === "all" || scope === "movimenti") {
+        await countOrDelete("movimenti_test", "movimenti_impianto", `note ILIKE '${like}'`);
+      }
+      if (scope === "all" || scope === "privati") {
+        await countOrDelete("conferimenti_test", "privati_conferimenti", `note ILIKE '${like}'`);
+      }
+      if (scope === "all" || scope === "fatture") {
+        await countOrDelete("fatture_test", "fatture", `note ILIKE '${like}'`);
+      }
+
+      results.nota = dryRun
+        ? "Simulazione: nessun dato eliminato. Richiama con dry_run=false per eliminare davvero."
+        : "Dati di test eliminati. Ricalcola le giacenze se hai rimosso movimenti.";
+      return results;
+    }
+
+
 
     case "search_user": {
       let query = db
