@@ -224,6 +224,8 @@ export function resolveRoute(
       return { method: "GET", path: `/dati-registri/v1.0/operatore/${registryId}/transazioni/${txnId}` };
     case "TRANSAZIONE_FIR":
       return { method: "GET", path: `/formulari/v1.0/transazioni/${txnId}` };
+    case "TRANSAZIONE_VIDIMAZIONE":
+      return { method: "GET", path: `/vidimazione-formulari/v1.0/transazioni/${txnId}` };
     case "FIRMA_RICEZIONE":
       return { method: "POST", path: `/formulari/v1.0` };
     default:
