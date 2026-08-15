@@ -224,11 +224,27 @@ export function resolveRoute(
       };
     }
     case "TRANSAZIONE_REGISTRO":
-      return { method: "GET", path: `/dati-registri/v1.0/operatore/${registryId}/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/dati-registri/v1.0/operatore/${registryId}/transazioni/${txnId}`,
+        altPaths: [`/dati-registri/v1.0/operatore/${registryId}/transazione/${txnId}`],
+      };
     case "TRANSAZIONE_FIR":
-      return { method: "GET", path: `/formulari/v1.0/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/formulari/v1.0/transazioni/${txnId}`,
+        altPaths: [`/formulari/v1.0/transazione/${txnId}`],
+      };
     case "TRANSAZIONE_VIDIMAZIONE":
-      return { method: "GET", path: `/vidimazione-formulari/v1.0/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/vidimazione-formulari/v1.0/transazioni/${txnId}`,
+        altPaths: [
+          `/vidimazione-formulari/v1.0/transazione/${txnId}`,
+          ...(codiceBlocco ? [`/vidimazione-formulari/v1.0/${codiceBlocco}/transazioni/${txnId}`] : []),
+        ],
+      };
+
     case "FIRMA_RICEZIONE":
       return { method: "POST", path: `/formulari/v1.0` };
     default:
