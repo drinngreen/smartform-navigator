@@ -590,7 +590,7 @@ export async function vidimaFIRAsync(
 
     if (transazioneId) {
       try {
-        const txRes = await statoTransazioneFir(cliente, transazioneId);
+        const txRes = await statoTransazioneVidimazione(cliente, transazioneId);
         if (txRes.success) {
           for (const firNum of extractFirNumbers(txRes.data)) {
             if (!knownNumbers.has(firNum)) {
