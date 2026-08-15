@@ -199,16 +199,27 @@ export function FatturazioneModule({ tenantId }: Props) {
           </div>
 
           {/* Modalità invio Sibill */}
-          <div className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-xs ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
-            <label className="flex items-center gap-2 cursor-pointer font-medium">
+          <div className={`flex flex-wrap items-center gap-4 rounded-xl border px-4 py-3 text-xs ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
+            <span className="font-medium">Modalità invio Sibill:</span>
+            <label className="flex items-center gap-2 cursor-pointer">
               <input
-                type="checkbox"
+                type="radio"
+                name="sibill_mode"
                 checked={sibillMock}
-                onChange={(e) => { setSibillMock(e.target.checked); localStorage.setItem("sibill_mock_mode", String(e.target.checked)); }}
+                onChange={() => { setSibillMock(true); localStorage.setItem("sibill_mock_mode", "true"); }}
               />
-              Modalità MOCK Sibill (simulazione, nessun invio reale)
+              <span className={sibillMock ? "text-amber-300 font-medium" : "text-muted-foreground"}>MOCK — simulazione, nessun invio reale</span>
             </label>
-            <span className="text-muted-foreground">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="sibill_mode"
+                checked={!sibillMock}
+                onChange={() => { setSibillMock(false); localStorage.setItem("sibill_mock_mode", "false"); }}
+              />
+              <span className={!sibillMock ? "text-emerald-300 font-medium" : "text-muted-foreground"}>REALE — invio con chiave API configurata</span>
+            </label>
+            <span className="text-muted-foreground ml-auto">
               {sibillMock
                 ? "Le fatture seguono l'intero flusso reale (stati, badge, sincronizzazione) ma non vengono trasmesse a Sibill."
                 : "ATTENZIONE: invio REALE a Sibill con la chiave API configurata."}
