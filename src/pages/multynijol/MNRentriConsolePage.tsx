@@ -200,6 +200,40 @@ export default function MNRentriConsolePage() {
     }
   };
 
+  /** Contrassegna il numero come usato direttamente dall'ufficio (admin) */
+  const handleAssegnaUfficio = async (firNumber: string) => {
+    setAssegnando(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const adminId = auth?.user?.id;
+      if (!adminId) throw new Error("Sessione admin non valida");
+      const tenantId =
+        assignApp === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+      const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as never, {
+        p_user_id: adminId,
+        p_tenant_id: tenantId,
+        p_numero_fir: firNumber,
+      } as never);
+      if (error) throw error;
+      toast.success(`FIR ${firNumber} contrassegnato come UFFICIO (uso admin)`);
+      loadPool();
+    } catch (e: any) {
+      toast.error(`Errore assegnazione ufficio: ${e.message}`);
+    } finally {
+      setAssegnando(false);
+    }
+  };
+
+  const copyFir = async (firNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(firNumber);
+      toast.success(`Copiato: ${firNumber}`);
+    } catch {
+      toast.error("Copia non riuscita");
+    }
+  };
+
+
   /* ── Invio registri ── */
   const registri = registriDisponibili(cliente);
   const [registroId, setRegistroId] = useState(registri[0]?.id ?? "");
