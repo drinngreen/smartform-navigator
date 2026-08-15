@@ -189,9 +189,14 @@ export default function SibillSandboxPage() {
         {/* Modalità */}
         <section className={`rounded-2xl border p-5 space-y-3 ${mock ? "border-amber-500/40 bg-amber-500/10" : "border-emerald-500/40 bg-emerald-500/10"}`}>
           <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <input type="checkbox" checked={mock} onChange={(e) => setMock(e.target.checked)} />
-              Modalità MOCK (nessuna chiamata reale a Sibill)
+            <span className="text-sm font-medium">Ambiente:</span>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="sibill_sandbox_mode" checked={mock} onChange={() => setMock(true)} />
+              <span className={mock ? "text-amber-300 font-medium" : "text-muted-foreground"}>MOCK (nessuna chiamata reale a Sibill)</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="sibill_sandbox_mode" checked={!mock} onChange={() => setMock(false)} />
+              <span className={!mock ? "text-emerald-300 font-medium" : "text-muted-foreground"}>REALE (chiave Sandbox Sibill richiesta)</span>
             </label>
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Scenario simulato</Label>
@@ -207,8 +212,8 @@ export default function SibillSandboxPage() {
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            In MOCK le risposte hanno la stessa struttura di quelle reali Sibill (<code className="font-mono">data.id</code>, <code className="font-mono">status</code>, <code className="font-mono">delivery_status</code>, <code className="font-mono">errors[]</code>),
-            così il passaggio alla chiave reale non richiede alcuna modifica: basta togliere la spunta.
+            In MOCK le risposte hanno la stessa struttura di quelle reali Sibill (<code className="font-mono">data.id</code>, <code className="font-mono">status</code>, <code className="font-mono">delivery_status</code>, <code className="font-mono">errors[]</code>).
+            Seleziona <span className="text-emerald-300 font-medium">REALE</span> per usare la chiave Sandbox Sibill; nessuna modifica al payload è necessaria.
           </p>
         </section>
 
