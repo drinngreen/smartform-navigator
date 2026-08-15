@@ -2028,7 +2028,7 @@ async function handleTool(
         report.fatturazione = await runSql(`
           SELECT (SELECT count(*) FROM fatture) AS fatture,
                  (SELECT count(*) FROM fatture_sibill_sync) AS sync_sibill,
-                 (SELECT count(*) FROM fatture_sibill_sync WHERE stato_sync = 'error') AS sync_in_errore
+                 (SELECT count(*) FROM fatture_sibill_sync WHERE sync_status = 'error') AS sync_in_errore
         `);
       }
 
@@ -2059,7 +2059,7 @@ async function handleTool(
         await countOrDelete("numeri_fir_demo", "fir_number_pool", `(is_demo = true OR fir_number ILIKE 'TEST-%')`);
       }
       if (scope === "all" || scope === "movimenti") {
-        await countOrDelete("movimenti_test", "movimenti_impianto", `(note ILIKE '${like}' OR annotazioni ILIKE '${like}')`);
+        await countOrDelete("movimenti_test", "movimenti_impianto", `note ILIKE '${like}'`);
       }
       if (scope === "all" || scope === "privati") {
         await countOrDelete("conferimenti_test", "privati_conferimenti", `note ILIKE '${like}'`);
