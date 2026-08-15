@@ -49,6 +49,11 @@ const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
 };
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
+/** Blocchi di vidimazione appartenenti a ciascuna società (fallback se il bridge non espone CF/U.L.). */
+const ALLOWED_BLOCCHI: Record<string, string[]> = {
+  multy: ["ZRZXR"],
+  niyol: ["DGXYQ", "BPJMG"],
+};
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
 type TabId = "stato" | "numeri" | "dafirmare" | "registri" | "invii" | "lemon";
