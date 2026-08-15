@@ -1136,6 +1136,36 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "run_system_test",
+      description: "Esegue una diagnostica completa del gestionale (app dipendenti, pool FIR, formulari, giacenze vs movimenti, invii registri RENTRI, fatturazione/Sibill) e restituisce esiti PASS/WARN/FAIL con i numeri reali. Usalo quando l'utente chiede test, verifiche o controlli di funzionamento.",
+      parameters: {
+        type: "object",
+        properties: {
+          area: {
+            type: "string",
+            description: "Area da testare: all | app | fir | giacenze | rentri | fatturazione",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cleanup_test_data",
+      description: "Elimina i dati di test/demo creati durante le prove (numeri FIR is_demo, formulari e movimenti marcati [DEMO]/TEST). Con dry_run=true mostra solo cosa verrebbe eliminato.",
+      parameters: {
+        type: "object",
+        properties: {
+          dry_run: { type: "boolean", description: "Se true non elimina, mostra solo il conteggio (default true)" },
+          scope: { type: "string", description: "all | fir | movimenti | privati | fatture" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "distribute_baseline",
       description: "Esegui la distribuzione automatica baseline dei FIR: 1 bozza per ogni trasportatore.",
       parameters: { type: "object", properties: {} }
