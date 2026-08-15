@@ -369,6 +369,15 @@ export function statoTransazioneFir(cliente: RentriCliente, transazioneId: strin
   return inviaOperazioneRentri({ cliente, tipo_operazione: "TRANSAZIONE_FIR", payload: { transazione_id: transazioneId } });
 }
 
+/** Stato di una transazione di VIDIMAZIONE (endpoint diverso da quello dei formulari) */
+export function statoTransazioneVidimazione(cliente: RentriCliente, transazioneId: string) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "TRANSAZIONE_VIDIMAZIONE",
+    payload: { transazione_id: transazioneId },
+  });
+}
+
 
 export function firmaRicezione(cliente: RentriCliente, firPayload: Record<string, unknown>) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "FIRMA_RICEZIONE", payload: firPayload });
