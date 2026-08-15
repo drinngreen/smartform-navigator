@@ -198,6 +198,24 @@ export function FatturazioneModule({ tenantId }: Props) {
             </button>
           </div>
 
+          {/* Modalità invio Sibill */}
+          <div className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-xs ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
+            <label className="flex items-center gap-2 cursor-pointer font-medium">
+              <input
+                type="checkbox"
+                checked={sibillMock}
+                onChange={(e) => { setSibillMock(e.target.checked); localStorage.setItem("sibill_mock_mode", String(e.target.checked)); }}
+              />
+              Modalità MOCK Sibill (simulazione, nessun invio reale)
+            </label>
+            <span className="text-muted-foreground">
+              {sibillMock
+                ? "Le fatture seguono l'intero flusso reale (stati, badge, sincronizzazione) ma non vengono trasmesse a Sibill."
+                : "ATTENZIONE: invio REALE a Sibill con la chiave API configurata."}
+            </span>
+          </div>
+
+
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <SummaryCard label="Totale Fatture" value={String(fatture.length)} tone="text-foreground" />
