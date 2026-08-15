@@ -195,7 +195,7 @@ export default function SibillSandboxPage() {
             </label>
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Scenario simulato</Label>
-              <Select value={scenario} onValueChange={setScenario} disabled={!mock}>
+              <Select value={scenario} onValueChange={setScenario}>
                 <SelectTrigger className="w-56 h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="success">✅ Successo (201 Created)</SelectItem>
