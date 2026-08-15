@@ -23,6 +23,7 @@ export type RentriTipoOperazione =
   | "RICERCA_MOVIMENTI"
   | "TRANSAZIONE_REGISTRO"
   | "TRANSAZIONE_FIR"
+  | "TRANSAZIONE_VIDIMAZIONE"
   | "CUSTOM";
 
 export type RentriMethod = "GET" | "POST";
