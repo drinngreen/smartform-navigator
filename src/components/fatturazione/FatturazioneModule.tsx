@@ -62,9 +62,13 @@ export function FatturazioneModule({ tenantId }: Props) {
     queryFn: async () => fetchSibillSync(fatture.map((f: any) => f.id)),
   });
 
+  const [sibillMock, setSibillMock] = useState<boolean>(
+    () => localStorage.getItem("sibill_mock_mode") !== "false",
+  );
+
   const sibillMut = useMutation({
     mutationFn: async (f: any) => {
-      const res = await inviaFatturaASibill(f);
+      const res = await inviaFatturaASibill(f, { mock: sibillMock });
       if (f.stato !== "inviata") {
         await supabase.from("fatture" as any).update({
           stato: "inviata", locked: true, inviata_at: new Date().toISOString(),
@@ -73,13 +77,14 @@ export function FatturazioneModule({ tenantId }: Props) {
       return res;
     },
 
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
       qc.invalidateQueries({ queryKey: ["fatture"] });
-      toast.success("Fattura trasmessa a Sibill");
+      toast.success(res?.mock ? "MOCK: fattura trasmessa (simulazione, nessun invio reale)" : "Fattura trasmessa a Sibill");
     },
     onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
   });
+
 
 
 
