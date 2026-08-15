@@ -18,6 +18,8 @@ import { GlobalNotificationBell } from "@/components/notifications/GlobalNotific
 
 // Lazy-loaded pages
 const AuthPage = React.lazy(() => import("./pages/AuthPage"));
+const SibillSandboxPage = React.lazy(() => import("./pages/dev/SibillSandboxPage"));
+
 const MNAuthPage = React.lazy(() => import("./pages/MNAuthPage"));
 const MNAdminAuthPage = React.lazy(() => import("./pages/MNAdminAuthPage"));
 const SuperAdminAuthPage = React.lazy(() => import("./pages/SuperAdminAuthPage"));
@@ -194,6 +196,10 @@ const App = () => (
 
                 {/* Auth */}
                 <Route path="/auth" element={<AuthPage />} />
+
+                {/* Sandbox isolata di test Sibill (nessun dato reale) */}
+                <Route path="/dev/sibill-sandbox" element={<SibillSandboxPage />} />
+
 
                 {/* MultyNiyol auth pages - app login only */}
                 <Route path="/mn" element={<MNAuthPage />} />

@@ -146,42 +146,40 @@ export function DevMagazzinoModule() {
   };
 
   const handleSaveCernita = async () => {
+    if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
     if (!cernitaInput.cer || !cernitaInput.quantita) { toast.error("Input obbligatorio"); return; }
     const validOutputs = cernitaOutputs.filter(o => o.cer && o.quantita);
     if (validOutputs.length === 0) { toast.error("Almeno un output obbligatorio"); return; }
     const inputKg = parseFloat(cernitaInput.quantita);
     const outputKg = validOutputs.reduce((s, o) => s + parseFloat(o.quantita), 0);
-    const diff = Math.abs(inputKg - outputKg) / inputKg;
+    if (!(inputKg > 0)) { toast.error("Quantità in ingresso non valida"); return; }
     if (outputKg > inputKg) { toast.error("Output supera l'input!"); return; }
+    const disponibile = Number(giacenze?.find(g => g.cer === cernitaInput.cer)?.quantita_kg) || 0;
+    if (inputKg > disponibile) { toast.error(`Giacenza insufficiente: disponibili ${disponibile.toLocaleString("it-IT")} kg`); return; }
 
     try {
-      // Create cernita record
-      const { data: cernitaData, error: cernitaErr } = await supabase.from("cernite" as any)
-        .insert({ tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, cer_input: cernitaInput.cer, quantita_input: inputKg, stato: "completata", created_by: user?.id } as any)
-        .select("id").single();
-      if (cernitaErr) throw cernitaErr;
-      const cernitaId = (cernitaData as any).id;
+      // Cernita ATOMICA lato database: crea cernita, output, scarico input e carichi output
+      // in un'unica transazione e riallinea le giacenze (nessun disallineamento possibile).
+      const { error } = await (supabase as any).rpc("esegui_cernita_atomica", {
+        p_tenant_id: MULTY_TENANT_ID,
+        p_impianto_id: impiantoId,
+        p_cer_input: cernitaInput.cer.trim(),
+        p_quantita_input: inputKg,
+        p_outputs: validOutputs.map(o => ({ cer: o.cer.trim(), quantita: parseFloat(o.quantita), tipo: o.tipo })),
+        p_note: null,
+        p_data: new Date().toISOString().slice(0, 10),
+      });
+      if (error) throw error;
 
-      // Insert outputs
-      const outputRows = validOutputs.map(o => ({ cernita_id: cernitaId, cer_output: o.cer, quantita: parseFloat(o.quantita), tipo_output: o.tipo }));
-      const { error: outErr } = await supabase.from("cernita_output" as any).insert(outputRows as any);
-      if (outErr) throw outErr;
-
-      // Scarico input
-      await saveOperazione("SCARICO", cernitaInput.cer, inputKg, `Cernita ${cernitaId}`);
-
-      // Carico outputs
-      for (const o of validOutputs) {
-        await saveOperazione("CARICO", o.cer, parseFloat(o.quantita), `Cernita ${cernitaId} — ${o.tipo}`);
-      }
-
-      toast.success("✅ Cernita completata!");
+      invalidateAll();
+      toast.success("✅ Cernita completata e giacenze allineate");
       setShowCernita(false);
       setCernitaStep(0);
       setCernitaInput({ cer: "", quantita: "" });
       setCernitaOutputs([{ cer: "", quantita: "", tipo: "rifiuto" }]);
     } catch (err: any) { toast.error(err.message); }
   };
+
 
   // Filtered
   const filteredGiacenze = useMemo(() => {

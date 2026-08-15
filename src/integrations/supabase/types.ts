@@ -6181,6 +6181,16 @@ export type Database = {
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       can_access_tenant: { Args: { _tenant: string }; Returns: boolean }
+      check_giacenze_allineate: {
+        Args: { p_tenant_id?: string }
+        Returns: {
+          atteso_kg: number
+          cer: string
+          delta_kg: number
+          impianto_id: string
+          quantita_kg: number
+        }[]
+      }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
       create_manual_fir_draft_for_tenant: {
@@ -6209,6 +6219,18 @@ export type Database = {
       }
       ensure_user_has_fir_draft_for_tenant: {
         Args: { p_tenant_id: string; p_user_id: string }
+        Returns: string
+      }
+      esegui_cernita_atomica: {
+        Args: {
+          p_cer_input: string
+          p_data?: string
+          p_impianto_id: string
+          p_note?: string
+          p_outputs: Json
+          p_quantita_input: number
+          p_tenant_id: string
+        }
         Returns: string
       }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }

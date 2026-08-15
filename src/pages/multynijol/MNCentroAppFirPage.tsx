@@ -366,6 +366,24 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const restoreEmployee = async (emp: Employee) => {
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "restore_user", user_id: emp.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`App riattivata per ${emp.cognome} ${emp.nome}`);
+      await load();
+    } catch (e: any) {
+      toast.error("Errore riattivazione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   const openForm = (draftId: string) => {
 
     const routeCtx = company === "niyol" ? "niyol" : "multyproget";
@@ -534,15 +552,29 @@ export default function MNCentroAppFirPage() {
                       <Button size="sm" variant="outline" onClick={() => openEdit(emp)}>
                         <UserCog className="h-3.5 w-3.5 mr-1.5" /> Login / App
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive"
-                        disabled={busy === emp.user_id}
-                        onClick={() => removeEmployee(emp)}
-                      >
-                        <UserX className="h-3.5 w-3.5" />
-                      </Button>
+                      {emp.deactivated_at ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-neon-green border-neon-green/40"
+                          disabled={busy === emp.user_id}
+                          onClick={() => restoreEmployee(emp)}
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5 mr-1.5" /> Riattiva app
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          disabled={busy === emp.user_id}
+                          title="Disattiva ed elimina l'accesso app"
+                          onClick={() => removeEmployee(emp)}
+                        >
+                          <UserX className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+
 
                     </div>
                   </div>
