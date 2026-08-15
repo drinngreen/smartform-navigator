@@ -272,12 +272,15 @@ export function FatturazioneModule({ tenantId }: Props) {
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
                               <button
-                                onClick={() => confirm(`Inviare la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
+                                onClick={() => confirm(sibillMock
+                                  ? `MOCK: simulare l'invio della fattura ${f.numero_completo}? Nessun dato verrà inviato a Sibill.`
+                                  : `Inviare REALMENTE la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
                                 disabled={sibillMut.isPending || sib?.sync_status === "sincronizzata" || sib?.sync_status === "incassata"}
                                 className="p-1.5 rounded-lg text-xs flex items-center gap-1 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                                title="Invia a Sibill"
+                                title={sibillMock ? "Invio simulato (MOCK)" : "Invia a Sibill"}
                               >
-                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} Sibill
+                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} {sibillMock ? "Sibill (mock)" : "Sibill"}
+
                               </button>
                               {stato === "cortesia" && (
 
