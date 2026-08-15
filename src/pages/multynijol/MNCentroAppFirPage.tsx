@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, RefreshCw, Loader2, FilePlus, Pencil, Trash2, ShieldCheck, ShieldAlert,
-  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle,
+  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle, Copy,
 } from "lucide-react";
+
 import { vidimaFIRAsync } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { CreateTransporterDialog, type TenantConfig } from "@/components/admin/CreateTransporterDialog";
