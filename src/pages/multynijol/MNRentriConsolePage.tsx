@@ -36,7 +36,9 @@ import {
   Ticket,
   Users,
   PenLine,
+  Copy,
 } from "lucide-react";
+
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
   multyproget: "multy",
