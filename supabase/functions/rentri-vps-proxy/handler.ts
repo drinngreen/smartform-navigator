@@ -169,7 +169,10 @@ function normalizePath(value: unknown): string | null {
 export interface RouteInfo {
   method: "GET" | "POST";
   path: string;
+  /** Path alternativi da provare solo se RENTRI risponde 404 sul path principale. */
+  altPaths?: string[];
 }
+
 
 function formatProgressivo(value: unknown): string {
   const raw = String(value ?? "").trim();
@@ -221,11 +224,27 @@ export function resolveRoute(
       };
     }
     case "TRANSAZIONE_REGISTRO":
-      return { method: "GET", path: `/dati-registri/v1.0/operatore/${registryId}/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/dati-registri/v1.0/operatore/${registryId}/transazioni/${txnId}`,
+        altPaths: [`/dati-registri/v1.0/operatore/${registryId}/transazione/${txnId}`],
+      };
     case "TRANSAZIONE_FIR":
-      return { method: "GET", path: `/formulari/v1.0/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/formulari/v1.0/transazioni/${txnId}`,
+        altPaths: [`/formulari/v1.0/transazione/${txnId}`],
+      };
     case "TRANSAZIONE_VIDIMAZIONE":
-      return { method: "GET", path: `/vidimazione-formulari/v1.0/transazioni/${txnId}` };
+      return {
+        method: "GET",
+        path: `/vidimazione-formulari/v1.0/transazioni/${txnId}`,
+        altPaths: [
+          `/vidimazione-formulari/v1.0/transazione/${txnId}`,
+          ...(codiceBlocco ? [`/vidimazione-formulari/v1.0/${codiceBlocco}/transazioni/${txnId}`] : []),
+        ],
+      };
+
     case "FIRMA_RICEZIONE":
       return { method: "POST", path: `/formulari/v1.0` };
     default:
@@ -442,103 +461,122 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
   let lastStatus = primaryStatus;
   let lastData: unknown = primaryData;
 
+  outer:
   for (let i = 0; i < candidates.length; i++) {
     const cur = candidates[i];
     const safePayload = normalizePayload(payload);
-    const route = hasDirectRoute
+    const baseRoute = hasDirectRoute
       ? { method: directMethod!, path: directPath! }
       : resolveRoute(tipoOp, cur, safePayload);
-    const upstream = buildUpstreamBody(cur, tipoOp, payload, route);
-    const targetUrl = `${bridgeUrl}/invia-operazione`;
+    const pathsToTry = [baseRoute.path, ...((baseRoute as RouteInfo).altPaths ?? [])];
 
-    console.log(
-      `[rentri-vps] POST ${targetUrl} — cliente=${upstream.cliente}, company=${upstream.company}, ` +
-        `issuer=${upstream.issuer}, tipo=${tipoOp}, rentri_path=${route.path}, ` +
-        `codice_blocco=${upstream.codice_blocco || "N/A"}, bridge_key=${bridgeKey ? "present" : "missing"}`,
-    );
+    for (let p = 0; p < pathsToTry.length; p++) {
+      const route: RouteInfo = { method: baseRoute.method, path: pathsToTry[p] };
+      const upstream = buildUpstreamBody(cur, tipoOp, payload, route);
+      const targetUrl = `${bridgeUrl}/invia-operazione`;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    let res: Response;
-    try {
-      res = await fetchImpl(targetUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(bridgeKey ? { "x-bridge-key": bridgeKey } : {}),
-        },
-        body: JSON.stringify(upstream),
-        signal: controller.signal,
-      });
-    } catch (fetchErr) {
-      const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-      const message = sanitizeMessage(rawMessage, bridgeKey);
-      console.error("[rentri-vps] CONNECTIVITY:", message);
+      console.log(
+        `[rentri-vps] POST ${targetUrl} — cliente=${upstream.cliente}, company=${upstream.company}, ` +
+          `issuer=${upstream.issuer}, tipo=${tipoOp}, rentri_path=${route.path}, ` +
+          `codice_blocco=${upstream.codice_blocco || "N/A"}, bridge_key=${bridgeKey ? "present" : "missing"}`,
+      );
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      let res: Response;
+      try {
+        res = await fetchImpl(targetUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(bridgeKey ? { "x-bridge-key": bridgeKey } : {}),
+          },
+          body: JSON.stringify(upstream),
+          signal: controller.signal,
+        });
+      } catch (fetchErr) {
+        const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        const message = sanitizeMessage(rawMessage, bridgeKey);
+        console.error("[rentri-vps] CONNECTIVITY:", message);
+        attempts.push({
+          cliente: upstream.cliente, company: upstream.company,
+          status: 502, success: false, message, rentri_path: route.path,
+        });
+        return json(
+          {
+            success: false,
+            status: 502,
+            mode: "real",
+            error_code: errorCodeForStatus(502),
+            error: isConnectivityError(rawMessage)
+              ? "Bridge RENTRI non raggiungibile o timeout. Puoi continuare a compilare e salvare i FIR localmente."
+              : "Errore di comunicazione con il bridge RENTRI",
+            data: { error: message, bridge_unreachable: true },
+            rentri_offline: true,
+            attempts,
+          },
+          502,
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      let text: string;
+      try {
+        text = await res.text();
+      } catch (readErr) {
+        const message = sanitizeMessage(readErr instanceof Error ? readErr.message : String(readErr), bridgeKey);
+        return json(
+          {
+            success: false, status: 502, mode: "real",
+            error_code: errorCodeForStatus(502),
+            error: "Risposta del bridge RENTRI non valida",
+            data: { error: message, bridge_invalid_response: true },
+            attempts,
+          },
+          502,
+        );
+      }
+
+      const data = parseBody(text);
+      const msg = extractMsg(data);
+
       attempts.push({
-        cliente: upstream.cliente, company: upstream.company,
-        status: 502, success: false, message, rentri_path: route.path,
+        cliente: upstream.cliente,
+        company: upstream.company,
+        status: res.status,
+        success: res.ok,
+        rentri_path: route.path,
+        ...(msg ? { message: msg } : {}),
       });
-      return json(
-        {
-          success: false,
-          status: 502,
-          mode: "real",
-          error_code: errorCodeForStatus(502),
-          error: isConnectivityError(rawMessage)
-            ? "Bridge RENTRI non raggiungibile o timeout. Puoi continuare a compilare e salvare i FIR localmente."
-            : "Errore di comunicazione con il bridge RENTRI",
-          data: { error: message, bridge_unreachable: true },
-          rentri_offline: true,
-          attempts,
-        },
-        502,
-      );
-    } finally {
-      clearTimeout(timeoutId);
+
+      lastStatus = res.status;
+      lastData = data;
+      if (i === 0 && p === 0) { primaryStatus = res.status; primaryData = data; }
+
+      console.log(`[rentri-vps] Risposta bridge: status=${res.status}, cliente=${upstream.cliente}, rentri_path=${route.path}`);
+
+      if (res.ok) {
+        return json({ success: true, status: res.status, mode: "real", error_code: null, data, attempts }, res.status);
+      }
+
+      // 404: il path alternativo può essere quello corretto sul servizio RENTRI.
+      if (res.status === 404 && p < pathsToTry.length - 1) {
+        console.warn(`[rentri-vps] 404 su ${route.path} → provo path alternativo`);
+        continue;
+      }
+
+      if (res.status === 404 && pathsToTry.length > 1) {
+        // Tutti i path hanno risposto 404: riporto l'ultimo esito come primario.
+        primaryStatus = res.status;
+        primaryData = data;
+      }
+
+      if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break outer;
+      console.warn(`[rentri-vps] fallback → prossimo candidato dopo 500: ${upstream.cliente}`);
+      continue outer;
     }
 
-    let text: string;
-    try {
-      text = await res.text();
-    } catch (readErr) {
-      const message = sanitizeMessage(readErr instanceof Error ? readErr.message : String(readErr), bridgeKey);
-      return json(
-        {
-          success: false, status: 502, mode: "real",
-          error_code: errorCodeForStatus(502),
-          error: "Risposta del bridge RENTRI non valida",
-          data: { error: message, bridge_invalid_response: true },
-          attempts,
-        },
-        502,
-      );
-    }
-
-
-    const data = parseBody(text);
-    const msg = extractMsg(data);
-
-    attempts.push({
-      cliente: upstream.cliente,
-      company: upstream.company,
-      status: res.status,
-      success: res.ok,
-      rentri_path: route.path,
-      ...(msg ? { message: msg } : {}),
-    });
-
-    lastStatus = res.status;
-    lastData = data;
-    if (i === 0) { primaryStatus = res.status; primaryData = data; }
-
-    console.log(`[rentri-vps] Risposta bridge: status=${res.status}, cliente=${upstream.cliente}, rentri_path=${route.path}`);
-
-    if (res.ok) {
-      return json({ success: true, status: res.status, mode: "real", error_code: null, data, attempts }, res.status);
-    }
-
-    if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break;
-    console.warn(`[rentri-vps] fallback → prossimo candidato dopo 500: ${upstream.cliente}`);
   }
 
   // Errore 4xx/5xx del bridge: stesso status HTTP verso il chiamante.
