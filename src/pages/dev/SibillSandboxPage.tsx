@@ -94,11 +94,14 @@ export default function SibillSandboxPage() {
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const [mock, setMock] = useState(true);
+  const [scenario, setScenario] = useState("success");
+
   const [webhookDocId, setWebhookDocId] = useState("");
   const [webhookStatus, setWebhookStatus] = useState("PAID");
   const [webhookPreviewOnly, setWebhookPreviewOnly] = useState(true);
 
-  const ready = apiKey.trim().length > 0 && companyId.trim().length > 0;
+  const ready = mock || (apiKey.trim().length > 0 && companyId.trim().length > 0);
 
   const webhookPayload = useMemo(
     () => ({
@@ -113,21 +116,23 @@ export default function SibillSandboxPage() {
   );
 
   const callSandbox = async (label: string, path: string, payload: any, method = "POST") => {
-    if (!ready) { toast.error("Inserisci Sandbox API Key e Company ID"); return; }
+    if (!ready) { toast.error("Inserisci Sandbox API Key e Company ID (oppure attiva la modalità MOCK)"); return; }
     setBusy(label);
-    setSentPayload({ method, url: `https://integration.dev.sibill.com${path}`, body: payload });
+    setSentPayload({ method, url: `https://integration.dev.sibill.com${path}`, body: payload, mode: mock ? `MOCK (${scenario})` : "REALE" });
     setApiResponse(null);
     setHttpStatus(null);
     try {
       const res = await fetch(`${FUNCTIONS_BASE}/${SANDBOX_FN}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
-        body: JSON.stringify({ api_key: apiKey.trim(), path, method, payload }),
+        body: JSON.stringify({ api_key: apiKey.trim(), path, method, payload, mock, mock_scenario: scenario }),
       });
       const data = await res.json();
       setHttpStatus(data?.status ?? res.status);
       setApiResponse(data?.response ?? data);
-      if (data?.ok) toast.success(`${label}: ${data.status} OK (${data.elapsed_ms} ms)`);
+      const docId = data?.response?.data?.id;
+      if (docId && String(docId).startsWith("doc")) setWebhookDocId(docId);
+      if (data?.ok) toast.success(`${label}${mock ? " (MOCK)" : ""}: ${data.status} OK (${data.elapsed_ms} ms)`);
       else toast.error(`${label}: HTTP ${data?.status ?? res.status}`);
     } catch (e: any) {
       setApiResponse({ error: e.message });
@@ -136,6 +141,7 @@ export default function SibillSandboxPage() {
       setBusy(null);
     }
   };
+
 
   const sendWebhook = async () => {
     if (webhookPreviewOnly) {
