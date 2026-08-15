@@ -366,6 +366,24 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const restoreEmployee = async (emp: Employee) => {
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "restore_user", user_id: emp.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`App riattivata per ${emp.cognome} ${emp.nome}`);
+      await load();
+    } catch (e: any) {
+      toast.error("Errore riattivazione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   const openForm = (draftId: string) => {
 
     const routeCtx = company === "niyol" ? "niyol" : "multyproget";
