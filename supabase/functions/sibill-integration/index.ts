@@ -137,11 +137,27 @@ async function ensureCounterpart(admin: any, cp: any, tenantId: string | null) {
   return id as string;
 }
 
+/**
+ * MOCK MODE — simula la risposta di Sibill senza chiamare l'API reale.
+ * Attivo se il body contiene `mock: true` oppure se il secret SIBILL_MOCK = "true".
+ * Riproduce ESATTAMENTE le stesse dinamiche del flusso reale
+ * (stessa scrittura su `fatture_sibill_sync`, stessi campi di risposta):
+ * l'unica differenza è che la chiamata HTTP verso Sibill non parte.
+ */
+const MOCK_ENV = (Deno.env.get("SIBILL_MOCK") || "").toLowerCase() === "true";
+
+const mockId = (prefix: string) =>
+  `${prefix}_mock_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    if (!API_KEY || !COMPANY_ID) {
+    const authHeader = req.headers.get("Authorization") || "";
+    const body = await req.json().catch(() => ({}));
+    const mock = MOCK_ENV || body?.mock === true;
+
+    if (!mock && (!API_KEY || !COMPANY_ID)) {
       return json(
         { error: { title: "Configurazione mancante", detail: "SIBILL_API_KEY / SIBILL_COMPANY_ID non configurati" } },
         400
@@ -149,7 +165,6 @@ Deno.serve(async (req) => {
     }
 
     // Autenticazione utente
-    const authHeader = req.headers.get("Authorization") || "";
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -159,12 +174,12 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const body = await req.json().catch(() => ({}));
     const action = body?.action || "send_invoice";
 
-
-
     if (action === "ping") {
+      if (mock) {
+        return json({ ok: true, mock: true, env: "mock", base_url: BASE_URL, data: { data: [{ id: mockId("cmp"), name: "Azienda Mock" }] } });
+      }
       const res = await fetch(`${BASE_URL}/api/v1/companies`, { headers: sibillHeaders() });
       if (!res.ok) {
         const e = await parseError(res);
@@ -181,6 +196,56 @@ Deno.serve(async (req) => {
     if (!fattura_id || !xml) {
       return json({ error: { title: "Dati mancanti", detail: "fattura_id e xml sono obbligatori" } }, 400);
     }
+
+    if (mock) {
+      // Validazioni minime equivalenti a quelle che farebbe Sibill
+      if (typeof xml !== "string" || !xml.includes("FatturaElettronica")) {
+        const err = { title: "XML non valido", detail: "Il documento non sembra una FatturaPA valida (mock)" };
+        await admin.from("fatture_sibill_sync").upsert(
+          {
+            fattura_id,
+            tenant_id: tenant_id || null,
+            sync_status: "errore",
+            error_title: err.title,
+            error_detail: err.detail,
+            raw_response: { mock: true },
+            last_sync_at: new Date().toISOString(),
+          },
+          { onConflict: "fattura_id" }
+        );
+        return json({ error: err }, 200);
+      }
+
+      const documentId = mockId("doc");
+      const counterpartId = counterpart ? mockId("cp") : null;
+      const doc = {
+        id: documentId,
+        status: "ISSUED",
+        delivery_status: "SENT",
+        format: "FPA12",
+        mock: true,
+        created_at: new Date().toISOString(),
+      };
+
+      await admin.from("fatture_sibill_sync").upsert(
+        {
+          fattura_id,
+          tenant_id: tenant_id || null,
+          sibill_document_id: documentId,
+          sync_status: "sincronizzata",
+          document_status: doc.status,
+          delivery_status: doc.delivery_status,
+          error_title: null,
+          error_detail: null,
+          raw_response: doc,
+          last_sync_at: new Date().toISOString(),
+        },
+        { onConflict: "fattura_id" }
+      );
+
+      return json({ ok: true, mock: true, document_id: documentId, counterpart_id: counterpartId, data: doc });
+    }
+
 
     let counterpartId: string | null = null;
     try {
