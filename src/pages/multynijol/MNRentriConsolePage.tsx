@@ -484,13 +484,28 @@ export default function MNRentriConsolePage() {
                 {disponibili.map((p) => (
                   <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/40 border border-border/30">
                     <span className="font-mono text-sm font-bold">{p.fir_number}</span>
+                    <button
+                      type="button"
+                      title="Copia numero FIR"
+                      onClick={() => copyFir(p.fir_number)}
+                      className="rounded-md border border-border/60 bg-background/60 p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy size={14} />
+                    </button>
                     <select
                       disabled={assegnando}
-                      defaultValue=""
-                      onChange={(e) => e.target.value && handleAssegna(p.fir_number, e.target.value)}
+                      value=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (!v) return;
+                        if (v === "__ufficio__") handleAssegnaUfficio(p.fir_number);
+                        else handleAssegna(p.fir_number, v);
+                        e.target.value = "";
+                      }}
                       className="ml-auto rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
                     >
                       <option value="">Assegna a…</option>
+                      <option value="__ufficio__">🏢 Contrassegna come UFFICIO (uso admin)</option>
                       {personale
                         .filter((u) => appDiProfilo(u) === assignApp)
                         .map((u) => (
@@ -500,6 +515,7 @@ export default function MNRentriConsolePage() {
                         ))}
                     </select>
                   </div>
+
                 ))}
                 {disponibili.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nessun numero disponibile: vidima nuovi numeri.</p>
