@@ -62,9 +62,13 @@ export function FatturazioneModule({ tenantId }: Props) {
     queryFn: async () => fetchSibillSync(fatture.map((f: any) => f.id)),
   });
 
+  const [sibillMock, setSibillMock] = useState<boolean>(
+    () => localStorage.getItem("sibill_mock_mode") !== "false",
+  );
+
   const sibillMut = useMutation({
     mutationFn: async (f: any) => {
-      const res = await inviaFatturaASibill(f);
+      const res = await inviaFatturaASibill(f, { mock: sibillMock });
       if (f.stato !== "inviata") {
         await supabase.from("fatture" as any).update({
           stato: "inviata", locked: true, inviata_at: new Date().toISOString(),
@@ -73,13 +77,14 @@ export function FatturazioneModule({ tenantId }: Props) {
       return res;
     },
 
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
       qc.invalidateQueries({ queryKey: ["fatture"] });
-      toast.success("Fattura trasmessa a Sibill");
+      toast.success(res?.mock ? "MOCK: fattura trasmessa (simulazione, nessun invio reale)" : "Fattura trasmessa a Sibill");
     },
     onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
   });
+
 
 
 
@@ -193,6 +198,24 @@ export function FatturazioneModule({ tenantId }: Props) {
             </button>
           </div>
 
+          {/* Modalità invio Sibill */}
+          <div className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-xs ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
+            <label className="flex items-center gap-2 cursor-pointer font-medium">
+              <input
+                type="checkbox"
+                checked={sibillMock}
+                onChange={(e) => { setSibillMock(e.target.checked); localStorage.setItem("sibill_mock_mode", String(e.target.checked)); }}
+              />
+              Modalità MOCK Sibill (simulazione, nessun invio reale)
+            </label>
+            <span className="text-muted-foreground">
+              {sibillMock
+                ? "Le fatture seguono l'intero flusso reale (stati, badge, sincronizzazione) ma non vengono trasmesse a Sibill."
+                : "ATTENZIONE: invio REALE a Sibill con la chiave API configurata."}
+            </span>
+          </div>
+
+
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <SummaryCard label="Totale Fatture" value={String(fatture.length)} tone="text-foreground" />
@@ -249,12 +272,15 @@ export function FatturazioneModule({ tenantId }: Props) {
                                 <Eye className="h-3.5 w-3.5" />
                               </button>
                               <button
-                                onClick={() => confirm(`Inviare la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
+                                onClick={() => confirm(sibillMock
+                                  ? `MOCK: simulare l'invio della fattura ${f.numero_completo}? Nessun dato verrà inviato a Sibill.`
+                                  : `Inviare REALMENTE la fattura ${f.numero_completo} a Sibill?`) && sibillMut.mutate(f)}
                                 disabled={sibillMut.isPending || sib?.sync_status === "sincronizzata" || sib?.sync_status === "incassata"}
                                 className="p-1.5 rounded-lg text-xs flex items-center gap-1 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                                title="Invia a Sibill"
+                                title={sibillMock ? "Invio simulato (MOCK)" : "Invia a Sibill"}
                               >
-                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} Sibill
+                                {sibillMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />} {sibillMock ? "Sibill (mock)" : "Sibill"}
+
                               </button>
                               {stato === "cortesia" && (
 

@@ -47,8 +47,10 @@ async function buildCounterpart(f: any) {
   };
 }
 
-/** Invia la fattura a Sibill: crea/verifica l'anagrafica e trasmette l'XML FatturaPA */
-export async function inviaFatturaASibill(f: any) {
+/** Invia la fattura a Sibill: crea/verifica l'anagrafica e trasmette l'XML FatturaPA.
+ *  Con `{ mock: true }` la Edge Function simula la risposta di Sibill senza chiamare l'API reale:
+ *  stessi stati, stesse scritture su `fatture_sibill_sync`, nessuna chiamata esterna. */
+export async function inviaFatturaASibill(f: any, opts: { mock?: boolean } = {}) {
   const { data: righe } = await supabase
     .from("fatture_righe" as any)
     .select("*")
@@ -69,7 +71,7 @@ export async function inviaFatturaASibill(f: any) {
   const counterpart = await buildCounterpart(f);
 
   const { data, error } = await supabase.functions.invoke("sibill-integration", {
-    body: { action: "send_invoice", fattura_id: f.id, tenant_id: f.tenant_id, xml, counterpart },
+    body: { action: "send_invoice", fattura_id: f.id, tenant_id: f.tenant_id, xml, counterpart, mock: !!opts.mock },
   });
 
   if (error) throw new Error(error.message || "Errore di rete verso Sibill");
@@ -77,8 +79,9 @@ export async function inviaFatturaASibill(f: any) {
     const e = (data as any).error;
     throw new Error(`${e.title}: ${e.detail}`);
   }
-  return data as { document_id: string | null };
+  return data as { document_id: string | null; mock?: boolean };
 }
+
 
 export async function fetchSibillSync(fatturaIds: string[]) {
   if (!fatturaIds.length) return {} as Record<string, SibillSync>;
