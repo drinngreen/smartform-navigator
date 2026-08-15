@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, RefreshCw, Loader2, FilePlus, Pencil, Trash2, ShieldCheck, ShieldAlert,
-  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle,
+  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle, Copy,
 } from "lucide-react";
+
 import { vidimaFIRAsync } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { CreateTransporterDialog, type TenantConfig } from "@/components/admin/CreateTransporterDialog";
@@ -478,8 +479,22 @@ export default function MNCentroAppFirPage() {
                       {pronto ? (
                         <div className="text-xs font-mono text-neon-green flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4" /> {draft?.numero_fir}
+                          <button
+                            type="button"
+                            title="Copia numero FIR"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(draft!.numero_fir!);
+                                toast.success(`Copiato: ${draft!.numero_fir}`);
+                              } catch { toast.error("Copia non riuscita"); }
+                            }}
+                            className="rounded-md border border-border/60 bg-background/60 p-1 text-muted-foreground hover:text-foreground"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       ) : (
+
                         <div className="text-xs font-mono text-amber-400 flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4" /> Nessun formulario pronto
                         </div>

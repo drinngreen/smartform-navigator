@@ -36,7 +36,9 @@ import {
   Ticket,
   Users,
   PenLine,
+  Copy,
 } from "lucide-react";
+
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
   multyproget: "multy",
@@ -199,6 +201,40 @@ export default function MNRentriConsolePage() {
       setAssegnando(false);
     }
   };
+
+  /** Contrassegna il numero come usato direttamente dall'ufficio (admin) */
+  const handleAssegnaUfficio = async (firNumber: string) => {
+    setAssegnando(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const adminId = auth?.user?.id;
+      if (!adminId) throw new Error("Sessione admin non valida");
+      const tenantId =
+        assignApp === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+      const { error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as never, {
+        p_user_id: adminId,
+        p_tenant_id: tenantId,
+        p_numero_fir: firNumber,
+      } as never);
+      if (error) throw error;
+      toast.success(`FIR ${firNumber} contrassegnato come UFFICIO (uso admin)`);
+      loadPool();
+    } catch (e: any) {
+      toast.error(`Errore assegnazione ufficio: ${e.message}`);
+    } finally {
+      setAssegnando(false);
+    }
+  };
+
+  const copyFir = async (firNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(firNumber);
+      toast.success(`Copiato: ${firNumber}`);
+    } catch {
+      toast.error("Copia non riuscita");
+    }
+  };
+
 
   /* ── Invio registri ── */
   const registri = registriDisponibili(cliente);
@@ -450,13 +486,28 @@ export default function MNRentriConsolePage() {
                 {disponibili.map((p) => (
                   <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/40 border border-border/30">
                     <span className="font-mono text-sm font-bold">{p.fir_number}</span>
+                    <button
+                      type="button"
+                      title="Copia numero FIR"
+                      onClick={() => copyFir(p.fir_number)}
+                      className="rounded-md border border-border/60 bg-background/60 p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy size={14} />
+                    </button>
                     <select
                       disabled={assegnando}
-                      defaultValue=""
-                      onChange={(e) => e.target.value && handleAssegna(p.fir_number, e.target.value)}
+                      value=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (!v) return;
+                        if (v === "__ufficio__") handleAssegnaUfficio(p.fir_number);
+                        else handleAssegna(p.fir_number, v);
+                        e.target.value = "";
+                      }}
                       className="ml-auto rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
                     >
                       <option value="">Assegna a…</option>
+                      <option value="__ufficio__">🏢 Contrassegna come UFFICIO (uso admin)</option>
                       {personale
                         .filter((u) => appDiProfilo(u) === assignApp)
                         .map((u) => (
@@ -466,6 +517,7 @@ export default function MNRentriConsolePage() {
                         ))}
                     </select>
                   </div>
+
                 ))}
                 {disponibili.length === 0 && (
                   <p className="text-sm text-muted-foreground">Nessun numero disponibile: vidima nuovi numeri.</p>
