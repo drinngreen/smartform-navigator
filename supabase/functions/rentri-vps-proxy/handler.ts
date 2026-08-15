@@ -169,7 +169,10 @@ function normalizePath(value: unknown): string | null {
 export interface RouteInfo {
   method: "GET" | "POST";
   path: string;
+  /** Path alternativi da provare solo se RENTRI risponde 404 sul path principale. */
+  altPaths?: string[];
 }
+
 
 function formatProgressivo(value: unknown): string {
   const raw = String(value ?? "").trim();
