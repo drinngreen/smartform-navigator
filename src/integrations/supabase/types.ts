@@ -4885,6 +4885,7 @@ export type Database = {
           created_at: string
           data: string
           esito_pesata: string | null
+          gruppo_id: string | null
           id: string
           impianto_id: string
           importo_pagato: number | null
@@ -4911,6 +4912,7 @@ export type Database = {
           created_at?: string
           data?: string
           esito_pesata?: string | null
+          gruppo_id?: string | null
           id?: string
           impianto_id: string
           importo_pagato?: number | null
@@ -4937,6 +4939,7 @@ export type Database = {
           created_at?: string
           data?: string
           esito_pesata?: string | null
+          gruppo_id?: string | null
           id?: string
           impianto_id?: string
           importo_pagato?: number | null
@@ -5471,6 +5474,7 @@ export type Database = {
           conferimento_id: string | null
           created_at: string
           data_emissione: string
+          gruppo_id: string | null
           id: string
           impianto_id: string | null
           importo: number | null
@@ -5487,6 +5491,7 @@ export type Database = {
           conferimento_id?: string | null
           created_at?: string
           data_emissione?: string
+          gruppo_id?: string | null
           id?: string
           impianto_id?: string | null
           importo?: number | null
@@ -5503,6 +5508,7 @@ export type Database = {
           conferimento_id?: string | null
           created_at?: string
           data_emissione?: string
+          gruppo_id?: string | null
           id?: string
           impianto_id?: string | null
           importo?: number | null
