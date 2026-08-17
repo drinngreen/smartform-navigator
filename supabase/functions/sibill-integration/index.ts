@@ -264,12 +264,97 @@ Deno.serve(async (req) => {
 
     // Allineamento stati: rilegge da Sibill lo stato reale dei documenti già trasmessi
     // Elenco documenti presenti su Sibill (stato reale lato provider)
+    const amount = (v: any) => {
+      const n = Number(v?.amount ?? v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const mapDoc = (d: any) => {
+      const gross = amount(d?.gross_amount);
+      const vat = amount(d?.vat_amount);
+      return {
+        doc_id: String(d?.id),
+        number: d?.number || null,
+        direction: d?.direction || null,
+        type: d?.type || null,
+        status: d?.status || null,
+        delivery_status: d?.delivery_status || null,
+        delivery_date: d?.delivery_date || null,
+        document_date: (d?.creation_date || d?.created_at || null)?.slice(0, 10) || null,
+        gross,
+        vat,
+        currency: d?.gross_amount?.currency || "EUR",
+        counterpart:
+          d?.counterpart?.company_name ||
+          (Array.isArray(d?.reasons_and_remarks) && d.reasons_and_remarks.length
+            ? d.reasons_and_remarks.join(" — ")
+            : null) ||
+          d?.notes ||
+          null,
+        file_name: d?.file_name || null,
+        is_e_invoice: !!d?.is_e_invoice,
+        raw: d,
+        synced_at: new Date().toISOString(),
+      };
+    };
+
+    /** Scansione incrementale dei documenti Sibill: salva in cache locale e restituisce l'avanzamento.
+     *  Va richiamata più volte dal client finché `done` non diventa true (Sibill non offre filtri lato API). */
+    if (action === "scan_documents") {
+      if (mock) return json({ ok: true, mock: true, done: true, scanned: 0, total: 0 });
+      const maxPages = Math.min(Number(body?.pages || 12), 25);
+      const restart = !!body?.restart;
+
+      const { data: st } = await admin.from("sibill_scan_state").select("*").eq("id", "documents").maybeSingle();
+      let cursor: string | null = restart || !st ? null : (st.done ? null : st.cursor);
+      let scanned = restart || !st || st.done ? 0 : Number(st.scanned || 0);
+      let done = false;
+      let rateLimited = false;
+
+      for (let page = 0; page < maxPages; page++) {
+        const url =
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+        let res: Response | null = null;
+        for (let attempt = 0; attempt < 4; attempt++) {
+          res = await fetch(url, { headers: sibillHeaders() });
+          if (res.status !== 429) break;
+          await res.text().catch(() => "");
+          if (attempt === 3) { rateLimited = true; break; }
+          await sleep(1500 * Math.pow(2, attempt));
+        }
+        if (!res || rateLimited) break;
+        if (!res.ok) {
+          if (scanned === 0) return json({ error: await parseError(res) }, 200);
+          break;
+        }
+        const b = await res.json().catch(() => ({}));
+        const list: any[] = Array.isArray(b?.data) ? b.data : [];
+        scanned += list.length;
+        if (list.length) {
+          const rows = list.filter((d) => d?.id).map(mapDoc);
+          await admin.from("sibill_documents_cache").upsert(rows, { onConflict: "doc_id" });
+        }
+        const pg = b?.page || {};
+        if (!pg?.has_next_page || !pg?.cursor) { done = true; break; }
+        cursor = pg.cursor as string;
+        await sleep(150);
+      }
+
+      await admin.from("sibill_scan_state").upsert({
+        id: "documents", cursor, scanned, done, updated_at: new Date().toISOString(),
+      });
+
+      const { count } = await admin.from("sibill_documents_cache").select("doc_id", { count: "exact", head: true });
+      return json({ ok: true, done, scanned, rate_limited: rateLimited, cached: count ?? 0 });
+    }
+
+    // Elenco documenti dalla cache locale (popolata da `scan_documents`)
     if (action === "list_documents") {
-      // `filter`: "P" (default) = solo le fatture con numero che termina con "/P", "all" = tutti i documenti
       const filter = String(body?.filter || "P").toUpperCase();
       if (mock) {
         return json({
-          ok: true, mock: true, env: "mock", count: 1, scanned: 1,
+          ok: true, mock: true, env: "mock", count: 1, scanned: 1, done: true,
           documents: [
             {
               id: mockId("doc"), number: "679/P", type: "INVOICE", status: "DELIVERED",
@@ -281,149 +366,54 @@ Deno.serve(async (req) => {
           ],
         });
       }
-      if (!API_KEY || !COMPANY_ID) {
-        return json({ error: { title: "Configurazione mancante", detail: "SIBILL_API_KEY / SIBILL_COMPANY_ID non configurati" } }, 200);
-      }
 
-      const num = (v: any) => {
-        const n = Number(v?.amount ?? v);
-        return Number.isFinite(n) ? n : null;
-      };
+      let q = admin.from("sibill_documents_cache").select("*").order("document_date", { ascending: false }).limit(3000);
+      if (filter === "IN") q = q.eq("direction", "RECEIVED").eq("is_e_invoice", true);
+      else if (filter === "P") q = q.eq("direction", "ISSUED").ilike("number", "%/P");
+      const { data: rows, error: dbErr } = await q;
+      if (dbErr) return json({ error: { title: "Errore lettura cache", detail: dbErr.message } }, 200);
 
+      const out = (rows || []).map((r: any) => ({
+        id: r.doc_id,
+        number: r.number,
+        type: r.type,
+        status: r.status,
+        delivery_status: r.delivery_status,
+        delivery_date: r.delivery_date,
+        gross: r.gross != null ? Number(r.gross) : null,
+        vat: r.vat != null ? Number(r.vat) : null,
+        net: r.gross != null && r.vat != null ? Number((Number(r.gross) - Number(r.vat)).toFixed(2)) : (r.gross != null ? Number(r.gross) : null),
+        currency: r.currency || "EUR",
+        date: r.document_date,
+        direction: r.direction,
+        counterpart: r.counterpart,
+        notes: null,
+        is_e_invoice: !!r.is_e_invoice,
+        file_name: r.file_name,
+      }));
 
-      // Cache in memoria (10 min): evita di ri-scaricare migliaia di documenti ad ogni apertura
-      // Versione cache incrementata quando cambia il mapping dei campi economici.
-      const cacheKey = `docs:v2:${filter}`;
-      const cached = DOC_CACHE.get(cacheKey);
-      if (cached && !body?.force && Date.now() - cached.at < 10 * 60 * 1000) {
-        return json({ ok: true, env: SIBILL_ENV, cached: true, count: cached.documents.length, scanned: cached.scanned, partial: cached.partial, documents: cached.documents });
-      }
-
-      const out: any[] = [];
-      let cursor: string | null = null;
-      let scanned = 0;
-      let partial = false;
-      let warning: string | null = null;
-
-      pages: for (let page = 0; page < 250; page++) {
-        const url =
-          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
-          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
-
-        // Throttling + retry con backoff sul rate limit di Sibill (429)
-        let res: Response | null = null;
-        for (let attempt = 0; attempt < 5; attempt++) {
-          res = await fetch(url, { headers: sibillHeaders() });
-          if (res.status !== 429) break;
-          await res.text().catch(() => "");
-          const retryAfter = Number(res.headers.get("retry-after"));
-          const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-            ? Math.min(retryAfter * 1000, 15000)
-            : 1500 * Math.pow(2, attempt);
-          if (attempt === 4) {
-            partial = true;
-            warning = "Limite di chiamate Sibill raggiunto: elenco parziale, riprova tra qualche minuto.";
-            break pages;
-          }
-          await sleep(waitMs);
-        }
-        if (!res) break;
-        if (!res.ok) {
-          if (out.length) { partial = true; warning = "Errore Sibill durante lo scorrimento: elenco parziale."; break; }
-          return json({ error: await parseError(res) }, 200);
-        }
-
-        const okBody = await res.json().catch(() => ({}));
-        const list: any[] = Array.isArray(okBody?.data) ? okBody.data : [];
-        scanned += list.length;
-        for (const d of list) {
-          const number = d?.number || null;
-          if (filter === "P" && !/\/P$/i.test(String(number || ""))) continue;
-          if (filter === "IN") {
-            const isReceived = String(d?.direction || "").toUpperCase() === "RECEIVED";
-            const isInvoice = !!d?.is_e_invoice || ["INVOICE", "CREDIT_NOTE"].includes(String(d?.type || "").toUpperCase());
-            if (!isReceived || !isInvoice) continue;
-          }
-          const gross = num(d?.gross_amount);
-          const vat = num(d?.vat_amount);
-          out.push({
-            id: d?.id || null,
-            number,
-            type: d?.type || null,
-            status: d?.status || null,
-            delivery_status: d?.delivery_status || null,
-            delivery_date: d?.delivery_date || null,
-            gross,
-            vat,
-            net: gross != null && vat != null ? Number((gross - vat).toFixed(2)) : gross,
-            currency: d?.gross_amount?.currency || "EUR",
-            date: d?.creation_date || d?.created_at || null,
-            direction: d?.direction || null,
-            counterpart:
-              d?.counterpart?.company_name ||
-              (Array.isArray(d?.reasons_and_remarks) && d.reasons_and_remarks.length
-                ? d.reasons_and_remarks.join(" — ")
-                : null) ||
-              d?.notes ||
-              null,
-            notes: d?.notes || null,
-            is_e_invoice: !!d?.is_e_invoice,
-            file_name: d?.file_name || null,
-
-          });
-        }
-        const pg = okBody?.page || {};
-        if (!pg?.has_next_page || !pg?.cursor) break;
-        cursor = pg.cursor as string;
-        await sleep(250); // rallenta: rispetta il rate limit di Sibill
-      }
-
-      out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-
-      // Arricchimento descrizione (Sibill non espone il counterpart nell'elenco):
-      // 1) fatture emesse dal gestionale e sincronizzate su Sibill (match per document_id)
-      // 2) match per numero documento con la tabella `fatture` (solo lettura)
+      // Arricchimento descrizione con le fatture emesse dal gestionale (solo lettura)
       try {
-        const docIds = out.map((d) => d.id).filter(Boolean);
-        if (docIds.length) {
-          const { data: syncRows } = await admin
-            .from("fatture_sibill_sync")
-            .select("sibill_document_id, fattura_id")
-            .in("sibill_document_id", docIds.slice(0, 1000));
-          const fattIds = (syncRows || []).map((r: any) => r.fattura_id).filter(Boolean);
-          const byDocId = new Map<string, string>();
-          if (fattIds.length) {
-            const { data: fatt } = await admin
-              .from("fatture")
-              .select("id, cliente_ragione_sociale, numero_completo, imponibile")
-              .in("id", fattIds);
-            const fMap = new Map((fatt || []).map((f: any) => [f.id, f]));
-            for (const r of (syncRows || []) as any[]) {
-              const f = fMap.get(r.fattura_id);
-              if (f?.cliente_ragione_sociale) byDocId.set(r.sibill_document_id, f.cliente_ragione_sociale);
-            }
-          }
-          const numbers = out.map((d) => d.number).filter(Boolean).slice(0, 1000);
-          const byNumber = new Map<string, string>();
-          if (numbers.length) {
-            const { data: fatt2 } = await admin
-              .from("fatture")
-              .select("numero_completo, cliente_ragione_sociale")
-              .in("numero_completo", numbers);
-            for (const f of (fatt2 || []) as any[]) {
-              if (f.cliente_ragione_sociale) byNumber.set(f.numero_completo, f.cliente_ragione_sociale);
-            }
-          }
-          for (const d of out) {
-            if (!d.counterpart) d.counterpart = byDocId.get(d.id) || byNumber.get(d.number) || null;
-          }
+        const numbers = out.map((d) => d.number).filter(Boolean).slice(0, 1000) as string[];
+        if (numbers.length) {
+          const { data: fatt } = await admin
+            .from("fatture")
+            .select("numero_completo, cliente_ragione_sociale")
+            .in("numero_completo", numbers);
+          const byNumber = new Map((fatt || []).map((f: any) => [f.numero_completo, f.cliente_ragione_sociale]));
+          for (const d of out) if (!d.counterpart && d.number) d.counterpart = byNumber.get(d.number) || null;
         }
-      } catch (_e) { /* enrichment best-effort */ }
+      } catch (_e) { /* best-effort */ }
 
-      DOC_CACHE.set(cacheKey, { at: Date.now(), documents: out, scanned, partial });
-      return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, partial, warning, documents: out });
-
+      const { data: st } = await admin.from("sibill_scan_state").select("*").eq("id", "documents").maybeSingle();
+      return json({
+        ok: true, env: SIBILL_ENV, count: out.length,
+        scanned: st?.scanned ?? 0, done: !!st?.done, partial: !st?.done,
+        warning: st?.done ? null : "Scansione Sibill in corso: l'elenco si completa man mano.",
+        documents: out,
+      });
     }
+
 
 
     if (action === "refresh_status") {
