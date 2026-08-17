@@ -1,0 +1,1 @@
+DELETE FROM public._stress_log;
