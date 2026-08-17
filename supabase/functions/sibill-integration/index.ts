@@ -146,6 +146,11 @@ async function ensureCounterpart(admin: any, cp: any, tenantId: string | null) {
  */
 const MOCK_ENV = (Deno.env.get("SIBILL_MOCK") || "").toLowerCase() === "true";
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Cache in memoria dell'elenco documenti Sibill (per istanza della function)
+const DOC_CACHE = new Map<string, { at: number; documents: any[]; scanned: number; partial: boolean }>();
+
 const mockId = (prefix: string) =>
   `${prefix}_mock_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
