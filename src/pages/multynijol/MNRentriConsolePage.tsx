@@ -129,9 +129,9 @@ export default function MNRentriConsolePage() {
   }, [cliente]);
 
   /* ── Numeri FIR ── */
-  const [pool, setPool] = useState<{ id: string; fir_number: string; status: string; user_id: string | null }[]>([]);
+  const [pool, setPool] = useState<{ id: string; fir_number: string; status: string; user_id: string | null; assigned_at: string | null }[]>([]);
   const [personale, setPersonale] = useState<
-    { id: string; nome: string | null; cognome: string | null; mn_context: string | null; tenant_id: string | null }[]
+    { id: string; user_id: string | null; nome: string | null; cognome: string | null; mn_context: string | null; tenant_id: string | null }[]
   >([]);
   const [qty, setQty] = useState(5);
   const [pescando, setPescando] = useState(false);
@@ -151,13 +151,13 @@ export default function MNRentriConsolePage() {
     const [{ data: poolRows }, { data: profs }] = await Promise.all([
       supabase
         .from("fir_number_pool")
-        .select("id, fir_number, status, user_id")
+        .select("id, fir_number, status, user_id, assigned_at")
         .eq("societa_id", societaId)
         .order("created_at", { ascending: false })
         .limit(200),
       supabase
         .from("profiles")
-        .select("id, nome, cognome, mn_context, tenant_id")
+        .select("id, user_id, nome, cognome, mn_context, tenant_id")
         .or(
           "mn_context.in.(multyproget,niyol),tenant_id.in.(77ec9a3d-602e-438f-97bf-1c69abd8f691,819c783e-78dd-4080-8265-802e75b0d813)",
         )
@@ -173,6 +173,34 @@ export default function MNRentriConsolePage() {
   }, [societaId]);
 
   const disponibili = useMemo(() => pool.filter((p) => p.status === "available"), [pool]);
+
+  /** Mappa auth-uid → nome dipendente (profiles.user_id o profiles.id) */
+  const nomeByUid = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const u of personale) {
+      const label = [u.nome, u.cognome].filter(Boolean).join(" ").trim();
+      if (!label) continue;
+      if (u.user_id) map[u.user_id] = label;
+      map[u.id] = map[u.id] ?? label;
+    }
+    return map;
+  }, [personale]);
+
+  const assegnati = useMemo(
+    () =>
+      pool
+        .filter((p) => p.status !== "available")
+        .map((p) => ({
+          ...p,
+          assegnatario:
+            p.user_id && p.user_id !== SHARED_POOL_USER_ID
+              ? nomeByUid[p.user_id] ?? "🏢 Ufficio / admin"
+              : "Serbatoio condiviso",
+        })),
+    [pool, nomeByUid],
+  );
+
+
 
   const handlePesca = async () => {
     setPescando(true);
