@@ -112,3 +112,21 @@ export async function aggiornaStatiSibill(fatturaIds: string[]) {
 export function isMockSync(s?: SibillSync | null) {
   return !!s?.sibill_document_id?.includes("_mock_");
 }
+
+export type SibillDocumento = {
+  id: string | null; number: string | null; status: string | null;
+  delivery_status: string | null; total: number | null; date: string | null; counterpart: string | null;
+};
+
+/** Elenca i documenti realmente presenti su Sibill (stato lato provider). */
+export async function elencaDocumentiSibill(opts: { mock?: boolean } = {}) {
+  const { data, error } = await supabase.functions.invoke("sibill-integration", {
+    body: { action: "list_documents", mock: !!opts.mock },
+  });
+  if (error) throw new Error(error.message || "Errore di rete verso Sibill");
+  if ((data as any)?.error) {
+    const e = (data as any).error;
+    throw new Error(`${e.title}: ${e.detail}`);
+  }
+  return (data as any).documents as SibillDocumento[];
+}
