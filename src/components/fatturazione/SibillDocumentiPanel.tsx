@@ -96,22 +96,25 @@ export function SibillDocumentiPanel({ mock, tenantId }: Props) {
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
         </div>
         <span className="text-xs text-muted-foreground">
-          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
+          {isFetching ? "Lettura archivio…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
         </span>
-        <button onClick={async () => {
-          setIsForceRefreshing(true);
-          try {
-            const freshDocs = await elencaDocumentiSibill({ mock, filter: modo, force: true });
-            queryClient.setQueryData(queryKey, freshDocs);
-          } finally {
-            setIsForceRefreshing(false);
-          }
-        }} disabled={isFetching || isForceRefreshing}
+        <button onClick={() => queryClient.invalidateQueries({ queryKey })} disabled={isFetching}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 bg-background/40 text-sm hover:bg-background/70 disabled:opacity-40">
-          {isFetching || isForceRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Aggiorna da Sibill
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Aggiorna elenco
+        </button>
+        <button onClick={() => sincronizza(true)} disabled={scanning}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/40 bg-primary/15 text-primary text-sm hover:bg-primary/25 disabled:opacity-40">
+          {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
+          Sincronizza da Sibill
         </button>
       </div>
+
+      {(scanInfo || (res && !res.done)) && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-xs">
+          {scanInfo || "Archivio Sibill incompleto: premi «Sincronizza da Sibill» per scaricare tutti i documenti (emesse e ricevute)."}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
