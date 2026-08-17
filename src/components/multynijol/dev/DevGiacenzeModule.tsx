@@ -121,7 +121,8 @@ export function DevGiacenzeModule() {
             .filter((m) => m.cer === cer && m.data_movimento < dataDal)
             .reduce((net, m) => net + (m.tipo_movimento === "CARICO" ? Number(m.quantita_kg) || 0 : -(Number(m.quantita_kg) || 0)), 0)
         : 0;
-      row.iniziale = historicalOpening + netBeforePeriod;
+      // Un saldo iniziale negativo non esiste fisicamente: si azzera.
+      row.iniziale = Math.max(0, historicalOpening + netBeforePeriod);
     }
 
     for (const m of movimenti) {
