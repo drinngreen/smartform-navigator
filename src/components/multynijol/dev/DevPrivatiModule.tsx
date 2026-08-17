@@ -49,6 +49,9 @@ export function DevPrivatiModule() {
   const [editPrivatoId, setEditPrivatoId] = useState<string | null>(null);
   const [cerSearch, setCerSearch] = useState("");
   const [showCerDropdown, setShowCerDropdown] = useState(false);
+  // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
+  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
+  const [openCerRow, setOpenCerRow] = useState<number | null>(null);
 
   // Forms
   const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
