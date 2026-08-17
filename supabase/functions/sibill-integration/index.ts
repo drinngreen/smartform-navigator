@@ -312,6 +312,11 @@ Deno.serve(async (req) => {
         for (const d of list) {
           const number = d?.number || null;
           if (filter === "P" && !/\/P$/i.test(String(number || ""))) continue;
+          if (filter === "IN") {
+            const isReceived = String(d?.direction || "").toUpperCase() === "RECEIVED";
+            const isInvoice = !!d?.is_e_invoice || ["INVOICE", "CREDIT_NOTE"].includes(String(d?.type || "").toUpperCase());
+            if (!isReceived || !isInvoice) continue;
+          }
           const gross = num(d?.gross_amount);
           const vat = num(d?.vat_amount);
           out.push({
