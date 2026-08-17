@@ -560,9 +560,10 @@ export default function MNRentriConsolePage() {
                       {personale
                         .filter((u) => appDiProfilo(u) === assignApp)
                         .map((u) => (
-                          <option key={u.id} value={u.id}>
+                          <option key={u.id} value={u.user_id ?? u.id}>
                             {[u.nome, u.cognome].filter(Boolean).join(" ") || u.id.slice(0, 8)}
                           </option>
+
                         ))}
                     </select>
                   </div>
