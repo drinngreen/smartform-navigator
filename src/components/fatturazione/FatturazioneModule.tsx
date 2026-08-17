@@ -345,6 +345,9 @@ export function FatturazioneModule({ tenantId }: Props) {
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <SibillBadge sync={sib} />
+                              {isMockSync(sib) && (
+                                <span className="px-2 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-semibold" title="Stato generato in simulazione MOCK: non presente su Sibill">MOCK</span>
+                              )}
                               <IncassoBadge sync={sib} />
                             </div>
                           </td>
