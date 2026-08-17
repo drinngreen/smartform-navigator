@@ -164,8 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (mounted) {
         console.warn("[Auth] bootstrap timeout, forcing UI unlock");
         setIsLoading(false);
+        setIsRoleReady(true);
       }
     }, 7000);
+
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
