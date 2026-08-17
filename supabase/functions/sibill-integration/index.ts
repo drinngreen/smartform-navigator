@@ -215,6 +215,33 @@ Deno.serve(async (req) => {
       return json({ ok: true, hits: hits.slice(0, 3), detail });
     }
 
+    // Diagnostica: conta direzioni/tipi sui primi N documenti
+    if (action === "scan_stats") {
+      let cursor: string | null = null;
+      const stats: Record<string, number> = {};
+      const received: any[] = [];
+      let scanned = 0;
+      for (let page = 0; page < Number(body?.pages || 40); page++) {
+        const res = await fetch(
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+            (cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""),
+          { headers: sibillHeaders() }
+        );
+        if (!res.ok) break;
+        const b = await res.json();
+        for (const d of b?.data || []) {
+          scanned++;
+          const k = `${d.direction}|${d.type}|e=${!!d.is_e_invoice}`;
+          stats[k] = (stats[k] || 0) + 1;
+          if (String(d.direction).toUpperCase() === "RECEIVED" && received.length < 3) received.push(d);
+        }
+        if (!b?.page?.has_next_page || !b?.page?.cursor) break;
+        cursor = b.page.cursor;
+        await sleep(200);
+      }
+      return json({ ok: true, scanned, stats, received });
+    }
+
     if (action === "peek_documents") {
       const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=5`, { headers: sibillHeaders() });
       if (!res.ok) return json({ error: await parseError(res) }, 200);
