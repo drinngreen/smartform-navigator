@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Plus, Search, Eye, Trash2, FileCode, Send, Lock, Clock, Loader2,
-  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro,
+  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
@@ -61,6 +61,20 @@ export function FatturazioneModule({ tenantId }: Props) {
     refetchInterval: 60000,
     queryFn: async () => fetchSibillSync(fatture.map((f: any) => f.id)),
   });
+
+  // Realtime: appena il webhook Sibill aggiorna il DB, la lista si ricolora da sola
+  useEffect(() => {
+    const channel = supabase
+      .channel("fatture-sibill-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fatture" }, () => {
+        qc.invalidateQueries({ queryKey: ["fatture"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fatture_sibill_sync" }, () => {
+        qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const [sibillMock, setSibillMock] = useState<boolean>(
     () => localStorage.getItem("sibill_mock_mode") !== "false",
@@ -261,7 +275,17 @@ export function FatturazioneModule({ tenantId }: Props) {
 
                       return (
                         <tr key={f.id} className={`border-b border-border/10 transition-colors ${STATO_ROW[stato]}`}>
-                          <td className="px-4 py-3 font-mono font-semibold text-foreground">{f.numero_completo}</td>
+                          <td className="px-4 py-3 font-mono font-semibold text-foreground">
+                            <span className="inline-flex items-center gap-1.5">
+                              {f.numero_completo}
+                              {(sib?.sync_status === "errore" || sib?.error_title) && (
+                                <AlertTriangle
+                                  className="h-4 w-4 text-red-400"
+                                  title={`Scartata da Sibill: ${sib?.error_title || ""} ${sib?.error_detail || ""}`.trim()}
+                                />
+                              )}
+                            </span>
+                          </td>
                           <td className="px-4 py-3 text-muted-foreground">{f.data_emissione}</td>
                           <td className="px-4 py-3 text-foreground">{f.cliente_ragione_sociale}</td>
                           <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{f.cliente_partita_iva || "—"}</td>
@@ -275,7 +299,10 @@ export function FatturazioneModule({ tenantId }: Props) {
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <SibillBadge sync={sib} />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <SibillBadge sync={sib} />
+                              <IncassoBadge sync={sib} />
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
@@ -383,6 +410,22 @@ function SibillBadge({ sync }: { sync?: SibillSync }) {
   );
 }
 
+
+function IncassoBadge({ sync }: { sync?: SibillSync }) {
+  const incassata = sync?.payment_status === "PAID" || sync?.sync_status === "incassata";
+  return (
+    <span
+      title={incassata ? `Incassata ${sync?.payment_date || ""} ${sync?.payment_method || ""}`.trim() : "Pagamento non ancora registrato"}
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-medium ${
+        incassata
+          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+          : "bg-red-500/15 border-red-500/40 text-red-300"
+      }`}
+    >
+      <BadgeEuro className="h-3 w-3" /> {incassata ? "Incassata" : "Non Incassata"}
+    </span>
+  );
+}
 
 function SummaryCard({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
