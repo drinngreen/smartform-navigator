@@ -4330,6 +4330,7 @@ export type Database = {
           note: string | null
           numero_fir: string | null
           origine: string | null
+          privati_conferimento_id: string | null
           produttore_denominazione: string | null
           quantita_kg: number
           quantita_presunta: number | null
@@ -4353,6 +4354,7 @@ export type Database = {
           note?: string | null
           numero_fir?: string | null
           origine?: string | null
+          privati_conferimento_id?: string | null
           produttore_denominazione?: string | null
           quantita_kg?: number
           quantita_presunta?: number | null
@@ -4376,6 +4378,7 @@ export type Database = {
           note?: string | null
           numero_fir?: string | null
           origine?: string | null
+          privati_conferimento_id?: string | null
           produttore_denominazione?: string | null
           quantita_kg?: number
           quantita_presunta?: number | null
@@ -4398,6 +4401,13 @@ export type Database = {
             columns: ["impianto_id"]
             isOneToOne: false
             referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimenti_impianto_privati_conferimento_id_fkey"
+            columns: ["privati_conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti"
             referencedColumns: ["id"]
           },
           {
@@ -6264,6 +6274,10 @@ export type Database = {
         Args: { p_form_id: string; p_numero_fir: string }
         Returns: string
       }
+      assert_magazzino_giacenza: {
+        Args: { p_cer: string; p_impianto_id: string; p_tenant_id: string }
+        Returns: undefined
+      }
       auto_assign_after_consume: {
         Args: { p_user_id: string }
         Returns: string
@@ -6286,6 +6300,24 @@ export type Database = {
         }[]
       }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
+      crea_conferimento_privato_atomico: {
+        Args: {
+          p_cf_pi: string
+          p_data: string
+          p_impianto_id: string
+          p_importo: number
+          p_materiali: Json
+          p_metodo_pag: string
+          p_modello: string
+          p_nome_privato: string
+          p_note: string
+          p_privato_id: string
+          p_targa: string
+          p_tenant_id: string
+          p_tipo_utenza: string
+        }
+        Returns: Json
+      }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
       create_manual_fir_draft_for_tenant: {
         Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
@@ -6351,6 +6383,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      inventory_lock_key: {
+        Args: { p_cer: string; p_impianto_id: string; p_tenant_id: string }
+        Returns: number
       }
       is_allowed_multy_niyol_tenant: {
         Args: { _tenant_id: string }
