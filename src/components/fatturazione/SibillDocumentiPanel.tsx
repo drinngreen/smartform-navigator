@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { elencaDocumentiSibillFull, scansionaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
 import { FattureEmesseEsitoPanel } from "./FattureEmesseEsitoPanel";
 
-interface Props { mock?: boolean; tenantId?: string }
+interface Props { mock?: boolean; tenantId?: string; initialMode?: "P" | "IN" }
 
 const eur = (v: number | null) =>
   v == null ? "—" : new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v);
@@ -18,13 +18,13 @@ const dataIt = (d: string | null) => {
 };
 
 /** Elenco documenti letti da Sibill (emesse "/P" e ricevute), con la stessa vista del gestionale Sibill. */
-export function SibillDocumentiPanel({ mock, tenantId }: Props) {
+export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [scanning, setScanning] = useState(false);
   const [scanInfo, setScanInfo] = useState<string | null>(null);
-  const [modo, setModo] = useState<"P" | "IN">("P");
+  const [modo, setModo] = useState<"P" | "IN">(initialMode);
   const queryKey = ["sibill-documenti-v3", !!mock, modo] as const;
   const { data: res, isFetching, error } = useQuery({
     queryKey,
