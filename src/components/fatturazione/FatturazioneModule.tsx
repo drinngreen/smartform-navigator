@@ -265,9 +265,9 @@ export function FatturazioneModule({ tenantId }: Props) {
               </label>
               <button
                 onClick={() => refreshMut.mutate()}
-                disabled={refreshMut.isPending || fatture.length === 0}
+                disabled={refreshMut.isPending}
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 bg-background/40 text-foreground hover:bg-background/70 disabled:opacity-40"
-                title="Rilegge da Sibill lo stato reale delle fatture trasmesse"
+                title="Rilegge da Sibill lo stato reale delle fatture trasmesse e l'elenco documenti"
               >
                 {refreshMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                 Aggiorna stati da Sibill
@@ -287,11 +287,36 @@ export function FatturazioneModule({ tenantId }: Props) {
               )}
             </div>
 
+            {/* Documenti realmente presenti su Sibill */}
+            {docsSibill && (
+              <div className="rounded-lg border border-border/40 bg-background/40 p-2 text-muted-foreground">
+                {docsSibill.length === 0 ? (
+                  <span>Nessun documento presente su Sibill{sibillMock ? " (mock)" : " con la chiave API configurata"}.</span>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="text-foreground font-medium">Documenti su Sibill: {docsSibill.length}</div>
+                    <div className="max-h-40 overflow-y-auto space-y-0.5">
+                      {docsSibill.map(d => (
+                        <div key={d.id || Math.random()} className="flex flex-wrap gap-2 font-mono text-[11px]">
+                          <span className="text-foreground">{d.number || d.id}</span>
+                          <span>{d.date || "—"}</span>
+                          <span>{d.counterpart || "—"}</span>
+                          <span className="text-emerald-300">{d.status || "—"}</span>
+                          <span className="text-blue-300">{d.delivery_status || "—"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="text-muted-foreground">
               {sibillMock
                 ? "Le fatture seguono l'intero flusso reale (stati, badge, sincronizzazione) ma non vengono trasmesse a Sibill."
                 : "ATTENZIONE: invio REALE a Sibill con la chiave API configurata."}
             </div>
+
           </div>
 
 
