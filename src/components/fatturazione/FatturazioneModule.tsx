@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
-import { inviaFatturaASibill, fetchSibillSync, type SibillSync } from "@/lib/sibill";
+import { inviaFatturaASibill, fetchSibillSync, aggiornaStatiSibill, isMockSync, type SibillSync } from "@/lib/sibill";
 
 
 interface Props { tenantId?: string; }
