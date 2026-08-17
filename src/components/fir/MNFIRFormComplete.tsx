@@ -1509,6 +1509,20 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
         </div>
       )}
+
+      {fatturaFrom && (
+        <NuovaFatturaDialog
+          tenantId={fatturaFrom.tenantId}
+          preselectedRighe={fatturaFrom.righe}
+          clienteId={fatturaFrom.clienteFallback?.id}
+          clienteFallback={fatturaFrom.clienteFallback}
+          onClose={() => setFatturaFrom(null)}
+          onCreated={() => {
+            setFatturaFrom(null);
+            toast.success(`Fattura creata come ${fatturaFrom.emittente === "niyol" ? "NIYOL ETICONS LOGISTICA" : "MULTY PROGET"}`);
+          }}
+        />
+      )}
     </div>
   );
 }
