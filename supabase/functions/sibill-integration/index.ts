@@ -190,6 +190,31 @@ Deno.serve(async (req) => {
       return json({ ok: res.ok, status: res.status, body: txt.slice(0, 900000) });
     }
 
+    // Debug: trova i primi documenti "/P" e mostra il grezzo lista + dettaglio
+    if (action === "debug_p") {
+      let cursor: string | null = null;
+      const hits: any[] = [];
+      for (let page = 0; page < 60 && hits.length < 3; page++) {
+        const res = await fetch(
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+            (cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""),
+          { headers: sibillHeaders() }
+        );
+        if (!res.ok) return json({ error: await parseError(res) }, 200);
+        const b = await res.json();
+        for (const d of b?.data || []) if (/\/P$/i.test(String(d?.number || ""))) hits.push(d);
+        if (!b?.page?.has_next_page) break;
+        cursor = b.page.cursor;
+        await sleep(200);
+      }
+      let detail: any = null;
+      if (hits[0]?.id) {
+        const dr = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents/${hits[0].id}`, { headers: sibillHeaders() });
+        detail = { status: dr.status, body: (await dr.text()).slice(0, 4000) };
+      }
+      return json({ ok: true, hits: hits.slice(0, 3), detail });
+    }
+
     if (action === "ping") {
 
       if (mock) {
