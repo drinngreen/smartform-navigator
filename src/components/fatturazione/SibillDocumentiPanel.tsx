@@ -216,6 +216,8 @@ export function SibillDocumentiPanel({ mock, tenantId }: Props) {
           </table>
         </div>
       </div>
+
+      <FattureEmesseEsitoPanel tenantId={tenantId} />
     </div>
   );
 }
