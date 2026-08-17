@@ -201,34 +201,78 @@ Deno.serve(async (req) => {
     // Allineamento stati: rilegge da Sibill lo stato reale dei documenti già trasmessi
     // Elenco documenti presenti su Sibill (stato reale lato provider)
     if (action === "list_documents") {
+      // `filter`: "P" (default) = solo le fatture con numero che termina con "/P", "all" = tutti i documenti
+      const filter = String(body?.filter || "P").toUpperCase();
       if (mock) {
         return json({
-          ok: true, mock: true, env: "mock",
+          ok: true, mock: true, env: "mock", count: 1, scanned: 1,
           documents: [
-            { id: mockId("doc"), number: "MOCK-1", status: "ISSUED", delivery_status: "SENT", total: 122, date: new Date().toISOString().slice(0, 10), counterpart: "Cliente Mock" },
+            {
+              id: mockId("doc"), number: "679/P", type: "INVOICE", status: "DELIVERED",
+              delivery_status: null, delivery_date: new Date().toISOString(),
+              gross: 3111.12, vat: 8.62, net: 3102.5, currency: "EUR",
+              date: new Date().toISOString().slice(0, 10), direction: "ISSUED",
+              counterpart: "FERMET SRL (mock)", is_e_invoice: true, file_name: null,
+            },
           ],
         });
       }
       if (!API_KEY || !COMPANY_ID) {
         return json({ error: { title: "Configurazione mancante", detail: "SIBILL_API_KEY / SIBILL_COMPANY_ID non configurati" } }, 200);
       }
-      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents`, { headers: sibillHeaders() });
-      if (!res.ok) return json({ error: await parseError(res) }, 200);
-      const okBody = await res.json().catch(() => ({}));
-      const list = Array.isArray(okBody?.data) ? okBody.data : Array.isArray(okBody) ? okBody : [];
-      return json({
-        ok: true, env: SIBILL_ENV, count: list.length,
-        documents: list.map((d: any) => ({
-          id: d?.id || null,
-          number: d?.number || d?.document_number || null,
-          status: d?.status || null,
-          delivery_status: d?.delivery_status || null,
-          total: d?.total ?? d?.total_amount ?? null,
-          date: d?.date || d?.issue_date || d?.created_at || null,
-          counterpart: d?.counterpart?.company_name || d?.counterpart_name || null,
-        })),
-      });
+
+      const num = (v: any) => {
+        const n = Number(v?.amount ?? v);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const out: any[] = [];
+      let cursor: string | null = null;
+      let scanned = 0;
+      for (let page = 0; page < 250; page++) {
+        const url =
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+        const res = await fetch(url, { headers: sibillHeaders() });
+        if (!res.ok) return json({ error: await parseError(res) }, 200);
+        const okBody = await res.json().catch(() => ({}));
+        const list: any[] = Array.isArray(okBody?.data) ? okBody.data : [];
+        scanned += list.length;
+        for (const d of list) {
+          const number = d?.number || null;
+          if (filter === "P" && !/\/P$/i.test(String(number || ""))) continue;
+          const gross = num(d?.gross_amount);
+          const vat = num(d?.vat_amount);
+          out.push({
+            id: d?.id || null,
+            number,
+            type: d?.type || null,
+            status: d?.status || null,
+            delivery_status: d?.delivery_status || null,
+            delivery_date: d?.delivery_date || null,
+            gross,
+            vat,
+            net: gross != null && vat != null ? Number((gross - vat).toFixed(2)) : gross,
+            currency: d?.gross_amount?.currency || "EUR",
+            date: d?.creation_date || d?.created_at || null,
+            direction: d?.direction || null,
+            counterpart:
+              d?.counterpart?.company_name ||
+              (Array.isArray(d?.reasons_and_remarks) ? d.reasons_and_remarks[0] : null) ||
+              null,
+            is_e_invoice: !!d?.is_e_invoice,
+            file_name: d?.file_name || null,
+          });
+        }
+        const pg = okBody?.page || {};
+        if (!pg?.has_next_page || !pg?.cursor) break;
+        cursor = pg.cursor as string;
+      }
+
+      out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+      return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, documents: out });
     }
+
 
     if (action === "refresh_status") {
 
