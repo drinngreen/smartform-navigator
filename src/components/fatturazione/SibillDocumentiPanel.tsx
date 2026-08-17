@@ -23,7 +23,7 @@ export function SibillDocumentiPanel({ mock }: Props) {
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [isForceRefreshing, setIsForceRefreshing] = useState(false);
   const queryKey = ["sibill-documenti-p-v2", !!mock] as const;
-  const { data: docs = [], isFetching, refetch, error } = useQuery({
+  const { data: docs = [], isFetching, error } = useQuery({
     queryKey,
     queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
     staleTime: 10 * 60 * 1000,
