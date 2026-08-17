@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
@@ -37,6 +37,7 @@ import {
   Users,
   PenLine,
   Copy,
+  ArrowLeft,
 } from "lucide-react";
 
 
@@ -399,6 +400,14 @@ export default function MNRentriConsolePage() {
   return (
     <MNAdminLayout title={`Console RENTRI — ${label}`} subtitle="Stato, numeri FIR, registri e invii">
       <div className="space-y-6">
+        <button
+          type="button"
+          onClick={() => navigate("/mn/admin/dev-multyproget")}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-border/60 bg-secondary/50 hover:bg-secondary"
+        >
+          <ArrowLeft size={16} /> Torna alla console centrale
+        </button>
+
         {/* Barra stato */}
         <div className="flex flex-wrap items-center gap-2">
           {(["multy", "niyol"] as const).map((c) => (
