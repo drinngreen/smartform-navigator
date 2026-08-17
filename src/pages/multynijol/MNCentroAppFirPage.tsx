@@ -532,6 +532,15 @@ export default function MNCentroAppFirPage() {
                               >
                                 compila
                               </button>
+                              <button
+                                type="button"
+                                disabled={busy === emp.user_id}
+                                onClick={() => removeDraftById(d, emp)}
+                                title="Togli assegnazione e rimetti il numero nei FIR da assegnare"
+                                className="text-[10px] underline text-destructive hover:opacity-80 disabled:opacity-40"
+                              >
+                                togli
+                              </button>
                             </div>
                           ))}
                         </div>
