@@ -153,6 +153,14 @@ export default function MNCentroAppFirPage() {
 
   useEffect(() => { if (isValid) load(); }, [load, isValid]);
 
+  const draftsByUser = useMemo(() => {
+    const map: Record<string, DraftRow[]> = {};
+    for (const d of drafts) {
+      (map[d.user_id] ||= []).push(d);
+    }
+    return map;
+  }, [drafts]);
+
   const draftByUser = useMemo(() => {
     const map: Record<string, DraftRow> = {};
     for (const d of drafts) {
@@ -161,6 +169,7 @@ export default function MNCentroAppFirPage() {
     }
     return map;
   }, [drafts]);
+
 
   const pronti = employees.filter((e) => draftByUser[e.user_id]?.numero_fir).length;
   const scoperti = employees.length - pronti;
