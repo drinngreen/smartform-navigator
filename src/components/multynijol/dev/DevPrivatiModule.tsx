@@ -958,42 +958,62 @@ export function DevPrivatiModule() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {/* CER Combobox */}
-            <div className="col-span-2 relative">
-              <Label>Codice CER *</Label>
-              <Input
-                value={confForm.cer || cerSearch}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCerSearch(v);
-                  setConfForm(p => ({ ...p, cer: v }));
-                  setShowCerDropdown(true);
-                }}
-                onFocus={() => setShowCerDropdown(true)}
-                onBlur={() => setTimeout(() => setShowCerDropdown(false), 200)}
-                placeholder="Cerca o digita CER (es. 200140)"
-                className="font-mono"
-              />
-              {showCerDropdown && filteredCER.length > 0 && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
-                  {filteredCER.map(c => (
-                    <button key={c.codice} type="button"
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setConfForm(p => ({ ...p, cer: c.codice }));
-                        setCerSearch(c.codice);
-                        setShowCerDropdown(false);
-                      }}>
-                      <span className="font-mono text-emerald-400 shrink-0">{c.codice}</span>
-                      <span className="text-muted-foreground truncate text-xs">{c.descrizione}</span>
-                      {c.pericoloso && <span className="text-red-400 text-xs shrink-0">⚠️</span>}
-                    </button>
-                  ))}
+            {/* Materiali conferiti (multi-riga) */}
+            <div className="col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Materiali conferiti *</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 gap-1 text-xs"
+                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "" }])}>
+                  + Aggiungi materiale
+                </Button>
+              </div>
+              {righeMateriali.map((riga, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_110px_36px] gap-2 items-start">
+                  <div className="relative">
+                    <Input
+                      value={riga.cer}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, cer: v } : r)));
+                        setOpenCerRow(idx);
+                      }}
+                      onFocus={() => setOpenCerRow(idx)}
+                      onBlur={() => setTimeout(() => setOpenCerRow((cur) => (cur === idx ? null : cur)), 200)}
+                      placeholder="Cerca o digita CER (es. 200140)"
+                      className="font-mono"
+                    />
+                    {openCerRow === idx && cerOptions(riga.cer).length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                        {cerOptions(riga.cer).map(c => (
+                          <button key={c.codice} type="button"
+                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, cer: c.codice } : r)));
+                              setOpenCerRow(null);
+                            }}>
+                            <span className="font-mono text-emerald-400 shrink-0">{c.codice}</span>
+                            <span className="text-muted-foreground truncate text-xs">{c.descrizione}</span>
+                            {c.pericoloso && <span className="text-red-400 text-xs shrink-0">⚠️</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <Input type="number" placeholder="kg" value={riga.kg}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, kg: e.target.value } : r)))} />
+                  <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300"
+                    disabled={righeMateriali.length === 1}
+                    onClick={() => setRigheMateriali(p => p.filter((_, i) => i !== idx))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — una sola ricevuta con tutti i materiali.
+              </p>
             </div>
-            <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
+
             <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
             <div>
               <Label>Metodo Pagamento *</Label>
