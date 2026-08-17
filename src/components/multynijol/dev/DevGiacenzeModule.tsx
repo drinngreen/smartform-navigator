@@ -248,13 +248,14 @@ export function DevGiacenzeModule() {
         [
           { content: "C.E.R.", rowSpan: 2, styles: { valign: "bottom" } },
           { content: "", rowSpan: 2 },
-          { content: "Quantità", colSpan: 3, styles: { halign: "center" } },
+          { content: "Quantità", colSpan: 4, styles: { halign: "center" } },
         ],
-        ["Carico", "Scarico", "Saldo"],
+        ["Saldo iniziale", "Carico", "Scarico", "Saldo"],
       ],
       body: filtered.map((r) => [
         { content: r.cer, styles: { fontStyle: "bold" } },
         r.descrizione,
+        { content: fmt(r.iniziale), styles: { halign: "right" } },
         { content: fmt(r.carico), styles: { halign: "right" } },
         { content: fmt(r.scarico), styles: { halign: "right" } },
         { content: fmt(r.saldo), styles: { halign: "right", fontStyle: "bold" } },
@@ -262,6 +263,7 @@ export function DevGiacenzeModule() {
       foot: [
         [
           { content: "TOTALI GENERALI", colSpan: 2, styles: { fontStyle: "bold" } },
+          { content: fmt(totals.iniziale), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.carico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.scarico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.saldo), styles: { halign: "right", fontStyle: "bold" } },
@@ -273,9 +275,10 @@ export function DevGiacenzeModule() {
       columnStyles: {
         0: { cellWidth: 34, overflow: "visible" },
         1: { cellWidth: "auto" },
-        2: { cellWidth: 25 },
-        3: { cellWidth: 25 },
-        4: { cellWidth: 25 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 22 },
+        5: { cellWidth: 22 },
       },
       margin: { left: marginX, right: marginX, top: headerEndY, bottom: 14 },
       showHead: "everyPage",
@@ -306,13 +309,13 @@ export function DevGiacenzeModule() {
     const headerLines = buildHeaderLines();
     const aoa: any[][] = headerLines.map((l) => [l]);
     aoa.push([]);
-    aoa.push(["C.E.R.", "Descrizione", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
-    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.carico, r.scarico, r.saldo]));
+    aoa.push(["C.E.R.", "Descrizione", "Saldo iniziale", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
+    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.iniziale, r.carico, r.scarico, r.saldo]));
     aoa.push([]);
-    aoa.push(["TOTALI GENERALI", "", totals.carico, totals.scarico, totals.saldo]);
+    aoa.push(["TOTALI GENERALI", "", totals.iniziale, totals.carico, totals.scarico, totals.saldo]);
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
+    ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Registro CER");
     XLSX.writeFile(wb, `${buildFileName()}.xlsx`);
@@ -370,7 +373,7 @@ export function DevGiacenzeModule() {
             <Input placeholder="es. 170405" value={searchCer} onChange={(e) => setSearchCer(e.target.value)} className="bg-card/60" />
           </div>
           <div className="text-xs text-muted-foreground">
-            Saldo calcolato includendo tutti i movimenti con data ≤ {fmtDate(new Date(dataAl))}.
+            Saldo = saldo iniziale ufficiale (snapshot) + carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}.
           </div>
         </CardContent>
       </Card>
@@ -428,9 +431,10 @@ export function DevGiacenzeModule() {
                   <tr className="border-b-2 border-border/50 text-muted-foreground bg-card/40">
                     <th className="text-left py-2 px-3" rowSpan={2}>C.E.R.</th>
                     <th className="text-left py-2 px-3" rowSpan={2}>Descrizione</th>
-                    <th className="text-center py-1 px-3" colSpan={3}>Quantità</th>
+                    <th className="text-center py-1 px-3" colSpan={4}>Quantità</th>
                   </tr>
                   <tr className="border-b border-border/30 text-muted-foreground bg-card/30">
+                    <th className="text-right py-1 px-3">Saldo iniziale</th>
                     <th className="text-right py-1 px-3">Carico</th>
                     <th className="text-right py-1 px-3">Scarico</th>
                     <th className="text-right py-1 px-3">Saldo</th>
@@ -441,6 +445,7 @@ export function DevGiacenzeModule() {
                     <tr key={r.cer} className="border-b border-border/10 hover:bg-white/5">
                       <td className="py-1.5 px-3 font-mono font-bold text-emerald-300">{r.cer}</td>
                       <td className="py-1.5 px-3 text-xs">{r.descrizione || "—"}</td>
+                      <td className="py-1.5 px-3 text-right text-muted-foreground">{fmt(r.iniziale)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.carico)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.scarico)}</td>
                       <td className={`py-1.5 px-3 text-right font-bold ${r.saldo > 0 ? "text-emerald-400" : r.saldo < 0 ? "text-red-400" : "text-muted-foreground"}`}>
@@ -450,6 +455,7 @@ export function DevGiacenzeModule() {
                   ))}
                   <tr className="bg-emerald-500/10 border-t-2 border-emerald-500/40 font-bold">
                     <td colSpan={2} className="py-2 px-3">TOTALI GENERALI</td>
+                    <td className="py-2 px-3 text-right">{fmt(totals.iniziale)}</td>
                     <td className="py-2 px-3 text-right">{fmt(totals.carico)}</td>
                     <td className="py-2 px-3 text-right">{fmt(totals.scarico)}</td>
                     <td className="py-2 px-3 text-right text-emerald-300">{fmt(totals.saldo)}</td>
