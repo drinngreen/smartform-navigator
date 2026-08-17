@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2, DownloadCloud } from "lucide-react";
 import { toast } from "sonner";
-import { elencaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+import { elencaDocumentiSibillFull, scansionaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+import { FattureEmesseEsitoPanel } from "./FattureEmesseEsitoPanel";
 
-interface Props { mock?: boolean }
+interface Props { mock?: boolean; tenantId?: string }
 
 const eur = (v: number | null) =>
   v == null ? "—" : new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v);
@@ -16,21 +17,49 @@ const dataIt = (d: string | null) => {
   return y && m && g ? `${g}/${m}/${y}` : iso;
 };
 
-/** Elenco documenti "/P" letti direttamente da Sibill, con la stessa vista del gestionale Sibill. */
-export function SibillDocumentiPanel({ mock }: Props) {
+/** Elenco documenti letti da Sibill (emesse "/P" e ricevute), con la stessa vista del gestionale Sibill. */
+export function SibillDocumentiPanel({ mock, tenantId }: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [isForceRefreshing, setIsForceRefreshing] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanInfo, setScanInfo] = useState<string | null>(null);
   const [modo, setModo] = useState<"P" | "IN">("P");
-  const queryKey = ["sibill-documenti-p-v2", !!mock, modo] as const;
-  const { data: docs = [], isFetching, error } = useQuery({
+  const queryKey = ["sibill-documenti-v3", !!mock, modo] as const;
+  const { data: res, isFetching, error } = useQuery({
     queryKey,
-    queryFn: () => elencaDocumentiSibill({ mock, filter: modo }),
-    staleTime: 10 * 60 * 1000,
+    queryFn: () => elencaDocumentiSibillFull({ mock, filter: modo }),
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
   });
+  const docs = res?.documents ?? [];
+
+  /** Sincronizza l'intero archivio Sibill a blocchi (l'API non consente filtri lato server). */
+  const sincronizza = async (restart = false) => {
+    setScanning(true);
+    try {
+      let done = false;
+      let first = true;
+      for (let i = 0; i < 40 && !done; i++) {
+        const r = await scansionaDocumentiSibill({ mock, pages: 12, restart: restart && first });
+        first = false;
+        done = !!r.done;
+        setScanInfo(`Scansione Sibill: ${r.scanned} documenti letti, ${r.cached} in archivio${done ? " — completata" : "…"}`);
+        await queryClient.invalidateQueries({ queryKey: ["sibill-documenti-v3"] });
+        if (r.rate_limited) {
+          toast.warning("Sibill ha limitato le chiamate: riprendo tra poco, l'elenco è parziale.");
+          break;
+        }
+      }
+      if (done) toast.success("Archivio Sibill aggiornato");
+    } catch (e: any) {
+      toast.error(e.message || "Errore sincronizzazione Sibill");
+    } finally {
+      setScanning(false);
+    }
+  };
+
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -67,22 +96,25 @@ export function SibillDocumentiPanel({ mock }: Props) {
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
         </div>
         <span className="text-xs text-muted-foreground">
-          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
+          {isFetching ? "Lettura archivio…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
         </span>
-        <button onClick={async () => {
-          setIsForceRefreshing(true);
-          try {
-            const freshDocs = await elencaDocumentiSibill({ mock, filter: modo, force: true });
-            queryClient.setQueryData(queryKey, freshDocs);
-          } finally {
-            setIsForceRefreshing(false);
-          }
-        }} disabled={isFetching || isForceRefreshing}
+        <button onClick={() => queryClient.invalidateQueries({ queryKey })} disabled={isFetching}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 bg-background/40 text-sm hover:bg-background/70 disabled:opacity-40">
-          {isFetching || isForceRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Aggiorna da Sibill
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Aggiorna elenco
+        </button>
+        <button onClick={() => sincronizza(true)} disabled={scanning}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/40 bg-primary/15 text-primary text-sm hover:bg-primary/25 disabled:opacity-40">
+          {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
+          Sincronizza da Sibill
         </button>
       </div>
+
+      {(scanInfo || (res && !res.done)) && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 px-4 py-2 text-xs">
+          {scanInfo || "Archivio Sibill incompleto: premi «Sincronizza da Sibill» per scaricare tutti i documenti (emesse e ricevute)."}
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
@@ -184,6 +216,8 @@ export function SibillDocumentiPanel({ mock }: Props) {
           </table>
         </div>
       </div>
+
+      <FattureEmesseEsitoPanel tenantId={tenantId} />
     </div>
   );
 }

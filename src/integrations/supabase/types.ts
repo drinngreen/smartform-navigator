@@ -5665,6 +5665,90 @@ export type Database = {
         }
         Relationships: []
       }
+      sibill_documents_cache: {
+        Row: {
+          counterpart: string | null
+          currency: string | null
+          delivery_date: string | null
+          delivery_status: string | null
+          direction: string | null
+          doc_id: string
+          document_date: string | null
+          file_name: string | null
+          gross: number | null
+          is_e_invoice: boolean | null
+          number: string | null
+          raw: Json | null
+          status: string | null
+          synced_at: string
+          type: string | null
+          vat: number | null
+        }
+        Insert: {
+          counterpart?: string | null
+          currency?: string | null
+          delivery_date?: string | null
+          delivery_status?: string | null
+          direction?: string | null
+          doc_id: string
+          document_date?: string | null
+          file_name?: string | null
+          gross?: number | null
+          is_e_invoice?: boolean | null
+          number?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+          type?: string | null
+          vat?: number | null
+        }
+        Update: {
+          counterpart?: string | null
+          currency?: string | null
+          delivery_date?: string | null
+          delivery_status?: string | null
+          direction?: string | null
+          doc_id?: string
+          document_date?: string | null
+          file_name?: string | null
+          gross?: number | null
+          is_e_invoice?: boolean | null
+          number?: string | null
+          raw?: Json | null
+          status?: string | null
+          synced_at?: string
+          type?: string | null
+          vat?: number | null
+        }
+        Relationships: []
+      }
+      sibill_scan_state: {
+        Row: {
+          cursor: string | null
+          done: boolean
+          id: string
+          scanned: number
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          cursor?: string | null
+          done?: boolean
+          id: string
+          scanned?: number
+          started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          cursor?: string | null
+          done?: boolean
+          id?: string
+          scanned?: number
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       signals: {
         Row: {
           candidate: Json | null

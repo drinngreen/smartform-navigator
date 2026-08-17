@@ -133,17 +133,44 @@ export type SibillDocumento = {
 
 };
 
-/** Elenca i documenti realmente presenti su Sibill (stato lato provider).
- *  `filter: "P"` (default) restituisce solo le fatture con numero che termina in "/P". */
-export async function elencaDocumentiSibill(opts: { mock?: boolean; filter?: "P" | "IN" | "all"; force?: boolean } = {}) {
+export type SibillElenco = {
+  documents: SibillDocumento[];
+  scanned: number;
+  done: boolean;
+  warning: string | null;
+};
+
+/** Elenca i documenti Sibill dalla cache locale (popolata da `scansionaDocumentiSibill`).
+ *  `filter: "P"` = fatture emesse con numero "/P", `filter: "IN"` = fatture ricevute (entrata). */
+export async function elencaDocumentiSibillFull(
+  opts: { mock?: boolean; filter?: "P" | "IN" | "all" } = {},
+): Promise<SibillElenco> {
   const { data, error } = await supabase.functions.invoke("sibill-integration", {
-    body: { action: "list_documents", mock: !!opts.mock, filter: opts.filter || "P", force: !!opts.force },
+    body: { action: "list_documents", mock: !!opts.mock, filter: opts.filter || "P" },
   });
   if (error) throw new Error(error.message || "Errore di rete verso Sibill");
   if ((data as any)?.error) {
     const e = (data as any).error;
     throw new Error(`${e.title}: ${e.detail}`);
   }
-  return (data as any).documents as SibillDocumento[];
+  const d = data as any;
+  return { documents: (d.documents || []) as SibillDocumento[], scanned: d.scanned || 0, done: !!d.done, warning: d.warning || null };
+}
+
+export async function elencaDocumentiSibill(opts: { mock?: boolean; filter?: "P" | "IN" | "all"; force?: boolean } = {}) {
+  return (await elencaDocumentiSibillFull(opts)).documents;
+}
+
+/** Avanza di alcune pagine la scansione dei documenti Sibill (l'API non offre filtri lato server). */
+export async function scansionaDocumentiSibill(opts: { mock?: boolean; pages?: number; restart?: boolean } = {}) {
+  const { data, error } = await supabase.functions.invoke("sibill-integration", {
+    body: { action: "scan_documents", mock: !!opts.mock, pages: opts.pages || 12, restart: !!opts.restart },
+  });
+  if (error) throw new Error(error.message || "Errore di rete verso Sibill");
+  if ((data as any)?.error) {
+    const e = (data as any).error;
+    throw new Error(`${e.title}: ${e.detail}`);
+  }
+  return data as { done: boolean; scanned: number; cached: number; rate_limited?: boolean };
 }
 
