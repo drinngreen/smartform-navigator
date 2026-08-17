@@ -301,7 +301,7 @@ export function DevGiacenzeModule() {
         2: { cellWidth: 22 },
         3: { cellWidth: 22 },
         4: { cellWidth: 22 },
-        5: { cellWidth: 22 },
+        },
       },
       margin: { left: marginX, right: marginX, top: headerEndY, bottom: 14 },
       showHead: "everyPage",
