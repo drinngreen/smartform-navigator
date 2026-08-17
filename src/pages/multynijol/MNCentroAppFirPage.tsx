@@ -213,6 +213,24 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const removeDraftById = async (draft: DraftRow, emp: Employee) => {
+    if (!window.confirm(`Togliere il FIR ${draft.numero_fir ?? ""} a ${emp.cognome} ${emp.nome}? Il numero torna disponibile per l'assegnazione.`)) return;
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: draft.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Numero ${draft.numero_fir ?? ""} rimesso nei FIR da assegnare`);
+      await load();
+    } catch (e: any) {
+      toast.error("Errore rimozione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const removeDraft = async (emp: Employee) => {
     const draft = draftByUser[emp.user_id];
     if (!draft) return;
@@ -531,6 +549,15 @@ export default function MNCentroAppFirPage() {
                                 className="text-[10px] underline text-muted-foreground hover:text-foreground"
                               >
                                 compila
+                              </button>
+                              <button
+                                type="button"
+                                disabled={busy === emp.user_id}
+                                onClick={() => removeDraftById(d, emp)}
+                                title="Togli assegnazione e rimetti il numero nei FIR da assegnare"
+                                className="text-[10px] underline text-destructive hover:opacity-80 disabled:opacity-40"
+                              >
+                                togli
                               </button>
                             </div>
                           ))}

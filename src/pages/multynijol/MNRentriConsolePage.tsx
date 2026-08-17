@@ -80,7 +80,12 @@ export default function MNRentriConsolePage() {
     if (isValid) setActiveContext(mnCtx);
   }, [context, isValid]);
 
-  const [tab, setTab] = useState<TabId>("stato");
+  const initialTab = ((): TabId => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    const ids: TabId[] = ["stato", "numeri", "dafirmare", "registri", "invii", "lemon"];
+    return ids.includes(t as TabId) ? (t as TabId) : "stato";
+  })();
+  const [tab, setTab] = useState<TabId>(initialTab);
 
   /* ── Stato RENTRI ── */
   const [vpsUp, setVpsUp] = useState<boolean | null>(null);
