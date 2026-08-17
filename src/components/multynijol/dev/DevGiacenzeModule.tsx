@@ -78,34 +78,58 @@ export function DevGiacenzeModule() {
     },
   });
 
-  // Aggregazione per CER: saldo iniziale (snapshot) + movimenti successivi allo snapshot
+  // Aggregazione contabile per CER. Lo snapshot conserva il saldo ufficiale, ma non
+  // deve nascondere i movimenti storici: il saldo di apertura viene riconciliato con
+  // lo snapshot e Carico/Scarico mostrano sempre i movimenti del periodo selezionato.
   const rows: CerRow[] = useMemo(() => {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
     const snapshotByCer: Record<string, string> = {};
+    const snapshotBalanceByCer: Record<string, number> = {};
+    const descriptionsByCer: Record<string, string> = {};
+
+    for (const m of movimenti) {
+      if (m.descrizione_rifiuto?.trim()) descriptionsByCer[m.cer] = m.descrizione_rifiuto.trim();
+    }
 
     for (const b of baseline ?? []) {
       const snapDay = b.saldo_snapshot_at ? b.saldo_snapshot_at.slice(0, 10) : "";
       if (snapDay) snapshotByCer[b.cer] = snapDay;
-      const iniziale = Number(b.saldo_iniziale_kg) || 0;
+      snapshotBalanceByCer[b.cer] = (snapshotBalanceByCer[b.cer] || 0) + (Number(b.saldo_iniziale_kg) || 0);
       if (!map[b.cer]) {
-        map[b.cer] = { cer: b.cer, descrizione: b.descrizione_cer || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
+        map[b.cer] = {
+          cer: b.cer,
+          descrizione: b.descrizione_cer?.trim() || descriptionsByCer[b.cer] || "",
+          iniziale: 0,
+          carico: 0,
+          scarico: 0,
+          saldo: 0,
+        };
       }
-      // Il saldo iniziale (snapshot ufficiale) entra solo se ricade nell'intervallo scelto
-      const dentroPeriodo =
-        (!snapDay || !dataAl || snapDay <= dataAl) && (!snapDay || !dataDal || snapDay >= dataDal);
-      if (dentroPeriodo) map[b.cer].iniziale += iniziale;
+    }
+
+    // Calcola il saldo reale precedente al periodo. La rettifica iniziale riconcilia
+    // lo storico importato con lo snapshot ufficiale senza azzerare Carico/Scarico.
+    for (const [cer, row] of Object.entries(map)) {
+      const snapDay = snapshotByCer[cer];
+      const netToSnapshot = movimenti
+        .filter((m) => m.cer === cer && (!snapDay || m.data_movimento <= snapDay))
+        .reduce((net, m) => net + (m.tipo_movimento === "CARICO" ? Number(m.quantita_kg) || 0 : -(Number(m.quantita_kg) || 0)), 0);
+      const historicalOpening = (snapshotBalanceByCer[cer] || 0) - netToSnapshot;
+      const netBeforePeriod = dataDal
+        ? movimenti
+            .filter((m) => m.cer === cer && m.data_movimento < dataDal)
+            .reduce((net, m) => net + (m.tipo_movimento === "CARICO" ? Number(m.quantita_kg) || 0 : -(Number(m.quantita_kg) || 0)), 0)
+        : 0;
+      row.iniziale = historicalOpening + netBeforePeriod;
     }
 
     for (const m of movimenti) {
-      const snapDay = snapshotByCer[m.cer];
-      // I movimenti antecedenti/uguali allo snapshot sono già inclusi nel saldo iniziale
-      if (snapDay && m.data_movimento <= snapDay) continue;
       if (dataAl && m.data_movimento > dataAl) continue;
       if (dataDal && m.data_movimento < dataDal) continue;
       const key = m.cer;
       if (!map[key]) {
-        map[key] = { cer: m.cer, descrizione: m.descrizione_rifiuto || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
+        map[key] = { cer: m.cer, descrizione: descriptionsByCer[key] || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
       }
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;
