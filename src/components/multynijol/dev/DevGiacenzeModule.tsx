@@ -123,18 +123,34 @@ export function DevGiacenzeModule() {
     () =>
       filtered.reduce(
         (acc, r) => ({
-          iniziale: acc.iniziale + r.iniziale,
           carico: acc.carico + r.carico,
           scarico: acc.scarico + r.scarico,
           saldo: acc.saldo + r.saldo,
         }),
-        { iniziale: 0, carico: 0, scarico: 0, saldo: 0 }
+        { carico: 0, scarico: 0, saldo: 0 }
       ),
     [filtered]
   );
 
+  // Aggiornamento automatico: qualsiasi movimento o conferimento privato ricarica le giacenze
+  useEffect(() => {
+    const channel = supabase
+      .channel("dev-giacenze-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "movimenti_impianto" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "privati_conferimenti" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
-  // Sync giacenze (ricalcolo magazzino_giacenze dai movimenti, alla data odierna)
+  // Sync giacenze: ricalcola magazzino_giacenze per TUTTI i CER presenti nei movimenti
   const recalculate = useMutation({
     mutationFn: async () => {
       const { data: stockRows, error: stockError } = await supabase
@@ -142,24 +158,38 @@ export function DevGiacenzeModule() {
         .select("impianto_id, cer")
         .eq("tenant_id", MULTY_TENANT_ID);
       if (stockError) throw stockError;
-      for (const row of stockRows ?? []) {
-        if (!row.impianto_id) continue;
+
+      const { data: movRows, error: movError } = await supabase
+        .from("movimenti_impianto")
+        .select("impianto_id, cer")
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (movError) throw movError;
+
+      const pairs = new Map<string, { impianto_id: string; cer: string }>();
+      for (const row of [...(stockRows ?? []), ...(movRows ?? [])]) {
+        if (!row.impianto_id || !row.cer) continue;
+        pairs.set(`${row.impianto_id}|${row.cer}`, { impianto_id: row.impianto_id, cer: row.cer });
+      }
+
+      for (const { impianto_id, cer } of pairs.values()) {
         const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
           p_tenant_id: MULTY_TENANT_ID,
-          p_impianto_id: row.impianto_id,
-          p_cer: row.cer,
+          p_impianto_id: impianto_id,
+          p_cer: cer,
         });
         if (error) throw error;
       }
+      return pairs.size;
     },
-    onSuccess: () => {
-      ["dev-giacenze", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
+    onSuccess: (count) => {
+      ["dev-giacenze", "dev-giacenze-baseline", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
-      toast.success("Giacenze ricalcolate dai movimenti");
+      toast.success(`Giacenze ricalcolate dai movimenti (${count} codici CER)`);
     },
     onError: (e: any) => toast.error("Errore: " + e.message),
   });
+
 
   // Costruisce intestazione testuale (riusata da PDF/Excel)
   const buildHeaderLines = () => {
@@ -242,14 +272,13 @@ export function DevGiacenzeModule() {
         [
           { content: "C.E.R.", rowSpan: 2, styles: { valign: "bottom" } },
           { content: "", rowSpan: 2 },
-          { content: "Quantità", colSpan: 4, styles: { halign: "center" } },
+          { content: "Quantità", colSpan: 3, styles: { halign: "center" } },
         ],
-        ["Saldo iniziale", "Carico", "Scarico", "Saldo"],
+        ["Carico", "Scarico", "Saldo"],
       ],
       body: filtered.map((r) => [
         { content: r.cer, styles: { fontStyle: "bold" } },
         r.descrizione,
-        { content: fmt(r.iniziale), styles: { halign: "right" } },
         { content: fmt(r.carico), styles: { halign: "right" } },
         { content: fmt(r.scarico), styles: { halign: "right" } },
         { content: fmt(r.saldo), styles: { halign: "right", fontStyle: "bold" } },
@@ -257,12 +286,12 @@ export function DevGiacenzeModule() {
       foot: [
         [
           { content: "TOTALI GENERALI", colSpan: 2, styles: { fontStyle: "bold" } },
-          { content: fmt(totals.iniziale), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.carico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.scarico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.saldo), styles: { halign: "right", fontStyle: "bold" } },
         ],
       ],
+
       styles: { font: "helvetica", fontSize: 7.3, cellPadding: 1.1, lineColor: [180, 180, 180], lineWidth: 0.1, overflow: "linebreak" },
       headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
       footStyles: { fillColor: [230, 230, 230], textColor: 0 },
