@@ -189,7 +189,39 @@ Deno.serve(async (req) => {
     }
 
     // Allineamento stati: rilegge da Sibill lo stato reale dei documenti già trasmessi
+    // Elenco documenti presenti su Sibill (stato reale lato provider)
+    if (action === "list_documents") {
+      if (mock) {
+        return json({
+          ok: true, mock: true, env: "mock",
+          documents: [
+            { id: mockId("doc"), number: "MOCK-1", status: "ISSUED", delivery_status: "SENT", total: 122, date: new Date().toISOString().slice(0, 10), counterpart: "Cliente Mock" },
+          ],
+        });
+      }
+      if (!API_KEY || !COMPANY_ID) {
+        return json({ error: { title: "Configurazione mancante", detail: "SIBILL_API_KEY / SIBILL_COMPANY_ID non configurati" } }, 200);
+      }
+      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?limit=100`, { headers: sibillHeaders() });
+      if (!res.ok) return json({ error: await parseError(res) }, 200);
+      const okBody = await res.json().catch(() => ({}));
+      const list = Array.isArray(okBody?.data) ? okBody.data : Array.isArray(okBody) ? okBody : [];
+      return json({
+        ok: true, env: SIBILL_ENV, count: list.length,
+        documents: list.map((d: any) => ({
+          id: d?.id || null,
+          number: d?.number || d?.document_number || null,
+          status: d?.status || null,
+          delivery_status: d?.delivery_status || null,
+          total: d?.total ?? d?.total_amount ?? null,
+          date: d?.date || d?.issue_date || d?.created_at || null,
+          counterpart: d?.counterpart?.company_name || d?.counterpart_name || null,
+        })),
+      });
+    }
+
     if (action === "refresh_status") {
+
       const ids: string[] = Array.isArray(body?.fattura_ids) ? body.fattura_ids : [];
       const { data: rows } = await admin
         .from("fatture_sibill_sync")
