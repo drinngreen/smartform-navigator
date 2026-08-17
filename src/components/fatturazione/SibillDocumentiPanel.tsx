@@ -22,10 +22,11 @@ export function SibillDocumentiPanel({ mock }: Props) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [isForceRefreshing, setIsForceRefreshing] = useState(false);
-  const queryKey = ["sibill-documenti-p-v2", !!mock] as const;
+  const [modo, setModo] = useState<"P" | "IN">("P");
+  const queryKey = ["sibill-documenti-p-v2", !!mock, modo] as const;
   const { data: docs = [], isFetching, error } = useQuery({
     queryKey,
-    queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
+    queryFn: () => elencaDocumentiSibill({ mock, filter: modo }),
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
