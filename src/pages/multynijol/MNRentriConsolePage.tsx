@@ -53,7 +53,15 @@ const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 /** Blocchi di vidimazione appartenenti a ciascuna società (fallback se il bridge non espone CF/U.L.). */
 const ALLOWED_BLOCCHI: Record<string, string[]> = {
   multy: ["ZRZXR"],
-  niyol: ["DGXYQ", "BPJMG"],
+  niyol: ["BPJMG", "FRVKM"],
+};
+/** Blocchi selezionabili in pesca per ciascuna società (BPJMG = ufficio Niyol, FRVKM = dipendenti Niyol). */
+const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string | null }[]> = {
+  multy: [{ code: "ZRZXR", label: "Multyproget — TO0001", sito: "TO0001" }],
+  niyol: [
+    { code: "BPJMG", label: "Niyol — Ufficio", sito: "TO0001" },
+    { code: "FRVKM", label: "Niyol — Dipendenti", sito: null },
+  ],
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
