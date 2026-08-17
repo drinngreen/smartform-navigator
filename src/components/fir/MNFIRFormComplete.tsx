@@ -236,9 +236,78 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [fatturaFrom, setFatturaFrom] = useState<
+    { tenantId: string; emittente: string; righe: Riga[]; clienteFallback?: any } | null
+  >(null);
 
   const u = store.updateField;
   const d = store.data;
+
+  // ── Crea fattura direttamente dal formulario ──────────────────────
+  const cfKey = (v?: string) => (v || "").replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+
+  const apriCreaFattura = async () => {
+    const multyCf = cfKey(COMPANY_PRESETS.multy.codice_fiscale);
+    const niyolCf = cfKey(COMPANY_PRESETS.niyol.codice_fiscale);
+    const prod = { cf: cfKey(d.produttoreCF), nome: d.produttoreDenominazione, ind: d.produttoreUnitaLocale };
+    const dest = { cf: cfKey(d.destinatarioCF), nome: d.destinatarioDenominazione, ind: d.destinatarioUnitaLocale };
+    const trasCf = cfKey(d.trasportatoreCF);
+
+    // Chi emette la fattura: la società (Multyproget o Niyol) presente sul formulario.
+    let emittente: "multy" | "niyol" | null = null;
+    if ([prod.cf, dest.cf, trasCf].includes(niyolCf)) emittente = "niyol";
+    if ([prod.cf, dest.cf, trasCf].includes(multyCf)) emittente = "multy";
+    // Se entrambe sono presenti, emette chi fa il servizio principale (destinatario, poi trasportatore).
+    if (dest.cf === niyolCf || (trasCf === niyolCf && dest.cf !== multyCf && prod.cf !== multyCf)) emittente = "niyol";
+    if (dest.cf === multyCf) emittente = "multy";
+    if (!emittente) emittente = activeTenantId === NIYOL_TENANT_ID_CONST ? "niyol" : "multy";
+
+    const emittenteCf = emittente === "niyol" ? niyolCf : multyCf;
+    const tenantIdFattura = emittente === "niyol" ? NIYOL_TENANT_ID_CONST : MULTY_TENANT_ID_CONST;
+
+    // Cliente = la controparte del formulario (mai la società emittente).
+    const controparte = prod.cf && prod.cf !== emittenteCf ? prod : dest.cf !== emittenteCf ? dest : prod;
+
+    let clienteFallback: any = undefined;
+    if (controparte.cf) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp" as any)
+        .select("id,ragione_sociale,partita_iva,codice_fiscale,indirizzo,citta,cap,provincia,codice_destinatario")
+        .or(`codice_fiscale.eq.${controparte.cf},partita_iva.eq.${controparte.cf}`)
+        .limit(1)
+        .maybeSingle();
+      if (data) clienteFallback = data;
+    }
+    if (!clienteFallback && controparte.nome) {
+      clienteFallback = {
+        ragione_sociale: controparte.nome,
+        partita_iva: controparte.cf || null,
+        codice_fiscale: controparte.cf || null,
+        indirizzo: controparte.ind || null,
+      };
+    }
+
+    const cer = d.codiceEER || "";
+    const numeroFir = d.selectedFirNumber || "";
+    const qta = Number(String(d.pesoRicevuto || d.quantita || "").replace(",", ".")) || 1;
+
+    const riga: Riga = {
+      descrizione: `Smaltimento CER ${cer} - FIR ${numeroFir}`.trim(),
+      cer,
+      fir_form_id: store.editingFirId || null,
+      numero_fir: numeroFir,
+      quantita: qta,
+      unita_misura: d.unitaMisura || "kg",
+      prezzo_unitario: 0,
+      aliquota_iva: 22,
+      reverse_charge: false,
+      tipo_riga: "servizio",
+    };
+
+    setFatturaFrom({ tenantId: tenantIdFattura, emittente, righe: [riga], clienteFallback });
+  };
+
+
 
   const clearFields = useCallback((keys: string[]) => {
     const cur: any = useMNFIRStore.getState().data;
