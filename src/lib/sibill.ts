@@ -114,14 +114,28 @@ export function isMockSync(s?: SibillSync | null) {
 }
 
 export type SibillDocumento = {
-  id: string | null; number: string | null; status: string | null;
-  delivery_status: string | null; total: number | null; date: string | null; counterpart: string | null;
+  id: string | null;
+  number: string | null;
+  type: string | null;
+  status: string | null;
+  delivery_status: string | null;
+  delivery_date: string | null;
+  gross: number | null;
+  vat: number | null;
+  net: number | null;
+  currency: string | null;
+  date: string | null;
+  direction: string | null;
+  counterpart: string | null;
+  is_e_invoice?: boolean;
+  file_name?: string | null;
 };
 
-/** Elenca i documenti realmente presenti su Sibill (stato lato provider). */
-export async function elencaDocumentiSibill(opts: { mock?: boolean } = {}) {
+/** Elenca i documenti realmente presenti su Sibill (stato lato provider).
+ *  `filter: "P"` (default) restituisce solo le fatture con numero che termina in "/P". */
+export async function elencaDocumentiSibill(opts: { mock?: boolean; filter?: "P" | "all" } = {}) {
   const { data, error } = await supabase.functions.invoke("sibill-integration", {
-    body: { action: "list_documents", mock: !!opts.mock },
+    body: { action: "list_documents", mock: !!opts.mock, filter: opts.filter || "P" },
   });
   if (error) throw new Error(error.message || "Errore di rete verso Sibill");
   if ((data as any)?.error) {
@@ -130,3 +144,4 @@ export async function elencaDocumentiSibill(opts: { mock?: boolean } = {}) {
   }
   return (data as any).documents as SibillDocumento[];
 }
+

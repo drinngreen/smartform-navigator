@@ -1,0 +1,161 @@
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { elencaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+
+interface Props { mock?: boolean }
+
+const eur = (v: number | null) =>
+  v == null ? "—" : new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v);
+
+const dataIt = (d: string | null) => {
+  if (!d) return "—";
+  const iso = d.slice(0, 10);
+  const [y, m, g] = iso.split("-");
+  return y && m && g ? `${g}/${m}/${y}` : iso;
+};
+
+/** Elenco documenti "/P" letti direttamente da Sibill, con la stessa vista del gestionale Sibill. */
+export function SibillDocumentiPanel({ mock }: Props) {
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  const { data: docs = [], isFetching, refetch, error } = useQuery({
+    queryKey: ["sibill-documenti-p", !!mock],
+    queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    if (!s) return docs;
+    return docs.filter((d: SibillDocumento) =>
+      (d.number || "").toLowerCase().includes(s) || (d.counterpart || "").toLowerCase().includes(s));
+  }, [docs, search]);
+
+  const totale = useMemo(() => filtered.reduce((a, d) => a + (d.gross || 0), 0), [filtered]);
+  const allChecked = filtered.length > 0 && filtered.every(d => selected[d.id || ""]);
+
+  const copia = (d: SibillDocumento) => {
+    navigator.clipboard.writeText(
+      [d.number, d.counterpart, dataIt(d.date), eur(d.gross)].filter(Boolean).join(" — ")
+    );
+    toast.success("Riga copiata");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cerca numero documento o cliente…"
+            className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} fatture /P — totale ${eur(totale)}`}
+        </span>
+        <button onClick={() => refetch()} disabled={isFetching}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 bg-background/40 text-sm hover:bg-background/70 disabled:opacity-40">
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Aggiorna da Sibill
+        </button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
+          {(error as any).message}
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-border/30 bg-card/60 backdrop-blur-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-background/60 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <th className="p-3 w-10">
+                  <input type="checkbox" checked={allChecked}
+                    onChange={e => {
+                      const next: Record<string, boolean> = {};
+                      if (e.target.checked) filtered.forEach(d => { next[d.id || ""] = true; });
+                      setSelected(next);
+                    }} />
+                </th>
+                <th className="p-3 w-10" />
+                <th className="p-3 text-left">Numero documento</th>
+                <th className="p-3 text-left">Descrizione</th>
+                <th className="p-3 text-left">Data documento</th>
+                <th className="p-3 text-right">Importo</th>
+                <th className="p-3 text-left">Categoria</th>
+                <th className="p-3 text-center">Stato</th>
+                <th className="p-3 text-center">Copia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isFetching && filtered.length === 0 && (
+                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Lettura documenti da Sibill…
+                </td></tr>
+              )}
+              {!isFetching && filtered.length === 0 && (
+                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nessuna fattura /P trovata su Sibill.</td></tr>
+              )}
+              {filtered.map((d) => {
+                const [base, ...rest] = (d.number || "—").split("/");
+                const suffix = rest.length ? `/${rest.join("/")}` : "";
+                const consegnata = !!d.delivery_date || d.status === "DELIVERED";
+                return (
+                  <tr key={d.id || d.number} className="border-t border-border/20 hover:bg-background/40">
+                    <td className="p-3">
+                      <input type="checkbox" checked={!!selected[d.id || ""]}
+                        onChange={e => setSelected(s => ({ ...s, [d.id || ""]: e.target.checked }))} />
+                    </td>
+                    <td className="p-3 text-muted-foreground"><FileSearch className="h-4 w-4" /></td>
+                    <td className="p-3">
+                      <div className="font-medium">
+                        {base}
+                        {suffix && <span className="bg-amber-300/30 text-amber-200 rounded px-0.5">{suffix}</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.type === "CREDIT_NOTE" ? "Nota di credito" : "Fattura"}
+                      </div>
+                    </td>
+                    <td className="p-3">{d.counterpart || "—"}</td>
+                    <td className="p-3">{dataIt(d.date)}</td>
+                    <td className="p-3 text-right">
+                      <div className="font-medium">{eur(d.gross)}</div>
+                      <div className="text-xs text-muted-foreground">netto {eur(d.net)}</div>
+                    </td>
+                    <td className="p-3">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        d.direction === "RECEIVED"
+                          ? "bg-blue-600/20 text-blue-200 border border-blue-500/40"
+                          : "bg-emerald-600/20 text-emerald-200 border border-emerald-500/40"}`}>
+                        {d.direction === "RECEIVED" ? "fornitore" : "cliente"}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center" title={`${d.status || ""} ${d.delivery_date ? "— consegnata " + dataIt(d.delivery_date) : ""}`}>
+                      <span className="relative inline-flex">
+                        <Inbox className="h-4 w-4 text-muted-foreground" />
+                        {consegnata
+                          ? <CheckCircle2 className="h-3 w-3 text-emerald-400 absolute -bottom-1 -right-1" />
+                          : <span className="h-2 w-2 rounded-full bg-amber-400 absolute -bottom-0.5 -right-0.5" />}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <button onClick={() => copia(d)} className="text-muted-foreground hover:text-foreground" title="Copia riga">
+                        <Copy className="h-4 w-4 inline" />
+                      </button>
+                      <Mail className="h-4 w-4 inline ml-2 text-muted-foreground/50" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
