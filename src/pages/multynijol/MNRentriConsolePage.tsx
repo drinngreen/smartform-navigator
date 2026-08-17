@@ -574,7 +574,53 @@ export default function MNRentriConsolePage() {
                 )}
               </div>
             </div>
+
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-3">
+              <h3 className="text-base font-display tracking-wider flex items-center gap-2">
+                <Users size={16} /> Numeri già assegnati ({assegnati.length})
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Numeri scaricati da RENTRI e già assegnati a un dipendente o all'ufficio.
+              </p>
+              <div className="space-y-2 max-h-[420px] overflow-auto">
+                {assegnati.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30"
+                  >
+                    <span className="font-mono text-sm font-bold">{p.fir_number}</span>
+                    <button
+                      type="button"
+                      title="Copia numero FIR"
+                      onClick={() => copyFir(p.fir_number)}
+                      className="rounded-md border border-border/60 bg-background/60 p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <span className="text-sm text-foreground">{p.assegnatario}</span>
+                    <span
+                      className={`ml-auto text-[11px] uppercase font-semibold px-2 py-1 rounded-full ${
+                        p.status === "consumed"
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-amber-500/20 text-amber-300"
+                      }`}
+                    >
+                      {p.status === "consumed" ? "utilizzato" : "assegnato"}
+                    </span>
+                    {p.assigned_at && (
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {new Date(p.assigned_at).toLocaleDateString("it-IT")}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {assegnati.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nessun numero assegnato al momento.</p>
+                )}
+              </div>
+            </div>
           </div>
+
         )}
 
         {tab === "registri" && (
