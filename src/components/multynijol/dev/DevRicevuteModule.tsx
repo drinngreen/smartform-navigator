@@ -256,8 +256,11 @@ export function DevRicevuteModule() {
     ${r.conferimento ? `
       ${r.conferimento.numero_progressivo != null ? `<div class="row"><div class="label">N° Registro DBT</div><div class="val">#${escHtml(String(r.conferimento.numero_progressivo))}/${escHtml(String(r.conferimento.anno_dbt ?? ""))}</div></div>` : ""}
       <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
-      <div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
-      <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>
+      ${(r.materiali && r.materiali.length > 1)
+        ? `<div class="row"><div class="label">Materiali</div><div class="val">${r.materiali.map((m) => `${escHtml(m.cer ?? "—")} — ${escHtml(Number(m.kg_pesati ?? 0).toLocaleString("it-IT"))} kg`).join("<br/>")}</div></div>
+           <div class="row"><div class="label">Peso totale</div><div class="val">${escHtml(r.materiali.reduce((s, m) => s + (Number(m.kg_pesati) || 0), 0).toLocaleString("it-IT"))} kg</div></div>`
+        : `<div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
+           <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>`}
       ${r.conferimento.targa_automezzo ? `<div class="row"><div class="label">Targa automezzo</div><div class="val">${escHtml(r.conferimento.targa_automezzo)}${r.conferimento.modello_automezzo ? ` — ${escHtml(r.conferimento.modello_automezzo)}` : ""}</div></div>` : ""}
       ${r.conferimento.metodo_pag ? `<div class="row"><div class="label">Metodo pagamento</div><div class="val">${escHtml(r.conferimento.metodo_pag === "contanti" ? "Contanti" : "Metodi Tracciabili / Politici")}</div></div>` : ""}
     ` : ""}
