@@ -932,6 +932,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         </div>
       )}
 
+      {/* Crea fattura dal formulario (solo ufficio/admin) */}
+      {(isStarted || store.editingFirId) && (
+        <button
+          onClick={() => void apriCreaFattura()}
+          className="w-full py-3 rounded-2xl bg-neon-green/15 border border-neon-green/40 text-neon-green font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-green/25 transition-colors"
+        >
+          <Receipt className="h-4 w-4" /> CREA FATTURA DA QUESTO FORMULARIO
+        </button>
+      )}
+
+
       {/* Data Emissione + Registro */}
       <div className="p-4 rounded-2xl bg-card/60 border border-border/30">
         <div className="grid grid-cols-2 gap-4">
