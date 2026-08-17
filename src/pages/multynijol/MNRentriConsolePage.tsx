@@ -65,11 +65,12 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "dafirmare" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "stato", label: "Stato RENTRI", icon: <Activity size={14} /> },
   { id: "numeri", label: "Numeri FIR", icon: <Ticket size={14} /> },
+  { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
