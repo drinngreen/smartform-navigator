@@ -188,9 +188,60 @@ Deno.serve(async (req) => {
       return json({ ok: true, env: SIBILL_ENV, base_url: BASE_URL, data: await res.json() });
     }
 
+    // Allineamento stati: rilegge da Sibill lo stato reale dei documenti già trasmessi
+    if (action === "refresh_status") {
+      const ids: string[] = Array.isArray(body?.fattura_ids) ? body.fattura_ids : [];
+      const { data: rows } = await admin
+        .from("fatture_sibill_sync")
+        .select("*")
+        .in("fattura_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+
+      const results: any[] = [];
+      for (const r of (rows || []) as any[]) {
+        const docId: string | null = r.sibill_document_id;
+        const isMock = !docId || docId.includes("_mock_");
+        if (isMock) {
+          results.push({ fattura_id: r.fattura_id, mock: true, document_status: r.document_status, delivery_status: r.delivery_status });
+          continue;
+        }
+        if (mock || !API_KEY || !COMPANY_ID) {
+          results.push({ fattura_id: r.fattura_id, skipped: true });
+          continue;
+        }
+        try {
+          const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents/${docId}`, {
+            headers: sibillHeaders(),
+          });
+          if (!res.ok) {
+            const err = await parseError(res);
+            results.push({ fattura_id: r.fattura_id, error: err });
+            continue;
+          }
+          const okBody = await res.json().catch(() => ({}));
+          const doc = okBody?.data || okBody;
+          await admin.from("fatture_sibill_sync").update({
+            document_status: doc?.status ?? r.document_status,
+            delivery_status: doc?.delivery_status ?? r.delivery_status,
+            payment_status: doc?.payment_status ?? r.payment_status,
+            raw_response: doc || r.raw_response,
+            last_sync_at: new Date().toISOString(),
+          }).eq("fattura_id", r.fattura_id);
+          results.push({
+            fattura_id: r.fattura_id,
+            document_status: doc?.status || null,
+            delivery_status: doc?.delivery_status || null,
+          });
+        } catch (e: any) {
+          results.push({ fattura_id: r.fattura_id, error: { title: "Errore rete", detail: String(e?.message || e) } });
+        }
+      }
+      return json({ ok: true, env: mock ? "mock" : SIBILL_ENV, checked: results.length, results });
+    }
+
     if (action !== "send_invoice") {
       return json({ error: { title: "Azione non valida", detail: String(action) } }, 400);
     }
+
 
     const { fattura_id, tenant_id, xml, counterpart } = body || {};
     if (!fattura_id || !xml) {
