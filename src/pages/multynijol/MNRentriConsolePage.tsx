@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
@@ -37,6 +37,7 @@ import {
   Users,
   PenLine,
   Copy,
+  ArrowLeft,
 } from "lucide-react";
 
 
@@ -69,6 +70,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 export default function MNRentriConsolePage() {
   const { context } = useParams<{ context: string }>();
+  const navigate = useNavigate();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) ?? MN_CONTEXTS.find((c) => c.id === "multyproget") ?? MN_CONTEXTS[0];
@@ -206,6 +208,38 @@ export default function MNRentriConsolePage() {
   );
 
 
+
+  const [releasing, setReleasing] = useState<string | null>(null);
+
+  /** Toglie l'assegnazione di un numero FIR e lo rimette tra i disponibili. */
+  const liberaNumero = async (poolId: string, firNumber: string) => {
+    if (!window.confirm(`Togliere l'assegnazione del FIR ${firNumber}? Il numero torna disponibile.`)) return;
+    setReleasing(poolId);
+    try {
+      const { data: drafts } = await supabase
+        .from("fir_forms")
+        .select("id")
+        .eq("numero_fir", firNumber)
+        .eq("status", "bozza")
+        .eq("deleted_by_user", false);
+      for (const d of drafts ?? []) {
+        await supabase.functions.invoke("admin-user-manage", {
+          body: { action: "delete_fir_form", form_id: (d as any).id },
+        });
+      }
+      const { error } = await supabase
+        .from("fir_number_pool")
+        .update({ status: "available", user_id: SHARED_POOL_USER_ID, assigned_at: null } as never)
+        .eq("id", poolId);
+      if (error) throw error;
+      toast.success(`Numero ${firNumber} rimesso tra i FIR da assegnare`);
+      await loadPool();
+    } catch (e: any) {
+      toast.error("Errore rimozione: " + (e?.message || ""));
+    } finally {
+      setReleasing(null);
+    }
+  };
 
   const handlePesca = async () => {
     setPescando(true);
@@ -399,6 +433,14 @@ export default function MNRentriConsolePage() {
   return (
     <MNAdminLayout title={`Console RENTRI — ${label}`} subtitle="Stato, numeri FIR, registri e invii">
       <div className="space-y-6">
+        <button
+          type="button"
+          onClick={() => navigate("/mn/admin/dev-multyproget")}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border border-border/60 bg-secondary/50 hover:bg-secondary"
+        >
+          <ArrowLeft size={16} /> Torna alla console centrale
+        </button>
+
         {/* Barra stato */}
         <div className="flex flex-wrap items-center gap-2">
           {(["multy", "niyol"] as const).map((c) => (
@@ -617,6 +659,15 @@ export default function MNRentriConsolePage() {
                         {new Date(p.assigned_at).toLocaleDateString("it-IT")}
                       </span>
                     )}
+                    <button
+                      type="button"
+                      disabled={releasing === p.id}
+                      onClick={() => liberaNumero(p.id, p.fir_number)}
+                      title="Togli assegnazione e rimetti il numero nei FIR da assegnare"
+                      className="text-[11px] underline text-destructive hover:opacity-80 disabled:opacity-40"
+                    >
+                      {releasing === p.id ? "…" : "togli"}
+                    </button>
                   </div>
                 ))}
                 {assegnati.length === 0 && (

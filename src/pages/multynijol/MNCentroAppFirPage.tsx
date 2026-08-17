@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, RefreshCw, Loader2, FilePlus, Pencil, Trash2, ShieldCheck, ShieldAlert,
-  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle, Copy,
+  Hash, Zap, CheckCircle2, AlertTriangle, UserPlus, UserCog, UserX, PlusCircle, Copy, ArrowLeft,
 } from "lucide-react";
 
 import { vidimaFIRAsync } from "@/lib/rentriVpsApi";
@@ -420,6 +420,10 @@ export default function MNCentroAppFirPage() {
   return (
     <MNAdminLayout title="Centro App & FIR" subtitle="Accessi app dipendenti e formulari sempre pronti">
       <div className="space-y-6">
+        <Button variant="outline" size="sm" onClick={() => navigate("/mn/admin/dev-multyproget")}>
+          <ArrowLeft className="h-4 w-4 mr-2" /> Torna alla console centrale
+        </Button>
+
         {/* Switch società */}
         <div className="flex flex-wrap items-center gap-3">
           {(Object.keys(COMPANIES) as CompanyKey[]).map((key) => (
