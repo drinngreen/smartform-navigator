@@ -213,6 +213,24 @@ export default function MNCentroAppFirPage() {
     }
   };
 
+  const removeDraftById = async (draft: DraftRow, emp: Employee) => {
+    if (!window.confirm(`Togliere il FIR ${draft.numero_fir ?? ""} a ${emp.cognome} ${emp.nome}? Il numero torna disponibile per l'assegnazione.`)) return;
+    setBusy(emp.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-user-manage", {
+        body: { action: "delete_fir_form", form_id: draft.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Numero ${draft.numero_fir ?? ""} rimesso nei FIR da assegnare`);
+      await load();
+    } catch (e: any) {
+      toast.error("Errore rimozione: " + (e.message || ""));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const removeDraft = async (emp: Employee) => {
     const draft = draftByUser[emp.user_id];
     if (!draft) return;
