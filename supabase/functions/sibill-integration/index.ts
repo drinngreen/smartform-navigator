@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
       if (!API_KEY || !COMPANY_ID) {
         return json({ error: { title: "Configurazione mancante", detail: "SIBILL_API_KEY / SIBILL_COMPANY_ID non configurati" } }, 200);
       }
-      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?limit=100`, { headers: sibillHeaders() });
+      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents`, { headers: sibillHeaders() });
       if (!res.ok) return json({ error: await parseError(res) }, 200);
       const okBody = await res.json().catch(() => ({}));
       const list = Array.isArray(okBody?.data) ? okBody.data : Array.isArray(okBody) ? okBody : [];
