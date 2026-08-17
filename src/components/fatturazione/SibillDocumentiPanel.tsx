@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2 } from "lucide-react";
+import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2, DownloadCloud } from "lucide-react";
 import { toast } from "sonner";
-import { elencaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+import { elencaDocumentiSibillFull, scansionaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+import { FattureEmesseEsitoPanel } from "./FattureEmesseEsitoPanel";
 
-interface Props { mock?: boolean }
+interface Props { mock?: boolean; tenantId?: string }
 
 const eur = (v: number | null) =>
   v == null ? "—" : new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v);
@@ -16,21 +17,49 @@ const dataIt = (d: string | null) => {
   return y && m && g ? `${g}/${m}/${y}` : iso;
 };
 
-/** Elenco documenti "/P" letti direttamente da Sibill, con la stessa vista del gestionale Sibill. */
-export function SibillDocumentiPanel({ mock }: Props) {
+/** Elenco documenti letti da Sibill (emesse "/P" e ricevute), con la stessa vista del gestionale Sibill. */
+export function SibillDocumentiPanel({ mock, tenantId }: Props) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [isForceRefreshing, setIsForceRefreshing] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanInfo, setScanInfo] = useState<string | null>(null);
   const [modo, setModo] = useState<"P" | "IN">("P");
-  const queryKey = ["sibill-documenti-p-v2", !!mock, modo] as const;
-  const { data: docs = [], isFetching, error } = useQuery({
+  const queryKey = ["sibill-documenti-v3", !!mock, modo] as const;
+  const { data: res, isFetching, error } = useQuery({
     queryKey,
-    queryFn: () => elencaDocumentiSibill({ mock, filter: modo }),
-    staleTime: 10 * 60 * 1000,
+    queryFn: () => elencaDocumentiSibillFull({ mock, filter: modo }),
+    staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
   });
+  const docs = res?.documents ?? [];
+
+  /** Sincronizza l'intero archivio Sibill a blocchi (l'API non consente filtri lato server). */
+  const sincronizza = async (restart = false) => {
+    setScanning(true);
+    try {
+      let done = false;
+      let first = true;
+      for (let i = 0; i < 40 && !done; i++) {
+        const r = await scansionaDocumentiSibill({ mock, pages: 12, restart: restart && first });
+        first = false;
+        done = !!r.done;
+        setScanInfo(`Scansione Sibill: ${r.scanned} documenti letti, ${r.cached} in archivio${done ? " — completata" : "…"}`);
+        await queryClient.invalidateQueries({ queryKey: ["sibill-documenti-v3"] });
+        if (r.rate_limited) {
+          toast.warning("Sibill ha limitato le chiamate: riprendo tra poco, l'elenco è parziale.");
+          break;
+        }
+      }
+      if (done) toast.success("Archivio Sibill aggiornato");
+    } catch (e: any) {
+      toast.error(e.message || "Errore sincronizzazione Sibill");
+    } finally {
+      setScanning(false);
+    }
+  };
+
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
