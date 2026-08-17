@@ -226,15 +226,47 @@ Deno.serve(async (req) => {
         return Number.isFinite(n) ? n : null;
       };
 
+      // Cache in memoria (10 min): evita di ri-scaricare migliaia di documenti ad ogni apertura
+      const cacheKey = `docs:${filter}`;
+      const cached = DOC_CACHE.get(cacheKey);
+      if (cached && !body?.force && Date.now() - cached.at < 10 * 60 * 1000) {
+        return json({ ok: true, env: SIBILL_ENV, cached: true, count: cached.documents.length, scanned: cached.scanned, partial: cached.partial, documents: cached.documents });
+      }
+
       const out: any[] = [];
       let cursor: string | null = null;
       let scanned = 0;
-      for (let page = 0; page < 250; page++) {
+      let partial = false;
+      let warning: string | null = null;
+
+      pages: for (let page = 0; page < 250; page++) {
         const url =
           `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
           (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
-        const res = await fetch(url, { headers: sibillHeaders() });
-        if (!res.ok) return json({ error: await parseError(res) }, 200);
+
+        // Throttling + retry con backoff sul rate limit di Sibill (429)
+        let res: Response | null = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          res = await fetch(url, { headers: sibillHeaders() });
+          if (res.status !== 429) break;
+          await res.text().catch(() => "");
+          const retryAfter = Number(res.headers.get("retry-after"));
+          const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+            ? Math.min(retryAfter * 1000, 15000)
+            : 1500 * Math.pow(2, attempt);
+          if (attempt === 4) {
+            partial = true;
+            warning = "Limite di chiamate Sibill raggiunto: elenco parziale, riprova tra qualche minuto.";
+            break pages;
+          }
+          await sleep(waitMs);
+        }
+        if (!res) break;
+        if (!res.ok) {
+          if (out.length) { partial = true; warning = "Errore Sibill durante lo scorrimento: elenco parziale."; break; }
+          return json({ error: await parseError(res) }, 200);
+        }
+
         const okBody = await res.json().catch(() => ({}));
         const list: any[] = Array.isArray(okBody?.data) ? okBody.data : [];
         scanned += list.length;
@@ -267,10 +299,13 @@ Deno.serve(async (req) => {
         const pg = okBody?.page || {};
         if (!pg?.has_next_page || !pg?.cursor) break;
         cursor = pg.cursor as string;
+        await sleep(250); // rallenta: rispetta il rate limit di Sibill
       }
 
       out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
-      return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, documents: out });
+      DOC_CACHE.set(cacheKey, { at: Date.now(), documents: out, scanned, partial });
+      return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, partial, warning, documents: out });
+
     }
 
 
