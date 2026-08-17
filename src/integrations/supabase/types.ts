@@ -6300,6 +6300,24 @@ export type Database = {
         }[]
       }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
+      crea_conferimento_privato_atomico: {
+        Args: {
+          p_cf_pi: string
+          p_data: string
+          p_impianto_id: string
+          p_importo: number
+          p_materiali: Json
+          p_metodo_pag: string
+          p_modello: string
+          p_nome_privato: string
+          p_note: string
+          p_privato_id: string
+          p_targa: string
+          p_tenant_id: string
+          p_tipo_utenza: string
+        }
+        Returns: Json
+      }
       create_extra_fir_draft: { Args: { p_user_id: string }; Returns: string }
       create_manual_fir_draft_for_tenant: {
         Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
