@@ -454,10 +454,9 @@ export function DevGiacenzeModule() {
                   <tr className="border-b-2 border-border/50 text-muted-foreground bg-card/40">
                     <th className="text-left py-2 px-3" rowSpan={2}>C.E.R.</th>
                     <th className="text-left py-2 px-3" rowSpan={2}>Descrizione</th>
-                    <th className="text-center py-1 px-3" colSpan={4}>Quantità</th>
+                    <th className="text-center py-1 px-3" colSpan={3}>Quantità</th>
                   </tr>
                   <tr className="border-b border-border/30 text-muted-foreground bg-card/30">
-                    <th className="text-right py-1 px-3">Saldo iniziale</th>
                     <th className="text-right py-1 px-3">Carico</th>
                     <th className="text-right py-1 px-3">Scarico</th>
                     <th className="text-right py-1 px-3">Saldo</th>
@@ -468,7 +467,6 @@ export function DevGiacenzeModule() {
                     <tr key={r.cer} className="border-b border-border/10 hover:bg-white/5">
                       <td className="py-1.5 px-3 font-mono font-bold text-emerald-300">{r.cer}</td>
                       <td className="py-1.5 px-3 text-xs">{r.descrizione || "—"}</td>
-                      <td className="py-1.5 px-3 text-right text-muted-foreground">{fmt(r.iniziale)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.carico)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.scarico)}</td>
                       <td className={`py-1.5 px-3 text-right font-bold ${r.saldo > 0 ? "text-emerald-400" : r.saldo < 0 ? "text-red-400" : "text-muted-foreground"}`}>
@@ -478,7 +476,7 @@ export function DevGiacenzeModule() {
                   ))}
                   <tr className="bg-emerald-500/10 border-t-2 border-emerald-500/40 font-bold">
                     <td colSpan={2} className="py-2 px-3">TOTALI GENERALI</td>
-                    <td className="py-2 px-3 text-right">{fmt(totals.iniziale)}</td>
+
                     <td className="py-2 px-3 text-right">{fmt(totals.carico)}</td>
                     <td className="py-2 px-3 text-right">{fmt(totals.scarico)}</td>
                     <td className="py-2 px-3 text-right text-emerald-300">{fmt(totals.saldo)}</td>
