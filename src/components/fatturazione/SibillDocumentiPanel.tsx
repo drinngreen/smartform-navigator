@@ -92,7 +92,9 @@ export function SibillDocumentiPanel({ mock }: Props) {
                 <th className="p-3 text-left">Numero documento</th>
                 <th className="p-3 text-left">Descrizione</th>
                 <th className="p-3 text-left">Data documento</th>
-                <th className="p-3 text-right">Importo</th>
+                <th className="p-3 text-right">Imponibile</th>
+                <th className="p-3 text-right">IVA</th>
+                <th className="p-3 text-right">Totale</th>
                 <th className="p-3 text-left">Categoria</th>
                 <th className="p-3 text-center">Stato</th>
                 <th className="p-3 text-center">Copia</th>
@@ -100,12 +102,12 @@ export function SibillDocumentiPanel({ mock }: Props) {
             </thead>
             <tbody>
               {isFetching && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">
+                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin inline mr-2" /> Lettura documenti da Sibill…
                 </td></tr>
               )}
               {!isFetching && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nessuna fattura /P trovata su Sibill.</td></tr>
+                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">Nessuna fattura /P trovata su Sibill.</td></tr>
               )}
               {filtered.map((d) => {
                 const [base, ...rest] = (d.number || "—").split("/");
@@ -127,12 +129,14 @@ export function SibillDocumentiPanel({ mock }: Props) {
                         {d.type === "CREDIT_NOTE" ? "Nota di credito" : "Fattura"}
                       </div>
                     </td>
-                    <td className="p-3">{d.counterpart || "—"}</td>
-                    <td className="p-3">{dataIt(d.date)}</td>
-                    <td className="p-3 text-right">
-                      <div className="font-medium">{eur(d.gross)}</div>
-                      <div className="text-xs text-muted-foreground">netto {eur(d.net)}</div>
+                    <td className="p-3">
+                      <div>{d.counterpart || d.notes || "—"}</div>
+                      {d.file_name && <div className="text-[11px] text-muted-foreground truncate max-w-[220px]">{d.file_name}</div>}
                     </td>
+                    <td className="p-3">{dataIt(d.date)}</td>
+                    <td className="p-3 text-right">{eur(d.net)}</td>
+                    <td className="p-3 text-right text-muted-foreground">{eur(d.vat)}</td>
+                    <td className="p-3 text-right font-semibold">{eur(d.gross)}</td>
                     <td className="p-3">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         d.direction === "RECEIVED"
