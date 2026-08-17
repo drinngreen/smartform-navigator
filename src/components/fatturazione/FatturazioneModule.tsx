@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Plus, Search, Eye, Trash2, FileCode, Send, Lock, Clock, Loader2,
-  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro, AlertTriangle,
+  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
-import { inviaFatturaASibill, fetchSibillSync, type SibillSync } from "@/lib/sibill";
+import { inviaFatturaASibill, fetchSibillSync, aggiornaStatiSibill, isMockSync, type SibillSync } from "@/lib/sibill";
 
 
 interface Props { tenantId?: string; }
@@ -98,6 +98,35 @@ export function FatturazioneModule({ tenantId }: Props) {
     },
     onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
   });
+
+  // Allineamento stati reali da Sibill (usato anche quando si passa da MOCK a REALE)
+  const refreshMut = useMutation({
+    mutationFn: async () => aggiornaStatiSibill(fatture.map((f: any) => f.id)),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
+      qc.invalidateQueries({ queryKey: ["fatture"] });
+      toast.success(`Stati aggiornati da Sibill (${res?.checked ?? 0} fatture verificate)`);
+    },
+    onError: (e: any) => toast.error(e.message || "Impossibile aggiornare gli stati da Sibill", { duration: 8000 }),
+  });
+
+  const setModalita = (mockMode: boolean) => {
+    setSibillMock(mockMode);
+    localStorage.setItem("sibill_mock_mode", mockMode ? "true" : "false");
+    if (!mockMode) refreshMut.mutate();
+  };
+
+  const sibillStats = useMemo(() => {
+    const list = fatture.map((f: any) => (sibillMap as any)[f.id] as SibillSync | undefined);
+    return {
+      reali: list.filter(s => s && !isMockSync(s) && s.sync_status !== "errore").length,
+      mock: list.filter(s => isMockSync(s)).length,
+      errore: list.filter(s => s?.sync_status === "errore").length,
+      nonInviate: list.filter(s => !s).length,
+    };
+  }, [fatture, sibillMap]);
+
+
 
 
 
@@ -213,32 +242,48 @@ export function FatturazioneModule({ tenantId }: Props) {
           </div>
 
           {/* Modalità invio Sibill */}
-          <div className={`flex flex-wrap items-center gap-4 rounded-xl border px-4 py-3 text-xs ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
-            <span className="font-medium">Modalità invio Sibill:</span>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="sibill_mode"
-                checked={sibillMock}
-                onChange={() => { setSibillMock(true); localStorage.setItem("sibill_mock_mode", "true"); }}
-              />
-              <span className={sibillMock ? "text-amber-300 font-medium" : "text-muted-foreground"}>MOCK — simulazione, nessun invio reale</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="sibill_mode"
-                checked={!sibillMock}
-                onChange={() => { setSibillMock(false); localStorage.setItem("sibill_mock_mode", "false"); }}
-              />
-              <span className={!sibillMock ? "text-emerald-300 font-medium" : "text-muted-foreground"}>REALE — invio con chiave API configurata</span>
-            </label>
-            <span className="text-muted-foreground ml-auto">
+          <div className={`rounded-xl border px-4 py-3 text-xs space-y-2 ${sibillMock ? "border-amber-500/40 bg-amber-500/10 text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"}`}>
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="font-medium">Modalità invio Sibill:</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="sibill_mode" checked={sibillMock} onChange={() => setModalita(true)} />
+                <span className={sibillMock ? "text-amber-300 font-medium" : "text-muted-foreground"}>MOCK — simulazione, nessun invio reale</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="sibill_mode" checked={!sibillMock} onChange={() => setModalita(false)} />
+                <span className={!sibillMock ? "text-emerald-300 font-medium" : "text-muted-foreground"}>REALE — invio con chiave API configurata</span>
+              </label>
+              <button
+                onClick={() => refreshMut.mutate()}
+                disabled={refreshMut.isPending || fatture.length === 0}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 bg-background/40 text-foreground hover:bg-background/70 disabled:opacity-40"
+                title="Rilegge da Sibill lo stato reale delle fatture trasmesse"
+              >
+                {refreshMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Aggiorna stati da Sibill
+              </button>
+            </div>
+
+            {/* Stato attuale delle fatture rispetto a Sibill */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300">Reali sincronizzate: {sibillStats.reali}</span>
+              <span className="px-2 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300">Simulate MOCK: {sibillStats.mock}</span>
+              <span className="px-2 py-1 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300">In errore: {sibillStats.errore}</span>
+              <span className="px-2 py-1 rounded-lg border border-border/40 bg-background/40 text-muted-foreground">Mai inviate: {sibillStats.nonInviate}</span>
+              {!sibillMock && sibillStats.mock > 0 && (
+                <span className="text-amber-300">
+                  In modalità REALE le {sibillStats.mock} fatture marcate MOCK non esistono su Sibill: vanno ritrasmesse.
+                </span>
+              )}
+            </div>
+
+            <div className="text-muted-foreground">
               {sibillMock
                 ? "Le fatture seguono l'intero flusso reale (stati, badge, sincronizzazione) ma non vengono trasmesse a Sibill."
                 : "ATTENZIONE: invio REALE a Sibill con la chiave API configurata."}
-            </span>
+            </div>
           </div>
+
 
 
           {/* Summary */}
@@ -300,6 +345,9 @@ export function FatturazioneModule({ tenantId }: Props) {
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <SibillBadge sync={sib} />
+                              {isMockSync(sib) && (
+                                <span className="px-2 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[10px] font-semibold" title="Stato generato in simulazione MOCK: non presente su Sibill">MOCK</span>
+                              )}
                               <IncassoBadge sync={sib} />
                             </div>
                           </td>

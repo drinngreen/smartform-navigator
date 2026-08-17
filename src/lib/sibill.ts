@@ -93,3 +93,22 @@ export async function fetchSibillSync(fatturaIds: string[]) {
   ((data || []) as any[]).forEach((r) => (map[r.fattura_id] = r as SibillSync));
   return map;
 }
+
+/** Rilegge da Sibill lo stato reale dei documenti già trasmessi (utile passando da MOCK a REALE). */
+export async function aggiornaStatiSibill(fatturaIds: string[]) {
+  if (!fatturaIds.length) return { checked: 0, results: [] as any[] };
+  const { data, error } = await supabase.functions.invoke("sibill-integration", {
+    body: { action: "refresh_status", fattura_ids: fatturaIds },
+  });
+  if (error) throw new Error(error.message || "Errore di rete verso Sibill");
+  if ((data as any)?.error) {
+    const e = (data as any).error;
+    throw new Error(`${e.title}: ${e.detail}`);
+  }
+  return data as { checked: number; results: any[] };
+}
+
+/** true se lo stato salvato proviene da una simulazione MOCK */
+export function isMockSync(s?: SibillSync | null) {
+  return !!s?.sibill_document_id?.includes("_mock_");
+}
