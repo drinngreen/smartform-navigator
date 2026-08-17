@@ -306,72 +306,25 @@ export function DevPrivatiModule() {
     const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
     const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
-    const anno = Number(dataRegistrazione.slice(0, 4));
-    const gruppoId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`);
     const importoTotale = confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : 0;
-
-    const insertedIds: string[] = [];
-    const rollback = async () => {
-      if (insertedIds.length) await supabase.from("privati_conferimenti").delete().in("id", insertedIds);
-      invalidateInventoryQueries();
-    };
-
-    const confRows: any[] = [];
-    for (let i = 0; i < righe.length; i++) {
-      const r = righe[i];
-      const { data: confData, error } = await supabase
-        .from("privati_conferimenti")
-        .insert({
-          tenant_id: MULTY_TENANT_ID,
-          impianto_id: impiantoId,
-          cer: r.cer,
-          kg_pesati: r.kg,
-          nome_privato: nomeFinale,
-          cf_pi: privato?.codice_fiscale || null,
-          // L'importo viene attribuito interamente alla prima riga per non duplicare gli incassi
-          importo_pagato: i === 0 ? (confForm.importo_pagato ? importoTotale : null) : 0,
-          metodo_pag: confForm.metodo_pag || null,
-          note: confForm.note || null,
-          privato_id: targetPrivatoId,
-          tipo_utenza: privato?.tipo_utenza || "domestica",
-          targa_automezzo: confForm.targa_automezzo || null,
-          modello_automezzo: confForm.modello_automezzo || null,
-          data: dataRegistrazione,
-          gruppo_id: gruppoId,
-        } as any)
-        .select()
-        .single();
-
-      if (error || !confData) {
-        toast.error(error?.message || "Errore inserimento conferimento");
-        await rollback();
-        return;
-      }
-      insertedIds.push((confData as any).id);
-      confRows.push(confData);
-    }
-
-    const primo = confRows[0] as any;
-    const { data: numData, error: numberError } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
-    if (numberError) {
-      toast.error(`Conferimento annullato: impossibile generare il numero ricevuta (${numberError.message})`);
-      await rollback();
-      return;
-    }
-
-    const dettaglioMateriali = confRows.map((c: any) => `CER ${c.cer} — ${c.kg_pesati} kg`).join(" | ");
-    const totaleKg = righe.reduce((s, r) => s + r.kg, 0);
-    const { error: receiptError } = await supabase.from("ricevute_privati" as any).insert({
-      tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: primo.id,
-      privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-      data_emissione: dataRegistrazione,
-      importo: importoTotale,
-      gruppo_id: gruppoId,
-      note: `DBT #${primo.numero_progressivo ?? "-"}/${primo.anno_dbt ?? anno} — ${nomeFinale} — ${dettaglioMateriali} — Totale ${totaleKg} kg — Pag.: ${confForm.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${primo.targa_automezzo ? ` — Targa: ${primo.targa_automezzo}` : ""}`,
+    const { error } = await supabase.rpc("crea_conferimento_privato_atomico", {
+      p_tenant_id: MULTY_TENANT_ID,
+      p_impianto_id: impiantoId,
+      p_privato_id: targetPrivatoId,
+      p_nome_privato: nomeFinale,
+      p_cf_pi: privato?.codice_fiscale || "",
+      p_tipo_utenza: privato?.tipo_utenza || "domestica",
+      p_materiali: righe,
+      p_data: dataRegistrazione,
+      p_importo: importoTotale,
+      p_metodo_pag: confForm.metodo_pag,
+      p_note: confForm.note || "",
+      p_targa: confForm.targa_automezzo || "",
+      p_modello: confForm.modello_automezzo || "",
     } as any);
-    if (receiptError) {
-      toast.error(`Conferimento annullato: ricevuta non salvata (${receiptError.message})`);
-      await rollback();
+
+    if (error) {
+      toast.error(`Conferimento non salvato: ${error.message}`);
       return;
     }
 
