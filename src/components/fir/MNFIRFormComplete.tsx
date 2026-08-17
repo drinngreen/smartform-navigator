@@ -13,7 +13,8 @@ import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
-import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST } from "@/lib/firFinalSync";
+import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST, NIYOL_TENANT_ID_CONST } from "@/lib/firFinalSync";
+import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
