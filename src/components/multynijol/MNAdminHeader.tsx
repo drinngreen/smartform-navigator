@@ -34,6 +34,12 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
 
   const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
 
+  // Formulari in arrivo da firmare su RENTRI (badge arancione)
+  const firDaFirmare = useFirDaFirmareCount(
+    currentContext === "niyol" ? "niyol" : currentContext === "multyproget" ? "multy" : null
+  );
+
+
   // Sync receive_calls to online_status table
   useEffect(() => {
     if (!user) return;
