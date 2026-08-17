@@ -215,6 +215,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, hits: hits.slice(0, 3), detail });
     }
 
+    if (action === "peek_documents") {
+      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=5`, { headers: sibillHeaders() });
+      if (!res.ok) return json({ error: await parseError(res) }, 200);
+      const b = await res.json();
+      return json({ ok: true, sample: (b?.data || []).slice(0, 5) });
+    }
+
     if (action === "ping") {
 
       if (mock) {
