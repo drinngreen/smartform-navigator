@@ -158,14 +158,14 @@ async function registraIncassoPrimaNota(
     contoIncasso && {
       prima_nota_id: testata.id,
       conto_id: contoIncasso,
-      segno: "D",
+      segno: "DARE",
       importo,
       descrizione_riga: `Incasso ${paymentMethod || "bonifico"} fattura ${fattura.numero_completo}`,
     },
     contoCrediti && {
       prima_nota_id: testata.id,
       conto_id: contoCrediti,
-      segno: "A",
+      segno: "AVERE",
       importo,
       descrizione_riga: `Chiusura credito ${fattura.cliente_ragione_sociale ?? ""}`.trim(),
     },
