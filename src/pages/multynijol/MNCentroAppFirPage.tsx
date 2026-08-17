@@ -483,6 +483,7 @@ export default function MNCentroAppFirPage() {
             <div className="divide-y divide-border/20">
               {employees.map((emp) => {
                 const draft = draftByUser[emp.user_id];
+                const empDrafts = (draftsByUser[emp.user_id] ?? []).filter((d) => d.numero_fir);
                 const pronto = !!draft?.numero_fir;
                 return (
                   <div key={emp.user_id} className="p-4 flex flex-col lg:flex-row lg:items-center gap-3">
@@ -495,6 +496,9 @@ export default function MNCentroAppFirPage() {
                           <Badge variant="outline" className="text-[10px]"><ShieldCheck className="h-3 w-3 mr-1" />App attiva</Badge>
                         )}
                         {emp.targa && <Badge variant="secondary" className="text-[10px] font-mono">{emp.targa}</Badge>}
+                        {empDrafts.length > 1 && (
+                          <Badge variant="secondary" className="text-[10px]">{empDrafts.length} FIR assegnati</Badge>
+                        )}
                       </div>
                       <div className="text-[11px] text-muted-foreground font-mono truncate">
                         {emp.codice_fiscale || emp.email}
@@ -502,26 +506,36 @@ export default function MNCentroAppFirPage() {
                       </div>
                     </div>
 
-                    <div className="lg:w-64">
-                      {pronto ? (
-                        <div className="text-xs font-mono text-neon-green flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4" /> {draft?.numero_fir}
-                          <button
-                            type="button"
-                            title="Copia numero FIR"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(draft!.numero_fir!);
-                                toast.success(`Copiato: ${draft!.numero_fir}`);
-                              } catch { toast.error("Copia non riuscita"); }
-                            }}
-                            className="rounded-md border border-border/60 bg-background/60 p-1 text-muted-foreground hover:text-foreground"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
+                    <div className="lg:w-72">
+                      {empDrafts.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {empDrafts.map((d) => (
+                            <div key={d.id} className="text-xs font-mono text-neon-green flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4" /> {d.numero_fir}
+                              <button
+                                type="button"
+                                title="Copia numero FIR"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(d.numero_fir!);
+                                    toast.success(`Copiato: ${d.numero_fir}`);
+                                  } catch { toast.error("Copia non riuscita"); }
+                                }}
+                                className="rounded-md border border-border/60 bg-background/60 p-1 text-muted-foreground hover:text-foreground"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openForm(d.id)}
+                                className="text-[10px] underline text-muted-foreground hover:text-foreground"
+                              >
+                                compila
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       ) : (
-
                         <div className="text-xs font-mono text-amber-400 flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4" /> Nessun formulario pronto
                         </div>
@@ -532,9 +546,10 @@ export default function MNCentroAppFirPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={busy === emp.user_id || pronto}
+                        disabled={busy === emp.user_id}
                         onClick={() => assignNumber(emp)}
                       >
+
                         {busy === emp.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Hash className="h-3.5 w-3.5" />}
                         <span className="ml-1.5">Assegna numero</span>
                       </Button>
