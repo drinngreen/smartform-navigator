@@ -1,0 +1,2 @@
+ALTER TABLE public.ricevute_privati DROP CONSTRAINT ricevute_privati_conferimento_id_fkey;
+ALTER TABLE public.ricevute_privati ADD CONSTRAINT ricevute_privati_conferimento_id_fkey FOREIGN KEY (conferimento_id) REFERENCES public.privati_conferimenti(id) ON DELETE CASCADE;
