@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { elencaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
@@ -18,13 +18,14 @@ const dataIt = (d: string | null) => {
 
 /** Elenco documenti "/P" letti direttamente da Sibill, con la stessa vista del gestionale Sibill. */
 export function SibillDocumentiPanel({ mock }: Props) {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
-
-  const [force, setForce] = useState(false);
-  const { data: docs = [], isFetching, refetch, error } = useQuery({
-    queryKey: ["sibill-documenti-p", !!mock],
-    queryFn: () => elencaDocumentiSibill({ mock, filter: "P", force }),
+  const [isForceRefreshing, setIsForceRefreshing] = useState(false);
+  const queryKey = ["sibill-documenti-p-v2", !!mock] as const;
+  const { data: docs = [], isFetching, error } = useQuery({
+    queryKey,
+    queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
@@ -59,9 +60,17 @@ export function SibillDocumentiPanel({ mock }: Props) {
         <span className="text-xs text-muted-foreground">
           {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} fatture /P — totale ${eur(totale)}`}
         </span>
-        <button onClick={async () => { setForce(true); await refetch(); setForce(false); }} disabled={isFetching}
+        <button onClick={async () => {
+          setIsForceRefreshing(true);
+          try {
+            const freshDocs = await elencaDocumentiSibill({ mock, filter: "P", force: true });
+            queryClient.setQueryData(queryKey, freshDocs);
+          } finally {
+            setIsForceRefreshing(false);
+          }
+        }} disabled={isFetching || isForceRefreshing}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 bg-background/40 text-sm hover:bg-background/70 disabled:opacity-40">
-          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {isFetching || isForceRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Aggiorna da Sibill
         </button>
       </div>
