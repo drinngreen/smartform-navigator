@@ -27,6 +27,8 @@ type RicevutaRow = {
   data_emissione: string;
   privato_id: string | null;
   conferimento_id?: string | null;
+  gruppo_id?: string | null;
+  materiali?: { cer: string | null; kg_pesati: number | null }[];
   conferimento?: {
     cer: string | null;
     kg_pesati: number | null;
@@ -39,6 +41,7 @@ type RicevutaRow = {
     anno_dbt: number | null;
   } | null;
 };
+
 
 type RicevutaEnriched = RicevutaRow & {
   privato_display: string;
