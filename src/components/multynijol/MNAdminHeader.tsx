@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabaseClient";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { useFirDaFirmareCount } from "@/hooks/useFirDaFirmareCount";
+
 
 interface MNAdminHeaderProps {
   title: string;
@@ -31,6 +33,12 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     : null;
 
   const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
+
+  // Formulari in arrivo da firmare su RENTRI (badge arancione)
+  const firDaFirmare = useFirDaFirmareCount(
+    currentContext === "niyol" ? "niyol" : currentContext === "multyproget" ? "multy" : null
+  );
+
 
   // Sync receive_calls to online_status table
   useEffect(() => {
@@ -118,7 +126,12 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         </button>
 
         {/* Notifications */}
-        <NotificationBell appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"} />
+        <NotificationBell
+          appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"}
+          signCount={firDaFirmare}
+          onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console` : "/mn/admin")}
+        />
+
       </div>
     </div>
   );
