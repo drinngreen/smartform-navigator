@@ -214,11 +214,17 @@ export function FatturazioneModule({ tenantId }: Props) {
         <button onClick={() => setTab("noleggi")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "noleggi" ? "bg-primary/20 border-primary/40 text-primary" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
           <Package className="h-4 w-4" /> Noleggi (mese scorso)
         </button>
+        <button onClick={() => setTab("sibill")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "sibill" ? "bg-primary/20 border-primary/40 text-primary" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
+          <BadgeEuro className="h-4 w-4" /> Fatture su Sibill (/P)
+        </button>
       </div>
 
-      {tab === "noleggi" ? (
+      {tab === "sibill" ? (
+        <SibillDocumentiPanel mock={sibillMock} />
+      ) : tab === "noleggi" ? (
         <NoleggiTab tenantId={tenantId} onCreated={() => qc.invalidateQueries({ queryKey: ["fatture"] })} />
       ) : (
+
         <>
           {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
