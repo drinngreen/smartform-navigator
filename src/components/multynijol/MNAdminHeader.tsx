@@ -118,7 +118,12 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         </button>
 
         {/* Notifications */}
-        <NotificationBell appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"} />
+        <NotificationBell
+          appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"}
+          signCount={firDaFirmare}
+          onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console` : "/mn/admin")}
+        />
+
       </div>
     </div>
   );
