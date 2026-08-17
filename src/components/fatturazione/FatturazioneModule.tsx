@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Plus, Search, Eye, Trash2, FileCode, Send, Lock, Clock, Loader2,
-  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro, AlertTriangle,
+  AlertCircle, FileText, Package, UploadCloud, CheckCircle2, XCircle, BadgeEuro, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
