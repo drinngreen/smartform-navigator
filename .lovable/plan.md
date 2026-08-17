@@ -1,35 +1,45 @@
-## Obiettivi
+# Conferimenti multi-materiale + allineamento giacenze al 17/08/2026
 
-1. **Data conferimento selezionabile** dal form nuovo conferimento (default = oggi).
-2. **PDF ricevuta**: data emissione con stessa dimensione del numero ricevuta (attualmente titolo `h1 26px` con dentro il numero, data mostrata come `12px` nel `.meta`). Rendere entrambi lo stesso stile e dimensione.
-3. **Importare i tre allegati del 24 giugno** (che non erano stati inseriti): estendere `import-elisabetta` includendo i nuovi FIR e i movimenti di registro.
+## 1. Conferimenti e ricevute privati con più materiali
 
-## Modifiche
+Oggi un conferimento ha un solo CER (`privati_conferimenti.cer` + `kg_pesati`) e la ricevuta punta a un solo conferimento (`ricevute_privati.conferimento_id`).
 
-### A) `DevPrivatiModule.tsx` — data conferimento
-- Aggiungere campo `data` in `confForm` (default `new Date().toISOString().slice(0,10)`).
-- Aggiungere input `<Input type="date">` nella dialog "Nuovo Conferimento".
-- Passare `data: confForm.data` all'insert su `privati_conferimenti` (il trigger `sync_privati_conferimento_to_inventory` già usa `NEW.data::date` → giacenza allineata alla data scelta).
+Cosa cambia:
 
-### B) `DevRicevuteModule.tsx` — PDF
-- Sostituire l'attuale `<div class="meta">Data: …</div>` con un layout header a due colonne dove **Numero ricevuta** e **Data** hanno lo stesso `font-size: 26px; font-weight:800`, così la data risulta grande quanto il numero.
-- Mantenere il resto del layout invariato.
+- Nel form "Nuovo Conferimento" (`DevPrivatiModule`) si potranno aggiungere **più righe materiale**: CER + kg + importo, con pulsanti "+ Aggiungi materiale" / cestino per riga. Con una sola riga il comportamento resta identico a oggi.
+- Ogni riga genera una riga in `privati_conferimenti` (così i trigger di giacenza e i limiti annuali per CER continuano a funzionare esattamente come ora, senza toccarli), e tutte le righe condividono un nuovo campo `gruppo_id`.
+- La ricevuta viene emessa **una sola** per gruppo: nuova colonna `gruppo_id` su `ricevute_privati` (la vecchia `conferimento_id` resta valorizzata con la prima riga, nessun dato esistente viene modificato).
+- Stampa/PDF ricevuta e registro ricevute (`DevRicevuteModule`): al posto della riga singola "CER / Peso" compare una **tabella materiali** (CER, descrizione, kg, importo) con totale kg e totale importo. Le ricevute già esistenti (senza gruppo) continuano a stamparsi come oggi.
+- Controllo limite 1500 kg annui: applicato sulla somma di tutte le righe del conferimento.
 
-### C) Import allegati del 24 giugno
-Preparare i dati parsando i 3 Excel e aggiornare l'edge function `import-elisabetta`:
+## 2. Giacenze: rimozione "Saldo iniziale"
 
-- **niyol_dal_24_giugno.xlsx** → FIR con trasportatore Niyol → routing tenant Niyol (o Multy se produttore/destinatario Multy).
-- **conto_proprio_dal_24_giugno.xlsx** → FIR conto proprio Multyproget → tenant Multy.
-- **registro_multyproget_dal_24_giugno_2026.xlsx** → 162 movimenti di registro → inseriti in `movimenti_impianto` (tenant Multy, impianto principale), con dedup su `numero_fir + data_movimento + cer + quantita_kg`.
+La voce **Saldo iniziale** viene tolta dalla tabella a video, dalla stampa PDF e dall'export Excel di `DevGiacenzeModule`, lasciando C.E.R. / Descrizione / Carico / Scarico / Saldo — esattamente come il PDF ufficiale allegato.
 
-Passi tecnici:
-1. Script Python locale: legge i 3 Excel e produce `supabase/functions/import-elisabetta/data_2024_06_24.json` con tre array: `fir_niyol`, `fir_conto_proprio`, `movimenti_registro`.
-2. `import-elisabetta/index.ts`:
-   - Importa il nuovo JSON e concatena i FIR alla logica esistente (dedup per `numero_fir`).
-   - Nuova sezione che inserisce `movimenti_registro` in `movimenti_impianto` risolvendo `impianto_id` con una `select` sul primo impianto del tenant Multy, mappando `C./S.` → `CARICO/SCARICO`, `+/-` per il segno, `Al RENTRI` = `Sì` → `esito_accettazione = 'accettato'`. Dedup: skip se esiste già una riga con stesso `numero_fir + data_movimento + cer + quantita_kg` (o, se `numero_fir` vuoto, stesso `n_int` in `note`).
-3. Ritorno funzione esteso con `insertedFir`, `insertedMovimenti`, `skippedFir`, `skippedMovimenti`.
-4. `PerElisabettaDialog.tsx`: aggiornare il report mostrato per elencare anche i movimenti in arrivo (163 movimenti registro Multy dal 24/06/2026) e i due lotti FIR. Bottone **Sì** chiama la stessa funzione — che ora esegue anche il nuovo import.
+Nessuna colonna del database viene cancellata: `magazzino_giacenze.saldo_iniziale_kg` resta dov'è, viene solo azzerata come componente di calcolo dopo l'allineamento del punto 3 (così `Saldo = Carico − Scarico` torna sempre, senza numeri "nascosti").
 
-### Note
-- Nessun dato viene eliminato dal DB (dedup con skip).
-- I trigger giacenza già in produzione aggiornano `magazzino_giacenze` automaticamente sui nuovi movimenti registro solo se passati via `privati_conferimenti`; per `movimenti_impianto` importati serve upsert manuale su `magazzino_giacenze`? **Attenzione**: i movimenti di registro Multy vanno solo a storico, non ricalcolano le giacenze correnti (che sono già allineate al 24/06). Confermo di **non** toccare `magazzino_giacenze` durante questo import.
+## 3. Allineamento allo stato dell'arte del 17/08/2026
+
+Fonti allegate:
+
+- `REGISTRO_MULTYPROGET_AGGIORNATO_IN_DATA_17_08_2026.xlsx` — 23 movimenti di registro Multyproget (04/08 → 17/08/2026).
+- `FORMULARI_CONTO_PROPRIO_AGGIORNATI_AL_17_08_2026.xlsx` — 6 formulari conto proprio.
+- `FORMULARI_NIYOL_AGGIORNATO_AL_17_04_2026.xlsx` — 30 formulari Niyol.
+- `GIACENZE.pdf` — registrazioni per C.E.R. al 17/08/2026 (Carico / Scarico / Saldo ufficiali, ~60 CER).
+
+Procedura:
+
+1. Estensione dell'import esistente (`import-elisabetta`) con un nuovo blocco dati `data_2026_08_17.json`: movimenti registro + formulari, con **dedup** su numero formulario / (numero_fir + data + CER + quantità) — le righe già presenti vengono saltate, nulla viene cancellato.
+2. Dopo l'import, confronto tra saldo calcolato dai movimenti e saldo del PDF per ogni CER. Dove c'è scarto, viene inserito **un solo movimento di rettifica** datato 17/08/2026 con nota "Allineamento ufficiale 17/08/2026", così le giacenze a video coincidono al kg con il PDF.
+3. `saldo_iniziale_kg` portato a 0 e snapshot riallineato: da quel momento il saldo è puramente Carico − Scarico sui movimenti.
+
+## 4. Giacenze sempre aggiornate
+
+- Il modulo Giacenze legge già i movimenti live; verrà aggiunta la **sottoscrizione realtime** su `movimenti_impianto` e `privati_conferimenti`, così il valore si aggiorna da solo senza premere Aggiorna.
+- Il pulsante "Sync giacenze da movimenti" resterà come ricalcolo forzato di `magazzino_giacenze`, esteso a tutti i CER presenti nei movimenti (oggi cicla solo sui CER già presenti in `magazzino_giacenze`, quindi un CER nuovo poteva restare fuori — è una delle cause dei disallineamenti segnalati dal cliente).
+
+## Note tecniche
+
+- Migrazioni: solo due colonne aggiuntive (`privati_conferimenti.gruppo_id`, `ricevute_privati.gruppo_id`), nessuna modifica a colonne/trigger esistenti.
+- Nessuna cancellazione di dati: import con dedup e rettifiche in aggiunta.
+- File toccati: `DevPrivatiModule.tsx`, `DevRicevuteModule.tsx`, `DevGiacenzeModule.tsx`, edge function `import-elisabetta`, `PerElisabettaDialog.tsx`.
