@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -332,10 +332,10 @@ export function DevGiacenzeModule() {
     const headerLines = buildHeaderLines();
     const aoa: any[][] = headerLines.map((l) => [l]);
     aoa.push([]);
-    aoa.push(["C.E.R.", "Descrizione", "Saldo iniziale", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
-    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.iniziale, r.carico, r.scarico, r.saldo]));
+    aoa.push(["C.E.R.", "Descrizione", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
+    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.carico, r.scarico, r.saldo]));
     aoa.push([]);
-    aoa.push(["TOTALI GENERALI", "", totals.iniziale, totals.carico, totals.scarico, totals.saldo]);
+    aoa.push(["TOTALI GENERALI", "", totals.carico, totals.scarico, totals.saldo]);
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
