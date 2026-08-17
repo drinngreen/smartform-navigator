@@ -321,10 +321,15 @@ Deno.serve(async (req) => {
             direction: d?.direction || null,
             counterpart:
               d?.counterpart?.company_name ||
-              (Array.isArray(d?.reasons_and_remarks) ? d.reasons_and_remarks[0] : null) ||
+              (Array.isArray(d?.reasons_and_remarks) && d.reasons_and_remarks.length
+                ? d.reasons_and_remarks.join(" — ")
+                : null) ||
+              d?.notes ||
               null,
+            notes: d?.notes || null,
             is_e_invoice: !!d?.is_e_invoice,
             file_name: d?.file_name || null,
+
           });
         }
         const pg = okBody?.page || {};
