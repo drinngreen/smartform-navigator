@@ -32,7 +32,8 @@ export const TENANT_RENTRI: Record<string, TenantRentriConfig> = {
     registryId: "RQEL39R7NS0",
     primaryBlock: "ZRZXR",
     blocks: [
-      { code: "ZRZXR", sito: "TO0001", label: "Principale TO (534 FIR)" },
+      { code: "ZRZXR", sito: "TO0001", label: "Multyproget — Impianto" },
+      { code: "FRVKM", sito: null, label: "Multyproget — Dipendenti" },
     ],
   },
   niyol: {
@@ -41,8 +42,7 @@ export const TENANT_RENTRI: Record<string, TenantRentriConfig> = {
     registryId: "01-250210-00079463",
     primaryBlock: "BPJMG",
     blocks: [
-      { code: "BPJMG", sito: "TO0001", label: "Ufficio Niyol" },
-      { code: "FRVKM", sito: null, label: "Dipendenti Niyol" },
+      { code: "BPJMG", sito: "TO0001", label: "Niyol — TO0001" },
     ],
   },
 };
