@@ -35,11 +35,11 @@ interface Movimento {
 interface CerRow {
   cer: string;
   descrizione: string;
-  iniziale: number;
   carico: number;
   scarico: number;
   saldo: number;
 }
+
 
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();
