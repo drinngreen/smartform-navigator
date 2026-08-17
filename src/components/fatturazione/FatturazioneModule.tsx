@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
+import { SibillDocumentiPanel } from "./SibillDocumentiPanel";
 import { inviaFatturaASibill, fetchSibillSync, aggiornaStatiSibill, elencaDocumentiSibill, isMockSync, type SibillSync, type SibillDocumento } from "@/lib/sibill";
 
 
@@ -35,7 +36,7 @@ const STATO_LABEL: Record<Stato, string> = {
 };
 
 export function FatturazioneModule({ tenantId }: Props) {
-  const [tab, setTab] = useState<"fatture" | "noleggi">("fatture");
+  const [tab, setTab] = useState<"fatture" | "noleggi" | "sibill">("fatture");
   const [search, setSearch] = useState("");
   const [filterStato, setFilterStato] = useState<"tutti" | Stato>("tutti");
   const [filterFrom, setFilterFrom] = useState("");

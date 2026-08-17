@@ -26,7 +26,7 @@ import {
   ClipboardList, Truck, Trash2,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
-import { FatturazioneModule } from "@/components/erp/FatturazioneModule";
+import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
 import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
