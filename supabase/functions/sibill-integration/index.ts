@@ -258,7 +258,8 @@ Deno.serve(async (req) => {
 
 
       // Cache in memoria (10 min): evita di ri-scaricare migliaia di documenti ad ogni apertura
-      const cacheKey = `docs:${filter}`;
+      // Versione cache incrementata quando cambia il mapping dei campi economici.
+      const cacheKey = `docs:v2:${filter}`;
       const cached = DOC_CACHE.get(cacheKey);
       if (cached && !body?.force && Date.now() - cached.at < 10 * 60 * 1000) {
         return json({ ok: true, env: SIBILL_ENV, cached: true, count: cached.documents.length, scanned: cached.scanned, partial: cached.partial, documents: cached.documents });
