@@ -82,70 +82,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Nessuna chiamata di bootstrap può bloccare la UI: ogni step ha un timeout.
+  const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string): Promise<T | null> => {
+    return await Promise.race([
+      p.catch((e) => {
+        console.warn(`[Auth] ${label} failed:`, e);
+        return null as any;
+      }),
+      new Promise<null>((resolve) =>
+        setTimeout(() => {
+          console.warn(`[Auth] ${label} timeout (${ms}ms)`);
+          resolve(null);
+        }, ms)
+      ),
+    ]);
+  };
+
   const fetchUserData = async (userId: string, userEmail?: string) => {
+    const email = userEmail?.toLowerCase() ?? "";
+    const isAdminTenantEmail = ADMIN_TENANT_EMAILS.some(
+      (adminEmail) => adminEmail.toLowerCase() === email
+    );
+
     try {
-      const email = userEmail?.toLowerCase() ?? "";
-      const isAdminTenantEmail = ADMIN_TENANT_EMAILS.some(
-        (adminEmail) => adminEmail.toLowerCase() === email
+      if (isAdminTenantEmail) {
+        // non bloccante: se la RPC è lenta/bloccata la UI parte lo stesso
+        await withTimeout(
+          Promise.resolve(supabase.rpc("bootstrap_admin_role")) as any,
+          4000,
+          "bootstrap_admin_role"
+        );
+      }
+
+      const profileRes: any = await withTimeout(
+        Promise.resolve(
+          supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle()
+        ) as any,
+        6000,
+        "profiles fetch"
+      );
+      setProfile(profileRes?.data ? (profileRes.data as Profile) : null);
+
+      const roleRes: any = await withTimeout(
+        Promise.resolve(
+          supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle()
+        ) as any,
+        6000,
+        "user_roles fetch"
       );
 
-      if (isAdminTenantEmail) {
-        try {
-          const { error: bootstrapError } = await supabase.rpc("bootstrap_admin_role");
-          if (bootstrapError) {
-            console.warn("bootstrap_admin_role failed:", bootstrapError);
-          }
-        } catch (e) {
-          console.warn("bootstrap_admin_role threw:", e);
-        }
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-      }
-
-      setProfile(profileData ? (profileData as Profile) : null);
-
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error("Error fetching role:", roleError);
-      }
-
-      if (roleData) {
-        setRole(roleData.role as AppRole);
+      if (roleRes?.data) {
+        setRole(roleRes.data.role as AppRole);
       } else if (isAdminTenantEmail) {
         setRole("admin");
       } else {
         setRole("user");
       }
-      setIsRoleReady(true);
 
-      // [DISABLED] Auto-assegnazione FIR al login rimossa: i FIR ora si creano solo manualmente.
-      // if (profileData?.tenant_id) {
-      //   try {
-      //     await supabase.rpc("ensure_user_has_fir_draft" as any, { p_user_id: userId });
-      //   } catch (ensureErr) {
-      //     console.warn("ensure_user_has_fir_draft failed:", ensureErr);
-      //   }
-      // }
-
-      await markPresence(userId, "online");
+      markPresence(userId, "online").catch(() => {});
     } catch (error) {
       console.error("Error fetching user data:", error);
+      if (isAdminTenantEmail) setRole("admin");
+    } finally {
+      // In ogni caso la UI deve sbloccarsi.
       setIsRoleReady(true);
+      setIsLoading(false);
     }
   };
+
 
   const refreshUserData = async () => {
     if (!user) return;
