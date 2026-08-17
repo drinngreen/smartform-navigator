@@ -52,6 +52,14 @@ export function SibillDocumentiPanel({ mock }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-background/60 border border-border/30">
+          {([["P", "Emesse (/P)"], ["IN", "Ricevute (entrata)"]] as const).map(([v, label]) => (
+            <button key={v} onClick={() => setModo(v)}
+              className={`px-3 py-1.5 rounded-lg text-sm ${modo === v ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)}
