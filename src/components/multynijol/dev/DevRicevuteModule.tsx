@@ -27,6 +27,8 @@ type RicevutaRow = {
   data_emissione: string;
   privato_id: string | null;
   conferimento_id?: string | null;
+  gruppo_id?: string | null;
+  materiali?: { cer: string | null; kg_pesati: number | null }[];
   conferimento?: {
     cer: string | null;
     kg_pesati: number | null;
@@ -39,6 +41,7 @@ type RicevutaRow = {
     anno_dbt: number | null;
   } | null;
 };
+
 
 type RicevutaEnriched = RicevutaRow & {
   privato_display: string;
@@ -94,14 +97,31 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
-      return (data ?? []) as RicevutaRow[];
+      const rows = (data ?? []) as RicevutaRow[];
+
+      // Conferimenti multi-materiale: raggruppa per gruppo_id
+      const gruppi = Array.from(new Set(rows.map((r) => r.gruppo_id).filter(Boolean))) as string[];
+      if (gruppi.length) {
+        const { data: confs } = (await (supabase as any)
+          .from("privati_conferimenti")
+          .select("gruppo_id, cer, kg_pesati")
+          .in("gruppo_id", gruppi)) as { data: { gruppo_id: string; cer: string | null; kg_pesati: number | null }[] | null };
+        const byGruppo = new Map<string, { cer: string | null; kg_pesati: number | null }[]>();
+        for (const c of confs ?? []) {
+          if (!byGruppo.has(c.gruppo_id)) byGruppo.set(c.gruppo_id, []);
+          byGruppo.get(c.gruppo_id)!.push({ cer: c.cer, kg_pesati: c.kg_pesati });
+        }
+        for (const r of rows) if (r.gruppo_id) r.materiali = byGruppo.get(r.gruppo_id);
+      }
+      return rows;
     },
   });
+
 
   const filtered = useMemo(() => {
     if (!search) return ricevute;
@@ -236,8 +256,11 @@ export function DevRicevuteModule() {
     ${r.conferimento ? `
       ${r.conferimento.numero_progressivo != null ? `<div class="row"><div class="label">N° Registro DBT</div><div class="val">#${escHtml(String(r.conferimento.numero_progressivo))}/${escHtml(String(r.conferimento.anno_dbt ?? ""))}</div></div>` : ""}
       <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
-      <div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
-      <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>
+      ${(r.materiali && r.materiali.length > 1)
+        ? `<div class="row"><div class="label">Materiali</div><div class="val">${r.materiali.map((m) => `${escHtml(m.cer ?? "—")} — ${escHtml(Number(m.kg_pesati ?? 0).toLocaleString("it-IT"))} kg`).join("<br/>")}</div></div>
+           <div class="row"><div class="label">Peso totale</div><div class="val">${escHtml(r.materiali.reduce((s, m) => s + (Number(m.kg_pesati) || 0), 0).toLocaleString("it-IT"))} kg</div></div>`
+        : `<div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
+           <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>`}
       ${r.conferimento.targa_automezzo ? `<div class="row"><div class="label">Targa automezzo</div><div class="val">${escHtml(r.conferimento.targa_automezzo)}${r.conferimento.modello_automezzo ? ` — ${escHtml(r.conferimento.modello_automezzo)}` : ""}</div></div>` : ""}
       ${r.conferimento.metodo_pag ? `<div class="row"><div class="label">Metodo pagamento</div><div class="val">${escHtml(r.conferimento.metodo_pag === "contanti" ? "Contanti" : "Metodi Tracciabili / Politici")}</div></div>` : ""}
     ` : ""}

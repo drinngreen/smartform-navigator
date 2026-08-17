@@ -49,6 +49,9 @@ export function DevPrivatiModule() {
   const [editPrivatoId, setEditPrivatoId] = useState<string | null>(null);
   const [cerSearch, setCerSearch] = useState("");
   const [showCerDropdown, setShowCerDropdown] = useState(false);
+  // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
+  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
+  const [openCerRow, setOpenCerRow] = useState<number | null>(null);
 
   // Forms
   const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
@@ -248,6 +251,13 @@ export function DevPrivatiModule() {
     return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
   }, [cerSearch]);
 
+  const cerOptions = (q: string) => {
+    if (!q) return CER_DATA.slice(0, 20);
+    const s = q.toLowerCase();
+    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
+  };
+
+
   const invalidateInventoryQueries = () => {
     [
       "dev-conferimenti-anno",
@@ -265,84 +275,116 @@ export function DevPrivatiModule() {
     const targetPrivatoId = conferimentoPrivatoId ?? selectedPrivatoId;
     if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
     if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
-    if (!confForm.cer || !confForm.kg_pesati) { toast.error("CER e kg obbligatori"); return; }
     if (!confForm.metodo_pag) { toast.error("Seleziona il metodo di pagamento"); return; }
 
-    const kg = parseFloat(confForm.kg_pesati);
-    if (!Number.isFinite(kg) || kg <= 0) { toast.error("Inserisci un peso valido"); return; }
-
-    const rawCer = confForm.cer.trim();
-    const cerInfo = CER_DATA.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
-    const cerFinale = cerInfo?.codice || rawCer.toUpperCase();
-
-    const warning = await checkLimits(targetPrivatoId, cerFinale, kg);
-    if (warning && (warning.includes("LIMITE SUPERATO") || warning.includes("LIMITE ANNUO GLOBALE"))) {
-      setLimitWarning(warning);
-      toast.error("Conferimento BLOCCATO: limite superato");
-      return;
+    // Normalizza le righe materiali (multi-materiale)
+    const righe: { cer: string; kg: number }[] = [];
+    for (const r of righeMateriali) {
+      const rawCer = (r.cer || "").trim();
+      const kg = parseFloat(r.kg);
+      if (!rawCer && !r.kg) continue;
+      if (!rawCer) { toast.error("Ogni riga deve avere un codice CER"); return; }
+      if (!Number.isFinite(kg) || kg <= 0) { toast.error(`Peso non valido per il CER ${rawCer}`); return; }
+      const cerInfo = CER_DATA.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
+      righe.push({ cer: cerInfo?.codice || rawCer.toUpperCase(), kg });
     }
-    if (warning) setLimitWarning(warning);
+    if (!righe.length) { toast.error("Inserisci almeno un materiale (CER + kg)"); return; }
+
+    // Controllo limiti su tutti i materiali
+    let lastWarning: string | null = null;
+    for (const r of righe) {
+      const warning = await checkLimits(targetPrivatoId, r.cer, r.kg);
+      if (warning && (warning.includes("LIMITE SUPERATO") || warning.includes("LIMITE ANNUO GLOBALE"))) {
+        setLimitWarning(warning);
+        toast.error(`Conferimento BLOCCATO: limite superato (CER ${r.cer})`);
+        return;
+      }
+      if (warning) lastWarning = warning;
+    }
+    if (lastWarning) setLimitWarning(lastWarning);
 
     const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
+    const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
+    const anno = Number(dataRegistrazione.slice(0, 4));
+    const gruppoId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`);
+    const importoTotale = confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : 0;
 
-    const { data: confData, error } = await supabase
-      .from("privati_conferimenti")
-      .insert({
-        tenant_id: MULTY_TENANT_ID,
-        impianto_id: impiantoId,
-        cer: cerFinale,
-        kg_pesati: kg,
-        nome_privato: nomeFinale,
-        cf_pi: privato?.codice_fiscale || null,
-        importo_pagato: confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : null,
-        metodo_pag: confForm.metodo_pag || null,
-        note: confForm.note || null,
-        privato_id: targetPrivatoId,
-        tipo_utenza: privato?.tipo_utenza || "domestica",
-        targa_automezzo: confForm.targa_automezzo || null,
-        modello_automezzo: confForm.modello_automezzo || null,
-        data: confForm.data || format(new Date(), "yyyy-MM-dd"),
-      } as any)
-      .select()
-      .single();
+    const insertedIds: string[] = [];
+    const rollback = async () => {
+      if (insertedIds.length) await supabase.from("privati_conferimenti").delete().in("id", insertedIds);
+      invalidateInventoryQueries();
+    };
 
-    if (error) { toast.error(error.message); return; }
+    const confRows: any[] = [];
+    for (let i = 0; i < righe.length; i++) {
+      const r = righe[i];
+      const { data: confData, error } = await supabase
+        .from("privati_conferimenti")
+        .insert({
+          tenant_id: MULTY_TENANT_ID,
+          impianto_id: impiantoId,
+          cer: r.cer,
+          kg_pesati: r.kg,
+          nome_privato: nomeFinale,
+          cf_pi: privato?.codice_fiscale || null,
+          // L'importo viene attribuito interamente alla prima riga per non duplicare gli incassi
+          importo_pagato: i === 0 ? (confForm.importo_pagato ? importoTotale : null) : 0,
+          metodo_pag: confForm.metodo_pag || null,
+          note: confForm.note || null,
+          privato_id: targetPrivatoId,
+          tipo_utenza: privato?.tipo_utenza || "domestica",
+          targa_automezzo: confForm.targa_automezzo || null,
+          modello_automezzo: confForm.modello_automezzo || null,
+          data: dataRegistrazione,
+          gruppo_id: gruppoId,
+        } as any)
+        .select()
+        .single();
 
-    const conf = confData as any;
-    if (conf) {
-      const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
-      const anno = Number(dataRegistrazione.slice(0, 4));
-      const { data: numData, error: numberError } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
-      if (numberError) {
-        await supabase.from("privati_conferimenti").delete().eq("id", conf.id);
-        toast.error(`Conferimento annullato: impossibile generare il numero ricevuta (${numberError.message})`);
-        invalidateInventoryQueries();
+      if (error || !confData) {
+        toast.error(error?.message || "Errore inserimento conferimento");
+        await rollback();
         return;
       }
-      const { error: receiptError } = await supabase.from("ricevute_privati" as any).insert({
-        tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: conf.id,
-        privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-        data_emissione: dataRegistrazione,
-        importo: conf.importo_pagato || 0,
-        note: `DBT #${conf.numero_progressivo ?? "-"}/${conf.anno_dbt ?? anno} — ${nomeFinale} — CER ${cerFinale} — ${conf.kg_pesati} kg — Pag.: ${conf.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}`,
-      } as any);
-      if (receiptError) {
-        await supabase.from("privati_conferimenti").delete().eq("id", conf.id);
-        toast.error(`Conferimento annullato: ricevuta non salvata (${receiptError.message})`);
-        invalidateInventoryQueries();
-        return;
-      }
+      insertedIds.push((confData as any).id);
+      confRows.push(confData);
     }
 
-    toast.success("✅ Conferimento e ricevuta registrati!");
+    const primo = confRows[0] as any;
+    const { data: numData, error: numberError } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
+    if (numberError) {
+      toast.error(`Conferimento annullato: impossibile generare il numero ricevuta (${numberError.message})`);
+      await rollback();
+      return;
+    }
+
+    const dettaglioMateriali = confRows.map((c: any) => `CER ${c.cer} — ${c.kg_pesati} kg`).join(" | ");
+    const totaleKg = righe.reduce((s, r) => s + r.kg, 0);
+    const { error: receiptError } = await supabase.from("ricevute_privati" as any).insert({
+      tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, conferimento_id: primo.id,
+      privato_id: targetPrivatoId, numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
+      data_emissione: dataRegistrazione,
+      importo: importoTotale,
+      gruppo_id: gruppoId,
+      note: `DBT #${primo.numero_progressivo ?? "-"}/${primo.anno_dbt ?? anno} — ${nomeFinale} — ${dettaglioMateriali} — Totale ${totaleKg} kg — Pag.: ${confForm.metodo_pag === "contanti" ? "Contanti" : "Tracciabile/Politico"}${primo.targa_automezzo ? ` — Targa: ${primo.targa_automezzo}` : ""}`,
+    } as any);
+    if (receiptError) {
+      toast.error(`Conferimento annullato: ricevuta non salvata (${receiptError.message})`);
+      await rollback();
+      return;
+    }
+
+    toast.success(`✅ Conferimento (${righe.length} material${righe.length > 1 ? "i" : "e"}) e ricevuta registrati!`);
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
+    setRigheMateriali([{ cer: "", kg: "" }]);
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
   };
+
 
   const handleSaveRicevutaManuale = async () => {
     const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
@@ -901,7 +943,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); } }}>
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "" }]); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -916,42 +958,62 @@ export function DevPrivatiModule() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {/* CER Combobox */}
-            <div className="col-span-2 relative">
-              <Label>Codice CER *</Label>
-              <Input
-                value={confForm.cer || cerSearch}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCerSearch(v);
-                  setConfForm(p => ({ ...p, cer: v }));
-                  setShowCerDropdown(true);
-                }}
-                onFocus={() => setShowCerDropdown(true)}
-                onBlur={() => setTimeout(() => setShowCerDropdown(false), 200)}
-                placeholder="Cerca o digita CER (es. 200140)"
-                className="font-mono"
-              />
-              {showCerDropdown && filteredCER.length > 0 && (
-                <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
-                  {filteredCER.map(c => (
-                    <button key={c.codice} type="button"
-                      className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setConfForm(p => ({ ...p, cer: c.codice }));
-                        setCerSearch(c.codice);
-                        setShowCerDropdown(false);
-                      }}>
-                      <span className="font-mono text-emerald-400 shrink-0">{c.codice}</span>
-                      <span className="text-muted-foreground truncate text-xs">{c.descrizione}</span>
-                      {c.pericoloso && <span className="text-red-400 text-xs shrink-0">⚠️</span>}
-                    </button>
-                  ))}
+            {/* Materiali conferiti (multi-riga) */}
+            <div className="col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Materiali conferiti *</Label>
+                <Button type="button" size="sm" variant="outline" className="h-7 gap-1 text-xs"
+                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "" }])}>
+                  + Aggiungi materiale
+                </Button>
+              </div>
+              {righeMateriali.map((riga, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_110px_36px] gap-2 items-start">
+                  <div className="relative">
+                    <Input
+                      value={riga.cer}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, cer: v } : r)));
+                        setOpenCerRow(idx);
+                      }}
+                      onFocus={() => setOpenCerRow(idx)}
+                      onBlur={() => setTimeout(() => setOpenCerRow((cur) => (cur === idx ? null : cur)), 200)}
+                      placeholder="Cerca o digita CER (es. 200140)"
+                      className="font-mono"
+                    />
+                    {openCerRow === idx && cerOptions(riga.cer).length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                        {cerOptions(riga.cer).map(c => (
+                          <button key={c.codice} type="button"
+                            className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, cer: c.codice } : r)));
+                              setOpenCerRow(null);
+                            }}>
+                            <span className="font-mono text-emerald-400 shrink-0">{c.codice}</span>
+                            <span className="text-muted-foreground truncate text-xs">{c.descrizione}</span>
+                            {c.pericoloso && <span className="text-red-400 text-xs shrink-0">⚠️</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <Input type="number" placeholder="kg" value={riga.kg}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, kg: e.target.value } : r)))} />
+                  <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300"
+                    disabled={righeMateriali.length === 1}
+                    onClick={() => setRigheMateriali(p => p.filter((_, i) => i !== idx))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — una sola ricevuta con tutti i materiali.
+              </p>
             </div>
-            <div><Label>Peso (kg) *</Label><Input type="number" value={confForm.kg_pesati} onChange={(e) => setConfForm(p => ({ ...p, kg_pesati: e.target.value }))} /></div>
+
             <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
             <div>
               <Label>Metodo Pagamento *</Label>

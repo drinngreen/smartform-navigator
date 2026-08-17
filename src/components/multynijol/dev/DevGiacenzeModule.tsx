@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,11 +35,11 @@ interface Movimento {
 interface CerRow {
   cer: string;
   descrizione: string;
-  iniziale: number;
   carico: number;
   scarico: number;
   saldo: number;
 }
+
 
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();
@@ -78,14 +78,11 @@ export function DevGiacenzeModule() {
     },
   });
 
-  // Aggregazione contabile per CER. Lo snapshot conserva il saldo ufficiale, ma non
-  // deve nascondere i movimenti storici: il saldo di apertura viene riconciliato con
-  // lo snapshot e Carico/Scarico mostrano sempre i movimenti del periodo selezionato.
+  // Aggregazione contabile per CER: Saldo = Carico − Scarico sui movimenti del periodo,
+  // esattamente come la stampa ufficiale "Registrazioni per C.E.R.".
   const rows: CerRow[] = useMemo(() => {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
-    const snapshotByCer: Record<string, string> = {};
-    const snapshotBalanceByCer: Record<string, number> = {};
     const descriptionsByCer: Record<string, string> = {};
 
     for (const m of movimenti) {
@@ -93,36 +90,7 @@ export function DevGiacenzeModule() {
     }
 
     for (const b of baseline ?? []) {
-      const snapDay = b.saldo_snapshot_at ? b.saldo_snapshot_at.slice(0, 10) : "";
-      if (snapDay) snapshotByCer[b.cer] = snapDay;
-      snapshotBalanceByCer[b.cer] = (snapshotBalanceByCer[b.cer] || 0) + (Number(b.saldo_iniziale_kg) || 0);
-      if (!map[b.cer]) {
-        map[b.cer] = {
-          cer: b.cer,
-          descrizione: b.descrizione_cer?.trim() || descriptionsByCer[b.cer] || "",
-          iniziale: 0,
-          carico: 0,
-          scarico: 0,
-          saldo: 0,
-        };
-      }
-    }
-
-    // Calcola il saldo reale precedente al periodo. La rettifica iniziale riconcilia
-    // lo storico importato con lo snapshot ufficiale senza azzerare Carico/Scarico.
-    for (const [cer, row] of Object.entries(map)) {
-      const snapDay = snapshotByCer[cer];
-      const netToSnapshot = movimenti
-        .filter((m) => m.cer === cer && (!snapDay || m.data_movimento <= snapDay))
-        .reduce((net, m) => net + (m.tipo_movimento === "CARICO" ? Number(m.quantita_kg) || 0 : -(Number(m.quantita_kg) || 0)), 0);
-      const historicalOpening = (snapshotBalanceByCer[cer] || 0) - netToSnapshot;
-      const netBeforePeriod = dataDal
-        ? movimenti
-            .filter((m) => m.cer === cer && m.data_movimento < dataDal)
-            .reduce((net, m) => net + (m.tipo_movimento === "CARICO" ? Number(m.quantita_kg) || 0 : -(Number(m.quantita_kg) || 0)), 0)
-        : 0;
-      // Un saldo iniziale negativo non esiste fisicamente: si azzera.
-      row.iniziale = Math.max(0, historicalOpening + netBeforePeriod);
+      if (b.descrizione_cer?.trim()) descriptionsByCer[b.cer] = b.descrizione_cer.trim();
     }
 
     for (const m of movimenti) {
@@ -130,18 +98,19 @@ export function DevGiacenzeModule() {
       if (dataDal && m.data_movimento < dataDal) continue;
       const key = m.cer;
       if (!map[key]) {
-        map[key] = { cer: m.cer, descrizione: descriptionsByCer[key] || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
+        map[key] = { cer: m.cer, descrizione: descriptionsByCer[key] || "", carico: 0, scarico: 0, saldo: 0 };
       }
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;
       else map[key].scarico += q;
       if (!map[key].descrizione && m.descrizione_rifiuto) map[key].descrizione = m.descrizione_rifiuto;
     }
-    Object.values(map).forEach((r) => (r.saldo = r.iniziale + r.carico - r.scarico));
+    Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     return Object.values(map)
-      .filter((r) => r.iniziale !== 0 || r.carico !== 0 || r.scarico !== 0)
+      .filter((r) => r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
   }, [movimenti, baseline, dataAl, dataDal]);
+
 
 
 
@@ -154,18 +123,34 @@ export function DevGiacenzeModule() {
     () =>
       filtered.reduce(
         (acc, r) => ({
-          iniziale: acc.iniziale + r.iniziale,
           carico: acc.carico + r.carico,
           scarico: acc.scarico + r.scarico,
           saldo: acc.saldo + r.saldo,
         }),
-        { iniziale: 0, carico: 0, scarico: 0, saldo: 0 }
+        { carico: 0, scarico: 0, saldo: 0 }
       ),
     [filtered]
   );
 
+  // Aggiornamento automatico: qualsiasi movimento o conferimento privato ricarica le giacenze
+  useEffect(() => {
+    const channel = supabase
+      .channel("dev-giacenze-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "movimenti_impianto" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "privati_conferimenti" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
+        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
-  // Sync giacenze (ricalcolo magazzino_giacenze dai movimenti, alla data odierna)
+  // Sync giacenze: ricalcola magazzino_giacenze per TUTTI i CER presenti nei movimenti
   const recalculate = useMutation({
     mutationFn: async () => {
       const { data: stockRows, error: stockError } = await supabase
@@ -173,24 +158,38 @@ export function DevGiacenzeModule() {
         .select("impianto_id, cer")
         .eq("tenant_id", MULTY_TENANT_ID);
       if (stockError) throw stockError;
-      for (const row of stockRows ?? []) {
-        if (!row.impianto_id) continue;
+
+      const { data: movRows, error: movError } = await supabase
+        .from("movimenti_impianto")
+        .select("impianto_id, cer")
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (movError) throw movError;
+
+      const pairs = new Map<string, { impianto_id: string; cer: string }>();
+      for (const row of [...(stockRows ?? []), ...(movRows ?? [])]) {
+        if (!row.impianto_id || !row.cer) continue;
+        pairs.set(`${row.impianto_id}|${row.cer}`, { impianto_id: row.impianto_id, cer: row.cer });
+      }
+
+      for (const { impianto_id, cer } of pairs.values()) {
         const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
           p_tenant_id: MULTY_TENANT_ID,
-          p_impianto_id: row.impianto_id,
-          p_cer: row.cer,
+          p_impianto_id: impianto_id,
+          p_cer: cer,
         });
         if (error) throw error;
       }
+      return pairs.size;
     },
-    onSuccess: () => {
-      ["dev-giacenze", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
+    onSuccess: (count) => {
+      ["dev-giacenze", "dev-giacenze-baseline", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
-      toast.success("Giacenze ricalcolate dai movimenti");
+      toast.success(`Giacenze ricalcolate dai movimenti (${count} codici CER)`);
     },
     onError: (e: any) => toast.error("Errore: " + e.message),
   });
+
 
   // Costruisce intestazione testuale (riusata da PDF/Excel)
   const buildHeaderLines = () => {
@@ -273,14 +272,13 @@ export function DevGiacenzeModule() {
         [
           { content: "C.E.R.", rowSpan: 2, styles: { valign: "bottom" } },
           { content: "", rowSpan: 2 },
-          { content: "Quantità", colSpan: 4, styles: { halign: "center" } },
+          { content: "Quantità", colSpan: 3, styles: { halign: "center" } },
         ],
-        ["Saldo iniziale", "Carico", "Scarico", "Saldo"],
+        ["Carico", "Scarico", "Saldo"],
       ],
       body: filtered.map((r) => [
         { content: r.cer, styles: { fontStyle: "bold" } },
         r.descrizione,
-        { content: fmt(r.iniziale), styles: { halign: "right" } },
         { content: fmt(r.carico), styles: { halign: "right" } },
         { content: fmt(r.scarico), styles: { halign: "right" } },
         { content: fmt(r.saldo), styles: { halign: "right", fontStyle: "bold" } },
@@ -288,12 +286,12 @@ export function DevGiacenzeModule() {
       foot: [
         [
           { content: "TOTALI GENERALI", colSpan: 2, styles: { fontStyle: "bold" } },
-          { content: fmt(totals.iniziale), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.carico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.scarico), styles: { halign: "right", fontStyle: "bold" } },
           { content: fmt(totals.saldo), styles: { halign: "right", fontStyle: "bold" } },
         ],
       ],
+
       styles: { font: "helvetica", fontSize: 7.3, cellPadding: 1.1, lineColor: [180, 180, 180], lineWidth: 0.1, overflow: "linebreak" },
       headStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: "bold" },
       footStyles: { fillColor: [230, 230, 230], textColor: 0 },
@@ -303,7 +301,6 @@ export function DevGiacenzeModule() {
         2: { cellWidth: 22 },
         3: { cellWidth: 22 },
         4: { cellWidth: 22 },
-        5: { cellWidth: 22 },
       },
       margin: { left: marginX, right: marginX, top: headerEndY, bottom: 14 },
       showHead: "everyPage",
@@ -334,10 +331,10 @@ export function DevGiacenzeModule() {
     const headerLines = buildHeaderLines();
     const aoa: any[][] = headerLines.map((l) => [l]);
     aoa.push([]);
-    aoa.push(["C.E.R.", "Descrizione", "Saldo iniziale", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
-    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.iniziale, r.carico, r.scarico, r.saldo]));
+    aoa.push(["C.E.R.", "Descrizione", "Quantità Carico", "Quantità Scarico", "Quantità Saldo"]);
+    filtered.forEach((r) => aoa.push([r.cer, r.descrizione, r.carico, r.scarico, r.saldo]));
     aoa.push([]);
-    aoa.push(["TOTALI GENERALI", "", totals.iniziale, totals.carico, totals.scarico, totals.saldo]);
+    aoa.push(["TOTALI GENERALI", "", totals.carico, totals.scarico, totals.saldo]);
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [{ wch: 18 }, { wch: 60 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
@@ -398,7 +395,7 @@ export function DevGiacenzeModule() {
             <Input placeholder="es. 170405" value={searchCer} onChange={(e) => setSearchCer(e.target.value)} className="bg-card/60" />
           </div>
           <div className="text-xs text-muted-foreground">
-            Saldo = saldo iniziale ufficiale (snapshot) + carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}.
+            Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
           </div>
         </CardContent>
       </Card>
@@ -456,10 +453,9 @@ export function DevGiacenzeModule() {
                   <tr className="border-b-2 border-border/50 text-muted-foreground bg-card/40">
                     <th className="text-left py-2 px-3" rowSpan={2}>C.E.R.</th>
                     <th className="text-left py-2 px-3" rowSpan={2}>Descrizione</th>
-                    <th className="text-center py-1 px-3" colSpan={4}>Quantità</th>
+                    <th className="text-center py-1 px-3" colSpan={3}>Quantità</th>
                   </tr>
                   <tr className="border-b border-border/30 text-muted-foreground bg-card/30">
-                    <th className="text-right py-1 px-3">Saldo iniziale</th>
                     <th className="text-right py-1 px-3">Carico</th>
                     <th className="text-right py-1 px-3">Scarico</th>
                     <th className="text-right py-1 px-3">Saldo</th>
@@ -470,7 +466,6 @@ export function DevGiacenzeModule() {
                     <tr key={r.cer} className="border-b border-border/10 hover:bg-white/5">
                       <td className="py-1.5 px-3 font-mono font-bold text-emerald-300">{r.cer}</td>
                       <td className="py-1.5 px-3 text-xs">{r.descrizione || "—"}</td>
-                      <td className="py-1.5 px-3 text-right text-muted-foreground">{fmt(r.iniziale)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.carico)}</td>
                       <td className="py-1.5 px-3 text-right">{fmt(r.scarico)}</td>
                       <td className={`py-1.5 px-3 text-right font-bold ${r.saldo > 0 ? "text-emerald-400" : r.saldo < 0 ? "text-red-400" : "text-muted-foreground"}`}>
@@ -480,7 +475,7 @@ export function DevGiacenzeModule() {
                   ))}
                   <tr className="bg-emerald-500/10 border-t-2 border-emerald-500/40 font-bold">
                     <td colSpan={2} className="py-2 px-3">TOTALI GENERALI</td>
-                    <td className="py-2 px-3 text-right">{fmt(totals.iniziale)}</td>
+
                     <td className="py-2 px-3 text-right">{fmt(totals.carico)}</td>
                     <td className="py-2 px-3 text-right">{fmt(totals.scarico)}</td>
                     <td className="py-2 px-3 text-right text-emerald-300">{fmt(totals.saldo)}</td>
