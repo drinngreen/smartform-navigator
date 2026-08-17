@@ -135,7 +135,7 @@ export type SibillDocumento = {
 
 /** Elenca i documenti realmente presenti su Sibill (stato lato provider).
  *  `filter: "P"` (default) restituisce solo le fatture con numero che termina in "/P". */
-export async function elencaDocumentiSibill(opts: { mock?: boolean; filter?: "P" | "all"; force?: boolean } = {}) {
+export async function elencaDocumentiSibill(opts: { mock?: boolean; filter?: "P" | "IN" | "all"; force?: boolean } = {}) {
   const { data, error } = await supabase.functions.invoke("sibill-integration", {
     body: { action: "list_documents", mock: !!opts.mock, filter: opts.filter || "P", force: !!opts.force },
   });
