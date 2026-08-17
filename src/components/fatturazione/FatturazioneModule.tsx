@@ -99,13 +99,21 @@ export function FatturazioneModule({ tenantId }: Props) {
     onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
   });
 
+  // Documenti realmente presenti su Sibill (stato lato provider)
+  const [docsSibill, setDocsSibill] = useState<SibillDocumento[] | null>(null);
+
   // Allineamento stati reali da Sibill (usato anche quando si passa da MOCK a REALE)
   const refreshMut = useMutation({
-    mutationFn: async () => aggiornaStatiSibill(fatture.map((f: any) => f.id)),
+    mutationFn: async () => {
+      const sync = fatture.length ? await aggiornaStatiSibill(fatture.map((f: any) => f.id)) : { checked: 0, results: [] };
+      const docs = await elencaDocumentiSibill({ mock: sibillMock });
+      return { sync, docs };
+    },
     onSuccess: (res: any) => {
+      setDocsSibill(res.docs || []);
       qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
       qc.invalidateQueries({ queryKey: ["fatture"] });
-      toast.success(`Stati aggiornati da Sibill (${res?.checked ?? 0} fatture verificate)`);
+      toast.success(`Sincronizzazione completata: ${res.sync?.checked ?? 0} fatture locali verificate, ${res.docs?.length ?? 0} documenti su Sibill`);
     },
     onError: (e: any) => toast.error(e.message || "Impossibile aggiornare gli stati da Sibill", { duration: 8000 }),
   });
@@ -113,8 +121,10 @@ export function FatturazioneModule({ tenantId }: Props) {
   const setModalita = (mockMode: boolean) => {
     setSibillMock(mockMode);
     localStorage.setItem("sibill_mock_mode", mockMode ? "true" : "false");
-    if (!mockMode) refreshMut.mutate();
+    setDocsSibill(null);
+    setTimeout(() => refreshMut.mutate(), 0);
   };
+
 
   const sibillStats = useMemo(() => {
     const list = fatture.map((f: any) => (sibillMap as any)[f.id] as SibillSync | undefined);
