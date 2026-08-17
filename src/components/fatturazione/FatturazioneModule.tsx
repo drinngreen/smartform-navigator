@@ -36,7 +36,7 @@ const STATO_LABEL: Record<Stato, string> = {
 };
 
 export function FatturazioneModule({ tenantId }: Props) {
-  const [tab, setTab] = useState<"fatture" | "noleggi" | "sibill">("fatture");
+  const [tab, setTab] = useState<"fatture" | "noleggi" | "sibill" | "sibill_in">("fatture");
   const [search, setSearch] = useState("");
   const [filterStato, setFilterStato] = useState<"tutti" | Stato>("tutti");
   const [filterFrom, setFilterFrom] = useState("");
@@ -216,12 +216,15 @@ export function FatturazioneModule({ tenantId }: Props) {
           <Package className="h-4 w-4" /> Noleggi (mese scorso)
         </button>
         <button onClick={() => setTab("sibill")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "sibill" ? "bg-primary/20 border-primary/40 text-primary" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
-          <BadgeEuro className="h-4 w-4" /> Fatture su Sibill (/P)
+          <BadgeEuro className="h-4 w-4" /> Sibill — Emesse (/P)
+        </button>
+        <button onClick={() => setTab("sibill_in")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "sibill_in" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
+          <UploadCloud className="h-4 w-4 rotate-180" /> Sibill — Ricevute (entrata)
         </button>
       </div>
 
-      {tab === "sibill" ? (
-        <SibillDocumentiPanel mock={sibillMock} tenantId={tenantId} />
+      {tab === "sibill" || tab === "sibill_in" ? (
+        <SibillDocumentiPanel key={tab} mock={sibillMock} tenantId={tenantId} initialMode={tab === "sibill_in" ? "IN" : "P"} />
       ) : tab === "noleggi" ? (
         <NoleggiTab tenantId={tenantId} onCreated={() => qc.invalidateQueries({ queryKey: ["fatture"] })} />
       ) : (
