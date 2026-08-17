@@ -215,6 +215,13 @@ Deno.serve(async (req) => {
       return json({ ok: true, hits: hits.slice(0, 3), detail });
     }
 
+    if (action === "peek_documents") {
+      const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=5`, { headers: sibillHeaders() });
+      if (!res.ok) return json({ error: await parseError(res) }, 200);
+      const b = await res.json();
+      return json({ ok: true, sample: (b?.data || []).slice(0, 5) });
+    }
+
     if (action === "ping") {
 
       if (mock) {
@@ -305,6 +312,11 @@ Deno.serve(async (req) => {
         for (const d of list) {
           const number = d?.number || null;
           if (filter === "P" && !/\/P$/i.test(String(number || ""))) continue;
+          if (filter === "IN") {
+            const isReceived = String(d?.direction || "").toUpperCase() === "RECEIVED";
+            const isInvoice = !!d?.is_e_invoice || ["INVOICE", "CREDIT_NOTE"].includes(String(d?.type || "").toUpperCase());
+            if (!isReceived || !isInvoice) continue;
+          }
           const gross = num(d?.gross_amount);
           const vat = num(d?.vat_amount);
           out.push({

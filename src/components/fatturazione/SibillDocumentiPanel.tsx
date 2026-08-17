@@ -22,10 +22,11 @@ export function SibillDocumentiPanel({ mock }: Props) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [isForceRefreshing, setIsForceRefreshing] = useState(false);
-  const queryKey = ["sibill-documenti-p-v2", !!mock] as const;
+  const [modo, setModo] = useState<"P" | "IN">("P");
+  const queryKey = ["sibill-documenti-p-v2", !!mock, modo] as const;
   const { data: docs = [], isFetching, error } = useQuery({
     queryKey,
-    queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
+    queryFn: () => elencaDocumentiSibill({ mock, filter: modo }),
     staleTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: false,
@@ -51,6 +52,14 @@ export function SibillDocumentiPanel({ mock }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-background/60 border border-border/30">
+          {([["P", "Emesse (/P)"], ["IN", "Ricevute (entrata)"]] as const).map(([v, label]) => (
+            <button key={v} onClick={() => setModo(v)}
+              className={`px-3 py-1.5 rounded-lg text-sm ${modo === v ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)}
@@ -58,12 +67,12 @@ export function SibillDocumentiPanel({ mock }: Props) {
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
         </div>
         <span className="text-xs text-muted-foreground">
-          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} fatture /P — totale ${eur(totale)}`}
+          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
         </span>
         <button onClick={async () => {
           setIsForceRefreshing(true);
           try {
-            const freshDocs = await elencaDocumentiSibill({ mock, filter: "P", force: true });
+            const freshDocs = await elencaDocumentiSibill({ mock, filter: modo, force: true });
             queryClient.setQueryData(queryKey, freshDocs);
           } finally {
             setIsForceRefreshing(false);
@@ -116,7 +125,7 @@ export function SibillDocumentiPanel({ mock }: Props) {
                 </td></tr>
               )}
               {!isFetching && filtered.length === 0 && (
-                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">Nessuna fattura /P trovata su Sibill.</td></tr>
+                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">{modo === "IN" ? "Nessuna fattura in entrata trovata su Sibill." : "Nessuna fattura /P trovata su Sibill."}</td></tr>
               )}
               {filtered.map((d) => {
                 const [base, ...rest] = (d.number || "—").split("/");
