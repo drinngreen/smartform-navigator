@@ -6170,6 +6170,10 @@ export type Database = {
         }
         Returns: number
       }
+      admin_set_fir_number: {
+        Args: { p_form_id: string; p_numero_fir: string }
+        Returns: string
+      }
       auto_assign_after_consume: {
         Args: { p_user_id: string }
         Returns: string
