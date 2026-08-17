@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
       if (!p.startsWith("/api/")) return json({ error: { title: "Path non valido", detail: p } }, 400);
       const res = await fetch(`${BASE_URL}${p.replace("{company}", COMPANY_ID || "")}`, { headers: sibillHeaders() });
       const txt = await res.text();
-      return json({ ok: res.ok, status: res.status, body: txt.slice(0, 20000) });
+      return json({ ok: res.ok, status: res.status, body: txt.slice(0, 900000) });
     }
 
     if (action === "ping") {
