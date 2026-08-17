@@ -279,10 +279,9 @@ export function FatturazioneModule({ tenantId }: Props) {
                             <span className="inline-flex items-center gap-1.5">
                               {f.numero_completo}
                               {(sib?.sync_status === "errore" || sib?.error_title) && (
-                                <AlertTriangle
-                                  className="h-4 w-4 text-red-400"
-                                  title={`Scartata da Sibill: ${sib?.error_title || ""} ${sib?.error_detail || ""}`.trim()}
-                                />
+                                <span title={`Scartata da Sibill: ${sib?.error_title || ""} ${sib?.error_detail || ""}`.trim()}>
+                                  <AlertTriangle className="h-4 w-4 text-red-400" />
+                                </span>
                               )}
                             </span>
                           </td>
