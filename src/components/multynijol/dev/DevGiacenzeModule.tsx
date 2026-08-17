@@ -396,7 +396,7 @@ export function DevGiacenzeModule() {
             <Input placeholder="es. 170405" value={searchCer} onChange={(e) => setSearchCer(e.target.value)} className="bg-card/60" />
           </div>
           <div className="text-xs text-muted-foreground">
-            Saldo = saldo iniziale ufficiale (snapshot) + carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}.
+            Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
           </div>
         </CardContent>
       </Card>
