@@ -129,9 +129,9 @@ export default function MNRentriConsolePage() {
   }, [cliente]);
 
   /* ── Numeri FIR ── */
-  const [pool, setPool] = useState<{ id: string; fir_number: string; status: string; user_id: string | null }[]>([]);
+  const [pool, setPool] = useState<{ id: string; fir_number: string; status: string; user_id: string | null; assigned_at: string | null }[]>([]);
   const [personale, setPersonale] = useState<
-    { id: string; nome: string | null; cognome: string | null; mn_context: string | null; tenant_id: string | null }[]
+    { id: string; user_id: string | null; nome: string | null; cognome: string | null; mn_context: string | null; tenant_id: string | null }[]
   >([]);
   const [qty, setQty] = useState(5);
   const [pescando, setPescando] = useState(false);
@@ -151,13 +151,13 @@ export default function MNRentriConsolePage() {
     const [{ data: poolRows }, { data: profs }] = await Promise.all([
       supabase
         .from("fir_number_pool")
-        .select("id, fir_number, status, user_id")
+        .select("id, fir_number, status, user_id, assigned_at")
         .eq("societa_id", societaId)
         .order("created_at", { ascending: false })
         .limit(200),
       supabase
         .from("profiles")
-        .select("id, nome, cognome, mn_context, tenant_id")
+        .select("id, user_id, nome, cognome, mn_context, tenant_id")
         .or(
           "mn_context.in.(multyproget,niyol),tenant_id.in.(77ec9a3d-602e-438f-97bf-1c69abd8f691,819c783e-78dd-4080-8265-802e75b0d813)",
         )
@@ -173,6 +173,34 @@ export default function MNRentriConsolePage() {
   }, [societaId]);
 
   const disponibili = useMemo(() => pool.filter((p) => p.status === "available"), [pool]);
+
+  /** Mappa auth-uid → nome dipendente (profiles.user_id o profiles.id) */
+  const nomeByUid = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const u of personale) {
+      const label = [u.nome, u.cognome].filter(Boolean).join(" ").trim();
+      if (!label) continue;
+      if (u.user_id) map[u.user_id] = label;
+      map[u.id] = map[u.id] ?? label;
+    }
+    return map;
+  }, [personale]);
+
+  const assegnati = useMemo(
+    () =>
+      pool
+        .filter((p) => p.status !== "available")
+        .map((p) => ({
+          ...p,
+          assegnatario:
+            p.user_id && p.user_id !== SHARED_POOL_USER_ID
+              ? nomeByUid[p.user_id] ?? "🏢 Ufficio / admin"
+              : "Serbatoio condiviso",
+        })),
+    [pool, nomeByUid],
+  );
+
+
 
   const handlePesca = async () => {
     setPescando(true);
@@ -532,9 +560,10 @@ export default function MNRentriConsolePage() {
                       {personale
                         .filter((u) => appDiProfilo(u) === assignApp)
                         .map((u) => (
-                          <option key={u.id} value={u.id}>
+                          <option key={u.id} value={u.user_id ?? u.id}>
                             {[u.nome, u.cognome].filter(Boolean).join(" ") || u.id.slice(0, 8)}
                           </option>
+
                         ))}
                     </select>
                   </div>
@@ -545,7 +574,53 @@ export default function MNRentriConsolePage() {
                 )}
               </div>
             </div>
+
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-3">
+              <h3 className="text-base font-display tracking-wider flex items-center gap-2">
+                <Users size={16} /> Numeri già assegnati ({assegnati.length})
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Numeri scaricati da RENTRI e già assegnati a un dipendente o all'ufficio.
+              </p>
+              <div className="space-y-2 max-h-[420px] overflow-auto">
+                {assegnati.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/30 border border-border/30"
+                  >
+                    <span className="font-mono text-sm font-bold">{p.fir_number}</span>
+                    <button
+                      type="button"
+                      title="Copia numero FIR"
+                      onClick={() => copyFir(p.fir_number)}
+                      className="rounded-md border border-border/60 bg-background/60 p-1.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy size={14} />
+                    </button>
+                    <span className="text-sm text-foreground">{p.assegnatario}</span>
+                    <span
+                      className={`ml-auto text-[11px] uppercase font-semibold px-2 py-1 rounded-full ${
+                        p.status === "consumed"
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-amber-500/20 text-amber-300"
+                      }`}
+                    >
+                      {p.status === "consumed" ? "utilizzato" : "assegnato"}
+                    </span>
+                    {p.assigned_at && (
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {new Date(p.assigned_at).toLocaleDateString("it-IT")}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {assegnati.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nessun numero assegnato al momento.</p>
+                )}
+              </div>
+            </div>
           </div>
+
         )}
 
         {tab === "registri" && (
