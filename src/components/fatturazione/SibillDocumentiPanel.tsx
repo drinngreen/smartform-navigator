@@ -21,10 +21,13 @@ export function SibillDocumentiPanel({ mock }: Props) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
+  const [force, setForce] = useState(false);
   const { data: docs = [], isFetching, refetch, error } = useQuery({
     queryKey: ["sibill-documenti-p", !!mock],
-    queryFn: () => elencaDocumentiSibill({ mock, filter: "P" }),
-    staleTime: 5 * 60 * 1000,
+    queryFn: () => elencaDocumentiSibill({ mock, filter: "P", force }),
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   const filtered = useMemo(() => {
@@ -56,7 +59,7 @@ export function SibillDocumentiPanel({ mock }: Props) {
         <span className="text-xs text-muted-foreground">
           {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} fatture /P — totale ${eur(totale)}`}
         </span>
-        <button onClick={() => refetch()} disabled={isFetching}
+        <button onClick={async () => { setForce(true); await refetch(); setForce(false); }} disabled={isFetching}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border/40 bg-background/40 text-sm hover:bg-background/70 disabled:opacity-40">
           {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Aggiorna da Sibill
@@ -66,6 +69,9 @@ export function SibillDocumentiPanel({ mock }: Props) {
       {error && (
         <div className="rounded-xl border border-destructive/40 bg-destructive/10 text-destructive px-4 py-3 text-sm">
           {(error as any).message}
+          {/\bTroppe|429|Limite/i.test((error as any).message || "") && (
+            <div className="mt-1 text-xs opacity-80">Sibill limita il numero di chiamate: attendi un paio di minuti e riprova.</div>
+          )}
         </div>
       )}
 
