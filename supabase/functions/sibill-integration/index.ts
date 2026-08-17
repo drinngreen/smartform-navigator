@@ -334,6 +334,47 @@ Deno.serve(async (req) => {
       }
 
       out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+      // Arricchimento descrizione (Sibill non espone il counterpart nell'elenco):
+      // 1) fatture emesse dal gestionale e sincronizzate su Sibill (match per document_id)
+      // 2) match per numero documento con la tabella `fatture` (solo lettura)
+      try {
+        const docIds = out.map((d) => d.id).filter(Boolean);
+        if (docIds.length) {
+          const { data: syncRows } = await admin
+            .from("fatture_sibill_sync")
+            .select("sibill_document_id, fattura_id")
+            .in("sibill_document_id", docIds.slice(0, 1000));
+          const fattIds = (syncRows || []).map((r: any) => r.fattura_id).filter(Boolean);
+          const byDocId = new Map<string, string>();
+          if (fattIds.length) {
+            const { data: fatt } = await admin
+              .from("fatture")
+              .select("id, cliente_ragione_sociale, numero_completo, imponibile")
+              .in("id", fattIds);
+            const fMap = new Map((fatt || []).map((f: any) => [f.id, f]));
+            for (const r of (syncRows || []) as any[]) {
+              const f = fMap.get(r.fattura_id);
+              if (f?.cliente_ragione_sociale) byDocId.set(r.sibill_document_id, f.cliente_ragione_sociale);
+            }
+          }
+          const numbers = out.map((d) => d.number).filter(Boolean).slice(0, 1000);
+          const byNumber = new Map<string, string>();
+          if (numbers.length) {
+            const { data: fatt2 } = await admin
+              .from("fatture")
+              .select("numero_completo, cliente_ragione_sociale")
+              .in("numero_completo", numbers);
+            for (const f of (fatt2 || []) as any[]) {
+              if (f.cliente_ragione_sociale) byNumber.set(f.numero_completo, f.cliente_ragione_sociale);
+            }
+          }
+          for (const d of out) {
+            if (!d.counterpart) d.counterpart = byDocId.get(d.id) || byNumber.get(d.number) || null;
+          }
+        }
+      } catch (_e) { /* enrichment best-effort */ }
+
       DOC_CACHE.set(cacheKey, { at: Date.now(), documents: out, scanned, partial });
       return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, partial, warning, documents: out });
 
