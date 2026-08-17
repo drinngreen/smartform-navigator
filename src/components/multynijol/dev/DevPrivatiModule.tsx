@@ -251,6 +251,13 @@ export function DevPrivatiModule() {
     return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
   }, [cerSearch]);
 
+  const cerOptions = (q: string) => {
+    if (!q) return CER_DATA.slice(0, 20);
+    const s = q.toLowerCase();
+    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
+  };
+
+
   const invalidateInventoryQueries = () => {
     [
       "dev-conferimenti-anno",
