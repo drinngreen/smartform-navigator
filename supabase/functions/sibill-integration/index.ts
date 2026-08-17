@@ -226,6 +226,7 @@ Deno.serve(async (req) => {
         return Number.isFinite(n) ? n : null;
       };
 
+
       // Cache in memoria (10 min): evita di ri-scaricare migliaia di documenti ad ogni apertura
       const cacheKey = `docs:${filter}`;
       const cached = DOC_CACHE.get(cacheKey);
