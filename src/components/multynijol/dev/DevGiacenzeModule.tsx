@@ -129,14 +129,16 @@ export function DevGiacenzeModule() {
     () =>
       filtered.reduce(
         (acc, r) => ({
+          iniziale: acc.iniziale + r.iniziale,
           carico: acc.carico + r.carico,
           scarico: acc.scarico + r.scarico,
           saldo: acc.saldo + r.saldo,
         }),
-        { carico: 0, scarico: 0, saldo: 0 }
+        { iniziale: 0, carico: 0, scarico: 0, saldo: 0 }
       ),
     [filtered]
   );
+
 
   // Sync giacenze (ricalcolo magazzino_giacenze dai movimenti, alla data odierna)
   const recalculate = useMutation({
