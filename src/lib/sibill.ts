@@ -127,8 +127,10 @@ export type SibillDocumento = {
   date: string | null;
   direction: string | null;
   counterpart: string | null;
+  notes?: string | null;
   is_e_invoice?: boolean;
   file_name?: string | null;
+
 };
 
 /** Elenca i documenti realmente presenti su Sibill (stato lato provider).
