@@ -190,6 +190,31 @@ Deno.serve(async (req) => {
       return json({ ok: res.ok, status: res.status, body: txt.slice(0, 900000) });
     }
 
+    // Debug: trova i primi documenti "/P" e mostra il grezzo lista + dettaglio
+    if (action === "debug_p") {
+      let cursor: string | null = null;
+      const hits: any[] = [];
+      for (let page = 0; page < 60 && hits.length < 3; page++) {
+        const res = await fetch(
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+            (cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""),
+          { headers: sibillHeaders() }
+        );
+        if (!res.ok) return json({ error: await parseError(res) }, 200);
+        const b = await res.json();
+        for (const d of b?.data || []) if (/\/P$/i.test(String(d?.number || ""))) hits.push(d);
+        if (!b?.page?.has_next_page) break;
+        cursor = b.page.cursor;
+        await sleep(200);
+      }
+      let detail: any = null;
+      if (hits[0]?.id) {
+        const dr = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents/${hits[0].id}`, { headers: sibillHeaders() });
+        detail = { status: dr.status, body: (await dr.text()).slice(0, 4000) };
+      }
+      return json({ ok: true, hits: hits.slice(0, 3), detail });
+    }
+
     if (action === "ping") {
 
       if (mock) {
@@ -296,10 +321,15 @@ Deno.serve(async (req) => {
             direction: d?.direction || null,
             counterpart:
               d?.counterpart?.company_name ||
-              (Array.isArray(d?.reasons_and_remarks) ? d.reasons_and_remarks[0] : null) ||
+              (Array.isArray(d?.reasons_and_remarks) && d.reasons_and_remarks.length
+                ? d.reasons_and_remarks.join(" — ")
+                : null) ||
+              d?.notes ||
               null,
+            notes: d?.notes || null,
             is_e_invoice: !!d?.is_e_invoice,
             file_name: d?.file_name || null,
+
           });
         }
         const pg = okBody?.page || {};
@@ -309,6 +339,47 @@ Deno.serve(async (req) => {
       }
 
       out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+
+      // Arricchimento descrizione (Sibill non espone il counterpart nell'elenco):
+      // 1) fatture emesse dal gestionale e sincronizzate su Sibill (match per document_id)
+      // 2) match per numero documento con la tabella `fatture` (solo lettura)
+      try {
+        const docIds = out.map((d) => d.id).filter(Boolean);
+        if (docIds.length) {
+          const { data: syncRows } = await admin
+            .from("fatture_sibill_sync")
+            .select("sibill_document_id, fattura_id")
+            .in("sibill_document_id", docIds.slice(0, 1000));
+          const fattIds = (syncRows || []).map((r: any) => r.fattura_id).filter(Boolean);
+          const byDocId = new Map<string, string>();
+          if (fattIds.length) {
+            const { data: fatt } = await admin
+              .from("fatture")
+              .select("id, cliente_ragione_sociale, numero_completo, imponibile")
+              .in("id", fattIds);
+            const fMap = new Map((fatt || []).map((f: any) => [f.id, f]));
+            for (const r of (syncRows || []) as any[]) {
+              const f = fMap.get(r.fattura_id);
+              if (f?.cliente_ragione_sociale) byDocId.set(r.sibill_document_id, f.cliente_ragione_sociale);
+            }
+          }
+          const numbers = out.map((d) => d.number).filter(Boolean).slice(0, 1000);
+          const byNumber = new Map<string, string>();
+          if (numbers.length) {
+            const { data: fatt2 } = await admin
+              .from("fatture")
+              .select("numero_completo, cliente_ragione_sociale")
+              .in("numero_completo", numbers);
+            for (const f of (fatt2 || []) as any[]) {
+              if (f.cliente_ragione_sociale) byNumber.set(f.numero_completo, f.cliente_ragione_sociale);
+            }
+          }
+          for (const d of out) {
+            if (!d.counterpart) d.counterpart = byDocId.get(d.id) || byNumber.get(d.number) || null;
+          }
+        }
+      } catch (_e) { /* enrichment best-effort */ }
+
       DOC_CACHE.set(cacheKey, { at: Date.now(), documents: out, scanned, partial });
       return json({ ok: true, env: SIBILL_ENV, count: out.length, scanned, partial, warning, documents: out });
 
