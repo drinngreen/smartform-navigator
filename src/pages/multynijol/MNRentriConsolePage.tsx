@@ -24,6 +24,7 @@ import {
   type MovimentoImpiantoRow,
 } from "@/lib/rentriRegistroSync";
 import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
+import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
 import {
@@ -38,6 +39,7 @@ import {
   PenLine,
   Copy,
   ArrowLeft,
+  FileText,
 } from "lucide-react";
 
 
@@ -93,7 +95,7 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "dafirmare", "registri", "invii", "lemon"];
+    const ids: TabId[] = ["stato", "numeri", "bozze", "dafirmare", "registri", "invii", "lemon"];
     return ids.includes(t as TabId) ? (t as TabId) : "stato";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
@@ -151,6 +153,13 @@ export default function MNRentriConsolePage() {
   >([]);
   const [qty, setQty] = useState(5);
   const [pescando, setPescando] = useState(false);
+  const [bloccoPesca, setBloccoPesca] = useState<string>(
+    (BLOCCHI_PESCA[configKey] ?? [])[0]?.code ?? RENTRI_BLOCCO_CORRENTE[configKey] ?? "",
+  );
+
+  useEffect(() => {
+    setBloccoPesca((BLOCCHI_PESCA[configKey] ?? [])[0]?.code ?? RENTRI_BLOCCO_CORRENTE[configKey] ?? "");
+  }, [configKey]);
   const [assegnando, setAssegnando] = useState(false);
   const [assignApp, setAssignApp] = useState<"multyproget" | "niyol">(
     configKey === "niyol" ? "niyol" : "multyproget",
@@ -253,8 +262,9 @@ export default function MNRentriConsolePage() {
   const handlePesca = async () => {
     setPescando(true);
     try {
-      const blocco = RENTRI_BLOCCO_CORRENTE[configKey] ?? "";
-      const res = await vidimaFIRAsync(cliente, qty, blocco, RENTRI_UNITA_LOCALI[configKey], (m) =>
+      const opzione = (BLOCCHI_PESCA[configKey] ?? []).find((b) => b.code === bloccoPesca);
+      const blocco = bloccoPesca || RENTRI_BLOCCO_CORRENTE[configKey] || "";
+      const res = await vidimaFIRAsync(cliente, qty, blocco, opzione?.sito ? RENTRI_UNITA_LOCALI[configKey] : undefined, (m) =>
         toast.info(m, { id: "vidimazione" }),
       );
       const numeri = (res.numeri ?? []).filter((n: string) => n && !n.startsWith("TEST-"));
@@ -548,6 +558,20 @@ export default function MNRentriConsolePage() {
                     onChange={(e) => setQty(Number(e.target.value))}
                     className="block w-28 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
                   />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Blocco</label>
+                  <select
+                    value={bloccoPesca}
+                    onChange={(e) => setBloccoPesca(e.target.value)}
+                    className="block rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
+                  >
+                    {(BLOCCHI_PESCA[configKey] ?? []).map((b) => (
+                      <option key={b.code} value={b.code}>
+                        {b.code} — {b.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <button
                   onClick={handlePesca}
@@ -843,6 +867,20 @@ export default function MNRentriConsolePage() {
             )}
 
           </div>
+        )}
+
+        {tab === "bozze" && (
+          <RentriBozzePanel
+            cliente={cliente}
+            societaId={societaId}
+            tenantId={
+              configKey === "niyol"
+                ? "819c783e-78dd-4080-8265-802e75b0d813"
+                : "77ec9a3d-602e-438f-97bf-1c69abd8f691"
+            }
+            mnContext={configKey === "niyol" ? "niyol" : "multyproget"}
+            onPoolChanged={loadPool}
+          />
         )}
 
         {tab === "dafirmare" && (
