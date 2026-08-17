@@ -86,7 +86,10 @@ export function FattureEmesseEsitoPanel({ tenantId }: Props) {
     if (doc?.delivery_date || stato === "DELIVERED" || delivery === "DELIVERED") {
       return { label: "Consegnata al cassetto fiscale", tone: "ok", icon: CheckCircle2, detail: dataIt(doc?.delivery_date) };
     }
-    if (["REJECTED", "DISCARDED", "ERROR", "FAILED"].includes(stato) || delivery === "FAILED" || s?.sync_status === "errore") {
+    if (stato === "NOT_DELIVERED") {
+      return { label: "Non recapitata — in area riservata", tone: "wait", icon: Clock, detail: doc?.delivery_status || undefined };
+    }
+    if (["REJECTED", "DISCARDED", "ERROR", "FAILED"].includes(stato) || s?.sync_status === "errore") {
       return { label: "Scartata / errore SdI", tone: "err", icon: XCircle, detail: s?.error_title || stato || delivery };
     }
     if (mock) return { label: "Simulazione (MOCK)", tone: "idle", icon: FileText };
