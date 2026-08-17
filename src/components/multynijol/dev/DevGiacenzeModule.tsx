@@ -89,12 +89,12 @@ export function DevGiacenzeModule() {
       if (snapDay) snapshotByCer[b.cer] = snapDay;
       const iniziale = Number(b.saldo_iniziale_kg) || 0;
       if (!map[b.cer]) {
-        map[b.cer] = { cer: b.cer, descrizione: b.descrizione_cer || "", carico: 0, scarico: 0, saldo: 0 };
+        map[b.cer] = { cer: b.cer, descrizione: b.descrizione_cer || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
       }
-      // Il saldo iniziale entra nel periodo solo se lo snapshot ricade nell'intervallo scelto
+      // Il saldo iniziale (snapshot ufficiale) entra solo se ricade nell'intervallo scelto
       const dentroPeriodo =
         (!snapDay || !dataAl || snapDay <= dataAl) && (!snapDay || !dataDal || snapDay >= dataDal);
-      if (dentroPeriodo) map[b.cer].carico += iniziale;
+      if (dentroPeriodo) map[b.cer].iniziale += iniziale;
     }
 
     for (const m of movimenti) {
@@ -105,18 +105,19 @@ export function DevGiacenzeModule() {
       if (dataDal && m.data_movimento < dataDal) continue;
       const key = m.cer;
       if (!map[key]) {
-        map[key] = { cer: m.cer, descrizione: m.descrizione_rifiuto || "", carico: 0, scarico: 0, saldo: 0 };
+        map[key] = { cer: m.cer, descrizione: m.descrizione_rifiuto || "", iniziale: 0, carico: 0, scarico: 0, saldo: 0 };
       }
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;
       else map[key].scarico += q;
       if (!map[key].descrizione && m.descrizione_rifiuto) map[key].descrizione = m.descrizione_rifiuto;
     }
-    Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
+    Object.values(map).forEach((r) => (r.saldo = r.iniziale + r.carico - r.scarico));
     return Object.values(map)
-      .filter((r) => r.carico !== 0 || r.scarico !== 0)
+      .filter((r) => r.iniziale !== 0 || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
   }, [movimenti, baseline, dataAl, dataDal]);
+
 
 
   const filtered = useMemo(
