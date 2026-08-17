@@ -99,6 +99,35 @@ export function FatturazioneModule({ tenantId }: Props) {
     onError: (e: any) => toast.error(e.message || "Errore invio a Sibill", { duration: 8000 }),
   });
 
+  // Allineamento stati reali da Sibill (usato anche quando si passa da MOCK a REALE)
+  const refreshMut = useMutation({
+    mutationFn: async () => aggiornaStatiSibill(fatture.map((f: any) => f.id)),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ["fatture-sibill"] });
+      qc.invalidateQueries({ queryKey: ["fatture"] });
+      toast.success(`Stati aggiornati da Sibill (${res?.checked ?? 0} fatture verificate)`);
+    },
+    onError: (e: any) => toast.error(e.message || "Impossibile aggiornare gli stati da Sibill", { duration: 8000 }),
+  });
+
+  const setModalita = (mockMode: boolean) => {
+    setSibillMock(mockMode);
+    localStorage.setItem("sibill_mock_mode", mockMode ? "true" : "false");
+    if (!mockMode) refreshMut.mutate();
+  };
+
+  const sibillStats = useMemo(() => {
+    const list = fatture.map((f: any) => (sibillMap as any)[f.id] as SibillSync | undefined);
+    return {
+      reali: list.filter(s => s && !isMockSync(s) && s.sync_status !== "errore").length,
+      mock: list.filter(s => isMockSync(s)).length,
+      errore: list.filter(s => s?.sync_status === "errore").length,
+      nonInviate: list.filter(s => !s).length,
+    };
+  }, [fatture, sibillMap]);
+
+
+
 
 
 
