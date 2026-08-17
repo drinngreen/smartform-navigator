@@ -67,12 +67,12 @@ export function SibillDocumentiPanel({ mock }: Props) {
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/60 border border-border/30 text-sm" />
         </div>
         <span className="text-xs text-muted-foreground">
-          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} fatture /P — totale ${eur(totale)}`}
+          {isFetching ? "Lettura da Sibill in corso…" : `${filtered.length} ${modo === "IN" ? "fatture ricevute" : "fatture /P"} — totale ${eur(totale)}`}
         </span>
         <button onClick={async () => {
           setIsForceRefreshing(true);
           try {
-            const freshDocs = await elencaDocumentiSibill({ mock, filter: "P", force: true });
+            const freshDocs = await elencaDocumentiSibill({ mock, filter: modo, force: true });
             queryClient.setQueryData(queryKey, freshDocs);
           } finally {
             setIsForceRefreshing(false);
@@ -125,7 +125,7 @@ export function SibillDocumentiPanel({ mock }: Props) {
                 </td></tr>
               )}
               {!isFetching && filtered.length === 0 && (
-                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">Nessuna fattura /P trovata su Sibill.</td></tr>
+                <tr><td colSpan={11} className="p-8 text-center text-muted-foreground">{modo === "IN" ? "Nessuna fattura in entrata trovata su Sibill." : "Nessuna fattura /P trovata su Sibill."}</td></tr>
               )}
               {filtered.map((d) => {
                 const [base, ...rest] = (d.number || "—").split("/");
