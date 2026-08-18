@@ -257,6 +257,10 @@ export function ZoliDarkLemonWidget() {
                 <ScanSearch className="h-4 w-4" />
               </button>
             )}
+            <button onClick={handleScreenshot} onMouseDown={e => e.stopPropagation()} className="p-1.5 rounded-md bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors disabled:opacity-40" title="📸 Screenshot area di lavoro" disabled={isLoading}>
+              <Camera className="h-4 w-4" />
+            </button>
+
             <button
               onClick={() => setShowHistory(!showHistory)}
               onMouseDown={e => e.stopPropagation()}
