@@ -394,8 +394,12 @@ export function ZoliDarkLemonWidget() {
                 </div>
               )}
 
+              {/* Supervisione + Autopilot */}
+              <DarkLemonSupervisionBar />
+
               {/* Input */}
               <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
+
             </div>
           </div>
         </div>
