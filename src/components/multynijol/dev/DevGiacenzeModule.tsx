@@ -84,14 +84,19 @@ export function DevGiacenzeModule() {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
     const descriptionsByCer: Record<string, string> = {};
+    const isTechnicalDesc = (d: string) =>
+      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(d);
 
     for (const m of movimenti) {
-      if (m.descrizione_rifiuto?.trim()) descriptionsByCer[m.cer] = m.descrizione_rifiuto.trim();
+      const d = m.descrizione_rifiuto?.trim();
+      if (d && !isTechnicalDesc(d)) descriptionsByCer[m.cer] = d;
     }
 
     for (const b of baseline ?? []) {
-      if (b.descrizione_cer?.trim()) descriptionsByCer[b.cer] = b.descrizione_cer.trim();
+      const d = b.descrizione_cer?.trim();
+      if (d && !isTechnicalDesc(d)) descriptionsByCer[b.cer] = d;
     }
+
 
     for (const m of movimenti) {
       if (dataAl && m.data_movimento > dataAl) continue;
@@ -103,7 +108,7 @@ export function DevGiacenzeModule() {
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;
       else map[key].scarico += q;
-      if (!map[key].descrizione && m.descrizione_rifiuto) map[key].descrizione = m.descrizione_rifiuto;
+      
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     return Object.values(map)
