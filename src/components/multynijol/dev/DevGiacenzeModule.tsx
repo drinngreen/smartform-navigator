@@ -46,6 +46,7 @@ export function DevGiacenzeModule() {
   const [searchCer, setSearchCer] = useState("");
   const [dataAl, setDataAl] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dataDal, setDataDal] = useState<string>("");
+  const [showAllCer, setShowAllCer] = useState(false);
 
   // Fetch all movimenti for the tenant (we filter client-side per data selezionata)
   const { data: movimenti, isLoading } = useQuery({
@@ -98,6 +99,14 @@ export function DevGiacenzeModule() {
     }
 
 
+    // Se richiesto, mostra anche i CER registrati in magazzino senza movimenti nel periodo (a zero)
+    if (showAllCer) {
+      for (const b of baseline ?? []) {
+        if (!b.cer) continue;
+        map[b.cer] = { cer: b.cer, descrizione: descriptionsByCer[b.cer] || "", carico: 0, scarico: 0, saldo: 0 };
+      }
+    }
+
     for (const m of movimenti) {
       if (dataAl && m.data_movimento > dataAl) continue;
       if (dataDal && m.data_movimento < dataDal) continue;
@@ -112,9 +121,9 @@ export function DevGiacenzeModule() {
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     return Object.values(map)
-      .filter((r) => r.carico !== 0 || r.scarico !== 0)
+      .filter((r) => showAllCer || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, baseline, dataAl, dataDal]);
+  }, [movimenti, baseline, dataAl, dataDal, showAllCer]);
 
 
 
@@ -399,8 +408,19 @@ export function DevGiacenzeModule() {
             <Label className="text-xs text-muted-foreground">Filtro CER</Label>
             <Input placeholder="es. 170405" value={searchCer} onChange={(e) => setSearchCer(e.target.value)} className="bg-card/60" />
           </div>
-          <div className="text-xs text-muted-foreground">
-            Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAllCer}
+                onChange={(e) => setShowAllCer(e.target.checked)}
+                className="h-4 w-4 accent-emerald-500"
+              />
+              Mostra tutti i CER a magazzino (anche a zero)
+            </label>
+            <div className="text-xs text-muted-foreground">
+              Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
+            </div>
           </div>
         </CardContent>
       </Card>
