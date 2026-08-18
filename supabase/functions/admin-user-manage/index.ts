@@ -358,7 +358,7 @@ serve(async (req) => {
       const { data: existingCheck } = await adminClient
         .from("profiles")
         .select("user_id")
-        .eq("codice_fiscale", codice_fiscale.toUpperCase())
+        .eq("codice_fiscale", normalizedNewCf)
         .maybeSingle();
 
       if (existingCheck) {
@@ -372,7 +372,7 @@ serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { nome, cognome, codice_fiscale: codice_fiscale.toUpperCase() },
+        user_metadata: { nome, cognome, codice_fiscale: normalizedNewCf },
       });
 
       if (authError) {
@@ -394,7 +394,7 @@ serve(async (req) => {
         user_id: newUserId,
         nome,
         cognome,
-        codice_fiscale: codice_fiscale.toUpperCase(),
+        codice_fiscale: normalizedNewCf,
         tenant_id: targetTenantId || null,
         mn_context: mn_context || null,
         targa_automezzo: targa_automezzo || null,
