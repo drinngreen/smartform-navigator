@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
 import { CER_CATALOG } from "@/data/cerCatalog";
 import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
+import { logAgentActivity } from "@/stores/agentActivityStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const LIMITE_ANNUO_GLOBALE_KG = 1500;
@@ -380,9 +381,15 @@ export function DevPrivatiModule() {
     } as any);
 
     if (error) {
+      logAgentActivity("Creazione conferimento privato", "error", `${righe.length} materiali`, error.message);
       toast.error(`Conferimento non salvato: ${error.message}`);
       return;
     }
+    logAgentActivity(
+      "Creazione conferimento privato",
+      "ok",
+      `${righe.length} materiali (${righe.map((r: any) => r.cer).join(", ")}) — data ${dataRegistrazione}`,
+    );
 
     toast.success(`✅ Conferimento (${righe.length} material${righe.length > 1 ? "i" : "e"}) e ricevuta registrati!`);
     setShowNewConferimento(false);
