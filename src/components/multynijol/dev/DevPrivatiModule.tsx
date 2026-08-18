@@ -974,6 +974,16 @@ export function DevPrivatiModule() {
                         className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg"
                         onMouseDown={(e) => e.preventDefault()}
                       >
+                        <label className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2 text-xs bg-popover border-b border-border cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={mostraTuttiCer}
+                            onChange={(e) => setMostraTuttiCer(e.target.checked)}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="accent-emerald-500"
+                          />
+                          <span className="text-muted-foreground">Mostra tutti i CER del catalogo europeo</span>
+                        </label>
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
