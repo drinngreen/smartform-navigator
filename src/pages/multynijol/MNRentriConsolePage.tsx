@@ -949,7 +949,7 @@ export default function MNRentriConsolePage() {
           </div>
         )}
 
-        {tab === "lemon" && <DarkLemonMNChat context={context} />}
+        {tab === "lemon" && <DarkLemonMNChat context={context} surface="console" />}
       </div>
     </MNAdminLayout>
   );

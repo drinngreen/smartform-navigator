@@ -1,8 +1,9 @@
-import { useRef, useEffect, useCallback } from "react";
-import { X, Bot, User, Camera, PanelLeftClose, ScanSearch } from "lucide-react";
+import { useRef, useEffect, useCallback, useState } from "react";
+import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
+import { DarkLemonHistory } from "./DarkLemonHistory";
 import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
@@ -19,7 +20,8 @@ interface DarkLemonSidePanelProps {
 
 export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePanelProps) {
   const { setSidePanel, setWorking } = useZoliDarkLemonWidgetStore();
-  const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context);
+  const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context, "side");
+  const [showHistory, setShowHistory] = useState(false);
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -85,10 +87,25 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
         <button onClick={handleScreenshot} className="p-1 rounded-md bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors" title="Screenshot area di lavoro">
           <Camera className="h-3.5 w-3.5" />
         </button>
+        <button onClick={() => setShowHistory(v => !v)} className={"p-1 rounded-md transition-colors " + (showHistory ? "bg-cyan-500/25 text-cyan-300" : "bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25")} title="Cronologia">
+          <MessageSquare className="h-3.5 w-3.5" />
+        </button>
         <button onClick={() => setSidePanel(false)} className="p-1 text-white/40 hover:text-white transition-colors" title="Chiudi pannello">
           <PanelLeftClose className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {showHistory && (
+        <div className="h-1/2 border-b border-white/10 overflow-hidden shrink-0">
+          <DarkLemonHistory
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelect={(id) => { loadConversation(id); setShowHistory(false); }}
+            onDelete={deleteConversation}
+            onNewChat={() => { newChat(); setShowHistory(false); }}
+          />
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
