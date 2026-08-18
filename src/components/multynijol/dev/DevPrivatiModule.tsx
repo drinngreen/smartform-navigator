@@ -261,21 +261,27 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  // Elenco CER completo: preferiti in cima + intero catalogo europeo
+  // Elenco CER: di default solo quelli abituali (preferiti), con opzione catalogo completo
+  const PREFERITI_CER = useMemo(
+    () => CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso })),
+    []
+  );
+
   const ALL_CER = useMemo(() => {
-    const preferiti = CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso }));
-    const codiciPreferiti = new Set(preferiti.map(c => c.codice));
-    return [...preferiti, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
-  }, []);
+    const codiciPreferiti = new Set(PREFERITI_CER.map(c => c.codice));
+    return [...PREFERITI_CER, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
+  }, [PREFERITI_CER]);
+
+  const baseCerList = mostraTuttiCer ? ALL_CER : PREFERITI_CER;
 
   const searchCerList = (q: string) => {
-    if (!q) return ALL_CER;
+    if (!q) return baseCerList;
     const s = q.toLowerCase().replace(/\s/g, "");
-    return ALL_CER.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
+    return baseCerList.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
   };
 
   // CER filtered list for combobox
-  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, ALL_CER]);
+  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, baseCerList]);
 
   const cerOptions = (q: string) => searchCerList(q);
 
