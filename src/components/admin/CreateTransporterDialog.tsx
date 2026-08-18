@@ -118,11 +118,15 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
             <Input
               placeholder="Nome *"
               value={form.nome}
+              name="nuovo-nome"
+              autoComplete="off"
               onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
             />
             <Input
               placeholder="Cognome *"
               value={form.cognome}
+              name="nuovo-cognome"
+              autoComplete="off"
               onChange={(e) => setForm((f) => ({ ...f, cognome: e.target.value }))}
             />
           </div>
@@ -130,18 +134,31 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
             placeholder="Codice Fiscale (16 caratteri) *"
             value={form.codiceFiscale}
             maxLength={16}
-            onChange={(e) => setForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase() }))}
+            name="nuovo-cf"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            onChange={(e) => setForm((f) => ({ ...f, codiceFiscale: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") }))}
             className="font-mono"
           />
+          {form.codiceFiscale.length > 0 && !cfValid && (
+            <p className="text-xs text-destructive font-mono">
+              Codice fiscale non valido: 16 caratteri nel formato RSSMRA80A01H501U (niente email o spazi).
+            </p>
+          )}
           <Input
             type="password"
             placeholder="Password (min 6 caratteri) *"
             value={form.password}
+            name="nuova-password-app"
+            autoComplete="new-password"
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           />
           <Input
             placeholder="Targa automezzo (opzionale)"
             value={form.targaAutomezzo}
+            name="nuova-targa"
+            autoComplete="off"
             onChange={(e) => setForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
             className="font-mono"
           />
