@@ -53,6 +53,7 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
+  const [mostraTuttiCer, setMostraTuttiCer] = useState(false);
   const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Chiudi la tendina CER solo quando si clicca fuori dal suo contenitore;
@@ -261,21 +262,27 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  // Elenco CER completo: preferiti in cima + intero catalogo europeo
+  // Elenco CER: di default solo quelli abituali (preferiti), con opzione catalogo completo
+  const PREFERITI_CER = useMemo(
+    () => CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso })),
+    []
+  );
+
   const ALL_CER = useMemo(() => {
-    const preferiti = CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso }));
-    const codiciPreferiti = new Set(preferiti.map(c => c.codice));
-    return [...preferiti, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
-  }, []);
+    const codiciPreferiti = new Set(PREFERITI_CER.map(c => c.codice));
+    return [...PREFERITI_CER, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
+  }, [PREFERITI_CER]);
+
+  const baseCerList = mostraTuttiCer ? ALL_CER : PREFERITI_CER;
 
   const searchCerList = (q: string) => {
-    if (!q) return ALL_CER;
+    if (!q) return baseCerList;
     const s = q.toLowerCase().replace(/\s/g, "");
-    return ALL_CER.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
+    return baseCerList.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
   };
 
   // CER filtered list for combobox
-  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, ALL_CER]);
+  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, baseCerList]);
 
   const cerOptions = (q: string) => searchCerList(q);
 
@@ -968,6 +975,16 @@ export function DevPrivatiModule() {
                         className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg"
                         onMouseDown={(e) => e.preventDefault()}
                       >
+                        <label className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2 text-xs bg-popover border-b border-border cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={mostraTuttiCer}
+                            onChange={(e) => setMostraTuttiCer(e.target.checked)}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="accent-emerald-500"
+                          />
+                          <span className="text-muted-foreground">Mostra tutti i CER del catalogo europeo</span>
+                        </label>
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
