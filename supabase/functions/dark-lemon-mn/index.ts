@@ -3282,7 +3282,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
     ];
 
     // Il modello testuale non supporta immagini: con allegati/screenshot usiamo un modello con visione
-    const activeModel = attachmentAware ? "google/gemini-2.0-flash-001" : "openai/gpt-oss-120b";
+    const activeModel = attachmentAware ? "google/gemini-3.5-flash" : "openai/gpt-oss-120b";
     console.log(`[dark-lemon] model=${activeModel} attachments=${attachmentAware}`);
 
     let finalContent = "";
