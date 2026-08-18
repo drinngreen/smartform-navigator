@@ -85,16 +85,29 @@ export default function MNDevDashboardPage() {
           </div>
         </button>
 
-        <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/guida")}
-          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-emerald-500/30 bg-card hover:bg-emerald-500/10 transition-all text-left"
-        >
-          <HelpCircle size={20} className="text-emerald-400" />
-          <div>
-            <div className="font-semibold text-sm text-emerald-300">Guida Dev Multy</div>
-            <div className="text-xs text-muted-foreground">Istruzioni operative complete di ogni modulo</div>
-          </div>
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate("/mn/admin/dev-multyproget/guida")}
+            className="flex items-center gap-3 px-4 py-4 rounded-xl border border-emerald-500/30 bg-card hover:bg-emerald-500/10 transition-all text-left"
+          >
+            <HelpCircle size={20} className="text-emerald-400 shrink-0" />
+            <div>
+              <div className="font-semibold text-sm text-emerald-300">Guida Dev Multy</div>
+              <div className="text-xs text-muted-foreground">Istruzioni operative complete</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/mn/admin/dev-multyproget/tutorial")}
+            className="flex items-center gap-3 px-4 py-4 rounded-xl border border-sky-500/30 bg-card hover:bg-sky-500/10 transition-all text-left"
+          >
+            <PlayCircle size={20} className="text-sky-400 shrink-0" />
+            <div>
+              <div className="font-semibold text-sm text-sky-300">Tutorial Interattivo</div>
+              <div className="text-xs text-muted-foreground">12 capitoli con schermate e checklist</div>
+            </div>
+          </button>
+        </div>
 
         <button
           onClick={() => navigate("/mn/admin/dev-multyproget/rentri-console")}
