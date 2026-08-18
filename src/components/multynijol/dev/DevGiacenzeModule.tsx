@@ -108,7 +108,7 @@ export function DevGiacenzeModule() {
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;
       else map[key].scarico += q;
-      if (!map[key].descrizione && m.descrizione_rifiuto) map[key].descrizione = m.descrizione_rifiuto;
+      
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     return Object.values(map)
