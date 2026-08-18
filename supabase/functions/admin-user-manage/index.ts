@@ -344,14 +344,21 @@ serve(async (req) => {
         });
       }
 
-      const email = `${codice_fiscale.toLowerCase()}@zoli.internal`;
+      const normalizedNewCf = String(codice_fiscale).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(normalizedNewCf)) {
+        return new Response(JSON.stringify({ error: "cf_invalid", message: "Codice fiscale non valido (16 caratteri, formato RSSMRA80A01H501U)" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const email = `${normalizedNewCf.toLowerCase()}@zoli.internal`;
 
       // Check if user already exists
       const { data: existingUsers } = await adminClient.auth.admin.listUsers({ perPage: 1 });
       const { data: existingCheck } = await adminClient
         .from("profiles")
         .select("user_id")
-        .eq("codice_fiscale", codice_fiscale.toUpperCase())
+        .eq("codice_fiscale", normalizedNewCf)
         .maybeSingle();
 
       if (existingCheck) {
@@ -365,7 +372,7 @@ serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { nome, cognome, codice_fiscale: codice_fiscale.toUpperCase() },
+        user_metadata: { nome, cognome, codice_fiscale: normalizedNewCf },
       });
 
       if (authError) {
@@ -387,7 +394,7 @@ serve(async (req) => {
         user_id: newUserId,
         nome,
         cognome,
-        codice_fiscale: codice_fiscale.toUpperCase(),
+        codice_fiscale: normalizedNewCf,
         tenant_id: targetTenantId || null,
         mn_context: mn_context || null,
         targa_automezzo: targa_automezzo || null,

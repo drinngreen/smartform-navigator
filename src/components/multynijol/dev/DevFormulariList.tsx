@@ -505,6 +505,7 @@ export function DevFormulariList({
                   mnContext={mnContext as any}
                   firFormId={viewDialog.form.id}
                   draftData={viewDialog.form}
+                  enableFatturazione
                 />
               )}
             </>

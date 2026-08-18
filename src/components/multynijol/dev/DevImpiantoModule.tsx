@@ -149,7 +149,7 @@ export function DevImpiantoModule() {
 
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-            <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" />
+            <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" enableFatturazione />
           </div>
         </TabsContent>
         <TabsContent value="giacenze">
@@ -615,6 +615,7 @@ function ImpiantoFormulari() {
                   mnContext="multyproget"
                   firFormId={viewDialog.form.id}
                   draftData={viewDialog.form}
+                  enableFatturazione
                 />
               )}
             </>

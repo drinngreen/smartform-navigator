@@ -532,6 +532,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
                 draftData={activeDraft}
                 impiantoId={impiantoId}
                 registryMovementType={registryMovementType}
+                enableFatturazione
               />
             )}
           </div>

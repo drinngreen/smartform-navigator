@@ -283,7 +283,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
                 ✕ Chiudi
               </button>
             </div>
-            <MNFIRFormComplete key={editing.id} firFormId={editing.id} tenantId={tenantId} mnContext={mnContext} />
+            <MNFIRFormComplete key={editing.id} firFormId={editing.id} tenantId={tenantId} mnContext={mnContext} enableFatturazione />
           </div>
         </div>
       )}
