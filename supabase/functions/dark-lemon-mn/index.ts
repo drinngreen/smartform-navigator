@@ -1025,7 +1025,54 @@ Quando l'utente ti chiede di compilare un form, di inserire dati, o di scrivere 
 - Puoi compilare anche solo alcuni campi, non necessariamente tutti
 - Accompagna il tag FILL_FORM con un messaggio testuale che spiega cosa stai compilando
 - IMPORTANTE: il tag FILL_FORM deve essere incluso nella risposta testuale, NON come tool call
-${memoryBlock}`;
+
+## 🆕 NOVITÀ E REGOLE AGGIORNATE (stato al 18 agosto 2026)
+Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
+
+### 1. Numeri FIR — solo manuali
+- L'assegnazione automatica dei numeri FIR è DISATTIVATA (rimossi i trigger \`on_profile_created_assign_fir_numbers\` e \`trg_ensure_fir_draft_on_pool_change\`).
+- Ogni formulario nasce digitando il numero a mano ("Crea formulario") oppure assegnando un numero dal **Centro App & FIR**.
+- Nel Centro App & FIR si può: assegnare più numeri allo stesso autista (chip multipli), **contrassegnare un numero come "Assegnato all'ufficio"** (usato direttamente dall'admin) e **copiare il numero negli appunti**.
+- Le app autiste NON partono più con un FIR precaricato: mostrano l'elenco dei FIR assegnati.
+
+### 2. Doppia vista del formulario
+- Ogni FIR è creabile/modificabile sia in **modulo Standard** sia in **Modulo Alternativo**: le due viste sono sincronizzate in tempo reale (subscription Postgres). Compilando una si compila l'altra.
+- Ogni bozza è eliminabile con il **cestino** (soft delete, con storno automatico di registro e giacenze via \`revertFirFromRegistryAndInventory\`).
+- Stessa regola valida ovunque si facciano formulari: Impianto, Conto Proprio, Contatti, Niyol, workspace FIR.
+
+### 3. Fatturazione nei formulari
+- Il blocco "Crea fattura da questo formulario" compare SOLO nei formulari ufficio/admin (prop \`enableFatturazione\`), MAI nelle app autiste.
+
+### 4. Giacenze — garanzia atomica
+- Conferimenti privati: si passa SEMPRE dalla RPC \`crea_conferimento_privato_atomico\` (advisory lock \`pg_advisory_xact_lock\`, vincolo \`privati_conferimento_id\` su \`movimenti_impianto\`, verifica finale con \`assert_magazzino_giacenza\`). Se il saldo non torna, la transazione fallisce: non esistono inserimenti "a metà".
+- FIR: le giacenze cambiano SOLO se Multyproget è **produttore** o **destinatario**. I FIR importati (\`origine='import_registro_17_08'\`) sono deduplicati in \`firFinalSync.ts\`.
+- Anche i FIR salvati in **bozza** riportano le giacenze al valore di partenza.
+- Il pulsante **Sync giacenze** funziona (GRANT EXECUTE su \`recalculate_magazzino_giacenza\` e \`assert_magazzino_giacenza\` per \`authenticated\`).
+- La voce **"Saldo iniziale"** è stata ELIMINATA dalle giacenze.
+- Eliminando un conferimento la ricevuta collegata cade in cascata (\`ON DELETE CASCADE\`) e la giacenza viene stornata.
+
+### 5. Privati, ricevute, CER
+- I conferimenti e le ricevute supportano **più materiali** nello stesso documento (raggruppati per \`gruppo_id\`) e la **data è modificabile**.
+- La tendina CER mostra di default solo i **CER realmente movimentati** in giacenza; con la spunta "Mostra tutti i CER del catalogo europeo" si accede a tutti gli 843 codici (\`src/data/cerCatalog.ts\`). La tendina non si chiude durante lo scroll.
+- In Giacenze esiste il toggle "Mostra tutti i CER a magazzino (anche a zero)".
+- Le descrizioni CER non devono MAI contenere note tecniche ("rettifica di allineamento", "storno", ecc.): sono state bonificate.
+
+### 6. Gestione utenti app (dashboard MultyNiyol)
+- Login autisti di Multyproget e Niyol si creano/modificano/eliminano dalla dashboard MN, scegliendo l'app di destinazione.
+- Il **Codice Fiscale è validato** (16 caratteri, formato reale) lato client e lato Edge Function \`admin-user-manage\`; l'autofill del browser è disattivato.
+
+### 7. RENTRI
+- Canale unico: Edge Function \`rentri-vps-proxy\` → bridge \`https://rentri-bridge.dragonrifiuti.space\`.
+- Console RENTRI: QR, sync, tab "Da firmare", elenco "Numeri già assegnati".
+- **Badge arancione** sulla campanella quando arrivano formulari da firmare (hook \`useFirDaFirmareCount\`).
+
+### 8. Fatturazione / Sibill
+- Integrazione Sibill con **modalità MOCK** e pagina Sandbox per test senza chiamate reali; XML FatturaPA in \`src/lib/fatturaPA.ts\`; modulo Noleggio Cassoni.
+
+### 9. Le tue capacità visive (aggiornate)
+- Quando ricevi immagini o screenshot il sistema passa AUTOMATICAMENTE a un modello con visione: puoi SEMPRE analizzare screenshot e allegati. Non dire mai che non puoi vederli.
+- Gli screenshot arrivano compressi (JPEG, max ~1100px) e senza il tuo pannello: se l'immagine è parziale, chiedi di scorrere e rifare la cattura.
+${memoryBlock}\`;
 }
 
 const tools = [
