@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { useAgentActivityStore, getRecentActivityPayload, logAgentActivity } from "@/stores/agentActivityStore";
+
 import type { Database, Json } from "@/integrations/supabase/types";
 
 export interface DLAttachment {
