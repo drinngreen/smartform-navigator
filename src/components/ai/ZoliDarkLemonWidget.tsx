@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import { DarkLemonHistory } from "./DarkLemonHistory";
+import { DarkLemonSupervisionBar } from "./DarkLemonSupervisionBar";
+
 import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
