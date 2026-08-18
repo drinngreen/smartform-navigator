@@ -408,8 +408,19 @@ export function DevGiacenzeModule() {
             <Label className="text-xs text-muted-foreground">Filtro CER</Label>
             <Input placeholder="es. 170405" value={searchCer} onChange={(e) => setSearchCer(e.target.value)} className="bg-card/60" />
           </div>
-          <div className="text-xs text-muted-foreground">
-            Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAllCer}
+                onChange={(e) => setShowAllCer(e.target.checked)}
+                className="h-4 w-4 accent-emerald-500"
+              />
+              Mostra tutti i CER a magazzino (anche a zero)
+            </label>
+            <div className="text-xs text-muted-foreground">
+              Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
+            </div>
           </div>
         </CardContent>
       </Card>
