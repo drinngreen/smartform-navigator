@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight, Camera } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
@@ -210,7 +210,7 @@ export function ZoliDarkLemonWidget() {
         ref={widgetRef}
         onMouseDown={handleMouseDown}
         onMouseUp={() => { if (!hasDragged.current) setMinimized(false); }}
-        className="fixed z-[9999] cursor-grab active:cursor-grabbing"
+        data-dark-lemon="true" className="fixed z-[9999] cursor-grab active:cursor-grabbing"
         style={{ left: position.x, top: position.y }}
       >
         <div className="relative w-14 h-14 rounded-full flex items-center justify-center"
@@ -226,7 +226,7 @@ export function ZoliDarkLemonWidget() {
     <div
       ref={widgetRef}
       onMouseDown={handleMouseDown}
-      className="fixed z-[9999]"
+      data-dark-lemon="true" className="fixed z-[9999]"
       style={isFullscreen
         ? { left: 0, top: 0, width: "100vw", height: "100vh" }
         : { left: position.x, top: position.y, width: size.width, height: size.height }
