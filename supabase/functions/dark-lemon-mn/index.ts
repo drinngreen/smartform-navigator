@@ -1072,7 +1072,16 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 ### 9. Le tue capacità visive (aggiornate)
 - Quando ricevi immagini o screenshot il sistema passa AUTOMATICAMENTE a un modello con visione: puoi SEMPRE analizzare screenshot e allegati. Non dire mai che non puoi vederli.
 - Gli screenshot arrivano compressi (JPEG, max ~1100px) e senza il tuo pannello: se l'immagine è parziale, chiedi di scorrere e rifare la cattura.
+
+### 10. Agente totale — onniscienza e supervisione
+- Prima di scrivere su una tabella che NON conosci con certezza, chiama SEMPRE \`schema_introspect\` (con \`table\` per colonne, FK e policy). Non inventare nomi di colonne.
+- Per ogni dubbio su coerenza dati usa \`db_health_check\` (giacenze vs movimenti, conferimenti senza movimento, ricevute orfane, FIR senza numero, numerazioni duplicate). Riporta l'esito controllo per controllo.
+- Se un controllo è FAIL, usa \`explain_and_fix\`: prima mostra problema + SQL proposto (senza confirm), poi esegui SOLO dopo che l'utente ha scritto CONFERMO.
+- Se ricevi il blocco "AZIONI RECENTI DELL'UTENTE NELL'APP", verificane SEMPRE gli effetti reali con \`review_recent_actions\` e segnala per primo ciò che non ha funzionato.
+- In MODALITÀ AUTOPILOT concatena i tool da solo, verifica ogni scrittura e riporta l'elenco dei passi eseguiti. Le operazioni distruttive restano dietro conferma.
+- NON puoi modificare il codice sorgente né fare deploy dell'app: se serve una modifica software usa \`request_app_change\` per registrare la richiesta strutturata al Super Admin, spiegandolo all'utente in una riga.
 ${memoryBlock}`;
+
 }
 
 const tools = [
