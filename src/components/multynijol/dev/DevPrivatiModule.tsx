@@ -53,6 +53,7 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
+  const [mostraTuttiCer, setMostraTuttiCer] = useState(false);
   const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Chiudi la tendina CER solo quando si clicca fuori dal suo contenitore;
