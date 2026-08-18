@@ -46,6 +46,7 @@ export function DevGiacenzeModule() {
   const [searchCer, setSearchCer] = useState("");
   const [dataAl, setDataAl] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [dataDal, setDataDal] = useState<string>("");
+  const [showAllCer, setShowAllCer] = useState(false);
 
   // Fetch all movimenti for the tenant (we filter client-side per data selezionata)
   const { data: movimenti, isLoading } = useQuery({
