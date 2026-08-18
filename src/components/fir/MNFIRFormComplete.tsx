@@ -219,9 +219,11 @@ interface MNFIRFormCompleteProps {
   draftData?: any | null;
   impiantoId?: string | null;
   registryMovementType?: "Carico" | "Scarico";
+  /** Mostra il pulsante "Crea fattura": solo per i formulari compilati da ufficio/admin */
+  enableFatturazione?: boolean;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
