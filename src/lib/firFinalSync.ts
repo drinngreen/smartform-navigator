@@ -194,11 +194,14 @@ export async function syncFirFinalToRegistryAndInventory(params: {
           (warning ? warning + " · " : "") +
           "Nessun impianto Multyproget disponibile per giacenze";
       } else {
+        // Un movimento può essere già stato creato da un import storico e poi
+        // collegato al FIR. Va riutilizzato indipendentemente dall'origine,
+        // altrimenti il successivo salvataggio dal modulo duplica la giacenza.
         const { data: existing } = await supabase
           .from("movimenti_impianto" as any)
-          .select("id, impianto_id, cer, quantita_kg, tipo_movimento")
+          .select("id, impianto_id, cer, quantita_kg, tipo_movimento, origine")
           .eq("fir_id", firId)
-          .eq("origine", "fir_final")
+          .neq("origine", "fir_adjust")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
