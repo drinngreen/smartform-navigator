@@ -64,26 +64,17 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
 
 
   const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
-    const ctx = capturePageContent();
-    const bridgeFields = getRegisteredFields();
-    const bridgeInfo = bridgeFields.length > 0
-      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
-      : "";
-    sendMessage(content, attachments, { ...ctx, content: (ctx.content || "") + bridgeInfo });
-  }, [sendMessage, capturePageContent, getRegisteredFields]);
+    sendMessage(content, attachments, buildContext());
+  }, [sendMessage, buildContext]);
 
   const handleAnalyzePage = useCallback(() => {
     if (isLoading) return;
-    const ctx = capturePageContent();
-    const bridgeFields = getRegisteredFields();
-    const bridgeInfo = bridgeFields.length > 0
-      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
-      : "";
-    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, { ...ctx, content: (ctx.content || "") + bridgeInfo });
-  }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [sendMessage, buildContext, isLoading]);
 
   return (
-    <div className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+    <div data-dark-lemon="true" className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-6 w-6" />
