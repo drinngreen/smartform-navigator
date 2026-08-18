@@ -3367,11 +3367,11 @@ async function handleTool(
       if (area === "all" || area === "privati") {
         await run(
           "conferimenti_senza_movimento",
-          "Ogni conferimento privato deve avere il movimento di magazzino collegato",
+          "Ogni conferimento privato recente (ultimi 60 giorni) deve avere il movimento di magazzino collegato",
           `SELECT pc.id, pc.data, pc.cer
            FROM privati_conferimenti pc
            LEFT JOIN movimenti_impianto mi ON mi.privati_conferimento_id = pc.id
-           WHERE pc.tenant_id='${tenantId}' AND mi.id IS NULL
+           WHERE pc.tenant_id='${tenantId}' AND mi.id IS NULL AND pc.created_at > now() - interval '60 days'
            ORDER BY pc.created_at DESC LIMIT 50`,
         );
         await run(
