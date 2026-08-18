@@ -1,20 +1,22 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Plus, Trash2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
+import { useDarkLemonMN, type DLSurface } from "@/hooks/useDarkLemonMN";
+import { DarkLemonHistory } from "./DarkLemonHistory";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { MessageCopyButton } from "./MessageCopyButton";
 
 interface Props {
   context?: string;
+  surface?: DLSurface;
 }
 
-export function DarkLemonMNChat({ context }: Props) {
+export function DarkLemonMNChat({ context, surface = "page" }: Props) {
   const {
     messages, isLoading, conversations, currentConversationId,
     sendMessage, loadConversation, deleteConversation, newChat,
-  } = useDarkLemonMN(context);
+  } = useDarkLemonMN(context, surface);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,39 +39,14 @@ export function DarkLemonMNChat({ context }: Props) {
       {sidebarOpen && (
         <div className="w-64 shrink-0 relative rounded-2xl p-[2px] overflow-hidden">
           <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
-          <div className="relative h-full rounded-2xl bg-[hsl(222,47%,6%)] flex flex-col">
-            <div className="p-3 border-b border-white/10">
-              <button
-                onClick={newChat}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Nuova Chat
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={cn(
-                    "group flex items-center gap-2 px-3 py-2 rounded-lg text-xs cursor-pointer transition-colors",
-                    conv.id === currentConversationId
-                      ? "bg-white/10 text-white"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                  onClick={() => loadConversation(conv.id)}
-                >
-                  <MessageSquare className="h-3 w-3 shrink-0" />
-                  <span className="flex-1 truncate">{conv.title}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                    className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="relative h-full rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden">
+            <DarkLemonHistory
+              conversations={conversations}
+              currentConversationId={currentConversationId}
+              onSelect={loadConversation}
+              onDelete={deleteConversation}
+              onNewChat={newChat}
+            />
           </div>
         </div>
       )}
