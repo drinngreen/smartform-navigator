@@ -1,7 +1,7 @@
 # 📘 Guida Completa — Dev Multy (Multyproget · Centro di Comando)
 
 > Documento operativo. Chi lo legge deve poter usare Dev Multy dal primo click all'ultimo, senza esperienza pregressa.
-> Aggiornato dopo il consolidamento dei Prompt 1‑7 (Formulari, Registri, Privati, Fatturazione, Archivio, RENTRI, MUD/DDT).
+> **Ultimo aggiornamento: 18 agosto 2026.** Le novità più recenti sono raccolte nella **Sezione 21 — Novità**: in caso di dubbio, la Sezione 21 prevale su tutto il resto del documento.
 
 ---
 
