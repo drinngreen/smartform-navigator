@@ -11,7 +11,7 @@ import { FillFormAction, parseFillFormTag, stripFillFormTag } from "./FillFormAc
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 
 interface DarkLemonSidePanelProps {
   context?: string;
