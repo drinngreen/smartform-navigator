@@ -3376,7 +3376,7 @@ async function handleTool(
                SELECT 1 FROM movimenti_impianto mi
                WHERE mi.privati_conferimento_id = pc.id
                   OR (mi.tenant_id = pc.tenant_id AND mi.origine = 'privati'
-                      AND mi.cer = pc.cer AND mi.data = pc.data
+                      AND mi.cer = pc.cer AND mi.data_movimento = pc.data
                       AND ABS(COALESCE(mi.quantita_kg,0) - COALESCE(pc.kg_pesati,0)) < 0.01)
              )
            ORDER BY pc.created_at DESC LIMIT 50`,
