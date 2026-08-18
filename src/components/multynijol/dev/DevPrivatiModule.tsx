@@ -244,18 +244,24 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  // CER filtered list for combobox
-  const filteredCER = useMemo(() => {
-    if (!cerSearch) return CER_DATA.slice(0, 20);
-    const s = cerSearch.toLowerCase();
-    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
-  }, [cerSearch]);
+  // Elenco CER completo: preferiti in cima + intero catalogo europeo
+  const ALL_CER = useMemo(() => {
+    const preferiti = CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso }));
+    const codiciPreferiti = new Set(preferiti.map(c => c.codice));
+    return [...preferiti, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
+  }, []);
 
-  const cerOptions = (q: string) => {
-    if (!q) return CER_DATA.slice(0, 20);
-    const s = q.toLowerCase();
-    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
+  const searchCerList = (q: string) => {
+    if (!q) return ALL_CER;
+    const s = q.toLowerCase().replace(/\s/g, "");
+    return ALL_CER.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
   };
+
+  // CER filtered list for combobox
+  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, ALL_CER]);
+
+  const cerOptions = (q: string) => searchCerList(q);
+
 
 
   const invalidateInventoryQueries = () => {
