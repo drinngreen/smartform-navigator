@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import { supabase } from "@/lib/supabaseClient";
@@ -53,6 +53,22 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
+  const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Chiudi la tendina CER solo quando si clicca fuori dal suo contenitore;
+  // rimane aperta durante lo scroll con la barra laterale.
+  useEffect(() => {
+    if (openCerRow === null) return;
+    const handlePointerDown = (e: PointerEvent | MouseEvent) => {
+      const target = e.target as Node;
+      const container = cerRowRefs.current.get(openCerRow);
+      if (container && !container.contains(target)) {
+        setOpenCerRow(null);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openCerRow]);
 
   // Forms
   const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
@@ -929,7 +945,13 @@ export function DevPrivatiModule() {
               </div>
               {righeMateriali.map((riga, idx) => (
                 <div key={idx} className="grid grid-cols-[1fr_110px_36px] gap-2 items-start">
-                  <div className="relative">
+                  <div
+                    className="relative"
+                    ref={(el) => {
+                      if (el) cerRowRefs.current.set(idx, el);
+                      else cerRowRefs.current.delete(idx);
+                    }}
+                  >
                     <Input
                       value={riga.cer}
                       onChange={(e) => {
@@ -938,12 +960,14 @@ export function DevPrivatiModule() {
                         setOpenCerRow(idx);
                       }}
                       onFocus={() => setOpenCerRow(idx)}
-                      onBlur={() => setTimeout(() => setOpenCerRow((cur) => (cur === idx ? null : cur)), 200)}
                       placeholder="Cerca o digita CER (es. 200140)"
                       className="font-mono"
                     />
                     {openCerRow === idx && cerOptions(riga.cer).length > 0 && (
-                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                      <div
+                        className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
