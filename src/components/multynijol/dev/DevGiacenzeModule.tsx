@@ -121,9 +121,9 @@ export function DevGiacenzeModule() {
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     return Object.values(map)
-      .filter((r) => r.carico !== 0 || r.scarico !== 0)
+      .filter((r) => showAllCer || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, baseline, dataAl, dataDal]);
+  }, [movimenti, baseline, dataAl, dataDal, showAllCer]);
 
 
 
