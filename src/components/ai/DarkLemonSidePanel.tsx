@@ -33,40 +33,35 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
     setWorking(isLoading);
   }, [isLoading, setWorking]);
 
-  const handleScreenshot = useCallback(async () => {
-    // Capture the workspace area - find the main content area
-    const workspaceEl = document.querySelector("[data-admin-layout] main") as HTMLElement
-      || document.querySelector("main") as HTMLElement
-      || document.querySelector("[data-admin-layout] > div:first-child") as HTMLElement;
+  const buildContext = useCallback(() => {
+    const ctx = capturePageContent();
+    const bridgeFields = getRegisteredFields();
+    const bridgeInfo = bridgeFields.length > 0
+      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
+      : "";
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
 
-    if (!workspaceEl) {
-      toast.error("Area di lavoro non disponibile");
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
       return;
     }
-    try {
-      toast.info("📸 Cattura in corso...");
-      const canvas = await html2canvas(workspaceEl, {
-        scale: 1,
-        useCORS: true,
-        logging: false,
-        backgroundColor: null,
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const ctx = capturePageContent();
-      const bridgeFields = getRegisteredFields();
-      const bridgeInfo = bridgeFields.length > 0
-        ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
-        : "";
-      sendMessage(
-        "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
-        [{ type: "image/png", name: "screenshot.png", dataUrl }],
-        { ...ctx, content: (ctx.content || "") + bridgeInfo }
-      );
-      toast.success("Screenshot catturato!");
-    } catch (err) {
-      toast.error("Errore nella cattura dello screenshot");
-    }
-  }, [sendMessage, capturePageContent, getRegisteredFields]);
+
+    toast.success("Screenshot catturato!", { id: toastId });
+    sendMessage(
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
+    );
+  }, [sendMessage, buildContext, isLoading]);
+
 
   const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
     const ctx = capturePageContent();
