@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { CER_CATALOG } from "@/data/cerCatalog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -99,11 +100,22 @@ export function DevGiacenzeModule() {
     }
 
 
-    // Se richiesto, mostra anche i CER registrati in magazzino senza movimenti nel periodo (a zero)
+    // Se richiesto, mostra l'intero catalogo CER/EER (843 codici) con saldo 0 se senza movimenti
     if (showAllCer) {
       for (const b of baseline ?? []) {
         if (!b.cer) continue;
         map[b.cer] = { cer: b.cer, descrizione: descriptionsByCer[b.cer] || "", carico: 0, scarico: 0, saldo: 0 };
+      }
+      for (const c of CER_CATALOG) {
+        if (!map[c.codice]) {
+          map[c.codice] = {
+            cer: c.codice,
+            descrizione: descriptionsByCer[c.codice] || c.descrizione,
+            carico: 0,
+            scarico: 0,
+            saldo: 0,
+          };
+        }
       }
     }
 
