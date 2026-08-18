@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight } from "lucide-react";
+import { X, Minimize2, Maximize2, Shrink, Bot, User, MessageSquare, Plus, Trash2, FileImage, ScanSearch, Check, XCircle, PanelRight, Camera } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
@@ -11,6 +11,7 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { MessageCopyButton } from "./MessageCopyButton";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 
 const MIN_W = 300;
 const MIN_H = 280;
@@ -150,19 +151,38 @@ export function ZoliDarkLemonWidget() {
     sendMessage(content, attachments, { route: enrichedCtx.route, pageTitle: enrichedCtx.pageTitle, content: enrichedCtx.content });
   }, [sendMessage, capturePageContent, getRegisteredFields]);
 
-  const handleAnalyzePage = useCallback(() => {
-    if (isLoading) return;
+  const buildContext = useCallback(() => {
     const ctx = capturePageContent();
     const bridgeFields = getRegisteredFields();
     const bridgeInfo = bridgeFields.length > 0
       ? `\n\n🔗 BRIDGE FIELDS REGISTRATI (compilabili via fill_form):\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
       : "";
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
+
+  const handleAnalyzePage = useCallback(() => {
+    if (isLoading) return;
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [sendMessage, buildContext, isLoading]);
+
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
+      return;
+    }
+    toast.success("Screenshot catturato!", { id: toastId });
     sendMessage(
-      `Analizza la pagina che sto visualizzando e dammi consigli utili.`,
-      undefined,
-      { ...ctx, content: (ctx.content || "") + bridgeInfo }
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
     );
-  }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
+  }, [sendMessage, buildContext, isLoading]);
+
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
@@ -190,7 +210,7 @@ export function ZoliDarkLemonWidget() {
         ref={widgetRef}
         onMouseDown={handleMouseDown}
         onMouseUp={() => { if (!hasDragged.current) setMinimized(false); }}
-        className="fixed z-[9999] cursor-grab active:cursor-grabbing"
+        data-dark-lemon="true" className="fixed z-[9999] cursor-grab active:cursor-grabbing"
         style={{ left: position.x, top: position.y }}
       >
         <div className="relative w-14 h-14 rounded-full flex items-center justify-center"
@@ -206,7 +226,7 @@ export function ZoliDarkLemonWidget() {
     <div
       ref={widgetRef}
       onMouseDown={handleMouseDown}
-      className="fixed z-[9999]"
+      data-dark-lemon="true" className="fixed z-[9999]"
       style={isFullscreen
         ? { left: 0, top: 0, width: "100vw", height: "100vh" }
         : { left: position.x, top: position.y, width: size.width, height: size.height }
@@ -237,6 +257,10 @@ export function ZoliDarkLemonWidget() {
                 <ScanSearch className="h-4 w-4" />
               </button>
             )}
+            <button onClick={handleScreenshot} onMouseDown={e => e.stopPropagation()} className="p-1.5 rounded-md bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors disabled:opacity-40" title="📸 Screenshot area di lavoro" disabled={isLoading}>
+              <Camera className="h-4 w-4" />
+            </button>
+
             <button
               onClick={() => setShowHistory(!showHistory)}
               onMouseDown={e => e.stopPropagation()}

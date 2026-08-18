@@ -11,7 +11,7 @@ import { FillFormAction, parseFillFormTag, stripFillFormTag } from "./FillFormAc
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 
 interface DarkLemonSidePanelProps {
   context?: string;
@@ -33,62 +33,48 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
     setWorking(isLoading);
   }, [isLoading, setWorking]);
 
-  const handleScreenshot = useCallback(async () => {
-    // Capture the workspace area - find the main content area
-    const workspaceEl = document.querySelector("[data-admin-layout] main") as HTMLElement
-      || document.querySelector("main") as HTMLElement
-      || document.querySelector("[data-admin-layout] > div:first-child") as HTMLElement;
-
-    if (!workspaceEl) {
-      toast.error("Area di lavoro non disponibile");
-      return;
-    }
-    try {
-      toast.info("📸 Cattura in corso...");
-      const canvas = await html2canvas(workspaceEl, {
-        scale: 1,
-        useCORS: true,
-        logging: false,
-        backgroundColor: null,
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const ctx = capturePageContent();
-      const bridgeFields = getRegisteredFields();
-      const bridgeInfo = bridgeFields.length > 0
-        ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
-        : "";
-      sendMessage(
-        "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
-        [{ type: "image/png", name: "screenshot.png", dataUrl }],
-        { ...ctx, content: (ctx.content || "") + bridgeInfo }
-      );
-      toast.success("Screenshot catturato!");
-    } catch (err) {
-      toast.error("Errore nella cattura dello screenshot");
-    }
-  }, [sendMessage, capturePageContent, getRegisteredFields]);
-
-  const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
+  const buildContext = useCallback(() => {
     const ctx = capturePageContent();
     const bridgeFields = getRegisteredFields();
     const bridgeInfo = bridgeFields.length > 0
       ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
       : "";
-    sendMessage(content, attachments, { ...ctx, content: (ctx.content || "") + bridgeInfo });
-  }, [sendMessage, capturePageContent, getRegisteredFields]);
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
+
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
+      return;
+    }
+
+    toast.success("Screenshot catturato!", { id: toastId });
+    sendMessage(
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
+    );
+  }, [sendMessage, buildContext, isLoading]);
+
+
+  const handleSend = useCallback((content: string, attachments?: { type: string; name: string; dataUrl: string }[]) => {
+    sendMessage(content, attachments, buildContext());
+  }, [sendMessage, buildContext]);
 
   const handleAnalyzePage = useCallback(() => {
     if (isLoading) return;
-    const ctx = capturePageContent();
-    const bridgeFields = getRegisteredFields();
-    const bridgeInfo = bridgeFields.length > 0
-      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
-      : "";
-    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, { ...ctx, content: (ctx.content || "") + bridgeInfo });
-  }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [sendMessage, buildContext, isLoading]);
 
   return (
-    <div className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+    <div data-dark-lemon="true" className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-6 w-6" />

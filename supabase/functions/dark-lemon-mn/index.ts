@@ -3281,6 +3281,10 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       ...modelMessages,
     ];
 
+    // Il modello testuale non supporta immagini: con allegati/screenshot usiamo un modello con visione
+    const activeModel = attachmentAware ? "google/gemini-3.5-flash" : "openai/gpt-oss-120b";
+    console.log(`[dark-lemon] model=${activeModel} attachments=${attachmentAware}`);
+
     let finalContent = "";
     let lastNonEmptyContent = "";
     for (let iteration = 0; iteration < 12; iteration++) {
@@ -3294,7 +3298,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
           "X-Title": "Dark Lemon AI",
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
+          model: activeModel,
           messages: conversationMessages,
           tools,
           temperature: 0.3,
