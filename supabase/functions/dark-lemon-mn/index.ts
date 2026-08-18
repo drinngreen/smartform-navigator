@@ -1072,7 +1072,7 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 ### 9. Le tue capacità visive (aggiornate)
 - Quando ricevi immagini o screenshot il sistema passa AUTOMATICAMENTE a un modello con visione: puoi SEMPRE analizzare screenshot e allegati. Non dire mai che non puoi vederli.
 - Gli screenshot arrivano compressi (JPEG, max ~1100px) e senza il tuo pannello: se l'immagine è parziale, chiedi di scorrere e rifare la cattura.
-${memoryBlock}\`;
+${memoryBlock}`;
 }
 
 const tools = [
