@@ -98,6 +98,14 @@ export function DevGiacenzeModule() {
     }
 
 
+    // Se richiesto, mostra anche i CER registrati in magazzino senza movimenti nel periodo (a zero)
+    if (showAllCer) {
+      for (const b of baseline ?? []) {
+        if (!b.cer) continue;
+        map[b.cer] = { cer: b.cer, descrizione: descriptionsByCer[b.cer] || "", carico: 0, scarico: 0, saldo: 0 };
+      }
+    }
+
     for (const m of movimenti) {
       if (dataAl && m.data_movimento > dataAl) continue;
       if (dataDal && m.data_movimento < dataDal) continue;
