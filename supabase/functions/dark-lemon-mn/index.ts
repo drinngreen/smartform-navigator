@@ -3294,7 +3294,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
           "X-Title": "Dark Lemon AI",
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
+          model: activeModel,
           messages: conversationMessages,
           tools,
           temperature: 0.3,
