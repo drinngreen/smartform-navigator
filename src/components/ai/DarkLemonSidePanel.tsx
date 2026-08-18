@@ -165,8 +165,12 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Supervisione + Autopilot */}
+      <DarkLemonSupervisionBar />
+
       {/* Input */}
       <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
+
     </div>
   );
 }
