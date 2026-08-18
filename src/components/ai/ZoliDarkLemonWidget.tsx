@@ -11,6 +11,7 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { MessageCopyButton } from "./MessageCopyButton";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 
 const MIN_W = 300;
 const MIN_H = 280;
