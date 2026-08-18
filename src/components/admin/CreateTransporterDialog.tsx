@@ -71,8 +71,16 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
           targa_automezzo: form.targaAutomezzo.trim() || null,
         },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        let detail = error.message;
+        try {
+          const ctx: any = (error as any).context;
+          const body = ctx && typeof ctx.json === "function" ? await ctx.json() : null;
+          if (body?.message || body?.error) detail = body.message || body.error;
+        } catch { /* ignore */ }
+        throw new Error(detail);
+      }
+      if (data?.error) throw new Error(data.message || data.error);
       toast.success(`Trasportatore ${form.nome} ${form.cognome} creato per ${activeTenant.label}`);
       setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "" });
       onOpenChange(false);
