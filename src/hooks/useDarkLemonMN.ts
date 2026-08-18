@@ -19,9 +19,19 @@ export interface DLMessage {
   createdAt: Date;
 }
 
+export type DLSurface = "side" | "floating" | "console" | "page";
+
+export const DL_SURFACE_LABELS: Record<DLSurface, string> = {
+  side: "Vista laterale",
+  floating: "Vista fluttuante",
+  console: "Console RENTRI",
+  page: "Pagina Dark Lemon",
+};
+
 export interface DLConversation {
   id: string;
   title: string;
+  surface: DLSurface;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,7 +125,7 @@ function buildApiMessage(message: DLMessage) {
   return { role: message.role, content: parts };
 }
 
-export function useDarkLemonMN(context?: string) {
+export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
   const { user } = useAuth();
   const [messages, setMessages] = useState<DLMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -139,12 +149,17 @@ export function useDarkLemonMN(context?: string) {
           const ctx = c.context as any;
           return ctx?.source === "dark-lemon-mn";
         })
-        .map(c => ({
-          id: c.id,
-          title: c.title,
-          createdAt: new Date(c.created_at),
-          updatedAt: new Date(c.updated_at),
-        }))
+        .map(c => {
+          const ctx = c.context as any;
+          const raw = ctx?.surface as string | undefined;
+          return {
+            id: c.id,
+            title: c.title,
+            surface: (raw && ["side", "floating", "console", "page"].includes(raw) ? raw : "page") as DLSurface,
+            createdAt: new Date(c.created_at),
+            updatedAt: new Date(c.updated_at),
+          };
+        })
       );
     }
   }, [user]);
@@ -156,7 +171,11 @@ export function useDarkLemonMN(context?: string) {
       .insert({
         user_id: user.id,
         title,
-        context: { source: "dark-lemon-mn", ...(normalizedContext ? { mn_context: normalizedContext } : {}) },
+        context: {
+          source: "dark-lemon-mn",
+          surface,
+          ...(normalizedContext ? { mn_context: normalizedContext } : {}),
+        },
       })
       .select()
       .single();
@@ -165,7 +184,8 @@ export function useDarkLemonMN(context?: string) {
     setMessages([]);
     await loadConversations();
     return data.id;
-  }, [user, normalizedContext, loadConversations, setCurrentConversationId]);
+  }, [user, normalizedContext, surface, loadConversations, setCurrentConversationId]);
+
 
   const loadConversation = useCallback(async (conversationId: string) => {
     const { data } = await supabase

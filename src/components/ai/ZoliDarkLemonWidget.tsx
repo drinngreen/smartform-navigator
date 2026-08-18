@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
+import { DarkLemonHistory } from "./DarkLemonHistory";
 import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
@@ -55,7 +56,7 @@ export function ZoliDarkLemonWidget() {
   const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
   const context = isMN ? (ctxMatch?.[1] || "multyproget") : "multyproget";
 
-  const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context);
+  const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context, "floating");
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
 
@@ -292,36 +293,14 @@ export function ZoliDarkLemonWidget() {
           <div className="flex flex-1 overflow-hidden">
             {/* History sidebar */}
             {showHistory && (
-              <div className="w-64 shrink-0 border-r border-white/10 flex flex-col bg-[hsl(222,47%,5%)]" onMouseDown={e => e.stopPropagation()}>
-                <div className="p-3 border-b border-white/10">
-                  <button onClick={() => { newChat(); }} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs hover:bg-cyan-500/20 transition-colors">
-                    <Plus className="h-3.5 w-3.5" /> Nuova Chat
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
-                  {conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      className={cn(
-                        "group flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs cursor-pointer transition-colors",
-                        conv.id === currentConversationId ? "bg-white/10 text-white" : "text-white/50 hover:text-white hover:bg-white/5"
-                      )}
-                      onClick={() => loadConversation(conv.id)}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                      <span className="flex-1 truncate">{conv.title}</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
-                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  {conversations.length === 0 && (
-                    <p className="text-white/25 text-xs text-center px-3 py-8">Nessuna conversazione</p>
-                  )}
-                </div>
+              <div className="w-64 shrink-0 border-r border-white/10" onMouseDown={e => e.stopPropagation()}>
+                <DarkLemonHistory
+                  conversations={conversations}
+                  currentConversationId={currentConversationId}
+                  onSelect={loadConversation}
+                  onDelete={deleteConversation}
+                  onNewChat={newChat}
+                />
               </div>
             )}
 
