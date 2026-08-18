@@ -41,10 +41,13 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
     targaAutomezzo: "",
   });
 
+  const CF_REGEX = /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
+  const cfValid = CF_REGEX.test(form.codiceFiscale.toUpperCase().trim());
+
   const isValid =
     form.nome.length >= 2 &&
     form.cognome.length >= 2 &&
-    form.codiceFiscale.length === 16 &&
+    cfValid &&
     form.password.length >= 6;
 
   useEffect(() => {
