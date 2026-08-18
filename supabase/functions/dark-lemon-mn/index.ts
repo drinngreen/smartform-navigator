@@ -3368,7 +3368,7 @@ async function handleTool(
         await run(
           "conferimenti_senza_movimento",
           "Ogni conferimento privato deve avere il movimento di magazzino collegato",
-          `SELECT pc.id, pc.data_conferimento, pc.cer
+          `SELECT pc.id, pc.data, pc.cer
            FROM privati_conferimenti pc
            LEFT JOIN movimenti_impianto mi ON mi.privati_conferimento_id = pc.id
            WHERE pc.tenant_id='${tenantId}' AND mi.id IS NULL
@@ -3399,7 +3399,7 @@ async function handleTool(
           "Il numero FIR deve essere univoco per tenant",
           `SELECT numero_fir, count(*) AS occorrenze FROM fir_forms
            WHERE tenant_id='${tenantId}' AND numero_fir IS NOT NULL AND numero_fir <> ''
-             AND COALESCE(deleted_at::text,'') = ''
+             AND COALESCE(deleted_by_user, false) = false
            GROUP BY numero_fir HAVING count(*) > 1 LIMIT 50`,
         );
         await run(
