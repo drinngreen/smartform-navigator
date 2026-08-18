@@ -292,7 +292,7 @@ export function DevPrivatiModule() {
       if (!rawCer && !r.kg) continue;
       if (!rawCer) { toast.error("Ogni riga deve avere un codice CER"); return; }
       if (!Number.isFinite(kg) || kg <= 0) { toast.error(`Peso non valido per il CER ${rawCer}`); return; }
-      const cerInfo = CER_DATA.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
+      const cerInfo = ALL_CER.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
       righe.push({ cer: cerInfo?.codice || rawCer.toUpperCase(), kg });
     }
     if (!righe.length) { toast.error("Inserisci almeno un materiale (CER + kg)"); return; }
