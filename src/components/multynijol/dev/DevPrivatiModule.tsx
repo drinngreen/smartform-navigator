@@ -943,7 +943,7 @@ export function DevPrivatiModule() {
                       className="font-mono"
                     />
                     {openCerRow === idx && cerOptions(riga.cer).length > 0 && (
-                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
