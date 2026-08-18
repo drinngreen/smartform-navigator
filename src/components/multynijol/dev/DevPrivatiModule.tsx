@@ -53,6 +53,22 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
+  const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Chiudi la tendina CER solo quando si clicca fuori dal suo contenitore;
+  // rimane aperta durante lo scroll con la barra laterale.
+  useEffect(() => {
+    if (openCerRow === null) return;
+    const handlePointerDown = (e: PointerEvent | MouseEvent) => {
+      const target = e.target as Node;
+      const container = cerRowRefs.current.get(openCerRow);
+      if (container && !container.contains(target)) {
+        setOpenCerRow(null);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [openCerRow]);
 
   // Forms
   const [confForm, setConfForm] = useState({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
