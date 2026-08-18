@@ -150,19 +150,38 @@ export function ZoliDarkLemonWidget() {
     sendMessage(content, attachments, { route: enrichedCtx.route, pageTitle: enrichedCtx.pageTitle, content: enrichedCtx.content });
   }, [sendMessage, capturePageContent, getRegisteredFields]);
 
-  const handleAnalyzePage = useCallback(() => {
-    if (isLoading) return;
+  const buildContext = useCallback(() => {
     const ctx = capturePageContent();
     const bridgeFields = getRegisteredFields();
     const bridgeInfo = bridgeFields.length > 0
       ? `\n\n🔗 BRIDGE FIELDS REGISTRATI (compilabili via fill_form):\n${bridgeFields.map(f => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
       : "";
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
+
+  const handleAnalyzePage = useCallback(() => {
+    if (isLoading) return;
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [sendMessage, buildContext, isLoading]);
+
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
+      return;
+    }
+    toast.success("Screenshot catturato!", { id: toastId });
     sendMessage(
-      `Analizza la pagina che sto visualizzando e dammi consigli utili.`,
-      undefined,
-      { ...ctx, content: (ctx.content || "") + bridgeInfo }
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
     );
-  }, [sendMessage, capturePageContent, isLoading, getRegisteredFields]);
+  }, [sendMessage, buildContext, isLoading]);
+
 
   const toggleFullscreen = () => {
     if (isFullscreen) {
