@@ -1,7 +1,7 @@
 # 📘 Guida Completa — Dev Multy (Multyproget · Centro di Comando)
 
 > Documento operativo. Chi lo legge deve poter usare Dev Multy dal primo click all'ultimo, senza esperienza pregressa.
-> Aggiornato dopo il consolidamento dei Prompt 1‑7 (Formulari, Registri, Privati, Fatturazione, Archivio, RENTRI, MUD/DDT).
+> **Ultimo aggiornamento: 18 agosto 2026.** Le novità più recenti sono raccolte nella **Sezione 21 — Novità**: in caso di dubbio, la Sezione 21 prevale su tutto il resto del documento.
 
 ---
 
@@ -297,4 +297,59 @@ Da consegnare così com'è al tecnico incaricato del MUD.
 
 ---
 
-Fine guida. Per aggiornamenti: modifica questo file (`docs/GUIDA_DEV_MULTY.md`) mantenendo la numerazione delle sezioni.
+## 21. 🆕 Novità (aggiornato al 18 agosto 2026)
+
+> Questa sezione prevale sulle precedenti dove ci fosse contraddizione.
+
+### 21.1 Numeri FIR: solo manuali
+- L'assegnazione **automatica** dei numeri FIR è stata **disattivata** (rimossi i trigger di auto-assegnazione).
+- Un formulario si crea in due modi: digitando il numero a mano ("Crea formulario") oppure assegnando un numero dal **Centro App & FIR**.
+- Nel Centro App & FIR puoi: assegnare **più numeri** allo stesso autista (chip multipli), contrassegnare un numero come **"Assegnato all'ufficio"** (lo usa direttamente l'admin) e **copiare** il numero con un click.
+- Le app degli autisti non partono più con un FIR precaricato: mostrano l'elenco dei FIR che gli hai assegnato.
+
+### 21.2 Modulo Standard e Modulo Alternativo
+- Ogni formulario è creabile e modificabile in **entrambe** le viste; sono **sincronizzate in tempo reale**: quello che scrivi in una compare nell'altra.
+- Ogni bozza si elimina con l'icona **cestino** (soft delete): registro e giacenze vengono **stornati automaticamente**.
+- Questa regola vale ovunque si facciano formulari: Impianto, Conto Proprio, Contatti, Niyol, workspace FIR, bozze RENTRI.
+- Pulsante **gomma "Cancella sezione"** per svuotare rapidamente un blocco del formulario.
+
+### 21.3 Fatturazione dai formulari
+- Il blocco "Crea fattura da questo formulario" appare **solo nei formulari compilati da ufficio/admin**. Nelle app degli autisti non c'è.
+
+### 21.4 Giacenze: garanzia automatica
+- I conferimenti privati passano dalla procedura **atomica** `crea_conferimento_privato_atomico`: lock anti-concorrenza, movimento di magazzino legato al conferimento e **verifica finale del saldo**. Se il saldo non torna, l'inserimento fallisce: non esistono più conferimenti "salvati ma non contabilizzati".
+- I formulari aggiornano le giacenze **solo se Multyproget è produttore o destinatario** (regola corretta, non è un bug).
+- Anche i formulari salvati **in bozza** riportano le giacenze al valore di partenza.
+- Il pulsante **Sync giacenze** nei movimenti è operativo (permessi corretti).
+- La voce **"Saldo iniziale"** è stata rimossa dalle giacenze.
+- Eliminando un conferimento vengono eliminate anche la ricevuta collegata e il relativo carico.
+
+### 21.5 Privati, ricevute e CER
+- **Multi-materiale**: un conferimento/ricevuta può contenere più CER diversi (raggruppati).
+- La **data** del conferimento e della ricevuta è modificabile; la ricevuta si rigenera di conseguenza.
+- Nella tendina CER vedi di default solo i **materiali realmente movimentati**; con la spunta **"Mostra tutti i CER del catalogo europeo"** accedi a tutti gli 843 codici. La tendina non si chiude più mentre scorri.
+- In Giacenze c'è il toggle **"Mostra tutti i CER a magazzino (anche a zero)"**.
+- Le descrizioni CER mostrano il materiale reale (niente più diciture tecniche tipo "rettifica di allineamento").
+
+### 21.6 Utenti delle app (Multyproget e Niyol)
+- Login degli autisti: si **creano, modificano ed eliminano dalla dashboard MultyNiyol**, scegliendo se assegnarli a Multyproget o a Niyol.
+- Il **Codice Fiscale** è validato (16 caratteri, formato reale) e l'autocompletamento del browser è disattivato: se il campo è errato, l'errore ora è esplicito.
+
+### 21.7 RENTRI
+- Canale unico verso il **bridge** `https://rentri-bridge.dragonrifiuti.space` tramite la Edge Function `rentri-vps-proxy`.
+- **Console RENTRI**: QR code, sincronizzazione, tab **"Da firmare"** e sezione **"Numeri già assegnati"**.
+- **Alert**: pallino/numerino **arancione** sulla campanella quando arrivano formulari da firmare; cliccandolo si apre la console sul tab "Da firmare".
+
+### 21.8 Fatturazione, Sibill e Noleggio
+- Integrazione **Sibill** con **modalità Mock** e pagina **Sandbox** per provare tutto senza inviare nulla di reale.
+- XML **FatturaPA** per l'invio SDI, modulo **Noleggio Cassoni**, esportazioni **MUD** e **DDT**.
+
+### 21.9 Dark Lemon AI
+- **Screenshot funzionante** dal pannello laterale e dal widget flottante (pulsante 📸): la cattura è compressa, ha un timeout di sicurezza ed esclude il pannello AI.
+- Quando invii un'immagine, l'AI passa automaticamente a un **modello con visione**: legge screenshot, foto di formulari cartacei e documenti.
+- Se la cattura fallisce, l'AI analizza comunque la pagina come **testo** invece di bloccarsi.
+- Dark Lemon può **compilare i form** visibili (Form Bridge) e conosce tutte le regole di questa guida.
+
+---
+
+Fine guida. Per aggiornamenti: modifica questo file (`public/guida-dev-multy.md`, copia in `docs/GUIDA_DEV_MULTY.md`) mantenendo la numerazione delle sezioni.
