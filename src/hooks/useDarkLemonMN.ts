@@ -19,9 +19,19 @@ export interface DLMessage {
   createdAt: Date;
 }
 
+export type DLSurface = "side" | "floating" | "console" | "page";
+
+export const DL_SURFACE_LABELS: Record<DLSurface, string> = {
+  side: "Vista laterale",
+  floating: "Vista fluttuante",
+  console: "Console RENTRI",
+  page: "Pagina Dark Lemon",
+};
+
 export interface DLConversation {
   id: string;
   title: string;
+  surface: DLSurface;
   createdAt: Date;
   updatedAt: Date;
 }
