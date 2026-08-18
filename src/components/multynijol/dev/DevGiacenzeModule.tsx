@@ -84,14 +84,19 @@ export function DevGiacenzeModule() {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
     const descriptionsByCer: Record<string, string> = {};
+    const isTechnicalDesc = (d: string) =>
+      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(d);
 
     for (const m of movimenti) {
-      if (m.descrizione_rifiuto?.trim()) descriptionsByCer[m.cer] = m.descrizione_rifiuto.trim();
+      const d = m.descrizione_rifiuto?.trim();
+      if (d && !isTechnicalDesc(d)) descriptionsByCer[m.cer] = d;
     }
 
     for (const b of baseline ?? []) {
-      if (b.descrizione_cer?.trim()) descriptionsByCer[b.cer] = b.descrizione_cer.trim();
+      const d = b.descrizione_cer?.trim();
+      if (d && !isTechnicalDesc(d)) descriptionsByCer[b.cer] = d;
     }
+
 
     for (const m of movimenti) {
       if (dataAl && m.data_movimento > dataAl) continue;
