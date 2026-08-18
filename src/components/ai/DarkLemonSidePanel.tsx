@@ -7,6 +7,8 @@ import { DarkLemonHistory } from "./DarkLemonHistory";
 import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
+import { DarkLemonSupervisionBar } from "./DarkLemonSupervisionBar";
+
 import { MessageCopyButton } from "./MessageCopyButton";
 import { FillFormAction, parseFillFormTag, stripFillFormTag } from "./FillFormAction";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
@@ -165,8 +167,12 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Supervisione + Autopilot */}
+      <DarkLemonSupervisionBar />
+
       {/* Input */}
       <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />
+
     </div>
   );
 }

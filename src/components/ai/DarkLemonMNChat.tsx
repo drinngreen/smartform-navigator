@@ -3,6 +3,8 @@ import { Send, Bot, User, Plus, Trash2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDarkLemonMN, type DLSurface } from "@/hooks/useDarkLemonMN";
 import { DarkLemonHistory } from "./DarkLemonHistory";
+import { DarkLemonSupervisionBar } from "./DarkLemonSupervisionBar";
+
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { MessageCopyButton } from "./MessageCopyButton";
@@ -154,7 +156,9 @@ export function DarkLemonMNChat({ context, surface = "page" }: Props) {
           </div>
 
           {/* Input */}
+          <DarkLemonSupervisionBar />
           <div className="p-4 border-t border-white/10">
+
             <div className="relative rounded-xl p-[1px] overflow-hidden">
               <div className="absolute inset-0 rounded-xl animate-gradient opacity-60" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #3b82f6)", backgroundSize: "300% 100%" }} />
               <div className="relative flex items-center gap-2 bg-[hsl(222,47%,8%)] rounded-xl px-4 py-3">
