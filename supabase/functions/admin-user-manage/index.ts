@@ -344,7 +344,14 @@ serve(async (req) => {
         });
       }
 
-      const email = `${codice_fiscale.toLowerCase()}@zoli.internal`;
+      const normalizedNewCf = String(codice_fiscale).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(normalizedNewCf)) {
+        return new Response(JSON.stringify({ error: "cf_invalid", message: "Codice fiscale non valido (16 caratteri, formato RSSMRA80A01H501U)" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const email = `${normalizedNewCf.toLowerCase()}@zoli.internal`;
 
       // Check if user already exists
       const { data: existingUsers } = await adminClient.auth.admin.listUsers({ perPage: 1 });
