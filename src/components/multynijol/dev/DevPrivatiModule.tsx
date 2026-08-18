@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { CER_DATA } from "./DevCERPreferitiModule";
+import { CER_CATALOG } from "@/data/cerCatalog";
 import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -244,18 +245,24 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  // CER filtered list for combobox
-  const filteredCER = useMemo(() => {
-    if (!cerSearch) return CER_DATA.slice(0, 20);
-    const s = cerSearch.toLowerCase();
-    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
-  }, [cerSearch]);
+  // Elenco CER completo: preferiti in cima + intero catalogo europeo
+  const ALL_CER = useMemo(() => {
+    const preferiti = CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso }));
+    const codiciPreferiti = new Set(preferiti.map(c => c.codice));
+    return [...preferiti, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
+  }, []);
 
-  const cerOptions = (q: string) => {
-    if (!q) return CER_DATA.slice(0, 20);
-    const s = q.toLowerCase();
-    return CER_DATA.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(s)).slice(0, 20);
+  const searchCerList = (q: string) => {
+    if (!q) return ALL_CER;
+    const s = q.toLowerCase().replace(/\s/g, "");
+    return ALL_CER.filter(c => c.codice.includes(s) || c.descrizione.toLowerCase().includes(q.toLowerCase()));
   };
+
+  // CER filtered list for combobox
+  const filteredCER = useMemo(() => searchCerList(cerSearch), [cerSearch, ALL_CER]);
+
+  const cerOptions = (q: string) => searchCerList(q);
+
 
 
   const invalidateInventoryQueries = () => {
@@ -285,7 +292,7 @@ export function DevPrivatiModule() {
       if (!rawCer && !r.kg) continue;
       if (!rawCer) { toast.error("Ogni riga deve avere un codice CER"); return; }
       if (!Number.isFinite(kg) || kg <= 0) { toast.error(`Peso non valido per il CER ${rawCer}`); return; }
-      const cerInfo = CER_DATA.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
+      const cerInfo = ALL_CER.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
       righe.push({ cer: cerInfo?.codice || rawCer.toUpperCase(), kg });
     }
     if (!righe.length) { toast.error("Inserisci almeno un materiale (CER + kg)"); return; }
@@ -936,7 +943,7 @@ export function DevPrivatiModule() {
                       className="font-mono"
                     />
                     {openCerRow === idx && cerOptions(riga.cer).length > 0 && (
-                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-36 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
                             className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent/50 flex items-center gap-2"
