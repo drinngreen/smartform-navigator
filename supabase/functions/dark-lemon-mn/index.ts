@@ -1944,6 +1944,81 @@ const tools = [
       }
     }
   },
+  // === AGENTE TOTALE: SCHEMA / DIAGNOSTICA / SUPERVISIONE ===
+  {
+    type: "function",
+    function: {
+      name: "schema_introspect",
+      description: "Introspezione completa del database: elenco tabelle, colonne, tipi, chiavi esterne e funzioni. Usalo SEMPRE prima di scrivere su una tabella che non conosci.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: { type: "string", description: "Nome tabella specifica (opzionale). Se omesso restituisce l'elenco di tutte le tabelle." },
+          include_functions: { type: "boolean", description: "Includi elenco funzioni del database" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "db_health_check",
+      description: "Esegue i controlli di coerenza del sistema (giacenze vs movimenti, FIR orfani, ricevute senza conferimento, numerazioni duplicate) e restituisce PASS/FAIL per ogni controllo.",
+      parameters: {
+        type: "object",
+        properties: {
+          area: { type: "string", enum: ["all", "giacenze", "fir", "privati", "numerazioni"], description: "Area da controllare (default all)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "explain_and_fix",
+      description: "Analizza un disallineamento e propone la correzione SQL. Esegue la correzione SOLO se confirm=true (l'utente ha scritto CONFERMO).",
+      parameters: {
+        type: "object",
+        properties: {
+          problem: { type: "string", description: "Descrizione del problema rilevato" },
+          fix_sql: { type: "string", description: "SQL correttivo proposto" },
+          confirm: { type: "boolean", description: "true solo se l'utente ha confermato esplicitamente" }
+        },
+        required: ["problem", "fix_sql"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "review_recent_actions",
+      description: "Analizza il registro delle azioni recenti compiute dall'utente nell'app (passato nel contesto) e restituisce le anomalie rilevate lato database per quelle azioni.",
+      parameters: {
+        type: "object",
+        properties: {
+          minutes: { type: "number", description: "Finestra temporale in minuti (default 60)" }
+        }
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "request_app_change",
+      description: "Registra una richiesta strutturata di modifica del software (l'agente non puo' modificare il codice: crea la richiesta per il Super Admin).",
+      parameters: {
+        type: "object",
+        properties: {
+          area: { type: "string", description: "Area/modulo interessato" },
+          title: { type: "string", description: "Titolo sintetico" },
+          current_behaviour: { type: "string", description: "Comportamento attuale" },
+          desired_behaviour: { type: "string", description: "Comportamento desiderato" },
+          priority: { type: "string", enum: ["bassa", "media", "alta", "critica"] }
+        },
+        required: ["title", "current_behaviour", "desired_behaviour"]
+      }
+    }
+  },
 ];
 
 async function resolveFirFormId(
@@ -3210,6 +3285,195 @@ async function handleTool(
       }
     }
 
+    // ---------- AGENTE TOTALE ----------
+    case "schema_introspect": {
+      const tableFilter = String(args.table || "").replace(/[^a-zA-Z0-9_]/g, "");
+      if (tableFilter) {
+        const colsQ = `SELECT column_name, data_type, is_nullable, column_default
+          FROM information_schema.columns
+          WHERE table_schema='public' AND table_name='${tableFilter}'
+          ORDER BY ordinal_position`;
+        const fkQ = `SELECT tc.constraint_name, kcu.column_name, ccu.table_name AS foreign_table, ccu.column_name AS foreign_column
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+          JOIN information_schema.constraint_column_usage ccu ON ccu.constraint_name = tc.constraint_name
+          WHERE tc.table_schema='public' AND tc.table_name='${tableFilter}' AND tc.constraint_type='FOREIGN KEY'`;
+        const polQ = `SELECT policyname, cmd, roles::text FROM pg_policies WHERE schemaname='public' AND tablename='${tableFilter}'`;
+        const [cols, fks, pols] = await Promise.all([
+          db.rpc("exec_sql_readonly", { query: colsQ }).maybeSingle(),
+          db.rpc("exec_sql_readonly", { query: fkQ }).maybeSingle(),
+          db.rpc("exec_sql_readonly", { query: polQ }).maybeSingle(),
+        ]);
+        if (cols.error) return { error: cols.error.message };
+        return { table: tableFilter, columns: cols.data || [], foreign_keys: fks.data || [], policies: pols.data || [] };
+      }
+      const listQ = `SELECT table_name, (SELECT count(*) FROM information_schema.columns c WHERE c.table_schema='public' AND c.table_name=t.table_name) AS columns
+        FROM information_schema.tables t WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: listQ }).maybeSingle();
+      if (error) return { error: error.message };
+      let functions: any = undefined;
+      if (args.include_functions) {
+        const fnQ = `SELECT p.proname AS function_name, pg_get_function_identity_arguments(p.oid) AS arguments
+          FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname='public' ORDER BY p.proname`;
+        const fr = await db.rpc("exec_sql_readonly", { query: fnQ }).maybeSingle();
+        functions = fr.data || [];
+      }
+      return { tables: data || [], functions };
+    }
+
+    case "db_health_check": {
+      const area = String(args.area || "all");
+      const checks: any[] = [];
+      const run = async (name: string, description: string, sql: string, failWhenRows = true) => {
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+        if (error) { checks.push({ check: name, status: "ERRORE", description, error: error.message }); return; }
+        const rows = (data as any[]) || [];
+        const failed = failWhenRows ? rows.length > 0 : false;
+        checks.push({ check: name, description, status: failed ? "FAIL" : "PASS", anomalie: rows.slice(0, 20), totale_anomalie: rows.length });
+      };
+
+      if (area === "all" || area === "giacenze") {
+        await run(
+          "giacenze_vs_movimenti",
+          "Il saldo in magazzino_giacenze deve corrispondere alla somma dei movimenti_impianto",
+          `WITH calc AS (
+             SELECT cer, impianto_id,
+               SUM(CASE WHEN tipo_movimento='CARICO' THEN quantita_kg ELSE -quantita_kg END) AS atteso
+             FROM movimenti_impianto WHERE tenant_id='${tenantId}' GROUP BY cer, impianto_id
+           )
+           SELECT g.cer, g.quantita_kg, c.atteso, ROUND((g.quantita_kg - c.atteso)::numeric, 2) AS delta
+           FROM magazzino_giacenze g
+           JOIN calc c ON c.cer = g.cer AND c.impianto_id = g.impianto_id
+           WHERE g.tenant_id='${tenantId}' AND ABS(g.quantita_kg - c.atteso) > 0.01
+           LIMIT 50`,
+        );
+        await run(
+          "giacenze_negative",
+          "Nessuna giacenza deve essere negativa",
+          `SELECT cer, quantita_kg FROM magazzino_giacenze WHERE tenant_id='${tenantId}' AND quantita_kg < 0 LIMIT 50`,
+        );
+      }
+
+      if (area === "all" || area === "privati") {
+        await run(
+          "conferimenti_senza_movimento",
+          "Ogni conferimento privato deve avere il movimento di magazzino collegato",
+          `SELECT pc.id, pc.data_conferimento, pc.cer
+           FROM privati_conferimenti pc
+           LEFT JOIN movimenti_impianto mi ON mi.privati_conferimento_id = pc.id
+           WHERE pc.tenant_id='${tenantId}' AND mi.id IS NULL
+           ORDER BY pc.created_at DESC LIMIT 50`,
+        );
+        await run(
+          "ricevute_orfane",
+          "Ogni ricevuta deve essere collegata a un conferimento esistente",
+          `SELECT r.id, r.numero_ricevuta FROM ricevute_privati r
+           LEFT JOIN privati_conferimenti pc ON pc.id = r.conferimento_id
+           WHERE r.tenant_id='${tenantId}' AND r.conferimento_id IS NOT NULL AND pc.id IS NULL LIMIT 50`,
+        );
+      }
+
+      if (area === "all" || area === "fir") {
+        await run(
+          "fir_senza_numero",
+          "Nessun FIR consolidato deve essere privo di numero",
+          `SELECT id, status, created_at FROM fir_forms
+           WHERE tenant_id='${tenantId}' AND (numero_fir IS NULL OR numero_fir='')
+             AND COALESCE(status,'') NOT IN ('draft','DRAFT') LIMIT 50`,
+        );
+      }
+
+      if (area === "all" || area === "numerazioni") {
+        await run(
+          "numeri_fir_duplicati",
+          "Il numero FIR deve essere univoco per tenant",
+          `SELECT numero_fir, count(*) AS occorrenze FROM fir_forms
+           WHERE tenant_id='${tenantId}' AND numero_fir IS NOT NULL AND numero_fir <> ''
+             AND COALESCE(deleted_at::text,'') = ''
+           GROUP BY numero_fir HAVING count(*) > 1 LIMIT 50`,
+        );
+        await run(
+          "ricevute_duplicate",
+          "Il numero ricevuta deve essere univoco",
+          `SELECT numero_ricevuta, count(*) AS occorrenze FROM ricevute_privati
+           WHERE tenant_id='${tenantId}' GROUP BY numero_ricevuta HAVING count(*) > 1 LIMIT 50`,
+        );
+      }
+
+      const failed = checks.filter((c) => c.status !== "PASS");
+      return {
+        esito_globale: failed.length === 0 ? "TUTTO OK" : `${failed.length} CONTROLLI NON SUPERATI`,
+        controlli: checks,
+      };
+    }
+
+    case "explain_and_fix": {
+      const sql = String(args.fix_sql || "").trim();
+      if (!sql) return { error: "fix_sql mancante" };
+      if (!args.confirm) {
+        return {
+          stato: "IN ATTESA DI CONFERMA",
+          problema: args.problem,
+          sql_proposto: sql,
+          messaggio: "Mostra all'utente il problema e l'SQL proposto e chiedi di scrivere CONFERMO per eseguire.",
+        };
+      }
+      const isRead = /^\s*(select|with)\b/i.test(sql);
+      const { data, error } = isRead
+        ? await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle()
+        : await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
+      if (error) return { error: error.message, sql_eseguito: sql };
+      await db.from("dragon_audit_logs").insert({
+        entity_type: "dark-lemon-fix",
+        entity_id: crypto.randomUUID(),
+        action_type: "UPDATE",
+        after_state: { problema: args.problem, sql },
+        performed_by: adminUserId || null,
+        reason: `Correzione automatica Dark Lemon: ${args.problem || ""}`.slice(0, 500),
+      }).then(() => {}, () => {});
+      return { stato: "CORREZIONE ESEGUITA", problema: args.problem, sql_eseguito: sql, risultato: data };
+    }
+
+    case "review_recent_actions": {
+      const minutes = Math.min(Math.max(Number(args.minutes) || 60, 5), 1440);
+      const q = `SELECT 'movimento' AS tipo, id::text, cer AS riferimento, tipo_movimento AS dettaglio, created_at
+                 FROM movimenti_impianto WHERE tenant_id='${tenantId}' AND created_at > now() - interval '${minutes} minutes'
+                 UNION ALL
+                 SELECT 'conferimento', id::text, cer, tipo_utenza, created_at
+                 FROM privati_conferimenti WHERE tenant_id='${tenantId}' AND created_at > now() - interval '${minutes} minutes'
+                 UNION ALL
+                 SELECT 'fir', id::text, COALESCE(numero_fir,'(senza numero)'), COALESCE(status,''), created_at
+                 FROM fir_forms WHERE tenant_id='${tenantId}' AND created_at > now() - interval '${minutes} minutes'
+                 ORDER BY created_at DESC LIMIT 60`;
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      if (error) return { error: error.message };
+      const health = await handleTool(
+        { name: "db_health_check", arguments: JSON.stringify({ area: "all" }) },
+        toolCallId,
+        db,
+        tenantId,
+        adminUserId,
+      );
+      return { finestra_minuti: minutes, scritture_db_recenti: data || [], diagnostica: health };
+    }
+
+    case "request_app_change": {
+      const priority = String(args.priority || "media");
+      const content = `AREA: ${args.area || "non specificata"}\nPRIORITA': ${priority}\n\nCOMPORTAMENTO ATTUALE:\n${args.current_behaviour}\n\nCOMPORTAMENTO DESIDERATO:\n${args.desired_behaviour}`;
+      const { data, error } = await db.from("system_prompt_requests").insert({
+        tenant_id: tenantId,
+        tenant_label: "dark-lemon",
+        user_id: adminUserId,
+        category: "modifica-app",
+        title: String(args.title).slice(0, 200),
+        content,
+        status: "pending",
+      }).select("id").single();
+      if (error) return { error: error.message };
+      return { stato: "RICHIESTA REGISTRATA", id: data?.id, titolo: args.title, priorita: priority };
+    }
+
     default:
       return { error: `Strumento sconosciuto: ${fn.name}` };
   }
@@ -3227,7 +3491,7 @@ Deno.serve(async (req) => {
     if (!body || typeof body !== "object") {
       return new Response(JSON.stringify({ error: "Richiesta non valida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { messages, context } = body as any;
+    const { messages, context, activity, autopilot } = body as any;
     if (!Array.isArray(messages) || messages.length === 0 || messages.length > 80) {
       return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -3302,8 +3566,22 @@ Deno.serve(async (req) => {
       return true;
     });
 
+    const activityList = Array.isArray(activity) ? activity.slice(-30) : [];
+    const autopilotMode = autopilot === true;
+    const activityBlock = activityList.length > 0
+      ? activityList.map((a: any) => `- [${a?.at || ""}] ${a?.action || "azione"} | esito: ${a?.status || "?"}${a?.detail ? ` | ${String(a.detail).slice(0, 200)}` : ""}${a?.error ? ` | ERRORE: ${String(a.error).slice(0, 200)}` : ""}`).join("\n")
+      : "";
+
     const conversationMessages: any[] = [
       { role: "system", content: systemPrompt },
+      ...(activityBlock ? [{
+        role: "system",
+        content: `AZIONI RECENTI DELL'UTENTE NELL'APP (supervisione operativa):\n${activityBlock}\n\nUsa review_recent_actions e db_health_check per verificare che queste azioni abbiano prodotto gli effetti attesi. Se vedi errori o operazioni incomplete, segnalali per primi e proponi la correzione.`,
+      }] : []),
+      ...(autopilotMode ? [{
+        role: "system",
+        content: `MODALITA' AUTOPILOT ATTIVA:\n- Concatena autonomamente i tool necessari fino a completare l'obiettivo.\n- Dopo ogni scrittura verifica il risultato con query_database o db_health_check.\n- Se un tool fallisce, ritenta con parametri corretti (max 3 tentativi) invece di chiedere all'utente.\n- Le operazioni distruttive (DELETE, UPDATE massivi, invii RENTRI) richiedono SEMPRE conferma esplicita dell'utente.\n- Al termine elenca i passi eseguiti con l'esito di ciascuno.`,
+      }] : []),
       ...(autonomyMode ? [{
         role: "system",
         content: `AUTONOMIA OBBLIGATORIA ATTIVA — REGOLE INDEROGABILI:
@@ -3334,7 +3612,9 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
 
     let finalContent = "";
     let lastNonEmptyContent = "";
-    for (let iteration = 0; iteration < 12; iteration++) {
+    const executedSteps: any[] = [];
+    const maxIterations = autopilotMode ? 24 : 12;
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
       console.log(`[dark-lemon] iteration=${iteration}, msgs=${conversationMessages.length}`);
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -3424,13 +3704,18 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
         } catch (e) {
           result = { error: e instanceof Error ? e.message : "Errore imprevisto" };
         }
+        executedSteps.push({
+          tool: toolCall.function?.name,
+          ok: !(result && typeof result === "object" && "error" in result),
+          error: result?.error ?? null,
+        });
         conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(result) });
       }
     }
 
     const responseContent = finalContent || lastNonEmptyContent || "⚠️ Operazione completata ma nessun riepilogo generato. Riprova.";
     console.log(`[dark-lemon] done, content length=${responseContent.length}`);
-    return new Response(JSON.stringify({ content: responseContent }), {
+    return new Response(JSON.stringify({ content: responseContent, steps: executedSteps }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
