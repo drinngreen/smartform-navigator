@@ -3368,10 +3368,17 @@ async function handleTool(
         await run(
           "conferimenti_senza_movimento",
           "Ogni conferimento privato recente (ultimi 60 giorni) deve avere il movimento di magazzino collegato",
-          `SELECT pc.id, pc.data, pc.cer
+          `SELECT pc.id, pc.data, pc.cer, pc.kg_pesati
            FROM privati_conferimenti pc
-           LEFT JOIN movimenti_impianto mi ON mi.privati_conferimento_id = pc.id
-           WHERE pc.tenant_id='${tenantId}' AND mi.id IS NULL AND pc.created_at > now() - interval '60 days'
+           WHERE pc.tenant_id='${tenantId}'
+             AND pc.created_at > now() - interval '60 days'
+             AND NOT EXISTS (
+               SELECT 1 FROM movimenti_impianto mi
+               WHERE mi.privati_conferimento_id = pc.id
+                  OR (mi.tenant_id = pc.tenant_id AND mi.origine = 'privati'
+                      AND mi.cer = pc.cer AND mi.data = pc.data
+                      AND ABS(COALESCE(mi.quantita_kg,0) - COALESCE(pc.kg_pesati,0)) < 0.01)
+             )
            ORDER BY pc.created_at DESC LIMIT 50`,
         );
         await run(
