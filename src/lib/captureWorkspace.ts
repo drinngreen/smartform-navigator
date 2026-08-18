@@ -5,7 +5,7 @@
 // - output JPEG compresso per non superare i limiti di payload della Edge Function
 
 const MAX_WIDTH = 1100;
-const TIMEOUT_MS = 12000;
+const TIMEOUT_MS = 22000;
 const MAX_DATAURL_BYTES = 3_000_000;
 
 export interface WorkspaceShot {
