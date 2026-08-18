@@ -254,12 +254,33 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
           context: normalizedContext,
           pageRoute: pageContext?.route,
           pageTitle: pageContext?.pageTitle,
+          activity: getRecentActivityPayload(),
+          autopilot: useAgentActivityStore.getState().autopilot,
         },
       });
 
       if (error) throw new Error(error.message || "Errore nella risposta");
 
+      const steps = Array.isArray((data as any)?.steps) ? (data as any).steps : [];
+      if (steps.length > 0) {
+        const failed = steps.filter((s: any) => !s?.ok);
+        useAgentActivityStore.getState().setSupervision({
+          level: failed.length > 0 ? "error" : "ok",
+          message: failed.length > 0
+            ? `${failed.length}/${steps.length} operazioni fallite (${failed.map((s: any) => s.tool).join(", ")})`
+            : `${steps.length} operazioni eseguite correttamente`,
+          at: new Date().toISOString(),
+        });
+        logAgentActivity(
+          "Dark Lemon: esecuzione strumenti",
+          failed.length > 0 ? "error" : "ok",
+          steps.map((s: any) => s.tool).join(", "),
+          failed.length > 0 ? failed.map((s: any) => `${s.tool}: ${s.error}`).join(" | ") : undefined,
+        );
+      }
+
       const assistantContent = data.content || "Mi dispiace, non ho capito.";
+
       const assistantMsg: DLMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
