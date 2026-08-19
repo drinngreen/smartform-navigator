@@ -360,6 +360,11 @@ const CHAPTERS: Chapter[] = [
       "Verifica l'elenco materiali e i kg totali.",
       "Stampa il PDF o invialo al privato.",
     ],
+    faq: [
+      { q: "Ho sbagliato la data della ricevuta.", a: "La data è modificabile dalla ricevuta stessa: correggila e ristampa. Il numero progressivo non cambia." },
+      { q: "Il privato ha portato tre materiali diversi: devo fare tre ricevute?", a: "No: una sola ricevuta con una riga per ogni CER e i relativi kg." },
+      { q: "Posso saltare un numero di ricevuta?", a: "No: la numerazione è progressiva annuale e senza buchi. Se una ricevuta è errata si annulla, non si cancella il numero." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=ricevute",
   },
   {
