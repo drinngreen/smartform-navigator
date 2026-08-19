@@ -257,6 +257,11 @@ const CHAPTERS: Chapter[] = [
       "Controlla nel Registro Generale che la registrazione Niyol sia presente.",
     ],
     tip: "Un FIR Niyol non duplica mai il movimento sul magazzino Multyproget: se lo vedi doppio, segnalalo subito.",
+    faq: [
+      { q: "Un formulario Niyol deve comparire anche in Multyproget?", a: "Solo se Multyproget è coinvolta come produttore o destinatario: in quel caso vedi il documento in entrambi i contesti, ma il movimento di magazzino resta uno solo." },
+      { q: "Vedo lo stesso movimento due volte.", a: "È un'anomalia da segnalare subito: il sistema è progettato per non duplicare. Lancia un controllo giacenze e verifica i movimenti collegati al FIR." },
+      { q: "Posso creare un FIR Niyol dall'area Multyproget?", a: "Sì, ma solo dalla tab Niyol: così la registrazione finisce nel registro corretto." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=niyol",
   },
   {
