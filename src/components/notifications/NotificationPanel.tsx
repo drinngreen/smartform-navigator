@@ -86,7 +86,7 @@ export function NotificationPanel({ open, onClose, appContext, tenantId }: Notif
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[200]" onClick={onClose}>
+    <div className="fixed inset-0 z-[100000]" onClick={onClose}>
       <div
         className="absolute right-2 top-14 w-[360px] max-h-[70vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-top-2 duration-200"
         onClick={(e) => e.stopPropagation()}
