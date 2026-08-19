@@ -30,20 +30,24 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
     setSpeechSupported(!!SpeechRecognition);
   }, []);
 
-  const readFileAsDataUrl = useCallback((file: File) => new Promise<Attachment>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      resolve({
-        type: file.type,
-        name: file.name,
-        dataUrl,
-        preview: file.type.startsWith("image/") ? dataUrl : undefined,
-      });
+  const readFileAsDataUrl = useCallback(async (file: File): Promise<Attachment> => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error || new Error(`Impossibile leggere ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+
+    const extractedText = await extractAttachmentText(file);
+
+    return {
+      type: file.type || "application/octet-stream",
+      name: file.name,
+      dataUrl,
+      preview: file.type.startsWith("image/") ? dataUrl : undefined,
+      ...(extractedText ? { extractedText } : {}),
     };
-    reader.onerror = () => reject(reader.error || new Error(`Impossibile leggere ${file.name}`));
-    reader.readAsDataURL(file);
-  }), []);
+  }, []);
 
   const handleSend = useCallback(() => {
     if ((!input.trim() && attachments.length === 0) || isLoading || isPreparingAttachments) return;
