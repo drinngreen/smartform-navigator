@@ -15,6 +15,13 @@ export interface WorkspaceShot {
 }
 
 function getWorkspaceElement(): HTMLElement {
+  // Se c'è un dialog/popup aperto (Radix lo monta in portal su <body>), lo screenshot
+  // deve includerlo: catturiamo il body così l'overlay resta visibile.
+  const modal = Array.from(
+    document.querySelectorAll<HTMLElement>('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')
+  ).filter((el) => !el.closest('[data-dark-lemon="true"]'));
+  if (modal.length > 0) return document.body;
+
   return (
     (document.querySelector("[data-admin-layout] main") as HTMLElement) ||
     (document.querySelector("main") as HTMLElement) ||
