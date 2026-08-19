@@ -136,6 +136,11 @@ const CHAPTERS: Chapter[] = [
       "Stampa o esporta in PDF per la copia cartacea.",
     ],
     tip: "Se il formulario è stato compilato in app dall'autista, qui vedi esattamente ciò che verrà stampato in ufficio.",
+    faq: [
+      { q: "Se modifico nella vista Alternativa perdo la vista Standard?", a: "No: le due viste sono lo stesso documento. Quello che scrivi in una compare subito nell'altra." },
+      { q: "Il testo esce dai riquadri in stampa.", a: "Il carattere si riduce da solo, ma con ragioni sociali o indirizzi molto lunghi conviene abbreviare (es. 'S.r.l.' invece di 'Società a responsabilità limitata')." },
+      { q: "Quando uso il modulo alternativo?", a: "Quando devi produrre la copia cartacea sul modulo prestampato, o quando vuoi vedere l'anteprima esatta di ciò che verrà stampato." },
+    ],
     route: "/mn/admin/dev-multyproget/modulo-alternativo",
   },
   {
