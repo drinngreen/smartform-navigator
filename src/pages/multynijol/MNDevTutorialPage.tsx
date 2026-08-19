@@ -407,6 +407,12 @@ const CHAPTERS: Chapter[] = [
       "Se il saldo cambia dopo il sync, cerca il movimento che mancava.",
     ],
     warnings: ["Non esiste una casella per 'scrivere' una giacenza: si corregge solo aggiungendo o correggendo movimenti."],
+    faq: [
+      { q: "Un CER che carico spesso non compare in giacenze.", a: "Compare solo se ha movimenti. Attiva 'Mostra tutti i CER' per vedere anche quelli a zero." },
+      { q: "La giacenza è diversa da quella che ho contato in piazzale.", a: "La differenza è sempre un movimento mancante o duplicato: confronta i movimenti del periodo nella tab Impianto e correggi lì." },
+      { q: "Posso scrivere io il saldo corretto?", a: "No, e non è un limite ma una garanzia: il saldo deriva dai movimenti, così il registro resta difendibile in caso di controllo." },
+      { q: "Cosa fa esattamente 'Sync giacenze'?", a: "Ricalcola i saldi partendo da tutti i movimenti registrati e verifica che il risultato coincida: se cambia qualcosa, significa che c'era un disallineamento." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=magazzino-dev",
   },
   {
