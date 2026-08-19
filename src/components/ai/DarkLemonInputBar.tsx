@@ -176,7 +176,7 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx"
+          accept="*/*"
           onChange={handleFileSelect}
           className="hidden"
         />
