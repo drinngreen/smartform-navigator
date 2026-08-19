@@ -278,6 +278,11 @@ const CHAPTERS: Chapter[] = [
       "Salva in bozza: le giacenze si aggiornano coerentemente al ruolo di Multyproget.",
       "Usa il cestino per eliminare: soft delete + storno automatico del movimento.",
     ],
+    faq: [
+      { q: "Perché in Conto Proprio non vedo i formulari dell'impianto?", a: "Sono contesti separati: il Conto Proprio riguarda i trasporti fatti in proprio, l'Impianto l'attività di gestione rifiuti." },
+      { q: "Il formulario aggiorna le giacenze?", a: "Solo se Multyproget è produttore o destinatario del rifiuto: se è solo trasportatore, il magazzino non si muove." },
+      { q: "Ho cancellato un formulario per sbaglio.", a: "L'eliminazione è un soft delete con storno automatico del movimento: i dati restano tracciati e il saldo torna al valore precedente." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=conto-proprio",
   },
   {
