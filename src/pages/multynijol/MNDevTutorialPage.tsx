@@ -558,7 +558,62 @@ const CHAPTERS: Chapter[] = [
     warnings: ["In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco."],
     route: "/mn/admin/dev-multyproget/rentri-console",
   },
+  {
+    id: "dark-lemon",
+    title: "Dark Lemon AI",
+    subtitle: "L'assistente operativo che vede, controlla e corregge",
+    image: "/tutorial/17-dark-lemon.png",
+    level: "Avanzato",
+    minutes: 8,
+    intro:
+      "Dark Lemon è l'assistente intelligente integrato nel gestionale: non è una semplice chat, è un agente che legge davvero i dati dell'azienda, controlla la coerenza di giacenze, formulari e conferimenti, e può eseguire azioni operative al posto tuo.",
+    explain: [
+      "Dove si trova: puoi aprirlo in tre modi. Il pulsante limone in alto a destra apre il widget fluttuante; l'icona a pannello apre la vista laterale affiancata al lavoro; nella Console RENTRI c'è una vista dedicata alle pratiche. È sempre lo stesso assistente, cambia solo la finestra.",
+      "Cosa sa: Dark Lemon legge il database aziendale — giacenze, movimenti di magazzino, formulari, registri, conferimenti privati, ricevute, anagrafiche, fatture e stato RENTRI. Può quindi rispondere a domande come «quanti kg di 200140 ho oggi?» oppure «quali conferimenti di luglio non hanno movimento collegato?».",
+      "Cosa vede: con il pulsante 📸 fa uno screenshot della schermata su cui stai lavorando e la analizza. Serve quando non sai spiegare a parole cosa non torna: gli mostri lo schermo e lui legge i campi.",
+      "Cosa controlla: ha una diagnostica interna che verifica la coerenza del magazzino (saldi contro movimenti), le anomalie sui formulari e sui conferimenti privati, e ti segnala i casi sospetti prima che diventino un problema in ispezione.",
+      "Cosa può fare: assegnare o cercare numeri FIR, interrogare l'anagrafica, ricalcolare e sincronizzare le giacenze, preparare correzioni sui dati, interagire con le pratiche RENTRI e compilare campi nei moduli. Ha anche l'autonomia di creare i dati mancanti (per esempio un CER o un'anagrafica assente) quando servono a sbloccare un'operazione che gli hai chiesto.",
+      "Le operazioni delicate — in particolare le firme digitali RENTRI — richiedono che tu scriva esplicitamente CONFERMO: senza quella parola l'agente si ferma.",
+      "Supervisione e Autopilot: la barra sotto la chat mostra in tempo reale cosa sta facendo. Con l'Autopilot spento l'agente procede a piccoli passi; acceso, può concatenare molte operazioni di fila per completare un compito lungo. Ogni azione resta tracciata in un registro di audit.",
+      "Cronologia: tutte le conversazioni si conservano e sono divise per vista di origine (laterale, fluttuante, console RENTRI, pagina). Puoi cancellare le conversazioni una per una dal pulsante Cronologia.",
+      "Limite invalicabile: Dark Lemon NON modifica il codice sorgente dell'applicazione. Se serve una funzione nuova, registra la richiesta come segnalazione allo sviluppo invece di improvvisare.",
+    ],
+    steps: [
+      "Apri Dark Lemon con il pulsante limone in alto a destra (widget) oppure con l'icona pannello (vista laterale).",
+      "Fai una domanda concreta sui dati, ad esempio: «Dammi la giacenza attuale di tutti i CER 200140».",
+      "Se il problema è a schermo, premi 📸 per fargli analizzare la pagina che stai guardando.",
+      "Chiedi un controllo di salute: «Verifica se le giacenze sono coerenti con i movimenti e segnalami le anomalie».",
+      "Se propone una correzione, leggi cosa sta per fare e approva solo se sei d'accordo.",
+      "Per le firme RENTRI scrivi CONFERMO quando te lo chiede: è la conferma obbligatoria.",
+      "Attiva l'Autopilot solo per compiti lunghi e sorveglia la barra di supervisione.",
+      "Apri Cronologia per rileggere una conversazione o eliminarla.",
+    ],
+    fields: [
+      { label: "Pulsante 🍋 (widget)", desc: "Apre la chat fluttuante sopra la schermata di lavoro, spostabile." },
+      { label: "Icona pannello", desc: "Apre Dark Lemon come colonna laterale, utile mentre compili un formulario." },
+      { label: "📸 Screenshot", desc: "Cattura e invia all'assistente la schermata corrente per farla analizzare." },
+      { label: "Cronologia", desc: "Elenco delle conversazioni con indicazione della vista di origine ed eliminazione singola." },
+      { label: "Barra di supervisione", desc: "Mostra l'azione in corso e lo stato dell'agente: se è ferma, non sta facendo nulla." },
+      { label: "Autopilot ON/OFF", desc: "Acceso permette catene lunghe di operazioni autonome; spento l'agente si ferma più spesso a chiedere." },
+    ],
+    warnings: [
+      "Dark Lemon opera sui dati REALI dell'azienda: leggi sempre cosa propone prima di approvare una correzione.",
+      "Le firme RENTRI non partono senza la parola CONFERMO: non scriverla se non sei sicuro del documento.",
+      "Non chiedergli di modificare l'applicazione: non può farlo, registra solo la richiesta per lo sviluppo.",
+      "Non incollargli password o credenziali: non servono e non vanno messe in chat.",
+    ],
+    faq: [
+      { q: "Non risponde o resta in caricamento.", a: "Chiudi e riapri il widget e riprova con una domanda più corta. Se avevi allegato uno screenshot molto grande, riprova senza immagine: le catture vengono compresse ma una pagina enorme può rallentare la risposta." },
+      { q: "Mi ha dato un numero di giacenza diverso da quello che vedo.", a: "Chiedigli di ricalcolare e sincronizzare le giacenze e di mostrarti i movimenti su cui si basa: il valore corretto è sempre quello che deriva dai movimenti." },
+      { q: "Può inserire un conferimento al posto mio?", a: "Sì, può eseguire operazioni sui dati, ma la responsabilità della verifica resta tua: controlla sempre il risultato nella schermata corrispondente." },
+      { q: "Le conversazioni restano salvate?", a: "Sì, con l'indicazione della vista da cui sono partite. Puoi eliminarle singolarmente dalla Cronologia." },
+      { q: "Perché a volte chiede conferma e a volte no?", a: "Le operazioni di sola lettura e quelle reversibili procedono da sole; quelle irreversibili — firme, invii ufficiali — richiedono conferma esplicita." },
+    ],
+    tip: "Usalo come un collega esperto: più la domanda è precisa (CER, data, società), più la risposta è utile. «Controlla il 200140 CAVI dal 1 al 18 agosto» funziona molto meglio di «controlla il magazzino».",
+    route: "/mn/admin/dev-multyproget?tab=impianto",
+  },
 ];
+
 
 const STORAGE_KEY = "mn-dev-tutorial-progress";
 
