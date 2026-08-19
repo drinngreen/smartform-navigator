@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { emissioneFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
-import { FileText, Loader2, PenLine, RefreshCw, Send } from "lucide-react";
+import { FileText, Loader2, PenLine, RefreshCw, Search, Send, X } from "lucide-react";
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 
