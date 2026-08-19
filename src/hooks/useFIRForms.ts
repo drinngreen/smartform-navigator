@@ -236,7 +236,11 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     unita_misura: storeData.unitaMisura || "kg",
     caratteristiche_hp: storeData.caratteristicheHP.length > 0 ? storeData.caratteristicheHP : null,
     data_partenza: storeData.oraDataInizioTrasporto || null,
-    data_arrivo: storeData.dataOraArrivo || null,
+    data_arrivo: storeData.dataOraArrivo || (
+      storeData.dataFineTrasporto
+        ? `${storeData.dataFineTrasporto}T${storeData.oraFineTrasporto || storeData.oraRicezione || "00:00"}`
+        : null
+    ),
     intermediario_denominazione: storeData.intermediarioDenominazione || null,
     intermediario_codice_fiscale: storeData.intermediarioCF || null,
     intermediario_iscrizione_albo: storeData.intermediarioNumeroAlbo || null,
@@ -267,6 +271,11 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
       respinto: storeData.accettazione === "respinto" || null,
       quantita_accettata: storeData.quantitaAccettata || null,
       peso_ricevuto: storeData.pesoRicevuto || null,
+      quantita_destino: storeData.pesoRicevuto || storeData.quantitaAccettata || null,
+      data_fine_trasporto: storeData.dataFineTrasporto || storeData.dataRicezione || null,
+      ora_fine_trasporto: storeData.oraFineTrasporto || storeData.oraRicezione || null,
+      data_ricezione: storeData.dataRicezione || storeData.dataFineTrasporto || null,
+      ora_ricezione: storeData.oraRicezione || storeData.oraFineTrasporto || null,
       numero_colli: storeData.numeroColli || null,
       trasbordo_parziale_denominazione: storeData.trasbordoParzDenominazione || null,
       trasbordo_parziale_codice_fiscale: storeData.trasbordoParzCF || null,

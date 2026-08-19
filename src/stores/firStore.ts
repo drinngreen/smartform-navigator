@@ -490,6 +490,12 @@ const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
   "altro": "6",
 };
 
+const toLocalDateTimeInput = (value: unknown): string => {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const normalized = value.trim().replace(" ", "T");
+  return normalized.length >= 16 ? normalized.slice(0, 16) : normalized;
+};
+
 const isTestFirNumber = (value: unknown): boolean =>
   typeof value === "string" && /^(test[\s-]?|skkzr)/i.test(value.trim());
 
@@ -586,6 +592,19 @@ export const useFIRStore = create<FIRStore>()(
         const f = <K extends keyof FIRDataStore>(dbVal: string | null | undefined, key: K): FIRDataStore[K] =>
           (dbVal != null && dbVal !== "" ? dbVal : initialFIRData[key]) as FIRDataStore[K];
 
+        const formData = dbData.form_data && typeof dbData.form_data === "object"
+          ? dbData.form_data
+          : {};
+        const destinationDate = String(
+          formData.data_fine_trasporto || formData.data_ricezione || dbData.data_arrivo || ""
+        ).slice(0, 10);
+        const destinationTime = String(
+          formData.ora_fine_trasporto || formData.ora_ricezione || ""
+        ).slice(0, 5);
+        const destinationDateTime = destinationDate
+          ? `${destinationDate}T${destinationTime || "00:00"}`
+          : toLocalDateTimeInput(dbData.data_arrivo);
+
         set({
           data: {
             ...initialFIRData,
@@ -618,7 +637,9 @@ export const useFIRStore = create<FIRStore>()(
             unitaMisura: (dbData.unita_misura as "kg" | "l") || "kg",
             caratteristicheHP: dbData.caratteristiche_hp || [],
             oraDataInizioTrasporto: dbData.data_partenza || "",
-            dataOraArrivo: dbData.data_arrivo || "",
+            dataFineTrasporto: destinationDate,
+            oraFineTrasporto: destinationTime,
+            dataOraArrivo: destinationDateTime,
             intermediarioDenominazione: f(dbData.intermediario_denominazione, "intermediarioDenominazione"),
             intermediarioCF: f(dbData.intermediario_codice_fiscale, "intermediarioCF"),
             intermediarioNumeroAlbo: f(dbData.intermediario_iscrizione_albo, "intermediarioNumeroAlbo"),
@@ -630,10 +651,12 @@ export const useFIRStore = create<FIRStore>()(
               produttoreNumeroAut: dbData.form_data.produttore_iscrizione_albo || initialFIRData.produttoreNumeroAut,
               isDetentore: dbData.form_data.detentore_checkbox || false,
               destinatarioTipoAut: dbData.form_data.destinatario_tipo || "",
-              pesoRicevuto: dbData.form_data.peso_ricevuto || "",
+              pesoRicevuto: String(dbData.form_data.peso_ricevuto ?? dbData.form_data.quantita_destino ?? ""),
+              quantitaAccettata: String(dbData.form_data.quantita_accettata ?? dbData.form_data.quantita_destino ?? ""),
+              dataRicezione: String(dbData.form_data.data_ricezione ?? dbData.form_data.data_fine_trasporto ?? destinationDate),
+              oraRicezione: String(dbData.form_data.ora_ricezione ?? dbData.form_data.ora_fine_trasporto ?? destinationTime),
               percorsoDiverso: dbData.form_data.percorso || "",
               accettazione: dbData.form_data.accettato_per_intero ? "intero" : dbData.form_data.accettato_parzialmente ? "parziale" : dbData.form_data.respinto ? "respinto" : "",
-              quantitaAccettata: dbData.form_data.quantita_accettata || "",
               numeroColli: dbData.form_data.numero_colli || "",
               trasportoADR: dbData.form_data.trasporto_adr_rid || false,
               adrClassePericolo: dbData.form_data.classe_pericolo || "",

@@ -152,6 +152,12 @@ const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
   "altro": "6",
 };
 
+const toLocalDateTimeInput = (value: unknown): string => {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const normalized = value.trim().replace(" ", "T");
+  return normalized.length >= 16 ? normalized.slice(0, 16) : normalized;
+};
+
 const isTestFirNumberMN = (value: unknown): boolean =>
   typeof value === "string" && /^(test[\s-]?|skkzr)/i.test(value.trim());
 
@@ -236,6 +242,19 @@ export const useMNFIRStore = create<MNFIRStore>()(
         if (dbStatus === 'inviato') mappedWorkflow = 'inviato';
         else if (dbStatus === 'chiuso' || dbStatus === 'completato') mappedWorkflow = 'chiuso';
 
+        const formData = dbData.form_data && typeof dbData.form_data === "object"
+          ? dbData.form_data
+          : {};
+        const destinationDate = String(
+          formData.data_fine_trasporto || formData.data_ricezione || dbData.data_arrivo || ""
+        ).slice(0, 10);
+        const destinationTime = String(
+          formData.ora_fine_trasporto || formData.ora_ricezione || ""
+        ).slice(0, 5);
+        const destinationDateTime = destinationDate
+          ? `${destinationDate}T${destinationTime || "00:00"}`
+          : toLocalDateTimeInput(dbData.data_arrivo);
+
         set({
           data: {
             ...mnInitialFIRData,
@@ -262,11 +281,17 @@ export const useMNFIRStore = create<MNFIRStore>()(
             unitaMisura: (dbData.unita_misura as "kg" | "l") || "kg",
             caratteristicheHP: dbData.caratteristiche_hp || [],
             oraDataInizioTrasporto: dbData.data_partenza || "",
-            dataOraArrivo: dbData.data_arrivo || "",
+            dataFineTrasporto: destinationDate,
+            oraFineTrasporto: destinationTime,
+            dataOraArrivo: destinationDateTime,
             intermediarioDenominazione: dbData.intermediario_denominazione || "",
             intermediarioCF: dbData.intermediario_codice_fiscale || "",
             intermediarioNumeroAlbo: dbData.intermediario_iscrizione_albo || "",
             annotazioni: dbData.note || "",
+            pesoRicevuto: String(formData.peso_ricevuto ?? formData.quantita_destino ?? ""),
+            quantitaAccettata: String(formData.quantita_accettata ?? formData.quantita_destino ?? ""),
+            dataRicezione: String(formData.data_ricezione ?? formData.data_fine_trasporto ?? destinationDate),
+            oraRicezione: String(formData.ora_ricezione ?? formData.ora_fine_trasporto ?? destinationTime),
           },
           editingFirId: dbData.id,
           workflowStatus: mappedWorkflow,
