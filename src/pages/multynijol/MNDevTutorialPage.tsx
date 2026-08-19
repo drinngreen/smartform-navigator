@@ -525,6 +525,12 @@ const CHAPTERS: Chapter[] = [
       "Modifica password o disattiva l'utente quando serve.",
     ],
     warnings: ["Il codice fiscale è l'identificativo di login: verificalo carattere per carattere prima di salvare."],
+    faq: [
+      { q: "Errore quando creo un nuovo utente.", a: "Quasi sempre è il codice fiscale sbagliato inserito dall'autocompletamento del browser: cancella il campo, disattiva l'autofill e riscrivilo a mano." },
+      { q: "L'autista ha dimenticato la password.", a: "Aprilo dall'elenco personale e imposta una nuova password: non serve ricreare l'account." },
+      { q: "Devo spostare un autista da Multyproget a Niyol.", a: "Modifica l'app assegnata nella scheda utente: mantiene lo stesso login e il suo storico." },
+      { q: "Se elimino un utente perdo i suoi formulari?", a: "No: i documenti restano nei registri. L'utente viene disattivato, i dati restano tracciati." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=personale",
   },
   {
