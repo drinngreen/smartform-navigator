@@ -481,19 +481,36 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
           `codice_blocco=${upstream.codice_blocco || "N/A"}, bridge_key=${bridgeKey ? "present" : "missing"}`,
       );
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      let res: Response;
-      try {
-        res = await fetchImpl(targetUrl, {
+      const doFetch = (signal: AbortSignal) =>
+        fetchImpl(targetUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(bridgeKey ? { "x-bridge-key": bridgeKey } : {}),
           },
           body: JSON.stringify(upstream),
-          signal: controller.signal,
+          signal,
         });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      let res: Response;
+      try {
+        try {
+          res = await doFetch(controller.signal);
+        } catch (firstErr) {
+          const firstMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+          // Il bridge/RENTRI a volte è lento al primo colpo (cold start mTLS): un retry singolo.
+          if (!isConnectivityError(firstMsg)) throw firstErr;
+          console.warn("[rentri-vps] retry after connectivity error:", sanitizeMessage(firstMsg, bridgeKey));
+          const retryController = new AbortController();
+          const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
+          try {
+            res = await doFetch(retryController.signal);
+          } finally {
+            clearTimeout(retryTimeoutId);
+          }
+        }
       } catch (fetchErr) {
         const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
         const message = sanitizeMessage(rawMessage, bridgeKey);
