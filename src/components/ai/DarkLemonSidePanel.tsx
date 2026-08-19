@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2 } from "lucide-react";
+import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
@@ -15,7 +15,6 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface DarkLemonSidePanelProps {
   context?: string;
@@ -28,18 +27,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleOpenFullscreen = useCallback(() => {
-    const isMnAdmin = location.pathname.startsWith("/mn/admin");
-    if (isMnAdmin) {
-      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
-    } else {
-      navigate("/admin/zoli-dark-lemon");
-    }
-    setSidePanel(false);
-  }, [navigate, location.pathname, context, setSidePanel]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,7 +78,13 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   }, [sendMessage, buildContext, isLoading]);
 
   return (
-    <div data-dark-lemon="true" className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+    <div
+      data-dark-lemon="true"
+      className={cn(
+        "fixed top-0 right-0 flex flex-col bg-[hsl(222,47%,6%)] border-white/10 z-[60] animate-slide-in-right",
+        isFullscreen ? "inset-0 w-full h-full border-l-0" : "h-full w-[20vw] min-w-[280px] border-l"
+      )}
+    >
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
@@ -105,8 +99,8 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
         <button onClick={() => setShowHistory(v => !v)} className={"p-1 rounded-md transition-colors " + (showHistory ? "bg-cyan-500/25 text-cyan-300" : "bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25")} title="Cronologia">
           <MessageSquare className="h-3.5 w-3.5" />
         </button>
-        <button onClick={handleOpenFullscreen} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title="Apri a tutto schermo">
-          <Maximize2 className="h-3.5 w-3.5" />
+        <button onClick={() => setIsFullscreen(v => !v)} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title={isFullscreen ? "Torna a vista laterale" : "Apri a tutto schermo"}>
+          {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </button>
         <button onClick={() => setSidePanel(false)} className="p-1 text-white/40 hover:text-white transition-colors" title="Chiudi pannello">
           <PanelLeftClose className="h-3.5 w-3.5" />
