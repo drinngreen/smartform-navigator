@@ -18,6 +18,11 @@ const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
 const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non (?:mi è (?:consentito|permesso)|posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare|eseguire))|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare|fammelo sapere e sar[oò]|per motivi di sicurezza|mi dispiace.*non|impedisce l'esecuzione)/i;
 const FIR_ID_BLOCKING_PATTERN = /(uuid del formular(?:io|i)|uuid interno del formular(?:io|i)|update_fir_form richiede l['’]?uuid|numero fir .* non è sufficiente .*update_fir_form|non ho un tool specifico per fare questa conversione|devo prima recuperare .*uuid|non posso procedere senza l['’]?uuid)/i;
+const WRITE_INTENT_PATTERN = /\b(modifica|modificare|aggiorna|aggiornare|imposta|impostare|cambia|cambiare|correggi|correggere|salva|salvare|inserisci|inserire|crea|creare|elimina|eliminare)\b/i;
+const MUTATING_TOOLS = new Set([
+  "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri",
+  "update_privato", "create_privato", "explain_and_fix",
+]);
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
   INGRESSO_UL: "CARICO_DA_FORMULARIO",
@@ -276,6 +281,8 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 - Se l'utente ti fornisce il numero FIR visibile, usalo direttamente: NON chiedere l'UUID
 - Se un tool FIR non trova il record, usa list_fir_forms filtrando numero_fir e poi riprova automaticamente
 - Non dire mai che manca un tool di conversione numero FIR → UUID: questa conversione è supportata
+- Per quantità/peso a destino usa fields.form_data con quantita_destino e peso_ricevuto. Per data e ora fine trasporto usa fields.form_data con data_fine_trasporto e ora_fine_trasporto; imposta anche data_arrivo con data e ora complete.
+- È VIETATO dire "aggiornato", "modifiche applicate", "salvato" o equivalenti senza avere eseguito update_fir_form con successo e verificato i valori restituiti dal database.
 
 ## AUTONOMIA OPERATIVA
 Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere tu", o simili, DEVI agire in piena autonomia:
@@ -2267,8 +2274,21 @@ async function handleTool(
       ]);
 
       const updatePayload: Record<string, any> = {};
+      const formDataAliases = new Set([
+        "quantita_destino", "peso_destino", "peso_ricevuto", "quantita_accettata",
+        "data_fine_trasporto", "ora_fine_trasporto", "data_ricezione", "ora_ricezione",
+      ]);
+      const aliasedFormData: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(fields)) {
+        if (formDataAliases.has(key)) {
+          aliasedFormData[key === "peso_destino" ? "peso_ricevuto" : key] = value;
+          if (key === "quantita_destino" || key === "peso_destino" || key === "peso_ricevuto") {
+            aliasedFormData.quantita_destino = value;
+            aliasedFormData.peso_ricevuto = value;
+          }
+          continue;
+        }
         if (!allowedFields.has(key)) continue;
 
         if (key === "form_data") {
@@ -2312,6 +2332,22 @@ async function handleTool(
         updatePayload[key] = value;
       }
 
+      if (Object.keys(aliasedFormData).length > 0) {
+        const { data: currentForm, error: readError } = await db
+          .from("fir_forms")
+          .select("form_data")
+          .eq("id", id)
+          .eq("tenant_id", tenantId)
+          .maybeSingle();
+        if (readError) return { error: readError.message };
+        if (!currentForm) return { error: "FIR non trovato" };
+        updatePayload.form_data = {
+          ...((currentForm.form_data && typeof currentForm.form_data === "object" && !Array.isArray(currentForm.form_data)) ? currentForm.form_data : {}),
+          ...((updatePayload.form_data && typeof updatePayload.form_data === "object") ? updatePayload.form_data : {}),
+          ...aliasedFormData,
+        };
+      }
+
       if (Object.keys(updatePayload).length === 0) return { error: "Nessun campo valido da aggiornare" };
 
       updatePayload.updated_at = new Date().toISOString();
@@ -2321,7 +2357,7 @@ async function handleTool(
         .update(updatePayload)
         .eq("id", id)
         .eq("tenant_id", tenantId)
-        .select("id, numero_fir, status")
+        .select("id, numero_fir, status, quantita, data_arrivo, form_data, updated_at")
         .maybeSingle();
 
       if (error) {
@@ -3629,6 +3665,13 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
     let finalContent = "";
     let lastNonEmptyContent = "";
     const executedSteps: any[] = [];
+    const latestUserText = [...modelMessages].reverse().find((message: any) => message?.role === "user")?.content;
+    const latestUserPlainText = typeof latestUserText === "string"
+      ? latestUserText
+      : Array.isArray(latestUserText)
+        ? latestUserText.filter((part: any) => part?.type === "text").map((part: any) => part.text || "").join(" ")
+        : "";
+    const requiresWrite = WRITE_INTENT_PATTERN.test(latestUserPlainText);
     const maxIterations = autopilotMode ? 24 : 12;
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       console.log(`[dark-lemon] iteration=${iteration}, msgs=${conversationMessages.length}`);
@@ -3706,6 +3749,14 @@ ESEGUI ORA questi step nell'ordine:
 2. Usa l'item_id restituito per dragon_create_movement con movement_type="CARICO", cause_code="CARICO_DA_FORMULARIO", register_type="DESTINATARIO", quantity=5000
 3. Continua con consolidamento e cernita
 USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
+          });
+          continue;
+        }
+        const successfulMutation = executedSteps.some((step: any) => MUTATING_TOOLS.has(step.tool) && step.ok);
+        if (requiresWrite && !successfulMutation) {
+          conversationMessages.push({
+            role: "system",
+            content: "BLOCCO ANTI-FALSO-SUCCESSO: l'utente ha chiesto una modifica ma non hai ancora eseguito nessun tool di scrittura con successo. Non puoi dichiarare che la modifica è stata applicata. Chiama ora il tool specifico, verifica il risultato e solo dopo rispondi.",
           });
           continue;
         }
