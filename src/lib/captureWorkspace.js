@@ -7,6 +7,9 @@ const MAX_WIDTH = 1100;
 const TIMEOUT_MS = 22000;
 const MAX_DATAURL_BYTES = 3000000;
 function getWorkspaceElement() {
+    const modal = Array.from(document.querySelectorAll('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')).filter((el) => !el.closest('[data-dark-lemon="true"]'));
+    if (modal.length > 0)
+        return document.body;
     return (document.querySelector("[data-admin-layout] main") ||
         document.querySelector("main") ||
         document.querySelector("[data-page-content]") ||
