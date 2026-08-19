@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildFatturaPAXml } from "../_shared/fatturaPA.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,38 @@ const TENANT_MAP: Record<string, string> = {
 const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 
+const RENTRI_UNITA_LOCALI: Record<string, string> = {
+  multy: "OP2501XMQ021914-TO0001",
+  niyol: "OP2501SXW021767-TO0001",
+  global: "OP2501RMK022692-TO0001",
+};
+
+/** Mappa il tenant corrente sul codice cliente accettato dal proxy RENTRI. */
+function rentriClienteForTenant(tenantId: string): string {
+  if (tenantId === TENANT_MAP.niyol) return "niyol";
+  return "multy";
+}
+
+/** Invia l'operazione al bridge RENTRI passando SEMPRE dalla Edge Function ufficiale rentri-vps-proxy. */
+async function callRentriProxy(request: Record<string, unknown>): Promise<{ ok: boolean; status: number; body: any; message: string }> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/rentri-vps-proxy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+      body: JSON.stringify(request),
+    });
+    const body = await resp.json().catch(() => null);
+    const ok = resp.ok && body?.success !== false;
+    const message = body?.userMessage || body?.error || (ok ? "OK" : `HTTP ${resp.status}`);
+    return { ok, status: resp.status, body, message };
+  } catch (e) {
+    return { ok: false, status: 0, body: null, message: e instanceof Error ? e.message : "errore di rete verso il bridge RENTRI" };
+  }
+}
+
+
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
 const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[ie]|darmi|dirmi)|ho (?:assolutamente )?bisogno di (?:conoscere|sapere)|devo sapere se .* esiste|è già configurato|è già presente|non (?:mi è (?:consentito|permesso)|posso (?:verificarlo|usare query_database|usare il database|inventarl[eo]|andare avanti|procedere|creare|eseguire))|ti chiedo (?:ancora|se puoi)|in attesa di questa informazione|hai un modo per creare|fammelo sapere e sar[oò]|per motivi di sicurezza|mi dispiace.*non|impedisce l'esecuzione)/i;
@@ -22,6 +55,8 @@ const WRITE_INTENT_PATTERN = /\b(modifica|modificare|aggiorna|aggiornare|imposta
 const MUTATING_TOOLS = new Set([
   "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri",
   "update_privato", "create_privato", "explain_and_fix",
+  "send_registro_rentri", "create_fattura_da_fir", "send_fattura_sibill",
+
 ]);
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
@@ -297,6 +332,15 @@ Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere t
 Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 
 ### "Nuovo Carico" / "Nuovo FIR"
+
+### FILIERA COMPLETA FIR → RENTRI → FATTURA (usa SEMPRE questi tool, mai testo)
+1. update_fir_form / complete_fir per i dati di partenza e arrivo (quantita_destino, data_arrivo, ora_fine_trasporto)
+2. send_to_rentri per l'emissione FIR (passa da rentri-vps-proxy; se torna errore RIPORTALO, non dichiarare successo)
+3. send_registro_rentri per il movimento sul registro cronologico
+4. rentri_transaction_status per verificare l'esito della transazione
+5. create_fattura_da_fir (serve cliente_id anagrafica_aziende_mp + prezzo_unitario)
+6. send_fattura_sibill (usa mock=true se l'utente chiede una prova sandbox)
+
 1. Verifica codice EER → se non valido, BLOCCA
 2. Verifica disponibilità numero nel pool FIR
 3. Controlla autorizzazione mezzo trasportatore per quel CER
@@ -1277,6 +1321,75 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "send_registro_rentri",
+      description: "Invia uno o più movimenti al registro cronologico RENTRI (carico/scarico) tramite il proxy ufficiale.",
+      parameters: {
+        type: "object",
+        properties: {
+          movimenti: { type: "array", items: { type: "object" }, description: "Array di movimenti nel formato RENTRI" },
+          registro_id: { type: "string", description: "ID registro RENTRI (opzionale)" },
+          dry_run: { type: "boolean", description: "Se true esegue solo la validazione senza invio reale" }
+        },
+        required: ["movimenti"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "rentri_transaction_status",
+      description: "Verifica lo stato di una transazione RENTRI (FIR o registro) dato l'ID transazione.",
+      parameters: {
+        type: "object",
+        properties: {
+          transazione_id: { type: "string" },
+          tipo: { type: "string", enum: ["FIR", "REGISTRO"], description: "Tipo di transazione da verificare" }
+        },
+        required: ["transazione_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_fattura_da_fir",
+      description: "Crea una fattura (tabella fatture + fatture_righe) partendo da uno o più FIR, con numerazione progressiva automatica.",
+      parameters: {
+        type: "object",
+        properties: {
+          fir_form_ids: { type: "array", items: { type: "string" }, description: "UUID o numeri FIR da fatturare" },
+          fir_form_id: { type: "string", description: "Singolo FIR da fatturare" },
+          cliente_id: { type: "string", description: "UUID cliente in anagrafica_aziende_mp" },
+          prezzo_unitario: { type: "number", description: "Prezzo unitario €/kg applicato a tutte le righe" },
+          prezzi_unitari: { type: "object", description: "Prezzi per numero FIR: { 'ZRZXR 000769 BY': 0.12 }" },
+          aliquota_iva: { type: "number", description: "Aliquota IVA (default 22)" },
+          reverse_charge: { type: "boolean", description: "Se true applica inversione contabile N6.1" },
+          data_emissione: { type: "string", description: "Data emissione YYYY-MM-DD" },
+          note: { type: "string" }
+        },
+        required: ["cliente_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_fattura_sibill",
+      description: "Trasmette una fattura a Sibill/SDI generando l'XML FatturaPA. Con mock=true simula l'invio senza chiamare l'API reale.",
+      parameters: {
+        type: "object",
+        properties: {
+          fattura_id: { type: "string" },
+          mock: { type: "boolean", description: "Modalità sandbox (nessuna chiamata reale a Sibill)" }
+        },
+        required: ["fattura_id"]
+      }
+    }
+  },
+
 
   // === ANAGRAFICA PRIVATI ===
   {
@@ -2438,32 +2551,188 @@ async function handleTool(
         .select("*").eq("id", resolvedFir.id).eq("tenant_id", tenantId).maybeSingle();
       if (firErr || !fir) return { error: firErr?.message || "FIR non trovato" };
 
-      const payload = {
-        rentri_path: args.rentri_path || "/api/rentri/action/emissioneFir",
-        societaId: "multy",
-        data: {
-          num_iscr_sito: "TO-00001",
-          dati_partenza: {
-            numero_fir: fir.numero_fir,
-            produttore: { cf_prod: fir.produttore_codice_fiscale || "", denominazione: fir.produttore_denominazione || "", indirizzo: fir.produttore_indirizzo || "", comune: fir.produttore_comune || "", provincia: fir.produttore_provincia || "", cap: fir.produttore_cap || "" },
-            rifiuto: { codice_eer: (fir.codice_eer || "").replace(/\./g, ""), stato_fisico: mapFirPhysicalStateToRentri(fir.stato_fisico), descrizione: fir.descrizione_rifiuto || "", quantita: fir.quantita || 0, unita_misura: mapFirUnitToRentri(fir.unita_misura) },
-            trasportatore: { cf_tras: fir.trasportatore_codice_fiscale || "", denominazione: fir.trasportatore_denominazione || "", conducente: fir.trasportatore_conducente || "", targa: fir.trasportatore_targa_automezzo || "" },
-          },
-          dati_arrivo: { destinatario: { cf_dest: fir.destinatario_codice_fiscale || "", denominazione: fir.destinatario_denominazione || "" } },
+      const cliente = rentriClienteForTenant(tenantId);
+      const firPayload = {
+        num_iscr_sito: RENTRI_UNITA_LOCALI[cliente] || "",
+        dati_partenza: {
+          numero_fir: fir.numero_fir,
+          data_partenza: fir.data_partenza || null,
+          produttore: { cf_prod: fir.produttore_codice_fiscale || "", denominazione: fir.produttore_denominazione || "", indirizzo: fir.produttore_indirizzo || "", comune: fir.produttore_comune || "", provincia: fir.produttore_provincia || "", cap: fir.produttore_cap || "" },
+          rifiuto: { codice_eer: (fir.codice_eer || "").replace(/\./g, ""), stato_fisico: mapFirPhysicalStateToRentri(fir.stato_fisico), descrizione: fir.descrizione_rifiuto || "", quantita: fir.quantita || 0, unita_misura: mapFirUnitToRentri(fir.unita_misura) },
+          trasportatore: { cf_tras: fir.trasportatore_codice_fiscale || "", denominazione: fir.trasportatore_denominazione || "", conducente: fir.trasportatore_conducente || "", targa: fir.trasportatore_targa_automezzo || "" },
+        },
+        dati_arrivo: {
+          data_arrivo: fir.data_arrivo || null,
+          quantita: Number(fir.form_data?.quantita_destino ?? fir.form_data?.peso_ricevuto ?? fir.quantita ?? 0),
+          destinatario: { cf_dest: fir.destinatario_codice_fiscale || "", denominazione: fir.destinatario_denominazione || "" },
         },
       };
 
-      try {
-        const vpsResp = await fetch("http://167.235.29.27:3000/invia-operazione", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
-        });
-        const vpsResult = await vpsResp.json();
-        await db.from("rentri_logs").insert({ tenant_id: tenantId, operation_type: "emissione_fir", payload, response: vpsResult, status: vpsResp.ok ? "success" : "error" }).catch(() => {});
-        return { success: vpsResp.ok, rentri_response: vpsResult };
-      } catch (e) {
-        return { error: `Errore connessione VPS: ${e instanceof Error ? e.message : "unknown"}` };
+      const result = await callRentriProxy({
+        cliente,
+        tipo_operazione: "FIR_EMISSIONE",
+        payload: firPayload,
+        ...(args.rentri_path ? { rentri_method: args.rentri_method || "POST", rentri_path: args.rentri_path } : {}),
+        ...(args.dry_run ? { dry_run: true } : {}),
+      });
+
+      await db.from("rentri_logs").insert({
+        tenant_id: tenantId, operation_type: "emissione_fir",
+        payload: firPayload, response: result.body, status: result.ok ? "success" : "error",
+      }).catch(() => {});
+
+      if (!result.ok) {
+        return { error: `Invio RENTRI non riuscito (status ${result.status}): ${result.message}`, rentri_response: result.body };
       }
+      return { success: true, cliente, rentri_response: result.body };
     }
+
+    case "send_registro_rentri": {
+      const cliente = rentriClienteForTenant(tenantId);
+      const movimenti = Array.isArray(args.movimenti) ? args.movimenti : null;
+      if (!movimenti || movimenti.length === 0) return { error: "Nessun movimento da inviare al registro RENTRI" };
+
+      const payload = { movimenti, ...(args.registro_id ? { registro_id: args.registro_id } : {}) };
+      const result = await callRentriProxy({
+        cliente, tipo_operazione: "REGISTRO", payload,
+        ...(args.dry_run ? { dry_run: true } : {}),
+      });
+
+      await db.from("rentri_logs").insert({
+        tenant_id: tenantId, operation_type: "registro_movimento",
+        payload, response: result.body, status: result.ok ? "success" : "error",
+      }).catch(() => {});
+
+      if (!result.ok) {
+        return { error: `Invio registro RENTRI non riuscito (status ${result.status}): ${result.message}`, rentri_response: result.body };
+      }
+      return { success: true, cliente, rentri_response: result.body };
+    }
+
+    case "rentri_transaction_status": {
+      const cliente = rentriClienteForTenant(tenantId);
+      const tipo = args.tipo === "REGISTRO" ? "TRANSAZIONE_REGISTRO" : "TRANSAZIONE_FIR";
+      if (!args.transazione_id) return { error: "transazione_id obbligatorio" };
+      const result = await callRentriProxy({
+        cliente, tipo_operazione: tipo,
+        payload: { transazione_id: args.transazione_id },
+      });
+      if (!result.ok) return { error: `Stato transazione non disponibile (status ${result.status}): ${result.message}`, rentri_response: result.body };
+      return { success: true, rentri_response: result.body };
+    }
+
+    case "create_fattura_da_fir": {
+      const firRefs: string[] = Array.isArray(args.fir_form_ids) ? args.fir_form_ids : (args.fir_form_id ? [args.fir_form_id] : []);
+      if (firRefs.length === 0) return { error: "Indicare almeno un FIR da fatturare" };
+      if (!args.cliente_id) return { error: "cliente_id (anagrafica_aziende_mp) obbligatorio" };
+
+      const { data: cli, error: cliErr } = await db.from("anagrafica_aziende_mp")
+        .select("id, ragione_sociale, partita_iva, codice_fiscale, indirizzo, cap, citta, provincia")
+        .eq("id", args.cliente_id).maybeSingle();
+      if (cliErr || !cli) return { error: cliErr?.message || "Cliente non trovato in anagrafica" };
+      if (!cli.partita_iva) return { error: `Partita IVA mancante per ${cli.ragione_sociale}: aggiornare l'anagrafica prima di fatturare` };
+
+      const prezzi: Record<string, number> = (args.prezzi_unitari && typeof args.prezzi_unitari === "object") ? args.prezzi_unitari : {};
+      const righe: any[] = [];
+      for (const ref of firRefs) {
+        const r = await resolveFirFormId(db, tenantId, ref);
+        if (r.error || !r.id) return { error: `FIR ${ref}: ${r.error || "non trovato"}` };
+        const { data: fir } = await db.from("fir_forms").select("*").eq("id", r.id).eq("tenant_id", tenantId).maybeSingle();
+        if (!fir) return { error: `FIR ${ref} non trovato nel tenant corrente` };
+        const cer = fir.codice_eer || fir.form_data?.cer || "";
+        const qta = Number(fir.form_data?.quantita_destino ?? fir.form_data?.peso_ricevuto ?? fir.quantita ?? 0) || 1;
+        const prezzo = Number(prezzi[fir.numero_fir] ?? prezzi[r.id] ?? args.prezzo_unitario ?? 0);
+        const aliquota = Number(args.aliquota_iva ?? 22);
+        const reverseCharge = Boolean(args.reverse_charge);
+        const imponibile = qta * prezzo;
+        righe.push({
+          fir_form_id: r.id, numero_fir: fir.numero_fir, cer,
+          descrizione: `Smaltimento CER ${cer} - FIR ${fir.numero_fir || ""}`.trim(),
+          quantita: qta, unita_misura: "kg", prezzo_unitario: prezzo,
+          imponibile, aliquota_iva: reverseCharge ? 0 : aliquota,
+          iva: reverseCharge ? 0 : imponibile * (aliquota / 100),
+          totale: reverseCharge ? imponibile : imponibile * (1 + aliquota / 100),
+          reverse_charge: reverseCharge, tipo_riga: "servizio",
+        });
+      }
+
+      const anno = new Date().getFullYear();
+      const { data: numero, error: numErr } = await db.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
+      if (numErr) return { error: `Numerazione fattura fallita: ${numErr.message}` };
+
+      const imponibileTot = righe.reduce((s, r) => s + r.imponibile, 0);
+      const ivaTot = righe.reduce((s, r) => s + r.iva, 0);
+
+      const { data: fattura, error: fErr } = await db.from("fatture").insert({
+        tenant_id: tenantId, numero, anno,
+        data_emissione: args.data_emissione || new Date().toISOString().slice(0, 10),
+        cliente_id: cli.id,
+        cliente_ragione_sociale: cli.ragione_sociale,
+        cliente_partita_iva: cli.partita_iva,
+        cliente_codice_fiscale: cli.codice_fiscale,
+        cliente_indirizzo: [cli.indirizzo, cli.cap, cli.citta, cli.provincia].filter(Boolean).join(" "),
+        tipo: "servizi",
+        stato: "cortesia",
+        imponibile: imponibileTot, iva: ivaTot, totale: imponibileTot + ivaTot,
+        reverse_charge: righe.every(r => r.reverse_charge),
+        note: args.note || null,
+      }).select().maybeSingle();
+      if (fErr || !fattura) return { error: `Creazione fattura fallita: ${fErr?.message || "nessuna riga creata"}` };
+
+      const { error: rErr } = await db.from("fatture_righe").insert(
+        righe.map((r, i) => ({ ...r, fattura_id: fattura.id, ordine: i }))
+      );
+      if (rErr) return { error: `Righe fattura non inserite: ${rErr.message}` };
+
+      return { success: true, fattura: { id: fattura.id, numero: fattura.numero, anno: fattura.anno, totale: fattura.totale, stato: fattura.stato }, righe: righe.length };
+    }
+
+    case "send_fattura_sibill": {
+      if (!args.fattura_id) return { error: "fattura_id obbligatorio" };
+      const { data: fattura, error: fErr } = await db.from("fatture")
+        .select("*").eq("id", args.fattura_id).eq("tenant_id", tenantId).maybeSingle();
+      if (fErr || !fattura) return { error: fErr?.message || "Fattura non trovata" };
+
+      const { data: righeDb } = await db.from("fatture_righe").select("*").eq("fattura_id", fattura.id).order("ordine");
+      const rows = (righeDb || []).map((r: any) => ({
+        descrizione: r.descrizione,
+        quantita: Number(r.quantita || 1),
+        unita_misura: r.unita_misura || "n",
+        prezzo_unitario: Number(r.prezzo_unitario || r.imponibile),
+        imponibile: Number(r.imponibile),
+        aliquota_iva: Number(r.aliquota_iva || 22),
+        reverse_charge: !!r.reverse_charge,
+      }));
+      if (rows.length === 0) return { error: "La fattura non contiene righe: impossibile generare l'XML FatturaPA" };
+
+      const xml = buildFatturaPAXml(fattura, rows);
+      const counterpart = {
+        name: fattura.cliente_ragione_sociale,
+        vat_number: fattura.cliente_partita_iva || null,
+        tax_code: fattura.cliente_codice_fiscale || null,
+        address: fattura.cliente_indirizzo || null,
+        country: "IT",
+        identity_type: "COMPANY",
+      };
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const resp = await fetch(`${supabaseUrl}/functions/v1/sibill-integration`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+        body: JSON.stringify({ action: "send_invoice", fattura_id: fattura.id, tenant_id: tenantId, xml, counterpart, mock: Boolean(args.mock) }),
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok || body?.error) {
+        return { error: `Invio Sibill non riuscito (status ${resp.status}): ${body?.error?.detail || body?.error?.title || JSON.stringify(body).slice(0, 300)}` };
+      }
+      if (!args.mock) {
+        await db.from("fatture").update({ stato: "inviata" }).eq("id", fattura.id);
+      }
+      return { success: true, mock: Boolean(args.mock), sibill_response: body };
+    }
+
+
 
     // ---------- ANAGRAFICA PRIVATI ----------
     case "search_privati": {
