@@ -547,6 +547,12 @@ const CHAPTERS: Chapter[] = [
       "Copia il numero con l'icona accanto al chip quando devi comunicarlo.",
       "Verifica nella Console RENTRI quali numeri risultano già assegnati.",
     ],
+    faq: [
+      { q: "Posso assegnare più numeri allo stesso autista?", a: "Sì: compaiono come chip separati sul suo profilo e li consuma uno alla volta." },
+      { q: "A cosa serve 'Assegna a ufficio'?", a: "Serve per i numeri che usa direttamente l'admin: restano fuori dalle app degli autisti ma risultano comunque impegnati." },
+      { q: "Ho assegnato un numero per sbaglio.", a: "Rimuovi l'assegnazione dal dipendente e riassegnalo: finché il formulario non è stato compilato il numero torna disponibile." },
+      { q: "Perché non c'è un'assegnazione automatica?", a: "È stata disattivata di proposito: il numero FIR è un dato ufficiale e deve essere sempre una scelta consapevole dell'ufficio." },
+    ],
     route: "/mn/admin/dev-multyproget/centro-app-fir",
   },
   {
