@@ -205,10 +205,15 @@ export const useMNFIRStore = create()(persist((set, get) => ({
             mappedWorkflow = 'inviato';
         else if (dbStatus === 'chiuso' || dbStatus === 'completato')
             mappedWorkflow = 'chiuso';
+        const formData = dbData.form_data && typeof dbData.form_data === "object" ? dbData.form_data : {};
+        const departureDate = String(formData.data_inizio_trasporto || dbData.data_partenza || "").slice(0, 10);
+        const departureTime = String(formData.ora_inizio_trasporto || "").slice(0, 5);
+        const destinationDate = String(formData.data_fine_trasporto || formData.data_ricezione || dbData.data_arrivo || "").slice(0, 10);
+        const destinationTime = String(formData.ora_fine_trasporto || formData.ora_ricezione || "").slice(0, 5);
         set({
             data: {
                 ...mnInitialFIRData,
-                dataEmissione: new Date().toISOString().split("T")[0],
+                dataEmissione: String(formData.data_emissione || "").slice(0, 10),
                 numeroRegistro: dbData.numero_fir || "",
                 selectedFirNumber: dbData.numero_fir || "",
                 produttoreDenominazione: dbData.produttore_denominazione || "",
@@ -230,12 +235,19 @@ export const useMNFIRStore = create()(persist((set, get) => ({
                 quantita: dbData.quantita?.toString() || "",
                 unitaMisura: dbData.unita_misura || "kg",
                 caratteristicheHP: dbData.caratteristiche_hp || [],
-                oraDataInizioTrasporto: dbData.data_partenza || "",
-                dataOraArrivo: dbData.data_arrivo || "",
+                oraDataInizioTrasporto: departureDate,
+                oraInizioTrasporto: departureTime,
+                dataFineTrasporto: destinationDate,
+                oraFineTrasporto: destinationTime,
+                dataOraArrivo: destinationDate ? `${destinationDate}T${destinationTime || "00:00"}` : (dbData.data_arrivo || ""),
                 intermediarioDenominazione: dbData.intermediario_denominazione || "",
                 intermediarioCF: dbData.intermediario_codice_fiscale || "",
                 intermediarioNumeroAlbo: dbData.intermediario_iscrizione_albo || "",
                 annotazioni: dbData.note || "",
+                pesoRicevuto: String(formData.peso_ricevuto ?? formData.quantita_destino ?? ""),
+                quantitaAccettata: String(formData.quantita_accettata ?? formData.quantita_destino ?? ""),
+                dataRicezione: String(formData.data_ricezione ?? formData.data_fine_trasporto ?? destinationDate),
+                oraRicezione: String(formData.ora_ricezione ?? formData.ora_fine_trasporto ?? destinationTime),
             },
             editingFirId: dbData.id,
             workflowStatus: mappedWorkflow,
