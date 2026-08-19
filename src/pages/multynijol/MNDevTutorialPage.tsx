@@ -384,6 +384,11 @@ const CHAPTERS: Chapter[] = [
       "Nel formulario usa il selettore preset per riempire produttore/destinatario.",
     ],
     tip: "Un'autorizzazione scaduta sul destinatario è un problema in caso di controllo: controllale a inizio mese.",
+    faq: [
+      { q: "Non trovo un'azienda che ho sicuramente inserito.", a: "Prova a cercarla per P.IVA invece che per nome: le ragioni sociali spesso sono scritte in modo diverso (S.r.l., SRL, Srl)." },
+      { q: "Il preset non compila tutti i campi del formulario.", a: "Il preset riempie i dati presenti in anagrafica: se mancano unità locale o autorizzazione, vanno completati nella scheda azienda." },
+      { q: "Come gestisco un'autorizzazione scaduta?", a: "Aggiorna la scheda con il nuovo documento e la nuova scadenza: il sistema segnala le scadenze, ma la verifica resta responsabilità dell'ufficio." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=contatti",
   },
   {
