@@ -3780,7 +3780,16 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
       }
     }
 
-    const responseContent = finalContent || lastNonEmptyContent || "⚠️ Operazione completata ma nessun riepilogo generato. Riprova.";
+    const failedMutations = executedSteps.filter((step: any) => MUTATING_TOOLS.has(step.tool) && !step.ok);
+    const successfulMutation = executedSteps.some((step: any) => MUTATING_TOOLS.has(step.tool) && step.ok);
+    const failureSummary = failedMutations
+      .map((step: any) => `${step.tool}: ${step.error || "errore non specificato"}`)
+      .join("; ");
+    const responseContent = requiresWrite && !successfulMutation
+      ? `❌ Modifica NON eseguita. ${failureSummary || "Dark Lemon non ha completato alcuna scrittura nel database."}`
+      : failedMutations.length > 0
+        ? `${finalContent || lastNonEmptyContent || "Operazione conclusa con errori."}\n\n⚠️ Alcune modifiche NON sono riuscite: ${failureSummary}`
+        : finalContent || lastNonEmptyContent || "⚠️ Nessuna operazione verificabile completata. Riprova.";
     console.log(`[dark-lemon] done, content length=${responseContent.length}`);
     return new Response(JSON.stringify({ content: responseContent, steps: executedSteps }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
