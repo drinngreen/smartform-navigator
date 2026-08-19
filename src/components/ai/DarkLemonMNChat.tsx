@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useDarkLemonMN, type DLSurface } from "@/hooks/useDarkLemonMN";
 import { DarkLemonHistory } from "./DarkLemonHistory";
 import { DarkLemonSupervisionBar } from "./DarkLemonSupervisionBar";
+import { DarkLemonInputBar } from "./DarkLemonInputBar";
 
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
@@ -157,30 +158,10 @@ export function DarkLemonMNChat({ context, surface = "page" }: Props) {
 
           {/* Input */}
           <DarkLemonSupervisionBar />
-          <div className="p-4 border-t border-white/10">
-
-            <div className="relative rounded-xl p-[1px] overflow-hidden">
-              <div className="absolute inset-0 rounded-xl animate-gradient opacity-60" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #3b82f6)", backgroundSize: "300% 100%" }} />
-              <div className="relative flex items-center gap-2 bg-[hsl(222,47%,8%)] rounded-xl px-4 py-3">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                  placeholder="Chiedimi qualsiasi cosa sui dati..."
-                  className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 focus:outline-none"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isLoading}
-                  className="p-2 rounded-lg disabled:opacity-30 transition-all hover:scale-110"
-                  style={{ background: "linear-gradient(135deg, rgba(6,182,212,0.3), rgba(59,130,246,0.3))", boxShadow: "0 0 15px rgba(6,182,212,0.2)" }}
-                >
-                  <Send className="h-4 w-4 text-cyan-400" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <DarkLemonInputBar
+            onSend={(content, attachments) => sendMessage(content, attachments)}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>

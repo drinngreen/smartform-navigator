@@ -11,6 +11,7 @@ export interface DLAttachment {
   name: string;
   dataUrl: string;
   preview?: string;
+  extractedText?: string;
 }
 
 export interface DLMessage {
@@ -99,10 +100,29 @@ function buildApiMessage(message: DLMessage) {
   const parts: any[] = [{ type: "text", text: message.content }];
 
   for (const attachment of message.attachments) {
-    if (attachment.type.startsWith("image/") || attachment.type === "application/pdf") {
+    const isPdf = attachment.type === "application/pdf"
+      || attachment.name.toLowerCase().endsWith(".pdf");
+
+    if (attachment.type.startsWith("image/")) {
       parts.push({
         type: "image_url",
         image_url: { url: attachment.dataUrl },
+      });
+      continue;
+    }
+
+    if (isPdf) {
+      parts.push({
+        type: "file",
+        file: { filename: attachment.name, file_data: attachment.dataUrl },
+      });
+      continue;
+    }
+
+    if (attachment.extractedText) {
+      parts.push({
+        type: "text",
+        text: `--- CONTENUTO FILE: ${attachment.name} ---\n${attachment.extractedText}\n--- FINE FILE ---`,
       });
       continue;
     }
