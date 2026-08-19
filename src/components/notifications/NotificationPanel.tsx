@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Bell, BellOff, Check, CheckCheck, Trash2, FileText, MessageCircle, PhoneMissed, Users } from "lucide-react";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
@@ -85,7 +86,7 @@ export function NotificationPanel({ open, onClose, appContext, tenantId }: Notif
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100000]" onClick={onClose}>
       <div
         className="absolute right-2 top-14 w-[360px] max-h-[70vh] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-top-2 duration-200"
@@ -141,6 +142,7 @@ export function NotificationPanel({ open, onClose, appContext, tenantId }: Notif
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
