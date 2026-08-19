@@ -233,8 +233,30 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
           assegnati ai dipendenti) e invia direttamente da qui.
         </p>
 
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cerca per numero FIR, CER, produttore, destinatario, trasportatore, data…"
+            className="w-full rounded-lg border border-border bg-background pl-9 pr-9 py-2 text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              aria-label="Pulisci ricerca"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-secondary text-muted-foreground"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         <div className="space-y-2 max-h-[560px] overflow-auto">
-          {drafts.map((d) => (
+          {search.trim() && draftsFiltrate.length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">Nessuna bozza trovata per «{search}»</p>
+          )}
+          {draftsFiltrate.map((d) => (
             <div key={d.id} className="rounded-lg bg-secondary/30 border border-border/30 p-3 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 <span className={`font-mono text-sm font-bold ${d.numero_fir ? "text-foreground" : "text-amber-400"}`}>
