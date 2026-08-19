@@ -115,6 +115,30 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
     });
   }, [pool, nomeByUid]);
 
+  const draftsFiltrate = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return drafts;
+    const terms = q.split(/\s+/);
+    return drafts.filter((d) => {
+      const hay = [
+        d.numero_fir,
+        d.codice_eer,
+        d.descrizione_rifiuto,
+        d.produttore_denominazione,
+        d.destinatario_denominazione,
+        d.trasportatore_denominazione,
+        d.produttore_codice_fiscale,
+        d.destinatario_codice_fiscale,
+        d.trasportatore_codice_fiscale,
+        new Date(d.created_at).toLocaleDateString("it-IT"),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return terms.every((t) => hay.includes(t));
+    });
+  }, [drafts, search]);
+
   const cambiaNumero = async (draft: Draft, numero: string) => {
     const opt = opzioniNumeri.find((o) => o.value === numero);
     const msg = opt?.libero
