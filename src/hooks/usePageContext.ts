@@ -35,9 +35,40 @@ function getPageTitle(pathname: string): string {
   return "Pagina sconosciuta";
 }
 
+// ---- Root attivo: se c'è un dialog/sheet/popover aperto (Radix usa portal su body),
+// il contesto deve leggere QUELLO, non la pagina sottostante.
+function getActiveRoots(): HTMLElement[] {
+  const overlays = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-radix-popper-content-wrapper], [role="dialog"]:not([hidden])'
+    )
+  ).filter((el) => {
+    if (el.closest('[data-dark-lemon="true"]')) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 40 && r.height > 40;
+  });
+  if (overlays.length > 0) {
+    // solo il più in alto (ultimo nel DOM) e i suoi eventuali figli
+    return [overlays[overlays.length - 1]];
+  }
+  const main =
+    (document.querySelector("[data-admin-layout] main") as HTMLElement) ||
+    (document.querySelector("main") as HTMLElement) ||
+    (document.querySelector("[data-page-content]") as HTMLElement) ||
+    document.body;
+  return [main];
+}
+
+export function hasOpenModal(): boolean {
+  const root = getActiveRoots()[0];
+  return !!root && root.tagName.toLowerCase() !== "main" && root !== document.body;
+}
+
 function extractFormFields(): string[] {
   const fields: string[] = [];
-  const inputs = document.querySelectorAll("main input, main select, main textarea, [data-page-content] input, [data-page-content] select, [data-page-content] textarea");
+  const roots = getActiveRoots();
+  const inputs: Element[] = [];
+  roots.forEach((r) => inputs.push(...Array.from(r.querySelectorAll("input, select, textarea"))));
   
   inputs.forEach((el) => {
     const input = el as HTMLInputElement;
@@ -62,7 +93,9 @@ function extractFormFields(): string[] {
 }
 
 function extractTableData(): string {
-  const tables = document.querySelectorAll("main table, [data-page-content] table");
+  const roots = getActiveRoots();
+  const tables: Element[] = [];
+  roots.forEach((r) => tables.push(...Array.from(r.querySelectorAll("table"))));
   if (tables.length === 0) return "";
   
   const lines: string[] = [];
@@ -92,8 +125,8 @@ function extractTableData(): string {
 }
 
 function extractPageText(): string {
-  const main = document.querySelector("main") || document.querySelector("[data-page-content]") || document.body;
-  const clone = main.cloneNode(true) as HTMLElement;
+  const root = getActiveRoots()[0];
+  const clone = root.cloneNode(true) as HTMLElement;
   
   // Remove widget
   clone.querySelectorAll("[class*='z-[9999]']").forEach(el => el.remove());
@@ -124,6 +157,9 @@ export function usePageContext() {
     const parts: string[] = [];
     parts.push(`📍 Pagina: ${routeInfo.pageTitle}`);
     parts.push(`📎 Route: ${routeInfo.route}`);
+    if (hasOpenModal()) {
+      parts.push(`🪟 FINESTRA MODALE APERTA: il contenuto qui sotto è quello del popup/dialog attivo, non della pagina sottostante.`);
+    }
     
     if (formFields.length > 0) {
       parts.push(`\n📋 Campi form visibili:\n${formFields.join("\n")}`);
