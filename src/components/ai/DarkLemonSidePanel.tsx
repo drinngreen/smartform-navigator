@@ -78,7 +78,13 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   }, [sendMessage, buildContext, isLoading]);
 
   return (
-    <div data-dark-lemon="true" className="fixed top-0 right-0 h-full w-[20vw] min-w-[280px] flex flex-col bg-[hsl(222,47%,6%)] border-l border-white/10 z-[60] animate-slide-in-right">
+    <div
+      data-dark-lemon="true"
+      className={cn(
+        "fixed top-0 right-0 flex flex-col bg-[hsl(222,47%,6%)] border-white/10 z-[60] animate-slide-in-right",
+        isFullscreen ? "inset-0 w-full h-full border-l-0" : "h-full w-[20vw] min-w-[280px] border-l"
+      )}
+    >
 
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
