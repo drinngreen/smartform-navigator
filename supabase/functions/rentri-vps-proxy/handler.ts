@@ -347,7 +347,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
   const fetchImpl = options.fetchImpl ?? fetch;
   const bridgeBase = options.bridgeUrl ?? env("RENTRI_BRIDGE_URL") ?? "https://rentri-bridge.dragonrifiuti.space";
   const bridgeKey = options.bridgeKey ?? env("RENTRI_BRIDGE_KEY") ?? "";
-  const timeoutMs = options.timeoutMs ?? Number(env("RENTRI_VPS_TIMEOUT_MS") ?? 25000);
+  const timeoutMs = options.timeoutMs ?? Number(env("RENTRI_VPS_TIMEOUT_MS") ?? 55000);
   const bridgeUrl = normalizeBaseUrl(bridgeBase);
 
   let body: Record<string, unknown>;
@@ -481,19 +481,37 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
           `codice_blocco=${upstream.codice_blocco || "N/A"}, bridge_key=${bridgeKey ? "present" : "missing"}`,
       );
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      let res: Response;
-      try {
-        res = await fetchImpl(targetUrl, {
+      const doFetch = (signal: AbortSignal) =>
+        fetchImpl(targetUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(bridgeKey ? { "x-bridge-key": bridgeKey } : {}),
           },
           body: JSON.stringify(upstream),
-          signal: controller.signal,
+          signal,
         });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      let res: Response;
+      try {
+        try {
+          res = await doFetch(controller.signal);
+        } catch (firstErr) {
+          const firstMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+          // Il bridge/RENTRI a volte è lento al primo colpo (cold start mTLS): un retry singolo.
+          const isAbort = (firstErr instanceof Error && firstErr.name === "AbortError") || /aborted|timeout/i.test(firstMsg);
+          if (!isAbort) throw firstErr;
+          console.warn("[rentri-vps] retry after connectivity error:", sanitizeMessage(firstMsg, bridgeKey));
+          const retryController = new AbortController();
+          const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
+          try {
+            res = await doFetch(retryController.signal);
+          } finally {
+            clearTimeout(retryTimeoutId);
+          }
+        }
       } catch (fetchErr) {
         const rawMessage = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
         const message = sanitizeMessage(rawMessage, bridgeKey);
