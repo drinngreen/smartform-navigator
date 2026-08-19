@@ -15,7 +15,6 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface DarkLemonSidePanelProps {
   context?: string;
