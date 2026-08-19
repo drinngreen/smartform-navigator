@@ -56,6 +56,7 @@ const MUTATING_TOOLS = new Set([
   "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri",
   "update_privato", "create_privato", "explain_and_fix",
   "send_registro_rentri", "create_fattura_da_fir", "send_fattura_sibill",
+  "run_demo_fir_lifecycle",
 
 ]);
 
@@ -318,6 +319,7 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 - Non dire mai che manca un tool di conversione numero FIR → UUID: questa conversione è supportata
 - Per quantità/peso a destino usa fields.form_data con quantita_destino e peso_ricevuto. Per data e ora fine trasporto usa fields.form_data con data_fine_trasporto e ora_fine_trasporto; imposta anche data_arrivo con data e ora complete.
 - È VIETATO dire "aggiornato", "modifiche applicate", "salvato" o equivalenti senza avere eseguito update_fir_form con successo e verificato i valori restituiti dal database.
+- Se l'utente chiede di creare, verificare e poi eliminare un formulario demo, usa SEMPRE run_demo_fir_lifecycle. Non usare create_extra_draft: l'assegnazione automatica dei numeri è disattivata.
 
 ## AUTONOMIA OPERATIVA
 Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere tu", o simili, DEVI agire in piena autonomia:
@@ -1226,6 +1228,20 @@ const tools = [
         type: "object",
         properties: { user_id: { type: "string", description: "UUID dell'utente" } },
         required: ["user_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "run_demo_fir_lifecycle",
+      description: "Crea manualmente un FIR con dati demo, verifica che sia una bozza compilata, lo elimina in modo logico e verifica che non sia più visibile. Usalo solo quando l'utente chiede esplicitamente l'intero test crea-verifica-elimina.",
+      parameters: {
+        type: "object",
+        properties: {
+          codice_eer: { type: "string", description: "Codice EER demo a 6 cifre; default 150106" },
+          quantita: { type: "number", description: "Quantità demo in kg; default 100" }
+        }
       }
     }
   },
@@ -2488,6 +2504,95 @@ async function handleTool(
 
     case "create_extra_draft": {
       return { error: "Creazione automatica FIR disattivata. Serve il numero FIR esatto e la creazione manuale dal workspace." };
+    }
+
+    case "run_demo_fir_lifecycle": {
+      const codiceEer = /^\d{6}$/.test(String(args.codice_eer || "")) ? String(args.codice_eer) : "150106";
+      const quantita = Number(args.quantita) > 0 ? Number(args.quantita) : 100;
+      const numeroFir = `TEST-DL-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+      const demoPayload = {
+        user_id: adminUserId,
+        tenant_id: tenantId,
+        status: "bozza",
+        numero_fir: numeroFir,
+        produttore_denominazione: "Produttore Demo S.r.l.",
+        produttore_codice_fiscale: "11111111111",
+        produttore_indirizzo: "Via Demo 1",
+        produttore_comune: "Torino",
+        produttore_provincia: "TO",
+        produttore_cap: "10100",
+        trasportatore_denominazione: "Trasporti Demo S.r.l.",
+        trasportatore_codice_fiscale: "22222222222",
+        trasportatore_iscrizione_albo: "TO-DEMO-001",
+        trasportatore_targa_automezzo: "DE000MO",
+        destinatario_denominazione: "Impianto Demo S.r.l.",
+        destinatario_codice_fiscale: "33333333333",
+        destinatario_indirizzo: "Via Prova 2",
+        destinatario_comune: "Torino",
+        destinatario_provincia: "TO",
+        destinatario_cap: "10100",
+        destinatario_autorizzazione: "AUT-DEMO-001",
+        codice_eer: codiceEer,
+        descrizione_rifiuto: "Imballaggi in materiali misti — prova Dark Lemon",
+        stato_fisico: "solido non pulverulento",
+        quantita,
+        unita_misura: "kg",
+        data_partenza: timestamp,
+        note: "[DEMO] Test automatico Dark Lemon crea-verifica-elimina",
+        form_data: {
+          numero_fir: numeroFir,
+          numero_formulario: numeroFir,
+          demo: true,
+        },
+        deleted_by_user: false,
+      };
+
+      const { data: created, error: createError } = await db
+        .from("fir_forms")
+        .insert(demoPayload)
+        .select("id, numero_fir, status, codice_eer, quantita, produttore_denominazione, trasportatore_denominazione, destinatario_denominazione, deleted_by_user")
+        .single();
+      if (createError || !created) return { error: `Creazione demo fallita: ${createError?.message || "record non restituito"}` };
+
+      const compiled = created.status === "bozza"
+        && created.codice_eer === codiceEer
+        && Number(created.quantita) === quantita
+        && Boolean(created.produttore_denominazione)
+        && Boolean(created.trasportatore_denominazione)
+        && Boolean(created.destinatario_denominazione)
+        && created.deleted_by_user === false;
+
+      if (!compiled) {
+        await db.from("fir_forms").update({ deleted_by_user: true, updated_at: new Date().toISOString() }).eq("id", created.id).eq("tenant_id", tenantId);
+        return { error: "La bozza demo è stata creata ma la verifica dei campi non è riuscita; il record è stato comunque rimosso." };
+      }
+
+      const { error: deleteError } = await db
+        .from("fir_forms")
+        .update({ deleted_by_user: true, updated_at: new Date().toISOString() })
+        .eq("id", created.id)
+        .eq("tenant_id", tenantId);
+      if (deleteError) return { error: `Compilazione verificata, ma eliminazione fallita: ${deleteError.message}` };
+
+      const { data: stillVisible, error: verifyDeleteError } = await db
+        .from("fir_forms")
+        .select("id")
+        .eq("id", created.id)
+        .eq("tenant_id", tenantId)
+        .eq("deleted_by_user", false)
+        .maybeSingle();
+      if (verifyDeleteError) return { error: `Compilazione riuscita ed eliminazione eseguita, ma verifica finale fallita: ${verifyDeleteError.message}` };
+
+      return {
+        success: true,
+        numero_fir: numeroFir,
+        compilazione: "riuscita",
+        stato_verificato: "bozza",
+        campi_verificati: ["produttore", "trasportatore", "destinatario", "codice_eer", "quantita"],
+        eliminazione: stillVisible ? "non verificata" : "riuscita",
+        visibile_nelle_bozze: Boolean(stillVisible),
+      };
     }
 
     case "check_fir_pool": {
@@ -3941,6 +4046,26 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
         ? latestUserText.filter((part: any) => part?.type === "text").map((part: any) => part.text || "").join(" ")
         : "";
     const requiresWrite = WRITE_INTENT_PATTERN.test(latestUserPlainText);
+    const demoFirLifecycleRequested = /formular(?:io|i).*demo|demo.*formular(?:io|i)/i.test(latestUserPlainText)
+      && /bozz/i.test(latestUserPlainText)
+      && /elimin/i.test(latestUserPlainText);
+
+    if (demoFirLifecycleRequested) {
+      const result = await handleTool(
+        { name: "run_demo_fir_lifecycle", arguments: JSON.stringify({}) },
+        crypto.randomUUID(),
+        db,
+        tenantId,
+        adminUserId,
+      );
+      const ok = !(result && typeof result === "object" && "error" in result);
+      return new Response(JSON.stringify({
+        content: ok
+          ? `✅ Compilazione demo riuscita. Il FIR ${result.numero_fir} è stato verificato nello stato bozza con produttore, trasportatore, destinatario, EER e quantità compilati; subito dopo è stato eliminato e non risulta più visibile nelle bozze.`
+          : `❌ Test FIR demo non completato: ${result?.error || "errore non specificato"}`,
+        steps: [{ tool: "run_demo_fir_lifecycle", ok, error: result?.error ?? null }],
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const maxIterations = autopilotMode ? 24 : 12;
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       console.log(`[dark-lemon] iteration=${iteration}, msgs=${conversationMessages.length}`);
