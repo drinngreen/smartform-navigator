@@ -304,6 +304,12 @@ const CHAPTERS: Chapter[] = [
       "Invia al RENTRI e verifica l'esito nello storico e nella Console RENTRI.",
     ],
     warnings: ["Un invio RENTRI consolidato non si annulla dal gestionale: controlla il periodo prima di confermare."],
+    faq: [
+      { q: "Devo scrivere io le righe del registro?", a: "No: le registrazioni nascono dai formulari e dai conferimenti. Qui si consulta, si esporta e si invia." },
+      { q: "Come registro un formulario cartaceo ricevuto da terzi?", a: "Usa la funzione Conto Terzi Manuale: entra nel registro come gli altri documenti." },
+      { q: "Ho inviato al RENTRI un periodo sbagliato.", a: "Un invio consolidato non si annulla dal gestionale: va gestito come rettifica. Per questo conviene controllare sempre il periodo prima di confermare." },
+      { q: "Serve l'esportazione per il commercialista?", a: "Sì: l'export in Excel del periodo è il formato più comodo da consegnare." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=registri",
   },
   {
