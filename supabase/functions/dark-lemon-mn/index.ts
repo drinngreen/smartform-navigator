@@ -55,6 +55,8 @@ const WRITE_INTENT_PATTERN = /\b(modifica|modificare|aggiorna|aggiornare|imposta
 const MUTATING_TOOLS = new Set([
   "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri",
   "update_privato", "create_privato", "explain_and_fix",
+  "send_registro_rentri", "create_fattura_da_fir", "send_fattura_sibill",
+
 ]);
 
 const DRAGON_CAUSE_CODE_ALIASES: Record<string, string> = {
@@ -330,6 +332,15 @@ Quando l'utente ti chiede di "inventare", "usare dati di fantasia", "procedere t
 Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 
 ### "Nuovo Carico" / "Nuovo FIR"
+
+### FILIERA COMPLETA FIR → RENTRI → FATTURA (usa SEMPRE questi tool, mai testo)
+1. update_fir_form / complete_fir per i dati di partenza e arrivo (quantita_destino, data_arrivo, ora_fine_trasporto)
+2. send_to_rentri per l'emissione FIR (passa da rentri-vps-proxy; se torna errore RIPORTALO, non dichiarare successo)
+3. send_registro_rentri per il movimento sul registro cronologico
+4. rentri_transaction_status per verificare l'esito della transazione
+5. create_fattura_da_fir (serve cliente_id anagrafica_aziende_mp + prezzo_unitario)
+6. send_fattura_sibill (usa mock=true se l'utente chiede una prova sandbox)
+
 1. Verifica codice EER → se non valido, BLOCCA
 2. Verifica disponibilità numero nel pool FIR
 3. Controlla autorizzazione mezzo trasportatore per quel CER
