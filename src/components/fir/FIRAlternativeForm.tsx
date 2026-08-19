@@ -332,7 +332,7 @@ function getDraftValueForField(
       return getFormDataValue(formData, "data_emissione", "dataEmissione") || draft.data_partenza || draft.data_arrivo;
     }
     if (hasTokens(field.name, ["data", "inizio", "trasporto"])) return draft.data_partenza;
-    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "data_accettazione") || draft.data_arrivo;
+    if (hasTokens(field.name, ["data", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "data_accettazione", "data_fine_trasporto", "data_ricezione") || draft.data_arrivo;
     if (normalized === "valida_al") return getFormDataValue(formData, "valida_al", "analisi_valida_al", "classificazione_valida_al");
     if (hasTokens(field.name, ["data", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
     if (normalized.includes("prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
@@ -347,7 +347,7 @@ function getDraftValueForField(
 
   if (field.type === "time") {
     if (hasTokens(field.name, ["ora", "inizio", "trasporto"])) return draft.data_partenza;
-    if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "ora_accettazione") || draft.data_arrivo;
+    if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "ora_accettazione", "ora_fine_trasporto", "ora_ricezione") || draft.data_arrivo;
     if (hasTokens(field.name, ["ora", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
     if (normalized.includes("ora_prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
     if (normalized.includes("ora_seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
@@ -366,7 +366,7 @@ function getDraftValueForField(
   if (normalized === "caratteristiche_di_pericolo") return draft.caratteristiche_hp;
   if (normalized === "stato_fisico") return toStatoFisicoCode(draft.stato_fisico);
   if (normalized === "quantita") return draft.quantita;
-  if (normalized === "quantita_accettata") return getFormDataValue(formData, "quantita_accettata");
+  if (normalized === "quantita_accettata") return getFormDataValue(formData, "quantita_accettata", "quantita_destino", "peso_ricevuto");
   if (normalized === "quantita_respinta" || normalized === "kg_respinti") return getFormDataValue(formData, "quantita_respinta", "kg_respinti");
   if (normalized === "annotazioni_pagina_1") return draft.note;
   if (normalized === "annotazioni_seconda_pagina") return getFormDataValue(formData, "annotazioni_pag2", "annotazioni_seconda_pagina");
