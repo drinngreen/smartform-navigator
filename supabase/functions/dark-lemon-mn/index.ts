@@ -2646,23 +2646,48 @@ async function handleTool(
     case "send_fattura_sibill": {
       if (!args.fattura_id) return { error: "fattura_id obbligatorio" };
       const { data: fattura, error: fErr } = await db.from("fatture")
-        .select("*, fatture_righe(*)").eq("id", args.fattura_id).eq("tenant_id", tenantId).maybeSingle();
+        .select("*").eq("id", args.fattura_id).eq("tenant_id", tenantId).maybeSingle();
       if (fErr || !fattura) return { error: fErr?.message || "Fattura non trovata" };
+
+      const { data: righeDb } = await db.from("fatture_righe").select("*").eq("fattura_id", fattura.id).order("ordine");
+      const rows = (righeDb || []).map((r: any) => ({
+        descrizione: r.descrizione,
+        quantita: Number(r.quantita || 1),
+        unita_misura: r.unita_misura || "n",
+        prezzo_unitario: Number(r.prezzo_unitario || r.imponibile),
+        imponibile: Number(r.imponibile),
+        aliquota_iva: Number(r.aliquota_iva || 22),
+        reverse_charge: !!r.reverse_charge,
+      }));
+      if (rows.length === 0) return { error: "La fattura non contiene righe: impossibile generare l'XML FatturaPA" };
+
+      const xml = buildFatturaPAXml(fattura, rows);
+      const counterpart = {
+        name: fattura.cliente_ragione_sociale,
+        vat_number: fattura.cliente_partita_iva || null,
+        tax_code: fattura.cliente_codice_fiscale || null,
+        address: fattura.cliente_indirizzo || null,
+        country: "IT",
+        identity_type: "COMPANY",
+      };
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const resp = await fetch(`${supabaseUrl}/functions/v1/sibill-integration`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
-        body: JSON.stringify({ action: "send_invoice", fattura, mock: Boolean(args.mock) }),
+        body: JSON.stringify({ action: "send_invoice", fattura_id: fattura.id, tenant_id: tenantId, xml, counterpart, mock: Boolean(args.mock) }),
       });
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok || body?.error) {
         return { error: `Invio Sibill non riuscito (status ${resp.status}): ${body?.error?.detail || body?.error?.title || JSON.stringify(body).slice(0, 300)}` };
       }
-      await db.from("fatture").update({ stato: args.mock ? fattura.stato : "inviata" }).eq("id", fattura.id).catch(() => {});
+      if (!args.mock) {
+        await db.from("fatture").update({ stato: "inviata" }).eq("id", fattura.id);
+      }
       return { success: true, mock: Boolean(args.mock), sibill_response: body };
     }
+
 
 
     // ---------- ANAGRAFICA PRIVATI ----------
