@@ -501,7 +501,8 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         } catch (firstErr) {
           const firstMsg = firstErr instanceof Error ? firstErr.message : String(firstErr);
           // Il bridge/RENTRI a volte è lento al primo colpo (cold start mTLS): un retry singolo.
-          if (!isConnectivityError(firstMsg)) throw firstErr;
+          const isAbort = (firstErr instanceof Error && firstErr.name === "AbortError") || /aborted|timeout/i.test(firstMsg);
+          if (!isAbort) throw firstErr;
           console.warn("[rentri-vps] retry after connectivity error:", sanitizeMessage(firstMsg, bridgeKey));
           const retryController = new AbortController();
           const retryTimeoutId = setTimeout(() => retryController.abort(), timeoutMs);
