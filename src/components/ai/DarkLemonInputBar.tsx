@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { extractAttachmentText } from "@/lib/attachmentExtract";
 
 interface Attachment {
   type: string;
   name: string;
   dataUrl: string;
   preview?: string;
+  extractedText?: string;
 }
 
 interface DarkLemonInputBarProps {
