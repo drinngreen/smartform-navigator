@@ -28,6 +28,18 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleOpenFullscreen = useCallback(() => {
+    const isMnAdmin = location.pathname.startsWith("/mn/admin");
+    if (isMnAdmin) {
+      navigate(`/mn/admin/${context}/dark-lemon`);
+    } else {
+      navigate("/admin/dark-lemon");
+    }
+    setSidePanel(false);
+  }, [navigate, location.pathname, context, setSidePanel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
