@@ -237,6 +237,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [fatturaFrom, setFatturaFrom] = useState<
     { tenantId: string; emittente: string; righe: Riga[]; clienteFallback?: any } | null
@@ -334,7 +335,42 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       form_data: draftData.form_data as Record<string, any> | null,
     });
     useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: draftData.status === "completato" ? "chiuso" : (draftData.status as any) || "bozza" });
+    setLoadedFirFormId(draftData.id);
   }, [draftData?.id]);
+
+  useEffect(() => {
+    if (!firFormId) return;
+    let active = true;
+    setLoadedFirFormId(null);
+
+    const loadSelectedFir = async () => {
+      const { data, error } = await supabase
+        .from("fir_forms")
+        .select("*")
+        .eq("id", firFormId)
+        .eq("deleted_by_user", false)
+        .maybeSingle();
+      if (!active) return;
+      if (error || !data) {
+        toast.error(error?.message || "Formulario non trovato");
+        return;
+      }
+      useMNFIRStore.getState().loadFromDatabase({
+        ...data,
+        form_data: data.form_data as Record<string, any> | null,
+      });
+      useMNFIRStore.setState({
+        editingFirId: data.id,
+        workflowStatus: data.status === "completato" ? "chiuso" : data.status === "inviato" ? "inviato" : "bozza",
+      });
+      setLoadedFirFormId(data.id);
+    };
+
+    void loadSelectedFir();
+    return () => {
+      active = false;
+    };
+  }, [firFormId]);
 
   // ── Driver app starts clean: assigned FIRs are opened only by explicit click ─────────────
   const hasAutoRestored = useRef(false);
@@ -354,11 +390,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
+    if (firFormId && loadedFirFormId !== firFormId) return;
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
     } catch { /* silent */ }
-  }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR]);
+  }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
 
   useEffect(() => {
     if (store.editingFirId && store.workflowStatus !== 'chiuso') {
