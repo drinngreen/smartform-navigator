@@ -1277,6 +1277,75 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "send_registro_rentri",
+      description: "Invia uno o più movimenti al registro cronologico RENTRI (carico/scarico) tramite il proxy ufficiale.",
+      parameters: {
+        type: "object",
+        properties: {
+          movimenti: { type: "array", items: { type: "object" }, description: "Array di movimenti nel formato RENTRI" },
+          registro_id: { type: "string", description: "ID registro RENTRI (opzionale)" },
+          dry_run: { type: "boolean", description: "Se true esegue solo la validazione senza invio reale" }
+        },
+        required: ["movimenti"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "rentri_transaction_status",
+      description: "Verifica lo stato di una transazione RENTRI (FIR o registro) dato l'ID transazione.",
+      parameters: {
+        type: "object",
+        properties: {
+          transazione_id: { type: "string" },
+          tipo: { type: "string", enum: ["FIR", "REGISTRO"], description: "Tipo di transazione da verificare" }
+        },
+        required: ["transazione_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_fattura_da_fir",
+      description: "Crea una fattura (tabella fatture + fatture_righe) partendo da uno o più FIR, con numerazione progressiva automatica.",
+      parameters: {
+        type: "object",
+        properties: {
+          fir_form_ids: { type: "array", items: { type: "string" }, description: "UUID o numeri FIR da fatturare" },
+          fir_form_id: { type: "string", description: "Singolo FIR da fatturare" },
+          cliente_id: { type: "string", description: "UUID cliente in anagrafica_aziende_mp" },
+          prezzo_unitario: { type: "number", description: "Prezzo unitario €/kg applicato a tutte le righe" },
+          prezzi_unitari: { type: "object", description: "Prezzi per numero FIR: { 'ZRZXR 000769 BY': 0.12 }" },
+          aliquota_iva: { type: "number", description: "Aliquota IVA (default 22)" },
+          reverse_charge: { type: "boolean", description: "Se true applica inversione contabile N6.1" },
+          data_emissione: { type: "string", description: "Data emissione YYYY-MM-DD" },
+          note: { type: "string" }
+        },
+        required: ["cliente_id"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_fattura_sibill",
+      description: "Trasmette una fattura a Sibill/SDI generando l'XML FatturaPA. Con mock=true simula l'invio senza chiamare l'API reale.",
+      parameters: {
+        type: "object",
+        properties: {
+          fattura_id: { type: "string" },
+          mock: { type: "boolean", description: "Modalità sandbox (nessuna chiamata reale a Sibill)" }
+        },
+        required: ["fattura_id"]
+      }
+    }
+  },
+
 
   // === ANAGRAFICA PRIVATI ===
   {
