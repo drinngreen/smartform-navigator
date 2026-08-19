@@ -1286,7 +1286,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
           </Section>
 
-          <Section title="12. Accettazione Destinatario" onClear={() => clearFields(["dataOraArrivo","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
+          <Section title="12. Accettazione Destinatario" onClear={() => clearFields(["dataOraArrivo","dataFineTrasporto","oraFineTrasporto","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
               <div>
@@ -1308,8 +1308,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
             <Field label="Peso Ricevuto (Kg)" value={d.pesoRicevuto} onChange={(v) => u("pesoRicevuto", v)} />
             <Row>
-              <Field label="Data Ricezione" value={d.dataRicezione} onChange={(v) => u("dataRicezione", v)} type="date" />
-              <Field label="Ora Ricezione" value={d.oraRicezione} onChange={(v) => u("oraRicezione", v)} type="time" />
+              <Field label="Data fine trasporto" value={d.dataFineTrasporto || d.dataRicezione} onChange={(v) => { u("dataFineTrasporto", v); u("dataRicezione", v); }} type="date" />
+              <Field label="Ora fine trasporto" value={d.oraFineTrasporto || d.oraRicezione} onChange={(v) => { u("oraFineTrasporto", v); u("oraRicezione", v); }} type="time" />
             </Row>
             <Check label="In attesa di verifica analitica" checked={d.inAttesaVerificaAnalitica} onChange={(v) => u("inAttesaVerificaAnalitica", v)} />
           </Section>
