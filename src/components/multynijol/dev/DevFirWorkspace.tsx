@@ -152,6 +152,29 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     return () => window.removeEventListener("dev-fir-open-draft", listener as EventListener);
   }, []);
 
+  useEffect(() => {
+    if (!activeDraftId) return;
+    const channel = supabase
+      .channel(`dev-fir-live-${activeDraftId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "fir_forms", filter: `id=eq.${activeDraftId}` },
+        (payload) => {
+          const updated = payload.new as any;
+          setActiveDraft(updated);
+          mnFirStore.loadFromDatabase({
+            ...updated,
+            form_data: updated.form_data as Record<string, any> | null,
+          });
+          queryClient.invalidateQueries({ queryKey: ["dev-multy-fir-workspace-drafts"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeDraftId, mnFirStore, queryClient]);
+
   // Invalidate registry/inventory queries after Standard form save-final
   useEffect(() => {
     const savedHandler = () => {
