@@ -99,8 +99,8 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
         <button onClick={() => setShowHistory(v => !v)} className={"p-1 rounded-md transition-colors " + (showHistory ? "bg-cyan-500/25 text-cyan-300" : "bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25")} title="Cronologia">
           <MessageSquare className="h-3.5 w-3.5" />
         </button>
-        <button onClick={handleOpenFullscreen} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title="Apri a tutto schermo">
-          <Maximize2 className="h-3.5 w-3.5" />
+        <button onClick={() => setIsFullscreen(v => !v)} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title={isFullscreen ? "Torna a vista laterale" : "Apri a tutto schermo"}>
+          {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </button>
         <button onClick={() => setSidePanel(false)} className="p-1 text-white/40 hover:text-white transition-colors" title="Chiudi pannello">
           <PanelLeftClose className="h-3.5 w-3.5" />
