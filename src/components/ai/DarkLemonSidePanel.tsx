@@ -34,9 +34,9 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   const handleOpenFullscreen = useCallback(() => {
     const isMnAdmin = location.pathname.startsWith("/mn/admin");
     if (isMnAdmin) {
-      navigate(`/mn/admin/${context}/dark-lemon`);
+      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
     } else {
-      navigate("/admin/dark-lemon");
+      navigate("/admin/zoli-dark-lemon");
     }
     setSidePanel(false);
   }, [navigate, location.pathname, context, setSidePanel]);
