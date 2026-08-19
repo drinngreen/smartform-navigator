@@ -1,0 +1,122 @@
+import { supabase } from "@/lib/supabaseClient";
+import { buildFatturaPAXml } from "@/lib/fatturaPA";
+/** Costruisce il payload anagrafica (counterpart) per Sibill a partire dalla fattura + archivio aziende */
+async function buildCounterpart(f) {
+    const piva = (f.cliente_partita_iva || "").toString().replace(/\s/g, "");
+    const cf = (f.cliente_codice_fiscale || "").toString().replace(/\s/g, "");
+    let azienda = null;
+    if (piva || cf) {
+        const { data } = await supabase
+            .from("anagrafica_aziende_mp")
+            .select("*")
+            .or([piva ? `partita_iva.eq.${piva}` : null, cf ? `codice_fiscale.eq.${cf}` : null].filter(Boolean).join(","))
+            .limit(1)
+            .maybeSingle();
+        azienda = data || null;
+    }
+    return {
+        azienda_id: azienda?.id || null,
+        company_name: f.cliente_ragione_sociale || azienda?.ragione_sociale || "",
+        vat_number: piva || azienda?.partita_iva || null,
+        tax_number: cf || azienda?.codice_fiscale || null,
+        address: f.cliente_indirizzo || azienda?.indirizzo || null,
+        city: azienda?.comune || azienda?.citta || null,
+        postal_code: azienda?.cap || null,
+        province_code: (azienda?.provincia || "").toString().slice(0, 2).toUpperCase() || null,
+        country: "IT",
+        destination_code: f.cliente_codice_destinatario || azienda?.codice_destinatario || null,
+        identity_type: "COMPANY",
+    };
+}
+/** Invia la fattura a Sibill: crea/verifica l'anagrafica e trasmette l'XML FatturaPA.
+ *  Con `{ mock: true }` la Edge Function simula la risposta di Sibill senza chiamare l'API reale:
+ *  stessi stati, stesse scritture su `fatture_sibill_sync`, nessuna chiamata esterna. */
+export async function inviaFatturaASibill(f, opts = {}) {
+    const { data: righe } = await supabase
+        .from("fatture_righe")
+        .select("*")
+        .eq("fattura_id", f.id)
+        .order("ordine");
+    const rows = (righe || []).map((r) => ({
+        descrizione: r.descrizione,
+        quantita: Number(r.quantita || 1),
+        unita_misura: r.unita_misura || "n",
+        prezzo_unitario: Number(r.prezzo_unitario || r.imponibile),
+        imponibile: Number(r.imponibile),
+        aliquota_iva: Number(r.aliquota_iva || 22),
+        reverse_charge: !!r.reverse_charge,
+    }));
+    const xml = buildFatturaPAXml(f, rows);
+    const counterpart = await buildCounterpart(f);
+    const { data, error } = await supabase.functions.invoke("sibill-integration", {
+        body: { action: "send_invoice", fattura_id: f.id, tenant_id: f.tenant_id, xml, counterpart, mock: !!opts.mock },
+    });
+    if (error)
+        throw new Error(error.message || "Errore di rete verso Sibill");
+    if (data?.error) {
+        const e = data.error;
+        throw new Error(`${e.title}: ${e.detail}`);
+    }
+    return data;
+}
+export async function fetchSibillSync(fatturaIds) {
+    if (!fatturaIds.length)
+        return {};
+    const { data } = await supabase
+        .from("fatture_sibill_sync")
+        .select("*")
+        .in("fattura_id", fatturaIds);
+    const map = {};
+    (data || []).forEach((r) => (map[r.fattura_id] = r));
+    return map;
+}
+/** Rilegge da Sibill lo stato reale dei documenti già trasmessi (utile passando da MOCK a REALE). */
+export async function aggiornaStatiSibill(fatturaIds) {
+    if (!fatturaIds.length)
+        return { checked: 0, results: [] };
+    const { data, error } = await supabase.functions.invoke("sibill-integration", {
+        body: { action: "refresh_status", fattura_ids: fatturaIds },
+    });
+    if (error)
+        throw new Error(error.message || "Errore di rete verso Sibill");
+    if (data?.error) {
+        const e = data.error;
+        throw new Error(`${e.title}: ${e.detail}`);
+    }
+    return data;
+}
+/** true se lo stato salvato proviene da una simulazione MOCK */
+export function isMockSync(s) {
+    return !!s?.sibill_document_id?.includes("_mock_");
+}
+/** Elenca i documenti Sibill dalla cache locale (popolata da `scansionaDocumentiSibill`).
+ *  `filter: "P"` = fatture emesse con numero "/P", `filter: "IN"` = fatture ricevute (entrata). */
+export async function elencaDocumentiSibillFull(opts = {}) {
+    const { data, error } = await supabase.functions.invoke("sibill-integration", {
+        body: { action: "list_documents", mock: !!opts.mock, filter: opts.filter || "P" },
+    });
+    if (error)
+        throw new Error(error.message || "Errore di rete verso Sibill");
+    if (data?.error) {
+        const e = data.error;
+        throw new Error(`${e.title}: ${e.detail}`);
+    }
+    const d = data;
+    return { documents: (d.documents || []), scanned: d.scanned || 0, done: !!d.done, warning: d.warning || null };
+}
+export async function elencaDocumentiSibill(opts = {}) {
+    return (await elencaDocumentiSibillFull(opts)).documents;
+}
+/** Avanza di alcune pagine la scansione dei documenti Sibill (l'API non offre filtri lato server). */
+export async function scansionaDocumentiSibill(opts = {}) {
+    const { data, error } = await supabase.functions.invoke("sibill-integration", {
+        body: { action: "scan_documents", mock: !!opts.mock, pages: opts.pages || 12, restart: !!opts.restart },
+    });
+    if (error)
+        throw new Error(error.message || "Errore di rete verso Sibill");
+    if (data?.error) {
+        const e = data.error;
+        throw new Error(`${e.title}: ${e.detail}`);
+    }
+    return data;
+}

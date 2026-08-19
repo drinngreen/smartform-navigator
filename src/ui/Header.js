@@ -1,0 +1,8 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Link, useLocation } from 'wouter';
+import { Home, BookUser, Upload, ShieldCheck, Server } from 'lucide-react';
+export function Header() {
+    const [loc] = useLocation();
+    const Item = ({ to, icon: Icon, label }) => (_jsxs(Link, { href: to, className: `px-3 py-2 rounded-md text-sm flex items-center gap-2 no-underline ${loc === to ? 'bg-slate-900/60 text-white' : 'hover:bg-slate-900/40 text-slate-300'}`, children: [_jsx(Icon, { size: 16 }), " ", label] }));
+    return (_jsx("header", { className: "sticky top-0 z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800", children: _jsxs("div", { className: "max-w-7xl mx-auto px-4 h-14 flex items-center justify-between", children: [_jsxs(Link, { href: "/", className: "flex items-center gap-3 no-underline text-slate-100", children: [_jsx("img", { src: "https://i.postimg.cc/RFGzCgjJ/Progetto-senza-titolo-(14).png", alt: "Zoli Dragon", className: "h-8 w-8 rounded-full" }), _jsxs("div", { children: [_jsx("div", { className: "font-semibold zoli-title", children: "Zoli Dragon" }), _jsx("div", { className: "text-xs text-slate-400", children: "Release 1.16_IRS" })] })] }), _jsxs("nav", { className: "flex items-center gap-2", children: [_jsx(Item, { to: "/", icon: Home, label: "Home" }), _jsx(Item, { to: "/anagrafiche", icon: BookUser, label: "Anagrafiche" }), _jsx(Item, { to: "/massive", icon: Upload, label: "Import Massivo" }), _jsx(Item, { to: "/policy", icon: ShieldCheck, label: "Policy" }), _jsx(Item, { to: "/bridge", icon: Server, label: "Bridge Service" })] })] }) }));
+}
