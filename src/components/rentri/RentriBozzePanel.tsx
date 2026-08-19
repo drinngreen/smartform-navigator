@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { emissioneFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
-import { FileText, Loader2, PenLine, RefreshCw, Send } from "lucide-react";
+import { FileText, Loader2, PenLine, RefreshCw, Search, Send, X } from "lucide-react";
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -52,6 +52,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Draft | null>(null);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -113,6 +114,30 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
       };
     });
   }, [pool, nomeByUid]);
+
+  const draftsFiltrate = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return drafts;
+    const terms = q.split(/\s+/);
+    return drafts.filter((d) => {
+      const hay = [
+        d.numero_fir,
+        d.codice_eer,
+        d.descrizione_rifiuto,
+        d.produttore_denominazione,
+        d.destinatario_denominazione,
+        d.trasportatore_denominazione,
+        d.produttore_codice_fiscale,
+        d.destinatario_codice_fiscale,
+        d.trasportatore_codice_fiscale,
+        new Date(d.created_at).toLocaleDateString("it-IT"),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return terms.every((t) => hay.includes(t));
+    });
+  }, [drafts, search]);
 
   const cambiaNumero = async (draft: Draft, numero: string) => {
     const opt = opzioniNumeri.find((o) => o.value === numero);
@@ -193,7 +218,8 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
       <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="text-base font-display tracking-wider flex items-center gap-2">
-            <FileText size={16} /> Bozze formulari ({drafts.length})
+            <FileText size={16} /> Bozze formulari ({draftsFiltrate.length}
+            {search.trim() ? ` / ${drafts.length}` : ""})
           </h3>
           <button
             onClick={load}
@@ -207,8 +233,30 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
           assegnati ai dipendenti) e invia direttamente da qui.
         </p>
 
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cerca per numero FIR, CER, produttore, destinatario, trasportatore, data…"
+            className="w-full rounded-lg border border-border bg-background pl-9 pr-9 py-2 text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              aria-label="Pulisci ricerca"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-secondary text-muted-foreground"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         <div className="space-y-2 max-h-[560px] overflow-auto">
-          {drafts.map((d) => (
+          {search.trim() && draftsFiltrate.length === 0 && (
+            <p className="text-xs text-muted-foreground py-4 text-center">Nessuna bozza trovata per «{search}»</p>
+          )}
+          {draftsFiltrate.map((d) => (
             <div key={d.id} className="rounded-lg bg-secondary/30 border border-border/30 p-3 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 <span className={`font-mono text-sm font-bold ${d.numero_fir ? "text-foreground" : "text-amber-400"}`}>
