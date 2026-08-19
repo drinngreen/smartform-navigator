@@ -11,6 +11,7 @@ export interface DLAttachment {
   name: string;
   dataUrl: string;
   preview?: string;
+  extractedText?: string;
 }
 
 export interface DLMessage {
