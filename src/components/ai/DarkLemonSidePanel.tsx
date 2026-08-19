@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare } from "lucide-react";
+import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
@@ -15,6 +15,7 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface DarkLemonSidePanelProps {
   context?: string;
