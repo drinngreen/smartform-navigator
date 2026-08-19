@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useDarkLemonMN, type DLSurface } from "@/hooks/useDarkLemonMN";
 import { DarkLemonHistory } from "./DarkLemonHistory";
 import { DarkLemonSupervisionBar } from "./DarkLemonSupervisionBar";
+import { DarkLemonInputBar } from "./DarkLemonInputBar";
 
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
