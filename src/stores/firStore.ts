@@ -657,7 +657,6 @@ export const useFIRStore = create<FIRStore>()(
               oraRicezione: String(dbData.form_data.ora_ricezione ?? dbData.form_data.ora_fine_trasporto ?? destinationTime),
               percorsoDiverso: dbData.form_data.percorso || "",
               accettazione: dbData.form_data.accettato_per_intero ? "intero" : dbData.form_data.accettato_parzialmente ? "parziale" : dbData.form_data.respinto ? "respinto" : "",
-              quantitaAccettata: dbData.form_data.quantita_accettata || "",
               numeroColli: dbData.form_data.numero_colli || "",
               trasportoADR: dbData.form_data.trasporto_adr_rid || false,
               adrClassePericolo: dbData.form_data.classe_pericolo || "",
