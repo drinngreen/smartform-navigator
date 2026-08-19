@@ -105,7 +105,7 @@ export default function MNDevDashboardPage() {
             <PlayCircle size={20} className="text-sky-400 shrink-0" />
             <div>
               <div className="font-semibold text-sm text-sky-300">Tutorial Interattivo</div>
-              <div className="text-xs text-muted-foreground">12 capitoli con schermate e checklist</div>
+              <div className="text-xs text-muted-foreground">18 capitoli con schermate e checklist</div>
             </div>
           </button>
         </div>
