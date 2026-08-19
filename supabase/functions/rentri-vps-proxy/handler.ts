@@ -248,8 +248,9 @@ export function resolveRoute(
             ]
             : []),
           `/vidimazione-formulari/v1.0/transazioni/${txnId}/esito`,
-          `/transazioni/v1.0/${txnId}`,
           `/formulari/v1.0/transazioni/${txnId}`,
+          `/formulari/v1.0/transazione/${txnId}`,
+
         ],
       };
 
