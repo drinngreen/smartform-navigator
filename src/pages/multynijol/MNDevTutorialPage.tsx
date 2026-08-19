@@ -12,34 +12,214 @@ import {
   X,
   RotateCcw,
   BookOpen,
+  AlertTriangle,
+  HelpCircle,
+  ListChecks,
 } from "lucide-react";
+
+type Field = { label: string; desc: string };
+type Faq = { q: string; a: string };
 
 type Chapter = {
   id: string;
   title: string;
   subtitle: string;
   image: string;
+  level: "Base" | "Intermedio" | "Avanzato";
+  minutes: number;
   intro: string;
+  /** Paragrafi discorsivi: spiegano il "perché", non solo il "come" */
+  explain: string[];
   steps: string[];
+  fields?: Field[];
+  warnings?: string[];
+  faq?: Faq[];
   tip?: string;
   route?: string;
 };
 
 const CHAPTERS: Chapter[] = [
   {
+    id: "orientamento",
+    title: "Come è fatto il gestionale",
+    subtitle: "Mappa generale prima di toccare qualsiasi cosa",
+    image: "/tutorial/01-impianto.png",
+    level: "Base",
+    minutes: 3,
+    intro:
+      "Il Centro di Comando Dev Multy è un'unica pagina con tante tab. Ogni tab è un contesto isolato: quello che vedi in una tab non contamina le altre. Prima di imparare i singoli moduli conviene capire come è organizzato il lavoro.",
+    explain: [
+      "Il gestionale ruota attorno a tre oggetti: il FORMULARIO (FIR), che è il documento di trasporto rifiuti; il MOVIMENTO, che è la conseguenza contabile del formulario (carico o scarico di magazzino); la GIACENZA, che è la somma dei movimenti per ogni codice CER.",
+      "Regola che spiega il 90% dei dubbi: le giacenze dell'impianto Multyproget si muovono SOLO quando Multyproget è Produttore (scarico) o Destinatario (carico). Se Multyproget o Niyol fanno solo i trasportatori, il formulario esiste, il registro si aggiorna, ma il magazzino non cambia. Non è un errore.",
+      "Ogni tab salva la sua posizione nell'indirizzo (?tab=...): se ricarichi o mandi il link a un collega, si riapre esattamente dove eri.",
+      "I colori aiutano a orientarsi: verde = Multyproget, ciano = Niyol, rosso = Magazzino Dev, ambra = allerte e MUD, viola = firma e invii RENTRI, giallo = personale.",
+    ],
+    steps: [
+      "Apri /mn/admin/dev-multyproget e scorri tutte le tab una volta, senza cliccare nulla dentro.",
+      "Individua le tre famiglie: documenti (Impianto, Niyol, Conto Proprio, Contatti), contabilità rifiuti (Registri, Giacenze, Privati, Ricevute), servizi (Personale, RENTRI, Fatturazione).",
+      "Ricarica la pagina su una tab qualsiasi e verifica che ci resti: è la conferma che l'URL memorizza il contesto.",
+    ],
+    warnings: [
+      "Nessun formulario viene creato in automatico dal sistema: il numero FIR lo digiti sempre tu, a mano.",
+    ],
+    tip: "Se ti perdi, il pulsante rosso in alto a sinistra riporta sempre al Centro di Comando.",
+    route: "/mn/admin/dev-multyproget",
+  },
+  {
+    id: "formulario-standard",
+    title: "Il Formulario Standard",
+    subtitle: "Come si compila un FIR, campo per campo",
+    image: "/tutorial/15-formulario-standard.png",
+    level: "Base",
+    minutes: 6,
+    intro:
+      "Il Modulo Standard è la vista 'a schede' del formulario: gli stessi dati del modulo cartaceo, ma organizzati in sezioni ordinate. È il punto in cui si crea la maggior parte del lavoro quotidiano.",
+    explain: [
+      "Si parte SEMPRE dal numero: digiti il numero FIR (quello stampato sul blocco o scaricato dal RENTRI) e premi 'Crea formulario'. La bozza si apre immediatamente e da quel momento è tua, modificabile.",
+      "Il formulario ha due viste — Standard e Alternativo — che sono lo stesso documento. Se scrivi il peso nella vista Standard, lo ritrovi nella vista Alternativa mentre stai ancora digitando. Non esistono due formulari: esiste un formulario con due facce.",
+      "Salva bozza = il documento resta modificabile. Salva definitivo = il documento entra nei registri e aggiorna le giacenze secondo il ruolo di Multyproget.",
+      "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino in alto, invece, elimina l'intero formulario e storna in automatico registro e giacenze: nessuna riga resta orfana.",
+    ],
+    steps: [
+      "Digita il numero FIR nel campo dedicato e premi 'Crea formulario'.",
+      "Compila la sezione Produttore: usa la tendina dei preset per riempire Multyproget in un click, oppure cerca l'azienda in rubrica.",
+      "Compila Destinatario e Trasportatore con lo stesso metodo.",
+      "Inserisci il rifiuto: codice CER, descrizione, stato fisico, caratteristiche di pericolo, destinazione (R o D).",
+      "Inserisci la quantità di partenza; la quantità di arrivo si compila quando il carico è pesato a destino.",
+      "Controlla data e ora di partenza, targa e conducente.",
+      "Passa alla vista Alternativa per verificare che il modulo ufficiale sia leggibile e completo.",
+      "Salva in bozza per continuare dopo, oppure Salva definitivo per scrivere su registri e giacenze.",
+    ],
+    fields: [
+      { label: "Numero FIR", desc: "Sempre manuale. È l'identificativo univoco: se sbagli, elimina il formulario e ricrealo col numero giusto." },
+      { label: "Produttore", desc: "Chi genera il rifiuto. Se è Multyproget, alla chiusura genera uno SCARICO di magazzino." },
+      { label: "Destinatario", desc: "Chi riceve il rifiuto. Se è Multyproget, genera un CARICO di magazzino." },
+      { label: "Trasportatore", desc: "Multyproget, Niyol o terzi. Da solo NON muove le giacenze." },
+      { label: "Codice CER", desc: "Determina su quale riga di giacenza finisce la quantità. Catalogo completo disponibile in tendina." },
+      { label: "Q.tà partenza / arrivo", desc: "Partenza è obbligatoria per chiudere; l'arrivo può arrivare dopo. Finché manca, la riga resta ambra." },
+      { label: "Operazione R/D", desc: "Recupero (R1–R13) o smaltimento (D1–D15). Serve per registri e MUD." },
+    ],
+    warnings: [
+      "Non usare il cestino per 'ripulire' un campo: cancella tutto il formulario e storna i movimenti. Per una sezione usa la gomma.",
+      "Se il formulario è già definitivo, modificare i pesi cambia le giacenze: verifica sempre il saldo dopo la modifica.",
+    ],
+    faq: [
+      { q: "Ho creato un formulario col numero sbagliato.", a: "Eliminalo con il cestino: il sistema storna in automatico registro e giacenze. Poi ricrealo con il numero corretto." },
+      { q: "Ho compilato in Standard ma in Alternativo non vedo nulla.", a: "Chiudi e riapri il formulario: le due viste si sincronizzano in tempo reale, un mancato aggiornamento indica solo una vista rimasta aperta da prima." },
+    ],
+    tip: "La tendina dei preset Multyproget riempie produttore o destinatario con dati anagrafici già verificati: usala sempre, riduce gli errori di battitura.",
+    route: "/mn/admin/dev-multyproget?tab=conto-proprio",
+  },
+  {
+    id: "modulo-alternativo",
+    title: "Modulo Alternativo",
+    subtitle: "La stessa scheda sul modulo ufficiale stampabile",
+    image: "/tutorial/12-modulo-alternativo.png",
+    level: "Base",
+    minutes: 3,
+    intro:
+      "Il Modulo Alternativo riproduce fedelmente il formulario ufficiale in formato stampabile, con i campi trasparenti sovrapposti al modulo.",
+    explain: [
+      "Serve a due cose: controllare che il documento stampato risulti allineato e leggibile, e consegnare la copia cartacea al trasportatore o al cliente.",
+      "Essendo la stessa scheda del Modulo Standard, puoi passare da una vista all'altra anche a metà compilazione senza perdere niente.",
+      "La dimensione dei caratteri si adatta in automatico ai campi lunghi, così il testo non esce dai riquadri in stampa.",
+    ],
+    steps: [
+      "Apri un formulario esistente e passa alla vista Alternativa.",
+      "Verifica che ogni campo cada dentro il riquadro corretto del modulo.",
+      "Correggi eventuali testi troppo lunghi (ragioni sociali, indirizzi) accorciandoli.",
+      "Stampa o esporta in PDF per la copia cartacea.",
+    ],
+    tip: "Se il formulario è stato compilato in app dall'autista, qui vedi esattamente ciò che verrà stampato in ufficio.",
+    route: "/mn/admin/dev-multyproget/modulo-alternativo",
+  },
+  {
+    id: "app-autisti",
+    title: "App dei dipendenti",
+    subtitle: "Cosa vedono e cosa possono fare gli autisti",
+    image: "/tutorial/13-app-autisti.png",
+    level: "Base",
+    minutes: 5,
+    intro:
+      "Gli autisti Multyproget e Niyol usano un'app mobile dedicata, con lo stesso database del gestionale ma un'interfaccia ridotta all'essenziale: compilare il formulario, tracciare il viaggio, comunicare con l'ufficio.",
+    explain: [
+      "L'app si apre su un ELENCO di formulari disponibili, mai su una bozza già assegnata: l'autista sceglie il numero su cui lavorare. I numeri FIR glieli assegni tu dal Centro App & FIR.",
+      "In alto ci sono i tre stati del viaggio: Bozza, In viaggio, Arrivo. Servono all'ufficio per sapere a che punto è il mezzo senza telefonare.",
+      "Le tre schede Principale / Trasbordo / Intermodale corrispondono alle tipologie di trasporto previste dal formulario RENTRI.",
+      "In fondo alla barra: Cronologia (i formulari già compilati), GPS, Telefono, Messaggi, AI, Profilo, Modulo Alternativo e Guida.",
+      "Nell'app NON compare la sezione fatturazione: è riservata all'ufficio. L'autista compila il documento di trasporto, l'ufficio fattura.",
+    ],
+    steps: [
+      "Dal Centro App & FIR assegna uno o più numeri FIR al dipendente (oppure marcali 'usati dall'ufficio').",
+      "L'autista apre l'app, tocca il numero nell'elenco 'Formulari disponibili' e compila i campi del trasporto.",
+      "Durante il viaggio aggiorna lo stato: In viaggio all'uscita, Arrivo alla consegna.",
+      "A destino inserisce la quantità di arrivo e salva.",
+      "In ufficio ritrovi il formulario nella tab corretta (Impianto, Conto Proprio o Niyol) già compilato.",
+      "Se serve la copia cartacea, l'autista apre Mod. Alt. e stampa il modulo ufficiale.",
+    ],
+    fields: [
+      { label: "Bozza / In viaggio / Arrivo", desc: "Stato del viaggio, visibile all'ufficio in tempo reale." },
+      { label: "Cronologia", desc: "Storico dei formulari dell'autista, diviso in Bozze e Inviati." },
+      { label: "GPS", desc: "Posizione del mezzo (l'autista può disattivarla dal profilo)." },
+      { label: "Mod. Alt.", desc: "Vista modulo ufficiale per la stampa in mobilità." },
+    ],
+    warnings: [
+      "Se l'autista non vede numeri disponibili, significa che non gli è stato assegnato alcun FIR: l'assegnazione è sempre manuale.",
+      "Un formulario aperto dall'autista resta modificabile finché è in bozza: dopo il salvataggio definitivo va corretto dall'ufficio.",
+    ],
+    faq: [
+      { q: "L'autista ha sbagliato formulario.", a: "Dall'ufficio elimina la bozza col cestino (storno automatico) e riassegna il numero corretto." },
+      { q: "Come creo un nuovo login autista?", a: "Dal capitolo Personale: crei l'utente con il codice fiscale e scegli se assegnarlo all'app Multyproget o Niyol." },
+    ],
+    tip: "Fai provare l'app a ogni nuovo autista con un numero FIR di prova prima di mandarlo in strada.",
+    route: "/mn/admin/dev-multyproget/centro-app-fir",
+  },
+  {
+    id: "app-cronologia",
+    title: "Cronologia app e controllo ufficio",
+    subtitle: "Verificare cosa hanno compilato gli autisti",
+    image: "/tutorial/14-app-cronologia.png",
+    level: "Intermedio",
+    minutes: 3,
+    intro:
+      "La Cronologia dell'app è lo specchio del lavoro dell'autista: bozze aperte da completare e formulari già inviati.",
+    explain: [
+      "Le Bozze sono formulari iniziati ma non chiusi: tipicamente manca il peso a destino o la firma.",
+      "Gli Inviati sono documenti definitivi: hanno già scritto nel registro generale e, quando previsto, mosso le giacenze.",
+      "Dall'ufficio puoi vedere gli stessi documenti nelle tab del Centro di Comando: è la stessa base dati, non una copia.",
+    ],
+    steps: [
+      "Apri Cronologia nell'app (o la tab corrispondente in ufficio).",
+      "Filtra per Bozze e chiudi quelle rimaste in sospeso da più giorni.",
+      "Controlla che tra gli Inviati non ci siano righe ambra (peso destino mancante).",
+    ],
+    tip: "Un controllo settimanale della cronologia evita di arrivare a fine mese con decine di bozze incomplete.",
+    route: "/mn/admin/dev-multyproget?tab=impianto",
+  },
+  {
     id: "impianto",
     title: "Impianto",
     subtitle: "Movimenti di carico e scarico dell'impianto Multyproget",
     image: "/tutorial/01-impianto.png",
+    level: "Intermedio",
+    minutes: 4,
     intro:
-      "La tab Impianto mostra esclusivamente i movimenti dell'impianto Multyproget. Ogni formulario in cui Multyproget è Produttore o Destinatario genera qui un movimento di CARICO o SCARICO.",
-    steps: [
-      "Apri il Centro di Comando e seleziona la tab Impianto.",
-      "Filtra per periodo e per CER per isolare i movimenti che ti interessano.",
-      "Controlla che ogni riga abbia data, CER, quantità e controparte corrette.",
-      "Usa il pulsante Sync giacenze se un saldo non ti torna: ricalcola in modo atomico.",
+      "La tab Impianto mostra esclusivamente i movimenti dell'impianto Multyproget di via Rivarossa. Ogni formulario in cui Multyproget è Produttore o Destinatario genera qui un movimento di CARICO o SCARICO.",
+    explain: [
+      "Un CARICO entra in magazzino (Multyproget è destinatario), uno SCARICO esce (Multyproget è produttore/mittente). La giacenza per CER è semplicemente la somma algebrica di queste righe.",
+      "L'elenco formulari mostra CER, produttore, destinatario, trasportatore e le quantità di partenza e di arrivo: serve per il colpo d'occhio, prima di aprire il documento.",
+      "Le righe ambra segnalano formulari chiusi ma senza peso a destino: vanno completate, altrimenti i saldi restano approssimati.",
+      "Il pulsante 'Sync giacenze' ricalcola i saldi partendo dai movimenti reali ed è una verifica indipendente: se dopo il sync il numero non cambia, il dato è corretto.",
     ],
-    tip: "I dati di Conto Proprio e Intermediazione NON compaiono qui: i contesti sono isolati.",
+    steps: [
+      "Seleziona la tab Impianto.",
+      "Filtra per periodo, CER, tipo (carico/scarico) e ruolo per isolare i movimenti che ti interessano.",
+      "Controlla che ogni riga abbia data, CER, quantità e controparte corrette.",
+      "Apri le righe ambra e inserisci la quantità di arrivo.",
+      "Lancia 'Sync giacenze' e confronta con la tab Magazzino Dev.",
+    ],
+    warnings: ["I dati di Conto Proprio e Intermediazione NON compaiono qui: i contesti sono isolati per legge e per chiarezza."],
+    tip: "Se un saldo non torna, non correggerlo a mano: cerca il movimento mancante o duplicato e sistema quello.",
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
   {
@@ -47,28 +227,41 @@ const CHAPTERS: Chapter[] = [
     title: "Niyol",
     subtitle: "Trasporti Niyol e formulari collegati",
     image: "/tutorial/02-niyol.png",
+    level: "Intermedio",
+    minutes: 3,
     intro:
-      "Niyol è il trasportatore. Se Niyol trasporta per Multyproget, il formulario è visibile in entrambi i contesti ma le giacenze si muovono solo su Multyproget.",
-    steps: [
-      "Vai nella tab Niyol per vedere i formulari con Niyol come trasportatore.",
-      "Verifica lo stato del FIR (bozza / inviato) e il numero assegnato manualmente.",
-      "Apri il formulario per completare partenza, arrivo e pesi.",
+      "Niyol è la società di trasporto. Se Niyol trasporta per Multyproget, il formulario è visibile in entrambi i contesti, ma le giacenze si muovono solo su Multyproget.",
+    explain: [
+      "Niyol non ha impianto: le sue giacenze restano a zero per definizione. Il registro generale però viene aggiornato, anche quando Niyol è solo trasportatore.",
+      "Questo evita il doppio conteggio: uno stesso rifiuto non può essere caricato due volte solo perché due società nostre compaiono sul documento.",
     ],
-    tip: "Un FIR Niyol non duplica mai il movimento sul magazzino Multyproget.",
+    steps: [
+      "Apri la tab Niyol per vedere i formulari con Niyol coinvolta.",
+      "Verifica stato del FIR (bozza / inviato) e numero assegnato manualmente.",
+      "Apri il formulario per completare partenza, arrivo e pesi.",
+      "Controlla nel Registro Generale che la registrazione Niyol sia presente.",
+    ],
+    tip: "Un FIR Niyol non duplica mai il movimento sul magazzino Multyproget: se lo vedi doppio, segnalalo subito.",
     route: "/mn/admin/dev-multyproget?tab=niyol",
   },
   {
     id: "conto-proprio",
     title: "Conto Proprio",
-    subtitle: "Trasporti in conto proprio",
+    subtitle: "Trasporti in categoria 2-bis",
     image: "/tutorial/03-conto-proprio.png",
+    level: "Intermedio",
+    minutes: 3,
     intro:
-      "In Conto Proprio gestisci i formulari dove Multyproget trasporta con mezzi propri. Elenco, modifica in bozza, eliminazione con storno automatico.",
+      "In Conto Proprio gestisci i formulari dove Multyproget trasporta i propri rifiuti con mezzi propri (categoria 2-bis).",
+    explain: [
+      "Stesse regole di ovunque: numero FIR manuale, due viste sincronizzate, bozza modificabile, cestino con storno automatico.",
+      "Le intermediazioni (categoria 8) NON stanno qui: hanno una sezione dedicata dentro Registri.",
+    ],
     steps: [
       "Crea un nuovo formulario inserendo manualmente il numero FIR.",
-      "Scegli la vista Standard o Alternativa: le due si compilano in sincrono.",
-      "Salva in bozza: le giacenze si aggiornano subito.",
-      "Cestino = soft delete + storno automatico del movimento.",
+      "Scegli la vista Standard o Alternativa: si compilano in sincrono.",
+      "Salva in bozza: le giacenze si aggiornano coerentemente al ruolo di Multyproget.",
+      "Usa il cestino per eliminare: soft delete + storno automatico del movimento.",
     ],
     route: "/mn/admin/dev-multyproget?tab=conto-proprio",
   },
@@ -77,29 +270,59 @@ const CHAPTERS: Chapter[] = [
     title: "Registri",
     subtitle: "Registro generale, intermediario, invii RENTRI",
     image: "/tutorial/04-registri.png",
+    level: "Avanzato",
+    minutes: 5,
     intro:
-      "I registri sono cronologici e isolati per company_id. Da qui prepari gli invii verso RENTRI.",
+      "I registri sono cronologici e isolati per società. Da qui prepari gli invii verso RENTRI e gestisci i casi particolari (formulari cartacei, lavorazioni R13).",
+    explain: [
+      "Intermediario raccoglie i movimenti di sola intermediazione (categoria 8), senza detenzione del rifiuto.",
+      "Registro Generale è la cronologia completa: filtri per giorno, società, CER, tipo o testo libero; col tasto destro su una riga esporti la selezione in Excel.",
+      "'Conto Terzi Manuale' serve quando un cliente porta fisicamente un formulario cartaceo: lo registri e viene trattato come un formulario digitale, registro e giacenze compresi.",
+      "'Scarico Lavorazione R13' sposta il materiale dai CER dei privati al CER aziendale generando in un colpo solo lo scarico e il carico corrispondente.",
+      "Negli Invii al RENTRI scegli registro e data limite e consolidi l'invio; sotto trovi lo storico con identificativo transazione ed esito.",
+    ],
     steps: [
       "Seleziona il sotto-registro (Intermediario, Generale, Invii RENTRI).",
-      "Controlla la progressione cronologica delle registrazioni.",
-      "Invia al RENTRI e verifica l'esito nella Console RENTRI.",
+      "Filtra per data e controlla la progressione cronologica.",
+      "Esporta in Excel con il tasto destro se ti serve per il commercialista.",
+      "Registra eventuali formulari cartacei con Conto Terzi Manuale.",
+      "Invia al RENTRI e verifica l'esito nello storico e nella Console RENTRI.",
     ],
+    warnings: ["Un invio RENTRI consolidato non si annulla dal gestionale: controlla il periodo prima di confermare."],
     route: "/mn/admin/dev-multyproget?tab=registri",
   },
   {
     id: "privati",
-    title: "Privati",
+    title: "Privati (registro DBT)",
     subtitle: "Conferimenti multi-materiale con garanzia atomica",
     image: "/tutorial/05-privati.png",
+    level: "Base",
+    minutes: 5,
     intro:
-      "Ogni conferimento privato può contenere più materiali. L'inserimento è atomico: o si registra tutto (conferimento + movimenti + giacenze), o non si registra nulla.",
-    steps: [
-      "Seleziona il privato dall'anagrafica o creane uno nuovo.",
-      "Scegli la data del conferimento (modificabile).",
-      "Aggiungi una riga per ogni materiale: CER, descrizione, kg.",
-      "Salva: il sistema verifica il limite annuo di 1500 kg e aggiorna le giacenze.",
+      "Il registro Privati gestisce i conferimenti dei cittadini. Ogni conferimento può contenere più materiali e l'inserimento è atomico: o si registra tutto (conferimento + movimenti + giacenze), o non si registra nulla.",
+    explain: [
+      "Si parte cercando il privato per codice fiscale, nome o targa; se non esiste lo crei al volo.",
+      "La data del conferimento la scegli tu al momento della creazione e resta modificabile anche dopo.",
+      "Se il privato porta ferro, rame e cavi, inserisci tre righe nello stesso conferimento: la ricevuta li elencherà tutti.",
+      "Il sistema controlla il limite annuo di 1500 kg complessivi per privato e blocca il superamento.",
+      "Ogni riga genera un movimento di carico sul CER indicato: le giacenze si aggiornano nello stesso istante del salvataggio.",
     ],
-    tip: "Se il salvataggio fallisce, nessun dato parziale resta a database.",
+    steps: [
+      "Cerca il privato per codice fiscale, nome o targa; creane uno nuovo se serve.",
+      "Scegli la data del conferimento.",
+      "Aggiungi una riga per ogni materiale: CER, descrizione/variante, kg.",
+      "Salva: il sistema verifica il limite annuo e aggiorna le giacenze.",
+      "Controlla in Magazzino Dev che i CER interessati siano cresciuti degli stessi kg.",
+    ],
+    warnings: [
+      "Se il salvataggio fallisce, nessun dato parziale resta a database: ripeti l'inserimento senza paura di duplicare.",
+      "Eliminando un conferimento vengono stornati sia la ricevuta sia i movimenti collegati.",
+    ],
+    faq: [
+      { q: "Il CER che mi serve non è in elenco.", a: "La tendina contiene il catalogo CER completo: scrivi il codice per filtrarlo. I CER 'abituali' sono solo i primi suggerimenti." },
+      { q: "Ho superato i 1500 kg.", a: "Il sistema blocca il salvataggio: il privato deve rivolgersi a un conferimento professionale con formulario." },
+    ],
+    tip: "Dopo ogni conferimento importante, un colpo d'occhio su Magazzino Dev conferma che tutto è filato liscio.",
     route: "/mn/admin/dev-multyproget?tab=privati",
   },
   {
@@ -107,105 +330,192 @@ const CHAPTERS: Chapter[] = [
     title: "Ricevute",
     subtitle: "Numerazione progressiva annuale e stampa",
     image: "/tutorial/06-ricevute.png",
+    level: "Base",
+    minutes: 3,
     intro:
-      "Ogni conferimento genera una ricevuta con numero progressivo annuale univoco (es. 258/2026). Data e materiali sono modificabili.",
+      "Ogni conferimento genera una ricevuta con numero progressivo annuale univoco (es. 258/2026), con tutti i materiali conferiti.",
+    explain: [
+      "La numerazione è automatica e non si può forzare: garantisce la sequenza richiesta in caso di controllo.",
+      "Data e materiali restano modificabili; il numero resta invariato anche se cambi la data.",
+      "La ricevuta multi-materiale elenca una riga per ogni CER conferito con i relativi kg.",
+    ],
     steps: [
       "Apri la ricevuta collegata al conferimento.",
-      "Modifica la data se necessario: la numerazione resta invariata.",
-      "Stampa o invia la ricevuta al privato.",
+      "Modifica la data se necessario.",
+      "Verifica l'elenco materiali e i kg totali.",
+      "Stampa il PDF o invialo al privato.",
     ],
     route: "/mn/admin/dev-multyproget?tab=ricevute",
   },
   {
     id: "contatti",
     title: "Contatti",
-    subtitle: "Rubrica aziende e preset formulari",
+    subtitle: "Rubrica aziende, unità locali, autorizzazioni",
     image: "/tutorial/07-contatti.png",
+    level: "Intermedio",
+    minutes: 4,
     intro:
-      "La rubrica alimenta i menu a tendina dei formulari. Dati corretti qui = formulari compilati in un click.",
+      "La rubrica alimenta i menu a tendina dei formulari. Dati corretti qui significano formulari compilati in un click.",
+    explain: [
+      "Ogni azienda ha quattro schede: unità locali, targhe dei mezzi, cantieri e autorizzazioni con numero, data di inizio e scadenza.",
+      "Puoi allegare i documenti scansionati, archiviati in un'area privata non pubblica.",
+      "Dalla scheda azienda puoi creare direttamente un formulario, con le stesse regole viste nel capitolo del Formulario Standard.",
+    ],
     steps: [
       "Cerca l'azienda per ragione sociale, P.IVA o codice fiscale.",
-      "Aggiorna indirizzi e autorizzazioni.",
+      "Apri il Dettaglio e aggiorna indirizzi, unità locali e targhe.",
+      "Controlla le scadenze delle autorizzazioni.",
+      "Allega i documenti scansionati.",
       "Nel formulario usa il selettore preset per riempire produttore/destinatario.",
     ],
+    tip: "Un'autorizzazione scaduta sul destinatario è un problema in caso di controllo: controllale a inizio mese.",
     route: "/mn/admin/dev-multyproget?tab=contatti",
   },
   {
     id: "magazzino",
-    title: "Magazzino Dev",
-    subtitle: "Giacenze reali per CER",
+    title: "Magazzino Dev (giacenze)",
+    subtitle: "Come leggere i saldi per CER",
     image: "/tutorial/08-magazzino-dev.png",
+    level: "Intermedio",
+    minutes: 4,
     intro:
-      "Le giacenze sono sempre il risultato dei movimenti reali: nessun saldo iniziale manuale.",
-    steps: [
-      "Consulta i saldi per CER e variante materiale.",
-      "Attiva 'Mostra tutti i CER' per vedere anche quelli a zero.",
-      "In caso di dubbio lancia Sync giacenze e confronta con i movimenti.",
+      "Le giacenze sono sempre il risultato dei movimenti reali: non esiste un saldo iniziale digitato a mano.",
+    explain: [
+      "Ogni riga è la coppia CER + variante materiale (es. 200140 rame, 200140 cavi): sono saldi separati perché separata è la lavorazione.",
+      "Di default vedi solo i CER con giacenza; attiva 'Mostra tutti i CER' per vedere anche quelli a zero, utile prima di un conferimento su un materiale nuovo.",
+      "Se un saldo ti sembra sbagliato, lancia Sync giacenze: ricalcola dai movimenti in modo atomico e ti dice il valore reale.",
     ],
+    steps: [
+      "Consulta i saldi per CER e variante.",
+      "Attiva 'Mostra tutti i CER' per includere quelli a zero.",
+      "Lancia Sync giacenze e confronta con i movimenti della tab Impianto.",
+      "Se il saldo cambia dopo il sync, cerca il movimento che mancava.",
+    ],
+    warnings: ["Non esiste una casella per 'scrivere' una giacenza: si corregge solo aggiungendo o correggendo movimenti."],
     route: "/mn/admin/dev-multyproget?tab=magazzino-dev",
   },
   {
-    id: "personale",
-    title: "Personale",
-    subtitle: "Utenti app autisti Multyproget e Niyol",
-    image: "/tutorial/09-personale.png",
+    id: "fatturazione",
+    title: "Fatturazione (Mini-ERP)",
+    subtitle: "Fatture di vendita, FatturaPA, noleggi",
+    image: "/tutorial/16-fatturazione.png",
+    level: "Avanzato",
+    minutes: 6,
     intro:
-      "Da qui crei, modifichi ed elimini i login degli autisti, decidendo a quale app assegnarli.",
+      "Il modulo Fatturazione è un mini-ERP contabile isolato dal resto: gestisce fatture di vendita, anagrafiche clienti, piano dei conti, tabelle fiscali e prima nota.",
+    explain: [
+      "Le fatture si creano da zero con 'Nuova Fattura' oppure partendo dai formulari già chiusi: in questo caso righe, quantità e cliente vengono precompilati dal documento di trasporto.",
+      "Il ciclo di stato è: Bozza → Cortesia → Inviata/Consegnata. La bozza è modificabile, la cortesia è il PDF da mandare al cliente in attesa dell'esito SDI.",
+      "L'invio allo SDI avviene in formato FatturaPA (XML) tramite il provider collegato; l'esito torna in automatico e aggiorna lo stato.",
+      "Le schede Piano dei Conti, Tabelle Fiscali e Prima Nota servono alla parte contabile: aliquote IVA, causali, registrazioni in partita doppia.",
+      "I noleggi (es. cassoni) hanno una gestione dedicata e possono confluire come righe in fattura.",
+      "Nell'app degli autisti la fatturazione non compare: è un'area riservata all'ufficio.",
+    ],
     steps: [
-      "Crea l'utente inserendo il codice fiscale (niente autofill del browser!).",
-      "Assegna l'app: Multyproget oppure Niyol.",
+      "Apri la tab Fatture Vendita e controlla i contatori in alto (totale, bozze, consegnate, importo).",
+      "Verifica che il cliente esista in Anagrafiche, con P.IVA/CF e codice destinatario SDI corretti.",
+      "Crea la fattura con 'Nuova Fattura' oppure generala dai formulari del periodo.",
+      "Controlla righe, aliquote IVA e totali.",
+      "Salva in bozza, genera il PDF di cortesia e invialo al cliente se serve.",
+      "Invia allo SDI e segui l'esito nello stato della fattura.",
+      "Registra l'incasso in Prima Nota quando arriva il pagamento.",
+    ],
+    fields: [
+      { label: "Numero e data", desc: "Progressivo per anno; la data determina il periodo IVA." },
+      { label: "Cliente", desc: "Preso dalle Anagrafiche: P.IVA, CF, PEC o codice destinatario SDI sono obbligatori per l'invio." },
+      { label: "Righe", desc: "Descrizione, quantità, prezzo, aliquota IVA. Da formulario vengono compilate con CER e kg." },
+      { label: "Stato", desc: "Bozza (modificabile), Cortesia (PDF inviato al cliente), Inviata/Consegnata (esito SDI)." },
+    ],
+    warnings: [
+      "Una fattura inviata allo SDI non si modifica: serve nota di credito.",
+      "Controlla sempre il codice destinatario prima dell'invio: è la causa più frequente di scarto.",
+    ],
+    faq: [
+      { q: "Non trovo nessuna fattura.", a: "Il modulo parte vuoto per ogni società: verifica di essere nel contesto giusto (Multyproget o Niyol) in alto a sinistra." },
+      { q: "Posso fatturare più formulari insieme?", a: "Sì: seleziona i formulari del periodo per lo stesso cliente e genera un'unica fattura con più righe." },
+    ],
+    route: "/mn/admin/dev-multyproget/fatturazione",
+  },
+  {
+    id: "personale",
+    title: "Personale e login app",
+    subtitle: "Creare, modificare ed eliminare gli utenti autisti",
+    image: "/tutorial/09-personale.png",
+    level: "Intermedio",
+    minutes: 4,
+    intro:
+      "Da qui crei, modifichi ed elimini i login degli autisti, decidendo a quale app assegnarli: Multyproget oppure Niyol.",
+    explain: [
+      "L'identificativo di login è il CODICE FISCALE: non serve un indirizzo email reale, il sistema ne gestisce uno interno.",
+      "Disattiva l'autocompletamento del browser quando digiti il codice fiscale: Chrome tende a inserire dati di altri campi e l'utente viene creato sbagliato.",
+      "Puoi cambiare la password, disattivare l'utente o spostarlo dall'app Multyproget a quella Niyol senza ricreare l'account.",
+      "Ogni utente ha il proprio storico FIR, diviso tra bozze e inviati.",
+    ],
+    steps: [
+      "Premi 'Nuovo utente' e inserisci nome, cognome e codice fiscale (senza autofill).",
+      "Scegli l'app di destinazione: Multyproget o Niyol.",
+      "Imposta la password iniziale e comunicala all'autista.",
+      "Dal Centro App & FIR assegna i numeri FIR all'utente appena creato.",
       "Modifica password o disattiva l'utente quando serve.",
     ],
-    tip: "Il codice fiscale è l'identificativo di login: verificalo carattere per carattere.",
+    warnings: ["Il codice fiscale è l'identificativo di login: verificalo carattere per carattere prima di salvare."],
     route: "/mn/admin/dev-multyproget?tab=personale",
+  },
+  {
+    id: "centro-app",
+    title: "Centro App & FIR",
+    subtitle: "Assegnazione dei numeri agli autisti o all'ufficio",
+    image: "/tutorial/11-centro-app-fir.png",
+    level: "Intermedio",
+    minutes: 3,
+    intro:
+      "Ogni numero FIR va assegnato manualmente: a un autista oppure contrassegnato come 'usato dall'ufficio'.",
+    explain: [
+      "Nessuna assegnazione automatica: il controllo di quale numero finisce a chi resta sempre tuo.",
+      "Un dipendente può avere più numeri assegnati contemporaneamente: compaiono come chip, ognuno copiabile con un click.",
+      "I numeri marcati 'ufficio' restano gestiti dall'admin e non compaiono nelle app.",
+    ],
+    steps: [
+      "Seleziona il dipendente e assegna uno o più numeri FIR.",
+      "Usa 'Assegna a ufficio' per i numeri gestiti dall'admin.",
+      "Copia il numero con l'icona accanto al chip quando devi comunicarlo.",
+      "Verifica nella Console RENTRI quali numeri risultano già assegnati.",
+    ],
+    route: "/mn/admin/dev-multyproget/centro-app-fir",
   },
   {
     id: "rentri",
     title: "Console RENTRI",
     subtitle: "Bridge, numeri FIR, firme digitali",
     image: "/tutorial/10-rentri-console.png",
+    level: "Avanzato",
+    minutes: 5,
     intro:
-      "La console mostra lo stato del bridge, i numeri FIR scaricati dal RENTRI e i formulari da firmare.",
+      "La console mostra lo stato del ponte verso il RENTRI, i numeri FIR scaricati e i formulari in attesa di firma digitale.",
+    explain: [
+      "Il semaforo di stato indica se il bridge è raggiungibile: se è rosso, gli invii vanno in coda e vanno ripetuti dopo.",
+      "I numeri FIR si scaricano dal RENTRI e poi si distribuiscono dal Centro App & FIR.",
+      "I formulari in attesa di firma generano un badge arancione sulla campanella delle notifiche: è l'alert da controllare ogni mattina.",
+      "La firma può richiedere una doppia sottoscrizione (partenza e accettazione a destino) a seconda del ruolo delle società coinvolte.",
+    ],
     steps: [
       "Controlla il semaforo di stato del bridge.",
       "Scarica i numeri FIR e copiali con l'icona copia.",
-      "Firma i formulari in attesa: la campanella mostra il badge arancione.",
+      "Firma i formulari in attesa quando la campanella mostra il badge arancione.",
+      "Verifica lo storico invii per identificativo transazione ed esito.",
     ],
+    warnings: ["In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco."],
     route: "/mn/admin/dev-multyproget/rentri-console",
-  },
-  {
-    id: "centro-app",
-    title: "Centro App & FIR",
-    subtitle: "Assegnazione numeri agli autisti o all'ufficio",
-    image: "/tutorial/11-centro-app-fir.png",
-    intro:
-      "Ogni numero FIR va assegnato manualmente: a un autista oppure contrassegnato come 'usato dall'ufficio'.",
-    steps: [
-      "Seleziona il dipendente e assegna uno o più numeri FIR.",
-      "Usa 'Assegna a ufficio' per i numeri gestiti dall'admin.",
-      "Copia il numero con l'icona accanto al chip.",
-    ],
-    tip: "Nessuna assegnazione automatica: il controllo è sempre tuo.",
-    route: "/mn/admin/dev-multyproget/centro-app-fir",
-  },
-  {
-    id: "modulo-alternativo",
-    title: "Modulo Alternativo",
-    subtitle: "Vista formulario su modulo ufficiale",
-    image: "/tutorial/12-modulo-alternativo.png",
-    intro:
-      "Il modulo alternativo riproduce il formulario cartaceo ufficiale. Compilando una vista si compila anche l'altra in tempo reale.",
-    steps: [
-      "Apri un formulario e passa alla vista Alternativa.",
-      "Compila i campi trasparenti sopra il modulo ufficiale.",
-      "Torna alla vista Standard: i dati sono già lì.",
-      "Stampa il modulo per la copia cartacea.",
-    ],
-    route: "/mn/admin/dev-multyproget/modulo-alternativo",
   },
 ];
 
 const STORAGE_KEY = "mn-dev-tutorial-progress";
+
+const LEVEL_STYLE: Record<Chapter["level"], string> = {
+  Base: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  Intermedio: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300",
+  Avanzato: "border-violet-500/40 bg-violet-500/10 text-violet-300",
+};
 
 export default function MNDevTutorialPage() {
   const navigate = useNavigate();
@@ -232,9 +542,16 @@ export default function MNDevTutorialPage() {
     [done]
   );
   const progress = Math.round((completed / CHAPTERS.length) * 100);
+  const totalMinutes = useMemo(() => CHAPTERS.reduce((a, c) => a + c.minutes, 0), []);
 
   const toggleStep = (i: number) =>
     setDone((d) => ({ ...d, [`${chapter.id}:${i}`]: !d[`${chapter.id}:${i}`] }));
+
+  const goTo = (i: number) => {
+    setIndex(i);
+    setZoom(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <MNAdminLayout title="🎬 Tutorial Interattivo" subtitle="Multyproget · Impara il gestionale passo dopo passo">
@@ -254,8 +571,8 @@ export default function MNDevTutorialPage() {
 
       {/* Progress */}
       <div className="mb-5 rounded-xl border border-border/40 bg-card/60 p-4 backdrop-blur-xl">
-        <div className="mb-2 flex items-center justify-between text-xs font-mono uppercase tracking-wider text-muted-foreground">
-          <span>Avanzamento tutorial</span>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+          <span>Avanzamento tutorial · percorso completo ~{totalMinutes} min</span>
           <span>{completed}/{CHAPTERS.length} capitoli · {progress}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
@@ -263,7 +580,7 @@ export default function MNDevTutorialPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[250px_1fr]">
         {/* Sidebar capitoli */}
         <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
           {CHAPTERS.map((c, i) => {
@@ -271,8 +588,8 @@ export default function MNDevTutorialPage() {
             return (
               <button
                 key={c.id}
-                onClick={() => { setIndex(i); setZoom(false); }}
-                className={`flex min-w-[180px] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all lg:min-w-0 ${
+                onClick={() => goTo(i)}
+                className={`flex min-w-[190px] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-all lg:min-w-0 ${
                   i === index
                     ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
                     : "border-border/40 bg-card/40 text-muted-foreground hover:bg-secondary/50"
@@ -288,9 +605,17 @@ export default function MNDevTutorialPage() {
         {/* Contenuto capitolo */}
         <section className="space-y-4">
           <div className="rounded-xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
-            <p className="text-xs font-mono uppercase tracking-wider text-emerald-400">
-              Capitolo {index + 1} di {CHAPTERS.length}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-mono uppercase tracking-wider text-emerald-400">
+                Capitolo {index + 1} di {CHAPTERS.length}
+              </p>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider ${LEVEL_STYLE[chapter.level]}`}>
+                {chapter.level}
+              </span>
+              <span className="rounded-full border border-border/40 bg-secondary/30 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                ~{chapter.minutes} min
+              </span>
+            </div>
             <h2 className="mt-1 text-2xl font-display font-bold text-foreground">{chapter.title}</h2>
             <p className="text-sm text-muted-foreground">{chapter.subtitle}</p>
             <p className="mt-3 text-sm leading-relaxed text-foreground/90">{chapter.intro}</p>
@@ -307,6 +632,34 @@ export default function MNDevTutorialPage() {
             </button>
           </div>
 
+          {/* Spiegazione discorsiva */}
+          <div className="rounded-xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
+            <h3 className="mb-3 text-sm font-display font-bold uppercase tracking-wider text-foreground">Come funziona</h3>
+            <div className="space-y-3">
+              {chapter.explain.map((p, i) => (
+                <p key={i} className="text-sm leading-relaxed text-foreground/85">{p}</p>
+              ))}
+            </div>
+          </div>
+
+          {/* Campi */}
+          {chapter.fields && (
+            <div className="rounded-xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-display font-bold uppercase tracking-wider text-foreground">
+                <ListChecks size={15} className="text-cyan-400" /> I campi, uno per uno
+              </h3>
+              <dl className="grid gap-2 sm:grid-cols-2">
+                {chapter.fields.map((f) => (
+                  <div key={f.label} className="rounded-lg border border-border/40 bg-secondary/20 p-3">
+                    <dt className="text-xs font-mono uppercase tracking-wider text-cyan-300">{f.label}</dt>
+                    <dd className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
+          {/* Passi */}
           <div className="rounded-xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
             <h3 className="mb-3 text-sm font-display font-bold uppercase tracking-wider text-foreground">Passi da seguire</h3>
             <ul className="space-y-2">
@@ -323,14 +676,25 @@ export default function MNDevTutorialPage() {
                       }`}
                     >
                       {checked ? <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-emerald-400" /> : <Circle size={17} className="mt-0.5 shrink-0 opacity-50" />}
-                      <span>{s}</span>
+                      <span><span className="mr-2 font-mono text-xs opacity-60">{i + 1}.</span>{s}</span>
                     </button>
                   </li>
                 );
               })}
             </ul>
+
+            {chapter.warnings?.length ? (
+              <div className="mt-4 space-y-2">
+                {chapter.warnings.map((w, i) => (
+                  <div key={i} className="flex items-start gap-2 rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-xs leading-relaxed text-red-300">
+                    <AlertTriangle size={14} className="mt-0.5 shrink-0" /> <span>{w}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             {chapter.tip && (
-              <div className="mt-4 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-300">
+              <div className="mt-4 rounded-lg border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-300">
                 💡 {chapter.tip}
               </div>
             )}
@@ -341,16 +705,33 @@ export default function MNDevTutorialPage() {
             )}
           </div>
 
+          {/* FAQ */}
+          {chapter.faq && (
+            <div className="rounded-xl border border-border/40 bg-card/60 p-5 backdrop-blur-xl">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-display font-bold uppercase tracking-wider text-foreground">
+                <HelpCircle size={15} className="text-amber-400" /> Domande frequenti
+              </h3>
+              <div className="space-y-2">
+                {chapter.faq.map((f) => (
+                  <details key={f.q} className="rounded-lg border border-border/40 bg-secondary/20 p-3">
+                    <summary className="cursor-pointer text-sm text-foreground">{f.q}</summary>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{f.a}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pb-6">
-            <Button variant="ghost" disabled={index === 0} onClick={() => { setIndex(index - 1); setZoom(false); }} className="gap-1">
+            <Button variant="ghost" disabled={index === 0} onClick={() => goTo(index - 1)} className="gap-1">
               <ChevronLeft size={16} /> Precedente
             </Button>
             {index < CHAPTERS.length - 1 ? (
-              <Button onClick={() => { setIndex(index + 1); setZoom(false); }} className="gap-1">
+              <Button onClick={() => goTo(index + 1)} className="gap-1">
                 Prossimo capitolo <ChevronRight size={16} />
               </Button>
             ) : (
-              <Button variant="outline" onClick={() => setIndex(0)}>Ricomincia da capo</Button>
+              <Button variant="outline" onClick={() => goTo(0)}>Ricomincia da capo</Button>
             )}
           </div>
         </section>
