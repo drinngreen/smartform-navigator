@@ -63,6 +63,11 @@ const CHAPTERS: Chapter[] = [
       "Nessun formulario viene creato in automatico dal sistema: il numero FIR lo digiti sempre tu, a mano.",
     ],
     tip: "Se ti perdi, il pulsante rosso in alto a sinistra riporta sempre al Centro di Comando.",
+    faq: [
+      { q: "Da dove comincio se non ho mai usato il gestionale?", a: "Dalle tab documenti (Impianto, Niyol, Conto Proprio): sono quelle che userai ogni giorno. Registri e Giacenze si popolano da sole con quello che registri lì." },
+      { q: "Perché ci sono contesti diversi (Multyproget, Niyol, Conto Proprio)?", a: "Perché sono soggetti e attività diverse: la legge impone registri separati. Mescolarli renderebbe i registri non validi in caso di controllo." },
+      { q: "Ho cambiato tab e ho perso quello che stavo facendo.", a: "I dialoghi aperti vengono ripristinati, ma i dati non salvati no: salva sempre in bozza prima di cambiare sezione." },
+    ],
     route: "/mn/admin/dev-multyproget",
   },
   {
@@ -131,6 +136,11 @@ const CHAPTERS: Chapter[] = [
       "Stampa o esporta in PDF per la copia cartacea.",
     ],
     tip: "Se il formulario è stato compilato in app dall'autista, qui vedi esattamente ciò che verrà stampato in ufficio.",
+    faq: [
+      { q: "Se modifico nella vista Alternativa perdo la vista Standard?", a: "No: le due viste sono lo stesso documento. Quello che scrivi in una compare subito nell'altra." },
+      { q: "Il testo esce dai riquadri in stampa.", a: "Il carattere si riduce da solo, ma con ragioni sociali o indirizzi molto lunghi conviene abbreviare (es. 'S.r.l.' invece di 'Società a responsabilità limitata')." },
+      { q: "Quando uso il modulo alternativo?", a: "Quando devi produrre la copia cartacea sul modulo prestampato, o quando vuoi vedere l'anteprima esatta di ciò che verrà stampato." },
+    ],
     route: "/mn/admin/dev-multyproget/modulo-alternativo",
   },
   {
@@ -194,6 +204,11 @@ const CHAPTERS: Chapter[] = [
       "Controlla che tra gli Inviati non ci siano righe ambra (peso destino mancante).",
     ],
     tip: "Un controllo settimanale della cronologia evita di arrivare a fine mese con decine di bozze incomplete.",
+    faq: [
+      { q: "L'autista dice di aver compilato ma in ufficio non vedo nulla.", a: "Controlla la cronologia filtrata su Bozze: se il documento non è stato inviato resta come bozza sul suo profilo." },
+      { q: "Posso correggere io un formulario inviato dall'autista?", a: "Gli inviati non si modificano dall'app; dall'ufficio si interviene sul documento e, se necessario, si annulla e si rifà." },
+      { q: "Cosa significano le righe evidenziate in ambra?", a: "Manca la quantità in arrivo a destino: finché non la inserisci il ciclo del documento non è completo." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
   {
@@ -220,6 +235,12 @@ const CHAPTERS: Chapter[] = [
     ],
     warnings: ["I dati di Conto Proprio e Intermediazione NON compaiono qui: i contesti sono isolati per legge e per chiarezza."],
     tip: "Se un saldo non torna, non correggerlo a mano: cerca il movimento mancante o duplicato e sistema quello.",
+    faq: [
+      { q: "Perché qui non vedo i movimenti di Conto Proprio?", a: "I contesti sono isolati: la tab Impianto mostra solo l'attività dell'impianto, come richiesto dalla normativa e per evitare confusione nei registri." },
+      { q: "Una riga è ambra: cosa manca?", a: "Manca la quantità in arrivo a destino. Finché non la inserisci il movimento non è completo e il saldo non è definitivo." },
+      { q: "Ho lanciato Sync giacenze e il saldo è cambiato.", a: "Significa che c'era un disallineamento: il valore giusto è quello ricalcolato dai movimenti. Se il salto è grosso, controlla i movimenti del periodo." },
+      { q: "Come distinguo carico e scarico?", a: "Il carico è il rifiuto che entra in impianto, lo scarico è quello che esce verso il destinatario finale. Il filtro tipo ti permette di vedere solo una delle due famiglie." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
   {
@@ -242,6 +263,11 @@ const CHAPTERS: Chapter[] = [
       "Controlla nel Registro Generale che la registrazione Niyol sia presente.",
     ],
     tip: "Un FIR Niyol non duplica mai il movimento sul magazzino Multyproget: se lo vedi doppio, segnalalo subito.",
+    faq: [
+      { q: "Un formulario Niyol deve comparire anche in Multyproget?", a: "Solo se Multyproget è coinvolta come produttore o destinatario: in quel caso vedi il documento in entrambi i contesti, ma il movimento di magazzino resta uno solo." },
+      { q: "Vedo lo stesso movimento due volte.", a: "È un'anomalia da segnalare subito: il sistema è progettato per non duplicare. Lancia un controllo giacenze e verifica i movimenti collegati al FIR." },
+      { q: "Posso creare un FIR Niyol dall'area Multyproget?", a: "Sì, ma solo dalla tab Niyol: così la registrazione finisce nel registro corretto." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=niyol",
   },
   {
@@ -262,6 +288,11 @@ const CHAPTERS: Chapter[] = [
       "Scegli la vista Standard o Alternativa: si compilano in sincrono.",
       "Salva in bozza: le giacenze si aggiornano coerentemente al ruolo di Multyproget.",
       "Usa il cestino per eliminare: soft delete + storno automatico del movimento.",
+    ],
+    faq: [
+      { q: "Perché in Conto Proprio non vedo i formulari dell'impianto?", a: "Sono contesti separati: il Conto Proprio riguarda i trasporti fatti in proprio, l'Impianto l'attività di gestione rifiuti." },
+      { q: "Il formulario aggiorna le giacenze?", a: "Solo se Multyproget è produttore o destinatario del rifiuto: se è solo trasportatore, il magazzino non si muove." },
+      { q: "Ho cancellato un formulario per sbaglio.", a: "L'eliminazione è un soft delete con storno automatico del movimento: i dati restano tracciati e il saldo torna al valore precedente." },
     ],
     route: "/mn/admin/dev-multyproget?tab=conto-proprio",
   },
@@ -289,6 +320,12 @@ const CHAPTERS: Chapter[] = [
       "Invia al RENTRI e verifica l'esito nello storico e nella Console RENTRI.",
     ],
     warnings: ["Un invio RENTRI consolidato non si annulla dal gestionale: controlla il periodo prima di confermare."],
+    faq: [
+      { q: "Devo scrivere io le righe del registro?", a: "No: le registrazioni nascono dai formulari e dai conferimenti. Qui si consulta, si esporta e si invia." },
+      { q: "Come registro un formulario cartaceo ricevuto da terzi?", a: "Usa la funzione Conto Terzi Manuale: entra nel registro come gli altri documenti." },
+      { q: "Ho inviato al RENTRI un periodo sbagliato.", a: "Un invio consolidato non si annulla dal gestionale: va gestito come rettifica. Per questo conviene controllare sempre il periodo prima di confermare." },
+      { q: "Serve l'esportazione per il commercialista?", a: "Sì: l'export in Excel del periodo è il formato più comodo da consegnare." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=registri",
   },
   {
@@ -345,6 +382,11 @@ const CHAPTERS: Chapter[] = [
       "Verifica l'elenco materiali e i kg totali.",
       "Stampa il PDF o invialo al privato.",
     ],
+    faq: [
+      { q: "Ho sbagliato la data della ricevuta.", a: "La data è modificabile dalla ricevuta stessa: correggila e ristampa. Il numero progressivo non cambia." },
+      { q: "Il privato ha portato tre materiali diversi: devo fare tre ricevute?", a: "No: una sola ricevuta con una riga per ogni CER e i relativi kg." },
+      { q: "Posso saltare un numero di ricevuta?", a: "No: la numerazione è progressiva annuale e senza buchi. Se una ricevuta è errata si annulla, non si cancella il numero." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=ricevute",
   },
   {
@@ -369,6 +411,11 @@ const CHAPTERS: Chapter[] = [
       "Nel formulario usa il selettore preset per riempire produttore/destinatario.",
     ],
     tip: "Un'autorizzazione scaduta sul destinatario è un problema in caso di controllo: controllale a inizio mese.",
+    faq: [
+      { q: "Non trovo un'azienda che ho sicuramente inserito.", a: "Prova a cercarla per P.IVA invece che per nome: le ragioni sociali spesso sono scritte in modo diverso (S.r.l., SRL, Srl)." },
+      { q: "Il preset non compila tutti i campi del formulario.", a: "Il preset riempie i dati presenti in anagrafica: se mancano unità locale o autorizzazione, vanno completati nella scheda azienda." },
+      { q: "Come gestisco un'autorizzazione scaduta?", a: "Aggiorna la scheda con il nuovo documento e la nuova scadenza: il sistema segnala le scadenze, ma la verifica resta responsabilità dell'ufficio." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=contatti",
   },
   {
@@ -392,6 +439,12 @@ const CHAPTERS: Chapter[] = [
       "Se il saldo cambia dopo il sync, cerca il movimento che mancava.",
     ],
     warnings: ["Non esiste una casella per 'scrivere' una giacenza: si corregge solo aggiungendo o correggendo movimenti."],
+    faq: [
+      { q: "Un CER che carico spesso non compare in giacenze.", a: "Compare solo se ha movimenti. Attiva 'Mostra tutti i CER' per vedere anche quelli a zero." },
+      { q: "La giacenza è diversa da quella che ho contato in piazzale.", a: "La differenza è sempre un movimento mancante o duplicato: confronta i movimenti del periodo nella tab Impianto e correggi lì." },
+      { q: "Posso scrivere io il saldo corretto?", a: "No, e non è un limite ma una garanzia: il saldo deriva dai movimenti, così il registro resta difendibile in caso di controllo." },
+      { q: "Cosa fa esattamente 'Sync giacenze'?", a: "Ricalcola i saldi partendo da tutti i movimenti registrati e verifica che il risultato coincida: se cambia qualcosa, significa che c'era un disallineamento." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=magazzino-dev",
   },
   {
@@ -510,6 +563,12 @@ const CHAPTERS: Chapter[] = [
       "Modifica password o disattiva l'utente quando serve.",
     ],
     warnings: ["Il codice fiscale è l'identificativo di login: verificalo carattere per carattere prima di salvare."],
+    faq: [
+      { q: "Errore quando creo un nuovo utente.", a: "Quasi sempre è il codice fiscale sbagliato inserito dall'autocompletamento del browser: cancella il campo, disattiva l'autofill e riscrivilo a mano." },
+      { q: "L'autista ha dimenticato la password.", a: "Aprilo dall'elenco personale e imposta una nuova password: non serve ricreare l'account." },
+      { q: "Devo spostare un autista da Multyproget a Niyol.", a: "Modifica l'app assegnata nella scheda utente: mantiene lo stesso login e il suo storico." },
+      { q: "Se elimino un utente perdo i suoi formulari?", a: "No: i documenti restano nei registri. L'utente viene disattivato, i dati restano tracciati." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=personale",
   },
   {
@@ -531,6 +590,12 @@ const CHAPTERS: Chapter[] = [
       "Usa 'Assegna a ufficio' per i numeri gestiti dall'admin.",
       "Copia il numero con l'icona accanto al chip quando devi comunicarlo.",
       "Verifica nella Console RENTRI quali numeri risultano già assegnati.",
+    ],
+    faq: [
+      { q: "Posso assegnare più numeri allo stesso autista?", a: "Sì: compaiono come chip separati sul suo profilo e li consuma uno alla volta." },
+      { q: "A cosa serve 'Assegna a ufficio'?", a: "Serve per i numeri che usa direttamente l'admin: restano fuori dalle app degli autisti ma risultano comunque impegnati." },
+      { q: "Ho assegnato un numero per sbaglio.", a: "Rimuovi l'assegnazione dal dipendente e riassegnalo: finché il formulario non è stato compilato il numero torna disponibile." },
+      { q: "Perché non c'è un'assegnazione automatica?", a: "È stata disattivata di proposito: il numero FIR è un dato ufficiale e deve essere sempre una scelta consapevole dell'ufficio." },
     ],
     route: "/mn/admin/dev-multyproget/centro-app-fir",
   },
@@ -556,6 +621,12 @@ const CHAPTERS: Chapter[] = [
       "Verifica lo storico invii per identificativo transazione ed esito.",
     ],
     warnings: ["In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco."],
+    faq: [
+      { q: "Il semaforo del bridge è rosso: cosa faccio?", a: "Non insistere con gli invii: attendi qualche minuto e riprova. I tentativi ravvicinati possono allungare il blocco lato RENTRI." },
+      { q: "Ho scaricato i numeri FIR ma gli autisti non li vedono.", a: "Scaricare non basta: i numeri vanno distribuiti dal Centro App & FIR, oppure marcati come 'ufficio' se li usa l'admin." },
+      { q: "La campanella mostra il badge arancione ma non trovo i documenti.", a: "Il badge conta i formulari in attesa di firma: aprilo dalla campanella, ti porta direttamente all'elenco nella Console." },
+      { q: "Un invio risulta fallito.", a: "Controlla lo storico invii: c'è l'identificativo transazione e l'esito. Correggi il dato segnalato e ripeti l'invio." },
+    ],
     route: "/mn/admin/dev-multyproget/rentri-console",
   },
   {
