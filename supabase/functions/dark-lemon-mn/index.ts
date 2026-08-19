@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { buildFatturaPAXml } from "../_shared/fatturaPA.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,38 @@ const TENANT_MAP: Record<string, string> = {
 };
 const DEFAULT_TENANT_ID = "dc2a6046-d9a8-4549-8e45-82367d695ac6";
 const MULTY_IMPIANTO_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+const RENTRI_UNITA_LOCALI: Record<string, string> = {
+  multy: "OP2501XMQ021914-TO0001",
+  niyol: "OP2501SXW021767-TO0001",
+  global: "OP2501RMK022692-TO0001",
+};
+
+/** Mappa il tenant corrente sul codice cliente accettato dal proxy RENTRI. */
+function rentriClienteForTenant(tenantId: string): string {
+  if (tenantId === TENANT_MAP.niyol) return "niyol";
+  return "multy";
+}
+
+/** Invia l'operazione al bridge RENTRI passando SEMPRE dalla Edge Function ufficiale rentri-vps-proxy. */
+async function callRentriProxy(request: Record<string, unknown>): Promise<{ ok: boolean; status: number; body: any; message: string }> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/rentri-vps-proxy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}`, apikey: serviceKey },
+      body: JSON.stringify(request),
+    });
+    const body = await resp.json().catch(() => null);
+    const ok = resp.ok && body?.success !== false;
+    const message = body?.userMessage || body?.error || (ok ? "OK" : `HTTP ${resp.status}`);
+    return { ok, status: resp.status, body, message };
+  } catch (e) {
+    return { ok: false, status: 0, body: null, message: e instanceof Error ? e.message : "errore di rete verso il bridge RENTRI" };
+  }
+}
+
 
 const ATTACHMENT_REFUSAL_PATTERN = /non posso (accedere|visualizzare|analizzare|vedere|aprire).*(allegat|file)|non ho la capacit[aà].*(allegat|file)/i;
 const AUTONOMY_SIGNAL_PATTERN = /\b(inventa(?:re|lo|la|li|le)?|dati di fantasia|usa dati di fantasia|procedi tu|fai tu|simula(?:re|to|zione)?|autonomia)\b/i;
