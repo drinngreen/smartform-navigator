@@ -52,6 +52,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Draft | null>(null);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     setLoading(true);
