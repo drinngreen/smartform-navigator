@@ -27,18 +27,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
   const { pageTitle, capturePageContent } = usePageContext();
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleOpenFullscreen = useCallback(() => {
-    const isMnAdmin = location.pathname.startsWith("/mn/admin");
-    if (isMnAdmin) {
-      navigate(`/mn/admin/${context}/zoli-dark-lemon`);
-    } else {
-      navigate("/admin/zoli-dark-lemon");
-    }
-    setSidePanel(false);
-  }, [navigate, location.pathname, context, setSidePanel]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
