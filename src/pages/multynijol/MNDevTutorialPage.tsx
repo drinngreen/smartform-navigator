@@ -204,6 +204,11 @@ const CHAPTERS: Chapter[] = [
       "Controlla che tra gli Inviati non ci siano righe ambra (peso destino mancante).",
     ],
     tip: "Un controllo settimanale della cronologia evita di arrivare a fine mese con decine di bozze incomplete.",
+    faq: [
+      { q: "L'autista dice di aver compilato ma in ufficio non vedo nulla.", a: "Controlla la cronologia filtrata su Bozze: se il documento non è stato inviato resta come bozza sul suo profilo." },
+      { q: "Posso correggere io un formulario inviato dall'autista?", a: "Gli inviati non si modificano dall'app; dall'ufficio si interviene sul documento e, se necessario, si annulla e si rifà." },
+      { q: "Cosa significano le righe evidenziate in ambra?", a: "Manca la quantità in arrivo a destino: finché non la inserisci il ciclo del documento non è completo." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
   {
