@@ -235,6 +235,12 @@ const CHAPTERS: Chapter[] = [
     ],
     warnings: ["I dati di Conto Proprio e Intermediazione NON compaiono qui: i contesti sono isolati per legge e per chiarezza."],
     tip: "Se un saldo non torna, non correggerlo a mano: cerca il movimento mancante o duplicato e sistema quello.",
+    faq: [
+      { q: "Perché qui non vedo i movimenti di Conto Proprio?", a: "I contesti sono isolati: la tab Impianto mostra solo l'attività dell'impianto, come richiesto dalla normativa e per evitare confusione nei registri." },
+      { q: "Una riga è ambra: cosa manca?", a: "Manca la quantità in arrivo a destino. Finché non la inserisci il movimento non è completo e il saldo non è definitivo." },
+      { q: "Ho lanciato Sync giacenze e il saldo è cambiato.", a: "Significa che c'era un disallineamento: il valore giusto è quello ricalcolato dai movimenti. Se il salto è grosso, controlla i movimenti del periodo." },
+      { q: "Come distinguo carico e scarico?", a: "Il carico è il rifiuto che entra in impianto, lo scarico è quello che esce verso il destinatario finale. Il filtro tipo ti permette di vedere solo una delle due famiglie." },
+    ],
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
   {
