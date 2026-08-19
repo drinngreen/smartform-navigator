@@ -571,6 +571,12 @@ const CHAPTERS: Chapter[] = [
       "Verifica lo storico invii per identificativo transazione ed esito.",
     ],
     warnings: ["In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco."],
+    faq: [
+      { q: "Il semaforo del bridge è rosso: cosa faccio?", a: "Non insistere con gli invii: attendi qualche minuto e riprova. I tentativi ravvicinati possono allungare il blocco lato RENTRI." },
+      { q: "Ho scaricato i numeri FIR ma gli autisti non li vedono.", a: "Scaricare non basta: i numeri vanno distribuiti dal Centro App & FIR, oppure marcati come 'ufficio' se li usa l'admin." },
+      { q: "La campanella mostra il badge arancione ma non trovo i documenti.", a: "Il badge conta i formulari in attesa di firma: aprilo dalla campanella, ti porta direttamente all'elenco nella Console." },
+      { q: "Un invio risulta fallito.", a: "Controlla lo storico invii: c'è l'identificativo transazione e l'esito. Correggi il dato segnalato e ripeti l'invio." },
+    ],
     route: "/mn/admin/dev-multyproget/rentri-console",
   },
   {
