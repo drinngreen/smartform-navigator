@@ -247,6 +247,8 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     note: storeData.annotazioni || null,
     form_data: {
       data_emissione: storeData.dataEmissione || null,
+      data_inizio_trasporto: storeData.oraDataInizioTrasporto || null,
+      ora_inizio_trasporto: storeData.oraInizioTrasporto || null,
       registro_no: storeData.registroSi ? "SI" : "NO",
       numero_registro: storeData.numeroRegistro || null,
       produttore_luogo_produzione: storeData.produttoreLuogoProduzioneDiverso || null,

@@ -245,6 +245,12 @@ export const useMNFIRStore = create<MNFIRStore>()(
         const formData = dbData.form_data && typeof dbData.form_data === "object"
           ? dbData.form_data
           : {};
+        const departureDate = String(
+          formData.data_inizio_trasporto || dbData.data_partenza || ""
+        ).slice(0, 10);
+        const departureTime = String(
+          formData.ora_inizio_trasporto || ""
+        ).slice(0, 5);
         const destinationDate = String(
           formData.data_fine_trasporto || formData.data_ricezione || dbData.data_arrivo || ""
         ).slice(0, 10);
@@ -258,7 +264,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
         set({
           data: {
             ...mnInitialFIRData,
-            dataEmissione: new Date().toISOString().split("T")[0],
+            dataEmissione: String(formData.data_emissione || "").slice(0, 10),
             numeroRegistro: dbData.numero_fir || "",
             selectedFirNumber: dbData.numero_fir || "",
             produttoreDenominazione: dbData.produttore_denominazione || "",
@@ -280,7 +286,8 @@ export const useMNFIRStore = create<MNFIRStore>()(
             quantita: dbData.quantita?.toString() || "",
             unitaMisura: (dbData.unita_misura as "kg" | "l") || "kg",
             caratteristicheHP: dbData.caratteristiche_hp || [],
-            oraDataInizioTrasporto: dbData.data_partenza || "",
+            oraDataInizioTrasporto: departureDate,
+            oraInizioTrasporto: departureTime,
             dataFineTrasporto: destinationDate,
             oraFineTrasporto: destinationTime,
             dataOraArrivo: destinationDateTime,

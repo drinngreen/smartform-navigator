@@ -1270,7 +1270,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="8-9. Conducente e Trasporto" onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
+          <Section title="8-9. Conducente e Trasporto" defaultOpen={Boolean(d.oraDataInizioTrasporto || d.oraInizioTrasporto)} onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
             <PresetAziendaSelector
               label="Conducenti e mezzi del trasportatore"
               ruolo="TRASPORTATORE"
@@ -1323,7 +1323,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data Emissione" value={d.dataEmissione} onChange={(v) => u("dataEmissione", v)} type="date" />
           </Section>
 
-          <Section title="12. Accettazione Destinatario" onClear={() => clearFields(["dataOraArrivo","dataFineTrasporto","oraFineTrasporto","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
+          <Section title="12. Accettazione Destinatario" defaultOpen={Boolean(d.dataOraArrivo || d.dataFineTrasporto || d.oraFineTrasporto || d.pesoRicevuto)} onClear={() => clearFields(["dataOraArrivo","dataFineTrasporto","oraFineTrasporto","accettazione","quantitaAccettata","causaleRespingimento","motivazioneRespingimento","pesoRicevuto","dataRicezione","oraRicezione","inAttesaVerificaAnalitica"])}>
             <Row>
               <Field label="Data Arrivo" value={d.dataOraArrivo} onChange={(v) => u("dataOraArrivo", v)} type="datetime-local" />
               <div>
