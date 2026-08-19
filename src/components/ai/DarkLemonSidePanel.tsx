@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2 } from "lucide-react";
+import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
