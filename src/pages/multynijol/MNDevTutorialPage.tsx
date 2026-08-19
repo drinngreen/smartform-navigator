@@ -63,6 +63,11 @@ const CHAPTERS: Chapter[] = [
       "Nessun formulario viene creato in automatico dal sistema: il numero FIR lo digiti sempre tu, a mano.",
     ],
     tip: "Se ti perdi, il pulsante rosso in alto a sinistra riporta sempre al Centro di Comando.",
+    faq: [
+      { q: "Da dove comincio se non ho mai usato il gestionale?", a: "Dalle tab documenti (Impianto, Niyol, Conto Proprio): sono quelle che userai ogni giorno. Registri e Giacenze si popolano da sole con quello che registri lì." },
+      { q: "Perché ci sono contesti diversi (Multyproget, Niyol, Conto Proprio)?", a: "Perché sono soggetti e attività diverse: la legge impone registri separati. Mescolarli renderebbe i registri non validi in caso di controllo." },
+      { q: "Ho cambiato tab e ho perso quello che stavo facendo.", a: "I dialoghi aperti vengono ripristinati, ma i dati non salvati no: salva sempre in bozza prima di cambiare sezione." },
+    ],
     route: "/mn/admin/dev-multyproget",
   },
   {
