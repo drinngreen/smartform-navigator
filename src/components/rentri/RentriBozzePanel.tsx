@@ -218,7 +218,8 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
       <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="text-base font-display tracking-wider flex items-center gap-2">
-            <FileText size={16} /> Bozze formulari ({drafts.length})
+            <FileText size={16} /> Bozze formulari ({draftsFiltrate.length}
+            {search.trim() ? ` / ${drafts.length}` : ""})
           </h3>
           <button
             onClick={load}
