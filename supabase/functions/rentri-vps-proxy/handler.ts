@@ -347,7 +347,7 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
   const fetchImpl = options.fetchImpl ?? fetch;
   const bridgeBase = options.bridgeUrl ?? env("RENTRI_BRIDGE_URL") ?? "https://rentri-bridge.dragonrifiuti.space";
   const bridgeKey = options.bridgeKey ?? env("RENTRI_BRIDGE_KEY") ?? "";
-  const timeoutMs = options.timeoutMs ?? Number(env("RENTRI_VPS_TIMEOUT_MS") ?? 6000);
+  const timeoutMs = options.timeoutMs ?? Number(env("RENTRI_VPS_TIMEOUT_MS") ?? 25000);
   const bridgeUrl = normalizeBaseUrl(bridgeBase);
 
   let body: Record<string, unknown>;
