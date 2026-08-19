@@ -25,9 +25,31 @@ function getPageTitle(pathname) {
     }
     return "Pagina sconosciuta";
 }
+function getActiveRoots() {
+    const overlays = Array.from(document.querySelectorAll('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"], [data-radix-popper-content-wrapper], [role="dialog"]:not([hidden])')).filter((el) => {
+        if (el.closest('[data-dark-lemon="true"]'))
+            return false;
+        const r = el.getBoundingClientRect();
+        return r.width > 40 && r.height > 40;
+    });
+    if (overlays.length > 0)
+        return [overlays[overlays.length - 1]];
+    const main = document.querySelector("[data-admin-layout] main") ||
+        document.querySelector("main") ||
+        document.querySelector("[data-page-content]") ||
+        document.body;
+    return [main];
+}
+export function hasOpenModal() {
+    const root = getActiveRoots()[0];
+    return !!root && root.tagName.toLowerCase() !== "main" && root !== document.body;
+}
+
 function extractFormFields() {
     const fields = [];
-    const inputs = document.querySelectorAll("main input, main select, main textarea, [data-page-content] input, [data-page-content] select, [data-page-content] textarea");
+    const roots = getActiveRoots();
+    const inputs = [];
+    roots.forEach((r) => inputs.push(...Array.from(r.querySelectorAll("input, select, textarea"))));
     inputs.forEach((el) => {
         const input = el;
         // Skip hidden or widget inputs
@@ -50,7 +72,9 @@ function extractFormFields() {
     return fields.slice(0, 30); // max 30 fields
 }
 function extractTableData() {
-    const tables = document.querySelectorAll("main table, [data-page-content] table");
+    const roots = getActiveRoots();
+    const tables = [];
+    roots.forEach((r) => tables.push(...Array.from(r.querySelectorAll("table"))));
     if (tables.length === 0)
         return "";
     const lines = [];
@@ -77,8 +101,8 @@ function extractTableData() {
     return lines.join("\n");
 }
 function extractPageText() {
-    const main = document.querySelector("main") || document.querySelector("[data-page-content]") || document.body;
-    const clone = main.cloneNode(true);
+    const root = getActiveRoots()[0];
+    const clone = root.cloneNode(true);
     // Remove widget
     clone.querySelectorAll("[class*='z-[9999]']").forEach(el => el.remove());
     // Remove scripts, styles
@@ -102,6 +126,8 @@ export function usePageContext() {
         const parts = [];
         parts.push(`📍 Pagina: ${routeInfo.pageTitle}`);
         parts.push(`📎 Route: ${routeInfo.route}`);
+        if (hasOpenModal())
+            parts.push(`🪟 FINESTRA MODALE APERTA: il contenuto qui sotto è quello del popup/dialog attivo, non della pagina sottostante.`);
         if (formFields.length > 0) {
             parts.push(`\n📋 Campi form visibili:\n${formFields.join("\n")}`);
         }

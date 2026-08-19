@@ -38,6 +38,21 @@ export function DarkLemonSidePanel({ context = "multyproget" }) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+    useEffect(() => {
+        if (messages.length === 0)
+            return;
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg.role !== "assistant")
+            return;
+        const payload = parseFillFormTag(lastMsg.content);
+        if (!payload?.fields?.length)
+            return;
+        const count = fillFields(payload.fields);
+        if (count > 0)
+            toast.success(`✅ ${count} campi compilati in tempo reale`);
+        else
+            toast.error("Nessun campo compilato (campi non trovati nel form aperto)");
+    }, [messages, fillFields]);
     // Sync isWorking with isLoading
     useEffect(() => {
         setWorking(isLoading);
