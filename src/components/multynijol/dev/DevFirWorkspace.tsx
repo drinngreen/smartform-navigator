@@ -162,7 +162,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
         (payload) => {
           const updated = payload.new as any;
           setActiveDraft(updated);
-          mnFirStore.loadFromDatabase({
+          useMNFIRStore.getState().loadFromDatabase({
             ...updated,
             form_data: updated.form_data as Record<string, any> | null,
           });
@@ -173,7 +173,7 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeDraftId, mnFirStore, queryClient]);
+  }, [activeDraftId, queryClient]);
 
   // Invalidate registry/inventory queries after Standard form save-final
   useEffect(() => {
