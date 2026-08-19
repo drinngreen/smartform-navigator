@@ -241,9 +241,18 @@ export function resolveRoute(
         path: `/vidimazione-formulari/v1.0/transazioni/${txnId}`,
         altPaths: [
           `/vidimazione-formulari/v1.0/transazione/${txnId}`,
-          ...(codiceBlocco ? [`/vidimazione-formulari/v1.0/${codiceBlocco}/transazioni/${txnId}`] : []),
+          ...(codiceBlocco
+            ? [
+              `/vidimazione-formulari/v1.0/${codiceBlocco}/transazioni/${txnId}`,
+              `/vidimazione-formulari/v1.0/${codiceBlocco}/transazione/${txnId}`,
+            ]
+            : []),
+          `/vidimazione-formulari/v1.0/transazioni/${txnId}/esito`,
+          `/transazioni/v1.0/${txnId}`,
+          `/formulari/v1.0/transazioni/${txnId}`,
         ],
       };
+
 
     case "FIRMA_RICEZIONE":
       return { method: "POST", path: `/formulari/v1.0` };
