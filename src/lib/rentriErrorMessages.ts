@@ -43,7 +43,8 @@ export function rentriUserMessage(status: number, fallback?: string): string {
     case "FORBIDDEN":
       return "Autorizzazione non valida o operazione non consentita.";
     case "NOT_FOUND":
-      return "Risorsa RENTRI non trovata.";
+      return "Risorsa RENTRI non trovata: l'identificativo indicato non esiste (o la transazione è scaduta) per questa azienda.";
+
     case "RATE_LIMITED":
       return "Limite temporaneo raggiunto: riprovare più tardi.";
     case "BRIDGE_ERROR":
