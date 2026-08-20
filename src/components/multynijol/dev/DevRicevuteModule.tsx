@@ -28,10 +28,12 @@ type RicevutaRow = {
   privato_id: string | null;
   conferimento_id?: string | null;
   gruppo_id?: string | null;
-  materiali?: { cer: string | null; kg_pesati: number | null }[];
+  materiali?: { cer: string | null; kg_pesati: number | null; prezzo_kg?: number | null; importo_pagato?: number | null }[];
   conferimento?: {
     cer: string | null;
     kg_pesati: number | null;
+    prezzo_kg?: number | null;
+    importo_pagato?: number | null;
     data: string | null;
     targa_automezzo: string | null;
     modello_automezzo: string | null;
