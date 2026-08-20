@@ -645,6 +645,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-load user's active FIR draft only when no firFormId (workspace ALWAYS passes one)
   useEffect(() => {
     // PRIORITY: if firFormId provided by parent (workspace), never resolve another draft
+    if (blankPrint) return;
     if (firFormId) return;
 
     // If we have a numero_fir but no draft id, try to resolve the draft by numero
@@ -681,7 +682,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           }
         });
     });
-  }, [presetNumeroFir, firFormId]);
+  }, [presetNumeroFir, firFormId, blankPrint]);
 
   useEffect(() => {
     const effectiveNumero = presetNumeroFir || activeDraftNumero;
@@ -716,6 +717,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   useEffect(() => {
     if (fields.length === 0) return;
+    if (blankPrint) return;
 
     // Idrata i valori dal DB UNA SOLA VOLTA per bozza: evita che refetch/realtime
     // sovrascrivano quello che l'utente sta compilando.
@@ -774,9 +776,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     return () => {
       cancelled = true;
     };
-  }, [fields, draftData, activeDraftId, presetNumeroFir, activeDraftNumero, localDraftKey]);
+  }, [fields, draftData, activeDraftId, presetNumeroFir, activeDraftNumero, localDraftKey, blankPrint]);
 
   useEffect(() => {
+    if (blankPrint) return;
     if (!localDraftKey || !localDraftHydratedRef.current) return;
     try {
       sessionStorage.setItem(localDraftKey, JSON.stringify(values));
@@ -788,6 +791,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-prefill trasportatore fields from the assigned user's profile
   useEffect(() => {
     if (fields.length === 0) return;
+    if (blankPrint) return;
 
     // Determine user ID: from prop, or try fetching from fir_forms
     const resolveUserId = async (): Promise<string | null> => {
@@ -870,6 +874,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   // Auto-apply tenant preset as PRODUCER when producer fields are empty (e.g. Multyproget dev workspace)
   useEffect(() => {
     if (fields.length === 0) return;
+    if (blankPrint) return;
     if (ocrEntries?.length) return;
     if (suppressProducerPreset) return;
     if (tenantContext !== "multyproget" && tenantContext !== "niyol" && tenantContext !== "global") return;
