@@ -336,7 +336,7 @@ export function DevPrivatiModule() {
     if (!confForm.metodo_pag) { toast.error("Seleziona il metodo di pagamento"); return; }
 
     // Normalizza le righe materiali (multi-materiale)
-    const righe: { cer: string; kg: number }[] = [];
+    const righe: { cer: string; kg: number; prezzo_kg?: number; importo?: number }[] = [];
     for (const r of righeMateriali) {
       const rawCer = (r.cer || "").trim();
       const kg = parseFloat(r.kg);
@@ -344,7 +344,14 @@ export function DevPrivatiModule() {
       if (!rawCer) { toast.error("Ogni riga deve avere un codice CER"); return; }
       if (!Number.isFinite(kg) || kg <= 0) { toast.error(`Peso non valido per il CER ${rawCer}`); return; }
       const cerInfo = ALL_CER.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
-      righe.push({ cer: cerInfo?.codice || rawCer.toUpperCase(), kg });
+      const prezzo = parseFloat(String(r.prezzo).replace(",", "."));
+      const importo = parseFloat(String(r.importo).replace(",", "."));
+      righe.push({
+        cer: cerInfo?.codice || rawCer.toUpperCase(),
+        kg,
+        ...(Number.isFinite(prezzo) ? { prezzo_kg: prezzo } : {}),
+        ...(Number.isFinite(importo) ? { importo } : {}),
+      });
     }
     if (!righe.length) { toast.error("Inserisci almeno un materiale (CER + kg)"); return; }
 
