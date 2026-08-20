@@ -214,75 +214,71 @@ export function DevRicevuteModule() {
 
   const printSingle = (r: RicevutaRow) => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
-    const w = window.open("", "_blank");
-    if (!w) return;
 
-    const title = `Ricevuta ${r.numero_ricevuta ?? ""}`;
-    const privato = p ? `${p.cognome} ${p.nome}` : "—";
-    const cf = p?.codice_fiscale ?? "—";
-    const noteHtml = escHtml(r.note ?? "").split("\n").join("<br />");
+    const righeBase =
+      r.materiali && r.materiali.length
+        ? r.materiali
+        : r.conferimento
+          ? [{
+              cer: r.conferimento.cer,
+              kg_pesati: r.conferimento.kg_pesati,
+              prezzo_kg: r.conferimento.prezzo_kg,
+              importo_pagato: r.conferimento.importo_pagato,
+            }]
+          : [];
 
-    const html = `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="color-scheme" content="only light" />
-  <title>${escHtml(title)}</title>
-  <style>
-    html, body { background: #fff !important; color: #111 !important; margin: 0; padding: 0; }
-    body { font-family: Arial, Helvetica, sans-serif; padding: 32px; }
-    h1 { margin: 0 0 6px; font-size: 26px; }
-    .meta { color: #444; font-size: 12px; margin-bottom: 18px; }
-    .box { border: 1px solid #222; padding: 16px; border-radius: 10px; }
-    .row { display: flex; gap: 16px; margin: 10px 0; }
-    .label { width: 140px; color: #555; font-size: 12px; }
-    .val { flex: 1; font-weight: 700; font-size: 14px; }
-    .note-section { margin-top: 14px; white-space: pre-wrap; }
-    @media print {
-      html, body { background: #fff !important; color: #111 !important; }
-      input, button, select, textarea, [type="color"] { display: none !important; }
+    const materiali = righeBase.map((m) => ({
+      cer: m.cer,
+      descrizione: CER_CATALOG.find((c) => c.codice === m.cer)?.descrizione ?? "",
+      kg_pesati: m.kg_pesati,
+      prezzo_kg: m.prezzo_kg ?? null,
+      importo: m.importo_pagato ?? null,
+    }));
+
+    // Se nessuna riga ha importo, ripartisci l'importo totale della ricevuta sui kg
+    const totaleRicevuta = Number(r.importo ?? 0);
+    const kgTotali = materiali.reduce((s, m) => s + (Number(m.kg_pesati) || 0), 0);
+    const nessunImporto = materiali.every((m) => m.importo == null && m.prezzo_kg == null);
+    if (nessunImporto && totaleRicevuta > 0 && kgTotali > 0) {
+      const prezzoMedio = totaleRicevuta / kgTotali;
+      for (const m of materiali) {
+        m.prezzo_kg = Math.round(prezzoMedio * 10000) / 10000;
+        m.importo = Math.round((Number(m.kg_pesati) || 0) * prezzoMedio * 100) / 100;
+      }
     }
-  </style>
-</head>
-<body>
-  ${aziendaHtml}
-  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:18px;">
-    <h1 style="margin:0;font-size:26px;font-weight:800;">${escHtml(title)}</h1>
-    <div style="font-size:26px;font-weight:800;">${escHtml(new Date(r.data_emissione).toLocaleDateString("it-IT"))}</div>
-  </div>
-  <div class="box">
-    <div class="row"><div class="label">Privato</div><div class="val">${escHtml(privato)}</div></div>
-    <div class="row"><div class="label">Indirizzo</div><div class="val">${escHtml(formatIndirizzoPrivato(p) || "—")}</div></div>
-    <div class="row"><div class="label">Codice fiscale</div><div class="val">${escHtml(cf)}</div></div>
 
-    ${r.conferimento ? `
-      ${r.conferimento.numero_progressivo != null ? `<div class="row"><div class="label">N° Registro DBT</div><div class="val">#${escHtml(String(r.conferimento.numero_progressivo))}/${escHtml(String(r.conferimento.anno_dbt ?? ""))}</div></div>` : ""}
-      <div class="row"><div class="label">Data conferimento</div><div class="val">${escHtml(r.conferimento.data ? new Date(r.conferimento.data).toLocaleDateString("it-IT") : "—")}</div></div>
-      ${(r.materiali && r.materiali.length > 1)
-        ? `<div class="row"><div class="label">Materiali</div><div class="val">${r.materiali.map((m) => `${escHtml(m.cer ?? "—")} — ${escHtml(Number(m.kg_pesati ?? 0).toLocaleString("it-IT"))} kg`).join("<br/>")}</div></div>
-           <div class="row"><div class="label">Peso totale</div><div class="val">${escHtml(r.materiali.reduce((s, m) => s + (Number(m.kg_pesati) || 0), 0).toLocaleString("it-IT"))} kg</div></div>`
-        : `<div class="row"><div class="label">CER</div><div class="val">${escHtml(r.conferimento.cer ?? "—")}</div></div>
-           <div class="row"><div class="label">Peso</div><div class="val">${escHtml(Number(r.conferimento.kg_pesati ?? 0).toLocaleString("it-IT"))} kg</div></div>`}
-      ${r.conferimento.targa_automezzo ? `<div class="row"><div class="label">Targa automezzo</div><div class="val">${escHtml(r.conferimento.targa_automezzo)}${r.conferimento.modello_automezzo ? ` — ${escHtml(r.conferimento.modello_automezzo)}` : ""}</div></div>` : ""}
-      ${r.conferimento.metodo_pag ? `<div class="row"><div class="label">Metodo pagamento</div><div class="val">${escHtml(r.conferimento.metodo_pag === "contanti" ? "Contanti" : "Metodi Tracciabili / Politici")}</div></div>` : ""}
-    ` : ""}
-    <div class="row"><div class="label">Importo</div><div class="val">&euro; ${escHtml(
-      Number(r.importo ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })
-    )}</div></div>
-    <div class="row"><div class="label">Anno</div><div class="val">${escHtml(String(r.anno ?? "—"))}</div></div>
-    <div class="note-section"><div class="label">Note</div><div>${noteHtml || "—"}</div></div>
-  </div>
-</body>
-</html>`;
+    const noteComplete = [r.note ?? "", r.conferimento?.note ?? ""]
+      .map((n) => (n || "").trim())
+      .filter((n, i, arr) => n && arr.indexOf(n) === i)
+      .join("\n");
 
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
+    const veicolo = r.conferimento?.targa_automezzo
+      ? `VEICOLO ${[r.conferimento.modello_automezzo, `TARGA ${r.conferimento.targa_automezzo}`].filter(Boolean).join(" ")}`
+      : null;
 
-    // Aspetta il rendering, poi stampa
-    setTimeout(() => {
-      try { w.focus(); w.print(); } catch (_) { /* popup blocked */ }
-    }, 300);
+    stampaRicevuta({
+      numero: r.numero_ricevuta ?? "",
+      data: r.data_emissione,
+      destinatario: {
+        nome: p ? `${p.cognome} ${p.nome}` : "—",
+        indirizzo: p?.indirizzo ?? "",
+        cap: p?.cap ?? "",
+        comune: p?.comune_residenza ?? "",
+        provincia: p?.provincia ?? "",
+        codice_fiscale: p?.codice_fiscale ?? "",
+      },
+      causale: "ACQUISTO",
+      condizioniPagamento:
+        r.conferimento?.metodo_pag === "contanti"
+          ? "CONTANTI"
+          : r.conferimento?.metodo_pag
+            ? "BONIFICO BANCARIO"
+            : "",
+      materiali,
+      totale: totaleRicevuta || materiali.reduce((s, m) => s + (Number(m.importo) || 0), 0),
+      note: noteComplete || null,
+      veicolo,
+    });
   };
 
   const exportCols = [
