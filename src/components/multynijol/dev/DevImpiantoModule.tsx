@@ -175,10 +175,16 @@ export function DevImpiantoModule() {
             <DevRegistroCaricoScaricoModule />
           </div>
         </TabsContent>
+        <TabsContent value="fir-cartaceo">
+          <div className="p-4 rounded-2xl bg-card/60 border border-amber-500/20">
+            <DevFirCartaceoModule />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
 
 // ─── Formulari sub-module ───
 function ImpiantoFormulari() {
