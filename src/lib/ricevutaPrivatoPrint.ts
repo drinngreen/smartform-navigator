@@ -72,7 +72,7 @@ export function buildRicevutaHtml(d: RicevutaPrintData): string {
     .map(
       (r) => `<tr>
         <td class="c-art">${esc(r.cer ?? "")}</td>
-        <td class="c-desc">${esc(r.descrizione ?? "")}</td>
+        <td class="c-desc">${esc([r.cer ? `CER ${r.cer}` : "", r.descrizione ?? ""].filter(Boolean).join(" — "))}</td>
         <td class="c-um">Kg</td>
         <td class="c-num">${num(r.kg_pesati)}</td>
         <td class="c-num">${r.prezzo_kg != null ? num(r.prezzo_kg) : ""}</td>
