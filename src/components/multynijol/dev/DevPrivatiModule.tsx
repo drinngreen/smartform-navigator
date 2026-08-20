@@ -54,6 +54,17 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   // Ogni riga ha peso, prezzo al kg e totale: due valori qualsiasi calcolano il terzo.
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string; prezzo: string; importo: string }[]>([{ cer: "", kg: "", prezzo: "", importo: "" }]);
+  // true solo se l'operatore scrive a mano l'importo totale: altrimenti è sempre la somma delle righe
+  const [importoTotaleManuale, setImportoTotaleManuale] = useState(false);
+  const totaleRighe = righeMateriali.reduce(
+    (s, r) => s + (parseFloat(String(r.importo).replace(",", ".")) || 0),
+    0,
+  );
+  const totaleKgRighe = righeMateriali.reduce(
+    (s, r) => s + (parseFloat(String(r.kg).replace(",", ".")) || 0),
+    0,
+  );
+
 
   /**
    * Ricalcola la riga in base al campo modificato:
@@ -438,6 +449,8 @@ export function DevPrivatiModule() {
     setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
     setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]);
+    setImportoTotaleManuale(false);
+    setImportoTotaleManuale(false);
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
@@ -1001,7 +1014,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); } }}>
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); setImportoTotaleManuale(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1093,18 +1106,28 @@ export function DevPrivatiModule() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — € {righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)} — una sola ricevuta con tutti i materiali.
+                Totale: {totaleKgRighe.toLocaleString("it-IT")} kg — € {totaleRighe.toFixed(2)} — una sola ricevuta con tutti i materiali.
               </p>
             </div>
 
             <div>
-              <Label>Importo totale €</Label>
+              <Label className="flex items-center justify-between">
+                <span>Importo totale €</span>
+                {importoTotaleManuale && (
+                  <button type="button" className="text-[11px] text-emerald-400 underline"
+                    onClick={() => { setImportoTotaleManuale(false); setConfForm(p => ({ ...p, importo_pagato: "" })); }}>
+                    ricalcola dalle righe
+                  </button>
+                )}
+              </Label>
               <Input
                 type="number"
-                value={confForm.importo_pagato || righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)}
-                onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))}
+                step="0.01"
+                value={importoTotaleManuale ? confForm.importo_pagato : totaleRighe.toFixed(2)}
+                onChange={(e) => { setImportoTotaleManuale(true); setConfForm(p => ({ ...p, importo_pagato: e.target.value })); }}
               />
             </div>
+
             <div>
               <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
