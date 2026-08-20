@@ -232,9 +232,7 @@ export function DevRicevuteModule() {
 
     const materiali = righeBase.map((m) => ({
       cer: m.cer,
-      descrizione:
-        CER_CATALOG.find((c) => c.codice === String(m.cer ?? "").replace(/\D/g, ""))?.descrizione ??
-        (m.cer ? `Rifiuto CER ${m.cer}` : ""),
+      descrizione: m.cer ? getCerDescrizioneCompleta(m.cer) : "",
       kg_pesati: m.kg_pesati,
       prezzo_kg: m.prezzo_kg ?? null,
       importo: m.importo_pagato ?? null,
