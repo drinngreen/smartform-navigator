@@ -1043,7 +1043,37 @@ export function DevPrivatiModule() {
                     )}
                   </div>
                   <Input type="number" placeholder="kg" value={riga.kg}
-                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, kg: e.target.value } : r)))} />
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const kg = parseFloat(e.target.value);
+                      const prezzo = parseFloat(r.prezzo);
+                      const importo = parseFloat(r.importo);
+                      let next = { ...r, kg: e.target.value };
+                      if (Number.isFinite(kg) && kg > 0 && Number.isFinite(prezzo)) {
+                        next.importo = (kg * prezzo).toFixed(2);
+                      } else if (Number.isFinite(kg) && kg > 0 && Number.isFinite(importo)) {
+                        next.prezzo = (importo / kg).toFixed(4);
+                      }
+                      return next;
+                    }))} />
+                  <Input type="number" step="0.0001" placeholder="€/kg" value={riga.prezzo}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const prezzo = parseFloat(e.target.value);
+                      const kg = parseFloat(r.kg);
+                      const next = { ...r, prezzo: e.target.value };
+                      if (Number.isFinite(prezzo) && Number.isFinite(kg) && kg > 0) next.importo = (kg * prezzo).toFixed(2);
+                      return next;
+                    }))} />
+                  <Input type="number" step="0.01" placeholder="Totale €" value={riga.importo}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const importo = parseFloat(e.target.value);
+                      const kg = parseFloat(r.kg);
+                      const next = { ...r, importo: e.target.value };
+                      if (Number.isFinite(importo) && Number.isFinite(kg) && kg > 0) next.prezzo = (importo / kg).toFixed(4);
+                      return next;
+                    }))} />
                   <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300"
                     disabled={righeMateriali.length === 1}
                     onClick={() => setRigheMateriali(p => p.filter((_, i) => i !== idx))}>
@@ -1052,11 +1082,18 @@ export function DevPrivatiModule() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — una sola ricevuta con tutti i materiali.
+                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — € {righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)} — una sola ricevuta con tutti i materiali.
               </p>
             </div>
 
-            <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
+            <div>
+              <Label>Importo totale €</Label>
+              <Input
+                type="number"
+                value={confForm.importo_pagato || righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)}
+                onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))}
+              />
+            </div>
             <div>
               <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
