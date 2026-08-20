@@ -449,6 +449,7 @@ export function DevPrivatiModule() {
     setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
     setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]);
+    setImportoTotaleManuale(false);
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
@@ -1012,7 +1013,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); } }}>
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); setImportoTotaleManuale(false); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
