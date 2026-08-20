@@ -54,6 +54,38 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   // Ogni riga ha peso, prezzo al kg e totale: due valori qualsiasi calcolano il terzo.
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string; prezzo: string; importo: string }[]>([{ cer: "", kg: "", prezzo: "", importo: "" }]);
+
+  /**
+   * Ricalcola la riga in base al campo modificato:
+   * kg + €/kg -> totale · kg + totale -> €/kg · €/kg + totale -> kg
+   * L'ultimo campo digitato viene sempre rispettato.
+   */
+  const ricalcolaRiga = (
+    riga: { cer: string; kg: string; prezzo: string; importo: string },
+    campo: "kg" | "prezzo" | "importo",
+    valore: string,
+  ) => {
+    const next = { ...riga, [campo]: valore };
+    const n = (v: string) => {
+      const x = parseFloat(String(v).replace(",", "."));
+      return Number.isFinite(x) ? x : null;
+    };
+    const kg = n(next.kg);
+    const prezzo = n(next.prezzo);
+    const importo = n(next.importo);
+
+    if (campo === "kg" && kg && kg > 0) {
+      if (prezzo != null) next.importo = (kg * prezzo).toFixed(2);
+      else if (importo != null) next.prezzo = (importo / kg).toFixed(4);
+    } else if (campo === "prezzo" && prezzo != null) {
+      if (kg && kg > 0) next.importo = (kg * prezzo).toFixed(2);
+      else if (importo != null && prezzo > 0) next.kg = (importo / prezzo).toFixed(2);
+    } else if (campo === "importo" && importo != null) {
+      if (kg && kg > 0) next.prezzo = (importo / kg).toFixed(4);
+      else if (prezzo != null && prezzo > 0) next.kg = (importo / prezzo).toFixed(2);
+    }
+    return next;
+  };
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
   const [mostraTuttiCer, setMostraTuttiCer] = useState(false);
   const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
