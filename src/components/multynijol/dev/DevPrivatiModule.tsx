@@ -371,7 +371,9 @@ export function DevPrivatiModule() {
     const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
     const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
-    const importoTotale = confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : 0;
+    const importoTotale = confForm.importo_pagato
+      ? parseFloat(confForm.importo_pagato)
+      : righe.reduce((s, r) => s + (Number(r.importo) || 0), 0);
     const { error } = await supabase.rpc("crea_conferimento_privato_atomico", {
       p_tenant_id: MULTY_TENANT_ID,
       p_impianto_id: impiantoId,
