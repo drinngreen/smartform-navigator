@@ -36,6 +36,8 @@ export function DevGestioneFIRModule() {
   const [printFirNumber, setPrintFirNumber] = useState<string | null>(null);
   const [assignDropdownId, setAssignDropdownId] = useState<string | null>(null);
   const [manualFirNumber, setManualFirNumber] = useState("");
+  const [blankFirNumber, setBlankFirNumber] = useState("");
+  const [blankPrintNumber, setBlankPrintNumber] = useState<string | null>(null);
   const [isCreatingManual, setIsCreatingManual] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -242,6 +244,27 @@ export function DevGestioneFIRModule() {
         <StatCard icon={<Printer className="h-5 w-5" />} label="Cartacei" value={stats?.cartacei ?? 0} color="text-violet-400" loading={statsLoading} />
       </div>
 
+      {/* Stampa formulario vuoto */}
+      <div className="rounded-2xl bg-card/60 border border-violet-500/30 p-6 space-y-4">
+        <div className="flex items-center gap-2 text-violet-400"><Printer className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Stampa Formulario Vuoto</h3></div>
+        <p className="text-xs text-muted-foreground">Stampa un modulo completamente vuoto, da compilare a mano. Puoi assegnargli un numero FIR (opzionale).</p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            value={blankFirNumber}
+            onChange={(e) => setBlankFirNumber(e.target.value.toUpperCase())}
+            onKeyDown={(e) => { if (e.key === "Enter") setBlankPrintNumber(blankFirNumber.trim()); }}
+            placeholder="NUMERO FIR (opzionale)"
+            className="min-w-0 flex-1 bg-background/80 border border-violet-500/40 rounded-xl px-4 py-3 text-foreground text-sm font-mono placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-violet-400"
+          />
+          <button
+            onClick={() => setBlankPrintNumber(blankFirNumber.trim())}
+            className="px-6 py-3 rounded-xl bg-violet-600 text-white font-display text-sm tracking-wider hover:bg-violet-500 transition-colors flex items-center justify-center gap-2"
+          >
+            <Printer className="h-4 w-4" /> STAMPA VUOTO
+          </button>
+        </div>
+      </div>
+
       {/* Manual FIR Draft */}
       <div className="rounded-2xl bg-card/60 border border-emerald-500/30 p-6 space-y-4">
         <div className="flex items-center gap-2 text-emerald-400"><Plus className="h-5 w-5" /><h3 className="font-display text-lg tracking-wider uppercase">Crea Formulario da Numero</h3></div>
@@ -400,6 +423,30 @@ export function DevGestioneFIRModule() {
           </div>
         )}
       </div>
+
+      {/* Stampa formulario vuoto Dialog */}
+      {blankPrintNumber !== null && (
+        <DevStampaFIREditor
+          firNumber={blankPrintNumber}
+          blank
+          open={blankPrintNumber !== null}
+          onClose={() => setBlankPrintNumber(null)}
+          onPrinted={async () => {
+            const numero = blankPrintNumber.trim();
+            if (numero) {
+              const { error } = await supabase
+                .from("fir_number_pool")
+                .update({ status: "cartaceo", consumed_at: new Date().toISOString() })
+                .eq("fir_number", numero)
+                .eq("societa_id", SOCIETA_ID);
+              if (error) toast.error("Errore aggiornamento stato: " + error.message);
+              else invalidatePool();
+            }
+            setBlankPrintNumber(null);
+            setBlankFirNumber("");
+          }}
+        />
+      )}
 
       {/* Stampa FIR Editor Dialog */}
       {printFirNumber && (
