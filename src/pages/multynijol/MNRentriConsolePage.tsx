@@ -25,6 +25,7 @@ import {
 } from "@/lib/rentriRegistroSync";
 import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
+import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
 import {
@@ -40,6 +41,7 @@ import {
   Copy,
   ArrowLeft,
   FileText,
+  Printer,
 } from "lucide-react";
 
 
@@ -288,6 +290,8 @@ export default function MNRentriConsolePage() {
       setPescando(false);
     }
   };
+  const [blankPrintFir, setBlankPrintFir] = useState<string | null>(null);
+
 
   const handleAssegna = async (firNumber: string, userId: string) => {
     setAssegnando(true);
@@ -623,6 +627,14 @@ export default function MNRentriConsolePage() {
                     >
                       <Copy size={14} />
                     </button>
+                    <button
+                      type="button"
+                      title="Stampa formulario vuoto con questo numero e assegnalo all'ufficio"
+                      onClick={() => setBlankPrintFir(p.fir_number)}
+                      className="rounded-md border border-violet-500/50 bg-violet-500/10 p-1.5 text-violet-300 hover:bg-violet-500/20"
+                    >
+                      <Printer size={14} />
+                    </button>
                     <select
                       disabled={assegnando}
                       value=""
@@ -951,6 +963,19 @@ export default function MNRentriConsolePage() {
 
         {tab === "lemon" && <DarkLemonMNChat context={context} surface="console" />}
       </div>
-    </MNAdminLayout>
+      {blankPrintFir && (
+        <DevStampaFIREditor
+          firNumber={blankPrintFir}
+          blank
+          open={!!blankPrintFir}
+          onClose={() => setBlankPrintFir(null)}
+          onPrinted={async () => {
+            const num = blankPrintFir;
+            setBlankPrintFir(null);
+            if (num) await handleAssegnaUfficio(num);
+          }}
+        />
+      )}
+      </MNAdminLayout>
   );
 }
