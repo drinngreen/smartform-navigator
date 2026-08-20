@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
+import { DevFirCartaceoModule } from "./DevFirCartaceoModule";
+
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { ImpiantoFirList } from "@/components/impianto/ImpiantoFirList";
@@ -145,7 +147,11 @@ export function DevImpiantoModule() {
           <TabsTrigger value="registro" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <ClipboardList className="h-4 w-4" /> Registro C/S
           </TabsTrigger>
+          <TabsTrigger value="fir-cartaceo" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
+            <Truck className="h-4 w-4" /> FIR Cartaceo
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
@@ -171,10 +177,16 @@ export function DevImpiantoModule() {
             <DevRegistroCaricoScaricoModule />
           </div>
         </TabsContent>
+        <TabsContent value="fir-cartaceo">
+          <div className="p-4 rounded-2xl bg-card/60 border border-amber-500/20">
+            <DevFirCartaceoModule />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
 
 // ─── Formulari sub-module ───
 function ImpiantoFormulari() {
