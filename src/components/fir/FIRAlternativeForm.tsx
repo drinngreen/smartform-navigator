@@ -479,13 +479,16 @@ interface FIRAlternativeFormProps {
   draftData?: FIRAlternativeDraftData | null;
   ocrEntries?: { id: string; value: string }[];
   printOnly?: boolean;
+  /** Stampa un formulario completamente vuoto: nessuna bozza, nessun preset, solo il numero FIR. */
+  blankPrint?: boolean;
   disableRentriActions?: boolean;
   registryMovementType?: "Carico" | "Scarico";
   onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, disableRentriActions, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
