@@ -992,7 +992,7 @@ export function DevPrivatiModule() {
                 </Button>
               </div>
               {righeMateriali.map((riga, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_110px_36px] gap-2 items-start">
+                <div key={idx} className="grid grid-cols-[1fr_90px_90px_90px_36px] gap-2 items-start">
                   <div
                     className="relative"
                     ref={(el) => {
