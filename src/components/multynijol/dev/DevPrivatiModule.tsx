@@ -960,7 +960,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "" }]); } }}>
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
