@@ -54,6 +54,17 @@ export function DevPrivatiModule() {
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
   // Ogni riga ha peso, prezzo al kg e totale: due valori qualsiasi calcolano il terzo.
   const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string; prezzo: string; importo: string }[]>([{ cer: "", kg: "", prezzo: "", importo: "" }]);
+  // true solo se l'operatore scrive a mano l'importo totale: altrimenti è sempre la somma delle righe
+  const [importoTotaleManuale, setImportoTotaleManuale] = useState(false);
+  const totaleRighe = righeMateriali.reduce(
+    (s, r) => s + (parseFloat(String(r.importo).replace(",", ".")) || 0),
+    0,
+  );
+  const totaleKgRighe = righeMateriali.reduce(
+    (s, r) => s + (parseFloat(String(r.kg).replace(",", ".")) || 0),
+    0,
+  );
+
 
   /**
    * Ricalcola la riga in base al campo modificato:
