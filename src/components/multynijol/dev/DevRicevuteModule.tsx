@@ -99,7 +99,7 @@ export function DevRicevuteModule() {
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
         .from("ricevute_privati")
-        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
+        .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, prezzo_kg, importo_pagato, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
@@ -111,12 +111,12 @@ export function DevRicevuteModule() {
       if (gruppi.length) {
         const { data: confs } = (await (supabase as any)
           .from("privati_conferimenti")
-          .select("gruppo_id, cer, kg_pesati")
-          .in("gruppo_id", gruppi)) as { data: { gruppo_id: string; cer: string | null; kg_pesati: number | null }[] | null };
-        const byGruppo = new Map<string, { cer: string | null; kg_pesati: number | null }[]>();
+          .select("gruppo_id, cer, kg_pesati, prezzo_kg, importo_pagato")
+          .in("gruppo_id", gruppi)) as { data: { gruppo_id: string; cer: string | null; kg_pesati: number | null; prezzo_kg: number | null; importo_pagato: number | null }[] | null };
+        const byGruppo = new Map<string, { cer: string | null; kg_pesati: number | null; prezzo_kg: number | null; importo_pagato: number | null }[]>();
         for (const c of confs ?? []) {
           if (!byGruppo.has(c.gruppo_id)) byGruppo.set(c.gruppo_id, []);
-          byGruppo.get(c.gruppo_id)!.push({ cer: c.cer, kg_pesati: c.kg_pesati });
+          byGruppo.get(c.gruppo_id)!.push({ cer: c.cer, kg_pesati: c.kg_pesati, prezzo_kg: c.prezzo_kg, importo_pagato: c.importo_pagato });
         }
         for (const r of rows) if (r.gruppo_id) r.materiali = byGruppo.get(r.gruppo_id);
       }
