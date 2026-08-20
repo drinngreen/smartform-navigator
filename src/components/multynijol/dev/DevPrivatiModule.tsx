@@ -52,7 +52,8 @@ export function DevPrivatiModule() {
   const [cerSearch, setCerSearch] = useState("");
   const [showCerDropdown, setShowCerDropdown] = useState(false);
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
-  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
+  // Ogni riga ha peso, prezzo al kg e totale: due valori qualsiasi calcolano il terzo.
+  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string; prezzo: string; importo: string }[]>([{ cer: "", kg: "", prezzo: "", importo: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
   const [mostraTuttiCer, setMostraTuttiCer] = useState(false);
   const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -335,7 +336,7 @@ export function DevPrivatiModule() {
     if (!confForm.metodo_pag) { toast.error("Seleziona il metodo di pagamento"); return; }
 
     // Normalizza le righe materiali (multi-materiale)
-    const righe: { cer: string; kg: number }[] = [];
+    const righe: { cer: string; kg: number; prezzo_kg?: number; importo?: number }[] = [];
     for (const r of righeMateriali) {
       const rawCer = (r.cer || "").trim();
       const kg = parseFloat(r.kg);
@@ -343,7 +344,14 @@ export function DevPrivatiModule() {
       if (!rawCer) { toast.error("Ogni riga deve avere un codice CER"); return; }
       if (!Number.isFinite(kg) || kg <= 0) { toast.error(`Peso non valido per il CER ${rawCer}`); return; }
       const cerInfo = ALL_CER.find((c) => c.codice.toLowerCase() === rawCer.toLowerCase());
-      righe.push({ cer: cerInfo?.codice || rawCer.toUpperCase(), kg });
+      const prezzo = parseFloat(String(r.prezzo).replace(",", "."));
+      const importo = parseFloat(String(r.importo).replace(",", "."));
+      righe.push({
+        cer: cerInfo?.codice || rawCer.toUpperCase(),
+        kg,
+        ...(Number.isFinite(prezzo) ? { prezzo_kg: prezzo } : {}),
+        ...(Number.isFinite(importo) ? { importo } : {}),
+      });
     }
     if (!righe.length) { toast.error("Inserisci almeno un materiale (CER + kg)"); return; }
 
@@ -363,7 +371,9 @@ export function DevPrivatiModule() {
     const privato = privati?.find((p) => p.id === targetPrivatoId);
     const nomeFinale = privato ? `${privato.cognome} ${privato.nome}` : "Anonimo";
     const dataRegistrazione = confForm.data || format(new Date(), "yyyy-MM-dd");
-    const importoTotale = confForm.importo_pagato ? parseFloat(confForm.importo_pagato) : 0;
+    const importoTotale = confForm.importo_pagato
+      ? parseFloat(confForm.importo_pagato)
+      : righe.reduce((s, r) => s + (Number(r.importo) || 0), 0);
     const { error } = await supabase.rpc("crea_conferimento_privato_atomico", {
       p_tenant_id: MULTY_TENANT_ID,
       p_impianto_id: impiantoId,
@@ -395,7 +405,7 @@ export function DevPrivatiModule() {
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
-    setRigheMateriali([{ cer: "", kg: "" }]);
+    setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]);
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
@@ -959,7 +969,7 @@ export function DevPrivatiModule() {
       </Dialog>
 
       {/* ─── New Conferimento Dialog ─── */}
-      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "" }]); } }}>
+      <Dialog open={showNewConferimento} onOpenChange={(o) => { setShowNewConferimento(o); setLimitWarning(null); if (!o) { setConferimentoPrivatoId(null); setCerSearch(""); setShowCerDropdown(false); setOpenCerRow(null); setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]); } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -979,12 +989,12 @@ export function DevPrivatiModule() {
               <div className="flex items-center justify-between">
                 <Label>Materiali conferiti *</Label>
                 <Button type="button" size="sm" variant="outline" className="h-7 gap-1 text-xs"
-                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "" }])}>
+                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "", prezzo: "", importo: "" }])}>
                   + Aggiungi materiale
                 </Button>
               </div>
               {righeMateriali.map((riga, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_110px_36px] gap-2 items-start">
+                <div key={idx} className="grid grid-cols-[1fr_90px_90px_90px_36px] gap-2 items-start">
                   <div
                     className="relative"
                     ref={(el) => {
@@ -1035,7 +1045,37 @@ export function DevPrivatiModule() {
                     )}
                   </div>
                   <Input type="number" placeholder="kg" value={riga.kg}
-                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? { ...r, kg: e.target.value } : r)))} />
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const kg = parseFloat(e.target.value);
+                      const prezzo = parseFloat(r.prezzo);
+                      const importo = parseFloat(r.importo);
+                      let next = { ...r, kg: e.target.value };
+                      if (Number.isFinite(kg) && kg > 0 && Number.isFinite(prezzo)) {
+                        next.importo = (kg * prezzo).toFixed(2);
+                      } else if (Number.isFinite(kg) && kg > 0 && Number.isFinite(importo)) {
+                        next.prezzo = (importo / kg).toFixed(4);
+                      }
+                      return next;
+                    }))} />
+                  <Input type="number" step="0.0001" placeholder="€/kg" value={riga.prezzo}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const prezzo = parseFloat(e.target.value);
+                      const kg = parseFloat(r.kg);
+                      const next = { ...r, prezzo: e.target.value };
+                      if (Number.isFinite(prezzo) && Number.isFinite(kg) && kg > 0) next.importo = (kg * prezzo).toFixed(2);
+                      return next;
+                    }))} />
+                  <Input type="number" step="0.01" placeholder="Totale €" value={riga.importo}
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
+                      if (i !== idx) return r;
+                      const importo = parseFloat(e.target.value);
+                      const kg = parseFloat(r.kg);
+                      const next = { ...r, importo: e.target.value };
+                      if (Number.isFinite(importo) && Number.isFinite(kg) && kg > 0) next.prezzo = (importo / kg).toFixed(4);
+                      return next;
+                    }))} />
                   <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300"
                     disabled={righeMateriali.length === 1}
                     onClick={() => setRigheMateriali(p => p.filter((_, i) => i !== idx))}>
@@ -1044,11 +1084,18 @@ export function DevPrivatiModule() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — una sola ricevuta con tutti i materiali.
+                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — € {righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)} — una sola ricevuta con tutti i materiali.
               </p>
             </div>
 
-            <div><Label>Importo €</Label><Input type="number" value={confForm.importo_pagato} onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))} /></div>
+            <div>
+              <Label>Importo totale €</Label>
+              <Input
+                type="number"
+                value={confForm.importo_pagato || righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)}
+                onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))}
+              />
+            </div>
             <div>
               <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>

@@ -4906,6 +4906,7 @@ export type Database = {
           note: string | null
           numero_fir: string | null
           numero_progressivo: number | null
+          prezzo_kg: number | null
           privato_id: string | null
           quantita_presunta: number | null
           stato_rifiuto: string | null
@@ -4933,6 +4934,7 @@ export type Database = {
           note?: string | null
           numero_fir?: string | null
           numero_progressivo?: number | null
+          prezzo_kg?: number | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
@@ -4960,6 +4962,7 @@ export type Database = {
           note?: string | null
           numero_fir?: string | null
           numero_progressivo?: number | null
+          prezzo_kg?: number | null
           privato_id?: string | null
           quantita_presunta?: number | null
           stato_rifiuto?: string | null
