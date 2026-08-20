@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 import { stampaRicevuta } from "@/lib/ricevutaPrivatoPrint";
 import { CER_CATALOG } from "@/data/cerCatalog";
-import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -232,7 +231,9 @@ export function DevRicevuteModule() {
 
     const materiali = righeBase.map((m) => ({
       cer: m.cer,
-      descrizione: m.cer ? getCerDescrizioneCompleta(m.cer) : "",
+      descrizione: m.cer
+        ? (CER_CATALOG.find((c) => c.codice === m.cer)?.descrizione ?? "")
+        : "",
       kg_pesati: m.kg_pesati,
       prezzo_kg: m.prezzo_kg ?? null,
       importo: m.importo_pagato ?? null,
