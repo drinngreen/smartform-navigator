@@ -1443,6 +1443,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 htmlEl.parentNode?.replaceChild(span, htmlEl);
               });
               // Build all 3 pages for print
+              const numeroToPrint = canonicalNumeroFir || presetNumeroFir || "";
               const allPagesHtml = [1, 2, 3].map(pageNum => {
                 const pageContainer = document.createElement("div");
                 pageContainer.style.cssText = "position:relative;page-break-after:always;";
@@ -1450,17 +1451,28 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 img.src = PAGE_IMAGES[pageNum - 1];
                 img.style.cssText = "width:100%;height:auto;display:block;";
                 pageContainer.appendChild(img);
+                let numeroRendered = false;
                 // Render fields for this page
                 fields.filter(f => f.page === pageNum).forEach(field => {
-                  const val = String(values[field.id] || "");
+                  const isNumero = isNumeroFirFieldName(field.name);
+                  const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
                   if (!val) return;
+                  if (isNumero) numeroRendered = true;
                   const span = document.createElement("span");
                   span.textContent = val;
                   span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
                   pageContainer.appendChild(span);
                 });
+                // Fallback: se il template non ha un campo "numero FIR", stampalo comunque in alto a destra
+                if (!numeroRendered && numeroToPrint) {
+                  const span = document.createElement("span");
+                  span.textContent = `N. ${numeroToPrint}`;
+                  span.style.cssText = "position:absolute;left:60%;top:3%;width:38%;font-family:monospace;font-weight:bold;font-size:clamp(9px,2.1vw,13px);color:#1a1a2e;white-space:nowrap;text-align:right;";
+                  pageContainer.appendChild(span);
+                }
                 return pageContainer.outerHTML;
               }).join("");
+
               const signatureBlock = `
                 <div style="position:relative;page-break-before:always;padding:24mm 15mm;font-family:Arial,Helvetica,sans-serif;color:#111;">
                   <h2 style="margin:0 0 6mm 0;font-size:16pt;letter-spacing:1px;">FIR N. ${presetNumeroFir || ""} — Timbri e Firme</h2>
