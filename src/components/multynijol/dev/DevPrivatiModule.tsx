@@ -993,6 +993,9 @@ export function DevPrivatiModule() {
                   + Aggiungi materiale
                 </Button>
               </div>
+              <div className="grid grid-cols-[1fr_90px_90px_90px_36px] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span>CER</span><span>Kg</span><span>€/kg</span><span>Totale €</span><span />
+              </div>
               {righeMateriali.map((riga, idx) => (
                 <div key={idx} className="grid grid-cols-[1fr_90px_90px_90px_36px] gap-2 items-start">
                   <div
