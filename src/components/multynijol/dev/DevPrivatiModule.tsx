@@ -987,7 +987,7 @@ export function DevPrivatiModule() {
               <div className="flex items-center justify-between">
                 <Label>Materiali conferiti *</Label>
                 <Button type="button" size="sm" variant="outline" className="h-7 gap-1 text-xs"
-                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "" }])}>
+                  onClick={() => setRigheMateriali(p => [...p, { cer: "", kg: "", prezzo: "", importo: "" }])}>
                   + Aggiungi materiale
                 </Button>
               </div>
