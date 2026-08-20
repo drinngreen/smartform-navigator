@@ -231,7 +231,9 @@ export function DevRicevuteModule() {
 
     const materiali = righeBase.map((m) => ({
       cer: m.cer,
-      descrizione: CER_CATALOG.find((c) => c.codice === m.cer)?.descrizione ?? "",
+      descrizione:
+        CER_CATALOG.find((c) => c.codice === String(m.cer ?? "").replace(/\D/g, ""))?.descrizione ??
+        (m.cer ? `Rifiuto CER ${m.cer}` : ""),
       kg_pesati: m.kg_pesati,
       prezzo_kg: m.prezzo_kg ?? null,
       importo: m.importo_pagato ?? null,
@@ -249,9 +251,15 @@ export function DevRicevuteModule() {
       }
     }
 
+    // Tiene solo le note scritte dall'operatore: scarta il riepilogo automatico (DBT #… - CER … - Totale … kg - Pag.: …)
+    const isRiepilogoAuto = (line: string) =>
+      /^DBT\s*#/i.test(line) || (/\bCER\s*\d{6}\b/i.test(line) && /Totale\s|Pag\.:/i.test(line));
+
     const noteComplete = [r.note ?? "", r.conferimento?.note ?? ""]
-      .map((n) => (n || "").trim())
-      .filter((n, i, arr) => n && arr.indexOf(n) === i)
+      .flatMap((n) => (n || "").split("\n"))
+      .map((n) => n.trim())
+      .filter((n) => n && !isRiepilogoAuto(n))
+      .filter((n, i, arr) => arr.indexOf(n) === i)
       .join("\n");
 
     const veicolo = r.conferimento?.targa_automezzo
