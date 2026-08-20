@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
+import { DevFirCartaceoModule } from "./DevFirCartaceoModule";
+
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { ImpiantoFirList } from "@/components/impianto/ImpiantoFirList";
