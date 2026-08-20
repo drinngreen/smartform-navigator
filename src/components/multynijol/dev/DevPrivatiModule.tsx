@@ -403,7 +403,7 @@ export function DevPrivatiModule() {
     setShowNewConferimento(false);
     setConferimentoPrivatoId(null);
     setConfForm({ cer: "", kg_pesati: "", importo_pagato: "", metodo_pag: "contanti", note: "", targa_automezzo: "", modello_automezzo: "", data: new Date().toISOString().slice(0, 10) });
-    setRigheMateriali([{ cer: "", kg: "" }]);
+    setRigheMateriali([{ cer: "", kg: "", prezzo: "", importo: "" }]);
     setCerSearch("");
     setLimitWarning(null);
     invalidateInventoryQueries();
