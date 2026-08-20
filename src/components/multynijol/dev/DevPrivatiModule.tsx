@@ -1104,18 +1104,28 @@ export function DevPrivatiModule() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Totale: {righeMateriali.reduce((s, r) => s + (parseFloat(r.kg) || 0), 0)} kg — € {righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)} — una sola ricevuta con tutti i materiali.
+                Totale: {totaleKgRighe.toLocaleString("it-IT")} kg — € {totaleRighe.toFixed(2)} — una sola ricevuta con tutti i materiali.
               </p>
             </div>
 
             <div>
-              <Label>Importo totale €</Label>
+              <Label className="flex items-center justify-between">
+                <span>Importo totale €</span>
+                {importoTotaleManuale && (
+                  <button type="button" className="text-[11px] text-emerald-400 underline"
+                    onClick={() => { setImportoTotaleManuale(false); setConfForm(p => ({ ...p, importo_pagato: "" })); }}>
+                    ricalcola dalle righe
+                  </button>
+                )}
+              </Label>
               <Input
                 type="number"
-                value={confForm.importo_pagato || righeMateriali.reduce((s, r) => s + (parseFloat(r.importo) || 0), 0).toFixed(2)}
-                onChange={(e) => setConfForm(p => ({ ...p, importo_pagato: e.target.value }))}
+                step="0.01"
+                value={importoTotaleManuale ? confForm.importo_pagato : totaleRighe.toFixed(2)}
+                onChange={(e) => { setImportoTotaleManuale(true); setConfForm(p => ({ ...p, importo_pagato: e.target.value })); }}
               />
             </div>
+
             <div>
               <Label>Metodo Pagamento *</Label>
               <Select value={confForm.metodo_pag} onValueChange={(v) => setConfForm(p => ({ ...p, metodo_pag: v }))}>
