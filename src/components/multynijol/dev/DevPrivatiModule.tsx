@@ -52,7 +52,8 @@ export function DevPrivatiModule() {
   const [cerSearch, setCerSearch] = useState("");
   const [showCerDropdown, setShowCerDropdown] = useState(false);
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
-  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string }[]>([{ cer: "", kg: "" }]);
+  // Ogni riga ha peso, prezzo al kg e totale: due valori qualsiasi calcolano il terzo.
+  const [righeMateriali, setRigheMateriali] = useState<{ cer: string; kg: string; prezzo: string; importo: string }[]>([{ cer: "", kg: "", prezzo: "", importo: "" }]);
   const [openCerRow, setOpenCerRow] = useState<number | null>(null);
   const [mostraTuttiCer, setMostraTuttiCer] = useState(false);
   const cerRowRefs = useRef<Map<number, HTMLDivElement>>(new Map());
