@@ -249,9 +249,15 @@ export function DevRicevuteModule() {
       }
     }
 
+    // Tiene solo le note scritte dall'operatore: scarta il riepilogo automatico (DBT #… - CER … - Totale … kg - Pag.: …)
+    const isRiepilogoAuto = (line: string) =>
+      /^DBT\s*#/i.test(line) || (/\bCER\s*\d{6}\b/i.test(line) && /Totale\s|Pag\.:/i.test(line));
+
     const noteComplete = [r.note ?? "", r.conferimento?.note ?? ""]
-      .map((n) => (n || "").trim())
-      .filter((n, i, arr) => n && arr.indexOf(n) === i)
+      .flatMap((n) => (n || "").split("\n"))
+      .map((n) => n.trim())
+      .filter((n) => n && !isRiepilogoAuto(n))
+      .filter((n, i, arr) => arr.indexOf(n) === i)
       .join("\n");
 
     const veicolo = r.conferimento?.targa_automezzo
