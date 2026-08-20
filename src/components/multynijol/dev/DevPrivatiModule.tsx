@@ -1048,37 +1048,11 @@ export function DevPrivatiModule() {
                     )}
                   </div>
                   <Input type="number" placeholder="kg" value={riga.kg}
-                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
-                      if (i !== idx) return r;
-                      const kg = parseFloat(e.target.value);
-                      const prezzo = parseFloat(r.prezzo);
-                      const importo = parseFloat(r.importo);
-                      let next = { ...r, kg: e.target.value };
-                      if (Number.isFinite(kg) && kg > 0 && Number.isFinite(prezzo)) {
-                        next.importo = (kg * prezzo).toFixed(2);
-                      } else if (Number.isFinite(kg) && kg > 0 && Number.isFinite(importo)) {
-                        next.prezzo = (importo / kg).toFixed(4);
-                      }
-                      return next;
-                    }))} />
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? ricalcolaRiga(r, "kg", e.target.value) : r)))} />
                   <Input type="number" step="0.0001" placeholder="€/kg" value={riga.prezzo}
-                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
-                      if (i !== idx) return r;
-                      const prezzo = parseFloat(e.target.value);
-                      const kg = parseFloat(r.kg);
-                      const next = { ...r, prezzo: e.target.value };
-                      if (Number.isFinite(prezzo) && Number.isFinite(kg) && kg > 0) next.importo = (kg * prezzo).toFixed(2);
-                      return next;
-                    }))} />
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? ricalcolaRiga(r, "prezzo", e.target.value) : r)))} />
                   <Input type="number" step="0.01" placeholder="Totale €" value={riga.importo}
-                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => {
-                      if (i !== idx) return r;
-                      const importo = parseFloat(e.target.value);
-                      const kg = parseFloat(r.kg);
-                      const next = { ...r, importo: e.target.value };
-                      if (Number.isFinite(importo) && Number.isFinite(kg) && kg > 0) next.prezzo = (importo / kg).toFixed(4);
-                      return next;
-                    }))} />
+                    onChange={(e) => setRigheMateriali(p => p.map((r, i) => (i === idx ? ricalcolaRiga(r, "importo", e.target.value) : r)))} />
                   <Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300"
                     disabled={righeMateriali.length === 1}
                     onClick={() => setRigheMateriali(p => p.filter((_, i) => i !== idx))}>
