@@ -1326,6 +1326,7 @@ export type Database = {
           notes: string | null
           number: string | null
           status: string
+          test_session: string | null
           updated_at: string
         }
         Insert: {
@@ -1339,6 +1340,7 @@ export type Database = {
           notes?: string | null
           number?: string | null
           status?: string
+          test_session?: string | null
           updated_at?: string
         }
         Update: {
@@ -1352,6 +1354,7 @@ export type Database = {
           notes?: string | null
           number?: string | null
           status?: string
+          test_session?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1422,6 +1425,7 @@ export type Database = {
           metadata: Json | null
           pericoloso: boolean
           stato_fisico_default: string | null
+          test_session: string | null
           tipo_mps_eow: string | null
           tipo_mps_eow_desc: string | null
           unita_misura_default: string
@@ -1441,6 +1445,7 @@ export type Database = {
           metadata?: Json | null
           pericoloso?: boolean
           stato_fisico_default?: string | null
+          test_session?: string | null
           tipo_mps_eow?: string | null
           tipo_mps_eow_desc?: string | null
           unita_misura_default?: string
@@ -1460,6 +1465,7 @@ export type Database = {
           metadata?: Json | null
           pericoloso?: boolean
           stato_fisico_default?: string | null
+          test_session?: string | null
           tipo_mps_eow?: string | null
           tipo_mps_eow_desc?: string | null
           unita_misura_default?: string
@@ -1566,6 +1572,7 @@ export type Database = {
           parent_lot_id: string | null
           production_date: string
           status: string
+          test_session: string | null
           updated_at: string
           warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -1581,6 +1588,7 @@ export type Database = {
           parent_lot_id?: string | null
           production_date?: string
           status?: string
+          test_session?: string | null
           updated_at?: string
           warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -1596,6 +1604,7 @@ export type Database = {
           parent_lot_id?: string | null
           production_date?: string
           status?: string
+          test_session?: string | null
           updated_at?: string
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -1738,6 +1747,7 @@ export type Database = {
           source_site_id: string | null
           source_transform_batch_id: string | null
           status: Database["public"]["Enums"]["dragon_movement_status"]
+          test_session: string | null
           unit_of_measure: string
           updated_at: string
           updated_by: string | null
@@ -1773,6 +1783,7 @@ export type Database = {
           source_site_id?: string | null
           source_transform_batch_id?: string | null
           status?: Database["public"]["Enums"]["dragon_movement_status"]
+          test_session?: string | null
           unit_of_measure?: string
           updated_at?: string
           updated_by?: string | null
@@ -1808,6 +1819,7 @@ export type Database = {
           source_site_id?: string | null
           source_transform_batch_id?: string | null
           status?: Database["public"]["Enums"]["dragon_movement_status"]
+          test_session?: string | null
           unit_of_measure?: string
           updated_at?: string
           updated_by?: string | null
@@ -1914,6 +1926,7 @@ export type Database = {
           source_document_id: string | null
           source_register_movement_id: string | null
           source_transform_batch_id: string | null
+          test_session: string | null
           warehouse_id: string | null
           warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -1932,6 +1945,7 @@ export type Database = {
           source_document_id?: string | null
           source_register_movement_id?: string | null
           source_transform_batch_id?: string | null
+          test_session?: string | null
           warehouse_id?: string | null
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -1950,6 +1964,7 @@ export type Database = {
           source_document_id?: string | null
           source_register_movement_id?: string | null
           source_transform_batch_id?: string | null
+          test_session?: string | null
           warehouse_id?: string | null
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
         }
@@ -2072,6 +2087,7 @@ export type Database = {
       }
       dragon_transform_batches: {
         Row: {
+          calo_peso_kg: number
           company_id: string
           created_at: string
           created_by: string | null
@@ -2083,9 +2099,11 @@ export type Database = {
           source_item_id: string
           source_register_movement_id: string | null
           status: Database["public"]["Enums"]["dragon_batch_status"]
+          test_session: string | null
           updated_at: string
         }
         Insert: {
+          calo_peso_kg?: number
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -2097,9 +2115,11 @@ export type Database = {
           source_item_id: string
           source_register_movement_id?: string | null
           status?: Database["public"]["Enums"]["dragon_batch_status"]
+          test_session?: string | null
           updated_at?: string
         }
         Update: {
+          calo_peso_kg?: number
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -2111,6 +2131,7 @@ export type Database = {
           source_item_id?: string
           source_register_movement_id?: string | null
           status?: Database["public"]["Enums"]["dragon_batch_status"]
+          test_session?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -6534,6 +6555,22 @@ export type Database = {
           p_quantity: number
         }
         Returns: string
+      }
+      dragon_test_balance_snapshot: {
+        Args: { p_company_id: string }
+        Returns: Json
+      }
+      dragon_test_cleanup: {
+        Args: { p_company_id: string; p_session: string }
+        Returns: Json
+      }
+      dragon_test_run: {
+        Args: { p_company_id: string; p_scenario: string }
+        Returns: Json
+      }
+      dragon_test_tag_batch: {
+        Args: { p_batch_id: string; p_company_id: string; p_session: string }
+        Returns: undefined
       }
       ensure_fir_draft_by_number_for_tenant: {
         Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
