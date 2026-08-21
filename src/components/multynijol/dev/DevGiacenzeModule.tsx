@@ -88,24 +88,6 @@ export function DevGiacenzeModule() {
     },
   });
 
-  // Saldi iniziali ufficiali (snapshot) — indispensabili per la giacenza reale
-  const { data: baseline } = useQuery({
-    queryKey: ["dev-giacenze-baseline", MULTY_TENANT_ID],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("magazzino_giacenze")
-        .select("cer, descrizione_cer, saldo_iniziale_kg, saldo_snapshot_at")
-        .eq("tenant_id", MULTY_TENANT_ID);
-      if (error) throw error;
-      return data as {
-        cer: string;
-        descrizione_cer: string | null;
-        saldo_iniziale_kg: number | null;
-        saldo_snapshot_at: string | null;
-      }[];
-    },
-  });
-
   // Aggregazione contabile per CER: Saldo = Carico − Scarico sui movimenti del periodo,
   // esattamente come la stampa ufficiale "Registrazioni per C.E.R.".
   const rows: CerRow[] = useMemo(() => {
@@ -120,18 +102,8 @@ export function DevGiacenzeModule() {
       if (d && !isTechnicalDesc(d)) descriptionsByCer[m.cer] = d;
     }
 
-    for (const b of baseline ?? []) {
-      const d = b.descrizione_cer?.trim();
-      if (d && !isTechnicalDesc(d)) descriptionsByCer[b.cer] = d;
-    }
-
-
     // Se richiesto, mostra l'intero catalogo CER/EER (843 codici) con saldo 0 se senza movimenti
     if (showAllCer) {
-      for (const b of baseline ?? []) {
-        if (!b.cer) continue;
-        map[b.cer] = { cer: b.cer, descrizione: descriptionsByCer[b.cer] || "", carico: 0, scarico: 0, saldo: 0 };
-      }
       for (const c of CER_CATALOG) {
         if (!map[c.codice]) {
           map[c.codice] = {
@@ -161,7 +133,7 @@ export function DevGiacenzeModule() {
     return Object.values(map)
       .filter((r) => showAllCer || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, baseline, dataAl, dataDal, showAllCer]);
+  }, [movimenti, dataAl, dataDal, showAllCer]);
 
 
 
