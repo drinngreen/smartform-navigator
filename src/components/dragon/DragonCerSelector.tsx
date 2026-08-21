@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Search, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
 import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 
@@ -28,8 +27,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
       const item = existingByCode.get(entry.codice);
       if (item?.id === excludeItemId) return false;
       return !normalized || entry.codice.includes(normalized.replace(/\s/g, "")) || entry.descrizione.toLocaleLowerCase("it").includes(normalized);
-    })
-    .slice(0, 120), [excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
+    }), [excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
 
   const choose = async (code: string) => {
     const existing = existingByCode.get(code);
@@ -77,7 +75,9 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
                   <span className="w-16 shrink-0 font-mono text-xs">{entry.codice}</span>
                   <span className="min-w-0 flex-1 whitespace-normal text-xs">{entry.descrizione}</span>
                   {preferredCodes.has(entry.codice) && <Star className="h-3 w-3 shrink-0 text-amber-400" />}
-                  {existing ? <Badge variant="outline" className="shrink-0 text-[10px]">Dragon</Badge> : <Badge variant="outline" className="shrink-0 text-[10px]">Globale</Badge>}
+                  <span className="shrink-0 rounded-full border border-border bg-transparent px-2 py-1 text-[10px] font-semibold text-foreground">
+                    {existing ? "Dragon" : "Globale"}
+                  </span>
                 </Button>
               );
             })}

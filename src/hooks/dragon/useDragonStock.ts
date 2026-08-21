@@ -9,18 +9,28 @@ export function useDragonStock(scope?: DragonWarehouseScope) {
   const { data: stockMovements = [], isLoading: loadingMovements } = useQuery({
     queryKey: ["dragon-stock", companyId, scope],
     queryFn: async () => {
-      let query = supabase
-        .from("dragon_stock_movements")
-        .select(`*, item:dragon_items(*), cause:dragon_causes(*)`)
-        .eq("company_id", companyId)
-        .order("movement_date", { ascending: false })
-        .order("created_at", { ascending: false });
+      const pageSize = 1000;
+      const movements: DragonStockMovement[] = [];
 
-      if (scope) query = query.eq("warehouse_scope", scope);
+      for (let from = 0; ; from += pageSize) {
+        let query = supabase
+          .from("dragon_stock_movements")
+          .select(`*, item:dragon_items(*), cause:dragon_causes(*)`)
+          .eq("company_id", companyId)
+          .order("movement_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
 
-      const { data, error } = await query.limit(500);
-      if (error) throw error;
-      return data as DragonStockMovement[];
+        if (scope) query = query.eq("warehouse_scope", scope);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        const page = (data ?? []) as DragonStockMovement[];
+        movements.push(...page);
+        if (page.length < pageSize) break;
+      }
+
+      return movements;
     },
   });
 
@@ -30,7 +40,8 @@ export function useDragonStock(scope?: DragonWarehouseScope) {
     for (const m of stockMovements) {
       const key = m.item_id;
       if (!map.has(key)) map.set(key, { item: m.item, waste: 0, mps: 0 });
-      const entry = map.get(key)!;
+      const entry = map.get(key);
+      if (!entry) continue;
       const delta = m.sign === "PLUS" ? m.quantity : -m.quantity;
       if (m.warehouse_scope === "WASTE") entry.waste += delta;
       else entry.mps += delta;
