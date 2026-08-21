@@ -93,6 +93,22 @@ Modulo isolato basato sulle tabelle `dragon_*` (isolamento per `company_id`).
 - Movimentazioni normative separate dallo stock fisico.
 - Il pulsante rosso "torna indietro" appende sempre `?tab=magazzino-dev`.
 
+### 4.1 Doppio binario dei movimenti
+- **Movimenti esterni** (il rifiuto entra o esce dall'impianto): richiedono sempre un documento — FIR o DDT. Sono i carichi da formulario e gli scarichi verso terzi.
+- **Movimenti interni / lavorazioni** (cernite, selezioni, trasformazioni): **nessun FIR**. Restano dentro l'impianto e si tracciano solo con il legame padre → figli.
+- Nelle lavorazioni è ammesso il **calo peso**: la differenza tra quantità in ingresso e somma degli output viene salvata in automatico sul batch (campo "Calo peso") e non va forzata a zero.
+- Gli output MPS finiscono nel **magazzino MPS**, separato dal magazzino rifiuti: la giacenza del CER padre scende, quelle dei figli salgono.
+- L'annullamento di una lavorazione non cancella nulla: genera movimenti compensativi inversi che riportano i saldi allo stato precedente.
+
+### 4.2 TAB **Test di Sistema**
+Pannello che esegue test **reali** di filiera sul tenant attivo (nessuna simulazione):
+- `cernite`: carico 1000 kg → cernita 600 + 300 → calo peso 100 kg → lotti → annullamento e ripristino saldi.
+- `giacenze`: carico, scarico, blocco lavorazione oltre giacenza, coerenza registro/magazzino.
+- `fir`: creazione bozza di test, blocco numero duplicato, verifica che nessun numero FIR reale venga consumato.
+
+Ogni scenario termina con **pulizia automatica** di tutti i dati generati e con il confronto dei saldi prima/dopo: se resta una sola differenza il test è considerato fallito. I dati di test sono marcati con `test_session` e numeri FIR `ZTEST…`, quindi non possono confondersi con quelli di produzione. Anche Dark Lemon può lanciare i test con il tool `dragon_run_system_test`.
+
+
 ---
 
 ## 5. TAB **Conto Proprio**
