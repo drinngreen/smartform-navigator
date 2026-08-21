@@ -313,7 +313,6 @@ export default function DragonCerniteBatchPage() {
                         <TableCell>
                           <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} excludeItemId={inputItemId} placeholder="Seleziona output..." />
                         </TableCell>
-                        <TableCell><Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-8 text-xs" /></TableCell>
                         <TableCell>
                           <Input
                             type="number"
@@ -324,6 +323,7 @@ export default function DragonCerniteBatchPage() {
                             className="h-8 text-right font-mono text-xs"
                           />
                         </TableCell>
+                        <TableCell><Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-8 text-xs" /></TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground font-mono">{pct}%</TableCell>
                         <TableCell>
                           {outputRows.length > 1 && (
