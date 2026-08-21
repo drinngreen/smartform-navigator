@@ -16,6 +16,7 @@ import { Plus, Scissors, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { DragonItemType, DragonQuantityMode, DragonWarehouseScope } from "@/types/dragon";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
+import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
 
 export default function DragonCerniteModelliPage() {
   const { models, isLoading, createModel } = useDragonTransformModels();
@@ -143,14 +144,7 @@ export default function DragonCerniteModelliPage() {
             <div><Label>Nome *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Cernita 170904" /></div>
             <div>
               <Label>Articolo Input *</Label>
-              <Select value={form.input_item_id} onValueChange={v => setForm(f => ({ ...f, input_item_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleziona articolo..." /></SelectTrigger>
-                <SelectContent>
-                  {items.filter(i => i.attivo).map(i => (
-                    <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DragonCerSelector value={form.input_item_id} onChange={v => setForm(f => ({ ...f, input_item_id: v }))} />
             </div>
             <div><Label>Descrizione</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
             <Button onClick={handleSubmit} disabled={createModel.isPending || !form.code || !form.name || !form.input_item_id} className="w-full">
@@ -167,14 +161,7 @@ export default function DragonCerniteModelliPage() {
           <div className="space-y-4 mt-4">
             <div>
               <Label>Articolo Output *</Label>
-              <Select value={outputForm.output_item_id} onValueChange={v => setOutputForm(f => ({ ...f, output_item_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleziona articolo..." /></SelectTrigger>
-                <SelectContent>
-                  {items.filter(i => i.attivo).map(i => (
-                    <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DragonCerSelector value={outputForm.output_item_id} onChange={v => setOutputForm(f => ({ ...f, output_item_id: v }))} />
             </div>
             <div>
               <Label>Tipo Output</Label>
