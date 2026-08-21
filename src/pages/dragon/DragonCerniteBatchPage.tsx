@@ -354,7 +354,7 @@ export default function DragonCerniteBatchPage() {
                   <p className="text-lg font-mono font-bold text-emerald-400">{totalOutput.toLocaleString("it-IT")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Differenza</p>
+                  <p className="text-xs text-muted-foreground">Calo peso</p>
                   <p className={`text-lg font-mono font-bold ${Math.abs(difference) < 0.01 ? "text-emerald-400" : difference > 0 ? "text-amber-400" : "text-rose-400"}`}>
                     {difference > 0 ? "+" : ""}{difference.toLocaleString("it-IT")} kg
                   </p>
