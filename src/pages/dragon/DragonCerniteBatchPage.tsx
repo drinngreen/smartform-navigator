@@ -313,52 +313,42 @@ export default function DragonCerniteBatchPage() {
                 <Button size="sm" variant="outline" onClick={addOutputRow}><Plus className="h-3 w-3 mr-1" /> Riga</Button>
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/20">
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead>Articolo / CER</TableHead>
-                    <TableHead className="text-right w-28">Kg</TableHead>
-                    <TableHead className="w-32">Lotto</TableHead>
-                    <TableHead className="text-right w-20">%</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {outputRows.map((row, idx) => {
-                    const rowQty = parseFloat(row.quantity) || 0;
-                    const pct = inputQty > 0 ? ((rowQty / inputQty) * 100).toFixed(1) : "0.0";
-                    const rowItem = items.find(i => i.id === row.item_id);
-                    return (
-                      <TableRow key={idx} className="border-border/10">
-                        <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
-                        <TableCell>
+              <div className="space-y-2">
+                {outputRows.map((row, idx) => {
+                  const rowQty = parseFloat(row.quantity) || 0;
+                  const pct = inputQty > 0 ? ((rowQty / inputQty) * 100).toFixed(1) : "0.0";
+                  return (
+                    <div key={idx} className="rounded-lg border border-border/30 bg-background/40 p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                        <div className="min-w-0 flex-1">
                           <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} placeholder="Seleziona output..." />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={row.quantity}
-                            onChange={e => updateOutputRow(idx, "quantity", e.target.value)}
-                            placeholder="0.00"
-                            className="h-8 text-right font-mono text-xs"
-                          />
-                        </TableCell>
-                        <TableCell><Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-8 text-xs" /></TableCell>
-                        <TableCell className="text-right text-xs text-muted-foreground font-mono">{pct}%</TableCell>
-                        <TableCell>
-                          {outputRows.length > 1 && (
-                            <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-400" onClick={() => removeOutputRow(idx)}>
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-rose-400" onClick={() => removeOutputRow(idx)} aria-label="Elimina riga">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={row.quantity}
+                          onChange={e => updateOutputRow(idx, "quantity", e.target.value)}
+                          placeholder="Kg"
+                          className="h-9 text-right font-mono"
+                        />
+                        <Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-9" />
+                        <span className="col-span-2 text-right font-mono text-xs text-muted-foreground sm:col-span-1">{pct}% dell'ingresso</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {outputRows.length === 0 && (
+                  <p className="py-4 text-center text-xs text-muted-foreground">Nessuna riga — aggiungine una con "+ Riga"</p>
+                )}
+              </div>
+
             </div>
 
             {/* TOTALS */}
