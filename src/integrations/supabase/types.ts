@@ -1475,6 +1475,141 @@ export type Database = {
           },
         ]
       }
+      dragon_lot_movements: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          lot_id: string
+          note: string | null
+          quantity: number
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          stock_movement_id: string | null
+          transform_batch_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          lot_id: string
+          note?: string | null
+          quantity: number
+          sign: Database["public"]["Enums"]["dragon_sign"]
+          stock_movement_id?: string | null
+          transform_batch_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          lot_id?: string
+          note?: string | null
+          quantity?: number
+          sign?: Database["public"]["Enums"]["dragon_sign"]
+          stock_movement_id?: string | null
+          transform_batch_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_lot_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lot_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lot_movements_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lot_movements_stock_movement_id_fkey"
+            columns: ["stock_movement_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_stock_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lot_movements_transform_batch_id_fkey"
+            columns: ["transform_batch_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_transform_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dragon_lots: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          lot_code: string
+          notes: string | null
+          production_date: string
+          status: string
+          updated_at: string
+          warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          lot_code: string
+          notes?: string | null
+          production_date?: string
+          status?: string
+          updated_at?: string
+          warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          lot_code?: string
+          notes?: string | null
+          production_date?: string
+          status?: string
+          updated_at?: string
+          warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dragon_lots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lots_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dragon_movement_allocations: {
         Row: {
           allocated_quantity: number
@@ -1857,6 +1992,7 @@ export type Database = {
           generated_register_movement_id: string | null
           generated_stock_movement_id: string | null
           id: string
+          lot_id: string | null
           output_item_id: string
           output_quantity: number
           warehouse_scope: Database["public"]["Enums"]["dragon_warehouse_scope"]
@@ -1867,6 +2003,7 @@ export type Database = {
           generated_register_movement_id?: string | null
           generated_stock_movement_id?: string | null
           id?: string
+          lot_id?: string | null
           output_item_id: string
           output_quantity: number
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
@@ -1877,6 +2014,7 @@ export type Database = {
           generated_register_movement_id?: string | null
           generated_stock_movement_id?: string | null
           id?: string
+          lot_id?: string | null
           output_item_id?: string
           output_quantity?: number
           warehouse_scope?: Database["public"]["Enums"]["dragon_warehouse_scope"]
@@ -1901,6 +2039,13 @@ export type Database = {
             columns: ["generated_stock_movement_id"]
             isOneToOne: false
             referencedRelation: "dragon_stock_movements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_transform_batch_outputs_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_lots"
             referencedColumns: ["id"]
           },
           {
@@ -6326,6 +6471,27 @@ export type Database = {
         Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }
         Returns: string
       }
+      dragon_cancel_cernita_atomic: {
+        Args: { p_batch_id: string; p_reason?: string }
+        Returns: string
+      }
+      dragon_complete_cernita_atomic: {
+        Args: { p_batch_id: string; p_outputs: Json }
+        Returns: string
+      }
+      dragon_create_cernita_atomic: {
+        Args: {
+          p_company_id: string
+          p_deferred?: boolean
+          p_execution_date?: string
+          p_input_quantity: number
+          p_model_id?: string
+          p_notes?: string
+          p_outputs?: Json
+          p_source_item_id: string
+        }
+        Returns: string
+      }
       dragon_get_stock_balance: {
         Args: {
           p_company_id: string
@@ -6481,7 +6647,7 @@ export type Database = {
         | "CONFIRM"
         | "CANCEL"
         | "ADJUST"
-      dragon_batch_status: "BOZZA" | "CONFERMATA" | "ANNULLATA"
+      dragon_batch_status: "BOZZA" | "CONFERMATA" | "ANNULLATA" | "PENDENTE"
       dragon_cause_direction: "IN" | "OUT" | "TRANSFORM" | "ADJUST"
       dragon_cause_scope: "REGISTER" | "STOCK" | "BOTH"
       dragon_document_type:
@@ -6673,7 +6839,7 @@ export const Constants = {
         "CANCEL",
         "ADJUST",
       ],
-      dragon_batch_status: ["BOZZA", "CONFERMATA", "ANNULLATA"],
+      dragon_batch_status: ["BOZZA", "CONFERMATA", "ANNULLATA", "PENDENTE"],
       dragon_cause_direction: ["IN", "OUT", "TRANSFORM", "ADJUST"],
       dragon_cause_scope: ["REGISTER", "STOCK", "BOTH"],
       dragon_document_type: [
