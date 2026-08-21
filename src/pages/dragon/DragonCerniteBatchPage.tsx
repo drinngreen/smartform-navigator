@@ -311,7 +311,7 @@ export default function DragonCerniteBatchPage() {
                       <TableRow key={idx} className="border-border/10">
                         <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
                         <TableCell>
-                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} excludeItemId={inputItemId} placeholder="Seleziona output..." />
+                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} placeholder="Seleziona output..." />
                         </TableCell>
                         <TableCell>
                           <Input
