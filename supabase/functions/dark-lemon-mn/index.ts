@@ -1819,6 +1819,20 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "dragon_run_system_test",
+      description: "Esegue un test reale di filiera sul tenant attivo (cernite, giacenze, fir): crea dati veri, verifica saldi e lotti, poi cancella automaticamente tutti i dati di test e conferma l'integrità del sistema.",
+      parameters: {
+        type: "object",
+        properties: {
+          scenario: { type: "string", enum: ["cernite", "giacenze", "fir"], description: "Scenario da eseguire" }
+        },
+        required: ["scenario"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
       name: "dragon_trace_movement",
       description: "Traccia un movimento di magazzino: risale la catena FIR → carico → scarico lavorazione → cernita → ricarico.",
       parameters: {
