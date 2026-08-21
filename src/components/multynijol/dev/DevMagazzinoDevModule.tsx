@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, BookOpen, ClipboardList, Scissors, Layers } from "lucide-react";
+import { Package, BookOpen, ClipboardList, Scissors, Layers, GitBranch } from "lucide-react";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroGeneraleModule } from "./DevRegistroGeneraleModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
@@ -64,6 +64,17 @@ export function DevMagazzinoDevModule() {
             </div>
             <button onClick={() => navigate("/mn/admin/dev-multyproget/dragon/cernite/modelli")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
               Apri Modelli
+            </button>
+          </div>
+        </TabsContent>
+        <TabsContent value="lotti" className="mt-4">
+          <div className="rounded-xl border border-border/30 bg-card/60 p-5 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h4 className="font-semibold text-emerald-300 flex items-center gap-2"><GitBranch className="h-4 w-4" /> Lotti & Rintraccia</h4>
+              <p className="text-xs text-muted-foreground mt-1">Dividi o accorpa i lotti e visualizza l'albero di tracciabilità completo.</p>
+            </div>
+            <button onClick={() => navigate("/mn/admin/dev-multyproget/dragon/lotti")} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+              Apri Lotti
             </button>
           </div>
         </TabsContent>
