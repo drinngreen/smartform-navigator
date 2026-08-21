@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, BookOpen, ClipboardList, Scissors, Layers, GitBranch } from "lucide-react";
+import { Package, BookOpen, ClipboardList, Scissors, Layers, GitBranch, ShieldCheck } from "lucide-react";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroGeneraleModule } from "./DevRegistroGeneraleModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
+import { DevSystemTestModule } from "./DevSystemTestModule";
 
 export function DevMagazzinoDevModule() {
   const [tab, setTab] = useState("giacenze");
