@@ -3301,6 +3301,14 @@ async function handleTool(
       return insertError ? { error: insertError.message } : { success: true, created: true, item: newItem };
     }
 
+    case "dragon_run_system_test": {
+      const { data, error } = await db.rpc("dragon_test_run", {
+        p_company_id: tenantId,
+        p_scenario: args.scenario,
+      });
+      return error ? { error: error.message } : data;
+    }
+
     case "dragon_cernita": {
       // Find causes via SDK
       const { data: causesData, error: causesErr } = await db.from("dragon_causes")
