@@ -201,7 +201,7 @@ export default function DragonMagazzinoPage() {
                       <TableCell className={`text-right font-mono font-bold ${b.balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{Number(b.balance).toLocaleString("it-IT")}</TableCell>
                        <TableCell className="text-xs text-muted-foreground">{b.item?.unita_misura_default}</TableCell>
                        <TableCell>
-                         {b.balance > 0 && (
+                          {b.balance > 0 && b.warehouse_scope === "WASTE" && b.item?.item_type === "WASTE_CER" && (
                            <Button
                              size="sm"
                              variant="outline"

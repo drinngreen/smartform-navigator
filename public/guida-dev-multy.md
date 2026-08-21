@@ -100,7 +100,18 @@ Modulo isolato basato sulle tabelle `dragon_*` (isolamento per `company_id`).
 - Gli output MPS finiscono nel **magazzino MPS**, separato dal magazzino rifiuti: la giacenza del CER padre scende, quelle dei figli salgono.
 - L'annullamento di una lavorazione non cancella nulla: genera movimenti compensativi inversi che riportano i saldi allo stato precedente.
 
-### 4.2 TAB **Test di Sistema**
+### 4.2 Cernite: procedura operativa
+1. Apri **Magazzino Dev → Cernita → Apri Cernita** e premi **Nuova Cernita**.
+2. Seleziona il CER in ingresso. Accanto al materiale compare la voce **Disponibili per cernita**: è il saldo Dragon realmente controllato al salvataggio.
+3. Inserisci i kg da lavorare. Non puoi superare la disponibilità mostrata.
+4. Aggiungi uno o più articoli/CER in uscita. In ingresso e in uscita viene usato lo stesso catalogo CER del nuovo conferimento.
+5. La somma degli output può essere inferiore all'ingresso: la differenza è il **calo peso**. Non può invece superarlo.
+6. Premi **Conferma e Genera Movimenti**. Il sistema crea in un'unica operazione lo scarico del CER padre, i carichi dei figli, i lotti e i collegamenti di rintracciabilità.
+7. Controlla subito **Giacenze**: il padre deve diminuire e i figli devono aumentare. **Annulla** genera movimenti inversi e ripristina i saldi senza cancellare lo storico.
+
+Se compare “giacenza insufficiente”, confronta i kg richiesti con **Disponibili per cernita** nella stessa finestra: il controllo non usa un saldo nascosto né il vecchio archivio di magazzino.
+
+### 4.3 TAB **Test di Sistema**
 Pannello che esegue test **reali** di filiera sul tenant attivo (nessuna simulazione):
 - `cernite`: carico 1000 kg → cernita 600 + 300 → calo peso 100 kg → lotti → annullamento e ripristino saldi.
 - `giacenze`: carico, scarico, blocco lavorazione oltre giacenza, coerenza registro/magazzino.

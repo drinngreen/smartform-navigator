@@ -1794,7 +1794,7 @@ const tools = [
     type: "function",
     function: {
       name: "dragon_cernita",
-      description: "Esegue una cernita (smontaggio di un CER in componenti). Genera automaticamente scarico input + carichi output su registro e magazzino.",
+      description: "Esegue una cernita atomica Dragon (movimento interno senza FIR): verifica la giacenza WASTE, scarica il CER padre, carica tutti gli output, registra calo peso, lotti e tracciabilità. Gli output totali non possono superare l'input.",
       parameters: {
         type: "object",
         properties: {
@@ -3312,6 +3312,24 @@ async function handleTool(
     }
 
     case "dragon_cernita": {
+      const { data: atomicBatchId, error: atomicError } = await db.rpc("dragon_create_cernita_atomic", {
+        p_company_id: tenantId,
+        p_source_item_id: args.input_item_id,
+        p_input_quantity: args.input_quantity,
+        p_outputs: args.outputs || [],
+        p_model_id: null,
+        p_execution_date: new Date().toISOString().split("T")[0],
+        p_notes: args.notes || null,
+        p_deferred: false,
+      });
+      if (!atomicError) {
+        return { success: true, batch_id: atomicBatchId, atomic: true };
+      }
+
+      if (!atomicError.message.includes("Accesso non autorizzato")) {
+        return { error: atomicError.message };
+      }
+
       // Find causes via SDK
       const { data: causesData, error: causesErr } = await db.from("dragon_causes")
         .select("id, code")
