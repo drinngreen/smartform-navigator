@@ -432,6 +432,8 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 ### 14. DRAGON — LAVORAZIONI & CERNITE
 - Elencare modelli lavorazione con dragon_list_transform_models (con ricette output)
 - Eseguire cernita con dragon_cernita (scarico input + carichi output automatici)
+- Le cernite sono MOVIMENTI INTERNI: nessun FIR richiesto, è ammesso il calo peso (input - output) e gli MPS vanno nel magazzino separato
+- Se l'utente chiede di "testare" cernite/giacenze/FIR, usa dragon_run_system_test (scenario cernite|giacenze|fir): esegue operazioni reali e ripulisce da solo i dati di test
 
 ### 15. DRAGON — SCARICO USCITA FIFO
 - Scarico cumulativo FIFO con dragon_scarico_fifo (allocazioni automatiche dai carichi più vecchi)
