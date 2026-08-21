@@ -163,6 +163,7 @@ export default function MNRentriConsolePage() {
     setBloccoPesca((BLOCCHI_PESCA[configKey] ?? [])[0]?.code ?? RENTRI_BLOCCO_CORRENTE[configKey] ?? "");
   }, [configKey]);
   const [assegnando, setAssegnando] = useState(false);
+  const [compilandoFir, setCompilandoFir] = useState<string | null>(null);
   const [assignApp, setAssignApp] = useState<"multyproget" | "niyol">(
     configKey === "niyol" ? "niyol" : "multyproget",
   );
@@ -334,6 +335,35 @@ export default function MNRentriConsolePage() {
       toast.error(`Errore assegnazione ufficio: ${e.message}`);
     } finally {
       setAssegnando(false);
+    }
+  };
+
+  const handleCompilaFormulario = async (firNumber: string) => {
+    setCompilandoFir(firNumber);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const adminId = auth.user?.id;
+      if (!adminId) throw new Error("Sessione admin non valida");
+
+      const isNiyol = configKey === "niyol";
+      const tenantId = isNiyol
+        ? "819c783e-78dd-4080-8265-802e75b0d813"
+        : "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+      const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as never, {
+        p_user_id: adminId,
+        p_tenant_id: tenantId,
+        p_numero_fir: firNumber,
+      } as never);
+      if (error) throw error;
+      if (!draftId) throw new Error("Impossibile creare il formulario");
+
+      await loadPool();
+      const routeContext = isNiyol ? "niyol" : "multyproget";
+      navigate(`/mn/admin/${routeContext}/formulari?fir=${encodeURIComponent(String(draftId))}`);
+    } catch (e: any) {
+      toast.error(`Errore apertura formulario: ${e.message}`);
+    } finally {
+      setCompilandoFir(null);
     }
   };
 
@@ -619,6 +649,15 @@ export default function MNRentriConsolePage() {
                 {disponibili.map((p) => (
                   <div key={p.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-secondary/40 border border-border/30">
                     <span className="font-mono text-sm font-bold">{p.fir_number}</span>
+                    <button
+                      type="button"
+                      disabled={compilandoFir !== null}
+                      onClick={() => void handleCompilaFormulario(p.fir_number)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                    >
+                      {compilandoFir === p.fir_number ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                      Compila formulario
+                    </button>
                     <button
                       type="button"
                       title="Copia numero FIR"

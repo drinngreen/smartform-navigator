@@ -34,6 +34,13 @@ interface Movimento {
   data_movimento: string;
 }
 
+interface DragonStockRow {
+  quantity: number;
+  sign: "PLUS" | "MINUS";
+  movement_date: string;
+  item: { codice_cer: string; descrizione: string | null } | null;
+}
+
 interface CerRow {
   cer: string;
   descrizione: string;
@@ -50,16 +57,34 @@ export function DevGiacenzeModule() {
   const [dataDal, setDataDal] = useState<string>("");
   const [showAllCer, setShowAllCer] = useState(false);
 
-  // Fetch all movimenti for the tenant (we filter client-side per data selezionata)
+  // Dragon è l'unica fonte autorevole per le giacenze, incluse le cernite.
   const { data: movimenti, isLoading } = useQuery({
-    queryKey: ["dev-movimenti-multy", MULTY_TENANT_ID],
+    queryKey: ["dragon-stock", MULTY_TENANT_ID, "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("movimenti_impianto")
-        .select("cer, descrizione_rifiuto, tipo_movimento, quantita_kg, data_movimento, impianto_id")
-        .eq("tenant_id", MULTY_TENANT_ID);
-      if (error) throw error;
-      return data as (Movimento & { impianto_id: string })[];
+      const pageSize = 1000;
+      const rows: Movimento[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await supabase
+          .from("dragon_stock_movements")
+          .select("quantity, sign, movement_date, item:dragon_items!inner(codice_cer, descrizione)")
+          .eq("company_id", MULTY_TENANT_ID)
+          .order("movement_date", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        const page = (data ?? []) as unknown as DragonStockRow[];
+        for (const movement of page) {
+          if (!movement.item?.codice_cer) continue;
+          rows.push({
+            cer: movement.item.codice_cer,
+            descrizione_rifiuto: movement.item.descrizione,
+            tipo_movimento: movement.sign === "PLUS" ? "CARICO" : "SCARICO",
+            quantita_kg: Number(movement.quantity) || 0,
+            data_movimento: movement.movement_date,
+          });
+        }
+        if (page.length < pageSize) break;
+      }
+      return rows;
     },
   });
 
@@ -159,17 +184,12 @@ export function DevGiacenzeModule() {
     [filtered]
   );
 
-  // Aggiornamento automatico: qualsiasi movimento o conferimento privato ricarica le giacenze
+  // Aggiornamento automatico: ogni movimento Dragon, comprese le cernite, ricarica la vista.
   useEffect(() => {
     const channel = supabase
       .channel("dev-giacenze-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "movimenti_impianto" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
-        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "privati_conferimenti" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
-        queryClient.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+      .on("postgres_changes", { event: "*", schema: "public", table: "dragon_stock_movements" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
       })
       .subscribe();
     return () => {
@@ -177,43 +197,19 @@ export function DevGiacenzeModule() {
     };
   }, [queryClient]);
 
-  // Sync giacenze: ricalcola magazzino_giacenze per TUTTI i CER presenti nei movimenti
+  // Sync manuale: forza una rilettura del libro mastro Dragon senza duplicare movimenti.
   const recalculate = useMutation({
     mutationFn: async () => {
-      const { data: stockRows, error: stockError } = await supabase
-        .from("magazzino_giacenze")
-        .select("impianto_id, cer")
-        .eq("tenant_id", MULTY_TENANT_ID);
-      if (stockError) throw stockError;
-
-      const { data: movRows, error: movError } = await supabase
-        .from("movimenti_impianto")
-        .select("impianto_id, cer")
-        .eq("tenant_id", MULTY_TENANT_ID);
-      if (movError) throw movError;
-
-      const pairs = new Map<string, { impianto_id: string; cer: string }>();
-      for (const row of [...(stockRows ?? []), ...(movRows ?? [])]) {
-        if (!row.impianto_id || !row.cer) continue;
-        pairs.set(`${row.impianto_id}|${row.cer}`, { impianto_id: row.impianto_id, cer: row.cer });
-      }
-
-      for (const { impianto_id, cer } of pairs.values()) {
-        const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
-          p_tenant_id: MULTY_TENANT_ID,
-          p_impianto_id: impianto_id,
-          p_cer: cer,
-        });
-        if (error) throw error;
-      }
-      logAgentActivity("Sync giacenze dai movimenti", "ok", `${pairs.size} codici CER`);
-      return pairs.size;
+      await queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
+      const count = new Set((movimenti ?? []).map((row) => row.cer)).size;
+      logAgentActivity("Sync giacenze Dragon", "ok", `${count} codici CER`);
+      return count;
     },
     onSuccess: (count) => {
       ["dev-giacenze", "dev-giacenze-baseline", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
-      toast.success(`Giacenze ricalcolate dai movimenti (${count} codici CER)`);
+      toast.success(`Giacenze Dragon aggiornate (${count} codici CER)`);
     },
     onError: (e: any) => toast.error("Errore: " + e.message),
   });
@@ -433,7 +429,7 @@ export function DevGiacenzeModule() {
               Mostra tutti i CER a magazzino (anche a zero)
             </label>
             <div className="text-xs text-muted-foreground">
-              Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Aggiornamento automatico ad ogni movimento.
+              Saldo Dragon = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Le cernite aggiornano automaticamente questa vista.
             </div>
           </div>
         </CardContent>
@@ -447,7 +443,7 @@ export function DevGiacenzeModule() {
           disabled={recalculate.isPending}
           className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
         >
-          <RefreshCw className="h-4 w-4" /> Sync giacenze da movimenti
+          <RefreshCw className="h-4 w-4" /> Aggiorna giacenze Dragon
         </Button>
         <Button
           variant="outline"
