@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonTransformModels } from "@/hooks/dragon/useDragonTransforms";
-import { useDragonItems } from "@/hooks/dragon/useDragonItems";
 import { useMNContextStore } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,7 +19,6 @@ import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
 
 export default function DragonCerniteModelliPage() {
   const { models, isLoading, createModel } = useDragonTransformModels();
-  useDragonItems();
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
