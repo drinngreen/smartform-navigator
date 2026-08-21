@@ -3,6 +3,9 @@ import App from "./App";
 import "./index.css";
 import { preloadMenuIcons } from "./lib/preloadIcons";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { forceDesktopPreview } from "./lib/forceDesktopPreview";
+
+forceDesktopPreview();
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Root element #root non trovato");
