@@ -23,10 +23,18 @@ const statusColors: Record<string, string> = {
 };
 
 interface OutputRow {
+  id: string;
   item_id: string;
   quantity: string;
   lot_code: string;
 }
+
+const createOutputRow = (): OutputRow => ({
+  id: crypto.randomUUID(),
+  item_id: "",
+  quantity: "",
+  lot_code: "",
+});
 
 export default function DragonCerniteBatchPage() {
   const { batches, isLoading, executeCernita, completeCernita, cancelCernita } = useDragonTransformBatches();
@@ -45,7 +53,7 @@ export default function DragonCerniteBatchPage() {
   const [inputItemId, setInputItemId] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
   const [notes, setNotes] = useState("");
-  const [outputRows, setOutputRows] = useState<OutputRow[]>([{ item_id: "", quantity: "", lot_code: "" }]);
+  const [outputRows, setOutputRows] = useState<OutputRow[]>(() => [createOutputRow()]);
 
   const inputItem = items.find(i => i.id === inputItemId);
   const inputQty = parseFloat(inputQuantity) || 0;
@@ -74,9 +82,9 @@ export default function DragonCerniteBatchPage() {
       } else if (o.quantity_mode === "FIXED") {
         qty = o.quantity_value;
       }
-      return { item_id: o.output_item_id, quantity: qty > 0 ? qty.toFixed(2) : "", lot_code: "" };
+      return { id: crypto.randomUUID(), item_id: o.output_item_id, quantity: qty > 0 ? qty.toFixed(2) : "", lot_code: "" };
     });
-    setOutputRows(newRows.length > 0 ? newRows : [{ item_id: "", quantity: "", lot_code: "" }]);
+    setOutputRows(newRows.length > 0 ? newRows : [createOutputRow()]);
     setAppliedModelId(modelId);
   };
 
@@ -92,10 +100,10 @@ export default function DragonCerniteBatchPage() {
     }
   }, [searchParams, items.length]);
 
-  const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "", lot_code: "" }]);
-  const removeOutputRow = (idx: number) => setOutputRows(r => r.filter((_, i) => i !== idx));
-  const updateOutputRow = (idx: number, field: keyof OutputRow, value: string) =>
-    setOutputRows(r => r.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+  const addOutputRow = () => setOutputRows(rows => [...rows, createOutputRow()]);
+  const removeOutputRow = (rowId: string) => setOutputRows(rows => rows.filter(row => row.id !== rowId));
+  const updateOutputRow = (rowId: string, field: keyof Omit<OutputRow, "id">, value: string) =>
+    setOutputRows(rows => rows.map(row => row.id === rowId ? { ...row, [field]: value } : row));
 
   const hasEnoughStock = inputQty <= availableQty;
   const isFormValid = inputItemId && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
@@ -104,7 +112,7 @@ export default function DragonCerniteBatchPage() {
     setInputItemId("");
     setInputQuantity("");
     setNotes("");
-    setOutputRows([{ item_id: "", quantity: "", lot_code: "" }]);
+    setOutputRows([createOutputRow()]);
     setAppliedModelId(null);
     setEditingBatchId(null);
   };
@@ -210,7 +218,7 @@ export default function DragonCerniteBatchPage() {
                             setInputItemId(b.source_item_id);
                             setInputQuantity(String(b.input_quantity));
                             setNotes(b.notes || "");
-                            setOutputRows([{ item_id: "", quantity: "", lot_code: "" }]);
+                            setOutputRows([createOutputRow()]);
                             setShowCreate(true);
                           }}><Play className="h-3 w-3 mr-1" />Completa</Button>
                         )}
@@ -310,7 +318,7 @@ export default function DragonCerniteBatchPage() {
                 <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
                   <ArrowUp className="h-4 w-4" /> COMPONENTI IN USCITA (distribuisci i kg)
                 </div>
-                <Button size="sm" variant="outline" onClick={addOutputRow}><Plus className="h-3 w-3 mr-1" /> Riga</Button>
+                <Button type="button" size="sm" variant="outline" onClick={addOutputRow}><Plus className="h-3 w-3 mr-1" /> Riga</Button>
               </div>
 
               <div className="space-y-2">
@@ -318,13 +326,13 @@ export default function DragonCerniteBatchPage() {
                   const rowQty = parseFloat(row.quantity) || 0;
                   const pct = inputQty > 0 ? ((rowQty / inputQty) * 100).toFixed(1) : "0.0";
                   return (
-                    <div key={idx} className="rounded-lg border border-border/30 bg-background/40 p-3 space-y-2">
+                    <div key={row.id} className="rounded-lg border border-border/30 bg-background/40 p-3 space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">#{idx + 1}</span>
                         <div className="min-w-0 flex-1">
-                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} placeholder="Seleziona output..." />
+                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(row.id, "item_id", v)} placeholder="Seleziona output..." />
                         </div>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-rose-400" onClick={() => removeOutputRow(idx)} aria-label="Elimina riga">
+                        <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0 p-0" onClick={() => removeOutputRow(row.id)} aria-label={`Elimina riga ${idx + 1}`} title="Elimina riga">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -334,11 +342,11 @@ export default function DragonCerniteBatchPage() {
                           step="0.01"
                           inputMode="decimal"
                           value={row.quantity}
-                          onChange={e => updateOutputRow(idx, "quantity", e.target.value)}
+                          onChange={e => updateOutputRow(row.id, "quantity", e.target.value)}
                           placeholder="Kg"
                           className="h-9 text-right font-mono"
                         />
-                        <Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-9" />
+                        <Input value={row.lot_code} onChange={e => updateOutputRow(row.id, "lot_code", e.target.value)} placeholder="Lotto" className="h-9" />
                         <span className="col-span-2 text-right font-mono text-xs text-muted-foreground sm:col-span-1">{pct}% dell'ingresso</span>
                       </div>
                     </div>
