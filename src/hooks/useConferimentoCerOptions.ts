@@ -27,19 +27,22 @@ export function useConferimentoCerOptions() {
 
   const preferiti = useMemo(() => {
     const isTechnicalDesc = (description: string) =>
-      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(description);
-    const catalogo = new Map(CER_CATALOG.map((entry) => [entry.codice, entry]));
+      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(description) ||
+      /^cer\s*[\d\s*.]+$/i.test(description);
+    const normalize = (code: string) => code.replace(/\D/g, "");
+    const catalogo = new Map(CER_CATALOG.map((entry) => [normalize(entry.codice), entry]));
     const options = new Map<string, ConferimentoCerOption>();
 
     for (const movement of cerMovimentati ?? []) {
       if (!movement.cer) continue;
-      const catalogEntry = catalogo.get(movement.cer);
+      const codice = movement.cer.trim();
+      const catalogEntry = catalogo.get(normalize(codice));
       const movementDescription = movement.descrizione_rifiuto?.trim();
-      const descrizione = movementDescription && !isTechnicalDesc(movementDescription)
-        ? movementDescription
-        : catalogEntry?.descrizione ?? "";
-      options.set(movement.cer, {
-        codice: movement.cer,
+      const descrizione =
+        catalogEntry?.descrizione ??
+        (movementDescription && !isTechnicalDesc(movementDescription) ? movementDescription : "");
+      options.set(codice, {
+        codice,
         descrizione,
         pericoloso: catalogEntry?.pericoloso ?? false,
       });

@@ -20,6 +20,14 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
   const selected = items.find((item) => item.id === value);
+  const describe = (codice?: string, fallback?: string | null) => {
+    if (!codice) return fallback ?? "";
+    const digits = codice.replace(/\D/g, "");
+    const entry = tutti.find((e) => e.codice.replace(/\D/g, "") === digits);
+    if (entry?.descrizione) return entry.descrizione;
+    if (fallback && !/^cer\s*[\d\s*.]+$/i.test(fallback.trim())) return fallback;
+    return "";
+  };
   const existingByCode = useMemo(() => new Map(items.map((item) => [item.codice_cer, item])), [items]);
   const preferredCodes = useMemo(() => new Set(preferiti.map((entry) => entry.codice)), [preferiti]);
   const normalized = search.trim().toLocaleLowerCase("it");
@@ -75,7 +83,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
           {selected ? (
             <>
               <span className="shrink-0 font-mono text-xs">{selected.codice_cer}</span>
-              <span className="truncate text-xs text-muted-foreground">{selected.descrizione}</span>
+              <span className="truncate text-xs text-muted-foreground">{describe(selected.codice_cer, selected.descrizione)}</span>
             </>
           ) : (
             <span className="truncate text-muted-foreground">{placeholder}</span>
@@ -125,7 +133,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
                   className={`flex w-full items-start gap-3 rounded-lg border px-3 py-3 text-left transition-colors ${isSelected ? "border-primary bg-primary/10" : "border-border/40 hover:bg-accent"}`}
                 >
                   <span className="w-16 shrink-0 font-mono text-sm">{entry.codice}</span>
-                  <span className="min-w-0 flex-1 text-sm leading-snug">{entry.descrizione}</span>
+                  <span className="min-w-0 flex-1 text-sm leading-snug">{describe(entry.codice, entry.descrizione)}</span>
                   {preferredCodes.has(entry.codice) && <Star className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />}
                   <span className="mt-0.5 shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold">
                     {existing ? "Dragon" : "Globale"}
