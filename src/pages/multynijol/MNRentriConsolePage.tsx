@@ -179,7 +179,7 @@ export default function MNRentriConsolePage() {
     const [{ data: poolRows }, { data: profs }] = await Promise.all([
       supabase
         .from("fir_number_pool")
-        .select("id, fir_number, status, user_id, assigned_at")
+        .select("id, fir_number, status, user_id, assigned_at, reserved_by_fir_id")
         .eq("societa_id", societaId)
         .order("created_at", { ascending: false })
         .limit(200),
@@ -336,6 +336,11 @@ export default function MNRentriConsolePage() {
     } finally {
       setAssegnando(false);
     }
+  };
+
+  const apriFormularioEsistente = (firId: string) => {
+    const routeContext = configKey === "niyol" ? "niyol" : "multyproget";
+    navigate(`/mn/admin/${routeContext}/formulari?fir=${encodeURIComponent(firId)}`);
   };
 
   const handleCompilaFormulario = async (firNumber: string) => {
@@ -727,6 +732,19 @@ export default function MNRentriConsolePage() {
                       className="rounded-md border border-border/60 bg-background/60 p-1.5 text-muted-foreground hover:text-foreground"
                     >
                       <Copy size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={compilandoFir !== null}
+                      onClick={() =>
+                        (p as any).reserved_by_fir_id
+                          ? apriFormularioEsistente(String((p as any).reserved_by_fir_id))
+                          : void handleCompilaFormulario(p.fir_number)
+                      }
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/50 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                    >
+                      {compilandoFir === p.fir_number ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+                      {(p as any).reserved_by_fir_id ? "Apri formulario" : "Compila formulario"}
                     </button>
                     <span className="text-sm text-foreground">{p.assegnatario}</span>
                     <span
