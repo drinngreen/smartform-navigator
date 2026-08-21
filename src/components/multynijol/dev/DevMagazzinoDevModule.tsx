@@ -82,6 +82,7 @@ export function DevMagazzinoDevModule() {
             </button>
           </div>
         </TabsContent>
+        <TabsContent value="test" className="mt-4"><DevSystemTestModule /></TabsContent>
       </Tabs>
     </div>
   );
