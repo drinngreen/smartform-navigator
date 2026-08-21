@@ -20,7 +20,7 @@ import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
 
 export default function DragonCerniteModelliPage() {
   const { models, isLoading, createModel } = useDragonTransformModels();
-  const { items } = useDragonItems();
+  useDragonItems();
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);

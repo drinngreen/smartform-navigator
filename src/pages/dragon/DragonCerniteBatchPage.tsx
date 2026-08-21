@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal } from "lucide-react";
@@ -60,9 +59,6 @@ export default function DragonCerniteBatchPage() {
     [outputRows]
   );
   const difference = inputQty - totalOutput;
-
-  const activeItems = items.filter(i => i.attivo);
-  const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
 
   // Apply a transform model: pre-fill output rows with the model's recipe
   const applyModel = (modelId: string) => {
