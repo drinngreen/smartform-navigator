@@ -36,7 +36,11 @@ export function DevMagazzinoDevModule() {
           <TabsTrigger value="modelli-cernita" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <Layers className="h-4 w-4" /> Modelli Cernita
           </TabsTrigger>
+          <TabsTrigger value="lotti" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <GitBranch className="h-4 w-4" /> Lotti & Rintraccia
+          </TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="giacenze" className="mt-4"><DevGiacenzeModule /></TabsContent>
         <TabsContent value="registro" className="mt-4"><DevRegistroGeneraleModule /></TabsContent>
