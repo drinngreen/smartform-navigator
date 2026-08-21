@@ -1562,6 +1562,8 @@ export type Database = {
           item_id: string
           lot_code: string
           notes: string | null
+          origin: string | null
+          parent_lot_id: string | null
           production_date: string
           status: string
           updated_at: string
@@ -1575,6 +1577,8 @@ export type Database = {
           item_id: string
           lot_code: string
           notes?: string | null
+          origin?: string | null
+          parent_lot_id?: string | null
           production_date?: string
           status?: string
           updated_at?: string
@@ -1588,6 +1592,8 @@ export type Database = {
           item_id?: string
           lot_code?: string
           notes?: string | null
+          origin?: string | null
+          parent_lot_id?: string | null
           production_date?: string
           status?: string
           updated_at?: string
@@ -1606,6 +1612,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "dragon_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dragon_lots_parent_lot_id_fkey"
+            columns: ["parent_lot_id"]
+            isOneToOne: false
+            referencedRelation: "dragon_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -6500,9 +6513,27 @@ export type Database = {
         }
         Returns: number
       }
+      dragon_lot_balance: { Args: { p_lot_id: string }; Returns: number }
+      dragon_merge_lots_atomic: {
+        Args: {
+          p_notes?: string
+          p_source_lot_ids: string[]
+          p_target_lot_code: string
+        }
+        Returns: string
+      }
       dragon_next_movement_number: {
         Args: { p_company_id: string; p_register_id: string }
         Returns: number
+      }
+      dragon_split_lot_atomic: {
+        Args: {
+          p_lot_id: string
+          p_new_lot_code: string
+          p_notes?: string
+          p_quantity: number
+        }
+        Returns: string
       }
       ensure_fir_draft_by_number_for_tenant: {
         Args: { p_numero_fir: string; p_tenant_id: string; p_user_id: string }

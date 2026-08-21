@@ -108,6 +108,7 @@ const DragonDocumentiPage = React.lazy(() => import("./pages/dragon/DragonDocume
 const DragonCerniteModelliPage = React.lazy(() => import("./pages/dragon/DragonCerniteModelliPage"));
 const DragonCerniteBatchPage = React.lazy(() => import("./pages/dragon/DragonCerniteBatchPage"));
 const DragonAuditPage = React.lazy(() => import("./pages/dragon/DragonAuditPage"));
+const DragonLottiPage = React.lazy(() => import("./pages/dragon/DragonLottiPage"));
 const DragonCaricoScaricoPage = React.lazy(() => import("./pages/dragon/DragonCaricoScaricoPage"));
 const DragonScaricoCumulativoPage = React.lazy(() => import("./pages/dragon/DragonScaricoCumulativoPage"));
 const DragonIngressoPage = React.lazy(() => import("./pages/dragon/DragonIngressoPage"));
@@ -323,6 +324,7 @@ const App = () => (
                 <Route path="/mn/admin/:context/dragon/articoli" element={<ProtectedRoute><DragonArticoliPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/documenti" element={<ProtectedRoute><DragonDocumentiPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/cernite/modelli" element={<ProtectedRoute><DragonCerniteModelliPage /></ProtectedRoute>} />
+                <Route path="/mn/admin/:context/dragon/lotti" element={<ProtectedRoute><DragonLottiPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/audit" element={<ProtectedRoute><DragonAuditPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/carico-scarico" element={<ProtectedRoute><DragonCaricoScaricoPage /></ProtectedRoute>} />
                 <Route path="/mn/admin/:context/dragon/registro/scarico-cumulativo" element={<ProtectedRoute><DragonScaricoCumulativoPage /></ProtectedRoute>} />
