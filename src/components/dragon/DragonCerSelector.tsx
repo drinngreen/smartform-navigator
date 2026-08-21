@@ -3,9 +3,8 @@ import { Search, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CER_CATALOG } from "@/data/cerCatalog";
-import { CER_DATA } from "@/components/multynijol/dev/DevCERPreferitiModule";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
+import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 
 interface DragonCerSelectorProps {
   value: string;
@@ -14,23 +13,23 @@ interface DragonCerSelectorProps {
   placeholder?: string;
 }
 
-const preferredCodes = new Set(CER_DATA.map((entry) => entry.codice).filter((code) => /^\d{6}$/.test(code)));
-
 export function DragonCerSelector({ value, onChange, excludeItemId, placeholder = "Cerca CER o materiale..." }: DragonCerSelectorProps) {
   const { items, create } = useDragonItems();
+  const { preferiti, tutti } = useConferimentoCerOptions();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const selected = items.find((item) => item.id === value);
   const existingByCode = useMemo(() => new Map(items.map((item) => [item.codice_cer, item])), [items]);
+  const preferredCodes = useMemo(() => new Set(preferiti.map((entry) => entry.codice)), [preferiti]);
   const normalized = search.trim().toLocaleLowerCase("it");
-  const results = useMemo(() => CER_CATALOG
+  const results = useMemo(() => (showAll ? tutti : preferiti)
     .filter((entry) => {
       const item = existingByCode.get(entry.codice);
       if (item?.id === excludeItemId) return false;
       return !normalized || entry.codice.includes(normalized.replace(/\s/g, "")) || entry.descrizione.toLocaleLowerCase("it").includes(normalized);
     })
-    .sort((a, b) => Number(preferredCodes.has(b.codice)) - Number(preferredCodes.has(a.codice)) || a.codice.localeCompare(b.codice))
-    .slice(0, 120), [excludeItemId, existingByCode, normalized]);
+    .slice(0, 120), [excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
 
   const choose = async (code: string) => {
     const existing = existingByCode.get(code);
@@ -40,7 +39,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
       setSearch("");
       return;
     }
-    const catalogEntry = CER_CATALOG.find((entry) => entry.codice === code);
+    const catalogEntry = tutti.find((entry) => entry.codice === code);
     if (!catalogEntry) return;
     const created = await create.mutateAsync({
       codice_cer: catalogEntry.codice,
@@ -66,6 +65,10 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} className="pl-8" placeholder="Codice CER o descrizione" />
           </div>
+          <label className="mb-2 flex cursor-pointer items-center gap-2 border-b border-border px-1 pb-2 text-xs">
+            <input type="checkbox" checked={showAll} onChange={(event) => setShowAll(event.target.checked)} className="accent-emerald-500" />
+            <span className="text-muted-foreground">Mostra tutti i CER del catalogo europeo</span>
+          </label>
           <div className="max-h-72 space-y-1 overflow-y-auto">
             {results.map((entry) => {
               const existing = existingByCode.get(entry.codice);

@@ -17,8 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
-import { CER_DATA } from "./DevCERPreferitiModule";
-import { CER_CATALOG } from "@/data/cerCatalog";
+import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
@@ -307,41 +306,7 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  // CER "abituali" = quelli realmente movimentati in giacenze (stessa fonte del modulo Giacenze)
-  const { data: cerMovimentati } = useQuery({
-    queryKey: ["dev-cer-movimentati", MULTY_TENANT_ID],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("movimenti_impianto")
-        .select("cer, descrizione_rifiuto")
-        .eq("tenant_id", MULTY_TENANT_ID);
-      if (error) throw error;
-      return data as { cer: string; descrizione_rifiuto: string | null }[];
-    },
-  });
-
-  const PREFERITI_CER = useMemo(() => {
-    const isTechnicalDesc = (d: string) =>
-      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(d);
-    const catalogo = new Map(CER_CATALOG.map(c => [c.codice, c]));
-    const map = new Map<string, { codice: string; descrizione: string; pericoloso: boolean }>();
-    for (const m of cerMovimentati ?? []) {
-      if (!m.cer) continue;
-      const cat = catalogo.get(m.cer);
-      const d = m.descrizione_rifiuto?.trim();
-      const descrizione = (d && !isTechnicalDesc(d) ? d : cat?.descrizione) || "";
-      map.set(m.cer, { codice: m.cer, descrizione, pericoloso: cat?.pericoloso ?? false });
-    }
-    if (map.size === 0) {
-      return CER_DATA.map(c => ({ codice: c.codice, descrizione: c.descrizione, pericoloso: c.pericoloso }));
-    }
-    return [...map.values()].sort((a, b) => a.codice.localeCompare(b.codice));
-  }, [cerMovimentati]);
-
-  const ALL_CER = useMemo(() => {
-    const codiciPreferiti = new Set(PREFERITI_CER.map(c => c.codice));
-    return [...PREFERITI_CER, ...CER_CATALOG.filter(c => !codiciPreferiti.has(c.codice))];
-  }, [PREFERITI_CER]);
+  const { preferiti: PREFERITI_CER, tutti: ALL_CER } = useConferimentoCerOptions();
 
 
   const baseCerList = mostraTuttiCer ? ALL_CER : PREFERITI_CER;
