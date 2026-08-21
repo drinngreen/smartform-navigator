@@ -26,10 +26,15 @@ describe("registro rotte", () => {
   it("le rotte critiche restano registrate", () => {
     const critical = [
       "/mn/admin/dev-multyproget",
-      "/mn/admin/dev-multyproget/rentri-console",
+      "/mn/admin/:context/rentri-console",
+      "/mn/admin/dev-multyproget/centro-app-fir",
     ];
+    const declared = new Set(
+      [...appSource.matchAll(/<Route\s+path="([^"]+)"/g)].map((m) => m[1]),
+    );
     for (const route of critical) {
-      expect(appSource.includes(route), `rotta mancante: ${route}`).toBe(true);
+      expect(declared.has(route), `rotta mancante: ${route}`).toBe(true);
     }
   });
+
 });
