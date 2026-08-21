@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Star, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
 import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 
@@ -22,19 +23,30 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
   const existingByCode = useMemo(() => new Map(items.map((item) => [item.codice_cer, item])), [items]);
   const preferredCodes = useMemo(() => new Set(preferiti.map((entry) => entry.codice)), [preferiti]);
   const normalized = search.trim().toLocaleLowerCase("it");
-  const results = useMemo(() => (showAll ? tutti : preferiti)
-    .filter((entry) => {
+  const digits = normalized.replace(/\D/g, "");
+
+  const results = useMemo(() => {
+    const base = showAll || normalized.length > 0 ? tutti : preferiti;
+    return base.filter((entry) => {
       const item = existingByCode.get(entry.codice);
-      if (item?.id === excludeItemId) return false;
-      return !normalized || entry.codice.includes(normalized.replace(/\s/g, "")) || entry.descrizione.toLocaleLowerCase("it").includes(normalized);
-    }), [excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
+      if (item && item.id === excludeItemId) return false;
+      if (!normalized) return true;
+      const code = entry.codice.toLocaleLowerCase("it");
+      const matchCode = digits.length > 0 && code.replace(/\D/g, "").includes(digits);
+      const matchText = entry.descrizione.toLocaleLowerCase("it").includes(normalized);
+      return matchCode || matchText;
+    }).slice(0, 300);
+  }, [digits, excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
+
+  useEffect(() => {
+    if (!open) setSearch("");
+  }, [open]);
 
   const choose = async (code: string) => {
     const existing = existingByCode.get(code);
     if (existing) {
       onChange(existing.id);
       setOpen(false);
-      setSearch("");
       return;
     }
     const catalogEntry = tutti.find((entry) => entry.codice === code);
@@ -49,42 +61,82 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
     });
     onChange(created.id);
     setOpen(false);
-    setSearch("");
   };
 
   return (
-    <div className="relative">
-      <Button type="button" variant="outline" className="w-full justify-start text-left font-normal" onClick={() => setOpen((current) => !current)}>
-        {selected ? <><span className="font-mono">{selected.codice_cer}</span><span className="truncate">— {selected.descrizione}</span></> : placeholder}
-      </Button>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-[22rem] rounded-md border border-border bg-popover p-2 text-popover-foreground shadow-lg">
-          <div className="relative mb-2">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} className="pl-8" placeholder="Codice CER o descrizione" />
+    <>
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          className="min-w-0 flex-1 justify-start gap-2 text-left font-normal"
+          onClick={() => setOpen(true)}
+        >
+          {selected ? (
+            <>
+              <span className="shrink-0 font-mono text-xs">{selected.codice_cer}</span>
+              <span className="truncate text-xs text-muted-foreground">{selected.descrizione}</span>
+            </>
+          ) : (
+            <span className="truncate text-muted-foreground">{placeholder}</span>
+          )}
+        </Button>
+        {selected && (
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onChange("")} aria-label="Rimuovi CER selezionato">
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="flex h-[85vh] max-h-[85vh] w-[96vw] max-w-2xl flex-col gap-3 p-4 sm:p-6">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle className="text-base">Seleziona CER / materiale</DialogTitle>
+          </DialogHeader>
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              autoFocus
+              inputMode="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="h-11 pl-9 text-base text-foreground placeholder:text-muted-foreground"
+              placeholder="Codice CER o descrizione"
+            />
           </div>
-          <label className="mb-2 flex cursor-pointer items-center gap-2 border-b border-border px-1 pb-2 text-xs">
+
+          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
             <input type="checkbox" checked={showAll} onChange={(event) => setShowAll(event.target.checked)} className="accent-emerald-500" />
-            <span className="text-muted-foreground">Mostra tutti i CER del catalogo europeo</span>
+            <span>Mostra tutti i CER del catalogo europeo</span>
+            <span className="ml-auto font-mono">{results.length} risultati</span>
           </label>
-          <div className="max-h-72 space-y-1 overflow-y-auto">
+
+          <div className="-mx-1 flex-1 space-y-1 overflow-y-auto px-1">
             {results.map((entry) => {
               const existing = existingByCode.get(entry.codice);
+              const isSelected = existing?.id === value;
               return (
-                <Button key={entry.codice} type="button" variant="ghost" className="h-auto w-full justify-start px-2 py-2 text-left" onClick={() => choose(entry.codice)} disabled={create.isPending}>
-                  <span className="w-16 shrink-0 font-mono text-xs">{entry.codice}</span>
-                  <span className="min-w-0 flex-1 whitespace-normal text-xs">{entry.descrizione}</span>
-                  {preferredCodes.has(entry.codice) && <Star className="h-3 w-3 shrink-0 text-amber-400" />}
-                  <span className="shrink-0 rounded-full border border-border bg-transparent px-2 py-1 text-[10px] font-semibold text-foreground">
+                <button
+                  key={entry.codice}
+                  type="button"
+                  onClick={() => choose(entry.codice)}
+                  disabled={create.isPending}
+                  className={`flex w-full items-start gap-3 rounded-lg border px-3 py-3 text-left transition-colors ${isSelected ? "border-primary bg-primary/10" : "border-border/40 hover:bg-accent"}`}
+                >
+                  <span className="w-16 shrink-0 font-mono text-sm">{entry.codice}</span>
+                  <span className="min-w-0 flex-1 text-sm leading-snug">{entry.descrizione}</span>
+                  {preferredCodes.has(entry.codice) && <Star className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />}
+                  <span className="mt-0.5 shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold">
                     {existing ? "Dragon" : "Globale"}
                   </span>
-                </Button>
+                </button>
               );
             })}
-            {results.length === 0 && <p className="py-6 text-center text-xs text-muted-foreground">Nessun CER trovato</p>}
+            {results.length === 0 && <p className="py-10 text-center text-sm text-muted-foreground">Nessun CER trovato</p>}
           </div>
-        </div>
-      )}
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
