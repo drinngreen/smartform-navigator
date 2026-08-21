@@ -40,6 +40,9 @@ export function DevMagazzinoDevModule() {
           <TabsTrigger value="lotti" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <GitBranch className="h-4 w-4" /> Lotti & Rintraccia
           </TabsTrigger>
+          <TabsTrigger value="test" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <ShieldCheck className="h-4 w-4" /> Test di Sistema
+          </TabsTrigger>
         </TabsList>
 
 
