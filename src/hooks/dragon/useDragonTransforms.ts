@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { useMNContextStore } from "@/stores/mnContextStore";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { DragonTransformModel, DragonTransformBatch } from "@/types/dragon";
 
@@ -47,7 +46,6 @@ export function useDragonTransformModels() {
 
 export function useDragonTransformBatches() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
-  const { user } = useAuth();
   const qc = useQueryClient();
 
   const { data: batches = [], isLoading } = useQuery({
@@ -63,28 +61,51 @@ export function useDragonTransformBatches() {
     },
   });
 
-  const createBatch = useMutation({
-    mutationFn: async (batch: { model_id: string; source_item_id: string; input_quantity: number; execution_date?: string; notes?: string; source_register_movement_id?: string }) => {
-      const { data, error } = await supabase
-        .from("dragon_transform_batches")
-        .insert({
-          company_id: companyId,
-          created_by: user?.id,
-          model_id: batch.model_id,
-          source_item_id: batch.source_item_id,
-          input_quantity: batch.input_quantity,
-          execution_date: batch.execution_date ?? new Date().toISOString().split('T')[0],
-          notes: batch.notes ?? null,
-          source_register_movement_id: batch.source_register_movement_id ?? null,
-        })
-        .select()
-        .single();
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] });
+    qc.invalidateQueries({ queryKey: ["dragon-register"] });
+    qc.invalidateQueries({ queryKey: ["dragon-stock"] });
+    qc.invalidateQueries({ queryKey: ["dragon-audit"] });
+  };
+
+  const executeCernita = useMutation({
+    mutationFn: async (batch: { source_item_id: string; input_quantity: number; outputs: Array<{ item_id: string; quantity: number; lot_code?: string }>; model_id?: string | null; execution_date?: string; notes?: string; deferred?: boolean }) => {
+      const { data, error } = await (supabase.rpc as any)("dragon_create_cernita_atomic", {
+        p_company_id: companyId,
+        p_source_item_id: batch.source_item_id,
+        p_input_quantity: batch.input_quantity,
+        p_outputs: batch.outputs,
+        p_model_id: batch.model_id ?? null,
+        p_execution_date: batch.execution_date ?? new Date().toISOString().split("T")[0],
+        p_notes: batch.notes ?? null,
+        p_deferred: batch.deferred ?? false,
+      });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] }); toast.success("Batch creato"); },
+    onSuccess: refresh,
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { batches, isLoading, createBatch };
+  const completeCernita = useMutation({
+    mutationFn: async ({ batchId, outputs }: { batchId: string; outputs: Array<{ item_id: string; quantity: number; lot_code?: string }> }) => {
+      const { data, error } = await (supabase.rpc as any)("dragon_complete_cernita_atomic", { p_batch_id: batchId, p_outputs: outputs });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelCernita = useMutation({
+    mutationFn: async (batchId: string) => {
+      const { data, error } = await (supabase.rpc as any)("dragon_cancel_cernita_atomic", { p_batch_id: batchId, p_reason: "Annullamento operatore" });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return { batches, isLoading, executeCernita, completeCernita, cancelCernita };
 }

@@ -12,7 +12,7 @@ export type DragonSourceContext = 'UL' | 'FUORI_UL';
 export type DragonDocumentType = 'FIR' | 'DDT_IN' | 'DDT_OUT' | 'FORMULARIO_MODELLO' | 'ALTRO';
 export type DragonSubjectType = 'PRODUTTORE' | 'DESTINATARIO' | 'TRASPORTATORE' | 'INTERMEDIARIO';
 export type DragonSiteActivity = 'ND' | 'MANUTENZIONE' | 'ASSISTENZA_SANITARIA' | 'CANTIERE_TEMPORANEO_MOBILE' | 'BONIFICA_AMIANTO';
-export type DragonBatchStatus = 'BOZZA' | 'CONFERMATA' | 'ANNULLATA';
+export type DragonBatchStatus = 'BOZZA' | 'PENDENTE' | 'CONFERMATA' | 'ANNULLATA';
 export type DragonWarehouseScope = 'WASTE' | 'MPS';
 export type DragonQuantityMode = 'PERCENT' | 'FIXED';
 export type DragonAdjustmentType = 'POSITIVE' | 'NEGATIVE';
@@ -183,7 +183,7 @@ export interface DragonTransformModel {
 
 export interface DragonTransformModelOutput {
   id: string;
-  model_id: string;
+  model_id: string | null;
   output_item_id: string;
   output_type: DragonItemType;
   quantity_mode: DragonQuantityMode;
@@ -220,6 +220,7 @@ export interface DragonTransformBatchOutput {
   warehouse_scope: DragonWarehouseScope;
   generated_register_movement_id: string | null;
   generated_stock_movement_id: string | null;
+  lot_id?: string | null;
   created_at: string;
   output_item?: DragonItem;
 }
