@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonTransformBatches, useDragonTransformModels } from "@/hooks/dragon/useDragonTransforms";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
+import { useDragonStock } from "@/hooks/dragon/useDragonStock";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function DragonCerniteBatchPage() {
   const { batches, isLoading, executeCernita, completeCernita, cancelCernita } = useDragonTransformBatches();
   const { models } = useDragonTransformModels();
   const { items } = useDragonItems();
+  const { balances: wasteBalances } = useDragonStock("WASTE");
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -47,6 +49,7 @@ export default function DragonCerniteBatchPage() {
 
   const inputItem = items.find(i => i.id === inputItemId);
   const inputQty = parseFloat(inputQuantity) || 0;
+  const availableQty = wasteBalances.find((balance) => balance.item_id === inputItemId)?.balance ?? 0;
 
   // Find matching models for the selected input item
   const matchingModels = useMemo(() =>
@@ -94,7 +97,8 @@ export default function DragonCerniteBatchPage() {
   const updateOutputRow = (idx: number, field: keyof OutputRow, value: string) =>
     setOutputRows(r => r.map((row, i) => i === idx ? { ...row, [field]: value } : row));
 
-  const isFormValid = inputItemId && inputQty > 0 && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
+  const hasEnoughStock = inputQty <= availableQty;
+  const isFormValid = inputItemId && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
 
   const resetForm = () => {
     setInputItemId("");
@@ -275,9 +279,17 @@ export default function DragonCerniteBatchPage() {
                 </div>
               </div>
               {inputItem && (
-                <p className="text-xs text-muted-foreground">
-                  Tipo: <Badge variant="outline" className="text-xs">{inputItem.item_type}</Badge>
-                  {inputItem.pericoloso && <Badge variant="outline" className="text-xs ml-1 text-amber-400">⚠ Pericoloso</Badge>}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span>Tipo: <Badge variant="outline" className="text-xs">{inputItem.item_type}</Badge></span>
+                  {inputItem.pericoloso && <Badge variant="outline" className="text-xs text-amber-400">⚠ Pericoloso</Badge>}
+                  <Badge variant="outline" className={availableQty > 0 ? "text-emerald-400" : "text-rose-400"}>
+                    Disponibili per cernita: {availableQty.toLocaleString("it-IT")} kg
+                  </Badge>
+                </div>
+              )}
+              {inputItem && inputQty > availableQty && (
+                <p className="text-xs font-medium text-rose-400">
+                  Quantità non disponibile: richiesti {inputQty.toLocaleString("it-IT")} kg, disponibili {availableQty.toLocaleString("it-IT")} kg nel magazzino Dragon.
                 </p>
               )}
             </div>

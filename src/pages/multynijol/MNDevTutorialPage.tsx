@@ -603,6 +603,51 @@ const CHAPTERS: Chapter[] = [
   },
 
   {
+    id: "cernite-dragon",
+    title: "Cernite Dragon",
+    subtitle: "Trasformare un CER padre in più materiali tracciati",
+    image: "/tutorial/08-magazzino-dev.png",
+    level: "Avanzato",
+    minutes: 6,
+    intro:
+      "La cernita è una lavorazione interna all'impianto: scarica i kg dal CER in ingresso e li distribuisce su uno o più CER o materiali in uscita, senza creare un nuovo FIR.",
+    explain: [
+      "La cernita usa il saldo del magazzino Dragon. Dopo aver scelto il CER padre, la finestra mostra chiaramente i kg Disponibili per cernita: è esattamente il valore controllato quando confermi.",
+      "Ingresso e uscita usano lo stesso catalogo CER del nuovo conferimento. Puoi cercare per codice o descrizione e attivare l'intero catalogo europeo.",
+      "Il salvataggio è atomico: scarico del padre, carichi dei figli, lotti e legami di rintracciabilità riescono tutti insieme oppure non viene scritto nulla.",
+      "La somma degli output può essere minore dell'ingresso: la differenza è il calo peso. Non può mai superare i kg lavorati.",
+      "Annullare non cancella lo storico: crea movimenti compensativi inversi e riporta le giacenze alla situazione precedente.",
+    ],
+    steps: [
+      "Apri Magazzino Dev, scegli Cernita e premi Apri Cernita.",
+      "Premi Nuova Cernita e seleziona il CER in ingresso.",
+      "Leggi Disponibili per cernita e inserisci una quantità non superiore.",
+      "Aggiungi gli articoli/CER in uscita e distribuisci i kg.",
+      "Controlla il riepilogo e l'eventuale calo peso.",
+      "Conferma e verifica che il CER padre diminuisca e i figli aumentino nelle Giacenze Dragon.",
+      "Usa Lotti & Rintraccia per vedere il collegamento padre-figli.",
+    ],
+    fields: [
+      { label: "Disponibili per cernita", desc: "Saldo WASTE Dragon realmente usato dal controllo di disponibilità." },
+      { label: "Materiale in ingresso", desc: "CER padre che viene scaricato dal magazzino rifiuti." },
+      { label: "Componenti in uscita", desc: "CER o materiali figli che vengono caricati nei rispettivi magazzini." },
+      { label: "Calo peso", desc: "Differenza ammessa tra kg in ingresso e somma degli output." },
+      { label: "Lotto", desc: "Codice facoltativo che permette di seguire la genealogia del materiale." },
+    ],
+    warnings: [
+      "Non confermare se la disponibilità mostrata non coincide con la giacenza attesa: prima va allineato il movimento di origine.",
+      "Gli output non possono superare l'ingresso e devono appartenere alla stessa azienda attiva.",
+    ],
+    faq: [
+      { q: "Vedo migliaia di kg ma ricevo giacenza insufficiente.", a: "Guarda il badge Disponibili per cernita nella finestra: quello è il saldo Dragon validato. Se differisce dalla giacenza attesa, esegui il test Giacenze o chiedi a Dark Lemon di controllare e allineare i movimenti Dragon." },
+      { q: "Serve un FIR per la cernita?", a: "No. È un movimento interno senza trasporto esterno; la tracciabilità è garantita dai movimenti e dal legame padre-figli." },
+      { q: "Posso avere meno kg in uscita?", a: "Sì. La differenza viene registrata come calo peso; gli output non possono invece superare l'ingresso." },
+      { q: "Come verifico che funzioni davvero?", a: "Nella tab Test di Sistema esegui Testa Cernite: crea una filiera reale, verifica saldi e lotti, annulla e ripulisce tutti i dati di test." },
+    ],
+    tip: "Prima di lavorare un lotto grande, prova 1 kg e verifica padre, figli e rintracciabilità; poi annulla la prova.",
+    route: "/mn/admin/dev-multyproget/dragon/cernite/batch",
+  },
+  {
     id: "personale",
     title: "Personale e login app",
     subtitle: "Creare, modificare ed eliminare gli utenti autisti",
