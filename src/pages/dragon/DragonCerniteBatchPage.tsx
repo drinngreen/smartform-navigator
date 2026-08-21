@@ -276,7 +276,17 @@ export default function DragonCerniteBatchPage() {
                 <div>
                   <Label>Quantità (kg) *</Label>
                   <Input type="number" step="0.01" value={inputQuantity} onChange={e => setInputQuantity(e.target.value)} placeholder="0.00" className="font-mono" />
+                  {inputItem && (
+                    <button
+                      type="button"
+                      onClick={() => setInputQuantity(String(availableQty))}
+                      className="mt-1 text-[11px] underline text-muted-foreground hover:text-foreground"
+                    >
+                      Usa tutta la giacenza ({availableQty.toLocaleString("it-IT")} kg)
+                    </button>
+                  )}
                 </div>
+
               </div>
               {inputItem && (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
