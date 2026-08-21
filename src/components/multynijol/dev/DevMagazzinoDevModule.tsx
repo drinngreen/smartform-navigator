@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, BookOpen, ClipboardList, Scissors, Layers, GitBranch } from "lucide-react";
+import { Package, BookOpen, ClipboardList, Scissors, Layers, GitBranch, ShieldCheck } from "lucide-react";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroGeneraleModule } from "./DevRegistroGeneraleModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
+import { DevSystemTestModule } from "./DevSystemTestModule";
 
 export function DevMagazzinoDevModule() {
   const [tab, setTab] = useState("giacenze");
@@ -38,6 +39,9 @@ export function DevMagazzinoDevModule() {
           </TabsTrigger>
           <TabsTrigger value="lotti" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <GitBranch className="h-4 w-4" /> Lotti & Rintraccia
+          </TabsTrigger>
+          <TabsTrigger value="test" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+            <ShieldCheck className="h-4 w-4" /> Test di Sistema
           </TabsTrigger>
         </TabsList>
 
@@ -78,6 +82,7 @@ export function DevMagazzinoDevModule() {
             </button>
           </div>
         </TabsContent>
+        <TabsContent value="test" className="mt-4"><DevSystemTestModule /></TabsContent>
       </Tabs>
     </div>
   );

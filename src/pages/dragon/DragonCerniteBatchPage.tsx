@@ -354,7 +354,7 @@ export default function DragonCerniteBatchPage() {
                   <p className="text-lg font-mono font-bold text-emerald-400">{totalOutput.toLocaleString("it-IT")}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Differenza</p>
+                  <p className="text-xs text-muted-foreground">Calo peso</p>
                   <p className={`text-lg font-mono font-bold ${Math.abs(difference) < 0.01 ? "text-emerald-400" : difference > 0 ? "text-amber-400" : "text-rose-400"}`}>
                     {difference > 0 ? "+" : ""}{difference.toLocaleString("it-IT")} kg
                   </p>
@@ -364,8 +364,11 @@ export default function DragonCerniteBatchPage() {
                 <p className="text-xs text-rose-400 text-center">⚠ L'uscita supera l'ingresso — controlla le quantità</p>
               )}
               {difference > 0.01 && inputQty > 0 && (
-                <p className="text-xs text-amber-400 text-center">ℹ Restano {difference.toLocaleString("it-IT")} kg non assegnati (scarto/calo)</p>
+                <p className="text-xs text-amber-400 text-center">ℹ Calo peso di {difference.toLocaleString("it-IT")} kg (umidità, polveri, scarti dispersi): consentito, viene registrato sulla lavorazione</p>
               )}
+              <p className="text-[11px] text-muted-foreground text-center border-t border-border/30 pt-2">
+                Movimento interno all'impianto: nessun FIR, trasportatore o soggetto terzo richiesto. La provenienza dei materiali ottenuti è lo scarico di lavorazione del CER padre.
+              </p>
             </div>
 
             {/* Notes */}

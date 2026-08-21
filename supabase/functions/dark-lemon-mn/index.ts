@@ -432,6 +432,8 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 ### 14. DRAGON — LAVORAZIONI & CERNITE
 - Elencare modelli lavorazione con dragon_list_transform_models (con ricette output)
 - Eseguire cernita con dragon_cernita (scarico input + carichi output automatici)
+- Le cernite sono MOVIMENTI INTERNI: nessun FIR richiesto, è ammesso il calo peso (input - output) e gli MPS vanno nel magazzino separato
+- Se l'utente chiede di "testare" cernite/giacenze/FIR, usa dragon_run_system_test (scenario cernite|giacenze|fir): esegue operazioni reali e ripulisce da solo i dati di test
 
 ### 15. DRAGON — SCARICO USCITA FIFO
 - Scarico cumulativo FIFO con dragon_scarico_fifo (allocazioni automatiche dai carichi più vecchi)
@@ -1813,6 +1815,20 @@ const tools = [
           notes: { type: "string", description: "Note opzionali" }
         },
         required: ["input_item_id", "input_quantity", "outputs"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "dragon_run_system_test",
+      description: "Esegue un test reale di filiera sul tenant attivo (cernite, giacenze, fir): crea dati veri, verifica saldi e lotti, poi cancella automaticamente tutti i dati di test e conferma l'integrità del sistema.",
+      parameters: {
+        type: "object",
+        properties: {
+          scenario: { type: "string", enum: ["cernite", "giacenze", "fir"], description: "Scenario da eseguire" }
+        },
+        required: ["scenario"]
       }
     }
   },
@@ -3285,6 +3301,14 @@ async function handleTool(
         .select("id, codice_cer, descrizione, item_type, pericoloso, unita_misura_default, attivo")
         .single();
       return insertError ? { error: insertError.message } : { success: true, created: true, item: newItem };
+    }
+
+    case "dragon_run_system_test": {
+      const { data, error } = await db.rpc("dragon_test_run", {
+        p_company_id: tenantId,
+        p_scenario: args.scenario,
+      });
+      return error ? { error: error.message } : data;
     }
 
     case "dragon_cernita": {
