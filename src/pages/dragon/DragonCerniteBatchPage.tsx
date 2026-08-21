@@ -3,24 +3,20 @@ import { useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonTransformBatches, useDragonTransformModels } from "@/hooks/dragon/useDragonTransforms";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
-import { useDragonCauses } from "@/hooks/dragon/useDragonCauses";
-import { useMNContextStore } from "@/stores/mnContextStore";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabaseClient";
-import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal } from "lucide-react";
 import { toast } from "sonner";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
+import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
 
 const statusColors: Record<string, string> = {
   BOZZA: "bg-yellow-500/20 text-yellow-300",
+  PENDENTE: "bg-orange-500/20 text-orange-300",
   CONFERMATA: "bg-emerald-500/20 text-emerald-300",
   ANNULLATA: "bg-rose-500/20 text-rose-300",
 };
@@ -28,29 +24,26 @@ const statusColors: Record<string, string> = {
 interface OutputRow {
   item_id: string;
   quantity: string;
+  lot_code: string;
 }
 
 export default function DragonCerniteBatchPage() {
-  const { batches, isLoading } = useDragonTransformBatches();
+  const { batches, isLoading, executeCernita, completeCernita, cancelCernita } = useDragonTransformBatches();
   const { models } = useDragonTransformModels();
   const { items } = useDragonItems();
-  const { causes } = useDragonCauses();
-  const companyId = useMNContextStore((s) => s.activeContext.tenantId);
-  const { user } = useAuth();
-  const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [confirming, setConfirming] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [appliedModelId, setAppliedModelId] = useState<string | null>(null);
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
 
   // Form state
   const [inputItemId, setInputItemId] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
   const [notes, setNotes] = useState("");
-  const [outputRows, setOutputRows] = useState<OutputRow[]>([{ item_id: "", quantity: "" }]);
+  const [outputRows, setOutputRows] = useState<OutputRow[]>([{ item_id: "", quantity: "", lot_code: "" }]);
 
   const inputItem = items.find(i => i.id === inputItemId);
   const inputQty = parseFloat(inputQuantity) || 0;
@@ -67,9 +60,6 @@ export default function DragonCerniteBatchPage() {
   );
   const difference = inputQty - totalOutput;
 
-  const activeItems = items.filter(i => i.attivo);
-  const outputItemOptions = activeItems.filter(i => i.id !== inputItemId);
-
   // Apply a transform model: pre-fill output rows with the model's recipe
   const applyModel = (modelId: string) => {
     const model = models.find(m => m.id === modelId);
@@ -81,9 +71,9 @@ export default function DragonCerniteBatchPage() {
       } else if (o.quantity_mode === "FIXED") {
         qty = o.quantity_value;
       }
-      return { item_id: o.output_item_id, quantity: qty > 0 ? qty.toFixed(2) : "" };
+      return { item_id: o.output_item_id, quantity: qty > 0 ? qty.toFixed(2) : "", lot_code: "" };
     });
-    setOutputRows(newRows.length > 0 ? newRows : [{ item_id: "", quantity: "" }]);
+    setOutputRows(newRows.length > 0 ? newRows : [{ item_id: "", quantity: "", lot_code: "" }]);
     setAppliedModelId(modelId);
   };
 
@@ -99,7 +89,7 @@ export default function DragonCerniteBatchPage() {
     }
   }, [searchParams, items.length]);
 
-  const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "" }]);
+  const addOutputRow = () => setOutputRows(r => [...r, { item_id: "", quantity: "", lot_code: "" }]);
   const removeOutputRow = (idx: number) => setOutputRows(r => r.filter((_, i) => i !== idx));
   const updateOutputRow = (idx: number, field: keyof OutputRow, value: string) =>
     setOutputRows(r => r.map((row, i) => i === idx ? { ...row, [field]: value } : row));
@@ -110,158 +100,35 @@ export default function DragonCerniteBatchPage() {
     setInputItemId("");
     setInputQuantity("");
     setNotes("");
-    setOutputRows([{ item_id: "", quantity: "" }]);
+    setOutputRows([{ item_id: "", quantity: "", lot_code: "" }]);
+    setAppliedModelId(null);
+    setEditingBatchId(null);
   };
 
-  // CREATE + CONFIRM in one step
-  const handleCreate = async () => {
-    if (!isFormValid) return;
+  const serializeOutputs = () => outputRows.map((row) => ({
+    item_id: row.item_id,
+    quantity: Number(row.quantity),
+    lot_code: row.lot_code.trim() || undefined,
+  }));
+
+  const handleCreate = async (deferred = false) => {
+    if (!inputItemId || inputQty <= 0 || (!deferred && !isFormValid)) return;
     setCreating(true);
     try {
-      const scaricoCause = causes.find(c => c.code === "SCARICO_PER_LAVORAZIONE");
-      const caricoCause = causes.find(c => c.code === "CARICO_DA_LAVORAZIONE");
-      if (!scaricoCause || !caricoCause) throw new Error("Causali SCARICO_PER_LAVORAZIONE / CARICO_DA_LAVORAZIONE non trovate");
-
-      const { data: registers } = await supabase
-        .from("dragon_registers")
-        .select("id")
-        .eq("company_id", companyId)
-        .eq("active", true)
-        .limit(1);
-      const registerId = registers?.[0]?.id || null;
-
-      const today = new Date().toISOString().split("T")[0];
-      const sourceItem = items.find(i => i.id === inputItemId);
-
-      // Create batch record (CONFERMATA directly)
-      const { data: batch, error: batchErr } = await supabase
-        .from("dragon_transform_batches")
-        .insert({
-          company_id: companyId,
-          created_by: user?.id,
-          model_id: null as any, // no model
+      if (editingBatchId) {
+        await completeCernita.mutateAsync({ batchId: editingBatchId, outputs: serializeOutputs() });
+        toast.success("Cernita pendente completata — lotti e movimenti generati");
+      } else {
+        await executeCernita.mutateAsync({
           source_item_id: inputItemId,
           input_quantity: inputQty,
-          execution_date: today,
-          notes: notes || null,
-          status: "CONFERMATA" as any,
-        } as any)
-        .select()
-        .single();
-      if (batchErr) throw batchErr;
-      const batchId = batch.id;
-
-      // 1) SCARICO input (register movement)
-      await supabase
-        .from("dragon_register_movements")
-        .insert({
-          company_id: companyId,
-          register_id: registerId,
-          movement_date: today,
-          recording_date: today,
-          item_id: inputItemId,
-          cer_code: sourceItem?.codice_cer || "",
-          description_snapshot: sourceItem?.descrizione,
-          movement_type: "SCARICO",
-          cause_id: scaricoCause.id,
-          quantity: inputQty,
-          unit_of_measure: sourceItem?.unita_misura_default || "kg",
-          sign: "MINUS",
-          source_context: "UL",
-          weight_status: "DEFINITIVO",
-          status: "CONSOLIDATO",
-          source_transform_batch_id: batchId,
-          created_by: user?.id,
-        } as any);
-
-      // 2) For each output row, create movements
-      for (const row of outputRows) {
-        const outputItem = items.find(i => i.id === row.item_id);
-        const outputQty = parseFloat(row.quantity) || 0;
-        const isWaste = outputItem?.item_type === "WASTE_CER";
-        const warehouseScope = (outputItem?.item_type === "MPS" || outputItem?.item_type === "MATERIAL") ? "MPS" : "WASTE";
-
-        // Register movement (CARICO) for waste outputs
-        let regMovId: string | null = null;
-        if (isWaste) {
-          const { data: caricoMov, error: caricoErr } = await supabase
-            .from("dragon_register_movements")
-            .insert({
-              company_id: companyId,
-              register_id: registerId,
-              movement_date: today,
-              recording_date: today,
-              item_id: row.item_id,
-              cer_code: outputItem?.codice_cer || "",
-              description_snapshot: outputItem?.descrizione,
-              movement_type: "CARICO",
-              cause_id: caricoCause.id,
-              quantity: outputQty,
-              unit_of_measure: outputItem?.unita_misura_default || "kg",
-              sign: "PLUS",
-              source_context: "UL",
-              weight_status: "DEFINITIVO",
-              status: "CONSOLIDATO",
-              source_transform_batch_id: batchId,
-              created_by: user?.id,
-            } as any)
-            .select()
-            .single();
-          if (caricoErr) throw caricoErr;
-          regMovId = caricoMov.id;
-        }
-
-        // Stock movement
-        const { data: stockMov, error: stockErr } = await supabase
-          .from("dragon_stock_movements")
-          .insert({
-            company_id: companyId,
-            item_id: row.item_id,
-            movement_date: today,
-            cause_id: caricoCause.id,
-            quantity: outputQty,
-            sign: "PLUS",
-            warehouse_scope: warehouseScope,
-            source_transform_batch_id: batchId,
-            created_by: user?.id,
-          } as any)
-          .select()
-          .single();
-        if (stockErr) throw stockErr;
-
-        // Batch output record
-        await supabase.from("dragon_transform_batch_outputs").insert({
-          batch_id: batchId,
-          output_item_id: row.item_id,
-          output_quantity: outputQty,
-          warehouse_scope: warehouseScope,
-          generated_register_movement_id: regMovId,
-          generated_stock_movement_id: stockMov.id,
-        } as any);
+          outputs: deferred ? [] : serializeOutputs(),
+          model_id: appliedModelId,
+          notes,
+          deferred,
+        });
+        toast.success(deferred ? "Cernita pendente aperta — ingresso scaricato" : "Cernita confermata — lotti e movimenti generati");
       }
-
-      // Audit log
-      await supabase.from("dragon_audit_logs").insert({
-        entity_type: "transform_batch",
-        entity_id: batchId,
-        action_type: "CONFIRM",
-        after_state: {
-          input: sourceItem?.codice_cer,
-          input_qty: inputQty,
-          outputs: outputRows.map(r => ({
-            item: items.find(i => i.id === r.item_id)?.codice_cer,
-            qty: parseFloat(r.quantity),
-          })),
-        } as any,
-        performed_by: user?.id,
-        reason: "Cernita confermata",
-      } as any);
-
-      qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] });
-      qc.invalidateQueries({ queryKey: ["dragon-register"] });
-      qc.invalidateQueries({ queryKey: ["dragon-stock"] });
-      qc.invalidateQueries({ queryKey: ["dragon-audit"] });
-      toast.success("Cernita confermata — movimenti generati");
       setShowCreate(false);
       resetForm();
     } catch (e: any) {
@@ -275,107 +142,7 @@ export default function DragonCerniteBatchPage() {
   const handleCancel = async (batchId: string) => {
     setCancelling(batchId);
     try {
-      const batch = batches.find(b => b.id === batchId);
-      if (!batch) throw new Error("Batch non trovato");
-      if (batch.status !== "CONFERMATA") throw new Error("Solo batch CONFERMATI possono essere annullati");
-
-      const scaricoCause = causes.find(c => c.code === "SCARICO_PER_LAVORAZIONE");
-      const caricoCause = causes.find(c => c.code === "CARICO_DA_LAVORAZIONE");
-      if (!scaricoCause || !caricoCause) throw new Error("Causali non trovate");
-
-      const today = new Date().toISOString().split("T")[0];
-      const sourceItem = items.find(i => i.id === batch.source_item_id);
-
-      const { data: registers } = await supabase
-        .from("dragon_registers")
-        .select("id")
-        .eq("company_id", companyId)
-        .eq("active", true)
-        .limit(1);
-      const registerId = registers?.[0]?.id || null;
-
-      // Inverse SCARICO → CARICO (re-add input)
-      await supabase.from("dragon_register_movements").insert({
-        company_id: companyId,
-        register_id: registerId,
-        movement_date: today,
-        recording_date: today,
-        item_id: batch.source_item_id,
-        cer_code: sourceItem?.codice_cer || "",
-        description_snapshot: `ANNULLAMENTO CERNITA: ${sourceItem?.descrizione}`,
-        movement_type: "CARICO",
-        cause_id: caricoCause.id,
-        quantity: batch.input_quantity,
-        unit_of_measure: sourceItem?.unita_misura_default || "kg",
-        sign: "PLUS",
-        source_context: "UL",
-        weight_status: "DEFINITIVO",
-        status: "CONSOLIDATO",
-        source_transform_batch_id: batchId,
-        annotations: "Annullamento cernita",
-        created_by: user?.id,
-      } as any);
-
-      // Inverse each output
-      for (const output of batch.outputs || []) {
-        const outputItem = items.find(i => i.id === output.output_item_id);
-
-        if (output.generated_register_movement_id) {
-          await supabase.from("dragon_register_movements").insert({
-            company_id: companyId,
-            register_id: registerId,
-            movement_date: today,
-            recording_date: today,
-            item_id: output.output_item_id,
-            cer_code: outputItem?.codice_cer || "",
-            description_snapshot: `ANNULLAMENTO CERNITA: ${outputItem?.descrizione}`,
-            movement_type: "SCARICO",
-            cause_id: scaricoCause.id,
-            quantity: output.output_quantity,
-            unit_of_measure: outputItem?.unita_misura_default || "kg",
-            sign: "MINUS",
-            source_context: "UL",
-            weight_status: "DEFINITIVO",
-            status: "CONSOLIDATO",
-            source_transform_batch_id: batchId,
-            annotations: "Annullamento cernita",
-            created_by: user?.id,
-          } as any);
-        }
-
-        await supabase.from("dragon_stock_movements").insert({
-          company_id: companyId,
-          item_id: output.output_item_id,
-          movement_date: today,
-          cause_id: scaricoCause.id,
-          quantity: output.output_quantity,
-          sign: "MINUS",
-          warehouse_scope: output.warehouse_scope,
-          source_transform_batch_id: batchId,
-          note: "Annullamento cernita",
-          created_by: user?.id,
-        } as any);
-      }
-
-      await supabase
-        .from("dragon_transform_batches")
-        .update({ status: "ANNULLATA" as any, updated_at: new Date().toISOString() } as any)
-        .eq("id", batchId);
-
-      await supabase.from("dragon_audit_logs").insert({
-        entity_type: "transform_batch",
-        entity_id: batchId,
-        action_type: "CANCEL",
-        before_state: { status: "CONFERMATA" } as any,
-        after_state: { status: "ANNULLATA" } as any,
-        performed_by: user?.id,
-        reason: "Annullamento cernita con movimenti inversi",
-      } as any);
-
-      qc.invalidateQueries({ queryKey: ["dragon-transform-batches"] });
-      qc.invalidateQueries({ queryKey: ["dragon-register"] });
-      qc.invalidateQueries({ queryKey: ["dragon-stock"] });
-      qc.invalidateQueries({ queryKey: ["dragon-audit"] });
+      await cancelCernita.mutateAsync(batchId);
       toast.success("Cernita annullata — movimenti inversi creati");
     } catch (e: any) {
       toast.error(e.message);
@@ -433,7 +200,17 @@ export default function DragonCerniteBatchPage() {
                       </TableCell>
                       <TableCell><Badge variant="outline" className={statusColors[b.status] || ""}>{b.status}</Badge></TableCell>
                       <TableCell>
-                        {b.status === "CONFERMATA" && (
+                        {b.status === "PENDENTE" && (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingBatchId(b.id);
+                            setInputItemId(b.source_item_id);
+                            setInputQuantity(String(b.input_quantity));
+                            setNotes(b.notes || "");
+                            setOutputRows([{ item_id: "", quantity: "", lot_code: "" }]);
+                            setShowCreate(true);
+                          }}><Play className="h-3 w-3 mr-1" />Completa</Button>
+                        )}
+                        {(b.status === "CONFERMATA" || b.status === "PENDENTE") && (
                           <Button size="sm" variant="outline" className="text-rose-400" disabled={cancelling === b.id} onClick={() => handleCancel(b.id)}>
                             <XCircle className="h-3 w-3 mr-1" />{cancelling === b.id ? "..." : "Annulla"}
                           </Button>
@@ -490,14 +267,7 @@ export default function DragonCerniteBatchPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Articolo / CER *</Label>
-                  <Select value={inputItemId} onValueChange={setInputItemId}>
-                    <SelectTrigger><SelectValue placeholder="Seleziona articolo..." /></SelectTrigger>
-                    <SelectContent>
-                      {activeItems.map(i => (
-                        <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <DragonCerSelector value={inputItemId} onChange={setInputItemId} />
                 </div>
                 <div>
                   <Label>Quantità (kg) *</Label>
@@ -526,7 +296,8 @@ export default function DragonCerniteBatchPage() {
                   <TableRow className="border-border/20">
                     <TableHead className="w-8">#</TableHead>
                     <TableHead>Articolo / CER</TableHead>
-                    <TableHead className="text-right w-32">Kg</TableHead>
+                    <TableHead className="text-right w-28">Kg</TableHead>
+                    <TableHead className="w-32">Lotto</TableHead>
                     <TableHead className="text-right w-20">%</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
@@ -540,14 +311,7 @@ export default function DragonCerniteBatchPage() {
                       <TableRow key={idx} className="border-border/10">
                         <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
                         <TableCell>
-                          <Select value={row.item_id} onValueChange={v => updateOutputRow(idx, "item_id", v)}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                            <SelectContent>
-                              {outputItemOptions.map(i => (
-                                <SelectItem key={i.id} value={i.id}>{i.codice_cer} — {i.descrizione} [{i.item_type}]</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(idx, "item_id", v)} excludeItemId={inputItemId} placeholder="Seleziona output..." />
                         </TableCell>
                         <TableCell>
                           <Input
@@ -559,6 +323,7 @@ export default function DragonCerniteBatchPage() {
                             className="h-8 text-right font-mono text-xs"
                           />
                         </TableCell>
+                        <TableCell><Input value={row.lot_code} onChange={e => updateOutputRow(idx, "lot_code", e.target.value)} placeholder="Lotto" className="h-8 text-xs" /></TableCell>
                         <TableCell className="text-right text-xs text-muted-foreground font-mono">{pct}%</TableCell>
                         <TableCell>
                           {outputRows.length > 1 && (
@@ -609,13 +374,12 @@ export default function DragonCerniteBatchPage() {
               <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note opzionali..." />
             </div>
 
-            <Button
-              onClick={handleCreate}
-              disabled={creating || !isFormValid}
-              className="w-full"
-            >
-              {creating ? "Conferma in corso..." : "Conferma Cernita e Genera Movimenti"}
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              {!editingBatchId && <Button variant="outline" onClick={() => handleCreate(true)} disabled={creating || !inputItemId || inputQty <= 0}>Salva come Pendente</Button>}
+              <Button onClick={() => handleCreate(false)} disabled={creating || !isFormValid} className={editingBatchId ? "col-span-2" : ""}>
+                {creating ? "Conferma in corso..." : editingBatchId ? "Completa Cernita" : "Conferma e Genera Movimenti"}
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
