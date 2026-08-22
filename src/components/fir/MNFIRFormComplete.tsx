@@ -110,7 +110,9 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [dbResults, setDbResults] = useState<Soggetto[]>([]);
+  const [autWarn, setAutWarn] = useState<string>("");
   const ref = useRef<HTMLDivElement>(null);
+
 
   const filtered = search.length >= 1
     ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase()))
