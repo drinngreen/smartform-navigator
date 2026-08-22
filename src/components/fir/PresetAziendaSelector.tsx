@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Plus, Trash2, Search, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Trash2, Search, Loader2, X } from "lucide-react";
+
 import { supabase } from "@/lib/supabaseClient";
 import {
   AZIENDE_PRESETS,
@@ -83,6 +84,12 @@ export function PresetAziendaSelector({
   const [loadError, setLoadError] = useState("");
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [loadedCf, setLoadedCf] = useState("");
+  const [soloRuolo, setSoloRuolo] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const prevCfRef = useRef<string | null>(null);
+
+
 
   // Tendina con TUTTA l'anagrafica (in aggiunta alla ricerca testuale)
   useEffect(() => {
@@ -117,10 +124,31 @@ export function PresetAziendaSelector({
     };
   }, []);
 
-  // Precarica i dati collegati per l'azienda già presente nel form (es. Multy/Niyol produttore)
+  /** Azzera completamente la selezione: usato dalla gomma della sezione e dalla ✕ */
+  const clearSelection = (emit: boolean) => {
+    setClienteId(null);
+    setClienteIds([]);
+    setClienteNome("");
+    setAziendaKey("");
+    setAutId("");
+    setAuts([]);
+    setQuery("");
+    setResults([]);
+    setLoadedCf("");
+    if (emit) onSelectAzienda({ nome: "", indirizzo: "", cf: "", piva: "" });
+  };
+
+  // Precarica i dati collegati per l'azienda già presente nel form e reagisce
+  // alla gomma della sezione (CF svuotato dall'esterno → selettore azzerato).
   useEffect(() => {
     const cf = (initialCf || "").trim();
-    if (!cf || cf.length < 5 || clienteId) return;
+    const prev = prevCfRef.current;
+    prevCfRef.current = cf;
+    if (prev !== null && prev !== "" && cf === "") {
+      clearSelection(false);
+      return;
+    }
+    if (!cf || cf.length < 5 || cf.toUpperCase() === loadedCf.toUpperCase()) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -128,31 +156,44 @@ export function PresetAziendaSelector({
         .select("id,ragione_sociale,codice_fiscale,partita_iva")
         .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
         .limit(200);
-      if (cancelled || !data || data.length === 0) return;
+      if (cancelled) return;
+      setLoadedCf(cf);
+      if (!data || data.length === 0) return;
       setClienteId(data[0].id);
       setClienteNome(data[0].ragione_sociale || "");
-      setClienteIds(data.map((x: any) => x.id));
+      setClienteIds(await resolveClienteIds(data[0]));
     })();
     return () => {
       cancelled = true;
     };
-  }, [initialCf, clienteId]);
+  }, [initialCf, loadedCf]);
 
 
 
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
-   *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
-   *  cantieri, targhe, conducenti) vanno quindi raccolti su TUTTI i duplicati. */
-  const resolveClienteIds = async (r: { id: string; codice_fiscale?: string | null; partita_iva?: string | null }) => {
+   *  (stesso CF / P.IVA o stessa ragione sociale su indirizzi diversi): i dati
+   *  collegati (autorizzazioni, cantieri, targhe, conducenti) vanno quindi
+   *  raccolti su TUTTI i duplicati, altrimenti mancano cantieri e targhe. */
+  const resolveClienteIds = async (r: {
+    id: string;
+    ragione_sociale?: string | null;
+    codice_fiscale?: string | null;
+    partita_iva?: string | null;
+  }) => {
     const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
-    if (keys.length === 0) return [r.id];
-    const filters = keys
-      .flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`])
-      .join(",");
-    const { data } = await supabase.from("anagrafica_aziende_mp").select("id").or(filters).limit(200);
+    const filters = keys.flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`]);
+    const nome = String(r.ragione_sociale || "").trim();
+    if (nome.length > 2) filters.push(`ragione_sociale.eq.${nome.replace(/[(),]/g, " ")}`);
+    if (filters.length === 0) return [r.id];
+    const { data } = await supabase
+      .from("anagrafica_aziende_mp")
+      .select("id")
+      .or(filters.join(","))
+      .limit(1000);
     const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
     return ids;
   };
+
 
   // I file Prometeo classificano destinatari/trasportatori/intermediari tramite
   // le rispettive autorizzazioni. Le vecchie flag dell'anagrafica non sono
@@ -243,7 +284,7 @@ export function PresetAziendaSelector({
 
   // Carica tutti i dati collegati (autorizzazioni, cantieri, targhe, conducenti) del cliente scelto
   useEffect(() => {
-    const ids = clienteIds.length ? clienteIds : clienteId ? [clienteId] : [];
+    const ids = (clienteIds.length ? clienteIds : clienteId ? [clienteId] : []).slice(0, 300);
     if (ids.length === 0) {
       setDbAuts([]);
       setCantieri([]);
@@ -314,19 +355,24 @@ export function PresetAziendaSelector({
   }, [clienteId, clienteIds]);
 
   const selectAnagrafica = async (r: any) => {
+    const piva = r.partita_iva || r.codice_fiscale || "";
     onSelectAzienda({
       nome: r.ragione_sociale || "",
       indirizzo: fmtIndirizzo(r),
       cf: r.codice_fiscale || "",
-      piva: r.partita_iva || r.codice_fiscale || "",
+      piva,
     });
     setClienteId(r.id);
     setClienteNome(r.ragione_sociale || "");
     setAziendaKey("");
     setAuts([]);
     setAutId("");
-    setQuery(r.ragione_sociale || "");
+    setQuery("");
     setResults([]);
+    setPickerOpen(false);
+    // evita che l'effetto su initialCf ricarichi/sovrascriva la scelta appena fatta
+    setLoadedCf(piva || r.codice_fiscale || "");
+    prevCfRef.current = piva || r.codice_fiscale || "";
     setClienteIds(await resolveClienteIds(r));
   };
 
@@ -343,15 +389,18 @@ export function PresetAziendaSelector({
     }
     onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
     setClienteNome(az.nome);
+    setLoadedCf(az.piva || az.cf);
+    prevCfRef.current = az.piva || az.cf;
     const { data } = await supabase
       .from("anagrafica_aziende_mp")
-      .select("id")
+      .select("id,ragione_sociale,codice_fiscale,partita_iva")
       .or(`codice_fiscale.eq.${az.cf},partita_iva.eq.${az.piva}`)
       .limit(200);
-    const ids = (data || []).map((x: any) => x.id);
-    setClienteId(ids[0] ?? null);
-    setClienteIds(ids);
+    const first = (data || [])[0];
+    setClienteId(first?.id ?? null);
+    setClienteIds(first ? await resolveClienteIds(first) : []);
   };
+
 
 
   const selectAut = (id: string) => {
@@ -402,80 +451,96 @@ export function PresetAziendaSelector({
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
+  const q = query.trim().toUpperCase();
+  const usaSoloRuolo = Boolean(ruolo && ruolo !== "PRODUTTORE" && soloRuolo && roleCompanies.length);
+  const opzioni = useMemo(() => {
+    const base = usaSoloRuolo ? roleCompanies : allCompanies;
+    const match = (r: any) =>
+      !q ||
+      `${r.ragione_sociale || ""} ${r.codice_fiscale || ""} ${r.partita_iva || ""} ${r.citta || ""}`
+        .toUpperCase()
+        .includes(q);
+    const byId = new Map<string, any>();
+    for (const r of base) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
+    for (const r of results) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
+    return Array.from(byId.values());
+  }, [usaSoloRuolo, roleCompanies, allCompanies, results, q]);
+
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2">
       <label className="text-[10px] text-primary font-mono uppercase tracking-wider block">⚙ {label}</label>
 
-      <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
-        <option value="">-- Preset Multyproget / Niyol --</option>
-        {AZIENDE_PRESETS.map((a) => (
-          <option key={a.key} value={a.key}>{a.nome}</option>
-        ))}
-      </select>
-
-      {ruolo && ruolo !== "PRODUTTORE" && (
-        <select
-          value=""
-          onChange={(e) => {
-            const selected = roleCompanies.find((company) => company.id === e.target.value);
-            if (selected) void selectAnagrafica(selected);
-          }}
-          className={selectCls}
-          disabled={loadingRoleCompanies}
-        >
-          <option value="">
-            {loadingRoleCompanies
-              ? `-- Caricamento ${ruolo.toLowerCase()}… --`
-              : `-- Tutti i ${ruolo.toLowerCase()} (${roleCompanies.length}) --`}
-          </option>
-          {roleCompanies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.ragione_sociale} — {company.partita_iva || company.codice_fiscale || "senza P.IVA"}
-            </option>
+      {clienteNome ? (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-2">
+          <span className="flex-1 truncate text-sm text-white" title={clienteNome}>
+            {clienteNome}
+          </span>
+          <button
+            type="button"
+            onClick={() => clearSelection(true)}
+            title="Cambia azienda (azzera i campi)"
+            className="shrink-0 flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-[10px] text-red-200 hover:bg-red-500/20"
+          >
+            <X className="h-3 w-3" /> Cambia
+          </button>
+        </div>
+      ) : (
+        <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
+          <option value="">-- Preset Multyproget / Niyol --</option>
+          {AZIENDE_PRESETS.map((a) => (
+            <option key={a.key} value={a.key}>{a.nome}</option>
           ))}
         </select>
       )}
-
-      <select
-        value=""
-        onChange={(e) => {
-          const selected = allCompanies.find((c) => c.id === e.target.value);
-          if (selected) void selectAnagrafica(selected);
-        }}
-        className={selectCls}
-        disabled={loadingAll}
-      >
-        <option value="">
-          {loadingAll ? "-- Caricamento anagrafica completa… --" : `-- Tutta l'anagrafica (${allCompanies.length}) --`}
-        </option>
-        {allCompanies.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.ragione_sociale}
-            {c.citta ? ` — ${c.citta}` : ""}
-            {c.partita_iva || c.codice_fiscale ? ` — ${c.partita_iva || c.codice_fiscale}` : ""}
-          </option>
-        ))}
-      </select>
-
 
       <div className="relative">
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
           <Search className="h-3.5 w-3.5 text-primary shrink-0" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca in anagrafica (es. ITALCONCIMI, P.IVA, CF)…"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPickerOpen(true);
+            }}
+            onFocus={() => setPickerOpen(true)}
+            placeholder={
+              loadingAll
+                ? "Caricamento anagrafica…"
+                : `Cerca o scorri ${usaSoloRuolo ? roleCompanies.length : allCompanies.length} aziende (nome, P.IVA, CF)…`
+            }
             className="w-full bg-transparent py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
           />
-          {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+          {(searching || loadingAll) && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+          {pickerOpen && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setPickerOpen(false)}
+              className="shrink-0 text-[10px] text-white/50 hover:text-white"
+            >
+              chiudi
+            </button>
+          )}
         </div>
-        {results.length > 0 && (
-          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
-            {results.map((r) => (
+
+        {ruolo && ruolo !== "PRODUTTORE" && roleCompanies.length > 0 && (
+          <label className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
+            <input type="checkbox" checked={soloRuolo} onChange={(e) => setSoloRuolo(e.target.checked)} />
+            Solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
+            {loadingRoleCompanies && " — caricamento…"}
+          </label>
+        )}
+
+        {pickerOpen && (
+          <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
+            {opzioni.slice(0, 100).map((r) => (
               <button
                 key={r.id}
                 type="button"
-                onClick={() => selectAnagrafica(r)}
+                onClick={() => {
+                  setPickerOpen(false);
+                  void selectAnagrafica(r);
+                }}
                 className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-primary/15"
               >
                 <span className="font-semibold">{r.ragione_sociale}</span>
@@ -484,12 +549,18 @@ export function PresetAziendaSelector({
                 </span>
               </button>
             ))}
+            {opzioni.length > 100 && (
+              <p className="px-3 py-2 text-[10px] text-white/40">
+                Altre {opzioni.length - 100} aziende: affina la ricerca.
+              </p>
+            )}
+            {opzioni.length === 0 && !searching && !loadingAll && (
+              <p className="px-3 py-2 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
+            )}
           </div>
         )}
-        {query.trim().length >= 2 && !searching && results.length === 0 && (
-          <p className="mt-1 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
-        )}
       </div>
+
 
       {loadError && <p className="text-[10px] text-destructive">{loadError}</p>}
 

@@ -41,4 +41,15 @@ describe("tendine formulari - fonti dati anagrafica", () => {
   it("risolve i duplicati di anagrafica per CF/P.IVA", () => {
     expect(src).toContain("resolveClienteIds");
   });
+
+  it("risolve i duplicati anche per ragione sociale (cantieri divisi su più righe)", () => {
+    expect(src).toContain("ragione_sociale.eq.");
+  });
+
+  it("permette di cambiare azienda e reagisce alla gomma della sezione", () => {
+    expect(src).toContain("clearSelection");
+    expect(src).toMatch(/prevCfRef/);
+    expect(src).toContain("Cambia");
+  });
 });
+
