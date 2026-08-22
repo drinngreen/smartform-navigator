@@ -193,9 +193,9 @@ export function PresetAziendaSelector({
   };
 
 
-  // I file Prometeo classificano destinatari/trasportatori/intermediari tramite
-  // le rispettive autorizzazioni. Le vecchie flag dell'anagrafica non sono
-  // affidabili, quindi la tendina viene costruita dai collegamenti importati.
+  // Un ruolo può risultare sia dalle autorizzazioni collegate sia dalla relativa
+  // flag anagrafica. L'unione evita di perdere gli impianti storici importati
+  // nell'anagrafica anche quando il file autorizzazioni non contiene una riga.
   useEffect(() => {
     if (!ruolo || ruolo === "PRODUTTORE") {
       setRoleCompanies([]);
@@ -205,13 +205,31 @@ export function PresetAziendaSelector({
     setLoadingRoleCompanies(true);
     setLoadError("");
     (async () => {
-      const { data: links, error: linksError } = await supabase
-        .from("cliente_autorizzazioni")
-        .select("cliente_id")
-        .eq("tipo", ruolo)
-        .limit(1000);
+      const roleColumn = ruolo === "DESTINATARIO"
+        ? "destinatario"
+        : ruolo === "TRASPORTATORE"
+          ? "trasportatore"
+          : "intermediario";
+      const [{ data: links, error: linksError }, { data: flagged, error: flaggedError }] = await Promise.all([
+        supabase
+          .from("cliente_autorizzazioni")
+          .select("cliente_id")
+          .eq("tipo", ruolo)
+          .limit(1000),
+        supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+          .eq(roleColumn, true)
+          .order("ragione_sociale")
+          .limit(5000),
+      ]);
       if (linksError) {
         if (!cancelled) setLoadError("Impossibile caricare i preset autorizzati");
+        if (!cancelled) setLoadingRoleCompanies(false);
+        return;
+      }
+      if (flaggedError) {
+        if (!cancelled) setLoadError("Impossibile leggere i ruoli dell'anagrafica");
         if (!cancelled) setLoadingRoleCompanies(false);
         return;
       }
@@ -235,8 +253,7 @@ export function PresetAziendaSelector({
         return;
       }
       const seen = new Set<string>();
-      const rows = responses
-        .flatMap((response) => response.data || [])
+      const rows = [...(flagged || []), ...responses.flatMap((response) => response.data || [])]
         .filter((row: any) => {
           const key = `${row.codice_fiscale || row.partita_iva || row.id}|${row.ragione_sociale || ""}`.toUpperCase();
           if (seen.has(key)) return false;

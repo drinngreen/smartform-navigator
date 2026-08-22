@@ -1167,10 +1167,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           <Section title="3. Destinatario" onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
-            <DestinatarioSelector onSelect={handleDestinatarioSelect} />
             <PresetAziendaSelector
-              label="Preset anagrafica destinatari"
+              label="Anagrafica destinatari"
               ruolo="DESTINATARIO"
+              initialCf={d.destinatarioCF}
               onSelectAzienda={(a) => {
                 u("destinatarioDenominazione", a.nome);
                 u("destinatarioUnitaLocale", a.indirizzo);
