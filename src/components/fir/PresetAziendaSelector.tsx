@@ -84,6 +84,10 @@ export function PresetAziendaSelector({
   const [loadError, setLoadError] = useState("");
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [loadedCf, setLoadedCf] = useState("");
+  const [soloRuolo, setSoloRuolo] = useState(true);
+  const prevCfRef = useRef<string | null>(null);
+
 
   // Tendina con TUTTA l'anagrafica (in aggiunta alla ricerca testuale)
   useEffect(() => {
