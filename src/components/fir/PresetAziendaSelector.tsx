@@ -134,15 +134,9 @@ export function PresetAziendaSelector({
         if (!data || data.length < 1000) break;
       }
       if (cancelled) return;
-      const seen = new Set<string>();
-      setAllCompanies(
-        rows.filter((r) => {
-          const k = `${r.codice_fiscale || r.partita_iva || r.id}|${r.ragione_sociale || ""}`.toUpperCase();
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        })
-      );
+      // Conserva tutte le righe: i duplicati possono avere autorizzazioni,
+      // cantieri o targhe collegati a ID differenti. La UI li accorpa sotto.
+      setAllCompanies(rows);
       setLoadingAll(false);
     })();
     return () => {
@@ -511,10 +505,16 @@ export function PresetAziendaSelector({
       `${r.ragione_sociale || ""} ${r.codice_fiscale || ""} ${r.partita_iva || ""} ${r.citta || ""}`
         .toUpperCase()
         .includes(q);
-    const byId = new Map<string, any>();
-    for (const r of base) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
-    for (const r of results) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
-    return Array.from(byId.values());
+    const byCompany = new Map<string, any>();
+    const add = (r: any) => {
+      if (!match(r)) return;
+      const identifier = normalizeRegistryValue(r.codice_fiscale || r.partita_iva);
+      const key = identifier || normalizeRegistryValue(r.ragione_sociale) || r.id;
+      if (!byCompany.has(key)) byCompany.set(key, r);
+    };
+    for (const r of base) add(r);
+    for (const r of results) add(r);
+    return Array.from(byCompany.values());
   }, [usaSoloRuolo, roleCompanies, allCompanies, results, q]);
 
   return (
