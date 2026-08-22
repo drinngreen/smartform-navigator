@@ -152,6 +152,47 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const selectDestinatario = async (soggetto: Soggetto) => {
+    const identifier = (soggetto.piva || soggetto.cf || "").trim();
+    if (!identifier) {
+      onSelect(soggetto);
+      setSearch(soggetto.nome);
+      setIsOpen(false);
+      return;
+    }
+
+    const { data: aziende } = await supabase
+      .from("anagrafica_aziende_mp")
+      .select("id")
+      .or(`codice_fiscale.eq.${identifier},partita_iva.eq.${identifier}`)
+      .limit(200);
+    const ids = (aziende || []).map((azienda: any) => azienda.id).filter(Boolean);
+    let enriched = soggetto;
+
+    if (ids.length > 0) {
+      const { data: autorizzazioni } = await supabase
+        .from("cliente_autorizzazioni")
+        .select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
+        .in("cliente_id", ids)
+        .eq("tipo", "DESTINATARIO")
+        .order("data_scadenza", { ascending: false })
+        .limit(1);
+      const autorizzazione = autorizzazioni?.[0];
+      if (autorizzazione) {
+        enriched = {
+          ...soggetto,
+          autorizzazione: autorizzazione.numero_autorizzazione || "",
+          tipoAut: autorizzazione.ente_rilascio || soggetto.tipoAut || autorizzazione.tipo || "",
+          dataAut: autorizzazione.data_inizio || autorizzazione.data_scadenza || "",
+        };
+      }
+    }
+
+    onSelect(enriched);
+    setSearch(soggetto.nome);
+    setIsOpen(false);
+  };
+
   return (
     <div ref={ref} className="relative">
       <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">🔍 Seleziona Destinatario / Impianto</label>
@@ -162,14 +203,14 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
       {isOpen && (filtered.length > 0 || extraResults.length > 0) && (
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.map((d, i) => (
-            <button key={`s-${i}`} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
+            <button key={`s-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome}</span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
               {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
             </button>
           ))}
           {extraResults.map((d, i) => (
-            <button key={`db-${i}`} onClick={() => { onSelect(d); setSearch(d.nome); setIsOpen(false); }} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
+            <button key={`db-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome} <span className="text-[9px] text-neon-green/70">· anagrafica</span></span>
               <span className="text-[10px] text-white/50 block">{[d.indirizzo, d.cf].filter(Boolean).join(" · ")}</span>
             </button>
@@ -794,8 +835,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     u("destinatarioUnitaLocale", soggetto.indirizzo);
     u("destinatarioCF", soggetto.cf);
     if (soggetto.email) u("destinatarioEmail", soggetto.email);
-    if (soggetto.autorizzazione) u("destinatarioNumeroAut", soggetto.autorizzazione);
-    if (soggetto.tipoAut) u("destinatarioTipoAut", soggetto.tipoAut);
+    u("destinatarioNumeroAut", soggetto.autorizzazione || "");
+    u("destinatarioTipoAut", soggetto.tipoAut || "");
+    u("destinatarioDataAut", soggetto.dataAut || "");
     if (soggetto.operazione) {
       const isR = soggetto.operazione.startsWith("R");
       u("destinatarioOperazione", isR ? "R" : "D");

@@ -11,6 +11,10 @@ const src = readFileSync(
   resolve(__dirname, "../../components/fir/PresetAziendaSelector.tsx"),
   "utf8",
 );
+const formSrc = readFileSync(
+  resolve(__dirname, "../../components/fir/MNFIRFormComplete.tsx"),
+  "utf8",
+);
 
 const TABELLE_OBBLIGATORIE = [
   "anagrafica_aziende_mp",
@@ -50,6 +54,12 @@ describe("tendine formulari - fonti dati anagrafica", () => {
     expect(src).toContain("clearSelection");
     expect(src).toMatch(/prevCfRef/);
     expect(src).toContain("Cambia");
+  });
+
+  it("compila numero e data autorizzazione anche dalla tendina destinatario principale", () => {
+    expect(formSrc).toContain('select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")');
+    expect(formSrc).toContain('u("destinatarioNumeroAut", soggetto.autorizzazione || "")');
+    expect(formSrc).toContain('u("destinatarioDataAut", soggetto.dataAut || "")');
   });
 });
 
