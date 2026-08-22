@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { collectMatchingRegistryIds } from "../../components/fir/PresetAziendaSelector";
+import { collectMatchingRegistryIds } from "../../lib/registryMatching";
 
 /**
  * Regressione: le tendine dei formulari devono SEMPRE leggere l'anagrafica
