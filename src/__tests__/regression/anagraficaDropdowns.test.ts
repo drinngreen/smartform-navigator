@@ -16,6 +16,14 @@ const formSrc = readFileSync(
   resolve(__dirname, "../../components/fir/MNFIRFormComplete.tsx"),
   "utf8",
 );
+const standardFormSrc = readFileSync(
+  resolve(__dirname, "../../components/fir/FIRFormComplete.tsx"),
+  "utf8",
+);
+const alternativeFormSrc = readFileSync(
+  resolve(__dirname, "../../components/fir/FIRAlternativeForm.tsx"),
+  "utf8",
+);
 
 const TABELLE_OBBLIGATORIE = [
   "anagrafica_aziende_mp",
@@ -74,10 +82,21 @@ describe("tendine formulari - fonti dati anagrafica", () => {
     expect(src).toContain("Cambia");
   });
 
-  it("compila numero e data autorizzazione anche dalla tendina destinatario principale", () => {
-    expect(formSrc).toContain('select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")');
-    expect(formSrc).toContain('u("destinatarioNumeroAut", soggetto.autorizzazione || "")');
-    expect(formSrc).toContain('u("destinatarioDataAut", soggetto.dataAut || "")');
+  it("usa la tendina database collegata alle autorizzazioni in entrambi i moduli standard", () => {
+    for (const source of [formSrc, standardFormSrc]) {
+      expect(source).toContain('<PresetAziendaSelector');
+      expect(source).toContain('ruolo="DESTINATARIO"');
+      expect(source).toContain('u("destinatarioNumeroAut", aut.numero)');
+      expect(source).toContain('u("destinatarioDataAut", aut.data)');
+    }
+  });
+
+  it("usa il database, non l'elenco statico, anche nel modulo alternativo", () => {
+    expect(alternativeFormSrc).toContain('.from("anagrafica_aziende_mp")');
+    expect(alternativeFormSrc).toContain('.from("cliente_autorizzazioni")');
+    expect(alternativeFormSrc).toContain('.eq("destinatario", true)');
+    expect(alternativeFormSrc).not.toContain('DESTINATARI.filter');
+    expect(alternativeFormSrc).toContain('autorizzazione: authByCompany.get(row.id)?.numero_autorizzazione');
   });
 });
 

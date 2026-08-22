@@ -11,6 +11,7 @@ import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRPdf } from "@/lib/firPdfExport";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { GLOBAL_RECO, MULTYPROGET, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 
 // ── Neon color map per section ──────────────────────────────
@@ -1109,7 +1110,21 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
 
           {/* ── 3. DESTINATARIO (Searchable dropdown) ── */}
           <Section title="3. Destinatario">
-            <DestinatarioSelector onSelect={handleDestinatarioSelect} />
+            <PresetAziendaSelector
+              label="Anagrafica destinatari"
+              ruolo="DESTINATARIO"
+              initialCf={d.destinatarioCF}
+              onSelectAzienda={(a) => {
+                u("destinatarioDenominazione", a.nome);
+                u("destinatarioUnitaLocale", a.indirizzo);
+                u("destinatarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("destinatarioNumeroAut", aut.numero);
+                u("destinatarioTipoAut", aut.tipo);
+                u("destinatarioDataAut", aut.data);
+              }}
+            />
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
             <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />

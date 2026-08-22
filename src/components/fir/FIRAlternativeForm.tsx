@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import pag1 from "@/assets/formulario_pag_1.png";
 import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
-import { GLOBAL_RECO, MULTYPROGET, NIYOL, DESTINATARI, type Soggetto } from "@/data/anagrafiche";
+import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
@@ -496,6 +496,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [selectedProduttore, setSelectedProduttore] = useState<Soggetto | null>(null);
+  const [destinatari, setDestinatari] = useState<Soggetto[]>([]);
   const [suppressProducerPreset, setSuppressProducerPreset] = useState(false);
   const localDraftHydratedRef = useRef(false);
   const location = useLocation();
@@ -522,6 +523,53 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
     () => [tenantPreset, ...ALL_PRODUTTORI.filter((p) => p.cf !== tenantPreset.cf)],
     [tenantPreset]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const rows: any[] = [];
+      for (let page = 0; page < 20; page++) {
+        const { data, error } = await supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+          .eq("destinatario", true)
+          .order("ragione_sociale")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (cancelled) return;
+      const ids = rows.map((row) => row.id).filter(Boolean);
+      const authRows: any[] = [];
+      for (let offset = 0; offset < ids.length; offset += 150) {
+        const { data } = await supabase
+          .from("cliente_autorizzazioni")
+          .select("cliente_id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
+          .in("cliente_id", ids.slice(offset, offset + 150))
+          .eq("tipo", "DESTINATARIO")
+          .order("data_scadenza", { ascending: false });
+        authRows.push(...(data || []));
+      }
+      const authByCompany = new Map<string, any>();
+      for (const auth of authRows) {
+        if (!authByCompany.has(auth.cliente_id)) authByCompany.set(auth.cliente_id, auth);
+      }
+      setDestinatari(rows.map((row) => ({
+        nome: row.ragione_sociale || "",
+        indirizzo: [row.indirizzo, [row.cap, row.citta, row.provincia ? `(${row.provincia})` : ""].filter(Boolean).join(" ")]
+          .filter(Boolean)
+          .join(" - "),
+        cf: row.codice_fiscale || row.partita_iva || "",
+        piva: row.partita_iva || row.codice_fiscale || "",
+        tipo: "IMPIANTO" as const,
+        autorizzazione: authByCompany.get(row.id)?.numero_autorizzazione || "",
+        tipoAut: authByCompany.get(row.id)?.ente_rilascio || authByCompany.get(row.id)?.tipo || "",
+        dataAut: authByCompany.get(row.id)?.data_inizio || authByCompany.get(row.id)?.data_scadenza || "",
+      })));
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const produttoreDenomField = useMemo(
     () => fields.find((field) => isProduttoreDenominationField(field.name)),
@@ -1288,7 +1336,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               const suggestions = isProduttoreAutocomplete
                 ? orderedProduttori.filter((item) => matchesSoggettoSearch(item, rawValue))
                 : isDestinatarioAutocomplete
-                  ? DESTINATARI.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
+                  ? destinatari.filter((item) => matchesSoggettoSearch(item, rawValue)).slice(0, 12)
                   : [];
               const isConfirmed = confirmedFieldIds.has(field.id);
               const shouldShowAutocomplete = activeAutocompleteFieldId === field.id && !isConfirmed && suggestions.length > 0;
