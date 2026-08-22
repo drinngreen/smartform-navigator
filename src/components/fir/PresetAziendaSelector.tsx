@@ -88,6 +88,7 @@ export function PresetAziendaSelector({
   const [soloRuolo, setSoloRuolo] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const prevCfRef = useRef<string | null>(null);
+  const autoAutRef = useRef<string>("");
 
 
 
@@ -132,6 +133,7 @@ export function PresetAziendaSelector({
     setAziendaKey("");
     setAutId("");
     setAuts([]);
+    autoAutRef.current = "";
     setQuery("");
     setResults([]);
     setLoadedCf("");
@@ -367,6 +369,7 @@ export function PresetAziendaSelector({
     setAziendaKey("");
     setAuts([]);
     setAutId("");
+    autoAutRef.current = "";
     setQuery("");
     setResults([]);
     setPickerOpen(false);
@@ -451,7 +454,6 @@ export function PresetAziendaSelector({
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
-  const autoAutRef = useRef<string>("");
   useEffect(() => {
     if (loadingDeps) return;
     const best = [...autsOrdinate].sort((a, b) =>
