@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { collectMatchingRegistryIds } from "../../components/fir/PresetAziendaSelector";
 
 /**
  * Regressione: le tendine dei formulari devono SEMPRE leggere l'anagrafica
@@ -47,7 +48,24 @@ describe("tendine formulari - fonti dati anagrafica", () => {
   });
 
   it("risolve i duplicati anche per ragione sociale (cantieri divisi su più righe)", () => {
-    expect(src).toContain("ragione_sociale.eq.");
+    expect(src).toContain("normalizeRegistryValue");
+  });
+
+  it("unisce tutti i duplicati anche con CF/P.IVA e ragioni sociali formattati diversamente", () => {
+    const ids = collectMatchingRegistryIds(
+      { id: "selected", ragione_sociale: "A.F.I.M. S.R.L.S.", codice_fiscale: "IT 03926910047" },
+      [
+        { id: "auth-row", ragione_sociale: "AFIM SRLS", partita_iva: "03926910047" },
+        { id: "site-row", ragione_sociale: "A F I M SRLS", codice_fiscale: "IT03926910047" },
+        { id: "other", ragione_sociale: "ALTRA SRL", partita_iva: "00000000000" },
+      ],
+    );
+    expect(ids).toEqual(["selected", "auth-row", "site-row"]);
+  });
+
+  it("non presenta come errore l'assenza di autorizzazione del produttore", () => {
+    expect(src).toContain('ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta"');
+    expect(src).toContain('ruolo !== "PRODUTTORE" && autsOrdinate.length === 0');
   });
 
   it("permette di cambiare azienda e reagisce alla gomma della sezione", () => {

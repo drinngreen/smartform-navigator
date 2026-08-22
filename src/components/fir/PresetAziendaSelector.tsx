@@ -50,6 +50,31 @@ const fmtIndirizzo = (r: any) =>
     .filter(Boolean)
     .join(" - ");
 
+const normalizeRegistryValue = (value?: string | null) =>
+  String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+export const collectMatchingRegistryIds = (
+  selected: { id: string; ragione_sociale?: string | null; codice_fiscale?: string | null; partita_iva?: string | null },
+  rows: Array<{ id: string; ragione_sociale?: string | null; codice_fiscale?: string | null; partita_iva?: string | null }>,
+) => {
+  const identifiers = new Set(
+    [selected.codice_fiscale, selected.partita_iva]
+      .map(normalizeRegistryValue)
+      .filter((value) => value.length > 3),
+  );
+  const selectedName = normalizeRegistryValue(selected.ragione_sociale);
+  return Array.from(new Set([
+    selected.id,
+    ...rows
+      .filter((row) => {
+        const rowIdentifiers = [row.codice_fiscale, row.partita_iva].map(normalizeRegistryValue);
+        if (identifiers.size > 0 && rowIdentifiers.some((value) => identifiers.has(value))) return true;
+        return selectedName.length > 2 && normalizeRegistryValue(row.ragione_sociale) === selectedName;
+      })
+      .map((row) => row.id),
+  ]));
+};
+
 export function PresetAziendaSelector({
   label = "Preset azienda",
   ruolo,
@@ -175,25 +200,26 @@ export function PresetAziendaSelector({
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
    *  (stesso CF / P.IVA o stessa ragione sociale su indirizzi diversi): i dati
    *  collegati (autorizzazioni, cantieri, targhe, conducenti) vanno quindi
-   *  raccolti su TUTTI i duplicati, altrimenti mancano cantieri e targhe. */
+   *  raccolti su TUTTI i duplicati, altrimenti mancano autorizzazioni e cantieri.
+   *  Il confronto normalizzato evita che spazi, punti, slash o differenze tra
+   *  CF e P.IVA separino record che appartengono alla stessa azienda. */
   const resolveClienteIds = async (r: {
     id: string;
     ragione_sociale?: string | null;
     codice_fiscale?: string | null;
     partita_iva?: string | null;
   }) => {
+    const localIds = collectMatchingRegistryIds(r, allCompanies);
+    if (localIds.length > 1 || allCompanies.length > 0) return localIds;
     const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
     const filters = keys.flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`]);
-    const nome = String(r.ragione_sociale || "").trim();
-    if (nome.length > 2) filters.push(`ragione_sociale.eq.${nome.replace(/[(),]/g, " ")}`);
     if (filters.length === 0) return [r.id];
     const { data } = await supabase
       .from("anagrafica_aziende_mp")
-      .select("id")
+      .select("id,ragione_sociale,codice_fiscale,partita_iva")
       .or(filters.join(","))
       .limit(1000);
-    const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
-    return ids;
+    return collectMatchingRegistryIds(r, data || []);
   };
 
 
@@ -593,7 +619,7 @@ export function PresetAziendaSelector({
         <p className="text-[10px] text-white/50">
           {loadingDeps ? "Caricamento dati collegati…" : (
             <>
-              {clienteNome}: {autsOrdinate.length} autorizzazioni · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
+              {clienteNome}: {ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta" : `${autsOrdinate.length} autorizzazioni`} · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
               {conducenti.length} conducenti · {partnerDefaults.length} dati predefiniti
             </>
           )}
@@ -638,9 +664,9 @@ export function PresetAziendaSelector({
             )}
           </div>
 
-          {autsOrdinate.length === 0 && auts.length === 0 && !adding && (
+          {ruolo !== "PRODUTTORE" && autsOrdinate.length === 0 && auts.length === 0 && !adding && (
             <p className="text-[10px] text-white/50">
-              Nessuna autorizzazione in archivio per questa azienda: usa ＋ per aggiungerla.
+              Nei file importati non risulta alcun numero di autorizzazione per questo ruolo: usa ＋ per aggiungerlo.
             </p>
           )}
 
