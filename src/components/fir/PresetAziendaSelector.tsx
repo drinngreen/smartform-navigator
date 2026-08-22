@@ -445,10 +445,31 @@ export function PresetAziendaSelector({
     setAutId("");
   };
 
-  // autorizzazioni del ruolo prima, poi tutte le altre
-  const autsOrdinate = ruolo && ruolo !== "PRODUTTORE"
-    ? dbAuts.filter((a) => a.tipo === ruolo)
-    : dbAuts;
+  // autorizzazioni del ruolo; se non ce ne sono per il ruolo mostra comunque tutte
+  const autsRuolo = ruolo && ruolo !== "PRODUTTORE" ? dbAuts.filter((a) => a.tipo === ruolo) : dbAuts;
+  const autsOrdinate = autsRuolo.length ? autsRuolo : dbAuts;
+
+  // Autocompilazione: appena l'azienda è scelta, applica automaticamente
+  // l'autorizzazione pertinente (numero + data) senza ulteriori click.
+  const autoAutRef = useRef<string>("");
+  useEffect(() => {
+    if (loadingDeps) return;
+    const best = [...autsOrdinate].sort((a, b) =>
+      String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""))
+    )[0];
+    if (!best) return;
+    const key = `${clienteId || ""}|${best.id}`;
+    if (autoAutRef.current === key || autId) return;
+    autoAutRef.current = key;
+    setAutId(best.id);
+    onSelectAutorizzazione({
+      numero: best.numero_autorizzazione || "",
+      tipo: best.ente_rilascio || best.tipo || "",
+      data: best.data_inizio || best.data_scadenza || "",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dbAuts, loadingDeps, ruolo, clienteId]);
+
 
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
