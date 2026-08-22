@@ -217,11 +217,15 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.map((d, i) => (
             <button key={`s-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
-              <span className="text-xs text-white font-medium block">{d.nome}</span>
+              <span className="text-xs text-white font-medium block">
+                {d.nome}
+                {!d.autorizzazione && <span className="ml-1 text-[9px] text-amber-400">⚠ senza autorizzazione in elenco</span>}
+              </span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
               {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
             </button>
           ))}
+
           {extraResults.map((d, i) => (
             <button key={`db-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome} <span className="text-[9px] text-neon-green/70">· anagrafica</span></span>
