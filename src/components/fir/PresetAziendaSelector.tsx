@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, Search, Loader2, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabaseClient";
+import { collectMatchingRegistryIds, normalizeRegistryValue } from "@/lib/registryMatching";
 import {
   AZIENDE_PRESETS,
   TIPI_AUTORIZZAZIONE,
@@ -109,15 +110,9 @@ export function PresetAziendaSelector({
         if (!data || data.length < 1000) break;
       }
       if (cancelled) return;
-      const seen = new Set<string>();
-      setAllCompanies(
-        rows.filter((r) => {
-          const k = `${r.codice_fiscale || r.partita_iva || r.id}|${r.ragione_sociale || ""}`.toUpperCase();
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        })
-      );
+      // Conserva tutte le righe: i duplicati possono avere autorizzazioni,
+      // cantieri o targhe collegati a ID differenti. La UI li accorpa sotto.
+      setAllCompanies(rows);
       setLoadingAll(false);
     })();
     return () => {
@@ -175,25 +170,26 @@ export function PresetAziendaSelector({
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
    *  (stesso CF / P.IVA o stessa ragione sociale su indirizzi diversi): i dati
    *  collegati (autorizzazioni, cantieri, targhe, conducenti) vanno quindi
-   *  raccolti su TUTTI i duplicati, altrimenti mancano cantieri e targhe. */
+   *  raccolti su TUTTI i duplicati, altrimenti mancano autorizzazioni e cantieri.
+   *  Il confronto normalizzato evita che spazi, punti, slash o differenze tra
+   *  CF e P.IVA separino record che appartengono alla stessa azienda. */
   const resolveClienteIds = async (r: {
     id: string;
     ragione_sociale?: string | null;
     codice_fiscale?: string | null;
     partita_iva?: string | null;
   }) => {
+    const localIds = collectMatchingRegistryIds(r, allCompanies);
+    if (localIds.length > 1 || allCompanies.length > 0) return localIds;
     const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
     const filters = keys.flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`]);
-    const nome = String(r.ragione_sociale || "").trim();
-    if (nome.length > 2) filters.push(`ragione_sociale.eq.${nome.replace(/[(),]/g, " ")}`);
     if (filters.length === 0) return [r.id];
     const { data } = await supabase
       .from("anagrafica_aziende_mp")
-      .select("id")
+      .select("id,ragione_sociale,codice_fiscale,partita_iva")
       .or(filters.join(","))
       .limit(1000);
-    const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
-    return ids;
+    return collectMatchingRegistryIds(r, data || []);
   };
 
 
@@ -485,10 +481,16 @@ export function PresetAziendaSelector({
       `${r.ragione_sociale || ""} ${r.codice_fiscale || ""} ${r.partita_iva || ""} ${r.citta || ""}`
         .toUpperCase()
         .includes(q);
-    const byId = new Map<string, any>();
-    for (const r of base) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
-    for (const r of results) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
-    return Array.from(byId.values());
+    const byCompany = new Map<string, any>();
+    const add = (r: any) => {
+      if (!match(r)) return;
+      const identifier = normalizeRegistryValue(r.codice_fiscale || r.partita_iva);
+      const key = identifier || normalizeRegistryValue(r.ragione_sociale) || r.id;
+      if (!byCompany.has(key)) byCompany.set(key, r);
+    };
+    for (const r of base) add(r);
+    for (const r of results) add(r);
+    return Array.from(byCompany.values());
   }, [usaSoloRuolo, roleCompanies, allCompanies, results, q]);
 
   return (
@@ -593,7 +595,7 @@ export function PresetAziendaSelector({
         <p className="text-[10px] text-white/50">
           {loadingDeps ? "Caricamento dati collegati…" : (
             <>
-              {clienteNome}: {autsOrdinate.length} autorizzazioni · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
+              {clienteNome}: {ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta" : `${autsOrdinate.length} autorizzazioni`} · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
               {conducenti.length} conducenti · {partnerDefaults.length} dati predefiniti
             </>
           )}
@@ -638,9 +640,9 @@ export function PresetAziendaSelector({
             )}
           </div>
 
-          {autsOrdinate.length === 0 && auts.length === 0 && !adding && (
+          {ruolo !== "PRODUTTORE" && autsOrdinate.length === 0 && auts.length === 0 && !adding && (
             <p className="text-[10px] text-white/50">
-              Nessuna autorizzazione in archivio per questa azienda: usa ＋ per aggiungerla.
+              Nei file importati non risulta alcun numero di autorizzazione per questo ruolo: usa ＋ per aggiungerlo.
             </p>
           )}
 
