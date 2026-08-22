@@ -118,10 +118,31 @@ export function PresetAziendaSelector({
     };
   }, []);
 
-  // Precarica i dati collegati per l'azienda già presente nel form (es. Multy/Niyol produttore)
+  /** Azzera completamente la selezione: usato dalla gomma della sezione e dalla ✕ */
+  const clearSelection = (emit: boolean) => {
+    setClienteId(null);
+    setClienteIds([]);
+    setClienteNome("");
+    setAziendaKey("");
+    setAutId("");
+    setAuts([]);
+    setQuery("");
+    setResults([]);
+    setLoadedCf("");
+    if (emit) onSelectAzienda({ nome: "", indirizzo: "", cf: "", piva: "" });
+  };
+
+  // Precarica i dati collegati per l'azienda già presente nel form e reagisce
+  // alla gomma della sezione (CF svuotato dall'esterno → selettore azzerato).
   useEffect(() => {
     const cf = (initialCf || "").trim();
-    if (!cf || cf.length < 5 || clienteId) return;
+    const prev = prevCfRef.current;
+    prevCfRef.current = cf;
+    if (prev !== null && prev !== "" && cf === "") {
+      clearSelection(false);
+      return;
+    }
+    if (!cf || cf.length < 5 || cf.toUpperCase() === loadedCf.toUpperCase()) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -129,31 +150,44 @@ export function PresetAziendaSelector({
         .select("id,ragione_sociale,codice_fiscale,partita_iva")
         .or(`codice_fiscale.eq.${cf},partita_iva.eq.${cf}`)
         .limit(200);
-      if (cancelled || !data || data.length === 0) return;
+      if (cancelled) return;
+      setLoadedCf(cf);
+      if (!data || data.length === 0) return;
       setClienteId(data[0].id);
       setClienteNome(data[0].ragione_sociale || "");
-      setClienteIds(data.map((x: any) => x.id));
+      setClienteIds(await resolveClienteIds(data[0]));
     })();
     return () => {
       cancelled = true;
     };
-  }, [initialCf, clienteId]);
+  }, [initialCf, loadedCf]);
 
 
 
   /** Le anagrafiche importate contengono righe duplicate per la stessa azienda
-   *  (stesso CF / P.IVA su indirizzi diversi): i dati collegati (autorizzazioni,
-   *  cantieri, targhe, conducenti) vanno quindi raccolti su TUTTI i duplicati. */
-  const resolveClienteIds = async (r: { id: string; codice_fiscale?: string | null; partita_iva?: string | null }) => {
+   *  (stesso CF / P.IVA o stessa ragione sociale su indirizzi diversi): i dati
+   *  collegati (autorizzazioni, cantieri, targhe, conducenti) vanno quindi
+   *  raccolti su TUTTI i duplicati, altrimenti mancano cantieri e targhe. */
+  const resolveClienteIds = async (r: {
+    id: string;
+    ragione_sociale?: string | null;
+    codice_fiscale?: string | null;
+    partita_iva?: string | null;
+  }) => {
     const keys = [r.codice_fiscale, r.partita_iva].filter((v) => v && String(v).trim().length > 3) as string[];
-    if (keys.length === 0) return [r.id];
-    const filters = keys
-      .flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`])
-      .join(",");
-    const { data } = await supabase.from("anagrafica_aziende_mp").select("id").or(filters).limit(200);
+    const filters = keys.flatMap((k) => [`codice_fiscale.eq.${k}`, `partita_iva.eq.${k}`]);
+    const nome = String(r.ragione_sociale || "").trim();
+    if (nome.length > 2) filters.push(`ragione_sociale.eq.${nome.replace(/[(),]/g, " ")}`);
+    if (filters.length === 0) return [r.id];
+    const { data } = await supabase
+      .from("anagrafica_aziende_mp")
+      .select("id")
+      .or(filters.join(","))
+      .limit(1000);
     const ids = Array.from(new Set([r.id, ...(data || []).map((x: any) => x.id)]));
     return ids;
   };
+
 
   // I file Prometeo classificano destinatari/trasportatori/intermediari tramite
   // le rispettive autorizzazioni. Le vecchie flag dell'anagrafica non sono
