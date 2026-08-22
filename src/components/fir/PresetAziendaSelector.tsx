@@ -284,7 +284,7 @@ export function PresetAziendaSelector({
 
   // Carica tutti i dati collegati (autorizzazioni, cantieri, targhe, conducenti) del cliente scelto
   useEffect(() => {
-    const ids = clienteIds.length ? clienteIds : clienteId ? [clienteId] : [];
+    const ids = (clienteIds.length ? clienteIds : clienteId ? [clienteId] : []).slice(0, 300);
     if (ids.length === 0) {
       setDbAuts([]);
       setCantieri([]);
