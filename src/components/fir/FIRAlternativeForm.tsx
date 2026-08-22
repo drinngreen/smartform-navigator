@@ -531,7 +531,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       for (let page = 0; page < 20; page++) {
         const { data, error } = await supabase
           .from("anagrafica_aziende_mp")
-          .select("ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap,codice_fiscale,partita_iva")
           .eq("destinatario", true)
           .order("ragione_sociale")
           .range(page * 1000, page * 1000 + 999);
@@ -540,6 +540,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         if (!data || data.length < 1000) break;
       }
       if (cancelled) return;
+      const ids = rows.map((row) => row.id).filter(Boolean);
+      const authRows: any[] = [];
+      for (let offset = 0; offset < ids.length; offset += 150) {
+        const { data } = await supabase
+          .from("cliente_autorizzazioni")
+          .select("cliente_id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
+          .in("cliente_id", ids.slice(offset, offset + 150))
+          .eq("tipo", "DESTINATARIO")
+          .order("data_scadenza", { ascending: false });
+        authRows.push(...(data || []));
+      }
+      const authByCompany = new Map<string, any>();
+      for (const auth of authRows) {
+        if (!authByCompany.has(auth.cliente_id)) authByCompany.set(auth.cliente_id, auth);
+      }
       setDestinatari(rows.map((row) => ({
         nome: row.ragione_sociale || "",
         indirizzo: [row.indirizzo, [row.cap, row.citta, row.provincia ? `(${row.provincia})` : ""].filter(Boolean).join(" ")]
@@ -548,6 +563,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         cf: row.codice_fiscale || row.partita_iva || "",
         piva: row.partita_iva || row.codice_fiscale || "",
         tipo: "IMPIANTO" as const,
+        autorizzazione: authByCompany.get(row.id)?.numero_autorizzazione || "",
+        tipoAut: authByCompany.get(row.id)?.ente_rilascio || authByCompany.get(row.id)?.tipo || "",
+        dataAut: authByCompany.get(row.id)?.data_inizio || authByCompany.get(row.id)?.data_scadenza || "",
       })));
     })();
     return () => { cancelled = true; };

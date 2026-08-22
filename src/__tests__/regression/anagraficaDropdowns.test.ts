@@ -93,8 +93,10 @@ describe("tendine formulari - fonti dati anagrafica", () => {
 
   it("usa il database, non l'elenco statico, anche nel modulo alternativo", () => {
     expect(alternativeFormSrc).toContain('.from("anagrafica_aziende_mp")');
+    expect(alternativeFormSrc).toContain('.from("cliente_autorizzazioni")');
     expect(alternativeFormSrc).toContain('.eq("destinatario", true)');
     expect(alternativeFormSrc).not.toContain('DESTINATARI.filter');
+    expect(alternativeFormSrc).toContain('autorizzazione: authByCompany.get(row.id)?.numero_autorizzazione');
   });
 });
 
