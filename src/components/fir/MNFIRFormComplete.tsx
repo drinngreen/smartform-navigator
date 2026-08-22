@@ -239,7 +239,13 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
           <span className="text-xs text-primary font-medium">✏️ Usa "{search.trim()}" come nuovo impianto</span>
         </button>
       )}
+      {autWarn && (
+        <p className="mt-1 rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-2 text-[11px] text-amber-200">
+          ⚠ {autWarn}
+        </p>
+      )}
     </div>
+
   );
 }
 
