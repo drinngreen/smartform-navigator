@@ -6471,6 +6471,7 @@ export type Database = {
       auto_distribute_fir_numbers: { Args: never; Returns: number }
       bootstrap_admin_role: { Args: never; Returns: undefined }
       can_access_tenant: { Args: { _tenant: string }; Returns: boolean }
+      can_read_mp_registry: { Args: never; Returns: boolean }
       check_giacenze_allineate: {
         Args: { p_tenant_id?: string }
         Returns: {
