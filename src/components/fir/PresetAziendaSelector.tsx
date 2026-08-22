@@ -355,19 +355,24 @@ export function PresetAziendaSelector({
   }, [clienteId, clienteIds]);
 
   const selectAnagrafica = async (r: any) => {
+    const piva = r.partita_iva || r.codice_fiscale || "";
     onSelectAzienda({
       nome: r.ragione_sociale || "",
       indirizzo: fmtIndirizzo(r),
       cf: r.codice_fiscale || "",
-      piva: r.partita_iva || r.codice_fiscale || "",
+      piva,
     });
     setClienteId(r.id);
     setClienteNome(r.ragione_sociale || "");
     setAziendaKey("");
     setAuts([]);
     setAutId("");
-    setQuery(r.ragione_sociale || "");
+    setQuery("");
     setResults([]);
+    setPickerOpen(false);
+    // evita che l'effetto su initialCf ricarichi/sovrascriva la scelta appena fatta
+    setLoadedCf(piva || r.codice_fiscale || "");
+    prevCfRef.current = piva || r.codice_fiscale || "";
     setClienteIds(await resolveClienteIds(r));
   };
 
@@ -384,15 +389,18 @@ export function PresetAziendaSelector({
     }
     onSelectAzienda({ nome: az.nome, indirizzo: az.indirizzo, cf: az.cf, piva: az.piva });
     setClienteNome(az.nome);
+    setLoadedCf(az.piva || az.cf);
+    prevCfRef.current = az.piva || az.cf;
     const { data } = await supabase
       .from("anagrafica_aziende_mp")
-      .select("id")
+      .select("id,ragione_sociale,codice_fiscale,partita_iva")
       .or(`codice_fiscale.eq.${az.cf},partita_iva.eq.${az.piva}`)
       .limit(200);
-    const ids = (data || []).map((x: any) => x.id);
-    setClienteId(ids[0] ?? null);
-    setClienteIds(ids);
+    const first = (data || [])[0];
+    setClienteId(first?.id ?? null);
+    setClienteIds(first ? await resolveClienteIds(first) : []);
   };
+
 
 
   const selectAut = (id: string) => {
