@@ -156,10 +156,12 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
 
   const selectDestinatario = async (soggetto: Soggetto) => {
     const identifier = (soggetto.piva || soggetto.cf || "").trim();
+    setAutWarn("");
     if (!identifier) {
       onSelect(soggetto);
       setSearch(soggetto.nome);
       setIsOpen(false);
+      setAutWarn(`${soggetto.nome}: nessun CF/P.IVA in anagrafica, numero e data autorizzazione vanno inseriti a mano.`);
       return;
     }
 
@@ -170,16 +172,17 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
       .limit(200);
     const ids = (aziende || []).map((azienda: any) => azienda.id).filter(Boolean);
     let enriched = soggetto;
+    let autorizzazione: any = null;
 
     if (ids.length > 0) {
       const { data: autorizzazioni } = await supabase
         .from("cliente_autorizzazioni")
         .select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
         .in("cliente_id", ids)
-        .eq("tipo", "DESTINATARIO")
         .order("data_scadenza", { ascending: false })
-        .limit(1);
-      const autorizzazione = autorizzazioni?.[0];
+        .limit(50);
+      const righe = (autorizzazioni || []).filter((a: any) => a.numero_autorizzazione);
+      autorizzazione = righe.find((a: any) => a.tipo === "DESTINATARIO") || righe[0] || null;
       if (autorizzazione) {
         enriched = {
           ...soggetto,
@@ -193,7 +196,15 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
     onSelect(enriched);
     setSearch(soggetto.nome);
     setIsOpen(false);
+    if (!autorizzazione) {
+      setAutWarn(
+        ids.length === 0
+          ? `${soggetto.nome}: azienda non presente nell'anagrafica importata — numero e data autorizzazione vanno inseriti a mano.`
+          : `${soggetto.nome}: in anagrafica non risulta alcun numero di autorizzazione — inseriscilo a mano nei campi qui sotto.`,
+      );
+    }
   };
+
 
   return (
     <div ref={ref} className="relative">
