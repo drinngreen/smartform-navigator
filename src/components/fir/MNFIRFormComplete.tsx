@@ -110,7 +110,9 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [dbResults, setDbResults] = useState<Soggetto[]>([]);
+  const [autWarn, setAutWarn] = useState<string>("");
   const ref = useRef<HTMLDivElement>(null);
+
 
   const filtered = search.length >= 1
     ? DESTINATARI.filter(d => d.nome.toLowerCase().includes(search.toLowerCase()))
@@ -154,10 +156,12 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
 
   const selectDestinatario = async (soggetto: Soggetto) => {
     const identifier = (soggetto.piva || soggetto.cf || "").trim();
+    setAutWarn("");
     if (!identifier) {
       onSelect(soggetto);
       setSearch(soggetto.nome);
       setIsOpen(false);
+      setAutWarn(`${soggetto.nome}: nessun CF/P.IVA in anagrafica, numero e data autorizzazione vanno inseriti a mano.`);
       return;
     }
 
@@ -168,16 +172,17 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
       .limit(200);
     const ids = (aziende || []).map((azienda: any) => azienda.id).filter(Boolean);
     let enriched = soggetto;
+    let autorizzazione: any = null;
 
     if (ids.length > 0) {
       const { data: autorizzazioni } = await supabase
         .from("cliente_autorizzazioni")
         .select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
         .in("cliente_id", ids)
-        .eq("tipo", "DESTINATARIO")
         .order("data_scadenza", { ascending: false })
-        .limit(1);
-      const autorizzazione = autorizzazioni?.[0];
+        .limit(50);
+      const righe = (autorizzazioni || []).filter((a: any) => a.numero_autorizzazione);
+      autorizzazione = righe.find((a: any) => a.tipo === "DESTINATARIO") || righe[0] || null;
       if (autorizzazione) {
         enriched = {
           ...soggetto,
@@ -191,7 +196,15 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
     onSelect(enriched);
     setSearch(soggetto.nome);
     setIsOpen(false);
+    if (!autorizzazione) {
+      setAutWarn(
+        ids.length === 0
+          ? `${soggetto.nome}: azienda non presente nell'anagrafica importata — numero e data autorizzazione vanno inseriti a mano.`
+          : `${soggetto.nome}: in anagrafica non risulta alcun numero di autorizzazione — inseriscilo a mano nei campi qui sotto.`,
+      );
+    }
   };
+
 
   return (
     <div ref={ref} className="relative">
@@ -204,11 +217,15 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
         <div className="absolute z-[100] w-full mt-1 max-h-60 overflow-y-auto bg-[#0a0e1a] border-2 border-neon-green/30 rounded-xl shadow-[0_0_30px_rgba(34,197,94,0.15)]">
           {filtered.map((d, i) => (
             <button key={`s-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
-              <span className="text-xs text-white font-medium block">{d.nome}</span>
+              <span className="text-xs text-white font-medium block">
+                {d.nome}
+                {!d.autorizzazione && <span className="ml-1 text-[9px] text-amber-400">⚠ senza autorizzazione in elenco</span>}
+              </span>
               {d.indirizzo && <span className="text-[10px] text-white/50 block">{d.indirizzo}</span>}
               {!d.indirizzo && !d.cf && <span className="text-[10px] text-yellow-500/70 block">⚠ Dati incompleti</span>}
             </button>
           ))}
+
           {extraResults.map((d, i) => (
             <button key={`db-${i}`} onClick={() => void selectDestinatario(d)} className="w-full text-left px-3 py-2.5 hover:bg-neon-green/15 transition-colors border-b border-white/5">
               <span className="text-xs text-white font-medium block">{d.nome} <span className="text-[9px] text-neon-green/70">· anagrafica</span></span>
@@ -222,7 +239,13 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
           <span className="text-xs text-primary font-medium">✏️ Usa "{search.trim()}" come nuovo impianto</span>
         </button>
       )}
+      {autWarn && (
+        <p className="mt-1 rounded-lg border border-amber-400/50 bg-amber-400/10 px-3 py-2 text-[11px] text-amber-200">
+          ⚠ {autWarn}
+        </p>
+      )}
     </div>
+
   );
 }
 
