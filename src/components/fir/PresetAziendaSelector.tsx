@@ -441,80 +441,96 @@ export function PresetAziendaSelector({
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
+  const q = query.trim().toUpperCase();
+  const usaSoloRuolo = Boolean(ruolo && ruolo !== "PRODUTTORE" && soloRuolo && roleCompanies.length);
+  const opzioni = useMemo(() => {
+    const base = usaSoloRuolo ? roleCompanies : allCompanies;
+    const match = (r: any) =>
+      !q ||
+      `${r.ragione_sociale || ""} ${r.codice_fiscale || ""} ${r.partita_iva || ""} ${r.citta || ""}`
+        .toUpperCase()
+        .includes(q);
+    const byId = new Map<string, any>();
+    for (const r of base) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
+    for (const r of results) if (match(r) && !byId.has(r.id)) byId.set(r.id, r);
+    return Array.from(byId.values());
+  }, [usaSoloRuolo, roleCompanies, allCompanies, results, q]);
+
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2">
       <label className="text-[10px] text-primary font-mono uppercase tracking-wider block">⚙ {label}</label>
 
-      <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
-        <option value="">-- Preset Multyproget / Niyol --</option>
-        {AZIENDE_PRESETS.map((a) => (
-          <option key={a.key} value={a.key}>{a.nome}</option>
-        ))}
-      </select>
-
-      {ruolo && ruolo !== "PRODUTTORE" && (
-        <select
-          value=""
-          onChange={(e) => {
-            const selected = roleCompanies.find((company) => company.id === e.target.value);
-            if (selected) void selectAnagrafica(selected);
-          }}
-          className={selectCls}
-          disabled={loadingRoleCompanies}
-        >
-          <option value="">
-            {loadingRoleCompanies
-              ? `-- Caricamento ${ruolo.toLowerCase()}… --`
-              : `-- Tutti i ${ruolo.toLowerCase()} (${roleCompanies.length}) --`}
-          </option>
-          {roleCompanies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.ragione_sociale} — {company.partita_iva || company.codice_fiscale || "senza P.IVA"}
-            </option>
+      {clienteNome ? (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-2">
+          <span className="flex-1 truncate text-sm text-white" title={clienteNome}>
+            {clienteNome}
+          </span>
+          <button
+            type="button"
+            onClick={() => clearSelection(true)}
+            title="Cambia azienda (azzera i campi)"
+            className="shrink-0 flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-[10px] text-red-200 hover:bg-red-500/20"
+          >
+            <X className="h-3 w-3" /> Cambia
+          </button>
+        </div>
+      ) : (
+        <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
+          <option value="">-- Preset Multyproget / Niyol --</option>
+          {AZIENDE_PRESETS.map((a) => (
+            <option key={a.key} value={a.key}>{a.nome}</option>
           ))}
         </select>
       )}
-
-      <select
-        value=""
-        onChange={(e) => {
-          const selected = allCompanies.find((c) => c.id === e.target.value);
-          if (selected) void selectAnagrafica(selected);
-        }}
-        className={selectCls}
-        disabled={loadingAll}
-      >
-        <option value="">
-          {loadingAll ? "-- Caricamento anagrafica completa… --" : `-- Tutta l'anagrafica (${allCompanies.length}) --`}
-        </option>
-        {allCompanies.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.ragione_sociale}
-            {c.citta ? ` — ${c.citta}` : ""}
-            {c.partita_iva || c.codice_fiscale ? ` — ${c.partita_iva || c.codice_fiscale}` : ""}
-          </option>
-        ))}
-      </select>
-
 
       <div className="relative">
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-secondary/50 px-3">
           <Search className="h-3.5 w-3.5 text-primary shrink-0" />
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca in anagrafica (es. ITALCONCIMI, P.IVA, CF)…"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPickerOpen(true);
+            }}
+            onFocus={() => setPickerOpen(true)}
+            placeholder={
+              loadingAll
+                ? "Caricamento anagrafica…"
+                : `Cerca o scorri ${usaSoloRuolo ? roleCompanies.length : allCompanies.length} aziende (nome, P.IVA, CF)…`
+            }
             className="w-full bg-transparent py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
           />
-          {searching && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+          {(searching || loadingAll) && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />}
+          {pickerOpen && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setPickerOpen(false)}
+              className="shrink-0 text-[10px] text-white/50 hover:text-white"
+            >
+              chiudi
+            </button>
+          )}
         </div>
-        {results.length > 0 && (
-          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
-            {results.map((r) => (
+
+        {ruolo && ruolo !== "PRODUTTORE" && roleCompanies.length > 0 && (
+          <label className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
+            <input type="checkbox" checked={soloRuolo} onChange={(e) => setSoloRuolo(e.target.checked)} />
+            Solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
+            {loadingRoleCompanies && " — caricamento…"}
+          </label>
+        )}
+
+        {pickerOpen && (
+          <div className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-primary/30 bg-background shadow-xl">
+            {opzioni.slice(0, 100).map((r) => (
               <button
                 key={r.id}
                 type="button"
-                onClick={() => selectAnagrafica(r)}
+                onClick={() => {
+                  setPickerOpen(false);
+                  void selectAnagrafica(r);
+                }}
                 className="block w-full px-3 py-2 text-left text-xs text-white hover:bg-primary/15"
               >
                 <span className="font-semibold">{r.ragione_sociale}</span>
@@ -523,12 +539,18 @@ export function PresetAziendaSelector({
                 </span>
               </button>
             ))}
+            {opzioni.length > 100 && (
+              <p className="px-3 py-2 text-[10px] text-white/40">
+                Altre {opzioni.length - 100} aziende: affina la ricerca.
+              </p>
+            )}
+            {opzioni.length === 0 && !searching && !loadingAll && (
+              <p className="px-3 py-2 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
+            )}
           </div>
         )}
-        {query.trim().length >= 2 && !searching && results.length === 0 && (
-          <p className="mt-1 text-[10px] text-white/50">Nessuna azienda trovata in anagrafica.</p>
-        )}
       </div>
+
 
       {loadError && <p className="text-[10px] text-destructive">{loadError}</p>}
 
