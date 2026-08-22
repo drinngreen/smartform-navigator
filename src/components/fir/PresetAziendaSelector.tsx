@@ -415,10 +415,12 @@ export function PresetAziendaSelector({
       onSelectAutorizzazione({
         numero: db.numero_autorizzazione || "",
         tipo: db.ente_rilascio || db.tipo || "",
-        data: db.data_scadenza || db.data_inizio || "",
+        // in formulario si riporta la data di rilascio dell'autorizzazione
+        data: db.data_inizio || db.data_scadenza || "",
       });
     }
   };
+
 
   const salvaNuovo = () => {
     const key = aziendaKey || clienteId;
