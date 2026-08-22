@@ -15,6 +15,7 @@ export interface Soggetto {
   // Extended RENTRI fields
   autorizzazione?: string;
   tipoAut?: string;
+  dataAut?: string;
   operazione?: string;
   comuneIstat?: string;
 }
