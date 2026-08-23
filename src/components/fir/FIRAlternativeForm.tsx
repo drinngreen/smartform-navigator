@@ -14,6 +14,7 @@ import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
+import { CerPickerField } from "@/components/fir/CerPickerField";
 
 export interface TemplateField {
   id: string;
