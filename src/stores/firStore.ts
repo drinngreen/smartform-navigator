@@ -108,6 +108,9 @@ export interface FIRDataStore {
   dataOraArrivo: string;
   inAttesaVerificaAnalitica: boolean;
 
+  // Formato del formulario: digitale (RENTRI) oppure cartaceo
+  formatoFir: "digitale" | "cartaceo";
+
   // Campo 17 - Annotazioni
   annotazioni: string;
 
@@ -252,6 +255,7 @@ export const initialFIRData: FIRDataStore = {
   motivazioneRespingimento: "",
   dataOraArrivo: "",
   inAttesaVerificaAnalitica: false,
+  formatoFir: "digitale",
   annotazioni: "Intermediario 1: MULTYPROGET S.R.L. - VIA RIVAROSSA, PISCINA (TO) - CF/P.IVA: 08486880019",
   trasbordoParzDenominazione: "",
   trasbordoParzCF: "",
@@ -391,6 +395,7 @@ export const FIR_FIELD_LABELS: Record<keyof FIRDataStore, string> = {
   motivazioneRespingimento: "Motivazione respingimento",
   dataOraArrivo: "Data/ora arrivo impianto",
   inAttesaVerificaAnalitica: "In attesa verifica analitica",
+  formatoFir: "Formato formulario (digitale/cartaceo)",
   annotazioni: "Annotazioni generali",
   trasbordoParzDenominazione: "Trasbordo parziale - Nuovo trasportatore",
   trasbordoParzCF: "Trasbordo parziale - CF nuovo trasportatore",

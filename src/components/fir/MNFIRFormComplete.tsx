@@ -13,6 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
+import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
+import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
@@ -740,6 +742,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const handleInviaFirma = async () => {
     if (!store.editingFirId) return;
+    if (d.formatoFir === "cartaceo") {
+      toast.error("Formulario impostato come CARTACEO: nessun invio a RENTRI. Usa la stampa per l'archiviazione.");
+      return;
+    }
     const missing = validateDeparture();
     if (missing.length > 0) {
       toast.error(`Campi obbligatori mancanti: ${missing.join(", ")}`);
@@ -755,7 +761,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
         store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null }, status: "inviato", submitted_at: new Date().toISOString() });
+        await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
       }
       const qrFromFirma = toRentriImageSrc(
         result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
@@ -799,7 +805,22 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.success(`📤 FIR ${officialNumeroFir || d.selectedFirNumber || ""} inviato e firmato su RENTRI`);
       window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
     } catch (error: any) {
-      toast.error(`Errore firma RENTRI: ${error.message}`);
+      // Servizi RENTRI indisponibili: il FIR resta in bozza e finisce nella coda
+      // "In attesa di reinvio" della Console RENTRI, per il rinvio in batch.
+      if (isRentriConnectivityError(error?.message ?? "")) {
+        try {
+          const dbFields = mapStoreToDatabaseFields(store.data);
+          await silentSaveFIR.mutateAsync({
+            id: store.editingFirId,
+            form_data: { ...dbFields.form_data, rentri_retry_pending: true, rentri_retry_since: new Date().toISOString(), rentri_retry_error: String(error?.message ?? "").slice(0, 300) },
+          });
+        } catch (queueError) {
+          console.warn("[RENTRI] impossibile marcare la coda di reinvio", queueError);
+        }
+        toast.error("RENTRI non raggiungibile: il FIR resta in bozza ed è in coda di reinvio (Console RENTRI)");
+      } else {
+        toast.error(`Errore firma RENTRI: ${error.message}`);
+      }
     } finally {
       setIsSigning(false);
     }
@@ -1021,6 +1042,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         </div>
       )}
 
+      <FirFormatoSelector
+        value={d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
+        onChange={(value) => u("formatoFir", value)}
+        disabled={store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
+      />
+
+
+
       <div className="flex gap-1 bg-secondary/30 rounded-xl p-1">
         {tabs.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i as 0 | 1 | 2)} className={`flex-1 py-2 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors ${activeTab === i ? "bg-primary/20 text-primary font-semibold" : "text-white/50 hover:text-white"}`}>
@@ -1066,11 +1095,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Workflow Action Buttons */}
       {(isStarted || store.editingFirId) && (
         <div className="space-y-2">
-          {store.workflowStatus === 'bozza' && (
+          {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
             <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
               {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
               {isSigning ? "FIRMA IN CORSO..." : "INVIA E FIRMA PARTENZA"}
             </button>
+          )}
+
+          {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
+            <div className="w-full rounded-2xl border border-amber-500/40 bg-amber-500/10 py-3 px-4 text-center text-[11px] font-mono text-amber-200">
+              Formulario CARTACEO: invio a RENTRI disattivato. Compila, stampa e archivia il modulo.
+            </div>
           )}
 
           {store.workflowStatus === 'inviato' && (

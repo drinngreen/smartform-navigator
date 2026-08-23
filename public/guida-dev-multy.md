@@ -368,6 +368,14 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 
 ---
 
+## 22-bis. Formato FIR, coda reinvio RENTRI e CER in fattura
+
+- **Formato FIR**: selettore "Formato del formulario" (digitale / cartaceo) presente sia nel Modulo Standard (`MNFIRFormComplete`) sia nel Modulo Alternativo (`FIRAlternativeForm`). Con "cartaceo" le azioni di invio/firma RENTRI sono disabilitate; il selettore mostra i giorni residui rispetto alla scadenza del **15 settembre 2026**. Valore salvato in `form_data.formato_fir`.
+- **Coda "In attesa di reinvio a RENTRI"**: se l'invio fallisce per indisponibilità dei servizi RENTRI, il FIR resta in bozza con `form_data.rentri_retry_pending = true`. Nella Console RENTRI il pannello ambra elenca i formulari in attesa e consente "Reinvia tutti" (nessun job automatico).
+- **CER obbligatorio in fattura**: `NuovaFatturaDialog` blocca il salvataggio se una riga di smaltimento/trasporto non ha un CER valido (`src/lib/cerValidation.ts`, catalogo europeo). Le righe di noleggio sono esenti.
+
+---
+
 ## 23. Cosa non fare mai
 
 1. Non riattivare l'assegnazione automatica dei numeri FIR: sempre manuale (workspace o Centro App & FIR).

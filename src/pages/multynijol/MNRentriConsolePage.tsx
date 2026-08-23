@@ -3,6 +3,7 @@ import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
+import { RentriRetryQueue } from "@/components/rentri/RentriRetryQueue";
 import { toast } from "sonner";
 import {
   listaBlocchi,
@@ -498,6 +499,8 @@ export default function MNRentriConsolePage() {
         >
           <ArrowLeft size={16} /> Torna alla console centrale
         </button>
+
+        <RentriRetryQueue societaId={societaId} />
 
         {/* Barra stato */}
         <div className="flex flex-wrap items-center gap-2">

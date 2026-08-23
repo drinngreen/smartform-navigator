@@ -15,6 +15,7 @@ import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { CerPickerField } from "@/components/fir/CerPickerField";
+import { FirFormatoSelector, normalizeFormatoFir, type FormatoFir } from "@/components/fir/FirFormatoSelector";
 
 export interface TemplateField {
   id: string;
@@ -548,6 +549,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
+  const [formatoFir, setFormatoFir] = useState<FormatoFir>(() => normalizeFormatoFir((draftData?.form_data as Record<string, unknown> | undefined)?.formato_fir));
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
   const [activeDraftNumero, setActiveDraftNumero] = useState<string | null>(presetNumeroFir || null);
   const [loading, setLoading] = useState(true);
@@ -1129,6 +1131,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         ...((existing.form_data as Record<string, unknown>) || {}),
         ...values,
         ...(impiantoId ? { impianto_id: impiantoId } : {}),
+        formato_fir: formatoFir,
       };
 
       const valByTokens = (...tokens: string[]) => {
@@ -1269,6 +1272,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           </span>
         </div>
       </div>
+
+      <FirFormatoSelector value={formatoFir} onChange={setFormatoFir} />
 
       <div className="flex gap-2">
         {[1, 2, 3].map((p) => (
@@ -1637,7 +1642,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         </button>
       </div>
 
-      {!printOnly && !disableRentriActions ? (
+      {!printOnly && !disableRentriActions && formatoFir !== "cartaceo" ? (
         <FIRRentriActions
           cliente={rentriCliente}
           formData={values as Record<string, string | boolean>}
