@@ -64,6 +64,15 @@ function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateF
   return fields.find((field) => hasTokens(field.name, tokens));
 }
 
+function isCerFieldName(fieldName: string): boolean {
+  return (
+    hasTokens(fieldName, ["codice", "eer"]) ||
+    hasTokens(fieldName, ["codice", "cer"]) ||
+    hasTokens(fieldName, ["cer"]) ||
+    hasTokens(fieldName, ["eer"])
+  );
+}
+
 export function isNumeroFirFieldName(fieldName: string): boolean {
   return hasTokens(fieldName, ["numero", "fir"]) || hasTokens(fieldName, ["numero", "formulario"]);
 }
