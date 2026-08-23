@@ -500,7 +500,7 @@ export default function MNRentriConsolePage() {
           <ArrowLeft size={16} /> Torna alla console centrale
         </button>
 
-        <RentriRetryQueue societaId={configKey} />
+        <RentriRetryQueue societaId={societaId} />
 
         {/* Barra stato */}
         <div className="flex flex-wrap items-center gap-2">
