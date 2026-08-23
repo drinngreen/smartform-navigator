@@ -85,9 +85,10 @@ export function NewsFeedModule() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Feed */}
-      <div className="xl:col-span-2 space-y-4">
+      <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
