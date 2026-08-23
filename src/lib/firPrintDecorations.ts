@@ -241,24 +241,56 @@ export interface PrintDecorationOptions {
   producedAt?: Date;
   /** Testo aggiuntivo da riportare in annotazioni (opzionale). */
   extraAnnotazioni?: string;
+  /** Numero di pagina del modulo ufficiale (1, 2 o 3). Default 1. */
+  page?: number;
 }
 
 /**
+ * Geometria dei riquadri ufficiali (percentuali sull'immagine della pagina):
+ * riquadro numero FIR in alto a destra, riquadro QR e riga di vidimazione in basso.
+ * Misurata direttamente sugli asset `formulario_pag_1/2.png`.
+ */
+const PAGE_GEOMETRY: Record<number, {
+  top: { left: number; top: number; width: number; height: number };
+  qr: { left: number; top: number; width: number; height: number };
+  row: { top: number; height: number };
+}> = {
+  1: {
+    top: { left: 73.4, top: 3.93, width: 22.2, height: 2.78 },
+    qr: { left: 79.9, top: 80.98, width: 14.4, height: 9.27 },
+    row: { top: 87.91, height: 2.56 },
+  },
+  2: {
+    top: { left: 72.2, top: 3.33, width: 23.3, height: 2.56 },
+    qr: { left: 79.8, top: 84.06, width: 14.3, height: 9.44 },
+    row: { top: 90.94, height: 2.52 },
+  },
+};
+
+/**
  * HTML da inserire dentro un contenitore `position:relative` che rappresenta una pagina A4:
- * numero FIR in alto a destra e in basso a destra, dicitura vidimazione + QR 28x28 mm.
+ * numero FIR nel riquadro in alto a destra e nel riquadro in basso, dicitura di vidimazione
+ * nella riga dedicata e QR 28x28 mm nel riquadro dedicato.
  */
 export function buildPageDecorationsHtml(opts: PrintDecorationOptions): string {
   const { numeroFir, cliente, qrDataUrl, producedAt, extraAnnotazioni } = opts;
   if (!numeroFir) return "";
+  const g = PAGE_GEOMETRY[opts.page ?? 1] ?? PAGE_GEOMETRY[1];
   const label = buildVidimazioneLabel(cliente, producedAt ?? new Date());
+
+  const numStyle =
+    "display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-weight:bold;font-size:3.6mm;letter-spacing:0.6mm;color:#12275c;white-space:nowrap;";
+
   const qr = qrDataUrl
-    ? `<img src="${qrDataUrl}" alt="QR RENTRI ${numeroFir}" style="position:absolute;right:6mm;bottom:24mm;width:28mm;height:28mm;object-fit:contain;background:#fff;" />`
+    ? `<img src="${qrDataUrl}" alt="QR RENTRI ${numeroFir}" style="position:absolute;left:${g.qr.left}%;top:${g.qr.top}%;width:${g.qr.width}%;height:${g.qr.height}%;object-fit:contain;background:#fff;" />`
     : "";
+
   return `
-    <div style="position:absolute;top:4mm;right:6mm;font-family:'Courier New',monospace;font-weight:bold;font-size:11pt;color:#000080;letter-spacing:0.5px;">${numeroFir}</div>
+    <div style="position:absolute;left:${g.top.left}%;top:${g.top.top}%;width:${g.top.width}%;height:${g.top.height}%;${numStyle}">${numeroFir}</div>
     ${qr}
-    <div style="position:absolute;right:6mm;bottom:18mm;width:40mm;text-align:center;font-family:'Courier New',monospace;font-weight:bold;font-size:11pt;color:#000080;">${numeroFir}</div>
-    <div style="position:absolute;left:6mm;bottom:14mm;max-width:62%;font-family:Arial,Helvetica,sans-serif;font-size:6.5pt;line-height:1.25;color:#111;">
-      ${label}${extraAnnotazioni ? `<br/>${extraAnnotazioni}` : ""}
+    <div style="position:absolute;left:57.1%;top:${g.row.top}%;width:22.2%;height:${g.row.height}%;${numStyle}">${numeroFir}</div>
+    <div style="position:absolute;left:5.2%;top:${g.row.top}%;width:50%;height:${g.row.height}%;display:flex;align-items:center;font-family:Arial,Helvetica,sans-serif;font-size:2.2mm;line-height:1.25;color:#12275c;">
+      <span>${label}${extraAnnotazioni ? `<br/>${extraAnnotazioni}` : ""}</span>
     </div>`;
 }
+
