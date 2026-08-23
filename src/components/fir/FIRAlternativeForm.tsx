@@ -362,7 +362,13 @@ function getDraftValueForField(
     // trasporto", "ora seconda sospensione trasporto"): riconosciamo l'ordinale
     // ovunque compaia nel nome del campo.
     if (normalized.includes("sospensione") && (normalized.includes("primo") || normalized.includes("prima"))) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
-    if (normalized.includes("sospensione") && (normalized.includes("secondo") || normalized.includes("seconda"))) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
+    // "ora seconda sospensione del trasporto" = 2ª sosta; "ora seconda sospensione
+    // trasporto" (senza "del") è l'etichetta errata del 3° blocco del modulo.
+    if (normalized.includes("sospensione") && (normalized.includes("secondo") || normalized.includes("seconda"))) {
+      return normalized.includes("del_trasporto")
+        ? getFormDataValue(formData, "sosta_tecnica_2_data_sospensione")
+        : getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    }
     if (normalized.includes("sospensione") && (normalized.includes("terzo") || normalized.includes("terza"))) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
     if (normalized.includes("ora_ripresa_primo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_1_data_ripresa");
     if (normalized.includes("ora_ripresa_secondo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_2_data_ripresa");
