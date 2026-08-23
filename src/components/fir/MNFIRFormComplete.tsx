@@ -869,6 +869,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
+  /** Documento di viaggio: riepilogo completo con QR ufficiale RENTRI, aperto in stampa. */
+  const handlePrintDocumentoViaggio = async () => {
+    try {
+      const numero = d.selectedFirNumber || "";
+      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) { toast.error("Consenti i popup per stampare il documento di viaggio"); return; }
+      w.addEventListener("load", () => { try { w.print(); } catch { /* noop */ } });
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success("Documento di viaggio pronto per la stampa");
+    } catch (error: any) {
+      toast.error("Errore documento di viaggio: " + error.message);
+    }
+  };
+
   /**
    * Stampa del MODULO UFFICIALE (3 pagine ministeriali) con i dati compilati fino a
    * questo momento, numero FIR in alto/basso a destra, dicitura di vidimazione virtuale
