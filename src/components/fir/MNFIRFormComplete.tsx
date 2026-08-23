@@ -868,17 +868,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
-  /** Stampa diretta del formulario (anche vuoto/bozza) con numero FIR, dicitura vidimazione e QR RENTRI. */
-  const handlePrintFormulario = async () => {
+  /**
+   * Stampa del MODULO UFFICIALE (3 pagine ministeriali) con i dati compilati fino a
+   * questo momento, numero FIR in alto/basso a destra, dicitura di vidimazione virtuale
+   * e QR Code RENTRI.
+   */
+  const handlePrintFormulario = async (blank = false) => {
     try {
       const numero = d.selectedFirNumber || "";
-      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
-      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, "_blank");
-      if (!w) { toast.error("Consenti i popup per stampare il formulario"); return; }
-      w.addEventListener("load", () => setTimeout(() => w.print(), 400));
-      toast.success("Formulario pronto per la stampa");
+      const dbFields = mapStoreToDatabaseFields(store.data) as any;
+      const ok = await printOfficialFir({
+        draft: { ...dbFields, id: store.editingFirId || undefined, numero_fir: numero },
+        numeroFir: numero,
+        cliente: printCliente(),
+        blank,
+      });
+      if (!ok) { toast.error("Consenti i popup per stampare il formulario"); return; }
+      toast.success(blank ? "Modulo vuoto pronto per la stampa" : "Modulo ufficiale pronto per la stampa");
     } catch (error: any) {
       toast.error("Errore stampa: " + error.message);
     }
