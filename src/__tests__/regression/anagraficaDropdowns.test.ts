@@ -73,15 +73,14 @@ describe("tendine formulari - fonti dati anagrafica", () => {
     expect(ids).toEqual(["selected", "auth-row", "site-row"]);
   });
 
-  it("non presenta come errore l'assenza di autorizzazione del produttore", () => {
-    expect(src).toContain('ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta"');
-    expect(src).toContain('{(aziendaKey || clienteId) && ruolo !== "PRODUTTORE" && (');
+  it("mostra anche al produttore le autorizzazioni realmente collegate", () => {
+    expect(src).toContain('{(aziendaKey || clienteId) && (');
+    expect(src).not.toContain('autorizzazione produttore non richiesta');
   });
 
-  it("non assegna mai al produttore autorizzazioni appartenenti ad altri ruoli", () => {
-    expect(src).toContain('ruolo === "PRODUTTORE"');
-    expect(src).toMatch(/ruolo === "PRODUTTORE"\s*\? \[\]/);
-    expect(src).not.toContain('ruolo && ruolo !== "PRODUTTORE" ? dbAuts.filter((a) => a.tipo === ruolo) : dbAuts');
+  it("esclude dal produttore solo le autorizzazioni appartenenti agli altri ruoli FIR", () => {
+    expect(src).toContain('["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"]');
+    expect(src).not.toMatch(/ruolo === "PRODUTTORE"\s*\? \[\]/);
   });
 
   it("azzera l'autorizzazione precedente prima di caricare una nuova azienda", () => {
