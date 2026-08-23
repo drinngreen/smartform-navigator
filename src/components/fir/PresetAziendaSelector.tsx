@@ -473,13 +473,14 @@ export function PresetAziendaSelector({
     setAutId("");
   };
 
-  // Un produttore non richiede autorizzazione: non deve mai ereditare quella
-  // eventualmente posseduta dalla stessa azienda come destinatario/trasportatore.
-  // Per gli altri ruoli mostriamo esclusivamente autorizzazioni dello stesso ruolo,
-  // senza fallback incrociati che produrrebbero dati formalmente falsi nel FIR.
-  const autsOrdinate = !ruolo || ruolo === "PRODUTTORE"
-    ? []
-    : dbAuts.filter((a) => a.tipo === ruolo);
+  // Il produttore può avere propri estremi autorizzativi. Mostriamo solo record
+  // realmente collegati all'azienda scelta: quelli marcati PRODUTTORE e quelli
+  // importati con una tipologia normativa, mai autorizzazioni di altri ruoli.
+  const autsOrdinate = !ruolo
+    ? dbAuts
+    : ruolo === "PRODUTTORE"
+      ? dbAuts.filter((a) => !["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"].includes(String(a.tipo || "").toUpperCase()))
+      : dbAuts.filter((a) => String(a.tipo || "").toUpperCase() === ruolo);
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
@@ -628,14 +629,14 @@ export function PresetAziendaSelector({
         <p className="text-[10px] text-white/50">
           {loadingDeps ? "Caricamento dati collegati…" : (
             <>
-              {clienteNome}: {ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta" : `${autsOrdinate.length} autorizzazioni`} · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
+              {clienteNome}: {autsOrdinate.length} autorizzazioni · {cantieri.length} cantieri · {targhe.length} targhe ·{" "}
               {conducenti.length} conducenti · {partnerDefaults.length} dati predefiniti
             </>
           )}
         </p>
       )}
 
-      {(aziendaKey || clienteId) && ruolo !== "PRODUTTORE" && (
+      {(aziendaKey || clienteId) && (
         <div className="space-y-2">
           <div className="flex gap-2">
             <select value={autId} onChange={(e) => selectAut(e.target.value)} className={selectCls}>
