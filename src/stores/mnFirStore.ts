@@ -233,6 +233,10 @@ export const useMNFIRStore = create<MNFIRStore>()(
       },
 
       loadFromDatabase: (dbData: DatabaseFIRData) => {
+        const str = (v: unknown): string =>
+          v === null || v === undefined || v === false ? "" : String(v);
+        const bool = (v: unknown): boolean =>
+          v === true || v === "true" || v === "SI" || v === "si" || v === 1 || v === "1";
         const statoFisicoCode = dbData.stato_fisico
           ? STATO_FISICO_REVERSE_MAP[dbData.stato_fisico] || ""
           : "";
