@@ -9,6 +9,7 @@ import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
 import { resolveFirQrDataUrl, buildPageDecorationsHtml } from "@/lib/firPrintDecorations";
+import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
 
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
@@ -1510,9 +1511,10 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
                 if (!val) return;
                 if (isNumero) return; // il numero viene stampato dalle decorazioni (alto e basso a destra)
+                 const geometry = officialPrintFieldGeometry(field);
                 const span = document.createElement("span");
                 span.textContent = val;
-                span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:2.9mm;font-weight:600;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 1mm;`;
+                 span.style.cssText = `position:absolute;left:${geometry.x}%;top:${geometry.y}%;width:${geometry.width}%;height:${geometry.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:3.2mm;font-weight:700;line-height:1;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 0.6mm;box-sizing:border-box;`;
                 pageContainer.appendChild(span);
               });
               return pageContainer.outerHTML.replace(/<\/div>$/, `${decorations}</div>`);

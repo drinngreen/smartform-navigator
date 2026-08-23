@@ -22,6 +22,7 @@ import {
   resolveFirQrDataUrl,
   type PrintCliente,
 } from "@/lib/firPrintDecorations";
+import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
 
 const PAGE_IMAGES = [pag1, pag2, pag3];
 
@@ -57,7 +58,8 @@ function buildPagesHtml(
           const raw = values[field.id];
           const val = typeof raw === "boolean" ? (raw ? "X" : "") : String(raw ?? "");
           if (!val) return "";
-          return `<span style="position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:2.9mm;font-weight:600;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 1mm;">${escapeHtml(val)}</span>`;
+          const geometry = officialPrintFieldGeometry(field);
+          return `<span style="position:absolute;left:${geometry.x}%;top:${geometry.y}%;width:${geometry.width}%;height:${geometry.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:3.2mm;font-weight:700;line-height:1;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 0.6mm;box-sizing:border-box;">${escapeHtml(val)}</span>`;
         })
         .join("");
       return `<div style="position:relative;page-break-after:always;"><img src="${PAGE_IMAGES[pageNum - 1]}" style="width:100%;height:auto;display:block;" />${inner}${decorationsFor(pageNum)}</div>`;
