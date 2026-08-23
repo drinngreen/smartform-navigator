@@ -141,7 +141,13 @@ async function getFeed() {
     seen.add(k);
     return true;
   });
-  unique.sort((a, b) => new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime());
+  // Le comunicazioni ufficiali del portale RENTRI restano in cima, poi ordine cronologico
+  unique.sort((a, b) => {
+    const pa = a.source_id === "rentri-portale" ? 1 : 0;
+    const pb = b.source_id === "rentri-portale" ? 1 : 0;
+    if (pa !== pb) return pb - pa;
+    return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
+  });
   const sources = SOURCES.map((s, i) => ({ id: s.id, name: s.name, category: s.category, count: results[i].items.length, error: results[i].error }));
   return { articles: unique.slice(0, 120), sources, fetched_at: new Date().toISOString() };
 }
@@ -153,17 +159,7 @@ serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = body.action || "feed";
 
-    if (action === "probe") {
-      const urls: string[] = body.urls || [];
-      const out = await Promise.all(urls.map(async (u) => {
-        try {
-          const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(12000) });
-          const t = await r.text();
-          return { u, status: r.status, len: t.length, head: t.slice(0, 80) };
-        } catch (e) { return { u, error: (e as Error).message }; }
-      }));
-      return new Response(JSON.stringify(out), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+
 
     if (action === "feed") {
       const data = await getFeed();
