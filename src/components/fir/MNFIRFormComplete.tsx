@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw } from "lucide-react";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
-import { useMNFIRStore } from "@/stores/mnFirStore";
+import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
