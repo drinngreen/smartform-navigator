@@ -22,11 +22,12 @@ const CATEGORY_STYLE: Record<string, string> = {
 };
 
 const QUICK_PROMPTS = [
-  "Riassumi le novità RENTRI degli ultimi giorni",
-  "Ci sono nuove scadenze normative da rispettare?",
+  "Queste news contengono nuove regolamentazioni da implementare nel software?",
+  "Quali moduli del gestionale (FIR, RENTRI, Dragon, registri) sono impattati dalle novità?",
+  "Riassumi le novità RENTRI degli ultimi giorni e le scadenze operative",
   "Cosa cambia per i formulari (FIR) e il registro carico/scarico?",
-  "Quali notizie impattano un'azienda di trasporto rifiuti?",
 ];
+
 
 function formatDate(iso: string | null) {
   if (!iso) return "data n/d";
