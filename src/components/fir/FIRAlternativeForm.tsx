@@ -358,9 +358,12 @@ function getDraftValueForField(
     if (hasTokens(field.name, ["ora", "inizio", "trasporto"])) return draft.data_partenza;
     if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "ora_accettazione", "ora_fine_trasporto", "ora_ricezione") || draft.data_arrivo;
     if (hasTokens(field.name, ["ora", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
-    if (normalized.includes("ora_prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
-    if (normalized.includes("ora_seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
-    if (normalized.includes("ora_terza_sospensione")) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    // Il template ministeriale usa etichette non uniformi ("ora sospensione primo
+    // trasporto", "ora seconda sospensione trasporto"): riconosciamo l'ordinale
+    // ovunque compaia nel nome del campo.
+    if (normalized.includes("sospensione") && (normalized.includes("primo") || normalized.includes("prima"))) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
+    if (normalized.includes("sospensione") && (normalized.includes("secondo") || normalized.includes("seconda"))) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
+    if (normalized.includes("sospensione") && (normalized.includes("terzo") || normalized.includes("terza"))) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
     if (normalized.includes("ora_ripresa_primo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_1_data_ripresa");
     if (normalized.includes("ora_ripresa_secondo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_2_data_ripresa");
     if (normalized.includes("ora_ripresa_terzo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_3_data_ripresa");
