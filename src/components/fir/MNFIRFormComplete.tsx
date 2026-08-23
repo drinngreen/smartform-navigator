@@ -285,9 +285,11 @@ interface MNFIRFormCompleteProps {
   registryMovementType?: "Carico" | "Scarico";
   /** Mostra il pulsante "Crea fattura": solo per i formulari compilati da ufficio/admin */
   enableFatturazione?: boolean;
+  /** Modalità creazione manuale: mostra subito il modulo vuoto, senza elenco FIR assegnati. */
+  creationMode?: boolean;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
@@ -309,6 +311,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+
+  const hasInitializedCreationMode = useRef(false);
+  useEffect(() => {
+    if (!creationMode || firFormId || draftData?.id || hasInitializedCreationMode.current) return;
+    hasInitializedCreationMode.current = true;
+    store.resetForm();
+  }, [creationMode, firFormId, draftData?.id]);
 
   // ── Crea fattura direttamente dal formulario ──────────────────────
   const cfKey = (v?: string) => (v || "").replace(/[^0-9A-Za-z]/g, "").toUpperCase();
@@ -909,8 +918,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         ))}
       </div>
 
-      {/* FORMULARI DISPONIBILI + INIZIA/RIPRENDI/NUOVO */}
-      <div className="flex flex-col items-center gap-3 py-2">
+      {/* Nell'area Nuovo FIR il modulo deve aprirsi subito: l'archivio resta nella scheda Formulari. */}
+      {!creationMode && <div className="flex flex-col items-center gap-3 py-2">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-neon-green animate-pulse" />
           <span className="text-xs font-mono uppercase tracking-widest text-neon-green">Formulari Disponibili</span>
@@ -941,7 +950,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Workflow Action Buttons */}
       {(isStarted || store.editingFirId) && (
