@@ -12,6 +12,10 @@ const src = readFileSync(
   resolve(__dirname, "../../components/fir/PresetAziendaSelector.tsx"),
   "utf8",
 );
+const runtimeJsSrc = readFileSync(
+  resolve(__dirname, "../../components/fir/PresetAziendaSelector.js"),
+  "utf8",
+);
 const formSrc = readFileSync(
   resolve(__dirname, "../../components/fir/MNFIRFormComplete.tsx"),
   "utf8",
@@ -79,10 +83,12 @@ describe("tendine formulari - fonti dati anagrafica", () => {
   });
 
   it("non nasconde al produttore i titoli classificati per natura dell'autorizzazione", () => {
-    const producerAuthorizationBranch = src.match(
-      /const autsOrdinate =[\s\S]*?: ruolo === "PRODUTTORE"\s*\? ([^\n]+)\n\s*: dbAuts\.filter/,
-    );
-    expect(producerAuthorizationBranch?.[1].trim()).toBe("dbAuts");
+    for (const source of [src, runtimeJsSrc]) {
+      const producerAuthorizationBranch = source.match(
+        /const autsOrdinate =[\s\S]*?: ruolo === "PRODUTTORE"\s*\? ([^\n]+)\n\s*: dbAuts\.filter/,
+      );
+      expect(producerAuthorizationBranch?.[1].trim()).toBe("dbAuts");
+    }
   });
 
   it("azzera l'autorizzazione precedente prima di caricare una nuova azienda", () => {
