@@ -740,6 +740,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const handleInviaFirma = async () => {
     if (!store.editingFirId) return;
+    if (d.formatoFir === "cartaceo") {
+      toast.error("Formulario impostato come CARTACEO: nessun invio a RENTRI. Usa la stampa per l'archiviazione.");
+      return;
+    }
     const missing = validateDeparture();
     if (missing.length > 0) {
       toast.error(`Campi obbligatori mancanti: ${missing.join(", ")}`);
@@ -755,7 +759,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
         store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null }, status: "inviato", submitted_at: new Date().toISOString() });
+        await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
       }
       const qrFromFirma = toRentriImageSrc(
         result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
@@ -799,7 +803,22 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.success(`📤 FIR ${officialNumeroFir || d.selectedFirNumber || ""} inviato e firmato su RENTRI`);
       window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
     } catch (error: any) {
-      toast.error(`Errore firma RENTRI: ${error.message}`);
+      // Servizi RENTRI indisponibili: il FIR resta in bozza e finisce nella coda
+      // "In attesa di reinvio" della Console RENTRI, per il rinvio in batch.
+      if (isRentriConnectivityError(error?.message ?? "")) {
+        try {
+          const dbFields = mapStoreToDatabaseFields(store.data);
+          await silentSaveFIR.mutateAsync({
+            id: store.editingFirId,
+            form_data: { ...dbFields.form_data, rentri_retry_pending: true, rentri_retry_since: new Date().toISOString(), rentri_retry_error: String(error?.message ?? "").slice(0, 300) },
+          });
+        } catch (queueError) {
+          console.warn("[RENTRI] impossibile marcare la coda di reinvio", queueError);
+        }
+        toast.error("RENTRI non raggiungibile: il FIR resta in bozza ed è in coda di reinvio (Console RENTRI)");
+      } else {
+        toast.error(`Errore firma RENTRI: ${error.message}`);
+      }
     } finally {
       setIsSigning(false);
     }
