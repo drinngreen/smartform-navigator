@@ -1087,11 +1087,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Workflow Action Buttons */}
       {(isStarted || store.editingFirId) && (
         <div className="space-y-2">
-          {store.workflowStatus === 'bozza' && (
+          {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
             <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
               {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
               {isSigning ? "FIRMA IN CORSO..." : "INVIA E FIRMA PARTENZA"}
             </button>
+          )}
+
+          {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
+            <div className="w-full rounded-2xl border border-amber-500/40 bg-amber-500/10 py-3 px-4 text-center text-[11px] font-mono text-amber-200">
+              Formulario CARTACEO: invio a RENTRI disattivato. Compila, stampa e archivia il modulo.
+            </div>
           )}
 
           {store.workflowStatus === 'inviato' && (
