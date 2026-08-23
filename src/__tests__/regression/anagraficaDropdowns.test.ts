@@ -76,6 +76,17 @@ describe("tendine formulari - fonti dati anagrafica", () => {
     expect(src).toContain('ruolo !== "PRODUTTORE" && autsOrdinate.length === 0');
   });
 
+  it("non assegna mai al produttore autorizzazioni appartenenti ad altri ruoli", () => {
+    expect(src).toContain('ruolo === "PRODUTTORE"');
+    expect(src).toMatch(/ruolo === "PRODUTTORE"\s*\? \[\]/);
+    expect(src).not.toContain('ruolo && ruolo !== "PRODUTTORE" ? dbAuts.filter((a) => a.tipo === ruolo) : dbAuts');
+  });
+
+  it("azzera l'autorizzazione precedente prima di caricare una nuova azienda", () => {
+    const resets = src.match(/onSelectAutorizzazione\(\{ numero: "", tipo: "", data: "" \}\)/g) || [];
+    expect(resets.length).toBeGreaterThanOrEqual(3);
+  });
+
   it("permette di cambiare azienda e reagisce alla gomma della sezione", () => {
     expect(src).toContain("clearSelection");
     expect(src).toMatch(/prevCfRef/);

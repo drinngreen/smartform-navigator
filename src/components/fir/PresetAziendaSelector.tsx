@@ -132,7 +132,10 @@ export function PresetAziendaSelector({
     setQuery("");
     setResults([]);
     setLoadedCf("");
-    if (emit) onSelectAzienda({ nome: "", indirizzo: "", cf: "", piva: "" });
+    if (emit) {
+      onSelectAzienda({ nome: "", indirizzo: "", cf: "", piva: "" });
+      onSelectAutorizzazione({ numero: "", tipo: "", data: "" });
+    }
   };
 
   // Precarica i dati collegati per l'azienda già presente nel form e reagisce
@@ -370,6 +373,12 @@ export function PresetAziendaSelector({
   }, [clienteId, clienteIds]);
 
   const selectAnagrafica = async (r: any) => {
+    // I dati autorizzativi appartengono esclusivamente all'azienda selezionata:
+    // azzerarli prima del nuovo caricamento impedisce che restino quelli della
+    // selezione precedente mentre la query asincrona è in corso.
+    onSelectAutorizzazione({ numero: "", tipo: "", data: "" });
+    setDbAuts([]);
+    setLoadingDeps(true);
     const piva = r.partita_iva || r.codice_fiscale || "";
     onSelectAzienda({
       nome: r.ragione_sociale || "",
@@ -393,6 +402,9 @@ export function PresetAziendaSelector({
   };
 
   const selectAzienda = async (key: string) => {
+    onSelectAutorizzazione({ numero: "", tipo: "", data: "" });
+    setDbAuts([]);
+    setLoadingDeps(true);
     setAziendaKey(key);
     setAutId("");
     setAuts(key ? getAutorizzazioni(key) : []);
@@ -461,9 +473,13 @@ export function PresetAziendaSelector({
     setAutId("");
   };
 
-  // autorizzazioni del ruolo; se non ce ne sono per il ruolo mostra comunque tutte
-  const autsRuolo = ruolo && ruolo !== "PRODUTTORE" ? dbAuts.filter((a) => a.tipo === ruolo) : dbAuts;
-  const autsOrdinate = autsRuolo.length ? autsRuolo : dbAuts;
+  // Un produttore non richiede autorizzazione: non deve mai ereditare quella
+  // eventualmente posseduta dalla stessa azienda come destinatario/trasportatore.
+  // Per gli altri ruoli mostriamo esclusivamente autorizzazioni dello stesso ruolo,
+  // senza fallback incrociati che produrrebbero dati formalmente falsi nel FIR.
+  const autsOrdinate = !ruolo || ruolo === "PRODUTTORE"
+    ? []
+    : dbAuts.filter((a) => a.tipo === ruolo);
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
@@ -619,7 +635,7 @@ export function PresetAziendaSelector({
         </p>
       )}
 
-      {(aziendaKey || clienteId) && (
+      {(aziendaKey || clienteId) && ruolo !== "PRODUTTORE" && (
         <div className="space-y-2">
           <div className="flex gap-2">
             <select value={autId} onChange={(e) => selectAut(e.target.value)} className={selectCls}>
