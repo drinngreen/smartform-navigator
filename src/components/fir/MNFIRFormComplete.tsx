@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt } from "lucide-react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw } from "lucide-react";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useMNFIRStore } from "@/stores/mnFirStore";
@@ -653,6 +653,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     toast.success(`FIR ${form.numero_fir || "senza numero"} aperto`);
   };
 
+  const handleResetForm = () => {
+    if (!window.confirm("Sei sicuro di voler svuotare il formulario?\n\nTutti i dati inseriti verranno cancellati e potrai iniziare da zero.")) return;
+    store.resetForm();
+    toast.info("🧹 Formulario svuotato");
+  };
+
   const validateDeparture = (): string[] => {
     const errors: string[] = [];
     if (!d.targaAutomezzo.trim()) errors.push("Targa Automezzo");
@@ -1026,13 +1032,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
       {/* Action Buttons — only when active and NOT closed */}
       {(isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
-        <div className="flex gap-2">
-          <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
-            <Plus className="h-4 w-4" /> Nuovo FIR
+        <div className="space-y-2">
+          <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
+            <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
           </button>
-          <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
-            <Save className="h-4 w-4" /> Metti in Bozza
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
+              <Plus className="h-4 w-4" /> Nuovo FIR
+            </button>
+            <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
+              <Save className="h-4 w-4" /> Metti in Bozza
+            </button>
+          </div>
         </div>
       )}
 
