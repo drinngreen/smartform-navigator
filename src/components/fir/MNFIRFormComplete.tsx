@@ -305,6 +305,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const creationSaveInFlight = useRef(false);
   const [fatturaFrom, setFatturaFrom] = useState<
     { tenantId: string; emittente: string; righe: Riga[]; clienteFallback?: any } | null
   >(null);
@@ -470,12 +471,50 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     } catch { /* silent */ }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
 
+  const createAndAutosaveManualDraft = useCallback(async () => {
+    const current = useMNFIRStore.getState();
+    const numeroFir = current.data.selectedFirNumber.trim().toUpperCase();
+    if (!creationMode || current.editingFirId || !numeroFir || !user?.id || !activeTenantId || creationSaveInFlight.current) return;
+
+    creationSaveInFlight.current = true;
+    try {
+      const { data: draftId, error } = await supabase.rpc("create_manual_fir_draft_for_tenant" as any, {
+        p_user_id: user.id,
+        p_tenant_id: activeTenantId,
+        p_numero_fir: numeroFir,
+      });
+      if (error) throw error;
+      if (!draftId) throw new Error("Impossibile creare la bozza manuale");
+
+      useMNFIRStore.setState({ editingFirId: String(draftId), workflowStatus: "bozza" });
+      const dbFields = mapStoreToDatabaseFields(useMNFIRStore.getState().data);
+      await silentSaveFIR.mutateAsync({ id: String(draftId), ...dbFields });
+      setLoadedFirFormId(String(draftId));
+    } catch (error: any) {
+      toast.error("Autosalvataggio non riuscito: " + (error?.message || String(error)));
+    } finally {
+      creationSaveInFlight.current = false;
+    }
+  }, [activeTenantId, creationMode, silentSaveFIR, user?.id]);
+
   useEffect(() => {
     if (store.editingFirId && store.workflowStatus !== 'chiuso') {
       autosaveRef.current = setInterval(doAutosave, 10000);
     }
     return () => { if (autosaveRef.current) clearInterval(autosaveRef.current); };
   }, [store.editingFirId, store.workflowStatus, doAutosave]);
+
+  // Salva l'ultima modifica dopo una breve pausa di digitazione. In modalità
+  // creazione la prima modifica, dopo l'inserimento manuale del numero FIR,
+  // crea la bozza persistente e poi la aggiorna.
+  useEffect(() => {
+    if (store.workflowStatus === "chiuso" || store.lastUpdatedBy !== "user") return;
+    const timer = window.setTimeout(() => {
+      if (useMNFIRStore.getState().editingFirId) void doAutosave();
+      else void createAndAutosaveManualDraft();
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [store.data, store.lastUpdatedBy, store.workflowStatus, doAutosave, createAndAutosaveManualDraft]);
 
   // ── Autofill Multyproget company data when tenant is Multy ─────────
   useEffect(() => {
@@ -910,6 +949,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         <h2 className="text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
       </div>
 
+      {creationMode && (
+        <div className="rounded-xl border border-primary/30 bg-card/60 p-3">
+          <label className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Numero FIR manuale</label>
+          <input
+            type="text"
+            value={d.selectedFirNumber}
+            onChange={(event) => u("selectedFirNumber", event.target.value.toUpperCase())}
+            placeholder="Es. FRVKM 001320 CM"
+            disabled={Boolean(store.editingFirId)}
+            className="h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground disabled:opacity-70"
+          />
+          <p className="mt-1 text-[10px] font-mono text-muted-foreground">
+            {store.editingFirId ? "Autosalvataggio attivo" : "Inserisci il numero: le modifiche verranno salvate automaticamente"}
+          </p>
+        </div>
+      )}
+
       <div className="flex gap-1 bg-secondary/30 rounded-xl p-1">
         {tabs.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i as 0 | 1 | 2)} className={`flex-1 py-2 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors ${activeTab === i ? "bg-primary/20 text-primary font-semibold" : "text-white/50 hover:text-white"}`}>
@@ -1053,7 +1109,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       )}
 
       {/* Action Buttons — only when active and NOT closed */}
-      {(isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
+      {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="space-y-2">
           <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
