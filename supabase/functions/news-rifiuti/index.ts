@@ -114,6 +114,18 @@ serve(async (req) => {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = body.action || "feed";
 
+    if (action === "probe") {
+      const urls: string[] = body.urls || [];
+      const out = await Promise.all(urls.map(async (u) => {
+        try {
+          const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(12000) });
+          const t = await r.text();
+          return { u, status: r.status, len: t.length, head: t.slice(0, 80) };
+        } catch (e) { return { u, error: (e as Error).message }; }
+      }));
+      return new Response(JSON.stringify(out), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "feed") {
       const data = await getFeed();
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
