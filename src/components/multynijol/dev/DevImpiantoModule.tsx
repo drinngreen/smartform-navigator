@@ -155,7 +155,7 @@ export function DevImpiantoModule() {
 
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
-            <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" enableFatturazione />
+            <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" enableFatturazione creationMode />
           </div>
         </TabsContent>
         <TabsContent value="giacenze">

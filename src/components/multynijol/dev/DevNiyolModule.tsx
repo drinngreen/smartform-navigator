@@ -43,7 +43,7 @@ export function DevNiyolModule() {
 
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-cyan-500/20">
-            <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" enableFatturazione />
+            <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" enableFatturazione creationMode />
           </div>
         </TabsContent>
       </Tabs>
