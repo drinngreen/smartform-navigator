@@ -73,7 +73,7 @@ describe("tendine formulari - fonti dati anagrafica", () => {
 
   it("non presenta come errore l'assenza di autorizzazione del produttore", () => {
     expect(src).toContain('ruolo === "PRODUTTORE" ? "autorizzazione produttore non richiesta"');
-    expect(src).toContain('ruolo !== "PRODUTTORE" && autsOrdinate.length === 0');
+    expect(src).toContain('{(aziendaKey || clienteId) && ruolo !== "PRODUTTORE" && (');
   });
 
   it("non assegna mai al produttore autorizzazioni appartenenti ad altri ruoli", () => {
