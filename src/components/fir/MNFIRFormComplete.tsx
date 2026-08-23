@@ -1151,6 +1151,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
             <Printer className="h-3.5 w-3.5" /> STAMPA MODULO UFFICIALE (QR RENTRI)
           </button>
+          <button onClick={() => void handlePrintFormulario(true)} className="w-full py-2 rounded-2xl border border-slate-500/30 bg-slate-500/10 text-slate-300 font-display text-[11px] tracking-wider flex items-center justify-center gap-2 hover:bg-slate-500/20 transition-colors">
+            <Printer className="h-3.5 w-3.5" /> STAMPA MODULO VUOTO (con numero + QR)
+          </button>
           <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
           </button>
