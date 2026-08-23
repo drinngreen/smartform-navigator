@@ -492,6 +492,7 @@ export function DevFormulariList({
                 <FIRAlternativeForm
                   key={`alt-${viewDialog.form.id}`}
                   firFormId={viewDialog.form.id}
+                  tenantId={(viewDialog.form as any).tenant_id || tenantId}
                   presetNumeroFir={viewDialog.form.numero_fir || undefined}
                   assignedUserId={viewDialog.form.user_id || undefined}
                   draftData={viewDialog.form}
