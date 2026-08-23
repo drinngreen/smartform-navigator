@@ -39,6 +39,13 @@ Queste regole valgono in **tutti** i punti in cui si compila un formulario: Impi
 - Le due viste sono **sincronizzate in tempo reale**: quello che scrivi in una compare nell'altra, perché scrivono sullo **stesso record `fir_forms`**. Non si duplica nulla.
 - Puoi passare da una vista all'altra in qualsiasi momento, anche a metà compilazione.
 
+### 1.2-bis Tendina CER nel formulario (sezione 6 — Caratteristiche del Rifiuto)
+- Il campo **Codice EER / CER** è una **tendina di ricerca** (`CerPickerField`): scrivi il codice o una parola della descrizione e scegli dalla lista.
+- Di default mostra i **CER preferiti** (quelli realmente movimentati); con la spunta **"Tutti i CER europei"** accedi all'intero catalogo. La ⭐ indica i preferiti, la **P** rossa i pericolosi.
+- Alla selezione la **descrizione del rifiuto si autocompila** (voce ufficiale del catalogo) e il codice viene normalizzato nel formato `17 04 05`.
+- La stessa tendina è presente nel **Modulo Alternativo**, direttamente sul riquadro CER del modulo fisico: la scelta compila anche il campo "Descrizione rifiuto" del modulo.
+- Poiché entrambe le viste scrivono sullo stesso record, il CER e la descrizione finiscono automaticamente nella **stampa del modulo ufficiale**, nel **documento di viaggio** e nel **riepilogo del trasporto** (e quindi in registri e giacenze al salvataggio definitivo).
+
 ### 1.3 Cancellazione e reset
 - Ogni bozza si elimina con l'icona **🗑 cestino** (soft delete `deleted_by_user`): registro e giacenze vengono **stornati automaticamente**.
 - Ogni sezione del modulo (Produttore, Destinatario, Trasportatore, Rifiuto, Quantità, Trasporto) ha il pulsante **gomma 🧽 "Cancella sezione"**: azzera solo quel blocco, lasciando intatto il resto.
