@@ -11,6 +11,7 @@ interface CerPickerFieldProps {
   overlay?: boolean;
   overlayStyle?: React.CSSProperties;
   inputClassName?: string;
+  inputStyle?: React.CSSProperties;
   label?: string;
 }
 
@@ -29,6 +30,7 @@ export function CerPickerField({
   overlay = false,
   overlayStyle,
   inputClassName,
+  inputStyle,
   label,
 }: CerPickerFieldProps) {
   const { preferiti, tutti } = useConferimentoCerOptions();
@@ -87,7 +89,7 @@ export function CerPickerField({
           inputClassName ??
           "w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary"
         }
-        style={overlay ? { width: "100%", height: "100%" } : undefined}
+        style={overlay ? { width: "100%", height: "100%", ...inputStyle } : inputStyle}
       />
 
       {open && (
