@@ -8,6 +8,8 @@ import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
+import { resolveFirQrDataUrl, buildPageDecorationsHtml } from "@/lib/firPrintDecorations";
+
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
@@ -1464,66 +1466,45 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       )}
 
 
-      {printOnly ? (
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            onClick={() => {
-              const printWindow = window.open("", "_blank");
-              if (!printWindow) return;
-              const container = containerRef.current;
-              if (!container) return;
-              const cloned = container.cloneNode(true) as HTMLElement;
-              // Remove borders from inputs and make them look printed
-              cloned.querySelectorAll("input, textarea").forEach((el) => {
-                const htmlEl = el as HTMLInputElement | HTMLTextAreaElement;
-                htmlEl.style.border = "none";
-                htmlEl.style.outline = "none";
-                htmlEl.style.background = "transparent";
-                // Replace inputs with spans for print
+      <div className="flex justify-end gap-3 pt-2">
+        <button
+          onClick={async () => {
+            const container = containerRef.current;
+            if (!container) return;
+            const numeroToPrint = canonicalNumeroFir || presetNumeroFir || "";
+            const qrDataUrl = numeroToPrint ? await resolveFirQrDataUrl(numeroToPrint, rentriCliente) : null;
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return;
+            const decorations = buildPageDecorationsHtml({
+              numeroFir: numeroToPrint,
+              cliente: rentriCliente,
+              qrDataUrl,
+            });
+            // Build all 3 pages for print
+            const allPagesHtml = [1, 2, 3].map(pageNum => {
+              const pageContainer = document.createElement("div");
+              pageContainer.style.cssText = "position:relative;page-break-after:always;";
+              const img = document.createElement("img");
+              img.src = PAGE_IMAGES[pageNum - 1];
+              img.style.cssText = "width:100%;height:auto;display:block;";
+              pageContainer.appendChild(img);
+              // Render fields for this page
+              fields.filter(f => f.page === pageNum).forEach(field => {
+                const isNumero = isNumeroFirFieldName(field.name);
+                const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
+                if (!val) return;
+                if (isNumero) return; // il numero viene stampato dalle decorazioni (alto e basso a destra)
                 const span = document.createElement("span");
-                span.textContent = htmlEl.value;
-                span.style.cssText = htmlEl.style.cssText;
-                span.style.position = "absolute";
-                span.style.left = htmlEl.style.left;
-                span.style.top = htmlEl.style.top;
-                span.style.width = htmlEl.style.width;
-                span.style.height = htmlEl.style.height;
-                htmlEl.parentNode?.replaceChild(span, htmlEl);
+                span.textContent = val;
+                span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
+                pageContainer.appendChild(span);
               });
-              // Build all 3 pages for print
-              const numeroToPrint = canonicalNumeroFir || presetNumeroFir || "";
-              const allPagesHtml = [1, 2, 3].map(pageNum => {
-                const pageContainer = document.createElement("div");
-                pageContainer.style.cssText = "position:relative;page-break-after:always;";
-                const img = document.createElement("img");
-                img.src = PAGE_IMAGES[pageNum - 1];
-                img.style.cssText = "width:100%;height:auto;display:block;";
-                pageContainer.appendChild(img);
-                let numeroRendered = false;
-                // Render fields for this page
-                fields.filter(f => f.page === pageNum).forEach(field => {
-                  const isNumero = isNumeroFirFieldName(field.name);
-                  const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
-                  if (!val) return;
-                  if (isNumero) numeroRendered = true;
-                  const span = document.createElement("span");
-                  span.textContent = val;
-                  span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
-                  pageContainer.appendChild(span);
-                });
-                // Fallback: se il template non ha un campo "numero FIR", stampalo comunque in alto a destra
-                if (!numeroRendered && numeroToPrint) {
-                  const span = document.createElement("span");
-                  span.textContent = `N. ${numeroToPrint}`;
-                  span.style.cssText = "position:absolute;left:60%;top:3%;width:38%;font-family:monospace;font-weight:bold;font-size:clamp(9px,2.1vw,13px);color:#1a1a2e;white-space:nowrap;text-align:right;";
-                  pageContainer.appendChild(span);
-                }
-                return pageContainer.outerHTML;
-              }).join("");
+              return pageContainer.outerHTML.replace(/<\/div>$/, `${decorations}</div>`);
+            }).join("");
 
-              const signatureBlock = `
+            const signatureBlock = `
                 <div style="position:relative;page-break-before:always;padding:24mm 15mm;font-family:Arial,Helvetica,sans-serif;color:#111;">
-                  <h2 style="margin:0 0 6mm 0;font-size:16pt;letter-spacing:1px;">FIR N. ${presetNumeroFir || ""} — Timbri e Firme</h2>
+                  <h2 style="margin:0 0 6mm 0;font-size:16pt;letter-spacing:1px;">FIR N. ${numeroToPrint} — Timbri e Firme</h2>
                   <p style="margin:0 0 10mm 0;font-size:10pt;color:#333;">Spazi riservati alla firma autografa e all'apposizione dei timbri dei soggetti coinvolti nel trasporto.</p>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12mm 10mm;">
                     ${["Produttore / Detentore","Trasportatore","Destinatario","Intermediario / Commerciante"].map(role => `
@@ -1543,20 +1524,21 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                     `).join("")}
                   </div>
                 </div>`;
-              printWindow.document.write(`<html><head><title>FIR ${presetNumeroFir || ""}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}${signatureBlock}</body></html>`);
-              printWindow.document.close();
+            printWindow.document.write(`<html><head><title>FIR ${numeroToPrint}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${allPagesHtml}${signatureBlock}</body></html>`);
+            printWindow.document.close();
 
-              setTimeout(() => {
-                printWindow.print();
-                onPrinted?.();
-              }, 600);
-            }}
-            className="px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2"
-          >
-            <Printer className="h-4 w-4" /> STAMPA TUTTE LE PAGINE
-          </button>
-        </div>
-      ) : !disableRentriActions ? (
+            setTimeout(() => {
+              printWindow.print();
+              onPrinted?.();
+            }, 800);
+          }}
+          className="px-6 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary font-display text-sm tracking-wider hover:bg-primary/30 transition-colors flex items-center gap-2"
+        >
+          <Printer className="h-4 w-4" /> STAMPA FORMULARIO
+        </button>
+      </div>
+
+      {!printOnly && !disableRentriActions ? (
         <FIRRentriActions
           cliente={rentriCliente}
           formData={values as Record<string, string | boolean>}
@@ -1567,6 +1549,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           }}
         />
       ) : null}
+
     </div>
   );
 }

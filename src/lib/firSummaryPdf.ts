@@ -4,6 +4,7 @@
  */
 import { jsPDF } from "jspdf";
 import type { FIRDataStore } from "@/stores/firStore";
+import { buildVidimazioneLabel, type PrintCliente } from "@/lib/firPrintDecorations";
 
 const STATO_MAP: Record<string, string> = {
   "1": "Solido pulverulento",
@@ -16,7 +17,10 @@ const STATO_MAP: Record<string, string> = {
 
 interface SummaryOptions {
   qrCodeBase64?: string;
+  cliente?: PrintCliente | null;
+  producedAt?: Date;
 }
+
 
 export async function generateFIRSummaryPdf(
   data: FIRDataStore,
@@ -142,6 +146,32 @@ export async function generateFIRSummaryPdf(
   if (data.percorsoDiverso) row("Percorso:", data.percorsoDiverso);
   separator();
 
+  // ── Annotazioni: vidimazione virtuale + numero FIR ──
+  y += 4;
+  sectionTitle("17. ANNOTAZIONI");
+  doc.setTextColor(30, 30, 30);
+  doc.setFont("Helvetica", "normal");
+  doc.setFontSize(7.5);
+  const vidLines = doc.splitTextToSize(
+    buildVidimazioneLabel(options.cliente, options.producedAt),
+    contentW - 34,
+  );
+  doc.text(vidLines, margin + 2, y);
+  y += vidLines.length * 4 + 2;
+
+  // QR RENTRI 28x28 mm in basso a destra + numero FIR sotto
+  if (options.qrCodeBase64) {
+    try {
+      doc.addImage(options.qrCodeBase64, "PNG", W - margin - 28, 232, 28, 28);
+    } catch (e) {
+      console.warn("QR code image failed:", e);
+    }
+  }
+  doc.setTextColor(0, 0, 128);
+  doc.setFont("Courier", "bold");
+  doc.setFontSize(11);
+  doc.text(data.selectedFirNumber || "", W - margin, 266, { align: "right" });
+
   // ── Footer ──
   y += 5;
   doc.setTextColor(150, 150, 150);
@@ -149,6 +179,7 @@ export async function generateFIRSummaryPdf(
   doc.setFontSize(7);
   doc.text("Documento generato automaticamente - Riepilogo non sostitutivo del formulario ministeriale", margin, 285);
   doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, W - margin, 285, { align: "right" });
+
 
   return doc.output("blob");
 }

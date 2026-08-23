@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw } from "lucide-react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer } from "lucide-react";
+import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
+
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
@@ -845,9 +847,15 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
+  const printCliente = () => {
+    try { return String(resolveSocietaId(activeTenantId, activeMnContext) || "multy"); } catch { return "multy"; }
+  };
+
   const handleDownloadSummaryPdf = async () => {
     try {
-      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
+      const numero = d.selectedFirNumber || "";
+      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -859,6 +867,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.error("Errore generazione PDF: " + error.message);
     }
   };
+
+  /** Stampa diretta del formulario (anche vuoto/bozza) con numero FIR, dicitura vidimazione e QR RENTRI. */
+  const handlePrintFormulario = async () => {
+    try {
+      const numero = d.selectedFirNumber || "";
+      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) { toast.error("Consenti i popup per stampare il formulario"); return; }
+      w.addEventListener("load", () => setTimeout(() => w.print(), 400));
+      toast.success("Formulario pronto per la stampa");
+    } catch (error: any) {
+      toast.error("Errore stampa: " + error.message);
+    }
+  };
+
 
   const handleArrivato = () => {
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
@@ -1116,9 +1141,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Action Buttons — only when active and NOT closed */}
       {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="space-y-2">
+          <button onClick={() => void handlePrintFormulario()} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
+            <Printer className="h-3.5 w-3.5" /> STAMPA FORMULARIO (QR RENTRI)
+          </button>
           <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
           </button>
+
           <div className="flex gap-2">
             <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
               <Plus className="h-4 w-4" /> Nuovo FIR
