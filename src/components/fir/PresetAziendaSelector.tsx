@@ -473,13 +473,15 @@ export function PresetAziendaSelector({
     setAutId("");
   };
 
-  // Il produttore può avere propri estremi autorizzativi. Mostriamo solo record
-  // realmente collegati all'azienda scelta: quelli marcati PRODUTTORE e quelli
-  // importati con una tipologia normativa, mai autorizzazioni di altri ruoli.
+  // Le autorizzazioni importate sono classificate per natura del titolo
+  // (DESTINATARIO/TRASPORTATORE/INTERMEDIARIO), non per ruolo occupato
+  // dall'azienda nel FIR corrente. Nel database non esistono righe con tipo
+  // PRODUTTORE: filtrare quei tipi nel riquadro produttore nascondeva quindi
+  // tutte le autorizzazioni realmente collegate all'azienda selezionata.
   const autsOrdinate = !ruolo
     ? dbAuts
     : ruolo === "PRODUTTORE"
-      ? dbAuts.filter((a) => !["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"].includes(String(a.tipo || "").toUpperCase()))
+      ? dbAuts
       : dbAuts.filter((a) => String(a.tipo || "").toUpperCase() === ruolo);
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
