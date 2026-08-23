@@ -277,7 +277,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
             destinatarioDenominazione: dbData.destinatario_denominazione || "",
             destinatarioUnitaLocale: dbData.destinatario_indirizzo || "",
             destinatarioCF: dbData.destinatario_codice_fiscale || "",
-            destinatarioNumeroAut: dbData.destinatario_autorizzazione || "",
+            
             trasportatoreDenominazione: dbData.trasportatore_denominazione || "",
             trasportatoreCF: dbData.trasportatore_codice_fiscale || "",
             trasportatoreNumeroAlbo: dbData.trasportatore_iscrizione_albo || "",
