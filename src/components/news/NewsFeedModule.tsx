@@ -85,9 +85,10 @@ export function NewsFeedModule() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Feed */}
-      <div className="xl:col-span-2 space-y-4">
+      <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -133,13 +134,14 @@ export function NewsFeedModule() {
       </div>
 
       {/* AI */}
-      <div className="space-y-3">
-        <Card className="p-4 sticky top-4">
+      <div className="space-y-3 order-1 lg:order-2">
+        <Card className="p-4 lg:sticky lg:top-4 border-primary/40 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 font-semibold">
               <Sparkles className="w-4 h-4 text-primary" />
               AI News Analyst
             </div>
+
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={clearChat} aria-label="Svuota chat">
                 <Trash2 className="w-4 h-4" />
