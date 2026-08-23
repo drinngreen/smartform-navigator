@@ -845,9 +845,15 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
+  const printCliente = () => {
+    try { return String(resolveSocietaId(activeTenantId, activeMnContext) || "multy"); } catch { return "multy"; }
+  };
+
   const handleDownloadSummaryPdf = async () => {
     try {
-      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qrCodeData || undefined });
+      const numero = d.selectedFirNumber || "";
+      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -859,6 +865,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.error("Errore generazione PDF: " + error.message);
     }
   };
+
+  /** Stampa diretta del formulario (anche vuoto/bozza) con numero FIR, dicitura vidimazione e QR RENTRI. */
+  const handlePrintFormulario = async () => {
+    try {
+      const numero = d.selectedFirNumber || "";
+      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, "_blank");
+      if (!w) { toast.error("Consenti i popup per stampare il formulario"); return; }
+      w.addEventListener("load", () => setTimeout(() => w.print(), 400));
+      toast.success("Formulario pronto per la stampa");
+    } catch (error: any) {
+      toast.error("Errore stampa: " + error.message);
+    }
+  };
+
 
   const handleArrivato = () => {
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
