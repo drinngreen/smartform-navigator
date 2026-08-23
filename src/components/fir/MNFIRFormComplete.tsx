@@ -653,6 +653,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     toast.success(`FIR ${form.numero_fir || "senza numero"} aperto`);
   };
 
+  const handleResetForm = () => {
+    if (!window.confirm("Sei sicuro di voler svuotare il formulario?\n\nTutti i dati inseriti verranno cancellati e potrai iniziare da zero.")) return;
+    store.resetForm();
+    toast.info("🧹 Formulario svuotato");
+  };
+
   const validateDeparture = (): string[] => {
     const errors: string[] = [];
     if (!d.targaAutomezzo.trim()) errors.push("Targa Automezzo");
