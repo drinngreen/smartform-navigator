@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
+import { printOfficialFir } from "@/lib/firOfficialPrint";
 
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
@@ -1147,8 +1148,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Action Buttons — only when active and NOT closed */}
       {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="space-y-2">
-          <button onClick={() => void handlePrintFormulario()} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
-            <Printer className="h-3.5 w-3.5" /> STAMPA FORMULARIO (QR RENTRI)
+          <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
+            <Printer className="h-3.5 w-3.5" /> STAMPA MODULO UFFICIALE (QR RENTRI)
           </button>
           <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
