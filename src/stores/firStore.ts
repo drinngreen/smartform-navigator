@@ -108,6 +108,9 @@ export interface FIRDataStore {
   dataOraArrivo: string;
   inAttesaVerificaAnalitica: boolean;
 
+  // Formato del formulario: digitale (RENTRI) oppure cartaceo
+  formatoFir: "digitale" | "cartaceo";
+
   // Campo 17 - Annotazioni
   annotazioni: string;
 
