@@ -10,25 +10,30 @@ interface Source {
   name: string;
   category: "rentri" | "normativa" | "settore" | "generale";
   url: string;
+  type?: "rss" | "rentri-html";
 }
 
+const bing = (q: string) => `https://www.bing.com/news/search?q=${encodeURIComponent(q)}&format=RSS&setmkt=it-IT&setlang=it`;
+
 const SOURCES: Source[] = [
-  // RENTRI ufficiale (via Google News, il portale non espone RSS)
-  { id: "rentri-gov", name: "RENTRI (portale)", category: "rentri", url: "https://news.google.com/rss/search?q=site:rentri.gov.it&hl=it&gl=IT&ceid=IT:it" },
-  { id: "rentri-news", name: "RENTRI news", category: "rentri", url: "https://news.google.com/rss/search?q=RENTRI+rifiuti+registro+elettronico&hl=it&gl=IT&ceid=IT:it" },
+  // RENTRI ufficiale (scraping del portale: non espone RSS)
+  { id: "rentri-portale", name: "Portale RENTRI (rentri.gov.it)", category: "rentri", url: "https://www.rentri.gov.it/", type: "rentri-html" },
+  { id: "rentri-news", name: "RENTRI news", category: "rentri", url: bing("RENTRI rifiuti registro elettronico tracciabilità") },
+  { id: "rentri-site", name: "RENTRI (rassegna)", category: "rentri", url: bing("site:rentri.gov.it") },
   // Normativa
-  { id: "normativa", name: "Normativa rifiuti", category: "normativa", url: "https://news.google.com/rss/search?q=normativa+rifiuti+decreto+ambiente+Italia&hl=it&gl=IT&ceid=IT:it" },
-  { id: "albo", name: "Albo Gestori Ambientali", category: "normativa", url: "https://news.google.com/rss/search?q=%22Albo+Nazionale+Gestori+Ambientali%22&hl=it&gl=IT&ceid=IT:it" },
-  { id: "formulario", name: "FIR & MUD", category: "normativa", url: "https://news.google.com/rss/search?q=formulario+identificazione+rifiuti+OR+MUD+OR+%22registro+carico+scarico%22&hl=it&gl=IT&ceid=IT:it" },
+  { id: "normativa", name: "Normativa rifiuti", category: "normativa", url: bing("normativa rifiuti decreto ambiente Italia") },
+  { id: "albo", name: "Albo Gestori Ambientali", category: "normativa", url: bing('"Albo Nazionale Gestori Ambientali"') },
+  { id: "formulario", name: "FIR, MUD e registri", category: "normativa", url: bing("formulario identificazione rifiuti FIR MUD registro carico scarico") },
   // Settore
+  { id: "circolare", name: "Economia circolare", category: "settore", url: bing("economia circolare riciclo rifiuti impianti") },
+  { id: "trasporto", name: "Trasporto rifiuti", category: "settore", url: bing("trasporto rifiuti autotrasporto ambientale imprese") },
   { id: "ricicla", name: "Ricicla.tv", category: "settore", url: "https://www.ricicla.tv/feed/" },
   { id: "rifiutiweb", name: "RifiutiWeb", category: "settore", url: "https://www.rifiutiweb.it/feed/" },
-  { id: "econonomia", name: "Eco-nomia", category: "settore", url: "https://www.eco-nomia.it/feed/" },
-  { id: "circolare", name: "Economia circolare", category: "settore", url: "https://news.google.com/rss/search?q=economia+circolare+riciclo+rifiuti+impianti&hl=it&gl=IT&ceid=IT:it" },
   // Generale
-  { id: "ansa-ambiente", name: "ANSA Ambiente", category: "generale", url: "https://www.ansa.it/canale_ambiente/notizie/rifiuti_riciclo/rifiuti_riciclo_rss.xml" },
-  { id: "generale", name: "Ambiente Italia", category: "generale", url: "https://news.google.com/rss/search?q=rifiuti+ambiente+Italia&hl=it&gl=IT&ceid=IT:it" },
+  { id: "generale", name: "Ambiente Italia", category: "generale", url: bing("rifiuti ambiente Italia") },
+  { id: "sanzioni", name: "Controlli e sanzioni", category: "generale", url: bing("sanzioni rifiuti controlli ambientali NOE sequestro") },
 ];
+
 
 function decode(s: string): string {
   return s
