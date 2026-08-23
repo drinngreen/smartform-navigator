@@ -178,8 +178,10 @@ export function mapFormToRentriPayload(
     dati_partenza: {
       numero_fir: str("numero_fir"),
       produttore: {
-        denominazione: str("prod_denominazione") || cfg.issuer,
-        codice_fiscale: str("prod_cf") || cfg.issuer,
+        // Mai sostituire il produttore con l'emittente RENTRI: sono soggetti
+        // distinti e il fallback generava dati non dichiarati nel formulario.
+        denominazione: str("prod_denominazione"),
+        codice_fiscale: str("prod_cf"),
         nazione_id: "IT",
         indirizzo: {
           citta: { comune_id: "" },

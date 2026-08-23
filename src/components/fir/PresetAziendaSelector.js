@@ -259,6 +259,9 @@ export function PresetAziendaSelector({ label = "Preset azienda", ruolo, initial
         };
     }, [clienteId, clienteIds]);
     const selectAnagrafica = async (r) => {
+        onSelectAutorizzazione({ numero: "", tipo: "", data: "" });
+        setDbAuts([]);
+        setLoadingDeps(true);
         onSelectAzienda({
             nome: r.ragione_sociale || "",
             indirizzo: fmtIndirizzo(r),
@@ -275,6 +278,9 @@ export function PresetAziendaSelector({ label = "Preset azienda", ruolo, initial
         setClienteIds(await resolveClienteIds(r));
     };
     const selectAzienda = async (key) => {
+        onSelectAutorizzazione({ numero: "", tipo: "", data: "" });
+        setDbAuts([]);
+        setLoadingDeps(true);
         setAziendaKey(key);
         setAutId("");
         setAuts(key ? getAutorizzazioni(key) : []);
@@ -335,10 +341,11 @@ export function PresetAziendaSelector({ label = "Preset azienda", ruolo, initial
         setAuts(getAutorizzazioni(key));
         setAutId("");
     };
-    // autorizzazioni del ruolo prima, poi tutte le altre
-    const autsOrdinate = ruolo && ruolo !== "PRODUTTORE"
-        ? dbAuts.filter((a) => a.tipo === ruolo)
-        : dbAuts;
+    // Nessun fallback tra ruoli: il produttore non deve ereditare autorizzazioni
+    // registrate per la stessa azienda come destinatario o trasportatore.
+    const autsOrdinate = !ruolo || ruolo === "PRODUTTORE"
+        ? []
+        : dbAuts.filter((a) => a.tipo === ruolo);
     const selectCls = "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
     return (_jsxs("div", { className: "rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2", children: [_jsxs("label", { className: "text-[10px] text-primary font-mono uppercase tracking-wider block", children: ["\u2699 ", label] }), _jsxs("select", { value: aziendaKey, onChange: (e) => selectAzienda(e.target.value), className: selectCls, children: [_jsx("option", { value: "", children: "-- Preset Multyproget / Niyol --" }), AZIENDE_PRESETS.map((a) => (_jsx("option", { value: a.key, children: a.nome }, a.key)))] }), ruolo && ruolo !== "PRODUTTORE" && (_jsxs("select", { value: "", onChange: (e) => {
                     const selected = roleCompanies.find((company) => company.id === e.target.value);
