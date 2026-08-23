@@ -66,6 +66,7 @@ const navItems: NavItem[] = [
   { label: "Intermediazione", iconImage: intermediazionIcon, path: "/intermediazione", color: "168, 85, 247" },
   { label: "Dark Lemon", iconImage: zoliLemonIcon, path: "/zoli-dark-lemon", color: "59, 130, 246" },
   { label: "System Prompt", iconImage: systemPromptIcon, path: "/system-prompt", color: "251, 191, 36" },
+  { label: "News", iconImage: iconAnalytics, path: "/news", color: "14, 165, 233" },
 ];
 
 const allContexts = [
