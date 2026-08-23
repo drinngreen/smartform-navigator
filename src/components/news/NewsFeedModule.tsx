@@ -48,11 +48,15 @@ function ArticleCard({ a }: { a: NewsArticle }) {
           </a>
           {a.summary && <p className="text-sm text-muted-foreground mt-1.5 line-clamp-3">{a.summary}</p>}
         </div>
-        <Button asChild variant="ghost" size="icon" className="shrink-0">
-          <a href={a.link} target="_blank" rel="noopener noreferrer" aria-label="Apri notizia">
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        </Button>
+        <a
+          href={a.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Apri notizia"
+          className="shrink-0 p-2 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
       </div>
     </Card>
   );
