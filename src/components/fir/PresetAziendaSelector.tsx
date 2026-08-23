@@ -673,7 +673,7 @@ export function PresetAziendaSelector({
             )}
           </div>
 
-          {ruolo !== "PRODUTTORE" && autsOrdinate.length === 0 && auts.length === 0 && !adding && (
+          {autsOrdinate.length === 0 && auts.length === 0 && !adding && (
             <p className="text-[10px] text-white/50">
               Nei file importati non risulta alcun numero di autorizzazione per questo ruolo: usa ＋ per aggiungerlo.
             </p>
