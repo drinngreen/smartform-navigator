@@ -36,12 +36,12 @@ export function useNewsRifiuti() {
   const [messages, setMessages] = useState<NewsAIMessage[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
 
-  const loadFeed = useCallback(async () => {
+  const loadFeed = useCallback(async (force = false) => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("news-rifiuti", {
-        body: { action: "feed" },
+        body: { action: "feed", force },
       });
       if (fnError) throw new Error(fnError.message);
       if (data?.error) throw new Error(data.error);
@@ -57,6 +57,9 @@ export function useNewsRifiuti() {
 
   useEffect(() => {
     loadFeed();
+    // auto-refresh completo ogni 10 minuti
+    const t = setInterval(() => loadFeed(true), 10 * 60 * 1000);
+    return () => clearInterval(t);
   }, [loadFeed]);
 
   const askAI = useCallback(

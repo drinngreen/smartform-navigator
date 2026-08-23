@@ -94,7 +94,7 @@ export function NewsFeedModule() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cerca nelle news…" className="pl-9" />
           </div>
-          <Button variant="outline" onClick={loadFeed} disabled={loading} className="gap-2">
+          <Button variant="outline" onClick={() => loadFeed(true)} disabled={loading} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Aggiorna
           </Button>
