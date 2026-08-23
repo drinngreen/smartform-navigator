@@ -507,6 +507,17 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const params = useParams<{ context?: string }>();
 
   const tenantContext = useMemo((): string => {
+    // 1) tenant esplicito (moduli dev/ufficio Niyol e Multyproget)
+    if (tenantIdProp) {
+      const explicit = Object.keys(TENANT_ID_MAP).find((k) => TENANT_ID_MAP[k] === tenantIdProp);
+      if (explicit) return explicit === "global" ? "global" : explicit;
+    }
+    // 2) bozza già esistente con tenant salvato
+    const draftTenant = (draftData as any)?.tenant_id as string | undefined;
+    if (draftTenant) {
+      const fromDraft = Object.keys(TENANT_ID_MAP).find((k) => TENANT_ID_MAP[k] === draftTenant);
+      if (fromDraft) return fromDraft;
+    }
     if (params.context) {
       if (params.context.includes("niyol")) return "niyol";
       if (params.context.includes("multy")) return "multyproget";
