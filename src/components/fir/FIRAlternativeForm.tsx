@@ -485,11 +485,13 @@ interface FIRAlternativeFormProps {
   blankPrint?: boolean;
   disableRentriActions?: boolean;
   registryMovementType?: "Carico" | "Scarico";
+  /** Tenant proprietario del formulario: forza società/QR/vidimazione (Multyproget vs Niyol). */
+  tenantId?: string;
   onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, tenantId: tenantIdProp, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
 
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
@@ -505,18 +507,29 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
   const params = useParams<{ context?: string }>();
 
   const tenantContext = useMemo((): string => {
+    // 1) tenant esplicito (moduli dev/ufficio Niyol e Multyproget)
+    if (tenantIdProp) {
+      const explicit = Object.keys(TENANT_ID_MAP).find((k) => TENANT_ID_MAP[k] === tenantIdProp);
+      if (explicit) return explicit === "global" ? "global" : explicit;
+    }
+    // 2) bozza già esistente con tenant salvato
+    const draftTenant = (draftData as any)?.tenant_id as string | undefined;
+    if (draftTenant) {
+      const fromDraft = Object.keys(TENANT_ID_MAP).find((k) => TENANT_ID_MAP[k] === draftTenant);
+      if (fromDraft) return fromDraft;
+    }
     if (params.context) {
       if (params.context.includes("niyol")) return "niyol";
       if (params.context.includes("multy")) return "multyproget";
       if (params.context.includes("global")) return "global";
     }
 
-    if (location.pathname.includes("/mn/app/niyol")) return "niyol";
+    if (location.pathname.toLowerCase().includes("niyol")) return "niyol";
     if (location.pathname.includes("/mn/app/multyproget")) return "multyproget";
     if (location.pathname.includes("/app/")) return "global";
     if (location.pathname.includes("/mn/")) return "multyproget";
     return "global";
-  }, [location.pathname, params.context]);
+  }, [location.pathname, params.context, tenantIdProp, draftData]);
 
   const tenantInfo = TENANT_MAP[tenantContext] || TENANT_MAP.global;
   const rentriCliente = tenantInfo.cliente;
