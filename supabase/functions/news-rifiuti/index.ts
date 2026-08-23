@@ -187,7 +187,7 @@ serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.0-flash-001",
+          model: "openai/gpt-oss-120b",
           messages: [
             {
               role: "system",
