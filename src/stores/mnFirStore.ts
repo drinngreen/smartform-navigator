@@ -301,7 +301,6 @@ export const useMNFIRStore = create<MNFIRStore>()(
             oraRicezione: String(formData.ora_ricezione ?? formData.ora_fine_trasporto ?? destinationTime),
             // ── Sezioni recuperate dal form_data: senza queste, riaprendo una bozza
             //    i dati inseriti sparivano dal modulo e dalla stampa ufficiale ──
-            numeroRegistroSalvato: undefined as never,
             produttoreLuogoProduzioneDiverso: str(formData.produttore_luogo_produzione),
             produttoreNumeroAut: str(formData.produttore_numero_aut ?? formData.produttore_iscrizione_albo),
             produttoreTipoAut: str(formData.produttore_tipo_aut ?? formData.produttore_tipo),
