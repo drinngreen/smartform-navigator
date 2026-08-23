@@ -324,6 +324,12 @@ function getDraftValueForField(
     if (normalized === "intermodale") return getFormDataValue(formData, "intermodale");
     if (normalized === "analisi_rapporto_di_prova") return getFormDataValue(formData, "analisi_rapporto_di_prova");
     if (normalized === "classificazione_caratteristiche_chimico_fisiche") return getFormDataValue(formData, "classificazione_caratteristiche_chimico_fisiche");
+    if (normalized === "recupero_secondo_destinatario") return getFormDataValue(formData, "secondo_destinatario_operazione_R", "secondo_destinatario_operazione_r");
+    if (normalized === "smaltimento_secondo_destinatario") return getFormDataValue(formData, "secondo_destinatario_operazione_D", "secondo_destinatario_operazione_d");
+    if (normalized.includes("presa_in_carico_rimorchio")) {
+      return getFormDataValue(formData, "trasbordo_totale_presa_in_carico")
+        ?? getFormDataValue(formData, "trasbordo_totale_data_presa_carico", "trasbordoTotDataPresaCarico");
+    }
     if (normalized === "ir") return getFormDataValue(formData, "ir");
     if (normalized === "nc") return getFormDataValue(formData, "nc");
     if (normalized === "a") return getFormDataValue(formData, "a");
