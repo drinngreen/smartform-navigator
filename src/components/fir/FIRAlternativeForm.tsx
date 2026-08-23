@@ -485,11 +485,13 @@ interface FIRAlternativeFormProps {
   blankPrint?: boolean;
   disableRentriActions?: boolean;
   registryMovementType?: "Carico" | "Scarico";
+  /** Tenant proprietario del formulario: forza società/QR/vidimazione (Multyproget vs Niyol). */
+  tenantId?: string;
   onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, tenantId: tenantIdProp, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
 
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
