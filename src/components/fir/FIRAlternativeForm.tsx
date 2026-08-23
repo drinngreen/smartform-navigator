@@ -1501,6 +1501,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                       if (descField && descrizione) handleChange(descField.id, descrizione);
                     }}
                     inputClassName=""
+                    inputStyle={{
+                      background: "rgba(56, 189, 248, 0.14)",
+                      border: "1px solid rgba(56, 189, 248, 0.55)",
+                      borderRadius: "2px",
+                      color: "#0b2540",
+                      fontSize: dynamicFontSize(displayValue),
+                      fontFamily: "monospace",
+                      padding: "1px 3px",
+                      outline: "none",
+                    }}
                   />
                 );
               }
