@@ -46,7 +46,7 @@ function buildPagesHtml(
   fields: TemplateField[],
   values: Record<string, string | boolean>,
   numeroFir: string,
-  decorations: string,
+  decorationsFor: (page: number) => string,
 ): string {
   return [1, 2, 3]
     .map((pageNum) => {
@@ -57,13 +57,14 @@ function buildPagesHtml(
           const raw = values[field.id];
           const val = typeof raw === "boolean" ? (raw ? "X" : "") : String(raw ?? "");
           if (!val) return "";
-          return `<span style="position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;">${escapeHtml(val)}</span>`;
+          return `<span style="position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:2.9mm;font-weight:600;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 1mm;">${escapeHtml(val)}</span>`;
         })
         .join("");
-      return `<div style="position:relative;page-break-after:always;"><img src="${PAGE_IMAGES[pageNum - 1]}" style="width:100%;height:auto;display:block;" />${inner}${decorations}</div>`;
+      return `<div style="position:relative;page-break-after:always;"><img src="${PAGE_IMAGES[pageNum - 1]}" style="width:100%;height:auto;display:block;" />${inner}${decorationsFor(pageNum)}</div>`;
     })
     .join("");
 }
+
 
 export interface OfficialPrintOptions {
   /** Dati del formulario (stessa forma del record `fir_forms`). */
