@@ -15,6 +15,7 @@ import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { CerPickerField } from "@/components/fir/CerPickerField";
+import { FirFormatoSelector, normalizeFormatoFir, type FormatoFir } from "@/components/fir/FirFormatoSelector";
 
 export interface TemplateField {
   id: string;
