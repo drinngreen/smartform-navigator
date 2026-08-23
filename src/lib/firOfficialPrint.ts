@@ -89,13 +89,18 @@ export async function printOfficialFir(options: OfficialPrintOptions): Promise<b
     ? await resolveFirQrDataUrl(numeroFir, options.cliente, { allowLocalFallback: true })
     : null;
 
-  const decorations = buildPageDecorationsHtml({
-    numeroFir,
-    cliente: options.cliente,
-    qrDataUrl,
-  });
+  const producedAt = new Date();
+  const decorationsFor = (page: number) =>
+    buildPageDecorationsHtml({
+      numeroFir,
+      cliente: options.cliente,
+      qrDataUrl,
+      producedAt,
+      page,
+    });
 
-  const pagesHtml = buildPagesHtml(fields, values as Record<string, string | boolean>, numeroFir, decorations);
+  const pagesHtml = buildPagesHtml(fields, values as Record<string, string | boolean>, numeroFir, decorationsFor);
+
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) return false;
