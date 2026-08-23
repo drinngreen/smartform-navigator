@@ -306,6 +306,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const creationSaveInFlight = useRef(false);
+  const lastAutosavedAtRef = useRef<string | null>(null);
   const [fatturaFrom, setFatturaFrom] = useState<
     { tenantId: string; emittente: string; righe: Riga[]; clienteFallback?: any } | null
   >(null);
@@ -465,9 +466,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
     if (firFormId && loadedFirFormId !== firFormId) return;
+    const updatedAt = useMNFIRStore.getState().lastUpdatedAt;
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+      lastAutosavedAtRef.current = updatedAt;
     } catch { /* silent */ }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
 
@@ -490,6 +493,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(useMNFIRStore.getState().data);
       await silentSaveFIR.mutateAsync({ id: String(draftId), ...dbFields });
       setLoadedFirFormId(String(draftId));
+      lastAutosavedAtRef.current = useMNFIRStore.getState().lastUpdatedAt;
     } catch (error: any) {
       toast.error("Autosalvataggio non riuscito: " + (error?.message || String(error)));
     } finally {
@@ -509,12 +513,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // crea la bozza persistente e poi la aggiorna.
   useEffect(() => {
     if (store.workflowStatus === "chiuso" || store.lastUpdatedBy !== "user") return;
+    if (!store.lastUpdatedAt || lastAutosavedAtRef.current === store.lastUpdatedAt) return;
     const timer = window.setTimeout(() => {
       if (useMNFIRStore.getState().editingFirId) void doAutosave();
       else void createAndAutosaveManualDraft();
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, [store.data, store.lastUpdatedBy, store.workflowStatus, doAutosave, createAndAutosaveManualDraft]);
+  }, [store.data, store.lastUpdatedAt, store.lastUpdatedBy, store.workflowStatus, doAutosave, createAndAutosaveManualDraft]);
 
   // ── Autofill Multyproget company data when tenant is Multy ─────────
   useEffect(() => {
