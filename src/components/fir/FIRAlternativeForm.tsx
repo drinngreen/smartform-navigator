@@ -1486,6 +1486,24 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               const isCanonicalNumeroField = isNumeroFirField(field);
               const displayValue = isCanonicalNumeroField ? canonicalNumeroFir : String(values[field.id] || "");
 
+              if (!printOnly && isCerFieldName(field.name)) {
+                return (
+                  <CerPickerField
+                    key={field.id}
+                    overlay
+                    overlayStyle={style}
+                    value={displayValue}
+                    onChange={(v) => handleChange(field.id, v)}
+                    onSelect={(codice, descrizione) => {
+                      handleChange(field.id, codice);
+                      const descField = findFieldByTokens(fields, ["descrizione", "rifiuto"]) ?? findFieldByTokens(fields, ["descrizione"]);
+                      if (descField && descrizione) handleChange(descField.id, descrizione);
+                    }}
+                    inputClassName=""
+                  />
+                );
+              }
+
               return (
                 <input
                   key={field.id}
