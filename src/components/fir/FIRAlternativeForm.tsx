@@ -425,8 +425,31 @@ function getDraftValueForField(
 
   if (hasTokens(field.name, ["classe", "pericolo"])) return getFormDataValue(formData, "classe_pericolo");
   if (hasTokens(field.name, ["numero", "colli"])) return getFormDataValue(formData, "numero_colli");
-  if (hasTokens(field.name, ["quantita", "residua"])) return getFormDataValue(formData, "trasbordo_parziale_quantita_residua");
-  if (hasTokens(field.name, ["riferimento", "formulario"])) return getFormDataValue(formData, "trasbordo_parziale_rif_formulario");
+  // ── Pagina 2: i blocchi hanno etichette abbreviate ("rif. nr formulario") e
+  //    ripetute (frazionamento 1 / 2): distinguiamo per blocco di appartenenza ──
+  const isSecondaRipetizione = normalized.includes("veicoli_2") || normalized.endsWith("_2");
+  if (normalized.includes("quantita_residua")) {
+    if (isFrazionamentoField || normalized.includes("veicoli")) {
+      return isSecondaRipetizione
+        ? getFormDataValue(formData, "frazionamento_2_quantita_residua", "trasbordo_parziale_2_quantita_residua")
+        : getFormDataValue(formData, "frazionamento_quantita_residua", "trasbordo_parziale_quantita_residua");
+    }
+    return getFormDataValue(formData, "trasbordo_parziale_quantita_residua");
+  }
+  if ((normalized.includes("rif_nr_formulario") || normalized.includes("rif_numero_di_formulario") || hasTokens(field.name, ["riferimento", "formulario"]))) {
+    if (isFrazionamentoField || normalized.includes("veicoli")) {
+      return isSecondaRipetizione
+        ? getFormDataValue(formData, "frazionamento_2_rif_formulario", "trasbordo_parziale_2_rif_formulario")
+        : getFormDataValue(formData, "frazionamento_rif_formulario", "trasbordo_parziale_rif_formulario");
+    }
+    return getFormDataValue(formData, "trasbordo_parziale_rif_formulario");
+  }
+  if (normalized.includes("quantita_accettata") && isSecondDestField) {
+    return getFormDataValue(formData, "secondo_destinatario_quantita_accettata", "dest2QuantitaAccettata");
+  }
+  if (normalized.includes("tipo_di_rifiuto") && isSecondDestField) {
+    return getFormDataValue(formData, "secondo_destinatario_codice_eer") || draft.codice_eer;
+  }
 
   if (hasTokens(field.name, ["denominazione", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_denominazione");
   if (hasTokens(field.name, ["unita", "locale", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_unita_locale");
