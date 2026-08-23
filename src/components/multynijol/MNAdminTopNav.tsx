@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, ChevronDown } from "lucide-react";
+import { LogOut, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import logoDragon from "@/assets/logo-dragon.png";
@@ -93,6 +93,12 @@ export function MNAdminTopNav() {
   const [subMenuOpen, setSubMenuOpen] = useState<string | null>(null);
   const [subMenuPos, setSubMenuPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const subMenuRef = useRef<HTMLDivElement>(null);
+  const navScrollRef = useRef<HTMLDivElement>(null);
+  const [navOverflow, setNavOverflow] = useState(false);
+
+  const scrollNav = (dir: -1 | 1) => {
+    navScrollRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
+  };
 
   // Detect current context from URL
   const currentContext = location.pathname.includes("/mn/admin/dev-multyproget") ? "dev-multyproget"
@@ -130,6 +136,15 @@ export function MNAdminTopNav() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  useEffect(() => {
+    const el = navScrollRef.current;
+    if (!el) return;
+    const check = () => setNavOverflow(el.scrollWidth > el.clientWidth + 8);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [location.pathname]);
 
   return (
     <div className="relative px-4 pt-3">
@@ -192,7 +207,25 @@ export function MNAdminTopNav() {
             )}
 
             {/* Nav items with PNG icons */}
-            <div className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-hide">
+            {navOverflow && (
+              <button
+                type="button"
+                onClick={() => scrollNav(-1)}
+                aria-label="Scorri menu a sinistra"
+                className="shrink-0 p-1 rounded-lg bg-secondary/60 text-white/80 hover:text-white hover:bg-secondary"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )}
+            <div
+              ref={navScrollRef}
+              onWheel={(e) => {
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && navScrollRef.current) {
+                  navScrollRef.current.scrollLeft += e.deltaY;
+                }
+              }}
+              className="flex items-center gap-1 flex-1 overflow-x-auto scrollbar-hide scroll-smooth"
+            >
               {isContextPage && navItems.map((item) => {
                 const href = item.path ? `${prefix}${item.path}` : prefix;
                 const active = item.subItems ? isSubRouteActive(item) : isRouteActive(href);
@@ -212,13 +245,13 @@ export function MNAdminTopNav() {
                           }
                         }}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
+                          "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
                           active
                             ? "bg-primary/20 text-white shadow-[0_0_20px_rgba(251,191,36,0.3)]"
                             : "text-white/70 hover:text-white hover:bg-secondary/50"
                         )}
                       >
-                        <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
+                        <img src={item.iconImage} alt={item.label} className="h-9 w-9 transition-transform duration-300 hover:scale-125" />
                         <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
                         <ChevronDown className="h-3 w-3 text-straw/60" />
                       </button>
@@ -259,18 +292,29 @@ export function MNAdminTopNav() {
                     to={href}
                     end={!item.path}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
+                      "flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300",
                       active
                         ? "bg-primary/20 text-white shadow-[0_0_20px_rgba(251,191,36,0.3)]"
                         : "text-white/70 hover:text-white hover:bg-secondary/50"
                     )}
                   >
-                    <img src={item.iconImage} alt={item.label} className="h-12 w-12 transition-transform duration-300 hover:scale-125" />
+                    <img src={item.iconImage} alt={item.label} className="h-9 w-9 transition-transform duration-300 hover:scale-125" />
                     <span className="text-straw font-light text-xs tracking-wide">{item.label}</span>
                   </NavLink>
                 );
               })}
             </div>
+
+            {navOverflow && (
+              <button
+                type="button"
+                onClick={() => scrollNav(1)}
+                aria-label="Scorri menu a destra"
+                className="shrink-0 p-1 rounded-lg bg-secondary/60 text-white/80 hover:text-white hover:bg-secondary animate-pulse"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
 
             {/* Profile & Logout */}
             <div className="flex items-center gap-2 ml-2">

@@ -134,7 +134,11 @@ async function fetchSource(s: Source) {
 }
 
 
-async function getFeed() {
+let feedCache: { data: any; at: number } | null = null;
+const FEED_TTL_MS = 5 * 60 * 1000;
+
+async function getFeed(force = false) {
+  if (!force && feedCache && Date.now() - feedCache.at < FEED_TTL_MS) return feedCache.data;
   const results = await Promise.all(SOURCES.map(fetchSource));
   const all = results.flatMap((r) => r.items);
   const seen = new Set<string>();
@@ -152,7 +156,9 @@ async function getFeed() {
     return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime();
   });
   const sources = SOURCES.map((s, i) => ({ id: s.id, name: s.name, category: s.category, count: results[i].items.length, error: results[i].error }));
-  return { articles: unique.slice(0, 120), sources, fetched_at: new Date().toISOString() };
+  const data = { articles: unique.slice(0, 120), sources, fetched_at: new Date().toISOString() };
+  feedCache = { data, at: Date.now() };
+  return data;
 }
 
 serve(async (req) => {
@@ -165,7 +171,7 @@ serve(async (req) => {
 
 
     if (action === "feed") {
-      const data = await getFeed();
+      const data = await getFeed(body.force === true);
       return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

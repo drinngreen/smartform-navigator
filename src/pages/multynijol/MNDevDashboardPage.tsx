@@ -40,7 +40,7 @@ import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule
 import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro, FileSpreadsheet, ClipboardList, Radar } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper } from "lucide-react";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -129,6 +129,17 @@ export default function MNDevDashboardPage() {
           <div>
             <div className="font-semibold text-sm text-violet-300">Centro App &amp; FIR</div>
             <div className="text-xs text-muted-foreground">Dipendenti Multyproget/Niyol con formulario sempre pronto</div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/news")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-sky-500/40 bg-card hover:bg-sky-500/10 transition-all text-left"
+        >
+          <Newspaper size={20} className="text-sky-400" />
+          <div>
+            <div className="font-semibold text-sm text-sky-300">News RENTRI &amp; Rifiuti</div>
+            <div className="text-xs text-muted-foreground">Feed normative, decreti e AI analista sulle notizie</div>
           </div>
         </button>
 
