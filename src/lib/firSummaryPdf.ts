@@ -4,6 +4,7 @@
  */
 import { jsPDF } from "jspdf";
 import type { FIRDataStore } from "@/stores/firStore";
+import { buildVidimazioneLabel, type PrintCliente } from "@/lib/firPrintDecorations";
 
 const STATO_MAP: Record<string, string> = {
   "1": "Solido pulverulento",
@@ -16,7 +17,10 @@ const STATO_MAP: Record<string, string> = {
 
 interface SummaryOptions {
   qrCodeBase64?: string;
+  cliente?: PrintCliente | null;
+  producedAt?: Date;
 }
+
 
 export async function generateFIRSummaryPdf(
   data: FIRDataStore,
