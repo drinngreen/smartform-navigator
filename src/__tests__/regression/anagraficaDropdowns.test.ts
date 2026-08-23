@@ -78,9 +78,9 @@ describe("tendine formulari - fonti dati anagrafica", () => {
     expect(src).not.toContain('autorizzazione produttore non richiesta');
   });
 
-  it("esclude dal produttore solo le autorizzazioni appartenenti agli altri ruoli FIR", () => {
-    expect(src).toContain('["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO"]');
-    expect(src).not.toMatch(/ruolo === "PRODUTTORE"\s*\? \[\]/);
+  it("non nasconde al produttore i titoli classificati per natura dell'autorizzazione", () => {
+    expect(src).toMatch(/ruolo === "PRODUTTORE"\s*\? dbAuts/);
+    expect(src).not.toMatch(/ruolo === "PRODUTTORE"[\s\S]{0,100}dbAuts\.filter/);
   });
 
   it("azzera l'autorizzazione precedente prima di caricare una nuova azienda", () => {
