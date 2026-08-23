@@ -45,6 +45,7 @@ function decode(s: string): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_m, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_m, d) => String.fromCharCode(Number(d)))
     .replace(/\s+/g, " ")
     .trim();
@@ -98,7 +99,9 @@ function parseRentriHtml(html: string, source: Source) {
     const headingText = headings.length ? decode(headings[headings.length - 1]) : "";
     const slugTitle = decodeURIComponent(href.split("/").pop() || "").replace(/-/g, " ");
     const title = headingText.length > 15 ? headingText : slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
-    if (!title) continue;
+    const segments = href.replace("https://www.rentri.gov.it/", "").split("/").filter(Boolean);
+    const isArticle = segments[0] === "news" || segments.length >= 3;
+    if (!title || title.length < 25 || !isArticle) continue;
     const paras = before.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
     const summary = paras.length ? decode(paras[paras.length - 1]).slice(0, 500) : "";
     items.push({
