@@ -1042,6 +1042,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         </div>
       )}
 
+      <FirFormatoSelector
+        value={d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
+        onChange={(value) => u("formatoFir", value)}
+        disabled={store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
+      />
+
+
+
       <div className="flex gap-1 bg-secondary/30 rounded-xl p-1">
         {tabs.map((tab, i) => (
           <button key={i} onClick={() => setActiveTab(i as 0 | 1 | 2)} className={`flex-1 py-2 rounded-lg text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors ${activeTab === i ? "bg-primary/20 text-primary font-semibold" : "text-white/50 hover:text-white"}`}>
