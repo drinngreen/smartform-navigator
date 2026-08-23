@@ -1488,13 +1488,16 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             const qrDataUrl = numeroToPrint ? await resolveFirQrDataUrl(numeroToPrint, rentriCliente) : null;
             const printWindow = window.open("", "_blank");
             if (!printWindow) return;
-            const decorations = buildPageDecorationsHtml({
-              numeroFir: numeroToPrint,
-              cliente: rentriCliente,
-              qrDataUrl,
-            });
+            const producedAt = new Date();
             // Build all 3 pages for print
             const allPagesHtml = [1, 2, 3].map(pageNum => {
+              const decorations = buildPageDecorationsHtml({
+                numeroFir: numeroToPrint,
+                cliente: rentriCliente,
+                qrDataUrl,
+                producedAt,
+                page: pageNum,
+              });
               const pageContainer = document.createElement("div");
               pageContainer.style.cssText = "position:relative;page-break-after:always;";
               const img = document.createElement("img");
@@ -1509,11 +1512,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
                 if (isNumero) return; // il numero viene stampato dalle decorazioni (alto e basso a destra)
                 const span = document.createElement("span");
                 span.textContent = val;
-                span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;`;
+                span.style.cssText = `position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:2.9mm;font-weight:600;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 1mm;`;
                 pageContainer.appendChild(span);
               });
               return pageContainer.outerHTML.replace(/<\/div>$/, `${decorations}</div>`);
             }).join("");
+
 
             const signatureBlock = `
                 <div style="position:relative;page-break-before:always;padding:24mm 15mm;font-family:Arial,Helvetica,sans-serif;color:#111;">
