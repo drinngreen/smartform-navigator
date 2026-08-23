@@ -654,10 +654,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
   const handleResetForm = () => {
-    if (!window.confirm("Sei sicuro di voler svuotare il formulario?\n\nTutti i dati inseriti verranno cancellati e potrai iniziare da zero.")) return;
-    store.resetForm();
-    toast.info("🧹 Formulario svuotato");
+    if (!window.confirm("Sei sicuro di voler svuotare il formulario?\n\nTutti i campi verranno azzerati ma resterai sul formulario da compilare.")) return;
+    const current = useMNFIRStore.getState();
+    // Svuota SOLO i campi, mantenendo il FIR aperto (numero, id, stato)
+    useMNFIRStore.setState({
+      data: {
+        ...mnInitialFIRData,
+        dataEmissione: new Date().toISOString().split("T")[0],
+        selectedFirNumber: current.data.selectedFirNumber,
+        numeroFir: (current.data as any).numeroFir ?? (mnInitialFIRData as any).numeroFir,
+      } as typeof current.data,
+      lastUpdatedBy: null,
+      lastUpdatedAt: null,
+      pendingFromAgent: false,
+    });
+    toast.info("🧹 Campi svuotati — formulario pronto da compilare");
   };
+
 
   const validateDeparture = (): string[] => {
     const errors: string[] = [];
