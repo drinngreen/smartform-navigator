@@ -8,6 +8,8 @@ import pag2 from "@/assets/formulario_pag_2.png";
 import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
+import { resolveFirQrDataUrl, buildPageDecorationsHtml } from "@/lib/firPrintDecorations";
+
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
