@@ -524,12 +524,12 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       if (params.context.includes("global")) return "global";
     }
 
-    if (location.pathname.includes("/mn/app/niyol")) return "niyol";
+    if (location.pathname.toLowerCase().includes("niyol")) return "niyol";
     if (location.pathname.includes("/mn/app/multyproget")) return "multyproget";
     if (location.pathname.includes("/app/")) return "global";
     if (location.pathname.includes("/mn/")) return "multyproget";
     return "global";
-  }, [location.pathname, params.context]);
+  }, [location.pathname, params.context, tenantIdProp, draftData]);
 
   const tenantInfo = TENANT_MAP[tenantContext] || TENANT_MAP.global;
   const rentriCliente = tenantInfo.cliente;
