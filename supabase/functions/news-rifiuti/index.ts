@@ -83,19 +83,53 @@ function parseFeed(xml: string, source: Source) {
   return items;
 }
 
+// Il portale RENTRI non espone RSS: estraiamo notizie/decreti dalla home ufficiale
+function parseRentriHtml(html: string, source: Source) {
+  const items: any[] = [];
+  const seen = new Set<string>();
+  const re = /<a[^>]+href="((?:https:\/\/www\.rentri\.gov\.it)?\/(?:it\/)?(?:news|decreti-direttoriali)\/[^"#]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) {
+    const href = m[1].startsWith("http") ? m[1] : `https://www.rentri.gov.it${m[1]}`;
+    if (seen.has(href)) continue;
+    seen.add(href);
+    const before = html.slice(Math.max(0, m.index - 2500), m.index);
+    const headings = before.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || [];
+    const headingText = headings.length ? decode(headings[headings.length - 1]) : "";
+    const slugTitle = decodeURIComponent(href.split("/").pop() || "").replace(/-/g, " ");
+    const title = headingText.length > 15 ? headingText : slugTitle.charAt(0).toUpperCase() + slugTitle.slice(1);
+    if (!title) continue;
+    const paras = before.match(/<p[^>]*>([\s\S]*?)<\/p>/gi) || [];
+    const summary = paras.length ? decode(paras[paras.length - 1]).slice(0, 500) : "";
+    items.push({
+      id: `${source.id}-${href}`.slice(0, 200),
+      title,
+      link: href,
+      summary,
+      published_at: null,
+      source_id: source.id,
+      source_name: source.name,
+      category: source.category,
+    });
+  }
+  return items.slice(0, 20);
+}
+
 async function fetchSource(s: Source) {
   try {
     const res = await fetch(s.url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; MultyprogetNewsBot/1.0)", Accept: "application/rss+xml, application/xml, text/xml, */*" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; MultyprogetNewsBot/1.0)", Accept: "application/rss+xml, application/xml, text/xml, text/html, */*" },
       signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return { items: [], error: `HTTP ${res.status}` };
-    const xml = await res.text();
-    return { items: parseFeed(xml, s), error: null };
+    const text = await res.text();
+    const items = s.type === "rentri-html" ? parseRentriHtml(text, s) : parseFeed(text, s);
+    return { items, error: items.length === 0 ? "nessun elemento" : null };
   } catch (e) {
     return { items: [], error: (e as Error).message };
   }
 }
+
 
 async function getFeed() {
   const results = await Promise.all(SOURCES.map(fetchSource));
