@@ -13,6 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
 import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
+import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
+import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
