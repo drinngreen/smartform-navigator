@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
+import { printOfficialFir } from "@/lib/firOfficialPrint";
 
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
@@ -868,17 +869,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
-  /** Stampa diretta del formulario (anche vuoto/bozza) con numero FIR, dicitura vidimazione e QR RENTRI. */
-  const handlePrintFormulario = async () => {
+  /**
+   * Stampa del MODULO UFFICIALE (3 pagine ministeriali) con i dati compilati fino a
+   * questo momento, numero FIR in alto/basso a destra, dicitura di vidimazione virtuale
+   * e QR Code RENTRI.
+   */
+  const handlePrintFormulario = async (blank = false) => {
     try {
       const numero = d.selectedFirNumber || "";
-      const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
-      const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, "_blank");
-      if (!w) { toast.error("Consenti i popup per stampare il formulario"); return; }
-      w.addEventListener("load", () => setTimeout(() => w.print(), 400));
-      toast.success("Formulario pronto per la stampa");
+      const dbFields = mapStoreToDatabaseFields(store.data) as any;
+      const ok = await printOfficialFir({
+        draft: { ...dbFields, id: store.editingFirId || undefined, numero_fir: numero },
+        numeroFir: numero,
+        cliente: printCliente(),
+        blank,
+      });
+      if (!ok) { toast.error("Consenti i popup per stampare il formulario"); return; }
+      toast.success(blank ? "Modulo vuoto pronto per la stampa" : "Modulo ufficiale pronto per la stampa");
     } catch (error: any) {
       toast.error("Errore stampa: " + error.message);
     }
@@ -1141,8 +1148,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Action Buttons — only when active and NOT closed */}
       {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="space-y-2">
-          <button onClick={() => void handlePrintFormulario()} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
-            <Printer className="h-3.5 w-3.5" /> STAMPA FORMULARIO (QR RENTRI)
+          <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
+            <Printer className="h-3.5 w-3.5" /> STAMPA MODULO UFFICIALE (QR RENTRI)
+          </button>
+          <button onClick={() => void handlePrintFormulario(true)} className="w-full py-2 rounded-2xl border border-slate-500/30 bg-slate-500/10 text-slate-300 font-display text-[11px] tracking-wider flex items-center justify-center gap-2 hover:bg-slate-500/20 transition-colors">
+            <Printer className="h-3.5 w-3.5" /> STAMPA MODULO VUOTO (con numero + QR)
           </button>
           <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
             <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO

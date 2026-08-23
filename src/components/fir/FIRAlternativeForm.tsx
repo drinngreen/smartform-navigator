@@ -14,7 +14,7 @@ import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 
-interface TemplateField {
+export interface TemplateField {
   id: string;
   name: string;
   type: "date" | "time" | "short_text" | "long_text" | "checkbox";
@@ -63,7 +63,7 @@ function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateF
   return fields.find((field) => hasTokens(field.name, tokens));
 }
 
-function isNumeroFirFieldName(fieldName: string): boolean {
+export function isNumeroFirFieldName(fieldName: string): boolean {
   return hasTokens(fieldName, ["numero", "fir"]) || hasTokens(fieldName, ["numero", "formulario"]);
 }
 
@@ -185,7 +185,7 @@ function toStatoFisicoLabel(value: unknown): string | null {
   return null;
 }
 
-interface FIRAlternativeDraftData {
+export interface FIRAlternativeDraftData {
   id?: string;
   numero_fir?: string | null;
   status?: string | null;
@@ -443,7 +443,7 @@ function getDraftValueForField(
   return null;
 }
 
-function buildDraftFieldValues(fields: TemplateField[], draft: FIRAlternativeDraftData) {
+export function buildDraftFieldValues(fields: TemplateField[], draft: FIRAlternativeDraftData) {
   const formData = draft.form_data && typeof draft.form_data === "object" && !Array.isArray(draft.form_data)
     ? draft.form_data as Record<string, unknown>
     : null;

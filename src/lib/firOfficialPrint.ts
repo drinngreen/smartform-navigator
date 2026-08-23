@@ -1,0 +1,108 @@
+/**
+ * Stampa del MODULO UFFICIALE del formulario (3 pagine ministeriali) con i dati
+ * compilati fino a quel momento, valida sia per il modulo alternativo sia per il
+ * modulo standard (MNFIRFormComplete).
+ *
+ * Le decorazioni obbligatorie (numero FIR in alto e in basso a destra, dicitura di
+ * vidimazione virtuale con data/ora di produzione e QR Code RENTRI 28x28 mm) sono
+ * prodotte da `firPrintDecorations`.
+ */
+import { supabase } from "@/lib/supabaseClient";
+import pag1 from "@/assets/formulario_pag_1.png";
+import pag2 from "@/assets/formulario_pag_2.png";
+import pag3 from "@/assets/formulario_pag_3.png";
+import {
+  buildDraftFieldValues,
+  isNumeroFirFieldName,
+  type TemplateField,
+  type FIRAlternativeDraftData,
+} from "@/components/fir/FIRAlternativeForm";
+import {
+  buildPageDecorationsHtml,
+  resolveFirQrDataUrl,
+  type PrintCliente,
+} from "@/lib/firPrintDecorations";
+
+const PAGE_IMAGES = [pag1, pag2, pag3];
+
+export async function loadOfficialTemplateFields(): Promise<TemplateField[]> {
+  const { data } = await supabase
+    .from("fir_form_templates")
+    .select("fields")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return ((data?.fields as unknown as TemplateField[]) || []).filter(Boolean);
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildPagesHtml(
+  fields: TemplateField[],
+  values: Record<string, string | boolean>,
+  numeroFir: string,
+  decorations: string,
+): string {
+  return [1, 2, 3]
+    .map((pageNum) => {
+      const inner = fields
+        .filter((f) => f.page === pageNum)
+        .map((field) => {
+          if (isNumeroFirFieldName(field.name)) return ""; // stampato dalle decorazioni
+          const raw = values[field.id];
+          const val = typeof raw === "boolean" ? (raw ? "X" : "") : String(raw ?? "");
+          if (!val) return "";
+          return `<span style="position:absolute;left:${field.x}%;top:${field.y}%;width:${field.width}%;height:${field.height}%;font-family:monospace;font-size:clamp(7px,1.8vw,11px);color:#1a1a2e;overflow:hidden;white-space:nowrap;padding:1px 3px;">${escapeHtml(val)}</span>`;
+        })
+        .join("");
+      return `<div style="position:relative;page-break-after:always;"><img src="${PAGE_IMAGES[pageNum - 1]}" style="width:100%;height:auto;display:block;" />${inner}${decorations}</div>`;
+    })
+    .join("");
+}
+
+export interface OfficialPrintOptions {
+  /** Dati del formulario (stessa forma del record `fir_forms`). */
+  draft: FIRAlternativeDraftData;
+  numeroFir?: string | null;
+  cliente?: PrintCliente | null;
+  /** Se true stampa il modulo vuoto (solo decorazioni + numero FIR). */
+  blank?: boolean;
+}
+
+/**
+ * Apre la finestra di stampa con il modulo ufficiale compilato.
+ * Ritorna false se il popup è stato bloccato.
+ */
+export async function printOfficialFir(options: OfficialPrintOptions): Promise<boolean> {
+  const { draft, blank } = options;
+  const numeroFir = String(options.numeroFir || draft.numero_fir || "").trim();
+
+  const fields = await loadOfficialTemplateFields();
+  const values = blank ? {} : buildDraftFieldValues(fields, draft);
+  const qrDataUrl = numeroFir
+    ? await resolveFirQrDataUrl(numeroFir, options.cliente, { allowLocalFallback: true })
+    : null;
+
+  const decorations = buildPageDecorationsHtml({
+    numeroFir,
+    cliente: options.cliente,
+    qrDataUrl,
+  });
+
+  const pagesHtml = buildPagesHtml(fields, values as Record<string, string | boolean>, numeroFir, decorations);
+
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return false;
+
+  printWindow.document.write(
+    `<html><head><title>FIR ${escapeHtml(numeroFir)}</title><style>@media print{@page{margin:5mm;size:A4;}body{margin:0;}}body{margin:0;padding:0;}</style></head><body>${pagesHtml}</body></html>`,
+  );
+  printWindow.document.close();
+  setTimeout(() => printWindow.print(), 800);
+  return true;
+}
