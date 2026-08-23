@@ -398,12 +398,15 @@ function getDraftValueForField(
   if (normalized === "unita_locale_indirizzo_detentore") return getFormDataValue(formData, "detentore_unita_locale", "detentore_indirizzo");
   if (normalized === "codice_fiscale_detentore") return getFormDataValue(formData, "detentore_codice_fiscale", "detentore_cf");
 
-  if (isProduttoreDenominationField(field.name)) return draft.produttore_denominazione;
-  if (isProduttoreCfField(field.name)) return draft.produttore_codice_fiscale;
-  if (isProduttoreAddressField(field.name)) return draft.produttore_indirizzo;
-  if (isProduttoreAuthorizationField(field.name)) return getFormDataValue(formData, "produttore_numero_aut", "produttore_iscrizione_albo");
-  if (isProduttoreAuthorizationTypeField(field.name)) return getFormDataValue(formData, "produttore_tipo", "produttore_tipo_aut");
-  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "produttore"])) return getFormDataValue(formData, "produttore_iscrizione_albo");
+  // Il primo blocco di pagina 2 contiene la dicitura ministeriale
+  // "nuovo trasportatore o produttore/detentore originale": non deve essere
+  // intercettato come anagrafica del produttore di pagina 1.
+  if (isProduttoreDenominationField(field.name) && !isNuovoTrasportatoreField) return draft.produttore_denominazione;
+  if (isProduttoreCfField(field.name) && !isNuovoTrasportatoreField) return draft.produttore_codice_fiscale;
+  if (isProduttoreAddressField(field.name) && !isNuovoTrasportatoreField) return draft.produttore_indirizzo;
+  if (isProduttoreAuthorizationField(field.name) && !isNuovoTrasportatoreField) return getFormDataValue(formData, "produttore_numero_aut", "produttore_iscrizione_albo");
+  if (isProduttoreAuthorizationTypeField(field.name) && !isNuovoTrasportatoreField) return getFormDataValue(formData, "produttore_tipo", "produttore_tipo_aut");
+  if (hasTokens(field.name, ["numero", "iscrizione", "albo", "produttore"]) && !isNuovoTrasportatoreField) return getFormDataValue(formData, "produttore_iscrizione_albo");
 
   if (isDestinatarioDenominationField(field.name)) return draft.destinatario_denominazione;
   if (isDestinatarioCfField(field.name)) return draft.destinatario_codice_fiscale;
