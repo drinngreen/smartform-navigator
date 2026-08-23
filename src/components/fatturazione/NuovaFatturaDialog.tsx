@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2, UploadCloud } from "lucide-react";
+import { isValidCerCode } from "@/lib/cerValidation";
 import { toast } from "sonner";
 import { inviaFatturaASibill } from "@/lib/sibill";
 
@@ -153,6 +154,19 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     if (!cliente) { toast.error("Selezionare un cliente"); return null; }
     if (!hasPIva) { toast.error("Partita IVA cliente mancante: aggiornare l'anagrafica prima di fatturare"); return null; }
     if (righe.length === 0 || righe.every(r => !r.descrizione)) { toast.error("Aggiungere almeno una riga"); return null; }
+
+    // Il codice CER deve comparire sul documento per ogni riga di smaltimento/trasporto
+    // rifiuti: campo obbligatorio e validato contro il catalogo europeo.
+    const cerErrore = righe.findIndex(r => r.tipo_riga !== "noleggio" && !isValidCerCode(r.cer));
+    if (cerErrore >= 0) {
+      const raw = righe[cerErrore].cer?.trim();
+      toast.error(
+        raw
+          ? `Riga ${cerErrore + 1}: codice CER "${raw}" non presente nel catalogo europeo`
+          : `Riga ${cerErrore + 1}: codice CER obbligatorio per le righe di smaltimento`
+      );
+      return null;
+    }
 
     const anno = new Date(dataEmissione).getFullYear();
     const { data: numRes, error: numErr } = await supabase.rpc("next_fattura_number", { p_tenant_id: tenantId, p_anno: anno });
