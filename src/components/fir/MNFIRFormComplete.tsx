@@ -16,6 +16,7 @@ import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
+import { CerPickerField } from "@/components/fir/CerPickerField";
 import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST, NIYOL_TENANT_ID_CONST } from "@/lib/firFinalSync";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 
@@ -1414,7 +1415,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           </Section>
 
           <Section title="6. Caratteristiche del Rifiuto" defaultOpen onClear={() => clearFields(["codiceEER","descrizione","statoFisico","provenienza","quantita","quantitaLitri","aspettoEsteriore","numeroColli","verificatoPartenza","caratteristicheHP"])}>
-            <Field label="Codice EER" value={d.codiceEER} onChange={(v) => u("codiceEER", v)} placeholder="es. 17 04 05" />
+            <CerPickerField
+              label="Codice EER / CER"
+              value={d.codiceEER}
+              onChange={(v) => u("codiceEER", v)}
+              onSelect={(codice, descrizione) => {
+                u("codiceEER", codice);
+                if (descrizione) u("descrizione", descrizione);
+              }}
+              placeholder="es. 17 04 05 — cerca codice o descrizione"
+            />
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
             <Row>
               <div>

@@ -14,6 +14,7 @@ import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
+import { CerPickerField } from "@/components/fir/CerPickerField";
 
 export interface TemplateField {
   id: string;
@@ -62,6 +63,15 @@ function hasTokens(fieldName: string, tokens: string[]): boolean {
 
 function findFieldByTokens(fields: TemplateField[], tokens: string[]): TemplateField | undefined {
   return fields.find((field) => hasTokens(field.name, tokens));
+}
+
+function isCerFieldName(fieldName: string): boolean {
+  return (
+    hasTokens(fieldName, ["codice", "eer"]) ||
+    hasTokens(fieldName, ["codice", "cer"]) ||
+    hasTokens(fieldName, ["cer"]) ||
+    hasTokens(fieldName, ["eer"])
+  );
 }
 
 export function isNumeroFirFieldName(fieldName: string): boolean {
@@ -1476,6 +1486,34 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
               const isCanonicalNumeroField = isNumeroFirField(field);
               const displayValue = isCanonicalNumeroField ? canonicalNumeroFir : String(values[field.id] || "");
+
+              if (!printOnly && isCerFieldName(field.name)) {
+                return (
+                  <CerPickerField
+                    key={field.id}
+                    overlay
+                    overlayStyle={style}
+                    value={displayValue}
+                    onChange={(v) => handleChange(field.id, v)}
+                    onSelect={(codice, descrizione) => {
+                      handleChange(field.id, codice);
+                      const descField = findFieldByTokens(fields, ["descrizione", "rifiuto"]) ?? findFieldByTokens(fields, ["descrizione"]);
+                      if (descField && descrizione) handleChange(descField.id, descrizione);
+                    }}
+                    inputClassName=""
+                    inputStyle={{
+                      background: "rgba(56, 189, 248, 0.14)",
+                      border: "1px solid rgba(56, 189, 248, 0.55)",
+                      borderRadius: "2px",
+                      color: "#0b2540",
+                      fontSize: dynamicFontSize(displayValue),
+                      fontFamily: "monospace",
+                      padding: "1px 3px",
+                      outline: "none",
+                    }}
+                  />
+                );
+              }
 
               return (
                 <input
