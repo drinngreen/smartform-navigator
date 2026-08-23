@@ -134,13 +134,14 @@ export function NewsFeedModule() {
       </div>
 
       {/* AI */}
-      <div className="space-y-3">
-        <Card className="p-4 sticky top-4">
+      <div className="space-y-3 order-1 lg:order-2">
+        <Card className="p-4 lg:sticky lg:top-4 border-primary/40 shadow-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2 font-semibold">
               <Sparkles className="w-4 h-4 text-primary" />
               AI News Analyst
             </div>
+
             {messages.length > 0 && (
               <Button variant="ghost" size="icon" onClick={clearChat} aria-label="Svuota chat">
                 <Trash2 className="w-4 h-4" />
