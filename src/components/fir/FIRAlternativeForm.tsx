@@ -462,9 +462,10 @@ function getDraftValueForField(
   if (isNuovoTrasportatoreField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
   if (isNuovoTrasportatoreField && hasTokens(field.name, ["iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
 
-  if (isFrazionamentoField && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
-  if (isFrazionamentoField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
-  if (isFrazionamentoField && hasTokens(field.name, ["numero", "iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
+  const isVeicoliBlock = isFrazionamentoField || normalized.includes("veicoli");
+  if (isVeicoliBlock && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
+  if (isVeicoliBlock && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
+  if (isVeicoliBlock && (hasTokens(field.name, ["numero", "iscrizione", "albo"]) || normalized.includes("iscrizione_alno") || normalized.includes("iscrizione_all_albo"))) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
   if (isFrazionamentoField && hasTokens(field.name, ["targa", "automezzo"])) return getFormDataValue(formData, "trasbordo_parziale_targa_automezzo");
   if (isFrazionamentoField && hasTokens(field.name, ["targa", "rimorchio"])) return getFormDataValue(formData, "trasbordo_parziale_targa_rimorchio");
 
