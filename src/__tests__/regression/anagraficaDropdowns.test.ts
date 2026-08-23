@@ -24,6 +24,8 @@ const alternativeFormSrc = readFileSync(
   resolve(__dirname, "../../components/fir/FIRAlternativeForm.tsx"),
   "utf8",
 );
+const firStoreSrc = readFileSync(resolve(__dirname, "../../stores/firStore.ts"), "utf8");
+const rentriMapperSrc = readFileSync(resolve(__dirname, "../../lib/rentriFormMapper.ts"), "utf8");
 
 const TABELLE_OBBLIGATORIE = [
   "anagrafica_aziende_mp",
@@ -85,6 +87,20 @@ describe("tendine formulari - fonti dati anagrafica", () => {
   it("azzera l'autorizzazione precedente prima di caricare una nuova azienda", () => {
     const resets = src.match(/onSelectAutorizzazione\(\{ numero: "", tipo: "", data: "" \}\)/g) || [];
     expect(resets.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("non precarica autorizzazioni inventate sul produttore", () => {
+    expect(firStoreSrc).toContain('produttoreNumeroAut: ""');
+    expect(firStoreSrc).toContain('produttoreTipoAut: ""');
+    expect(firStoreSrc).toContain('produttoreDataAut: ""');
+    expect(firStoreSrc).not.toContain('produttoreNumeroAut: "MI58420"');
+  });
+
+  it("non sostituisce il produttore mancante con l'emittente RENTRI", () => {
+    expect(rentriMapperSrc).toContain('denominazione: str("prod_denominazione")');
+    expect(rentriMapperSrc).toContain('codice_fiscale: str("prod_cf")');
+    expect(rentriMapperSrc).not.toContain('str("prod_denominazione") || cfg.issuer');
+    expect(rentriMapperSrc).not.toContain('str("prod_cf") || cfg.issuer');
   });
 
   it("permette di cambiare azienda e reagisce alla gomma della sezione", () => {

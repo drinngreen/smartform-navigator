@@ -150,8 +150,9 @@ export function mapFormToRentriPayload(cliente, formData, options) {
         dati_partenza: {
             numero_fir: str("numero_fir"),
             produttore: {
-                denominazione: str("prod_denominazione") || cfg.issuer,
-                codice_fiscale: str("prod_cf") || cfg.issuer,
+                // Il produttore deve provenire esclusivamente dal formulario.
+                denominazione: str("prod_denominazione"),
+                codice_fiscale: str("prod_cf"),
                 nazione_id: "IT",
                 indirizzo: {
                     citta: { comune_id: "" },
