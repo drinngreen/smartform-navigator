@@ -324,6 +324,12 @@ function getDraftValueForField(
     if (normalized === "intermodale") return getFormDataValue(formData, "intermodale");
     if (normalized === "analisi_rapporto_di_prova") return getFormDataValue(formData, "analisi_rapporto_di_prova");
     if (normalized === "classificazione_caratteristiche_chimico_fisiche") return getFormDataValue(formData, "classificazione_caratteristiche_chimico_fisiche");
+    if (normalized === "recupero_secondo_destinatario") return getFormDataValue(formData, "secondo_destinatario_operazione_R", "secondo_destinatario_operazione_r");
+    if (normalized === "smaltimento_secondo_destinatario") return getFormDataValue(formData, "secondo_destinatario_operazione_D", "secondo_destinatario_operazione_d");
+    if (normalized.includes("presa_in_carico_rimorchio")) {
+      return getFormDataValue(formData, "trasbordo_totale_presa_in_carico")
+        ?? getFormDataValue(formData, "trasbordo_totale_data_presa_carico", "trasbordoTotDataPresaCarico");
+    }
     if (normalized === "ir") return getFormDataValue(formData, "ir");
     if (normalized === "nc") return getFormDataValue(formData, "nc");
     if (normalized === "a") return getFormDataValue(formData, "a");
@@ -352,9 +358,18 @@ function getDraftValueForField(
     if (hasTokens(field.name, ["ora", "inizio", "trasporto"])) return draft.data_partenza;
     if (hasTokens(field.name, ["ora", "arrivo", "destinatario"]) && !isSecondDestField) return getFormDataValue(formData, "ora_accettazione", "ora_fine_trasporto", "ora_ricezione") || draft.data_arrivo;
     if (hasTokens(field.name, ["ora", "arrivo", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_data_arrivo", "dest2DataArrivo");
-    if (normalized.includes("ora_prima_sospensione")) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
-    if (normalized.includes("ora_seconda_sospensione")) return getFormDataValue(formData, "sosta_tecnica_2_data_sospensione");
-    if (normalized.includes("ora_terza_sospensione")) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    // Il template ministeriale usa etichette non uniformi ("ora sospensione primo
+    // trasporto", "ora seconda sospensione trasporto"): riconosciamo l'ordinale
+    // ovunque compaia nel nome del campo.
+    if (normalized.includes("sospensione") && (normalized.includes("primo") || normalized.includes("prima"))) return getFormDataValue(formData, "sosta_tecnica_1_data_sospensione");
+    // "ora seconda sospensione del trasporto" = 2ª sosta; "ora seconda sospensione
+    // trasporto" (senza "del") è l'etichetta errata del 3° blocco del modulo.
+    if (normalized.includes("sospensione") && (normalized.includes("secondo") || normalized.includes("seconda"))) {
+      return normalized.includes("del_trasporto")
+        ? getFormDataValue(formData, "sosta_tecnica_2_data_sospensione")
+        : getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
+    }
+    if (normalized.includes("sospensione") && (normalized.includes("terzo") || normalized.includes("terza"))) return getFormDataValue(formData, "sosta_tecnica_3_data_sospensione");
     if (normalized.includes("ora_ripresa_primo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_1_data_ripresa");
     if (normalized.includes("ora_ripresa_secondo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_2_data_ripresa");
     if (normalized.includes("ora_ripresa_terzo_trasporto")) return getFormDataValue(formData, "sosta_tecnica_3_data_ripresa");
@@ -410,8 +425,31 @@ function getDraftValueForField(
 
   if (hasTokens(field.name, ["classe", "pericolo"])) return getFormDataValue(formData, "classe_pericolo");
   if (hasTokens(field.name, ["numero", "colli"])) return getFormDataValue(formData, "numero_colli");
-  if (hasTokens(field.name, ["quantita", "residua"])) return getFormDataValue(formData, "trasbordo_parziale_quantita_residua");
-  if (hasTokens(field.name, ["riferimento", "formulario"])) return getFormDataValue(formData, "trasbordo_parziale_rif_formulario");
+  // ── Pagina 2: i blocchi hanno etichette abbreviate ("rif. nr formulario") e
+  //    ripetute (frazionamento 1 / 2): distinguiamo per blocco di appartenenza ──
+  const isSecondaRipetizione = normalized.includes("veicoli_2") || normalized.endsWith("_2");
+  if (normalized.includes("quantita_residua")) {
+    if (isFrazionamentoField || normalized.includes("veicoli")) {
+      return isSecondaRipetizione
+        ? getFormDataValue(formData, "frazionamento_2_quantita_residua", "trasbordo_parziale_2_quantita_residua")
+        : getFormDataValue(formData, "frazionamento_quantita_residua", "trasbordo_parziale_quantita_residua");
+    }
+    return getFormDataValue(formData, "trasbordo_parziale_quantita_residua");
+  }
+  if ((normalized.includes("rif_nr_formulario") || normalized.includes("rif_numero_di_formulario") || hasTokens(field.name, ["riferimento", "formulario"]))) {
+    if (isFrazionamentoField || normalized.includes("veicoli")) {
+      return isSecondaRipetizione
+        ? getFormDataValue(formData, "frazionamento_2_rif_formulario", "trasbordo_parziale_2_rif_formulario")
+        : getFormDataValue(formData, "frazionamento_rif_formulario", "trasbordo_parziale_rif_formulario");
+    }
+    return getFormDataValue(formData, "trasbordo_parziale_rif_formulario");
+  }
+  if (normalized.includes("quantita_accettata") && isSecondDestField) {
+    return getFormDataValue(formData, "secondo_destinatario_quantita_accettata", "dest2QuantitaAccettata");
+  }
+  if (normalized.includes("tipo_di_rifiuto") && isSecondDestField) {
+    return getFormDataValue(formData, "secondo_destinatario_codice_eer") || draft.codice_eer;
+  }
 
   if (hasTokens(field.name, ["denominazione", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_denominazione");
   if (hasTokens(field.name, ["unita", "locale", "secondo", "destinatario"])) return getFormDataValue(formData, "secondo_destinatario_unita_locale");
@@ -424,9 +462,10 @@ function getDraftValueForField(
   if (isNuovoTrasportatoreField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
   if (isNuovoTrasportatoreField && hasTokens(field.name, ["iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
 
-  if (isFrazionamentoField && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
-  if (isFrazionamentoField && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
-  if (isFrazionamentoField && hasTokens(field.name, ["numero", "iscrizione", "albo"])) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
+  const isVeicoliBlock = isFrazionamentoField || normalized.includes("veicoli");
+  if (isVeicoliBlock && hasTokens(field.name, ["denominazione"])) return getFormDataValue(formData, "trasbordo_parziale_denominazione");
+  if (isVeicoliBlock && hasTokens(field.name, ["codice", "fiscale"])) return getFormDataValue(formData, "trasbordo_parziale_codice_fiscale");
+  if (isVeicoliBlock && (hasTokens(field.name, ["numero", "iscrizione", "albo"]) || normalized.includes("iscrizione_alno") || normalized.includes("iscrizione_all_albo"))) return getFormDataValue(formData, "trasbordo_parziale_iscrizione_albo");
   if (isFrazionamentoField && hasTokens(field.name, ["targa", "automezzo"])) return getFormDataValue(formData, "trasbordo_parziale_targa_automezzo");
   if (isFrazionamentoField && hasTokens(field.name, ["targa", "rimorchio"])) return getFormDataValue(formData, "trasbordo_parziale_targa_rimorchio");
 
