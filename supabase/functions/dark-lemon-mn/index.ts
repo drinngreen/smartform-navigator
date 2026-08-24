@@ -853,6 +853,8 @@ Modulo conferimenti privati.
 - Barra per ogni privato con progressione verso i **1500 kg/anno**.
 - Colore verde <70%, ambra 70–95%, rosso ≥95%.
 - Bottone **📱 Avviso WhatsApp** → chiama la Edge Function \`send-whatsapp\` (Meta Cloud API, fallback \`wa.me\`).
+- Bottone **Aggiorna**: ricarica i kg conferiti in tempo reale.
+- Bottone **Scarica limiti privati (PDF)**: elenco con nome, telefono (da \`anagrafica_privati\`), kg conferiti, kg residui e % del limite.
 
 ⚠️ Il limite 1500 kg è hardcoded nella business rule. Non alterarlo.
 
@@ -864,6 +866,8 @@ PDF di ricevuta per ogni conferimento privato.
 - Include: numero progressivo DBT, data, privato, CER, kg, **metodo di pagamento**.
 - Editabile: puoi modificare la **data** anche dopo l'emissione.
 - PDF firmato "Multyproget S.r.l." con dati anagrafici azienda.
+- **Solo data** (riga singola) e **ESPORTA SOLO DATE** (massivo): layout **senza numero progressivo**, con la sola data.
+- **Selezione multipla** con checkbox + "Seleziona tutte", quindi **PDF cumulativo selezionate** (con numero) o **PDF cumulativo selezionate (solo data)**.
 
 ---
 

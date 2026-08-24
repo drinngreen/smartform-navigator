@@ -175,6 +175,8 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 ### 8.3 Numerazione e limiti
 - Trigger `assign_dbt_progressivo` → **numero progressivo DBT annuale** univoco (`numero_progressivo` + `anno_dbt`).
 - Widget **Limiti**: barra per privato verso i **1500 kg/anno** (verde <70%, ambra 70–95%, rosso ≥95%), con **📱 Avviso WhatsApp** (`send-whatsapp`).
+- Pulsante **Aggiorna**: ricarica in tempo reale i kg conferiti fino a quel momento.
+- Pulsante **Scarica limiti privati (PDF)**: esporta l'elenco completo dei privati con nome, telefono, **kg conferiti**, **kg residui** e **% del limite** alla data dell'aggiornamento.
 
 ⚠️ Il limite di 1500 kg è una business rule: non alterarlo.
 
@@ -186,6 +188,13 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - Contiene: numero progressivo DBT, data, privato, CER, kg, **metodo di pagamento**.
 - La **data è modificabile**: la ricevuta si rigenera di conseguenza.
 - PDF intestato "Multyproget S.r.l.".
+
+### Stampa ed export
+- **Solo data** (su singola riga): stampa la ricevuta **senza numero progressivo**, con la sola data.
+- **ESPORTA SOLO DATE**: export massivo di tutte le ricevute filtrate nel layout senza numero progressivo.
+- **Selezione multipla**: checkbox su ogni riga + "Seleziona tutte" nell'intestazione.
+- **PDF cumulativo selezionate**: un unico PDF con le sole ricevute spuntate (con numero progressivo).
+- **PDF cumulativo selezionate (solo data)**: stesso PDF cumulativo ma in layout senza numero progressivo.
 
 ---
 

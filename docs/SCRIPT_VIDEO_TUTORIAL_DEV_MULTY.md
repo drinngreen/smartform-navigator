@@ -87,6 +87,7 @@
 | 06:18 | Selezione metodo di pagamento e salvataggio | Indichi i chili per ogni materiale, scegli il metodo di pagamento — contanti o tracciabile — e salvi. | Pagamento obbligatorio |
 | 06:28 | Giacenza che si aggiorna subito dopo il salvataggio | Il salvataggio è una transazione unica: crea conferimento, ricevuta e movimento di magazzino, ricalcola il saldo e lo verifica. Se il saldo non torna, il salvataggio fallisce e ti avvisa. Non esistono più conferimenti salvati ma non contabilizzati. | Garanzia atomica sulle giacenze |
 | 06:38 | Widget limiti con barra colorata | Ogni privato ha il limite di millecinquecento chili all'anno: la barra è verde, poi ambra, poi rossa, e puoi mandare l'avviso via WhatsApp. | Limite 1500 kg/anno |
+| 06:42 | Click su Aggiorna e su Scarica limiti privati (PDF) | Il pulsante Aggiorna ricarica i chili conferiti in tempo reale; con Scarica limiti privati ottieni il PDF con nome, chili conferiti, chili residui e percentuale del limite per ogni privato. | Export limiti in PDF |
 
 ---
 
@@ -97,6 +98,8 @@
 | 06:45 | Tab Ricevute, elenco | A ogni conferimento corrisponde una ricevuta, con numero progressivo annuale univoco. | Numerazione DBT automatica |
 | 06:55 | Aprire una ricevuta multi-materiale | La ricevuta riporta tutti i materiali del conferimento con i rispettivi chili, la data, il privato e il metodo di pagamento. | Ricevuta multi-materiale |
 | 07:03 | Modificare la data e rigenerare il PDF | Se correggi la data, la ricevuta si rigenera. Il PDF è già intestato Multyproget. | PDF pronto da consegnare |
+| 07:06 | Click su "Solo data" e su "ESPORTA SOLO DATE" | Se ti serve la ricevuta senza numero progressivo usi Solo data sulla singola riga, oppure Esporta solo date per tutte quelle filtrate. | Layout senza progressivo |
+| 07:08 | Spuntare più righe e generare il PDF cumulativo | Con le caselle di spunta scegli le ricevute che vuoi e generi un unico PDF cumulativo, con o senza numero progressivo. | Selezione multipla e PDF cumulativo |
 
 ---
 
