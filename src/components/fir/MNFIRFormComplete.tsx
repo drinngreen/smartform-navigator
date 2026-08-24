@@ -322,6 +322,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const u = store.updateField;
   const d = store.data;
 
+  // App autisti: il formulario è sempre cartaceo (nessun invio RENTRI, nessuna fattura)
+  useEffect(() => {
+    if (forceCartaceo && d.formatoFir !== "cartaceo") u("formatoFir", "cartaceo");
+  }, [forceCartaceo, d.formatoFir]);
+
+
+
   const hasInitializedCreationMode = useRef(false);
   useEffect(() => {
     if (!creationMode || firFormId || draftData?.id || hasInitializedCreationMode.current) return;
