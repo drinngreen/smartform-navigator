@@ -1506,7 +1506,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <Field label="N° Colli" value={d.numeroColli} onChange={(v) => u("numeroColli", v)} />
             </Row>
             <Check label="Verificato in partenza" checked={d.verificatoPartenza} onChange={(v) => u("verificatoPartenza", v)} />
-            <Field label="Caratteristiche HP (separate da virgola)" value={d.caratteristicheHP.join(", ")} onChange={(v) => u("caratteristicheHP", v.split(",").map(s => s.trim()).filter(Boolean))} placeholder="HP4, HP5..." />
+            <HpSelector value={d.caratteristicheHP} onChange={(v) => u("caratteristicheHP", v)} codiceEER={d.codiceEER} />
           </Section>
 
           <Section title="Analisi e Classificazione" onClear={() => clearFields(["analisiRapportiProva","analisiNumero","analisiValidaAl","classificazione","classificazioneNumero","classificazioneValidaAl"])}>
