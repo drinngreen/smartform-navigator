@@ -14,7 +14,7 @@ export default function ModuloAlternativoPage() {
         <h1 className="font-display text-lg tracking-wider">MODULO ALTERNATIVO FIR</h1>
       </header>
       <main className="max-w-3xl mx-auto p-6">
-        <FIRAlternativeForm />
+        <FIRAlternativeForm forceCartaceo />
       </main>
     </div>
   );
