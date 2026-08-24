@@ -26,10 +26,13 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     codice_fiscale: "",
     partita_iva: "",
     indirizzo: "",
+    cap: "",
     comune: "",
     provincia: "",
+    autorizzazioni: "",
     note: "",
   });
+  const [categoria, setCategoria] = useState("CLIENTE");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
