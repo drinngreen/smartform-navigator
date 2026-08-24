@@ -430,6 +430,41 @@ export function DevRicevuteModule() {
             placeholder="Cerca per numero, nome, CF, note..."
             className="bg-background/60"
           />
+
+          <div className="flex items-center gap-2 flex-wrap rounded-lg border border-border/40 bg-background/40 px-3 py-2">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 accent-cyan-400" />
+              Seleziona tutte ({filtered.length})
+            </label>
+            <span className="text-xs font-semibold text-cyan-300">{selectedIds.length} selezionate</span>
+            <div className="flex-1" />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedIds.length}
+              onClick={esportaSelezionateSoloDate}
+              className="gap-1 h-7 text-xs border-cyan-500/70 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
+              title="PDF cumulativo delle ricevute selezionate, senza numero progressivo"
+            >
+              <CalendarDays className="h-3 w-3" /> PDF cumulativo selezionate (solo data)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedIds.length}
+              onClick={esportaSelezionateComplete}
+              className="gap-1 h-7 text-xs"
+              title="PDF cumulativo delle ricevute selezionate, con numero progressivo"
+            >
+              <Printer className="h-3 w-3" /> PDF cumulativo selezionate
+            </Button>
+            {selectedIds.length > 0 && (
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedIds([])}>
+                Azzera
+              </Button>
+            )}
+          </div>
+
         </CardHeader>
 
         <CardContent>
