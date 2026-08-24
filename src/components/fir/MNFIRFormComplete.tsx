@@ -18,6 +18,7 @@ import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
+import { autoValidateByLabel } from "@/lib/fieldValidation";
 import { CerPickerField } from "@/components/fir/CerPickerField";
 import { HpSelector } from "@/components/fir/HpSelector";
 
@@ -82,14 +83,28 @@ function Section({ title, defaultOpen = false, onClear, children }: { title: str
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+function Field({ label, value, onChange, placeholder, type = "text", validate }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null }) {
+  const error = (validate ? validate(value) : autoValidateByLabel(label, value)) || null;
   return (
     <div>
-      <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-sky-400/10 border border-sky-400/40 rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-sky-300 focus:border-sky-300/60 focus:bg-sky-400/15 focus:shadow-[0_0_10px_rgba(56,189,248,0.35)] transition-all" />
+      <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${error ? "text-red-300" : "text-white/80"}`}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-invalid={error ? true : undefined}
+        className={`w-full rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 transition-all ${
+          error
+            ? "bg-red-500/15 border border-red-500 focus:ring-red-400 focus:border-red-400 focus:shadow-[0_0_10px_rgba(239,68,68,0.45)]"
+            : "bg-sky-400/10 border border-sky-400/40 focus:ring-sky-300 focus:border-sky-300/60 focus:bg-sky-400/15 focus:shadow-[0_0_10px_rgba(56,189,248,0.35)]"
+        }`}
+      />
+      {error && <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ {error}</p>}
     </div>
   );
 }
+
 
 function TextArea({ label, value, onChange, placeholder, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (

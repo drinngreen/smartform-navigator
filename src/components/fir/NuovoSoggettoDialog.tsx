@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { autoValidateByLabel } from "@/lib/fieldValidation";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CATEGORIE_SOGGETTO, upsertSoggetto, type SoggettoResult } from "@/lib/anagraficaSync";
@@ -110,12 +111,30 @@ export function NuovoSoggettoDialog({
     }
   };
 
-  const f = (key: keyof typeof EMPTY, label: string) => (
-    <div className="space-y-1" key={key}>
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <Input value={form[key]} onChange={(e) => set(key, e.target.value)} className="h-8 text-sm" />
-    </div>
-  );
+  const f = (key: keyof typeof EMPTY, label: string) => {
+    const error = autoValidateByLabel(label, String(form[key] ?? ""));
+    return (
+      <div className="space-y-1" key={key}>
+        <Label className={`text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>{label}</Label>
+        <Input
+          value={form[key]}
+          onChange={(e) => set(key, e.target.value)}
+          aria-invalid={error ? true : undefined}
+          className={`h-8 text-sm ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+        />
+        {error && <p className="text-[11px] text-destructive">⚠ {error}</p>}
+      </div>
+    );
+  };
+
+  const hasErrors = Object.entries(form).some(([k, v]) => {
+    const labels: Record<string, string> = {
+      codiceFiscale: "Codice Fiscale", partitaIva: "Partita IVA", cap: "CAP", provincia: "Provincia",
+      telefono: "Telefono", cellulare: "Cellulare", email: "Email", pec: "PEC",
+    };
+    return labels[k] ? !!autoValidateByLabel(labels[k], String(v ?? "")) : false;
+  });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,7 +175,7 @@ export function NuovoSoggettoDialog({
         {f("note", "Note")}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Salvataggio..." : "Salva e compila"}</Button>
+          <Button onClick={handleSave} disabled={saving || hasErrors}>{saving ? "Salvataggio..." : hasErrors ? "Correggi i campi in rosso" : "Salva e compila"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
