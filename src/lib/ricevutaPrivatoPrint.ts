@@ -27,6 +27,8 @@ export type RicevutaPrintData = {
   totale: number;
   note?: string | null;
   veicolo?: string | null;
+  /** Se true stampa il layout "solo date": nessun numero progressivo di documento */
+  soloData?: boolean;
 };
 
 const esc = (v: unknown) =>
