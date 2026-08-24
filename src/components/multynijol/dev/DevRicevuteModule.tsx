@@ -214,7 +214,7 @@ export function DevRicevuteModule() {
     </div>
   `;
 
-  const printSingle = (r: RicevutaRow) => {
+  const buildRicevutaData = (r: RicevutaRow): RicevutaPrintData => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
 
     const righeBase =
