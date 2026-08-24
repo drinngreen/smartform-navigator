@@ -128,17 +128,37 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     );
   }
 
-  const items = data || [];
+  const items = data?.allerta ?? [];
+  const tutti = data?.tutti ?? [];
 
   return (
     <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-red-500/5 p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <ShieldAlert className="h-5 w-5 text-amber-400" />
-        <div className="flex-1">
+      <div className="flex items-start gap-2 flex-wrap">
+        <ShieldAlert className="h-5 w-5 text-amber-400 mt-0.5" />
+        <div className="flex-1 min-w-[200px]">
           <h3 className="text-sm font-semibold text-foreground">Scadenziario Privati — Limite 1500 kg/anno</h3>
-          <p className="text-xs text-muted-foreground">Privati oltre l'80% del limite annuo con invio avviso WhatsApp</p>
+          <p className="text-xs text-muted-foreground">
+            Privati oltre l'80% del limite annuo con invio avviso WhatsApp · {tutti.length} privati totali
+            {dataUpdatedAt ? ` · aggiornato ${new Date(dataUpdatedAt).toLocaleTimeString("it-IT")}` : ""}
+          </p>
         </div>
-        <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs hover:bg-sky-500/30 disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Aggiorna
+          </button>
+          <button
+            onClick={scaricaPdf}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30 disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" /> Scarica limiti privati (PDF)
+          </button>
+          <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
+        </div>
       </div>
 
       {items.length === 0 ? (
