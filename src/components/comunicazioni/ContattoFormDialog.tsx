@@ -41,6 +41,8 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     const { error } = await supabase.from("rubrica_contatti").insert({
       tenant_id: tenantId,
       ...form,
+      categoria,
+      ruoli: categoria,
       origine: "manuale",
     });
     setSaving(false);
@@ -48,7 +50,8 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     toast.success("Contatto salvato in rubrica");
     onOpenChange(false);
     onSaved?.();
-    setForm({ nome: "", cognome: "", ragione_sociale: "", telefono: "", cellulare: "", email: "", pec: "", codice_fiscale: "", partita_iva: "", indirizzo: "", comune: "", provincia: "", note: "" });
+    setForm({ nome: "", cognome: "", ragione_sociale: "", telefono: "", cellulare: "", email: "", pec: "", codice_fiscale: "", partita_iva: "", indirizzo: "", cap: "", comune: "", provincia: "", autorizzazioni: "", note: "" });
+    setCategoria("CLIENTE");
   };
 
   const f = (key: keyof typeof form, label: string) => (
