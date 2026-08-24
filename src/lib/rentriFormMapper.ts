@@ -8,6 +8,7 @@
  */
 
 import { TENANT_RENTRI, type TenantRentriConfig } from "@/lib/rentriBlockCodes";
+import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 
 /** Known field name → normalized lookup key */
@@ -223,20 +224,23 @@ export function mapFormToRentriPayload(
           } : {}),
         },
       ],
-      rifiuto: {
-        codice_eer: str("codice_eer").replace(/\./g, ""),
-        descrizione: str("descrizione_rifiuto"),
-        provenienza,
-        stato_fisico: statoFisico,
-        pericoloso: (str("caratteristiche_pericolo") || "").length > 0,
-        quantita: {
-          valore: Number.isFinite(qty) ? qty : 1,
-          unita_misura: str("litri") ? "lt" : "kg",
-        },
-        caratteristiche_pericolo: str("caratteristiche_pericolo")
-          ? str("caratteristiche_pericolo").split(/[,;\s]+/).filter(Boolean)
-          : [],
-      },
+      rifiuto: (() => {
+        const hp = normalizeHpList(str("caratteristiche_pericolo"));
+        const eerRaw = str("codice_eer");
+        return {
+          codice_eer: eerRaw.replace(/[.\s*]/g, ""),
+          descrizione: str("descrizione_rifiuto"),
+          provenienza,
+          stato_fisico: statoFisico,
+          pericoloso: hp.length > 0 || eerRaw.includes("*"),
+          quantita: {
+            valore: Number.isFinite(qty) ? qty : 1,
+            unita_misura: str("litri") ? "lt" : "kg",
+          },
+          caratteristiche_pericolo: hp,
+        };
+      })(),
+
       dati_trasporto_partenza: {
         conducente: {
           nome: conducenteNome,
