@@ -29,6 +29,8 @@ import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import {
   Activity,
   ClipboardList,
@@ -70,11 +72,24 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
+
+const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
+
+/** Destinazioni per la creazione dei formulari dalla Console RENTRI (stessi record fir_forms). */
+const DESTINAZIONI_FORMULARIO = [
+  { id: "multy-impianto", label: "Multyproget Impianto", tenantId: MULTY_TENANT, mnContext: "multyproget" },
+  { id: "multy-trasportatore", label: "Multyproget Trasportatore", tenantId: MULTY_TENANT, mnContext: "multyproget" },
+  { id: "niyol", label: "Niyol", tenantId: NIYOL_TENANT, mnContext: "niyol" },
+] as const;
+
+type DestinazioneId = (typeof DESTINAZIONI_FORMULARIO)[number]["id"];
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "stato", label: "Stato RENTRI", icon: <Activity size={14} /> },
   { id: "numeri", label: "Numeri FIR", icon: <Ticket size={14} /> },
+  { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
@@ -98,10 +113,18 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "bozze", "dafirmare", "registri", "invii", "lemon"];
+    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "registri", "invii", "lemon"];
     return ids.includes(t as TabId) ? (t as TabId) : "stato";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
+
+  /* ── Nuovo formulario (stesso modulo delle sezioni operative) ── */
+  const [destFormulario, setDestFormulario] = useState<DestinazioneId>(
+    (CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy") === "niyol" ? "niyol" : "multy-impianto",
+  );
+  const [vistaFormulario, setVistaFormulario] = useState<"standard" | "alternativo">("standard");
+  const destinazioneAttiva =
+    DESTINAZIONI_FORMULARIO.find((d) => d.id === destFormulario) ?? DESTINAZIONI_FORMULARIO[0];
 
   /* ── Stato RENTRI ── */
   const [vpsUp, setVpsUp] = useState<boolean | null>(null);
@@ -1017,6 +1040,61 @@ export default function MNRentriConsolePage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {tab === "nuovo" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Nuovo formulario</h3>
+            <p className="text-xs text-muted-foreground">
+              Stesso modulo usato nelle sezioni Impianto, Conto Proprio e Niyol: i dati finiscono sugli stessi record
+              <code className="mx-1 font-mono">fir_forms</code>, quindi il formulario resta collegato ovunque.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DESTINAZIONI_FORMULARIO.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDestFormulario(d.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                    destFormulario === d.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(["standard", "alternativo"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setVistaFormulario(v)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                    vistaFormulario === v
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                      : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
+                  }`}
+                >
+                  {v === "standard" ? "Modulo Standard" : "Modulo Alternativo"}
+                </button>
+              ))}
+            </div>
+            <div className="rounded-xl border border-border/30 bg-background/40 p-4">
+              {vistaFormulario === "standard" ? (
+                <MNFIRFormComplete
+                  key={`std-${destFormulario}`}
+                  tenantId={destinazioneAttiva.tenantId}
+                  mnContext={destinazioneAttiva.mnContext}
+                  enableFatturazione
+                  creationMode
+                />
+              ) : (
+                <FIRAlternativeForm key={`alt-${destFormulario}`} tenantId={destinazioneAttiva.tenantId} />
+              )}
             </div>
           </div>
         )}
