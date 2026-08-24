@@ -293,9 +293,11 @@ interface MNFIRFormCompleteProps {
   enableFatturazione?: boolean;
   /** Modalità creazione manuale: mostra subito il modulo vuoto, senza elenco FIR assegnati. */
   creationMode?: boolean;
+  /** App autisti (Niyol/Multyproget): solo formulari cartacei, formato bloccato e nessuna fatturazione. */
+  forceCartaceo?: boolean;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false, forceCartaceo = false }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
