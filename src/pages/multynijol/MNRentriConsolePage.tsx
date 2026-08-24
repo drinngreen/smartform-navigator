@@ -118,6 +118,14 @@ export default function MNRentriConsolePage() {
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
 
+  /* ── Nuovo formulario (stesso modulo delle sezioni operative) ── */
+  const [destFormulario, setDestFormulario] = useState<DestinazioneId>(
+    (CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy") === "niyol" ? "niyol" : "multy-impianto",
+  );
+  const [vistaFormulario, setVistaFormulario] = useState<"standard" | "alternativo">("standard");
+  const destinazioneAttiva =
+    DESTINAZIONI_FORMULARIO.find((d) => d.id === destFormulario) ?? DESTINAZIONI_FORMULARIO[0];
+
   /* ── Stato RENTRI ── */
   const [vpsUp, setVpsUp] = useState<boolean | null>(null);
   const [blocchi, setBlocchi] = useState<Record<string, unknown>[]>([]);
