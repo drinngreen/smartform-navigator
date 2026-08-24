@@ -466,6 +466,18 @@ export function DevRicevuteModule() {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-9 px-2 text-xs border-neon-cyan/40 text-neon-cyan bg-neon-cyan/5 hover:bg-neon-cyan/15"
+                              onClick={() => printSingleSoloData(r)}
+                              title="Scarica questa ricevuta senza numero progressivo (solo data)"
+                            >
+                              <CalendarDays className="h-4 w-4" color="hsl(var(--neon-cyan))" strokeWidth={2.4} />
+                              <span>Solo data</span>
+                            </Button>
+
+
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="h-9 px-2 text-xs border-neon-purple/70 text-neon-purple bg-neon-purple/10 hover:bg-neon-purple/20"
                               onClick={() => exportSinglePdf(row)}
                               title="Esporta PDF"
