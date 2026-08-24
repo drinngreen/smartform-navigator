@@ -11,13 +11,23 @@ export function useRubricaContatti(overrideTenantId?: string) {
     queryKey: ["rubrica_contatti", tenantId],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rubrica_contatti")
-        .select("*")
-        .eq("tenant_id", tenantId!)
-        .order("nome");
-      if (error) throw error;
-      return data;
+      // La rubrica contiene l'intera anagrafica: serve la paginazione
+      // altrimenti si fermerebbe ai primi 1000 contatti.
+      const all: any[] = [];
+      for (let page = 0; page < 50; page++) {
+        const { data, error } = await supabase
+          .from("rubrica_contatti")
+          .select("*")
+          .eq("tenant_id", tenantId!)
+          .order("categoria")
+          .order("ragione_sociale", { nullsFirst: false })
+          .order("nome")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) throw error;
+        all.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      return all;
     },
   });
 
