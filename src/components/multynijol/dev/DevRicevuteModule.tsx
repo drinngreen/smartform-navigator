@@ -73,6 +73,7 @@ const formatIndirizzoPrivato = (p?: PrivatoLite) => {
 export function DevRicevuteModule() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editing, setEditing] = useState<RicevutaRow | null>(null);
   const [editForm, setEditForm] = useState({ importo: "", note: "", data_emissione: "" });
 
@@ -306,6 +307,28 @@ export function DevRicevuteModule() {
     );
   };
 
+  /** Esporta SOLO le ricevute selezionate in un unico PDF cumulativo */
+  const esportaSelezionateSoloDate = () => {
+    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
+    stampaRicevute(
+      sel.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      `Ricevute selezionate - solo date (${sel.length})`,
+    );
+  };
+
+  /** Esporta le ricevute selezionate con numero progressivo, in un unico PDF */
+  const esportaSelezionateComplete = () => {
+    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
+    stampaRicevute(sel.map((r) => buildRicevutaData(r)), `Ricevute selezionate (${sel.length})`);
+  };
+
+  const toggleSel = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allSelected = filtered.length > 0 && filtered.every((r) => selectedIds.includes(r.id));
+  const toggleAll = () => setSelectedIds(allSelected ? [] : filtered.map((r) => r.id));
+
   const exportCols = [
     { header: "Numero", key: "numero_ricevuta", width: 16 },
     {
@@ -407,6 +430,41 @@ export function DevRicevuteModule() {
             placeholder="Cerca per numero, nome, CF, note..."
             className="bg-background/60"
           />
+
+          <div className="flex items-center gap-2 flex-wrap rounded-lg border border-border/40 bg-background/40 px-3 py-2">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 accent-cyan-400" />
+              Seleziona tutte ({filtered.length})
+            </label>
+            <span className="text-xs font-semibold text-cyan-300">{selectedIds.length} selezionate</span>
+            <div className="flex-1" />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedIds.length}
+              onClick={esportaSelezionateSoloDate}
+              className="gap-1 h-7 text-xs border-cyan-500/70 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
+              title="PDF cumulativo delle ricevute selezionate, senza numero progressivo"
+            >
+              <CalendarDays className="h-3 w-3" /> PDF cumulativo selezionate (solo data)
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedIds.length}
+              onClick={esportaSelezionateComplete}
+              className="gap-1 h-7 text-xs"
+              title="PDF cumulativo delle ricevute selezionate, con numero progressivo"
+            >
+              <Printer className="h-3 w-3" /> PDF cumulativo selezionate
+            </Button>
+            {selectedIds.length > 0 && (
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedIds([])}>
+                Azzera
+              </Button>
+            )}
+          </div>
+
         </CardHeader>
 
         <CardContent>
@@ -419,6 +477,9 @@ export function DevRicevuteModule() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/30 text-left">
+                    <th className="px-2 py-2 w-8">
+                      <input type="checkbox" checked={allSelected} onChange={toggleAll} className="h-4 w-4 accent-cyan-400" />
+                    </th>
                     <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Numero</th>
                     <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Data</th>
                     <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">Privato</th>
@@ -438,7 +499,15 @@ export function DevRicevuteModule() {
 
 
                     return (
-                      <tr key={r.id} className="border-b border-border/10 hover:bg-muted/10 transition-colors">
+                      <tr key={r.id} className={`border-b border-border/10 hover:bg-muted/10 transition-colors ${selectedIds.includes(r.id) ? "bg-cyan-500/5" : ""}`}>
+                        <td className="px-2 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(r.id)}
+                            onChange={() => toggleSel(r.id)}
+                            className="h-4 w-4 accent-cyan-400"
+                          />
+                        </td>
                         <td className="px-3 py-2 font-mono text-xs">{r.numero_ricevuta ?? "—"}</td>
                         <td className="px-3 py-2 text-xs text-muted-foreground">
                           {new Date(r.data_emissione).toLocaleDateString("it-IT")}
