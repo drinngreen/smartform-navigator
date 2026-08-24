@@ -88,9 +88,11 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
           {f("codice_fiscale", "Codice Fiscale")}
           {f("partita_iva", "Partita IVA")}
           {f("indirizzo", "Indirizzo")}
+          {f("cap", "CAP")}
           {f("comune", "Comune")}
           {f("provincia", "Provincia")}
         </div>
+        {f("autorizzazioni", "Autorizzazioni")}
         {f("note", "Note")}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
