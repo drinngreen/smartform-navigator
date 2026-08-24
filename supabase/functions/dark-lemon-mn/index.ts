@@ -866,6 +866,8 @@ PDF di ricevuta per ogni conferimento privato.
 - Include: numero progressivo DBT, data, privato, CER, kg, **metodo di pagamento**.
 - Editabile: puoi modificare la **data** anche dopo l'emissione.
 - PDF firmato "Multyproget S.r.l." con dati anagrafici azienda.
+- **Solo data** (riga singola) e **ESPORTA SOLO DATE** (massivo): layout **senza numero progressivo**, con la sola data.
+- **Selezione multipla** con checkbox + "Seleziona tutte", quindi **PDF cumulativo selezionate** (con numero) o **PDF cumulativo selezionate (solo data)**.
 
 ---
 
