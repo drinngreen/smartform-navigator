@@ -39,6 +39,13 @@ Queste regole valgono in **tutti** i punti in cui si compila un formulario: Impi
 - Le due viste sono **sincronizzate in tempo reale**: quello che scrivi in una compare nell'altra, perché scrivono sullo **stesso record `fir_forms`**. Non si duplica nulla.
 - Puoi passare da una vista all'altra in qualsiasi momento, anche a metà compilazione.
 
+### 1.2-bis Tendina CER nel formulario (sezione 6 — Caratteristiche del Rifiuto)
+- Il campo **Codice EER / CER** è una **tendina di ricerca** (`CerPickerField`): scrivi il codice o una parola della descrizione e scegli dalla lista.
+- Di default mostra i **CER preferiti** (quelli realmente movimentati); con la spunta **"Tutti i CER europei"** accedi all'intero catalogo. La ⭐ indica i preferiti, la **P** rossa i pericolosi.
+- Alla selezione la **descrizione del rifiuto si autocompila** (voce ufficiale del catalogo) e il codice viene normalizzato nel formato `17 04 05`.
+- La stessa tendina è presente nel **Modulo Alternativo**, direttamente sul riquadro CER del modulo fisico: la scelta compila anche il campo "Descrizione rifiuto" del modulo.
+- Poiché entrambe le viste scrivono sullo stesso record, il CER e la descrizione finiscono automaticamente nella **stampa del modulo ufficiale**, nel **documento di viaggio** e nel **riepilogo del trasporto** (e quindi in registri e giacenze al salvataggio definitivo).
+
 ### 1.3 Cancellazione e reset
 - Ogni bozza si elimina con l'icona **🗑 cestino** (soft delete `deleted_by_user`): registro e giacenze vengono **stornati automaticamente**.
 - Ogni sezione del modulo (Produttore, Destinatario, Trasportatore, Rifiuto, Quantità, Trasporto) ha il pulsante **gomma 🧽 "Cancella sezione"**: azzera solo quel blocco, lasciando intatto il resto.
@@ -93,33 +100,6 @@ Modulo isolato basato sulle tabelle `dragon_*` (isolamento per `company_id`).
 - Movimentazioni normative separate dallo stock fisico.
 - Il pulsante rosso "torna indietro" appende sempre `?tab=magazzino-dev`.
 
-### 4.1 Doppio binario dei movimenti
-- **Movimenti esterni** (il rifiuto entra o esce dall'impianto): richiedono sempre un documento — FIR o DDT. Sono i carichi da formulario e gli scarichi verso terzi.
-- **Movimenti interni / lavorazioni** (cernite, selezioni, trasformazioni): **nessun FIR**. Restano dentro l'impianto e si tracciano solo con il legame padre → figli.
-- Nelle lavorazioni è ammesso il **calo peso**: la differenza tra quantità in ingresso e somma degli output viene salvata in automatico sul batch (campo "Calo peso") e non va forzata a zero.
-- Gli output MPS finiscono nel **magazzino MPS**, separato dal magazzino rifiuti: la giacenza del CER padre scende, quelle dei figli salgono.
-- L'annullamento di una lavorazione non cancella nulla: genera movimenti compensativi inversi che riportano i saldi allo stato precedente.
-
-### 4.2 Cernite: procedura operativa
-1. Apri **Magazzino Dev → Cernita → Apri Cernita** e premi **Nuova Cernita**.
-2. Seleziona il CER in ingresso. Accanto al materiale compare la voce **Disponibili per cernita**: è il saldo Dragon realmente controllato al salvataggio.
-3. Inserisci i kg da lavorare. Non puoi superare la disponibilità mostrata.
-4. Aggiungi uno o più articoli/CER in uscita. In ingresso e in uscita viene usato lo stesso catalogo CER del nuovo conferimento.
-5. La somma degli output può essere inferiore all'ingresso: la differenza è il **calo peso**. Non può invece superarlo.
-6. Premi **Conferma e Genera Movimenti**. Il sistema crea in un'unica operazione lo scarico del CER padre, i carichi dei figli, i lotti e i collegamenti di rintracciabilità.
-7. Controlla subito **Giacenze**: il padre deve diminuire e i figli devono aumentare. **Annulla** genera movimenti inversi e ripristina i saldi senza cancellare lo storico.
-
-Se compare “giacenza insufficiente”, confronta i kg richiesti con **Disponibili per cernita** nella stessa finestra: il controllo non usa un saldo nascosto né il vecchio archivio di magazzino.
-
-### 4.3 TAB **Test di Sistema**
-Pannello che esegue test **reali** di filiera sul tenant attivo (nessuna simulazione):
-- `cernite`: carico 1000 kg → cernita 600 + 300 → calo peso 100 kg → lotti → annullamento e ripristino saldi.
-- `giacenze`: carico, scarico, blocco lavorazione oltre giacenza, coerenza registro/magazzino.
-- `fir`: creazione bozza di test, blocco numero duplicato, verifica che nessun numero FIR reale venga consumato.
-
-Ogni scenario termina con **pulizia automatica** di tutti i dati generati e con il confronto dei saldi prima/dopo: se resta una sola differenza il test è considerato fallito. I dati di test sono marcati con `test_session` e numeri FIR `ZTEST…`, quindi non possono confondersi con quelli di produzione. Anche Dark Lemon può lanciare i test con il tool `dragon_run_system_test`.
-
-
 ---
 
 ## 5. TAB **Conto Proprio**
@@ -171,6 +151,15 @@ Più la sezione **Documenti scansionati** (`cliente_documenti`) su bucket **`doc
 
 I formulari creati da qui seguono le stesse regole della Sezione 1.
 
+### 7.1 Rubrica contatti modificabile e nuovi soggetti
+
+- Ogni contatto della **Rubrica** ha ora l'icona **matita (Modifica)**: si aprono tutti i campi (tipo soggetto, denominazione, CF/P.IVA, indirizzo, CAP, comune, provincia, telefono, cellulare, email, PEC, autorizzazioni, note).
+- **Il salvataggio è bidirezionale**: la modifica aggiorna sia `rubrica_contatti` sia `anagrafica_aziende_mp`, quindi **le tendine dei formulari (produttore, destinatario, trasportatore, intermediario) mostrano subito il dato corretto**.
+- In **ogni sezione del formulario** (Standard e Alternativo), sotto la ricerca anagrafica, c'è il pulsante verde **NUOVO SOGGETTO (salva in anagrafica e rubrica)**: si inserisce il soggetto al volo, la sezione del formulario si autocompila (denominazione, indirizzo, CF/P.IVA, eventuale autorizzazione) e il soggetto resta disponibile in rubrica e in tutte le tendine.
+- Il salvataggio passa dalla funzione condivisa `upsert_soggetto_anagrafica`: se CF/P.IVA esiste già il record viene **aggiornato**, non duplicato; la categoria (PRODUTTORE/DESTINATARIO/TRASPORTATORE/INTERMEDIARIO/CLIENTE/FORNITORE/PRIVATO) imposta anche i flag di ruolo in anagrafica.
+- **Dark Lemon** fa la stessa cosa con lo strumento `upsert_contatto`: puoi chiedergli "inserisci come destinatario la ditta X con P.IVA … e compila il formulario", e il soggetto finisce in rubrica, in anagrafica, nelle tendine e nel formulario.
+
+
 ---
 
 ## 8. TAB **Privati** (DBT)
@@ -195,6 +184,8 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 ### 8.3 Numerazione e limiti
 - Trigger `assign_dbt_progressivo` → **numero progressivo DBT annuale** univoco (`numero_progressivo` + `anno_dbt`).
 - Widget **Limiti**: barra per privato verso i **1500 kg/anno** (verde <70%, ambra 70–95%, rosso ≥95%), con **📱 Avviso WhatsApp** (`send-whatsapp`).
+- Pulsante **Aggiorna**: ricarica in tempo reale i kg conferiti fino a quel momento.
+- Pulsante **Scarica limiti privati (PDF)**: esporta l'elenco completo dei privati con nome, telefono, **kg conferiti**, **kg residui** e **% del limite** alla data dell'aggiornamento.
 
 ⚠️ Il limite di 1500 kg è una business rule: non alterarlo.
 
@@ -206,6 +197,13 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - Contiene: numero progressivo DBT, data, privato, CER, kg, **metodo di pagamento**.
 - La **data è modificabile**: la ricevuta si rigenera di conseguenza.
 - PDF intestato "Multyproget S.r.l.".
+
+### Stampa ed export
+- **Solo data** (su singola riga): stampa la ricevuta **senza numero progressivo**, con la sola data.
+- **ESPORTA SOLO DATE**: export massivo di tutte le ricevute filtrate nel layout senza numero progressivo.
+- **Selezione multipla**: checkbox su ogni riga + "Seleziona tutte" nell'intestazione.
+- **PDF cumulativo selezionate**: un unico PDF con le sole ricevute spuntate (con numero progressivo).
+- **PDF cumulativo selezionate (solo data)**: stesso PDF cumulativo ma in layout senza numero progressivo.
 
 ---
 

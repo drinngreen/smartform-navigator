@@ -3,7 +3,7 @@ import { useRubricaContatti } from "@/hooks/useRubricaContatti";
 import { ContattoFormDialog } from "./ContattoFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2, MessageSquare, Phone, Mail } from "lucide-react";
+import { Plus, Search, Trash2, MessageSquare, Phone, Mail, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -45,6 +45,7 @@ export function RubricaTab({ basePath = "/admin", tenantId: tenantIdOverride }: 
   const [search, setSearch] = useState("");
   const [categoria, setCategoria] = useState<string>("TUTTI");
   const [showNew, setShowNew] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
   const navigate = useNavigate();
 
   const lista = useMemo(() => (contatti || []) as any[], [contatti]);
@@ -158,6 +159,7 @@ export function RubricaTab({ basePath = "/admin", tenantId: tenantIdOverride }: 
                         {c.telefono && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`${basePath}/sms?to=${encodeURIComponent(c.telefono!)}`)}><Phone className="h-3.5 w-3.5" /></Button>}
                         {c.cellulare && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`${basePath}/whatsapp?to=${encodeURIComponent(c.cellulare!)}`)}><MessageSquare className="h-3.5 w-3.5" /></Button>}
                         {c.email && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`${basePath}/email?to=${encodeURIComponent(c.email!)}`)}><Mail className="h-3.5 w-3.5" /></Button>}
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Modifica contatto" onClick={() => setEditing(c)}><Pencil className="h-3.5 w-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
@@ -170,6 +172,15 @@ export function RubricaTab({ basePath = "/admin", tenantId: tenantIdOverride }: 
       )}
 
       {tenantId && <ContattoFormDialog open={showNew} onOpenChange={setShowNew} tenantId={tenantId} onSaved={() => refetch()} />}
+      {tenantId && (
+        <ContattoFormDialog
+          open={!!editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+          tenantId={tenantId}
+          contatto={editing}
+          onSaved={() => { setEditing(null); refetch(); }}
+        />
+      )}
     </div>
   );
 }

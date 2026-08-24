@@ -1,60 +1,133 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import { CATEGORIE_SOGGETTO, upsertSoggetto } from "@/lib/anagraficaSync";
 
 interface ContattoFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tenantId: string;
   prefill?: { telefono?: string; cellulare?: string; email?: string };
+  /** Contatto da modificare: se presente il dialog è in modalità modifica */
+  contatto?: any | null;
   onSaved?: () => void;
 }
 
-export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSaved }: ContattoFormDialogProps) {
+const EMPTY = {
+  nome: "",
+  cognome: "",
+  ragione_sociale: "",
+  telefono: "",
+  cellulare: "",
+  email: "",
+  pec: "",
+  codice_fiscale: "",
+  partita_iva: "",
+  indirizzo: "",
+  cap: "",
+  comune: "",
+  provincia: "",
+  autorizzazioni: "",
+  note: "",
+};
+
+export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, contatto, onSaved }: ContattoFormDialogProps) {
+  const isEdit = Boolean(contatto?.id);
   const [form, setForm] = useState({
-    nome: "",
-    cognome: "",
-    ragione_sociale: "",
+    ...EMPTY,
     telefono: prefill?.telefono || "",
     cellulare: prefill?.cellulare || "",
     email: prefill?.email || "",
-    pec: "",
-    codice_fiscale: "",
-    partita_iva: "",
-    indirizzo: "",
-    cap: "",
-    comune: "",
-    provincia: "",
-    autorizzazioni: "",
-    note: "",
   });
   const [categoria, setCategoria] = useState("CLIENTE");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    if (contatto) {
+      setForm({
+        nome: contatto.nome || "",
+        cognome: contatto.cognome || "",
+        ragione_sociale: contatto.ragione_sociale || "",
+        telefono: contatto.telefono || "",
+        cellulare: contatto.cellulare || "",
+        email: contatto.email || "",
+        pec: contatto.pec || "",
+        codice_fiscale: contatto.codice_fiscale || "",
+        partita_iva: contatto.partita_iva || "",
+        indirizzo: contatto.indirizzo || "",
+        cap: contatto.cap || "",
+        comune: contatto.comune || "",
+        provincia: contatto.provincia || "",
+        autorizzazioni: contatto.autorizzazioni || "",
+        note: contatto.note || "",
+      });
+      setCategoria((contatto.categoria || "CLIENTE").toUpperCase());
+    } else {
+      setForm({
+        ...EMPTY,
+        telefono: prefill?.telefono || "",
+        cellulare: prefill?.cellulare || "",
+        email: prefill?.email || "",
+      });
+      setCategoria("CLIENTE");
+    }
+  }, [open, contatto, prefill?.telefono, prefill?.cellulare, prefill?.email]);
+
   const handleSave = async () => {
-    if (!form.nome.trim()) { toast.error("Il nome è obbligatorio"); return; }
+    const denominazione = (form.ragione_sociale || `${form.nome} ${form.cognome}`).trim();
+    if (!denominazione) {
+      toast.error("Inserisci nome o ragione sociale");
+      return;
+    }
     setSaving(true);
-    const { error } = await supabase.from("rubrica_contatti").insert({
-      tenant_id: tenantId,
-      ...form,
-      categoria,
-      ruoli: categoria,
-      origine: "manuale",
-    });
-    setSaving(false);
-    if (error) { toast.error("Errore salvataggio: " + error.message); return; }
-    toast.success("Contatto salvato in rubrica");
-    onOpenChange(false);
-    onSaved?.();
-    setForm({ nome: "", cognome: "", ragione_sociale: "", telefono: "", cellulare: "", email: "", pec: "", codice_fiscale: "", partita_iva: "", indirizzo: "", cap: "", comune: "", provincia: "", autorizzazioni: "", note: "" });
-    setCategoria("CLIENTE");
+    try {
+      // Salva/aggiorna in un colpo solo: rubrica + anagrafica aziende (tendine formulari)
+      const res = await upsertSoggetto({
+        tenantId,
+        ragioneSociale: denominazione,
+        codiceFiscale: form.codice_fiscale,
+        partitaIva: form.partita_iva,
+        indirizzo: form.indirizzo,
+        comune: form.comune,
+        provincia: form.provincia,
+        cap: form.cap,
+        telefono: form.telefono,
+        cellulare: form.cellulare,
+        email: form.email,
+        pec: form.pec,
+        categoria,
+        autorizzazioni: form.autorizzazioni,
+        note: form.note,
+        contattoId: contatto?.id,
+      });
+      // Campi specifici della rubrica non gestiti dalla funzione condivisa
+      const { error } = await supabase
+        .from("rubrica_contatti")
+        .update({
+          nome: form.nome.trim() || denominazione,
+          cognome: form.cognome.trim() || null,
+          ragione_sociale: form.ragione_sociale.trim() || null,
+          note: form.note.trim() || null,
+          autorizzazioni: form.autorizzazioni.trim() || null,
+        })
+        .eq("id", res.contatto_id);
+      if (error) throw error;
+      toast.success(isEdit ? "Contatto aggiornato (rubrica e tendine)" : "Contatto salvato in rubrica e anagrafica");
+      onOpenChange(false);
+      onSaved?.();
+    } catch (e: any) {
+      toast.error("Errore salvataggio: " + (e?.message || e));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const f = (key: keyof typeof form, label: string) => (
+  const f = (key: keyof typeof EMPTY, label: string) => (
     <div className="space-y-1" key={key}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input value={form[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} className="h-8 text-sm" />
@@ -64,7 +137,10 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-card border-border">
-        <DialogHeader><DialogTitle>Nuovo Contatto</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEdit ? "Modifica contatto" : "Nuovo Contatto"}</DialogTitle></DialogHeader>
+        <p className="text-xs text-muted-foreground">
+          Le modifiche vengono riportate automaticamente anche nell'anagrafica usata dalle tendine dei formulari.
+        </p>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Tipo soggetto</Label>
           <select
@@ -72,7 +148,7 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
             onChange={(e) => setCategoria(e.target.value)}
             className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm"
           >
-            {["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO", "PRODUTTORE", "CLIENTE", "FORNITORE", "PRIVATO", "ALTRO"].map((c) => (
+            {CATEGORIE_SOGGETTO.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>

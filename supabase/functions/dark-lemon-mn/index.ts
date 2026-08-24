@@ -459,8 +459,12 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 ### 20. NOTIFICHE
 - Consultare notifiche con list_notifications (filtro per tipo e stato lettura)
 
-### 21. RUBRICA CONTATTI
+### 21. RUBRICA CONTATTI E NUOVI SOGGETTI
 - Cercare contatti con search_rubrica
+- Creare o aggiornare un soggetto con upsert_contatto: scrive CONTEMPORANEAMENTE in rubrica_contatti e in anagrafica_aziende_mp, quindi il soggetto compare subito nelle tendine di produttore/destinatario/trasportatore/intermediario dei formulari
+- Stessa logica del pulsante "NUOVO SOGGETTO" presente in ogni sezione del formulario e della modifica contatto in Rubrica: nessun duplicato se CF/P.IVA esiste già (viene aggiornato)
+- Quando l'utente sta compilando un formulario e cita un soggetto non presente in anagrafica: chiedi i dati minimi (denominazione, CF/P.IVA, indirizzo, comune, provincia, eventuale autorizzazione), chiama upsert_contatto con la categoria del ruolo richiesto e poi compila la sezione del formulario con update_fir_form o con il form bridge
+- Le modifiche fatte in Rubrica si riflettono automaticamente nelle tendine dei formulari
 
 ### 22. EMAIL
 - Consultare inbox/outbox con list_emails
@@ -2097,6 +2101,34 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "upsert_contatto",
+      description: "Crea o aggiorna un soggetto (azienda/persona) contemporaneamente in RUBRICA CONTATTI e in ANAGRAFICA AZIENDE (la stessa usata dalle tendine dei formulari). Usalo quando l'utente chiede di inserire un nuovo produttore, destinatario, trasportatore, intermediario, cliente o fornitore, anche mentre si compila un formulario. Se il soggetto esiste già (stesso CF/P.IVA) viene aggiornato senza creare duplicati.",
+      parameters: {
+        type: "object",
+        properties: {
+          ragione_sociale: { type: "string", description: "Denominazione / ragione sociale (obbligatoria)" },
+          categoria: { type: "string", enum: ["PRODUTTORE", "DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO", "CLIENTE", "FORNITORE", "PRIVATO", "ALTRO"], description: "Tipo soggetto" },
+          codice_fiscale: { type: "string" },
+          partita_iva: { type: "string" },
+          indirizzo: { type: "string" },
+          comune: { type: "string" },
+          provincia: { type: "string" },
+          cap: { type: "string" },
+          telefono: { type: "string" },
+          cellulare: { type: "string" },
+          email: { type: "string" },
+          pec: { type: "string" },
+          autorizzazioni: { type: "string", description: "Numero/i autorizzazione albo gestori, se noti" },
+          note: { type: "string" }
+        },
+        required: ["ragione_sociale"]
+      }
+    }
+  },
+
 
   // === EMAIL ===
   {
@@ -3736,6 +3768,108 @@ async function handleTool(
       const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
       return error ? { error: error.message } : { contatti: data || [] };
     }
+
+    // Crea/aggiorna un soggetto in rubrica E in anagrafica aziende (tendine formulari)
+    case "upsert_contatto": {
+      const rs = String(args.ragione_sociale || "").trim();
+      if (!rs) return { error: "ragione_sociale obbligatoria" };
+      const cat = String(args.categoria || "CLIENTE").toUpperCase();
+      const cf = (args.codice_fiscale || "").trim() || null;
+      const pi = (args.partita_iva || "").trim() || null;
+      const val = (v: any) => (v && String(v).trim() ? String(v).trim() : null);
+
+      const orFilters: string[] = [];
+      if (cf) orFilters.push(`codice_fiscale.eq.${cf}`);
+      if (pi) orFilters.push(`partita_iva.eq.${pi}`);
+
+      // 1) anagrafica aziende
+      let aziendaId: string | null = null;
+      let azQuery = db.from("anagrafica_aziende_mp").select("id").eq("tenant_id", tenantId).limit(1);
+      azQuery = orFilters.length ? azQuery.or(orFilters.join(",")) : azQuery.ilike("ragione_sociale", rs);
+      const { data: azExist } = await azQuery;
+      const azPayload: Record<string, any> = {
+        ragione_sociale: rs,
+        codice_fiscale: cf,
+        partita_iva: pi,
+        indirizzo: val(args.indirizzo),
+        citta: val(args.comune),
+        provincia: val(args.provincia),
+        cap: val(args.cap),
+        telefono: val(args.telefono),
+        cellulare: val(args.cellulare),
+        email: val(args.email),
+        pec: val(args.pec),
+        note: val(args.note),
+        cliente: cat === "CLIENTE" || cat === "PRODUTTORE",
+        fornitore: cat === "FORNITORE",
+        trasportatore: cat === "TRASPORTATORE",
+        destinatario: cat === "DESTINATARIO",
+        intermediario: cat === "INTERMEDIARIO",
+        attivo: true,
+      };
+      for (const k of Object.keys(azPayload)) if (azPayload[k] === null) delete azPayload[k];
+      if (azExist && azExist.length) {
+        aziendaId = azExist[0].id;
+        const { error } = await db.from("anagrafica_aziende_mp").update(azPayload).eq("id", aziendaId);
+        if (error) return { error: error.message };
+      } else {
+        const { data, error } = await db
+          .from("anagrafica_aziende_mp")
+          .insert({ ...azPayload, tenant_id: tenantId })
+          .select("id")
+          .single();
+        if (error) return { error: error.message };
+        aziendaId = data.id;
+      }
+
+      // 2) rubrica contatti
+      let ctQuery = db.from("rubrica_contatti").select("id").eq("tenant_id", tenantId).limit(1);
+      ctQuery = orFilters.length ? ctQuery.or(orFilters.join(",")) : ctQuery.ilike("ragione_sociale", rs);
+      const { data: ctExist } = await ctQuery;
+      const ctPayload: Record<string, any> = {
+        nome: rs,
+        ragione_sociale: rs,
+        codice_fiscale: cf,
+        partita_iva: pi,
+        indirizzo: val(args.indirizzo),
+        comune: val(args.comune),
+        provincia: val(args.provincia),
+        cap: val(args.cap),
+        telefono: val(args.telefono),
+        cellulare: val(args.cellulare),
+        email: val(args.email),
+        pec: val(args.pec),
+        categoria: cat,
+        ruoli: cat,
+        autorizzazioni: val(args.autorizzazioni),
+        note: val(args.note),
+      };
+      for (const k of Object.keys(ctPayload)) if (ctPayload[k] === null) delete ctPayload[k];
+      let contattoId: string | null = null;
+      if (ctExist && ctExist.length) {
+        contattoId = ctExist[0].id;
+        const { error } = await db.from("rubrica_contatti").update(ctPayload).eq("id", contattoId);
+        if (error) return { error: error.message };
+      } else {
+        const { data, error } = await db
+          .from("rubrica_contatti")
+          .insert({ ...ctPayload, tenant_id: tenantId, origine: "manuale" })
+          .select("id")
+          .single();
+        if (error) return { error: error.message };
+        contattoId = data.id;
+      }
+
+      return {
+        ok: true,
+        azienda_id: aziendaId,
+        contatto_id: contattoId,
+        categoria: cat,
+        ragione_sociale: rs,
+        messaggio: "Soggetto disponibile in rubrica e nelle tendine dei formulari",
+      };
+    }
+
 
     // ---------- EMAIL ----------
     case "list_emails": {
