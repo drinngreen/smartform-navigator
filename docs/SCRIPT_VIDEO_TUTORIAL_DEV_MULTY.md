@@ -87,6 +87,7 @@
 | 06:18 | Selezione metodo di pagamento e salvataggio | Indichi i chili per ogni materiale, scegli il metodo di pagamento — contanti o tracciabile — e salvi. | Pagamento obbligatorio |
 | 06:28 | Giacenza che si aggiorna subito dopo il salvataggio | Il salvataggio è una transazione unica: crea conferimento, ricevuta e movimento di magazzino, ricalcola il saldo e lo verifica. Se il saldo non torna, il salvataggio fallisce e ti avvisa. Non esistono più conferimenti salvati ma non contabilizzati. | Garanzia atomica sulle giacenze |
 | 06:38 | Widget limiti con barra colorata | Ogni privato ha il limite di millecinquecento chili all'anno: la barra è verde, poi ambra, poi rossa, e puoi mandare l'avviso via WhatsApp. | Limite 1500 kg/anno |
+| 06:42 | Click su Aggiorna e su Scarica limiti privati (PDF) | Il pulsante Aggiorna ricarica i chili conferiti in tempo reale; con Scarica limiti privati ottieni il PDF con nome, chili conferiti, chili residui e percentuale del limite per ogni privato. | Export limiti in PDF |
 
 ---
 
