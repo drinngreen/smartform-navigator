@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { FIRDataStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
+import { normalizeHpList } from "@/data/hpCaratteristiche";
 
 const STATO_FISICO_MAP: Record<string, string> = {
   "1": "solido pulverulento",
@@ -234,7 +235,7 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     stato_fisico: statoFisicoValue,
     quantita: storeData.quantita ? parseFloat(storeData.quantita) : null,
     unita_misura: storeData.unitaMisura || "kg",
-    caratteristiche_hp: storeData.caratteristicheHP.length > 0 ? storeData.caratteristicheHP : null,
+    caratteristiche_hp: normalizeHpList(storeData.caratteristicheHP).length > 0 ? normalizeHpList(storeData.caratteristicheHP) : null,
     data_partenza: storeData.oraDataInizioTrasporto || null,
     data_arrivo: storeData.dataOraArrivo || (
       storeData.dataFineTrasporto
