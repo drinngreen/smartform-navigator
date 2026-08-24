@@ -113,6 +113,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     codiceFiscale: "",
     password: "",
     targaAutomezzo: "",
+    targaRimorchio: "",
     mnContext: tenant.mnContext || "multyproget",
   });
   const [newPassword, setNewPassword] = useState("");
