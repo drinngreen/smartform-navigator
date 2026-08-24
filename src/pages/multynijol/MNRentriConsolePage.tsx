@@ -70,11 +70,24 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
+
+const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
+
+/** Destinazioni per la creazione dei formulari dalla Console RENTRI (stessi record fir_forms). */
+const DESTINAZIONI_FORMULARIO = [
+  { id: "multy-impianto", label: "Multyproget Impianto", tenantId: MULTY_TENANT, mnContext: "multyproget" },
+  { id: "multy-trasportatore", label: "Multyproget Trasportatore", tenantId: MULTY_TENANT, mnContext: "multyproget" },
+  { id: "niyol", label: "Niyol", tenantId: NIYOL_TENANT, mnContext: "niyol" },
+] as const;
+
+type DestinazioneId = (typeof DESTINAZIONI_FORMULARIO)[number]["id"];
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "stato", label: "Stato RENTRI", icon: <Activity size={14} /> },
   { id: "numeri", label: "Numeri FIR", icon: <Ticket size={14} /> },
+  { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
