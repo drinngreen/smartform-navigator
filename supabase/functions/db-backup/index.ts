@@ -15,7 +15,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const backupSecret = Deno.env.get("BACKUP_VPS_SECRET")!;
-    const vpsEndpoint = "http://46.224.136.98:4000/upload-backup";
+    const vpsEndpoint = Deno.env.get("BACKUP_VPS_ENDPOINT")?.trim() ||
+      "http://46.224.136.98:4000/upload-backup";
+
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -55,11 +57,20 @@ Deno.serve(async (req) => {
     // POST to VPS
     const payload = { data, filename, secret: backupSecret };
 
-    const response = await fetch(vpsEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    let response: Response;
+    try {
+      response = await fetch(vpsEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(60_000),
+      });
+    } catch (netErr) {
+      throw new Error(
+        `Backup destination unreachable (${vpsEndpoint}). Set the BACKUP_VPS_ENDPOINT secret to a reachable URL or bring the backup server online. Details: ${(netErr as Error).message}`
+      );
+    }
+
 
     const responseText = await response.text();
 

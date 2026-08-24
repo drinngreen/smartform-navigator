@@ -14,21 +14,35 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     queryFn: async () => {
       const anno = new Date().getFullYear();
       let q = supabase.from("privati_conferimenti" as any)
-        .select("nome_privato, telefono_privato, cf_piva_privato, kg_pesati, anno_dbt, tenant_id")
+        .select("nome_privato, cf_pi, kg_pesati, anno_dbt, tenant_id, privato_id")
         .eq("anno_dbt", anno);
       if (tenantId) q = q.eq("tenant_id", tenantId);
       const { data, error } = await q;
       if (error) throw error;
 
+      const rows = (data || []) as any[];
+      const privatiIds = Array.from(new Set(rows.map(r => r.privato_id).filter(Boolean)));
+      const telefoni = new Map<string, string>();
+      if (privatiIds.length) {
+        const { data: anag } = await supabase.from("anagrafica_privati" as any)
+          .select("id, telefono")
+          .in("id", privatiIds);
+        for (const a of ((anag || []) as any[])) {
+          if (a?.telefono) telefoni.set(a.id, a.telefono);
+        }
+      }
+
       const bykey = new Map<string, { nome: string; telefono?: string; cf?: string; kg: number }>();
-      for (const r of (data || []) as any[]) {
-        const key = (r.cf_piva_privato || r.nome_privato || "").toString().toUpperCase().trim();
+      for (const r of rows) {
+        const key = (r.cf_pi || r.nome_privato || "").toString().toUpperCase().trim();
         if (!key) continue;
-        const cur = bykey.get(key) || { nome: r.nome_privato || key, telefono: r.telefono_privato, cf: r.cf_piva_privato, kg: 0 };
+        const tel = r.privato_id ? telefoni.get(r.privato_id) : undefined;
+        const cur = bykey.get(key) || { nome: r.nome_privato || key, telefono: tel, cf: r.cf_pi, kg: 0 };
         cur.kg += Number(r.kg_pesati) || 0;
-        if (!cur.telefono && r.telefono_privato) cur.telefono = r.telefono_privato;
+        if (!cur.telefono && tel) cur.telefono = tel;
         bykey.set(key, cur);
       }
+
       return Array.from(bykey.values())
         .filter(p => p.kg >= LIMITE_KG * 0.8)
         .sort((a, b) => b.kg - a.kg);
