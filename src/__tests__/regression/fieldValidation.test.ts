@@ -24,8 +24,8 @@ describe("fieldValidation", () => {
 
   it("segnala codici fiscali di lunghezza errata", () => {
     expect(validateCfPiva("RSSMRA85M01H50")).toMatch(/16/);
-    expect(validateCfPiva("RSSMRA85M01H501Z")).toBeNull();
-    expect(validateCfPiva("RSSMRA85M01H501A")).toMatch(/non valido/);
+    expect(validateCfPiva("RSSMRA85M01H501Q")).toBeNull();
+    expect(validateCfPiva("RSSMRA85M01H501Z")).toMatch(/non valido/);
   });
 
   it("segnala date di nascita implausibili", () => {
