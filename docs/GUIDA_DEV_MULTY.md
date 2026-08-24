@@ -175,6 +175,8 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 ### 8.3 Numerazione e limiti
 - Trigger `assign_dbt_progressivo` → **numero progressivo DBT annuale** univoco (`numero_progressivo` + `anno_dbt`).
 - Widget **Limiti**: barra per privato verso i **1500 kg/anno** (verde <70%, ambra 70–95%, rosso ≥95%), con **📱 Avviso WhatsApp** (`send-whatsapp`).
+- Pulsante **Aggiorna**: ricarica in tempo reale i kg conferiti fino a quel momento.
+- Pulsante **Scarica limiti privati (PDF)**: esporta l'elenco completo dei privati con nome, telefono, **kg conferiti**, **kg residui** e **% del limite** alla data dell'aggiornamento.
 
 ⚠️ Il limite di 1500 kg è una business rule: non alterarlo.
 
