@@ -306,6 +306,28 @@ export function DevRicevuteModule() {
     );
   };
 
+  /** Esporta SOLO le ricevute selezionate in un unico PDF cumulativo */
+  const esportaSelezionateSoloDate = () => {
+    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
+    stampaRicevute(
+      sel.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      `Ricevute selezionate - solo date (${sel.length})`,
+    );
+  };
+
+  /** Esporta le ricevute selezionate con numero progressivo, in un unico PDF */
+  const esportaSelezionateComplete = () => {
+    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
+    stampaRicevute(sel.map((r) => buildRicevutaData(r)), `Ricevute selezionate (${sel.length})`);
+  };
+
+  const toggleSel = (id: string) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allSelected = filtered.length > 0 && filtered.every((r) => selectedIds.includes(r.id));
+  const toggleAll = () => setSelectedIds(allSelected ? [] : filtered.map((r) => r.id));
+
   const exportCols = [
     { header: "Numero", key: "numero_ricevuta", width: 16 },
     {
