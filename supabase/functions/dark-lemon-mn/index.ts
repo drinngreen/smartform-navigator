@@ -853,6 +853,8 @@ Modulo conferimenti privati.
 - Barra per ogni privato con progressione verso i **1500 kg/anno**.
 - Colore verde <70%, ambra 70–95%, rosso ≥95%.
 - Bottone **📱 Avviso WhatsApp** → chiama la Edge Function \`send-whatsapp\` (Meta Cloud API, fallback \`wa.me\`).
+- Bottone **Aggiorna**: ricarica i kg conferiti in tempo reale.
+- Bottone **Scarica limiti privati (PDF)**: elenco con nome, telefono (da \`anagrafica_privati\`), kg conferiti, kg residui e % del limite.
 
 ⚠️ Il limite 1500 kg è hardcoded nella business rule. Non alterarlo.
 
