@@ -19,6 +19,8 @@ import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
 import { CerPickerField } from "@/components/fir/CerPickerField";
+import { HpSelector } from "@/components/fir/HpSelector";
+
 import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST, NIYOL_TENANT_ID_CONST } from "@/lib/firFinalSync";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 
