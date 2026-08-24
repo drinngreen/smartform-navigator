@@ -26,6 +26,8 @@ const OCR_FIELD_ALIASES: Record<string, string[]> = {
   quantita_kg: ["quantita", "peso", "peso_kg"],
   targa_veicolo: ["targa_automezzo", "targa automezzo"],
   targa: ["targa_automezzo", "targa automezzo"],
+  targa_rimorchio: ["rimorchio", "targa rimorchio"],
+  rimorchio: ["targa_rimorchio", "targa rimorchio"],
   produttore_denominazione: ["denominazione_produttore", "denominazione produttore"],
   produttore_cf: ["codice_fiscale_produttore", "produttore_codice_fiscale"],
   produttore_codice_fiscale: ["codice_fiscale_produttore"],

@@ -930,7 +930,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("nome, cognome, codice_fiscale, targa_automezzo")
+        .select("nome, cognome, codice_fiscale, targa_automezzo, targa_rimorchio")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -963,6 +963,15 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       );
       if (targaField && profile.targa_automezzo) {
         updates[targaField.id] = profile.targa_automezzo;
+      }
+
+      // Targa rimorchio = dal profilo utente
+      const rimorchioField = fields.find(f =>
+        hasTokens(f.name, ["targa", "rimorchio"]) &&
+        !normalizeFieldName(f.name).includes("trasbordo")
+      );
+      if (rimorchioField && (profile as any).targa_rimorchio) {
+        updates[rimorchioField.id] = String((profile as any).targa_rimorchio);
       }
 
       // Numero iscrizione albo trasportatore
