@@ -113,7 +113,7 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "bozze", "dafirmare", "registri", "invii", "lemon"];
+    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "registri", "invii", "lemon"];
     return ids.includes(t as TabId) ? (t as TabId) : "stato";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
