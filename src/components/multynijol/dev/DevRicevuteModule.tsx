@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
+import { CalendarDays, FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 import { stampaRicevuta, stampaRicevute, type RicevutaPrintData } from "@/lib/ricevutaPrivatoPrint";
 import { CER_CATALOG } from "@/data/cerCatalog";
 
