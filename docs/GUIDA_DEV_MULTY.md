@@ -189,6 +189,13 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - La **data è modificabile**: la ricevuta si rigenera di conseguenza.
 - PDF intestato "Multyproget S.r.l.".
 
+### Stampa ed export
+- **Solo data** (su singola riga): stampa la ricevuta **senza numero progressivo**, con la sola data.
+- **ESPORTA SOLO DATE**: export massivo di tutte le ricevute filtrate nel layout senza numero progressivo.
+- **Selezione multipla**: checkbox su ogni riga + "Seleziona tutte" nell'intestazione.
+- **PDF cumulativo selezionate**: un unico PDF con le sole ricevute spuntate (con numero progressivo).
+- **PDF cumulativo selezionate (solo data)**: stesso PDF cumulativo ma in layout senza numero progressivo.
+
 ---
 
 ## 10. TAB **Giacenze**
