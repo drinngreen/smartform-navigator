@@ -55,7 +55,7 @@ export default function MNMultyprogetAppPage() {
         <FIRTrafficLight />
       </div>
       <div className="flex-1 overflow-y-auto pb-20">
-        <MNFIRFormComplete tenantId={MULTYPROGET_TENANT_ID} mnContext="multyproget" forceCartaceo />
+        <MNFIRFormComplete tenantId={MULTYPROGET_TENANT_ID} mnContext="multyproget" forceRentriDigital />
       </div>
       <MNBottomNav basePath={BASE_PATH} />
     </MobileShell>
