@@ -110,12 +110,30 @@ export function NuovoSoggettoDialog({
     }
   };
 
-  const f = (key: keyof typeof EMPTY, label: string) => (
-    <div className="space-y-1" key={key}>
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <Input value={form[key]} onChange={(e) => set(key, e.target.value)} className="h-8 text-sm" />
-    </div>
-  );
+  const f = (key: keyof typeof EMPTY, label: string) => {
+    const error = autoValidateByLabel(label, String(form[key] ?? ""));
+    return (
+      <div className="space-y-1" key={key}>
+        <Label className={`text-xs ${error ? "text-destructive" : "text-muted-foreground"}`}>{label}</Label>
+        <Input
+          value={form[key]}
+          onChange={(e) => set(key, e.target.value)}
+          aria-invalid={error ? true : undefined}
+          className={`h-8 text-sm ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+        />
+        {error && <p className="text-[11px] text-destructive">⚠ {error}</p>}
+      </div>
+    );
+  };
+
+  const hasErrors = Object.entries(form).some(([k, v]) => {
+    const labels: Record<string, string> = {
+      codiceFiscale: "Codice Fiscale", partitaIva: "Partita IVA", cap: "CAP", provincia: "Provincia",
+      telefono: "Telefono", cellulare: "Cellulare", email: "Email", pec: "PEC",
+    };
+    return labels[k] ? !!autoValidateByLabel(labels[k], String(v ?? "")) : false;
+  });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
