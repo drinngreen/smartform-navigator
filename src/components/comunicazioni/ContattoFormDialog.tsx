@@ -65,6 +65,18 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-card border-border">
         <DialogHeader><DialogTitle>Nuovo Contatto</DialogTitle></DialogHeader>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Tipo soggetto</Label>
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            {["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO", "PRODUTTORE", "CLIENTE", "FORNITORE", "PRIVATO", "ALTRO"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {f("nome", "Nome *")}
           {f("cognome", "Cognome")}
