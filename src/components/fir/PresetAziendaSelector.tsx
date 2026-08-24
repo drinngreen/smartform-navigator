@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, Search, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Search, Loader2, X, UserPlus } from "lucide-react";
+
+import { NuovoSoggettoDialog } from "@/components/fir/NuovoSoggettoDialog";
+import { ANAGRAFICA_TENANT_ID } from "@/lib/anagraficaSync";
+
 
 import { supabase } from "@/lib/supabaseClient";
 import { collectMatchingRegistryIds, normalizeRegistryValue } from "@/lib/registryMatching";
@@ -88,6 +92,7 @@ export function PresetAziendaSelector({
   const [loadedCf, setLoadedCf] = useState("");
   const [soloRuolo, setSoloRuolo] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [nuovoSoggettoOpen, setNuovoSoggettoOpen] = useState(false);
   const prevCfRef = useRef<string | null>(null);
   const autoAutRef = useRef<string>("");
 
@@ -585,6 +590,52 @@ export function PresetAziendaSelector({
             </button>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setNuovoSoggettoOpen(true)}
+          className="mt-1 flex items-center gap-1 rounded-md border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-200 hover:bg-emerald-400/20"
+        >
+          <UserPlus className="h-3 w-3" /> NUOVO SOGGETTO (salva in anagrafica e rubrica)
+        </button>
+
+        <NuovoSoggettoDialog
+          open={nuovoSoggettoOpen}
+          onOpenChange={setNuovoSoggettoOpen}
+          tenantId={ANAGRAFICA_TENANT_ID}
+          categoriaIniziale={ruolo || "CLIENTE"}
+          denominazioneIniziale={query}
+          onCreated={(s) => {
+            const nuova = {
+              id: s.azienda_id,
+              ragione_sociale: s.ragioneSociale,
+              indirizzo: s.indirizzoCompleto,
+              citta: "",
+              provincia: "",
+              cap: "",
+              codice_fiscale: s.codiceFiscale,
+              partita_iva: s.partitaIva,
+            };
+            setAllCompanies((prev) => [nuova, ...prev.filter((r) => r.id !== s.azienda_id)]);
+            setRoleCompanies((prev) => [nuova, ...prev.filter((r) => r.id !== s.azienda_id)]);
+            setClienteId(s.azienda_id);
+            setClienteIds([s.azienda_id]);
+            setClienteNome(s.ragioneSociale);
+            setQuery("");
+            setPickerOpen(false);
+            setLoadedCf(s.partitaIva || s.codiceFiscale || "");
+            prevCfRef.current = s.partitaIva || s.codiceFiscale || "";
+            onSelectAzienda({
+              nome: s.ragioneSociale,
+              indirizzo: s.indirizzoCompleto,
+              cf: s.codiceFiscale,
+              piva: s.partitaIva || s.codiceFiscale,
+            });
+            if (s.autorizzazioni) {
+              onSelectAutorizzazione({ numero: s.autorizzazioni, tipo: ruolo || "", data: "" });
+            }
+          }}
+        />
 
         {ruolo && ruolo !== "PRODUTTORE" && roleCompanies.length > 0 && (
           <label className="mt-1 flex items-center gap-2 text-[10px] text-white/60">

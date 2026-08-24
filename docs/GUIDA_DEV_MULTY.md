@@ -151,6 +151,15 @@ Più la sezione **Documenti scansionati** (`cliente_documenti`) su bucket **`doc
 
 I formulari creati da qui seguono le stesse regole della Sezione 1.
 
+### 7.1 Rubrica contatti modificabile e nuovi soggetti
+
+- Ogni contatto della **Rubrica** ha ora l'icona **matita (Modifica)**: si aprono tutti i campi (tipo soggetto, denominazione, CF/P.IVA, indirizzo, CAP, comune, provincia, telefono, cellulare, email, PEC, autorizzazioni, note).
+- **Il salvataggio è bidirezionale**: la modifica aggiorna sia `rubrica_contatti` sia `anagrafica_aziende_mp`, quindi **le tendine dei formulari (produttore, destinatario, trasportatore, intermediario) mostrano subito il dato corretto**.
+- In **ogni sezione del formulario** (Standard e Alternativo), sotto la ricerca anagrafica, c'è il pulsante verde **NUOVO SOGGETTO (salva in anagrafica e rubrica)**: si inserisce il soggetto al volo, la sezione del formulario si autocompila (denominazione, indirizzo, CF/P.IVA, eventuale autorizzazione) e il soggetto resta disponibile in rubrica e in tutte le tendine.
+- Il salvataggio passa dalla funzione condivisa `upsert_soggetto_anagrafica`: se CF/P.IVA esiste già il record viene **aggiornato**, non duplicato; la categoria (PRODUTTORE/DESTINATARIO/TRASPORTATORE/INTERMEDIARIO/CLIENTE/FORNITORE/PRIVATO) imposta anche i flag di ruolo in anagrafica.
+- **Dark Lemon** fa la stessa cosa con lo strumento `upsert_contatto`: puoi chiedergli "inserisci come destinatario la ditta X con P.IVA … e compila il formulario", e il soggetto finisce in rubrica, in anagrafica, nelle tendine e nel formulario.
+
+
 ---
 
 ## 8. TAB **Privati** (DBT)

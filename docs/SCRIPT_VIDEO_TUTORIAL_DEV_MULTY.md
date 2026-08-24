@@ -73,6 +73,8 @@
 | 04:50 | Tab Contatti, ricerca cliente | Contatti è la rubrica di clienti e impianti. Cerchi l'azienda e apri il Dettaglio. | Rubrica aziende |
 | 05:02 | Aprire il dettaglio, scorrere le quattro schede | Dentro trovi quattro schede: unità locali, targhe dei mezzi, cantieri e autorizzazioni con numero, data di inizio e scadenza. | Unità locali · Targhe · Cantieri · Autorizzazioni |
 | 05:15 | Sezione documenti scansionati | Puoi allegare i documenti scansionati, archiviati in un'area privata. E da qui puoi creare formulari, con le stesse regole viste all'inizio. | Documenti in area privata |
+| 05:20 | Icona matita su una riga della rubrica | Ogni contatto è modificabile: clicchi la matita, correggi i dati e salvi. La modifica si riflette subito anche nelle tendine dei formulari. | Modifica contatto → tendine aggiornate |
+| 05:24 | Formulario, pulsante verde NUOVO SOGGETTO | Se il soggetto non esiste, dentro il formulario clicchi NUOVO SOGGETTO: lo inserisci una volta sola e finisce in anagrafica, in rubrica e in tutte le tendine, compilando la sezione. Anche Dark Lemon lo fa su richiesta. | NUOVO SOGGETTO · anagrafica + rubrica |
 
 ---
 

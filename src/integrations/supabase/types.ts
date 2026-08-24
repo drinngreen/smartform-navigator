@@ -6710,6 +6710,27 @@ export type Database = {
         Args: { p_account_id: string; p_new_password: string }
         Returns: undefined
       }
+      upsert_soggetto_anagrafica: {
+        Args: {
+          p_autorizzazioni?: string
+          p_cap?: string
+          p_categoria?: string
+          p_cellulare?: string
+          p_codice_fiscale?: string
+          p_comune?: string
+          p_contatto_id?: string
+          p_email?: string
+          p_indirizzo?: string
+          p_note?: string
+          p_partita_iva?: string
+          p_pec?: string
+          p_provincia?: string
+          p_ragione_sociale: string
+          p_telefono?: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       verify_impianto_password: {
         Args: { p_email: string; p_password: string }
         Returns: boolean
