@@ -58,52 +58,12 @@ export function normalizzaMateriali(materiali: RicevutaMateriale[]): RicevutaMat
   });
 }
 
-export function buildRicevutaHtml(d: RicevutaPrintData): string {
-  const righe = normalizzaMateriali(d.materiali);
-  const totale = d.totale || righe.reduce((s, r) => s + (Number(r.importo) || 0), 0);
-
-  const indirizzoRighe = [
-    d.destinatario.indirizzo,
-    [d.destinatario.cap, d.destinatario.comune, d.destinatario.provincia ? `- ${d.destinatario.provincia}` : ""]
-      .filter(Boolean)
-      .join(" ")
-      .trim(),
-  ].filter(Boolean);
-
-  const righeHtml = righe
-    .map(
-      (r) => `<tr>
-        <td class="c-art">${esc(r.cer ?? "")}</td>
-        <td class="c-desc">${esc([r.cer ? `CER ${r.cer}` : "", r.descrizione ?? ""].filter(Boolean).join(" — "))}</td>
-        <td class="c-um">Kg</td>
-        <td class="c-num">${num(r.kg_pesati)}</td>
-        <td class="c-num">${r.prezzo_kg != null ? num(r.prezzo_kg) : ""}</td>
-        <td class="c-num">${r.importo != null ? num(r.importo) : ""}</td>
-      </tr>`,
-    )
-    .join("");
-
-  const veicoloHtml = d.veicolo
-    ? `<tr><td class="c-art"></td><td class="c-desc strong">${esc(d.veicolo)}</td><td></td><td></td><td></td><td></td></tr>`
-    : "";
-
-  const noteHtml = d.note
-    ? `<div class="note-box">
-         <div class="note-title">NOTE</div>
-         <div class="note-body">${esc(d.note).split("\n").join("<br/>")}</div>
-       </div>`
-    : "";
-
-  return `<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8" />
-<meta name="color-scheme" content="only light" />
-<title>Ricevuta ${esc(d.numero)}</title>
-<style>
+const RICEVUTA_CSS = `
   @page { size: A4; margin: 12mm; }
   html, body { background:#fff !important; color:#000 !important; margin:0; padding:0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; }
+  .doc-page { page-break-after: always; }
+  .doc-page:last-child { page-break-after: auto; }
   .titolo { text-align:center; font-weight:bold; font-size:13px; line-height:1.35; margin-bottom:18px; text-transform:uppercase; }
   .top { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:26px; }
   .cliente { border:1px solid #000; padding:10px 14px; min-width:300px; min-height:92px; }
@@ -141,9 +101,80 @@ export function buildRicevutaHtml(d: RicevutaPrintData): string {
   .note-title { font-size:9px; font-weight:bold; letter-spacing:1px; margin-bottom:3px; }
   .note-body { font-size:11px; white-space:pre-wrap; }
   @media print { html, body { background:#fff !important; } button, input { display:none !important; } }
-</style>
-</head>
-<body>
+`;
+
+/** Corpo di una singola ricevuta (una pagina A4) */
+export function buildRicevutaBody(d: RicevutaPrintData): string {
+  const righe = normalizzaMateriali(d.materiali);
+  const totale = d.totale || righe.reduce((s, r) => s + (Number(r.importo) || 0), 0);
+
+  const indirizzoRighe = [
+    d.destinatario.indirizzo,
+    [d.destinatario.cap, d.destinatario.comune, d.destinatario.provincia ? `- ${d.destinatario.provincia}` : ""]
+      .filter(Boolean)
+      .join(" ")
+      .trim(),
+  ].filter(Boolean);
+
+  const righeHtml = righe
+    .map(
+      (r) => `<tr>
+        <td class="c-art">${esc(r.cer ?? "")}</td>
+        <td class="c-desc">${esc([r.cer ? `CER ${r.cer}` : "", r.descrizione ?? ""].filter(Boolean).join(" — "))}</td>
+        <td class="c-um">Kg</td>
+        <td class="c-num">${num(r.kg_pesati)}</td>
+        <td class="c-num">${r.prezzo_kg != null ? num(r.prezzo_kg) : ""}</td>
+        <td class="c-num">${r.importo != null ? num(r.importo) : ""}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const veicoloHtml = d.veicolo
+    ? `<tr><td class="c-art"></td><td class="c-desc strong">${esc(d.veicolo)}</td><td></td><td></td><td></td><td></td></tr>`
+    : "";
+
+  const noteHtml = d.note
+    ? `<div class="note-box">
+         <div class="note-title">NOTE</div>
+         <div class="note-body">${esc(d.note).split("\n").join("<br/>")}</div>
+       </div>`
+    : "";
+
+  const dataVal = esc(new Date(d.data).toLocaleDateString("it-IT"));
+
+  // Layout "solo date": nessun numero progressivo di documento
+  const testataHtml = d.soloData
+    ? `<tr>
+      <td class="center" style="width:22%"><span class="lbl">Data Doc.</span><span class="val">${dataVal}</span></td>
+      <td style="width:48%"><span class="lbl">Partita Iva / Cod. Fiscale</span><span class="val">${esc(d.destinatario.partita_iva ?? "")} / ${esc(d.destinatario.codice_fiscale ?? "")}</span></td>
+      <td class="center" style="width:18%"><span class="lbl">Codice</span><span class="val">${esc(d.destinatario.codice ?? "")}</span></td>
+      <td class="center" style="width:12%"><span class="lbl">Pag.</span><span class="val">1/1</span></td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Causale del trasporto</span><span class="val">${esc(d.causale || "ACQUISTO")}</span></td>
+      <td colspan="3"><span class="lbl">Banca d'appoggio</span><span class="val">&nbsp;</span></td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Cond. Pagamento</span><span class="val">${esc(d.condizioniPagamento || "")}</span></td>
+      <td colspan="3"><span class="lbl">Filiale</span><span class="val">&nbsp;</span></td>
+    </tr>`
+    : `<tr>
+      <td class="center" style="width:18%"><span class="lbl">N. Documento</span><span class="val">${esc(d.numero)}</span></td>
+      <td class="center" style="width:15%"><span class="lbl">Data Doc.</span><span class="val">${dataVal}</span></td>
+      <td style="width:42%"><span class="lbl">Partita Iva / Cod. Fiscale</span><span class="val">${esc(d.destinatario.partita_iva ?? "")} / ${esc(d.destinatario.codice_fiscale ?? "")}</span></td>
+      <td class="center" style="width:15%"><span class="lbl">Codice</span><span class="val">${esc(d.destinatario.codice ?? "")}</span></td>
+      <td class="center" style="width:10%"><span class="lbl">Pag.</span><span class="val">1/1</span></td>
+    </tr>
+    <tr>
+      <td colspan="2"><span class="lbl">Causale del trasporto</span><span class="val">${esc(d.causale || "ACQUISTO")}</span></td>
+      <td colspan="3"><span class="lbl">Banca d'appoggio</span><span class="val">&nbsp;</span></td>
+    </tr>
+    <tr>
+      <td colspan="2"><span class="lbl">Cond. Pagamento</span><span class="val">${esc(d.condizioniPagamento || "")}</span></td>
+      <td colspan="3"><span class="lbl">Filiale</span><span class="val">&nbsp;</span></td>
+    </tr>`;
+
+  return `<div class="doc-page">
   <div class="titolo">Soggetto privato esonerato dall'emissione della fattura ai sensi<br/>dell'art 1 D.P.R. 633 e successive modifiche ed integrazioni</div>
 
   <div class="top">
@@ -161,21 +192,7 @@ export function buildRicevutaHtml(d: RicevutaPrintData): string {
   </div>
 
   <table class="doc">
-    <tr>
-      <td class="center" style="width:18%"><span class="lbl">N. Documento</span><span class="val">${esc(d.numero)}</span></td>
-      <td class="center" style="width:15%"><span class="lbl">Data Doc.</span><span class="val">${esc(new Date(d.data).toLocaleDateString("it-IT"))}</span></td>
-      <td style="width:42%"><span class="lbl">Partita Iva / Cod. Fiscale</span><span class="val">${esc(d.destinatario.partita_iva ?? "")} / ${esc(d.destinatario.codice_fiscale ?? "")}</span></td>
-      <td class="center" style="width:15%"><span class="lbl">Codice</span><span class="val">${esc(d.destinatario.codice ?? "")}</span></td>
-      <td class="center" style="width:10%"><span class="lbl">Pag.</span><span class="val">1/1</span></td>
-    </tr>
-    <tr>
-      <td colspan="2"><span class="lbl">Causale del trasporto</span><span class="val">${esc(d.causale || "ACQUISTO")}</span></td>
-      <td colspan="3"><span class="lbl">Banca d'appoggio</span><span class="val">&nbsp;</span></td>
-    </tr>
-    <tr>
-      <td colspan="2"><span class="lbl">Cond. Pagamento</span><span class="val">${esc(d.condizioniPagamento || "")}</span></td>
-      <td colspan="3"><span class="lbl">Filiale</span><span class="val">&nbsp;</span></td>
-    </tr>
+    ${testataHtml}
   </table>
 
   <table class="items">
@@ -229,15 +246,39 @@ export function buildRicevutaHtml(d: RicevutaPrintData): string {
       <div class="dots"></div>
     </div>
   </div>
+  </div>`;
+}
+
+function wrapDocument(title: string, bodies: string[]): string {
+  return `<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="color-scheme" content="only light" />
+<title>${esc(title)}</title>
+<style>${RICEVUTA_CSS}</style>
+</head>
+<body>
+${bodies.join("\n")}
 </body>
 </html>`;
 }
 
-export function stampaRicevuta(d: RicevutaPrintData) {
+export function buildRicevutaHtml(d: RicevutaPrintData): string {
+  return wrapDocument(`Ricevuta ${d.soloData ? new Date(d.data).toLocaleDateString("it-IT") : d.numero}`, [
+    buildRicevutaBody(d),
+  ]);
+}
+
+export function buildRicevuteHtml(list: RicevutaPrintData[], title = "Ricevute"): string {
+  return wrapDocument(title, list.map(buildRicevutaBody));
+}
+
+function apriEStampa(html: string) {
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.open();
-  w.document.write(buildRicevutaHtml(d));
+  w.document.write(html);
   w.document.close();
   setTimeout(() => {
     try {
@@ -247,4 +288,14 @@ export function stampaRicevuta(d: RicevutaPrintData) {
       /* popup bloccato */
     }
   }, 350);
+}
+
+export function stampaRicevuta(d: RicevutaPrintData) {
+  apriEStampa(buildRicevutaHtml(d));
+}
+
+/** Stampa/scarica più ricevute in un unico documento (una per pagina) */
+export function stampaRicevute(list: RicevutaPrintData[], title = "Ricevute") {
+  if (!list.length) return;
+  apriEStampa(buildRicevuteHtml(list, title));
 }
