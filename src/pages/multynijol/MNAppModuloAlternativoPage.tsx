@@ -32,7 +32,7 @@ export default function MNAppModuloAlternativoPage() {
   return (
     <MobileShell>
       <div className="flex-1 overflow-y-auto p-4 pb-24">
-        <FIRAlternativeForm forceCartaceo />
+        <FIRAlternativeForm forceRentriDigital />
       </div>
       {isGlobalReco ? <BottomNav /> : <MNBottomNav basePath={basePath} />}
     </MobileShell>

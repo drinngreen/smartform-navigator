@@ -541,17 +541,17 @@ interface FIRAlternativeFormProps {
   registryMovementType?: "Carico" | "Scarico";
   /** Tenant proprietario del formulario: forza società/QR/vidimazione (Multyproget vs Niyol). */
   tenantId?: string;
-  /** App autisti (Niyol/Multyproget): solo formulari cartacei, formato bloccato e nessuna fatturazione. */
-  forceCartaceo?: boolean;
+  /** App autisti: FIR digitale RENTRI obbligatorio. */
+  forceRentriDigital?: boolean;
   onSaved?: () => void;
   onPrinted?: () => void;
 }
 
-export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, tenantId: tenantIdProp, forceCartaceo = false, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
+export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId, impiantoId, draftData, ocrEntries, printOnly, blankPrint, disableRentriActions, registryMovementType, tenantId: tenantIdProp, forceRentriDigital = false, onSaved, onPrinted }: FIRAlternativeFormProps = {}) {
 
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>({});
-  const [formatoFir, setFormatoFir] = useState<FormatoFir>(() => (forceCartaceo ? "cartaceo" : normalizeFormatoFir((draftData?.form_data as Record<string, unknown> | undefined)?.formato_fir)));
+  const [formatoFir, setFormatoFir] = useState<FormatoFir>(() => (forceRentriDigital ? "digitale" : normalizeFormatoFir((draftData?.form_data as Record<string, unknown> | undefined)?.formato_fir)));
   const [activeDraftId, setActiveDraftId] = useState<string | null>(firFormId || null);
   const [activeDraftNumero, setActiveDraftNumero] = useState<string | null>(presetNumeroFir || null);
   const [loading, setLoading] = useState(true);
@@ -1275,7 +1275,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         </div>
       </div>
 
-      <FirFormatoSelector value={forceCartaceo ? "cartaceo" : formatoFir} onChange={(v) => { if (!forceCartaceo) setFormatoFir(v); }} disabled={forceCartaceo} />
+      <FirFormatoSelector value={forceRentriDigital ? "digitale" : formatoFir} onChange={(v) => { if (!forceRentriDigital) setFormatoFir(v); }} disabled={forceRentriDigital} />
 
       <div className="flex gap-2">
         {[1, 2, 3].map((p) => (
