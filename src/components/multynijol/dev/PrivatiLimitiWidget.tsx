@@ -35,7 +35,7 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         }
       }
 
-      const bykey = new Map<string, { nome: string; telefono?: string; cf?: string; kg: number }>();
+      const bykey = new Map<string, PrivatoKg>();
       for (const r of rows) {
         const key = (r.cf_pi || r.nome_privato || "").toString().toUpperCase().trim();
         if (!key) continue;
@@ -46,12 +46,53 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         bykey.set(key, cur);
       }
 
-      return Array.from(bykey.values())
-        .filter(p => p.kg >= LIMITE_KG * 0.8)
-        .sort((a, b) => b.kg - a.kg);
+      const tutti = Array.from(bykey.values()).sort((a, b) => b.kg - a.kg);
+      return {
+        tutti,
+        allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8),
+      };
     },
     refetchInterval: 60_000,
   });
+
+  const scaricaPdf = async () => {
+    const res = await refetch();
+    const tutti = res.data?.tutti ?? data?.tutti ?? [];
+    if (!tutti.length) return toast.error("Nessun conferimento privato quest'anno");
+    const anno = new Date().getFullYear();
+    const ora = new Date();
+    exportToPdf(
+      tutti.map((p, i) => ({
+        n: i + 1,
+        nome: p.nome,
+        cf: p.cf || "—",
+        kg: p.kg,
+        residuo: Math.max(0, LIMITE_KG - p.kg),
+        perc: Math.round((p.kg / LIMITE_KG) * 100),
+      })),
+      [
+        { header: "#", key: "n", width: 8 },
+        { header: "Privato", key: "nome", width: 40 },
+        { header: "Cod. Fiscale / P.IVA", key: "cf", width: 24 },
+        {
+          header: "Kg conferiti",
+          key: "kg",
+          width: 16,
+          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+        },
+        {
+          header: "Kg residui",
+          key: "residuo",
+          width: 16,
+          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+        },
+        { header: "% limite", key: "perc", width: 12, format: (v: any) => `${v}%` },
+      ] as any,
+      `limiti-privati-${anno}`,
+      `LIMITI PRIVATI ${anno} — Limite ${LIMITE_KG} kg/anno\nAggiornato al ${ora.toLocaleDateString("it-IT")} ore ${ora.toLocaleTimeString("it-IT")}`,
+    );
+    toast.success("PDF limiti privati generato");
+  };
 
   const invia = async (p: { nome: string; telefono?: string; kg: number }) => {
     if (!p.telefono) return toast.error("Telefono mancante in anagrafica");
