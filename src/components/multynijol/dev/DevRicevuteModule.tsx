@@ -266,7 +266,7 @@ export function DevRicevuteModule() {
       ? `VEICOLO ${[r.conferimento.modello_automezzo, `TARGA ${r.conferimento.targa_automezzo}`].filter(Boolean).join(" ")}`
       : null;
 
-    stampaRicevuta({
+    return {
       numero: r.numero_ricevuta ?? "",
       data: r.data_emissione,
       destinatario: {
@@ -288,7 +288,22 @@ export function DevRicevuteModule() {
       totale: totaleRicevuta || materiali.reduce((s, m) => s + (Number(m.importo) || 0), 0),
       note: noteComplete || null,
       veicolo,
-    });
+    };
+  };
+
+  const printSingle = (r: RicevutaRow) => stampaRicevuta(buildRicevutaData(r));
+
+  /** Stampa una singola ricevuta nel layout "solo date" (senza numero progressivo) */
+  const printSingleSoloData = (r: RicevutaRow) =>
+    stampaRicevuta({ ...buildRicevutaData(r), soloData: true });
+
+  /** Esporta tutte le ricevute filtrate nel layout "solo date" */
+  const esportaSoloDate = () => {
+    if (!filtered.length) return toast.error("Nessuna ricevuta da esportare");
+    stampaRicevute(
+      filtered.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      "Ricevute - solo date",
+    );
   };
 
   const exportCols = [
