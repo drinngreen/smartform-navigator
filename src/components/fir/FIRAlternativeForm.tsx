@@ -1275,7 +1275,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         </div>
       </div>
 
-      <FirFormatoSelector value={formatoFir} onChange={setFormatoFir} />
+      <FirFormatoSelector value={forceCartaceo ? "cartaceo" : formatoFir} onChange={(v) => { if (!forceCartaceo) setFormatoFir(v); }} disabled={forceCartaceo} />
 
       <div className="flex gap-2">
         {[1, 2, 3].map((p) => (
