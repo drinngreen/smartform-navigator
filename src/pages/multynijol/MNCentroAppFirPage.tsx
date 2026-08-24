@@ -54,6 +54,7 @@ interface Employee {
   cognome: string;
   codice_fiscale: string;
   targa: string | null;
+  targa_rimorchio: string | null;
   last_sign_in_at: string | null;
   deactivated_at: string | null;
 }
@@ -97,7 +98,7 @@ export default function MNCentroAppFirPage() {
   const [poolNumber, setPoolNumber] = useState("");
   const [poolBusy, setPoolBusy] = useState(false);
   const [editDialog, setEditDialog] = useState<{ open: boolean; emp: Employee | null }>({ open: false, emp: null });
-  const [editForm, setEditForm] = useState({ nome: "", cognome: "", codiceFiscale: "", password: "", targa: "", mnContext: "multyproget" });
+  const [editForm, setEditForm] = useState({ nome: "", cognome: "", codiceFiscale: "", password: "", targa: "", targaRimorchio: "", mnContext: "multyproget" });
   const [editBusy, setEditBusy] = useState(false);
 
 
@@ -136,6 +137,7 @@ export default function MNCentroAppFirPage() {
           cognome: u.profile?.cognome ?? "",
           codice_fiscale: u.profile?.codice_fiscale ?? "",
           targa: u.profile?.targa_automezzo ?? null,
+          targa_rimorchio: (u.profile as any)?.targa_rimorchio ?? null,
           last_sign_in_at: u.last_sign_in_at ?? null,
           deactivated_at: u.profile?.deactivated_at ?? null,
         }))
@@ -338,6 +340,7 @@ export default function MNCentroAppFirPage() {
       codiceFiscale: emp.codice_fiscale,
       password: "",
       targa: emp.targa ?? "",
+      targaRimorchio: emp.targa_rimorchio ?? "",
       mnContext: cfg.mnContext,
     });
     setEditDialog({ open: true, emp });
@@ -361,6 +364,7 @@ export default function MNCentroAppFirPage() {
           mn_context: target.mnContext,
           org_id: target.orgId,
           targa_automezzo: editForm.targa.trim() || null,
+          targa_rimorchio: editForm.targaRimorchio.trim() || null,
         },
       });
       if (error) throw error;
@@ -717,12 +721,20 @@ export default function MNCentroAppFirPage() {
               value={editForm.password}
               onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
             />
-            <Input
-              placeholder="Targa automezzo"
-              value={editForm.targa}
-              onChange={(e) => setEditForm((f) => ({ ...f, targa: e.target.value.toUpperCase() }))}
-              className="font-mono"
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="Targa automezzo"
+                value={editForm.targa}
+                onChange={(e) => setEditForm((f) => ({ ...f, targa: e.target.value.toUpperCase() }))}
+                className="font-mono"
+              />
+              <Input
+                placeholder="Targa rimorchio"
+                value={editForm.targaRimorchio}
+                onChange={(e) => setEditForm((f) => ({ ...f, targaRimorchio: e.target.value.toUpperCase() }))}
+                className="font-mono"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, emp: null })}>Annulla</Button>
