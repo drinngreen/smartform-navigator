@@ -1052,9 +1052,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       )}
 
       <FirFormatoSelector
-        value={d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
-        onChange={(value) => u("formatoFir", value)}
-        disabled={store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
+        value={forceCartaceo || d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
+        onChange={(value) => { if (!forceCartaceo) u("formatoFir", value); }}
+        disabled={forceCartaceo || store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
       />
 
 
