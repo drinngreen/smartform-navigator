@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert, Download, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { exportToPdf } from "@/lib/exportUtils";
 
 const LIMITE_KG = 1500;
+
+type PrivatoKg = { nome: string; telefono?: string; cf?: string; kg: number };
 
 export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["privati-limiti-widget", tenantId],
     queryFn: async () => {
       const anno = new Date().getFullYear();
