@@ -55,7 +55,7 @@ export default function MNNiyolAppPage() {
         <FIRTrafficLight />
       </div>
       <div className="flex-1 overflow-y-auto pb-20">
-        <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" />
+        <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" forceCartaceo />
       </div>
       <MNBottomNav basePath={BASE_PATH} />
     </MobileShell>

@@ -293,9 +293,11 @@ interface MNFIRFormCompleteProps {
   enableFatturazione?: boolean;
   /** Modalità creazione manuale: mostra subito il modulo vuoto, senza elenco FIR assegnati. */
   creationMode?: boolean;
+  /** App autisti (Niyol/Multyproget): solo formulari cartacei, formato bloccato e nessuna fatturazione. */
+  forceCartaceo?: boolean;
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false, forceCartaceo = false }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
@@ -319,6 +321,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+
+  // App autisti: il formulario è sempre cartaceo (nessun invio RENTRI, nessuna fattura)
+  useEffect(() => {
+    if (forceCartaceo && d.formatoFir !== "cartaceo") u("formatoFir", "cartaceo");
+  }, [forceCartaceo, d.formatoFir]);
+
+
 
   const hasInitializedCreationMode = useRef(false);
   useEffect(() => {
@@ -1043,9 +1052,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       )}
 
       <FirFormatoSelector
-        value={d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
-        onChange={(value) => u("formatoFir", value)}
-        disabled={store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
+        value={forceCartaceo || d.formatoFir === "cartaceo" ? "cartaceo" : "digitale"}
+        onChange={(value) => { if (!forceCartaceo) u("formatoFir", value); }}
+        disabled={forceCartaceo || store.workflowStatus === "inviato" || store.workflowStatus === "chiuso"}
       />
 
 
@@ -1223,7 +1232,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       )}
 
       {/* Crea fattura dal formulario (solo ufficio/admin) */}
-      {enableFatturazione && (creationMode || isStarted || store.editingFirId) && (
+      {enableFatturazione && !forceCartaceo && (creationMode || isStarted || store.editingFirId) && (
         <button
           onClick={() => void apriCreaFattura()}
           className="w-full py-3 rounded-2xl bg-neon-green/15 border border-neon-green/40 text-neon-green font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-green/25 transition-colors"
