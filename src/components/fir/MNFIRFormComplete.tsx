@@ -1232,7 +1232,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       )}
 
       {/* Crea fattura dal formulario (solo ufficio/admin) */}
-      {enableFatturazione && (creationMode || isStarted || store.editingFirId) && (
+      {enableFatturazione && !forceCartaceo && (creationMode || isStarted || store.editingFirId) && (
         <button
           onClick={() => void apriCreaFattura()}
           className="w-full py-3 rounded-2xl bg-neon-green/15 border border-neon-green/40 text-neon-green font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-green/25 transition-colors"
