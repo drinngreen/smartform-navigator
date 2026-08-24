@@ -175,7 +175,7 @@ export function NuovoSoggettoDialog({
         {f("note", "Note")}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Salvataggio..." : "Salva e compila"}</Button>
+          <Button onClick={handleSave} disabled={saving || hasErrors}>{saving ? "Salvataggio..." : hasErrors ? "Correggi i campi in rosso" : "Salva e compila"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
