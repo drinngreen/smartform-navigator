@@ -15,6 +15,7 @@ export default function ProfileSetupPage() {
     cognome: "",
     codice_fiscale: "",
     targa_automezzo: "",
+    targa_rimorchio: "",
   });
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function ProfileSetupPage() {
         cognome: profile.cognome || "",
         codice_fiscale: profile.codice_fiscale || "",
         targa_automezzo: profile.targa_automezzo || "",
+        targa_rimorchio: (profile as any).targa_rimorchio || "",
       });
     }
   }, [profile]);
@@ -67,6 +69,7 @@ export default function ProfileSetupPage() {
             cognome: form.cognome.trim(),
             codice_fiscale: form.codice_fiscale.trim().toUpperCase(),
             targa_automezzo: form.targa_automezzo.trim() || null,
+            targa_rimorchio: form.targa_rimorchio.trim() || null,
           })
           .eq("user_id", user.id);
 
@@ -80,6 +83,7 @@ export default function ProfileSetupPage() {
             cognome: form.cognome.trim(),
             codice_fiscale: form.codice_fiscale.trim().toUpperCase(),
             targa_automezzo: form.targa_automezzo.trim() || null,
+            targa_rimorchio: form.targa_rimorchio.trim() || null,
           });
 
         if (error) throw error;
@@ -152,6 +156,17 @@ export default function ProfileSetupPage() {
               value={form.targa_automezzo}
               onChange={(e) => setForm({ ...form, targa_automezzo: e.target.value.toUpperCase() })}
               placeholder="AB123CD"
+              className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-3 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary uppercase"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-muted-foreground font-mono uppercase tracking-wider mb-1 block">Targa Rimorchio</label>
+            <input
+              type="text"
+              value={form.targa_rimorchio}
+              onChange={(e) => setForm({ ...form, targa_rimorchio: e.target.value.toUpperCase() })}
+              placeholder="XX000YY"
               className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-3 text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary uppercase"
             />
           </div>

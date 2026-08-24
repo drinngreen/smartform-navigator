@@ -83,7 +83,7 @@ export function DevLogisticaModule() {
           </tr>
         </tbody>
       </table>
-      <div class="totals"><strong>Targa:</strong> ${fir.trasportatore_targa_automezzo || "-"}</div>
+      <div class="totals"><strong>Targa:</strong> ${fir.trasportatore_targa_automezzo || "-"}${fir.trasportatore_targa_rimorchio ? ` — <strong>Rimorchio:</strong> ${fir.trasportatore_targa_rimorchio}` : ""}</div>
       </body></html>
     `);
     w.document.close();

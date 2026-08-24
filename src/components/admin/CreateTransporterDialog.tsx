@@ -39,6 +39,7 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
     codiceFiscale: "",
     password: "",
     targaAutomezzo: "",
+    targaRimorchio: "",
   });
 
   const CF_REGEX = /^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
@@ -69,6 +70,7 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
           mn_context: activeTenant.mnContext,
           org_id: activeTenant.orgId,
           targa_automezzo: form.targaAutomezzo.trim() || null,
+          targa_rimorchio: form.targaRimorchio.trim() || null,
         },
       });
       if (error) {
@@ -82,7 +84,7 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
       }
       if (data?.error) throw new Error(data.message || data.error);
       toast.success(`Trasportatore ${form.nome} ${form.cognome} creato per ${activeTenant.label}`);
-      setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "" });
+      setForm({ nome: "", cognome: "", codiceFiscale: "", password: "", targaAutomezzo: "", targaRimorchio: "" });
       onOpenChange(false);
       onCreated();
     } catch (e: any) {
@@ -168,6 +170,14 @@ export function CreateTransporterDialog({ open, onOpenChange, onCreated, tenant,
             name="nuova-targa"
             autoComplete="off"
             onChange={(e) => setForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
+            className="font-mono"
+          />
+          <Input
+            placeholder="Targa rimorchio (opzionale)"
+            value={form.targaRimorchio}
+            name="nuovo-rimorchio"
+            autoComplete="off"
+            onChange={(e) => setForm((f) => ({ ...f, targaRimorchio: e.target.value.toUpperCase() }))}
             className="font-mono"
           />
         </div>

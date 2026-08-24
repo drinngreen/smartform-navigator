@@ -131,7 +131,7 @@ serve(async (req) => {
 
     // ACTION: update_user_access - modifica login/profilo/app di un trasportatore
     if (action === "update_user_access") {
-      const { user_id, nome, cognome, codice_fiscale, password, tenant_id, mn_context, org_id, targa_automezzo } = body;
+      const { user_id, nome, cognome, codice_fiscale, password, tenant_id, mn_context, org_id, targa_automezzo, targa_rimorchio } = body;
       if (!user_id || !nome || !cognome || !codice_fiscale || !tenant_id || !mn_context) {
         return new Response(JSON.stringify({ error: "user_id, nome, cognome, codice_fiscale, tenant_id, mn_context required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -170,6 +170,7 @@ serve(async (req) => {
           tenant_id,
           mn_context,
           targa_automezzo: targa_automezzo || null,
+          targa_rimorchio: targa_rimorchio || null,
           deactivated_at: null,
         })
         .eq("user_id", user_id);
@@ -337,7 +338,7 @@ serve(async (req) => {
 
     // ACTION: create_user - admin creates a transporter user
     if (action === "create_user") {
-      const { nome, cognome, codice_fiscale, password, tenant_id: targetTenantId, mn_context, org_id, targa_automezzo } = body;
+      const { nome, cognome, codice_fiscale, password, tenant_id: targetTenantId, mn_context, org_id, targa_automezzo, targa_rimorchio } = body;
       if (!nome || !cognome || !codice_fiscale || !password) {
         return new Response(JSON.stringify({ error: "nome, cognome, codice_fiscale, password required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -398,6 +399,7 @@ serve(async (req) => {
         tenant_id: targetTenantId || null,
         mn_context: mn_context || null,
         targa_automezzo: targa_automezzo || null,
+        targa_rimorchio: targa_rimorchio || null,
       });
 
       // Assign user role

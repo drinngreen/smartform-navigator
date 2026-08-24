@@ -732,6 +732,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     if (!form.trasportatore_targa_automezzo && profile?.targa_automezzo) {
       store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
     }
+    if (!form.trasportatore_targa_rimorchio && (profile as any)?.targa_rimorchio) {
+      store.updateField("targaRimorchio", String((profile as any).targa_rimorchio).trim());
+    }
     if (!form.trasportatore_conducente && profile?.nome) {
       store.updateField("conducenteNomeCognome", profile.nome.trim());
     }
@@ -1192,6 +1195,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               </div>
               <div className="bg-card/80 p-4 space-y-2 text-xs font-mono">
                 <div className="flex justify-between"><span className="text-muted-foreground">Targa:</span><span className="text-white font-bold">{d.targaAutomezzo || "—"}</span></div>
+                {d.targaRimorchio && <div className="flex justify-between"><span className="text-muted-foreground">Rimorchio:</span><span className="text-white font-bold">{d.targaRimorchio}</span></div>}
                 <div className="flex justify-between"><span className="text-muted-foreground">EER:</span><span className="text-white font-bold">{d.codiceEER || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Quantità:</span><span className="text-white font-bold">{d.quantita} {d.unitaMisura}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Produttore:</span><span className="text-white font-bold truncate ml-2">{d.produttoreDenominazione || "—"}</span></div>

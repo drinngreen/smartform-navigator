@@ -5191,6 +5191,7 @@ export type Database = {
           social_bio: string | null
           social_warnings: number
           targa_automezzo: string | null
+          targa_rimorchio: string | null
           tenant_id: string | null
           updated_at: string | null
           user_id: string
@@ -5211,6 +5212,7 @@ export type Database = {
           social_bio?: string | null
           social_warnings?: number
           targa_automezzo?: string | null
+          targa_rimorchio?: string | null
           tenant_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -5231,6 +5233,7 @@ export type Database = {
           social_bio?: string | null
           social_warnings?: number
           targa_automezzo?: string | null
+          targa_rimorchio?: string | null
           tenant_id?: string | null
           updated_at?: string | null
           user_id?: string

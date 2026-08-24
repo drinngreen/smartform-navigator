@@ -60,6 +60,7 @@ interface UserEntry {
     cognome: string;
     codice_fiscale: string;
     targa_automezzo: string | null;
+    targa_rimorchio?: string | null;
     mn_context: string | null;
     deactivated_at?: string | null;
   } | null;
@@ -73,6 +74,7 @@ interface AccessForm {
   codiceFiscale: string;
   password: string;
   targaAutomezzo: string;
+  targaRimorchio: string;
   mnContext: string;
 }
 
@@ -111,6 +113,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
     codiceFiscale: "",
     password: "",
     targaAutomezzo: "",
+    targaRimorchio: "",
     mnContext: tenant.mnContext || "multyproget",
   });
   const [newPassword, setNewPassword] = useState("");
@@ -203,6 +206,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       codiceFiscale: user.profile?.codice_fiscale || "",
       password: "",
       targaAutomezzo: user.profile?.targa_automezzo || "",
+      targaRimorchio: user.profile?.targa_rimorchio || "",
       mnContext: user.profile?.mn_context || tenant.mnContext || "multyproget",
     });
     setAccessDialog({ open: true, user });
@@ -233,6 +237,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           mn_context: targetTenant.mnContext,
           org_id: targetTenant.orgId,
           targa_automezzo: accessForm.targaAutomezzo.trim().toUpperCase() || null,
+          targa_rimorchio: accessForm.targaRimorchio.trim().toUpperCase() || null,
         },
       });
       if (error) throw error;
@@ -532,6 +537,12 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
               placeholder="Targa automezzo"
               value={accessForm.targaAutomezzo}
               onChange={(e) => setAccessForm((f) => ({ ...f, targaAutomezzo: e.target.value.toUpperCase() }))}
+              className="font-mono"
+            />
+            <Input
+              placeholder="Targa rimorchio"
+              value={accessForm.targaRimorchio}
+              onChange={(e) => setAccessForm((f) => ({ ...f, targaRimorchio: e.target.value.toUpperCase() }))}
               className="font-mono"
             />
           </div>

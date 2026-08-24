@@ -65,6 +65,15 @@ export default function MNAppProfiloPage() {
             </div>
             <div className="p-3 rounded-xl bg-secondary/30 border border-border/20 flex items-center justify-between">
               <div>
+                <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Truck className="h-3 w-3" /> Targa rimorchio</p>
+                {editingField === "targa_rimorchio" ? (
+                  <input autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value.toUpperCase())} onBlur={() => handleSaveField("targa_rimorchio")} onKeyDown={(e) => e.key === "Enter" && handleSaveField("targa_rimorchio")} className="bg-transparent border-none outline-none text-sm text-foreground font-mono mt-1 w-full" />
+                ) : (<p className="text-sm text-foreground font-mono mt-1">{(profile as any)?.targa_rimorchio || "-"}</p>)}
+              </div>
+              <button onClick={() => { setEditingField("targa_rimorchio"); setEditValue((profile as any)?.targa_rimorchio || ""); }}><Edit2 className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" /></button>
+            </div>
+            <div className="p-3 rounded-xl bg-secondary/30 border border-border/20 flex items-center justify-between">
+              <div>
                 <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Autista alternativo</p>
                 {editingField === "autista_alternativo" ? (
                   <input autoFocus value={editValue} onChange={(e) => setEditValue(e.target.value)} onBlur={() => handleSaveField("autista_alternativo")} onKeyDown={(e) => e.key === "Enter" && handleSaveField("autista_alternativo")} className="bg-transparent border-none outline-none text-sm text-foreground font-mono mt-1 w-full" />
