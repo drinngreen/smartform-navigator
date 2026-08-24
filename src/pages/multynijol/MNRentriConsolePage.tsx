@@ -1021,6 +1021,61 @@ export default function MNRentriConsolePage() {
           </div>
         )}
 
+        {tab === "nuovo" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Nuovo formulario</h3>
+            <p className="text-xs text-muted-foreground">
+              Stesso modulo usato nelle sezioni Impianto, Conto Proprio e Niyol: i dati finiscono sugli stessi record
+              <code className="mx-1 font-mono">fir_forms</code>, quindi il formulario resta collegato ovunque.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {DESTINAZIONI_FORMULARIO.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setDestFormulario(d.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                    destFormulario === d.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(["standard", "alternativo"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setVistaFormulario(v)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
+                    vistaFormulario === v
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                      : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
+                  }`}
+                >
+                  {v === "standard" ? "Modulo Standard" : "Modulo Alternativo"}
+                </button>
+              ))}
+            </div>
+            <div className="rounded-xl border border-border/30 bg-background/40 p-4">
+              {vistaFormulario === "standard" ? (
+                <MNFIRFormComplete
+                  key={`std-${destFormulario}`}
+                  tenantId={destinazioneAttiva.tenantId}
+                  mnContext={destinazioneAttiva.mnContext}
+                  enableFatturazione
+                  creationMode
+                />
+              ) : (
+                <FIRAlternativeForm key={`alt-${destFormulario}`} tenantId={destinazioneAttiva.tenantId} />
+              )}
+            </div>
+          </div>
+        )}
+
         {tab === "lemon" && <DarkLemonMNChat context={context} surface="console" />}
       </div>
       {blankPrintFir && (
