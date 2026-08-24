@@ -98,6 +98,8 @@
 | 06:45 | Tab Ricevute, elenco | A ogni conferimento corrisponde una ricevuta, con numero progressivo annuale univoco. | Numerazione DBT automatica |
 | 06:55 | Aprire una ricevuta multi-materiale | La ricevuta riporta tutti i materiali del conferimento con i rispettivi chili, la data, il privato e il metodo di pagamento. | Ricevuta multi-materiale |
 | 07:03 | Modificare la data e rigenerare il PDF | Se correggi la data, la ricevuta si rigenera. Il PDF è già intestato Multyproget. | PDF pronto da consegnare |
+| 07:06 | Click su "Solo data" e su "ESPORTA SOLO DATE" | Se ti serve la ricevuta senza numero progressivo usi Solo data sulla singola riga, oppure Esporta solo date per tutte quelle filtrate. | Layout senza progressivo |
+| 07:08 | Spuntare più righe e generare il PDF cumulativo | Con le caselle di spunta scegli le ricevute che vuoi e generi un unico PDF cumulativo, con o senza numero progressivo. | Selezione multipla e PDF cumulativo |
 
 ---
 
