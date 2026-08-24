@@ -6,7 +6,6 @@
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 const clean = (v: string) => String(v ?? "").trim();
 
-const CF_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const CF_ODD: Record<string, number> = {
   "0": 1, "1": 0, "2": 5, "3": 7, "4": 9, "5": 13, "6": 15, "7": 17, "8": 19, "9": 21,
   A: 1, B: 0, C: 5, D: 7, E: 9, F: 13, G: 15, H: 17, I: 19, J: 21, K: 2, L: 4, M: 18,
