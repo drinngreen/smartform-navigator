@@ -29,6 +29,8 @@ import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
+import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
+import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import {
   Activity,
   ClipboardList,
