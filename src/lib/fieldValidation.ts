@@ -44,7 +44,7 @@ export function isValidCodiceFiscalePF(value: string): boolean {
     const c = v[i];
     sum += i % 2 === 0 ? CF_ODD[c] : CF_EVEN[c];
   }
-  return CF_CHARS[sum % 26 + 10] === v[15] || "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[sum % 26] === v[15];
+  return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[sum % 26] === v[15];
 }
 
 /** Campo "Codice Fiscale / P.IVA": accetta CF 16 o PIVA/CF numerico 11. */
@@ -181,7 +181,7 @@ export function autoValidateByLabel(label: string, value: string): string | null
     return l.includes("codice fiscale") || l.includes("cf") ? validateCfPiva(value) : validatePartitaIva(value);
   }
   if (l.includes("codice fiscale") || /\bcf\b/.test(l)) return validateCfPiva(value);
-  if (l.includes("cap")) return validateCap(value);
+  if (/\bcap\b/.test(l)) return validateCap(value);
   if (l.includes("provincia")) return validateProvincia(value);
   if (l.includes("email") || l.includes("pec")) return validateEmail(value);
   if (l.includes("telefono") || l.includes("cellulare")) return validateTelefono(value);
