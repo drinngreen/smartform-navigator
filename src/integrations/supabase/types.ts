@@ -5746,6 +5746,9 @@ export type Database = {
       rubrica_contatti: {
         Row: {
           anagrafica_id: string | null
+          autorizzazioni: string | null
+          cap: string | null
+          categoria: string
           cellulare: string | null
           codice_fiscale: string | null
           cognome: string | null
@@ -5761,12 +5764,16 @@ export type Database = {
           pec: string | null
           provincia: string | null
           ragione_sociale: string | null
+          ruoli: string | null
           telefono: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
           anagrafica_id?: string | null
+          autorizzazioni?: string | null
+          cap?: string | null
+          categoria?: string
           cellulare?: string | null
           codice_fiscale?: string | null
           cognome?: string | null
@@ -5782,12 +5789,16 @@ export type Database = {
           pec?: string | null
           provincia?: string | null
           ragione_sociale?: string | null
+          ruoli?: string | null
           telefono?: string | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
           anagrafica_id?: string | null
+          autorizzazioni?: string | null
+          cap?: string | null
+          categoria?: string
           cellulare?: string | null
           codice_fiscale?: string | null
           cognome?: string | null
@@ -5803,6 +5814,7 @@ export type Database = {
           pec?: string | null
           provincia?: string | null
           ragione_sociale?: string | null
+          ruoli?: string | null
           telefono?: string | null
           tenant_id?: string
           updated_at?: string

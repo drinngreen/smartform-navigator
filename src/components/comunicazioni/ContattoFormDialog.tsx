@@ -26,10 +26,13 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     codice_fiscale: "",
     partita_iva: "",
     indirizzo: "",
+    cap: "",
     comune: "",
     provincia: "",
+    autorizzazioni: "",
     note: "",
   });
+  const [categoria, setCategoria] = useState("CLIENTE");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -38,6 +41,8 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     const { error } = await supabase.from("rubrica_contatti").insert({
       tenant_id: tenantId,
       ...form,
+      categoria,
+      ruoli: categoria,
       origine: "manuale",
     });
     setSaving(false);
@@ -45,7 +50,8 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     toast.success("Contatto salvato in rubrica");
     onOpenChange(false);
     onSaved?.();
-    setForm({ nome: "", cognome: "", ragione_sociale: "", telefono: "", cellulare: "", email: "", pec: "", codice_fiscale: "", partita_iva: "", indirizzo: "", comune: "", provincia: "", note: "" });
+    setForm({ nome: "", cognome: "", ragione_sociale: "", telefono: "", cellulare: "", email: "", pec: "", codice_fiscale: "", partita_iva: "", indirizzo: "", cap: "", comune: "", provincia: "", autorizzazioni: "", note: "" });
+    setCategoria("CLIENTE");
   };
 
   const f = (key: keyof typeof form, label: string) => (
@@ -59,6 +65,18 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-card border-border">
         <DialogHeader><DialogTitle>Nuovo Contatto</DialogTitle></DialogHeader>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Tipo soggetto</Label>
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            {["DESTINATARIO", "TRASPORTATORE", "INTERMEDIARIO", "PRODUTTORE", "CLIENTE", "FORNITORE", "PRIVATO", "ALTRO"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           {f("nome", "Nome *")}
           {f("cognome", "Cognome")}
@@ -70,9 +88,11 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, onSa
           {f("codice_fiscale", "Codice Fiscale")}
           {f("partita_iva", "Partita IVA")}
           {f("indirizzo", "Indirizzo")}
+          {f("cap", "CAP")}
           {f("comune", "Comune")}
           {f("provincia", "Provincia")}
         </div>
+        {f("autorizzazioni", "Autorizzazioni")}
         {f("note", "Note")}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annulla</Button>
