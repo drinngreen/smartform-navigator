@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/dialog";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
-import { stampaRicevuta } from "@/lib/ricevutaPrivatoPrint";
+import { CalendarDays, FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
+import { stampaRicevuta, stampaRicevute, type RicevutaPrintData } from "@/lib/ricevutaPrivatoPrint";
 import { CER_CATALOG } from "@/data/cerCatalog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -214,7 +214,7 @@ export function DevRicevuteModule() {
     </div>
   `;
 
-  const printSingle = (r: RicevutaRow) => {
+  const buildRicevutaData = (r: RicevutaRow): RicevutaPrintData => {
     const p = r.privato_id ? privatiMap.get(r.privato_id) : undefined;
 
     const righeBase =
@@ -266,7 +266,7 @@ export function DevRicevuteModule() {
       ? `VEICOLO ${[r.conferimento.modello_automezzo, `TARGA ${r.conferimento.targa_automezzo}`].filter(Boolean).join(" ")}`
       : null;
 
-    stampaRicevuta({
+    return {
       numero: r.numero_ricevuta ?? "",
       data: r.data_emissione,
       destinatario: {
@@ -288,7 +288,22 @@ export function DevRicevuteModule() {
       totale: totaleRicevuta || materiali.reduce((s, m) => s + (Number(m.importo) || 0), 0),
       note: noteComplete || null,
       veicolo,
-    });
+    };
+  };
+
+  const printSingle = (r: RicevutaRow) => stampaRicevuta(buildRicevutaData(r));
+
+  /** Stampa una singola ricevuta nel layout "solo date" (senza numero progressivo) */
+  const printSingleSoloData = (r: RicevutaRow) =>
+    stampaRicevuta({ ...buildRicevutaData(r), soloData: true });
+
+  /** Esporta tutte le ricevute filtrate nel layout "solo date" */
+  const esportaSoloDate = () => {
+    if (!filtered.length) return toast.error("Nessuna ricevuta da esportare");
+    stampaRicevute(
+      filtered.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      "Ricevute - solo date",
+    );
   };
 
   const exportCols = [
@@ -374,6 +389,15 @@ export function DevRicevuteModule() {
               >
                 <Printer className="h-3 w-3" /> PDF
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={esportaSoloDate}
+                className="gap-1 h-7 text-xs border-neon-cyan/70 text-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/20"
+                title="Esporta tutte le ricevute filtrate senza numero progressivo (solo data)"
+              >
+                <CalendarDays className="h-3 w-3" /> Esporta solo date
+              </Button>
             </div>
           </div>
 
@@ -438,6 +462,18 @@ export function DevRicevuteModule() {
                               <Printer className="h-4 w-4" color="hsl(var(--neon-cyan))" strokeWidth={2.6} />
                               <span>Stampa</span>
                             </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-9 px-2 text-xs border-neon-cyan/40 text-neon-cyan bg-neon-cyan/5 hover:bg-neon-cyan/15"
+                              onClick={() => printSingleSoloData(r)}
+                              title="Scarica questa ricevuta senza numero progressivo (solo data)"
+                            >
+                              <CalendarDays className="h-4 w-4" color="hsl(var(--neon-cyan))" strokeWidth={2.4} />
+                              <span>Solo data</span>
+                            </Button>
+
 
                             <Button
                               variant="outline"

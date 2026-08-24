@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert } from "lucide-react";
+import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert, Download, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { exportToPdf } from "@/lib/exportUtils";
 
 const LIMITE_KG = 1500;
+
+type PrivatoKg = { nome: string; telefono?: string; cf?: string; kg: number };
 
 export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
   const [sendingId, setSendingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["privati-limiti-widget", tenantId],
     queryFn: async () => {
       const anno = new Date().getFullYear();
@@ -32,7 +35,7 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         }
       }
 
-      const bykey = new Map<string, { nome: string; telefono?: string; cf?: string; kg: number }>();
+      const bykey = new Map<string, PrivatoKg>();
       for (const r of rows) {
         const key = (r.cf_pi || r.nome_privato || "").toString().toUpperCase().trim();
         if (!key) continue;
@@ -43,12 +46,53 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         bykey.set(key, cur);
       }
 
-      return Array.from(bykey.values())
-        .filter(p => p.kg >= LIMITE_KG * 0.8)
-        .sort((a, b) => b.kg - a.kg);
+      const tutti = Array.from(bykey.values()).sort((a, b) => b.kg - a.kg);
+      return {
+        tutti,
+        allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8),
+      };
     },
     refetchInterval: 60_000,
   });
+
+  const scaricaPdf = async () => {
+    const res = await refetch();
+    const tutti = res.data?.tutti ?? data?.tutti ?? [];
+    if (!tutti.length) return toast.error("Nessun conferimento privato quest'anno");
+    const anno = new Date().getFullYear();
+    const ora = new Date();
+    exportToPdf(
+      tutti.map((p, i) => ({
+        n: i + 1,
+        nome: p.nome,
+        cf: p.cf || "—",
+        kg: p.kg,
+        residuo: Math.max(0, LIMITE_KG - p.kg),
+        perc: Math.round((p.kg / LIMITE_KG) * 100),
+      })),
+      [
+        { header: "#", key: "n", width: 8 },
+        { header: "Privato", key: "nome", width: 40 },
+        { header: "Cod. Fiscale / P.IVA", key: "cf", width: 24 },
+        {
+          header: "Kg conferiti",
+          key: "kg",
+          width: 16,
+          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+        },
+        {
+          header: "Kg residui",
+          key: "residuo",
+          width: 16,
+          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+        },
+        { header: "% limite", key: "perc", width: 12, format: (v: any) => `${v}%` },
+      ] as any,
+      `limiti-privati-${anno}`,
+      `LIMITI PRIVATI ${anno} — Limite ${LIMITE_KG} kg/anno\nAggiornato al ${ora.toLocaleDateString("it-IT")} ore ${ora.toLocaleTimeString("it-IT")}`,
+    );
+    toast.success("PDF limiti privati generato");
+  };
 
   const invia = async (p: { nome: string; telefono?: string; kg: number }) => {
     if (!p.telefono) return toast.error("Telefono mancante in anagrafica");
@@ -84,17 +128,37 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     );
   }
 
-  const items = data || [];
+  const items = data?.allerta ?? [];
+  const tutti = data?.tutti ?? [];
 
   return (
     <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-red-500/5 p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <ShieldAlert className="h-5 w-5 text-amber-400" />
-        <div className="flex-1">
+      <div className="flex items-start gap-2 flex-wrap">
+        <ShieldAlert className="h-5 w-5 text-amber-400 mt-0.5" />
+        <div className="flex-1 min-w-[200px]">
           <h3 className="text-sm font-semibold text-foreground">Scadenziario Privati — Limite 1500 kg/anno</h3>
-          <p className="text-xs text-muted-foreground">Privati oltre l'80% del limite annuo con invio avviso WhatsApp</p>
+          <p className="text-xs text-muted-foreground">
+            Privati oltre l'80% del limite annuo con invio avviso WhatsApp · {tutti.length} privati totali
+            {dataUpdatedAt ? ` · aggiornato ${new Date(dataUpdatedAt).toLocaleTimeString("it-IT")}` : ""}
+          </p>
         </div>
-        <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs hover:bg-sky-500/30 disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Aggiorna
+          </button>
+          <button
+            onClick={scaricaPdf}
+            disabled={isFetching}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30 disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" /> Scarica limiti privati (PDF)
+          </button>
+          <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
+        </div>
       </div>
 
       {items.length === 0 ? (
