@@ -18,6 +18,7 @@ import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
 import { PresetAziendaSelector } from "@/components/fir/PresetAziendaSelector";
+import { autoValidateByLabel } from "@/lib/fieldValidation";
 import { CerPickerField } from "@/components/fir/CerPickerField";
 import { HpSelector } from "@/components/fir/HpSelector";
 
