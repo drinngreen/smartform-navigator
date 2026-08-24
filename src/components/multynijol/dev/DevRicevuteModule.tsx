@@ -73,6 +73,7 @@ const formatIndirizzoPrivato = (p?: PrivatoLite) => {
 export function DevRicevuteModule() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editing, setEditing] = useState<RicevutaRow | null>(null);
   const [editForm, setEditForm] = useState({ importo: "", note: "", data_emissione: "" });
 
