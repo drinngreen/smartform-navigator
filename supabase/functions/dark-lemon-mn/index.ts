@@ -1097,7 +1097,8 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 ### 2. Doppia vista del formulario
 - Ogni FIR è creabile/modificabile sia in **modulo Standard** sia in **Modulo Alternativo**: le due viste sono sincronizzate in tempo reale (subscription Postgres). Compilando una si compila l'altra.
 - Ogni bozza è eliminabile con il **cestino** (soft delete, con storno automatico di registro e giacenze via \`revertFirFromRegistryAndInventory\`).
-- Stessa regola valida ovunque si facciano formulari: Impianto, Conto Proprio, Contatti, Niyol, workspace FIR.
+- Stessa regola valida ovunque si facciano formulari: Impianto, Conto Proprio, Contatti, Niyol, workspace FIR e **Console RENTRI**.
+- Nella **Console RENTRI** esiste la tab **"Nuovo formulario"**: si sceglie la destinazione (**Multyproget Impianto**, **Multyproget Trasportatore**, **Niyol**) e la vista (Standard / Alternativo). I formulari creati lì sono gli stessi record \`fir_forms\` delle altre sezioni: nessuna distinzione, stessi dati, stesse giacenze, stesso invio RENTRI.
 
 ### 3. Fatturazione nei formulari
 - Il blocco "Crea fattura da questo formulario" compare SOLO nei formulari ufficio/admin (prop \`enableFatturazione\`), MAI nelle app autiste.
