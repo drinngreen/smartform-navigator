@@ -46,6 +46,15 @@ Queste regole valgono in **tutti** i punti in cui si compila un formulario: Impi
 - La stessa tendina è presente nel **Modulo Alternativo**, direttamente sul riquadro CER del modulo fisico: la scelta compila anche il campo "Descrizione rifiuto" del modulo.
 - Poiché entrambe le viste scrivono sullo stesso record, il CER e la descrizione finiscono automaticamente nella **stampa del modulo ufficiale**, nel **documento di viaggio** e nel **riepilogo del trasporto** (e quindi in registri e giacenze al salvataggio definitivo).
 
+### 1.2-ter Caratteristiche di pericolo HP (sezione 6)
+- Il campo **Caratteristiche di pericolo (HP)** è ora un **selettore multiplo** con l'elenco ufficiale HP1–HP15 (Allegato III direttiva quadro rifiuti UE, Reg. UE 1357/2014 e 2017/997), ognuna con il significato pratico:
+  HP1 Esplosivo · HP2 Comburente · HP3 Infiammabile · HP4 Irritante · HP5 STOT/per aspirazione · HP6 Tossicità acuta · HP7 Cancerogeno · HP8 Corrosivo · HP9 Infettivo · HP10 Tossico per la riproduzione · HP11 Mutageno · HP12 Liberazione di gas a tossicità acuta · HP13 Sensibilizzante · HP14 Ecotossico · HP15 Pericolo successivo.
+- Un rifiuto può avere **più HP contemporaneamente** (es. solventi esausti: HP3, HP4, HP5, HP6, HP14).
+- Se il **CER selezionato è pericoloso** (voce con asterisco) e non è indicata alcuna HP, il campo si evidenzia in rosso con avviso.
+- I codici digitati in vecchi formulari ("hp 4", "HP04") vengono **normalizzati** in `HP4` sia in salvataggio sia nell'invio RENTRI, dove valorizzano `caratteristiche_pericolo` e il flag `pericoloso`.
+- **Non confondere le HP con le frasi H**: le HP si riferiscono al rifiuto, le frasi H (H314, H400, H350…) alle sostanze/miscele contenute secondo CLP. L'attribuzione non si fa "a occhio": serve codice EER (con verifica voce a specchio), conoscenza del processo e delle materie prime, schede di sicurezza, eventuali analisi chimiche rappresentative e valutazione con criteri/limiti CLP.
+
+
 ### 1.3 Cancellazione e reset
 - Ogni bozza si elimina con l'icona **🗑 cestino** (soft delete `deleted_by_user`): registro e giacenze vengono **stornati automaticamente**.
 - Ogni sezione del modulo (Produttore, Destinatario, Trasportatore, Rifiuto, Quantità, Trasporto) ha il pulsante **gomma 🧽 "Cancella sezione"**: azzera solo quel blocco, lasciando intatto il resto.
