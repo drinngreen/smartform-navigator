@@ -389,6 +389,15 @@ export function DevRicevuteModule() {
               >
                 <Printer className="h-3 w-3" /> PDF
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={esportaSoloDate}
+                className="gap-1 h-7 text-xs border-neon-cyan/70 text-neon-cyan bg-neon-cyan/10 hover:bg-neon-cyan/20"
+                title="Esporta tutte le ricevute filtrate senza numero progressivo (solo data)"
+              >
+                <CalendarDays className="h-3 w-3" /> Esporta solo date
+              </Button>
             </div>
           </div>
 
