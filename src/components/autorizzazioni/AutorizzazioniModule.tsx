@@ -378,9 +378,10 @@ export function AutorizzazioniModule() {
                 <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setSelected(r)}>
                   <FileText className="w-3.5 h-3.5" /> Testo
                 </Button>
-                <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => ask(`Riassumi in punti chiave il documento "${r.titolo}" (${r.numero ?? ""}) indicando CER, operazioni, quantitativi e prescrizioni.`)}>
+                <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setChatDoc(r)}>
                   <Sparkles className="w-3.5 h-3.5" /> Chiedi all'AI
                 </Button>
+
               </div>
             </Card>
           );
