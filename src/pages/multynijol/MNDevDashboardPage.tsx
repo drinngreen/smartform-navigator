@@ -143,7 +143,19 @@ export default function MNDevDashboardPage() {
           </div>
         </button>
 
+        <button
+          onClick={() => navigate("/mn/admin/dev-multyproget/autorizzazioni")}
+          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/40 bg-card hover:bg-amber-500/10 transition-all text-left"
+        >
+          <ShieldCheck size={20} className="text-amber-400" />
+          <div>
+            <div className="font-semibold text-sm text-amber-300">Autorizzazioni Multy &amp; Niyol</div>
+            <div className="text-xs text-muted-foreground">Albo, impianto, visure, PDF scaricabili e AUTHORITY AI</div>
+          </div>
+        </button>
+
       </div>
+
 
 
 
