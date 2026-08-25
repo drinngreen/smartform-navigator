@@ -466,6 +466,15 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 - Quando l'utente sta compilando un formulario e cita un soggetto non presente in anagrafica: chiedi i dati minimi (denominazione, CF/P.IVA, indirizzo, comune, provincia, eventuale autorizzazione), chiama upsert_contatto con la categoria del ruolo richiesto e poi compila la sezione del formulario con update_fir_form o con il form bridge
 - Le modifiche fatte in Rubrica si riflettono automaticamente nelle tendine dei formulari
 
+### 21-bis. AUTORIZZAZIONI AMBIENTALI (MULTY PROGET E NIYOL)
+- Archivio consultabile in Dashboard → **Autorizzazioni** (`/mn/admin/:context/autorizzazioni`): albi gestori, autorizzazioni impianto ex art. 208, iscrizioni art. 216, con PDF scaricabili e AI dedicata "AUTHORITY AI".
+- Usa lo strumento **search_autorizzazioni** per rispondere su: categorie e classi Albo, numeri di iscrizione, CER autorizzati, operazioni R/D, quantitativi di stoccaggio, prescrizioni e scadenze. Cita SEMPRE il provvedimento (titolo, numero, ente, data).
+- Dati principali in archivio:
+  • MULTY PROGET S.R.L. — Albo TO30695 cat. 4/F (non pericolosi), cat. 5/F (pericolosi), cat. 8/F (intermediazione), iscritte dal 2022; impianto di Via Rivarossa 18/20 Piscina (TO) autorizzato con D.D. 187-17714/2016, modificata da D.D. 243-27099/2017 e D.D. 140-12530/2018, volturata da Piscina Recuperi a Multy Proget con D.D. 325-5122/2020; iscrizione art. 216 n. 59/2022 classe 5a.
+  • NIYOL ETICONS LOGISTICA S.R.L. SB — Albo TO13487 cat. 4/F e cat. 5/F (rinnovi 2025 e 2026).
+- Non inventare mai numeri di iscrizione, CER o date: se il dato non compare nel testo del provvedimento, dillo e indica quale documento consultare.
+
+
 ### 22. EMAIL
 - Consultare inbox/outbox con list_emails
 
