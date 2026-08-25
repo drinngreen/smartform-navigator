@@ -137,6 +137,14 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
         />
 
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-lg bg-red-500/10 border border-red-500/40 hover:bg-red-500/20 hover:border-red-500/60 transition-all duration-300"
+          title="Logout"
+        >
+          <LogOut className="h-5 w-5 text-red-400" />
+        </button>
       </div>
     </div>
   );
