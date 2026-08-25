@@ -41,6 +41,7 @@ const TIPI: Record<string, { label: string; color: string }> = {
   impianto: { label: "Impianto / art. 208", color: "249,115,22" },
   art216: { label: "Art. 216 semplificata", color: "168,85,247" },
   aua: { label: "AUA", color: "236,72,153" },
+  visura: { label: "Visura Albo", color: "16,185,129" },
   altro: { label: "Altro", color: "148,163,184" },
 };
 
