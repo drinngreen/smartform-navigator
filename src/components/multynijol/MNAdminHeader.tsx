@@ -22,10 +22,6 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
   const toggleWidget = useZoliDarkLemonWidgetStore((s) => s.toggle);
   const isSidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const setSidePanel = useZoliDarkLemonWidgetStore((s) => s.setSidePanel);
-  const [receiveCalls, setReceiveCalls] = useState(() => {
-    const saved = localStorage.getItem("admin_receive_calls");
-    return saved !== "false";
-  });
 
   const handleLogout = async () => {
     await signOut();
