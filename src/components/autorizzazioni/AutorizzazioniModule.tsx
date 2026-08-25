@@ -69,6 +69,8 @@ export function AutorizzazioniModule() {
   const [filtroTipo, setFiltroTipo] = useState<string>("tutti");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<AutorizzazioneRow | null>(null);
+  const [chatDoc, setChatDoc] = useState<AutorizzazioneRow | null>(null);
+
 
   // AI
   const [chat, setChat] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
