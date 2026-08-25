@@ -79,30 +79,6 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Phone icon → navigate to phone page */}
-        <button
-          onClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/telefono` : "/mn/admin")}
-          className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary hover:border-white/30 transition-all duration-300"
-          title="Apri interfaccia telefono"
-        >
-          <Phone className="h-5 w-5 text-white/80" />
-        </button>
-
-        {/* Mini ON/OFF toggle for receive_calls */}
-        <button
-          onClick={toggleReceiveCalls}
-          className={`relative inline-flex h-6 w-10 items-center rounded-full border transition-all duration-300 ${
-            receiveCalls
-              ? "bg-green-500/30 border-green-500/50"
-              : "bg-red-500/30 border-red-500/50"
-          }`}
-          title={receiveCalls ? "Ricezione ON — clicca per OFF" : "Ricezione OFF — clicca per ON"}
-        >
-          <span className={`inline-block h-4 w-4 transform rounded-full shadow-lg transition-transform ${
-            receiveCalls ? "translate-x-5 bg-green-400" : "translate-x-0.5 bg-red-400"
-          }`} />
-        </button>
-
         {/* AI Widget toggle */}
         <button onClick={toggleWidget} className={widgetButtonClassName} title="Zoli Dark Lemon AI">
           <img src={zoliLemonIcon} alt="AI" className="h-5 w-5" />
