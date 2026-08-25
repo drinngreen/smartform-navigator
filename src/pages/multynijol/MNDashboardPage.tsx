@@ -6,27 +6,14 @@ import niyolIcon from "@/assets/niyol-icon.png";
 
 const tenants = [
   {
-    id: "multyproget",
-    label: "Multyproget",
-    icon: multyprogetIcon,
-    href: "/mn/admin/multyproget",
-    color: "249, 115, 22",
-  },
-  {
-    id: "niyol",
-    label: "Niyol",
-    icon: niyolIcon,
-    href: "/mn/admin/niyol",
-    color: "6, 182, 212",
-  },
-  {
     id: "dev-multy",
-    label: "🧪 Dev Multy",
+    label: "🧪 Multy Dev",
     icon: multyprogetIcon,
     href: "/mn/admin/dev-multyproget",
     color: "34, 197, 94",
   },
 ];
+
 
 export default function MNDashboardPage() {
   const navigate = useNavigate();
