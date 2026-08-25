@@ -73,7 +73,7 @@ function scoreDoc(doc: any, question: string) {
   return s;
 }
 
-async function runAsk(question: string, azienda: string | null, history: any[]) {
+async function runAsk(question: string, azienda: string | null, history: any[], docId?: string | null) {
   const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY_NEW") ?? Deno.env.get("OPENROUTER_API_KEY");
   if (!OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY non configurata");
 
@@ -82,11 +82,13 @@ async function runAsk(question: string, azienda: string | null, history: any[]) 
     .from("autorizzazioni_aziendali")
     .select("id, azienda, titolo, tipo, numero, ente, oggetto, data_rilascio, data_scadenza, file_name, contenuto")
     .order("data_rilascio", { ascending: false });
-  if (azienda && azienda !== "tutte") q = q.eq("azienda", azienda);
+  if (docId) q = q.eq("id", docId);
+  else if (azienda && azienda !== "tutte") q = q.eq("azienda", azienda);
   const { data, error } = await q;
   if (error) throw new Error(error.message);
 
   const docs = [...(data ?? [])].sort((a, b) => scoreDoc(b, question) - scoreDoc(a, question));
+
 
   let used = 0;
   const blocks: string[] = [];
