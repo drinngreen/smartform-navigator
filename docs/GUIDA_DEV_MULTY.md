@@ -396,3 +396,38 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 ---
 
 Fine guida. Per aggiornamenti: modifica questo file (`public/guida-dev-multy.md`, copia in `docs/GUIDA_DEV_MULTY.md`) **integrando le novità nelle sezioni esistenti**, senza creare capitoli separati.
+
+## 📜 Autorizzazioni Multyproget & Niyol
+
+**Percorso:** Dashboard → icona **Autorizzazioni** (`/mn/admin/:context/autorizzazioni`)
+
+Archivio unico e navigabile di tutte le autorizzazioni ambientali del gruppo.
+
+### Cosa contiene
+- **MULTY PROGET S.R.L.**
+  - Albo Nazionale Gestori Ambientali **TO30695**: cat. **4/F** (rifiuti speciali non pericolosi), cat. **5/F** (pericolosi), cat. **8/F** (intermediazione e commercio senza detenzione).
+  - Impianto di Via Rivarossa 18/20 – Piscina (TO): **D.D. 187-17714/2016** (autorizzazione originaria), **D.D. 243-27099/2017** (modifica sostanziale), **D.D. 140-12530/2018** (modifica d'ufficio), **D.D. 325-5122/2020** (voltura da Piscina Recuperi a Multy Proget).
+  - **Iscrizione art. 216 n. 59/2022**, classe 5a (recupero in procedura semplificata).
+- **NIYOL ETICONS LOGISTICA S.R.L. SB**
+  - Albo **TO13487**: cat. **4/F** (rinnovo 2025) e cat. **5/F** (rinnovo 2026).
+
+### Funzioni della sezione
+- **Contatori in alto**: totale documenti, documenti per azienda e autorizzazioni **in scadenza entro 90 giorni** (evidenziate in rosso).
+- **Filtri**: per azienda (Multyproget / Niyol), per tipo (Albo, Impianto/art. 208, art. 216, AUA, Altro) e **ricerca full-text dentro il testo dei provvedimenti**.
+- **Scheda documento**: numero, ente, oggetto, data di rilascio, stato di validità (verde = valida, ambra = in scadenza, rosso = scaduta ⚠️).
+- **PDF**: pulsante **PDF** per scaricare/aprire il provvedimento originale (link firmato temporaneo).
+- **Testo**: pulsante **Testo** per leggere l'intero testo estratto del provvedimento.
+- **Aggiungi autorizzazione**: carica un nuovo PDF con i suoi metadati; il testo viene estratto e indicizzato automaticamente, quindi l'AI lo conosce subito.
+
+### AUTHORITY AI (assistente dedicato)
+Pannello in cima alla pagina. Risponde **solo** sui documenti in archivio, citando sempre il provvedimento di riferimento.
+Esempi di domande:
+- "Quali categorie Albo abbiamo e con quali scadenze?"
+- "Quali codici CER siamo autorizzati a ricevere in impianto?"
+- "Quali operazioni R e D sono autorizzate a Piscina?"
+- "Quali sono i quantitativi massimi di stoccaggio istantaneo?"
+
+Il filtro azienda selezionato definisce anche l'ambito delle risposte dell'AI. Il pulsante **Chiedi all'AI** su ogni scheda genera un riassunto puntuale di quel singolo provvedimento.
+
+### Dark Lemon
+Dark Lemon dispone dello strumento `search_autorizzazioni` e risponde alle stesse domande da qualsiasi punto del gestionale (es. mentre si compila un formulario: "siamo autorizzati a trasportare questo CER pericoloso?").

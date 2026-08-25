@@ -193,3 +193,26 @@
 - Mostra il cursore e rallenta sui click chiave (Crea formulario, Salva definitivo, Sync giacenze).
 - Evidenzia con un riquadro colorato: riga ambra, badge arancione della campanella, barra dei limiti dei privati.
 - Se serve una versione breve (~4 minuti), tieni i capitoli 1, 2, 3, 7 e 15.
+
+## 🎬 Capitolo — Sezione Autorizzazioni
+
+**Scena 1 — Accesso (0:00-0:15)**
+"Dalla dashboard clicca sull'icona **Autorizzazioni**. Qui trovi in un unico posto tutte le autorizzazioni di Multy Proget e Niyol."
+
+**Scena 2 — Panoramica (0:15-0:45)**
+"In alto vedi il totale dei documenti, quanti sono per azienda e soprattutto quanti stanno per scadere entro 90 giorni: se il numero è rosso, hai un rinnovo da preparare."
+
+**Scena 3 — Consultazione (0:45-1:30)**
+"Filtra per azienda o per tipo — Albo Gestori, autorizzazione impianto, art. 216 — oppure cerca una parola direttamente dentro il testo dei provvedimenti, per esempio un codice CER. Ogni scheda mostra numero, ente, oggetto e stato di validità: verde valida, ambra in scadenza, rosso scaduta."
+
+**Scena 4 — PDF e testo (1:30-2:00)**
+"Il pulsante PDF apre o scarica il provvedimento originale firmato. Il pulsante Testo mostra il contenuto integrale, comodo per copiare una prescrizione."
+
+**Scena 5 — AUTHORITY AI (2:00-3:00)**
+"In cima c'è AUTHORITY AI, l'assistente allenato esclusivamente su questi documenti. Chiedi: 'quali categorie Albo abbiamo e con quali scadenze?' oppure 'quali CER possiamo ricevere in impianto?'. Risponde citando sempre il provvedimento da cui prende il dato, e ti segnala con l'avviso rosso ciò che risulta scaduto."
+
+**Scena 6 — Nuova autorizzazione (3:00-3:40)**
+"Con **Aggiungi autorizzazione** carichi un nuovo PDF: inserisci azienda, tipo, titolo, numero, ente e date, alleghi il file e salvi. Il sistema estrae automaticamente il testo, quindi da quel momento l'AI sa rispondere anche su quel documento."
+
+**Scena 7 — Dark Lemon (3:40-4:00)**
+"Anche Dark Lemon conosce le autorizzazioni: mentre compili un formulario puoi chiedergli se siamo autorizzati a trasportare un certo rifiuto pericoloso, e ti risponde citando la categoria d'Albo corretta."
