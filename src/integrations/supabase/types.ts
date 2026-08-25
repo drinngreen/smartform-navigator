@@ -494,6 +494,63 @@ export type Database = {
         }
         Relationships: []
       }
+      autorizzazioni_aziendali: {
+        Row: {
+          azienda: string
+          contenuto: string | null
+          created_at: string
+          created_by: string | null
+          data_rilascio: string | null
+          data_scadenza: string | null
+          ente: string | null
+          file_name: string | null
+          file_path: string | null
+          id: string
+          metadata: Json
+          numero: string | null
+          oggetto: string | null
+          tipo: string
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          azienda: string
+          contenuto?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_rilascio?: string | null
+          data_scadenza?: string | null
+          ente?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json
+          numero?: string | null
+          oggetto?: string | null
+          tipo?: string
+          titolo: string
+          updated_at?: string
+        }
+        Update: {
+          azienda?: string
+          contenuto?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_rilascio?: string | null
+          data_scadenza?: string | null
+          ente?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          metadata?: Json
+          numero?: string | null
+          oggetto?: string | null
+          tipo?: string
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       call_cost_adjustments: {
         Row: {
           amount: number
