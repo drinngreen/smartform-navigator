@@ -3791,7 +3791,50 @@ async function handleTool(
       return error ? { error: error.message } : { contatti: data || [] };
     }
 
+    // Consulta archivio autorizzazioni ambientali Multyproget / Niyol
+    case "search_autorizzazioni": {
+      const az = String(args.azienda || "tutte").toLowerCase();
+      let q = db
+        .from("autorizzazioni_aziendali")
+        .select("azienda, titolo, tipo, numero, ente, oggetto, data_rilascio, data_scadenza, file_name, contenuto")
+        .order("data_rilascio", { ascending: false });
+      if (az === "multyproget" || az === "niyol") q = q.eq("azienda", az);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+
+      const needle = String(args.query || "").toLowerCase().trim();
+      const span = args.full_text ? 3000 : 1200;
+      const docs = (data || []).map((d: any) => {
+        let estratto = "";
+        const testo: string = d.contenuto || "";
+        if (needle && testo) {
+          const idx = testo.toLowerCase().indexOf(needle);
+          estratto = idx >= 0
+            ? testo.slice(Math.max(0, idx - 400), idx + span)
+            : testo.slice(0, Math.min(600, testo.length));
+        } else {
+          estratto = testo.slice(0, span);
+        }
+        return {
+          azienda: d.azienda === "niyol" ? "NIYOL ETICONS LOGISTICA SRL SB" : "MULTY PROGET SRL",
+          titolo: d.titolo,
+          tipo: d.tipo,
+          numero: d.numero,
+          ente: d.ente,
+          oggetto: d.oggetto,
+          data_rilascio: d.data_rilascio,
+          data_scadenza: d.data_scadenza,
+          file: d.file_name,
+          match: needle ? (d.contenuto || "").toLowerCase().includes(needle) : null,
+          estratto,
+        };
+      });
+      const ordered = needle ? docs.sort((a: any, b: any) => Number(!!b.match) - Number(!!a.match)) : docs;
+      return { totale: ordered.length, documenti: ordered.slice(0, args.full_text ? 4 : 10) };
+    }
+
     // Crea/aggiorna un soggetto in rubrica E in anagrafica aziende (tendine formulari)
+
     case "upsert_contatto": {
       const rs = String(args.ragione_sociale || "").trim();
       if (!rs) return { error: "ragione_sociale obbligatoria" };
