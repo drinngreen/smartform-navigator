@@ -88,10 +88,13 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
           }}
         />
 
-        {/* Top Navigation */}
-        <div className="relative z-20">
-          <MNAdminTopNav />
-        </div>
+        {/* Top Navigation — nascosta su richiesta (menu non utilizzato) */}
+        {false && (
+          <div className="relative z-20">
+            <MNAdminTopNav />
+          </div>
+        )}
+
 
         {/* Header */}
         <div className="relative z-10">
