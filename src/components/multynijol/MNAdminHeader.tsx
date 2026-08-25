@@ -41,21 +41,6 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
   );
 
 
-  // Sync receive_calls to online_status table
-  useEffect(() => {
-    if (!user) return;
-    localStorage.setItem("admin_receive_calls", String(receiveCalls));
-    supabase.from("online_status").upsert({
-      user_id: user.id,
-      receive_calls: receiveCalls,
-      status: "online" as const,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" }).then(({ error }) => {
-      if (error) console.error("Error updating receive_calls:", error);
-    });
-  }, [receiveCalls, user]);
-
-  const toggleReceiveCalls = () => setReceiveCalls((prev) => !prev);
 
   const widgetButtonClassName = useMemo(() => {
     return `p-2 rounded-lg border transition-all duration-300 ${
