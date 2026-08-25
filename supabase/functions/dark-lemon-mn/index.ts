@@ -466,6 +466,15 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 - Quando l'utente sta compilando un formulario e cita un soggetto non presente in anagrafica: chiedi i dati minimi (denominazione, CF/P.IVA, indirizzo, comune, provincia, eventuale autorizzazione), chiama upsert_contatto con la categoria del ruolo richiesto e poi compila la sezione del formulario con update_fir_form o con il form bridge
 - Le modifiche fatte in Rubrica si riflettono automaticamente nelle tendine dei formulari
 
+### 21-bis. AUTORIZZAZIONI AMBIENTALI (MULTY PROGET E NIYOL)
+- Archivio consultabile in Dashboard → **Autorizzazioni** (/mn/admin/:context/autorizzazioni): albi gestori, autorizzazioni impianto ex art. 208, iscrizioni art. 216, con PDF scaricabili e AI dedicata "AUTHORITY AI".
+- Usa lo strumento **search_autorizzazioni** per rispondere su: categorie e classi Albo, numeri di iscrizione, CER autorizzati, operazioni R/D, quantitativi di stoccaggio, prescrizioni e scadenze. Cita SEMPRE il provvedimento (titolo, numero, ente, data).
+- Dati principali in archivio:
+  • MULTY PROGET S.R.L. — Albo TO30695 cat. 4/F (non pericolosi), cat. 5/F (pericolosi), cat. 8/F (intermediazione), iscritte dal 2022; impianto di Via Rivarossa 18/20 Piscina (TO) autorizzato con D.D. 187-17714/2016, modificata da D.D. 243-27099/2017 e D.D. 140-12530/2018, volturata da Piscina Recuperi a Multy Proget con D.D. 325-5122/2020; iscrizione art. 216 n. 59/2022 classe 5a.
+  • NIYOL ETICONS LOGISTICA S.R.L. SB — Albo TO13487 cat. 4/F e cat. 5/F (rinnovi 2025 e 2026).
+- Non inventare mai numeri di iscrizione, CER o date: se il dato non compare nel testo del provvedimento, dillo e indica quale documento consultare.
+
+
 ### 22. EMAIL
 - Consultare inbox/outbox con list_emails
 
@@ -2132,6 +2141,24 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "search_autorizzazioni",
+      description: "Consulta l'archivio delle AUTORIZZAZIONI AMBIENTALI di MULTY PROGET e NIYOL (Albo Nazionale Gestori Ambientali, autorizzazioni impianto ex art. 208, iscrizioni art. 216, AUA). Restituisce metadati (numero, ente, categorie, scadenze) ed estratti del testo integrale dei provvedimenti. Usalo per rispondere su categorie/classi Albo, CER autorizzati, operazioni R/D, quantitativi, prescrizioni e scadenze.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Parole chiave da cercare nel testo dei provvedimenti (es. 'categoria 5', 'CER 170405', 'stoccaggio istantaneo')" },
+          azienda: { type: "string", enum: ["multyproget", "niyol", "tutte"], description: "Azienda di riferimento (default tutte)" },
+          full_text: { type: "boolean", description: "Se true restituisce estratti più ampi del testo" }
+        },
+        required: []
+      }
+    }
+  },
+
+
 
 
   // === EMAIL ===
@@ -3773,7 +3800,50 @@ async function handleTool(
       return error ? { error: error.message } : { contatti: data || [] };
     }
 
+    // Consulta archivio autorizzazioni ambientali Multyproget / Niyol
+    case "search_autorizzazioni": {
+      const az = String(args.azienda || "tutte").toLowerCase();
+      let q = db
+        .from("autorizzazioni_aziendali")
+        .select("azienda, titolo, tipo, numero, ente, oggetto, data_rilascio, data_scadenza, file_name, contenuto")
+        .order("data_rilascio", { ascending: false });
+      if (az === "multyproget" || az === "niyol") q = q.eq("azienda", az);
+      const { data, error } = await q;
+      if (error) return { error: error.message };
+
+      const needle = String(args.query || "").toLowerCase().trim();
+      const span = args.full_text ? 3000 : 1200;
+      const docs = (data || []).map((d: any) => {
+        let estratto = "";
+        const testo: string = d.contenuto || "";
+        if (needle && testo) {
+          const idx = testo.toLowerCase().indexOf(needle);
+          estratto = idx >= 0
+            ? testo.slice(Math.max(0, idx - 400), idx + span)
+            : testo.slice(0, Math.min(600, testo.length));
+        } else {
+          estratto = testo.slice(0, span);
+        }
+        return {
+          azienda: d.azienda === "niyol" ? "NIYOL ETICONS LOGISTICA SRL SB" : "MULTY PROGET SRL",
+          titolo: d.titolo,
+          tipo: d.tipo,
+          numero: d.numero,
+          ente: d.ente,
+          oggetto: d.oggetto,
+          data_rilascio: d.data_rilascio,
+          data_scadenza: d.data_scadenza,
+          file: d.file_name,
+          match: needle ? (d.contenuto || "").toLowerCase().includes(needle) : null,
+          estratto,
+        };
+      });
+      const ordered = needle ? docs.sort((a: any, b: any) => Number(!!b.match) - Number(!!a.match)) : docs;
+      return { totale: ordered.length, documenti: ordered.slice(0, args.full_text ? 4 : 10) };
+    }
+
     // Crea/aggiorna un soggetto in rubrica E in anagrafica aziende (tendine formulari)
+
     case "upsert_contatto": {
       const rs = String(args.ragione_sociale || "").trim();
       if (!rs) return { error: "ragione_sociale obbligatoria" };
