@@ -1,9 +1,8 @@
-import { useMemo, useState, useEffect } from "react";
-import { Phone, PhoneOff, MessageSquare, PanelRight, LogOut } from "lucide-react";
+import { useMemo } from "react";
+import { MessageSquare, PanelRight, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabaseClient";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useFirDaFirmareCount } from "@/hooks/useFirDaFirmareCount";
