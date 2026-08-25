@@ -158,7 +158,7 @@ serve(async (req) => {
 
     if (action === "ask") {
       if (!body.question) throw new Error("Domanda mancante");
-      const out = await runAsk(String(body.question), body.azienda ?? null, body.history ?? []);
+      const out = await runAsk(String(body.question), body.azienda ?? null, body.history ?? [], body.doc_id ?? null);
       return new Response(JSON.stringify({ ok: true, ...out }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
