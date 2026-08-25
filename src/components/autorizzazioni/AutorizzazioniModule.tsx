@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { DocChatPanel } from "@/components/autorizzazioni/DocChatPanel";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -69,6 +71,8 @@ export function AutorizzazioniModule() {
   const [filtroTipo, setFiltroTipo] = useState<string>("tutti");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<AutorizzazioneRow | null>(null);
+  const [chatDoc, setChatDoc] = useState<AutorizzazioneRow | null>(null);
+
 
   // AI
   const [chat, setChat] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
@@ -378,9 +382,10 @@ export function AutorizzazioniModule() {
                 <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setSelected(r)}>
                   <FileText className="w-3.5 h-3.5" /> Testo
                 </Button>
-                <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => ask(`Riassumi in punti chiave il documento "${r.titolo}" (${r.numero ?? ""}) indicando CER, operazioni, quantitativi e prescrizioni.`)}>
+                <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setChatDoc(r)}>
                   <Sparkles className="w-3.5 h-3.5" /> Chiedi all'AI
                 </Button>
+
               </div>
             </Card>
           );
@@ -394,9 +399,14 @@ export function AutorizzazioniModule() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader><DialogTitle className="pr-8">{selected?.titolo}</DialogTitle></DialogHeader>
-          <div className="overflow-y-auto text-xs whitespace-pre-wrap font-mono bg-muted/40 p-3 rounded-lg">
+          <div className="overflow-y-auto text-xs whitespace-pre-wrap font-mono bg-muted/40 p-3 rounded-lg flex-1 min-h-[120px]">
             {selected?.contenuto || "Testo non ancora estratto per questo documento."}
           </div>
+          {selected && (
+            <div className="border-t border-border pt-3">
+              <DocChatPanel docId={selected.id} titolo={selected.titolo} compact />
+            </div>
+          )}
           <DialogFooter>
             {selected?.file_path && (
               <Button variant="outline" className="gap-1.5" onClick={() => selected && downloadPdf(selected)}>
@@ -406,6 +416,25 @@ export function AutorizzazioniModule() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Chat dedicata al singolo documento */}
+      <Dialog open={!!chatDoc} onOpenChange={(o) => !o && setChatDoc(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader><DialogTitle className="pr-8">AI sul documento</DialogTitle></DialogHeader>
+          {chatDoc && <DocChatPanel docId={chatDoc.id} titolo={chatDoc.titolo} />}
+          <DialogFooter>
+            {chatDoc?.file_path && (
+              <Button variant="outline" className="gap-1.5" onClick={() => chatDoc && downloadPdf(chatDoc)}>
+                <Download className="w-4 h-4" /> Scarica PDF originale
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => { setSelected(chatDoc); setChatDoc(null); }}>
+              <FileText className="w-4 h-4 mr-1.5" /> Vedi testo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
