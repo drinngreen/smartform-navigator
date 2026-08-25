@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Phone, PhoneOff, MessageSquare, PanelRight } from "lucide-react";
+import { Phone, PhoneOff, MessageSquare, PanelRight, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ interface MNAdminHeaderProps {
 }
 
 export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
-  const { profile, user } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isWidgetOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
@@ -26,6 +26,11 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     const saved = localStorage.getItem("admin_receive_calls");
     return saved !== "false";
   });
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
 
   // Detect current context for message routing
   const currentContext = (location.pathname.includes("/mn/admin/niyol")) ? "niyol"
