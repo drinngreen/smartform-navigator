@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Phone, PhoneOff, MessageSquare, PanelRight } from "lucide-react";
+import { Phone, PhoneOff, MessageSquare, PanelRight, LogOut } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,7 @@ interface MNAdminHeaderProps {
 }
 
 export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
-  const { profile, user } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isWidgetOpen = useZoliDarkLemonWidgetStore((s) => s.isOpen);
@@ -26,6 +26,11 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     const saved = localStorage.getItem("admin_receive_calls");
     return saved !== "false";
   });
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/", { replace: true });
+  };
 
   // Detect current context for message routing
   const currentContext = (location.pathname.includes("/mn/admin/niyol")) ? "niyol"
@@ -132,6 +137,14 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
         />
 
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-lg bg-red-500/10 border border-red-500/40 hover:bg-red-500/20 hover:border-red-500/60 transition-all duration-300"
+          title="Logout"
+        >
+          <LogOut className="h-5 w-5 text-red-400" />
+        </button>
       </div>
     </div>
   );
