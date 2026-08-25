@@ -2132,6 +2132,24 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "search_autorizzazioni",
+      description: "Consulta l'archivio delle AUTORIZZAZIONI AMBIENTALI di MULTY PROGET e NIYOL (Albo Nazionale Gestori Ambientali, autorizzazioni impianto ex art. 208, iscrizioni art. 216, AUA). Restituisce metadati (numero, ente, categorie, scadenze) ed estratti del testo integrale dei provvedimenti. Usalo per rispondere su categorie/classi Albo, CER autorizzati, operazioni R/D, quantitativi, prescrizioni e scadenze.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Parole chiave da cercare nel testo dei provvedimenti (es. 'categoria 5', 'CER 170405', 'stoccaggio istantaneo')" },
+          azienda: { type: "string", enum: ["multyproget", "niyol", "tutte"], description: "Azienda di riferimento (default tutte)" },
+          full_text: { type: "boolean", description: "Se true restituisce estratti più ampi del testo" }
+        },
+        required: []
+      }
+    }
+  },
+
+
 
 
   // === EMAIL ===
