@@ -20,20 +20,22 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     queryFn: async () => {
       const anno = new Date().getFullYear();
       // NB: senza .range() PostgREST tronca a 1000 righe → record mancanti nell'elenco/stampa
-      let q = supabase.from("privati_conferimenti" as any)
+      // Nessun filtro tenant nella query: serve a contare anche i record di altri tenant
+      // (verifica completezza richiesta da Cristina), poi si filtra lato client.
+      const { data, error } = await supabase.from("privati_conferimenti" as any)
         .select("nome_privato, cf_pi, kg_pesati, anno_dbt, data, tenant_id, privato_id")
         .range(0, 9999);
-      if (tenantId) q = q.eq("tenant_id", tenantId);
-      const { data, error } = await q;
       if (error) throw error;
 
       const all = (data || []) as any[];
       // Anno: usa anno_dbt quando valorizzato, altrimenti l'anno della data del conferimento
-      const rows = all.filter((r) => {
+      const annoRows = all.filter((r) => {
         const y = r.anno_dbt ?? (r.data ? new Date(r.data).getFullYear() : null);
         return y === anno;
       });
-      const scartati = all.length - rows.length;
+      const scartati = all.length - annoRows.length;
+      const rows = tenantId ? annoRows.filter((r) => r.tenant_id === tenantId) : annoRows;
+      const altriTenant = annoRows.length - rows.length;
 
       const privatiIds = Array.from(new Set(rows.map(r => r.privato_id).filter(Boolean)));
       const telefoni = new Map<string, string>();
@@ -71,6 +73,7 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8).sort(perNome),
         movimenti: rows.length,
         movimentiAltriAnni: scartati,
+        movimentiAltriTenant: altriTenant,
         senzaIdentificativo,
         kgTotali: tutti.reduce((s, p) => s + p.kg, 0),
       };
@@ -190,29 +193,28 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
           </button>
           <button
             onClick={() => stampa(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs hover:bg-emerald-500/30"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-emerald-950 font-semibold text-xs hover:bg-emerald-400 shadow"
           >
-            <Printer className="h-3.5 w-3.5" /> Stampa elenco completo (A→Z)
+            <Printer className="h-4 w-4" /> STAMPA LIMITI ({tutti.length} privati, A→Z)
           </button>
           <button
             onClick={() => stampa(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30"
           >
-            <Download className="h-3.5 w-3.5" /> Solo in allerta (PDF)
+            <Download className="h-3.5 w-3.5" /> Solo in allerta ({items.length})
           </button>
           <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
         </div>
       </div>
 
-      {(data?.senzaIdentificativo || data?.movimentiAltriAnni) ? (
-        <p className="text-[11px] text-muted-foreground">
-          Controllo completezza:{" "}
-          {data?.senzaIdentificativo
-            ? `${data.senzaIdentificativo} conferimenti senza CF/nominativo (raggruppati in "SENZA IDENTIFICATIVO") · `
-            : ""}
-          {data?.movimentiAltriAnni ? `${data.movimentiAltriAnni} conferimenti di altri anni esclusi dal ${new Date().getFullYear()}` : ""}
-        </p>
-      ) : null}
+      <p className="text-[11px] text-muted-foreground">
+        Controllo completezza: {data?.movimenti ?? 0} conferimenti {new Date().getFullYear()} inclusi nell'elenco e nel PDF
+        {data?.senzaIdentificativo
+          ? ` · ${data.senzaIdentificativo} senza CF/nominativo (raggruppati in "SENZA IDENTIFICATIVO", comunque stampati)`
+          : ""}
+        {data?.movimentiAltriTenant ? ` · ${data.movimentiAltriTenant} appartenenti ad altra azienda (esclusi)` : ""}
+        {data?.movimentiAltriAnni ? ` · ${data.movimentiAltriAnni} di altri anni (esclusi)` : ""}
+      </p>
 
       {items.length === 0 ? (
         <div className="p-3 text-center text-sm text-muted-foreground">Nessun privato oltre soglia quest'anno ✅</div>
