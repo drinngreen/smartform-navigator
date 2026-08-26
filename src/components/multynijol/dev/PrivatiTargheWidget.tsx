@@ -175,6 +175,34 @@ export function PrivatiTargheWidget({ tenantId }: { tenantId?: string }) {
     }
   };
 
+  const rimuoviTarga = async (g: Gruppo) => {
+    if (!window.confirm(`Rimuovere la targa da ${g.nome}? Il soggetto tornerà nell'elenco delle targhe mancanti.`)) return;
+    setSavingKey(g.key);
+    try {
+      if (g.privatoIds.length) {
+        await supabase.from("anagrafica_privati" as any).update({ targa_automezzo: null } as any).in("id", g.privatoIds);
+      } else if (g.cf) {
+        await supabase.from("anagrafica_privati" as any).update({ targa_automezzo: null } as any).eq("codice_fiscale", g.cf);
+      }
+      const ids = (data?.rows ?? []).filter((r) => keyOf(r) === g.key).map((r) => r.id);
+      if (ids.length) {
+        const { error } = await supabase
+          .from("privati_conferimenti" as any)
+          .update({ targa_automezzo: null } as any)
+          .in("id", ids)
+          .select("id");
+        if (error) throw error;
+      }
+      toast.success(`Targa rimossa da ${g.nome}`);
+      await refetch();
+      queryClient.invalidateQueries({ predicate: (q) => JSON.stringify(q.queryKey).toLowerCase().includes("privat") });
+    } catch (e: any) {
+      toast.error(e.message || "Errore rimozione targa");
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
   const COLONNE = [
     { header: "N.", key: "n", width: 8 },
     { header: "Data", key: "data", width: 14 },
@@ -340,6 +368,15 @@ export function PrivatiTargheWidget({ tenantId }: { tenantId?: string }) {
                 {savingKey === g.key ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                 Salva targa
               </button>
+              {g.senzaTarga < g.movimenti && (
+                <button
+                  onClick={() => rimuoviTarga(g)}
+                  disabled={savingKey === g.key}
+                  className="px-3 py-2 rounded-lg bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs hover:bg-rose-500/25 disabled:opacity-40"
+                >
+                  Rimuovi targa
+                </button>
+              )}
             </div>
           ))}
         </div>
