@@ -543,7 +543,14 @@ export function DevPrivatiModule() {
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
       if (error) { toast.error(error.message); return; }
-      toast.success("✅ Privato aggiornato");
+      // Propaga la targa (anche se svuotata) ai conferimenti del soggetto
+      const nuovaTarga = payload.targa_automezzo ? String(payload.targa_automezzo).trim().toUpperCase() : null;
+      const { error: confErr } = await supabase
+        .from("privati_conferimenti")
+        .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
+        .eq("privato_id", editPrivatoId);
+      if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
+      toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
     } else {
       const { data: created, error } = await supabase
         .from("anagrafica_privati")
