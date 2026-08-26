@@ -1,13 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert, Download, RefreshCw } from "lucide-react";
+import { AlertTriangle, MessageCircle, Phone, Loader2, ShieldAlert, Download, RefreshCw, Printer } from "lucide-react";
 import { useState } from "react";
 import { exportToPdf } from "@/lib/exportUtils";
 
 const LIMITE_KG = 1500;
 
-type PrivatoKg = { nome: string; telefono?: string; cf?: string; kg: number };
+type PrivatoKg = { nome: string; telefono?: string; cf?: string; kg: number; conferimenti: number };
+
+const collator = new Intl.Collator("it", { sensitivity: "base", numeric: true });
+const perNome = (a: PrivatoKg, b: PrivatoKg) => collator.compare(a.nome || "", b.nome || "");
 
 export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
   const [sendingId, setSendingId] = useState<string | null>(null);
@@ -16,14 +19,22 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     queryKey: ["privati-limiti-widget", tenantId],
     queryFn: async () => {
       const anno = new Date().getFullYear();
+      // NB: senza .range() PostgREST tronca a 1000 righe → record mancanti nell'elenco/stampa
       let q = supabase.from("privati_conferimenti" as any)
-        .select("nome_privato, cf_pi, kg_pesati, anno_dbt, tenant_id, privato_id")
-        .eq("anno_dbt", anno);
+        .select("nome_privato, cf_pi, kg_pesati, anno_dbt, data, tenant_id, privato_id")
+        .range(0, 9999);
       if (tenantId) q = q.eq("tenant_id", tenantId);
       const { data, error } = await q;
       if (error) throw error;
 
-      const rows = (data || []) as any[];
+      const all = (data || []) as any[];
+      // Anno: usa anno_dbt quando valorizzato, altrimenti l'anno della data del conferimento
+      const rows = all.filter((r) => {
+        const y = r.anno_dbt ?? (r.data ? new Date(r.data).getFullYear() : null);
+        return y === anno;
+      });
+      const scartati = all.length - rows.length;
+
       const privatiIds = Array.from(new Set(rows.map(r => r.privato_id).filter(Boolean)));
       const telefoni = new Map<string, string>();
       if (privatiIds.length) {
@@ -36,62 +47,88 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
       }
 
       const bykey = new Map<string, PrivatoKg>();
+      let senzaIdentificativo = 0;
       for (const r of rows) {
-        const key = (r.cf_pi || r.nome_privato || "").toString().toUpperCase().trim();
-        if (!key) continue;
+        const key = (r.cf_pi || r.nome_privato || "").toString().toUpperCase().trim() || "SENZA IDENTIFICATIVO";
+        if (key === "SENZA IDENTIFICATIVO") senzaIdentificativo++;
         const tel = r.privato_id ? telefoni.get(r.privato_id) : undefined;
-        const cur = bykey.get(key) || { nome: r.nome_privato || key, telefono: tel, cf: r.cf_pi, kg: 0 };
+        const cur = bykey.get(key) || {
+          nome: r.nome_privato || key,
+          telefono: tel,
+          cf: r.cf_pi,
+          kg: 0,
+          conferimenti: 0,
+        };
         cur.kg += Number(r.kg_pesati) || 0;
+        cur.conferimenti += 1;
         if (!cur.telefono && tel) cur.telefono = tel;
         bykey.set(key, cur);
       }
 
-      const tutti = Array.from(bykey.values()).sort((a, b) => b.kg - a.kg);
+      const tutti = Array.from(bykey.values()).sort(perNome);
       return {
         tutti,
-        allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8),
+        allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8).sort(perNome),
+        movimenti: rows.length,
+        movimentiAltriAnni: scartati,
+        senzaIdentificativo,
+        kgTotali: tutti.reduce((s, p) => s + p.kg, 0),
       };
     },
     refetchInterval: 60_000,
   });
 
-  const scaricaPdf = async () => {
-    const res = await refetch();
-    const tutti = res.data?.tutti ?? data?.tutti ?? [];
-    if (!tutti.length) return toast.error("Nessun conferimento privato quest'anno");
+  const buildRows = (lista: PrivatoKg[]) =>
+    lista.map((p, i) => ({
+      n: i + 1,
+      nome: p.nome,
+      cf: p.cf || "—",
+      conf: p.conferimenti,
+      kg: p.kg,
+      residuo: Math.max(0, LIMITE_KG - p.kg),
+      perc: Math.round((p.kg / LIMITE_KG) * 100),
+      stato: p.kg >= LIMITE_KG ? "SUPERATO" : p.kg >= LIMITE_KG * 0.8 ? "IN ALLERTA" : "OK",
+    }));
+
+  const COLONNE = [
+    { header: "#", key: "n", width: 8 },
+    { header: "Privato (A→Z)", key: "nome", width: 42 },
+    { header: "Cod. Fiscale / P.IVA", key: "cf", width: 24 },
+    { header: "N. conf.", key: "conf", width: 12 },
+    {
+      header: "Kg conferiti",
+      key: "kg",
+      width: 16,
+      format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+    },
+    {
+      header: "Kg residui",
+      key: "residuo",
+      width: 16,
+      format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
+    },
+    { header: "% limite", key: "perc", width: 12, format: (v: any) => `${v}%` },
+    { header: "Stato", key: "stato", width: 14 },
+  ] as any;
+
+  const stampa = (soloAllerta: boolean) => {
+    const lista = (soloAllerta ? data?.allerta : data?.tutti) ?? [];
+    if (!lista.length) {
+      toast.error(soloAllerta ? "Nessun privato in allerta" : "Nessun conferimento privato quest'anno");
+      return;
+    }
     const anno = new Date().getFullYear();
     const ora = new Date();
+    const kg = lista.reduce((s, p) => s + p.kg, 0);
     exportToPdf(
-      tutti.map((p, i) => ({
-        n: i + 1,
-        nome: p.nome,
-        cf: p.cf || "—",
-        kg: p.kg,
-        residuo: Math.max(0, LIMITE_KG - p.kg),
-        perc: Math.round((p.kg / LIMITE_KG) * 100),
-      })),
-      [
-        { header: "#", key: "n", width: 8 },
-        { header: "Privato", key: "nome", width: 40 },
-        { header: "Cod. Fiscale / P.IVA", key: "cf", width: 24 },
-        {
-          header: "Kg conferiti",
-          key: "kg",
-          width: 16,
-          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
-        },
-        {
-          header: "Kg residui",
-          key: "residuo",
-          width: 16,
-          format: (v: any) => Number(v || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 }),
-        },
-        { header: "% limite", key: "perc", width: 12, format: (v: any) => `${v}%` },
-      ] as any,
-      `limiti-privati-${anno}`,
-      `LIMITI PRIVATI ${anno} — Limite ${LIMITE_KG} kg/anno\nAggiornato al ${ora.toLocaleDateString("it-IT")} ore ${ora.toLocaleTimeString("it-IT")}`,
+      buildRows(lista),
+      COLONNE,
+      `limiti-privati-${soloAllerta ? "allerta-" : ""}${anno}`,
+      `LIMITI PRIVATI ${anno}${soloAllerta ? " — SOLO IN ALLERTA" : " — ELENCO COMPLETO"} · Limite ${LIMITE_KG} kg/anno\n` +
+        `Ordinamento alfabetico A→Z · ${lista.length} privati · ${data?.movimenti ?? 0} conferimenti · ${kg.toLocaleString("it-IT", { minimumFractionDigits: 2 })} kg totali\n` +
+        `Aggiornato al ${ora.toLocaleDateString("it-IT")} ore ${ora.toLocaleTimeString("it-IT")}`,
     );
-    toast.success("PDF limiti privati generato");
+    toast.success(`PDF generato — ${lista.length} privati in ordine alfabetico`);
   };
 
   const invia = async (p: { nome: string; telefono?: string; kg: number }) => {
