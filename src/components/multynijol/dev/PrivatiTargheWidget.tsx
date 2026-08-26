@@ -116,36 +116,57 @@ export function PrivatiTargheWidget({ tenantId }: { tenantId?: string }) {
     if (!targa) return toast.error("Inserisci una targa");
     setSavingKey(g.key);
     try {
-      // 1) anagrafica privati (per id o per codice fiscale)
+      // 1) anagrafica privati (per id o per codice fiscale) — con verifica righe scritte
+      let anagAggiornate = 0;
       if (g.privatoIds.length) {
-        const { error } = await supabase
+        const { data: upd, error } = await supabase
           .from("anagrafica_privati" as any)
           .update({ targa_automezzo: targa } as any)
-          .in("id", g.privatoIds);
+          .in("id", g.privatoIds)
+          .select("id");
         if (error) throw error;
+        anagAggiornate = (upd || []).length;
       } else if (g.cf) {
-        const { error } = await supabase
+        const { data: upd, error } = await supabase
           .from("anagrafica_privati" as any)
           .update({ targa_automezzo: targa } as any)
-          .eq("codice_fiscale", g.cf);
+          .eq("codice_fiscale", g.cf)
+          .select("id");
         if (error) throw error;
+        anagAggiornate = (upd || []).length;
       }
 
-      // 2) movimenti privi di targa dello stesso soggetto
+      // 2) movimenti privi di targa dello stesso soggetto — con verifica righe scritte
       const idsDaAggiornare = (data?.rows ?? [])
         .filter((r) => keyOf(r) === g.key && !r.targa_automezzo?.trim())
         .map((r) => r.id);
+      let movAggiornati = 0;
       if (idsDaAggiornare.length) {
-        const { error } = await supabase
+        const { data: upd, error } = await supabase
           .from("privati_conferimenti" as any)
           .update({ targa_automezzo: targa } as any)
-          .in("id", idsDaAggiornare);
+          .in("id", idsDaAggiornare)
+          .select("id");
         if (error) throw error;
+        movAggiornati = (upd || []).length;
       }
 
-      toast.success(`Targa ${targa} salvata — ${idsDaAggiornare.length} movimenti aggiornati`);
+      if (movAggiornati === 0 && anagAggiornate === 0) {
+        toast.error(
+          "Nessuna riga aggiornata: permessi insufficienti sul database. Rientra come amministratore Multy Dev e riprova.",
+        );
+        return;
+      }
+      if (idsDaAggiornare.length && movAggiornati < idsDaAggiornare.length) {
+        toast.warning(`Aggiornati solo ${movAggiornati}/${idsDaAggiornare.length} movimenti (permessi parziali)`);
+      } else {
+        toast.success(`Targa ${targa} salvata — ${movAggiornati} movimenti + ${anagAggiornate} anagrafiche aggiornate`);
+      }
+
       setDrafts((d) => ({ ...d, [g.key]: "" }));
       await refetch();
+      // aggiorna anche gli altri pannelli privati (limiti, elenco conferimenti, ricevute)
+      queryClient.invalidateQueries({ predicate: (q) => JSON.stringify(q.queryKey).toLowerCase().includes("privat") });
     } catch (e: any) {
       toast.error(e.message || "Errore salvataggio targa");
     } finally {
