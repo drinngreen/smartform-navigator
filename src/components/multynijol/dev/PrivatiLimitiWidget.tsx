@@ -193,15 +193,15 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
           </button>
           <button
             onClick={() => stampa(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs hover:bg-emerald-500/30"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-emerald-950 font-semibold text-xs hover:bg-emerald-400 shadow"
           >
-            <Printer className="h-3.5 w-3.5" /> Stampa elenco completo (A→Z)
+            <Printer className="h-4 w-4" /> STAMPA LIMITI ({tutti.length} privati, A→Z)
           </button>
           <button
             onClick={() => stampa(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30"
           >
-            <Download className="h-3.5 w-3.5" /> Solo in allerta (PDF)
+            <Download className="h-3.5 w-3.5" /> Solo in allerta ({items.length})
           </button>
           <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
         </div>
