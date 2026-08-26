@@ -20,20 +20,22 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
     queryFn: async () => {
       const anno = new Date().getFullYear();
       // NB: senza .range() PostgREST tronca a 1000 righe → record mancanti nell'elenco/stampa
-      let q = supabase.from("privati_conferimenti" as any)
+      // Nessun filtro tenant nella query: serve a contare anche i record di altri tenant
+      // (verifica completezza richiesta da Cristina), poi si filtra lato client.
+      const { data, error } = await supabase.from("privati_conferimenti" as any)
         .select("nome_privato, cf_pi, kg_pesati, anno_dbt, data, tenant_id, privato_id")
         .range(0, 9999);
-      if (tenantId) q = q.eq("tenant_id", tenantId);
-      const { data, error } = await q;
       if (error) throw error;
 
       const all = (data || []) as any[];
       // Anno: usa anno_dbt quando valorizzato, altrimenti l'anno della data del conferimento
-      const rows = all.filter((r) => {
+      const annoRows = all.filter((r) => {
         const y = r.anno_dbt ?? (r.data ? new Date(r.data).getFullYear() : null);
         return y === anno;
       });
-      const scartati = all.length - rows.length;
+      const scartati = all.length - annoRows.length;
+      const rows = tenantId ? annoRows.filter((r) => r.tenant_id === tenantId) : annoRows;
+      const altriTenant = annoRows.length - rows.length;
 
       const privatiIds = Array.from(new Set(rows.map(r => r.privato_id).filter(Boolean)));
       const telefoni = new Map<string, string>();
