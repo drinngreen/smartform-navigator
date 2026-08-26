@@ -39,6 +39,7 @@ const keyOf = (r: Row) => (r.cf_pi || r.nome_privato || "SENZA IDENTIFICATIVO").
 
 export function PrivatiTargheWidget({ tenantId }: { tenantId?: string }) {
   const anno = new Date().getFullYear();
+  const queryClient = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [filtro, setFiltro] = useState("");
