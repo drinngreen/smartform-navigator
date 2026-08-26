@@ -19,6 +19,7 @@ import { it } from "date-fns/locale/it";
 import { cn } from "@/lib/utils";
 import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
+import { PrivatiTargheWidget } from "./PrivatiTargheWidget";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -584,6 +585,7 @@ export function DevPrivatiModule() {
   return (
     <div className="space-y-4">
       <PrivatiLimitiWidget tenantId={MULTY_TENANT_ID} />
+      <PrivatiTargheWidget tenantId={MULTY_TENANT_ID} />
       {/* Global Limit Alert */}
       <Card className="bg-red-950/30 border-red-500/30">
         <CardHeader>
