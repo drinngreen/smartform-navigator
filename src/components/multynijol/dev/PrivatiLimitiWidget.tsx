@@ -204,6 +204,16 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         </div>
       </div>
 
+      {(data?.senzaIdentificativo || data?.movimentiAltriAnni) ? (
+        <p className="text-[11px] text-muted-foreground">
+          Controllo completezza:{" "}
+          {data?.senzaIdentificativo
+            ? `${data.senzaIdentificativo} conferimenti senza CF/nominativo (raggruppati in "SENZA IDENTIFICATIVO") · `
+            : ""}
+          {data?.movimentiAltriAnni ? `${data.movimentiAltriAnni} conferimenti di altri anni esclusi dal ${new Date().getFullYear()}` : ""}
+        </p>
+      ) : null}
+
       {items.length === 0 ? (
         <div className="p-3 text-center text-sm text-muted-foreground">Nessun privato oltre soglia quest'anno ✅</div>
       ) : (
