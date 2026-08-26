@@ -306,7 +306,8 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  const { preferiti: PREFERITI_CER, tutti: ALL_CER } = useConferimentoCerOptions();
+  // Solo CER ammessi ai privati (capitolo 20 + varianti già usate nei conferimenti privati)
+  const { preferiti: PREFERITI_CER, tutti: ALL_CER } = useConferimentoCerOptions({ soloPrivati: true });
 
 
   const baseCerList = mostraTuttiCer ? ALL_CER : PREFERITI_CER;
@@ -1039,7 +1040,7 @@ export function DevPrivatiModule() {
                             onMouseDown={(e) => e.stopPropagation()}
                             className="accent-emerald-500"
                           />
-                          <span className="text-muted-foreground">Mostra tutti i CER del catalogo europeo</span>
+                          <span className="text-muted-foreground">Mostra tutti i CER ammessi ai privati (capitolo 20)</span>
                         </label>
                         {cerOptions(riga.cer).map(c => (
                           <button key={c.codice} type="button"
