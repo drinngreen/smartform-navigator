@@ -175,11 +175,12 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         <div className="flex-1 min-w-[200px]">
           <h3 className="text-sm font-semibold text-foreground">Scadenziario Privati — Limite 1500 kg/anno</h3>
           <p className="text-xs text-muted-foreground">
-            Privati oltre l'80% del limite annuo con invio avviso WhatsApp · {tutti.length} privati totali
+            {tutti.length} privati · {data?.movimenti ?? 0} conferimenti {new Date().getFullYear()} ·{" "}
+            {(data?.kgTotali ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })} kg
             {dataUpdatedAt ? ` · aggiornato ${new Date(dataUpdatedAt).toLocaleTimeString("it-IT")}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button
             onClick={() => refetch()}
             disabled={isFetching}
@@ -188,11 +189,16 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Aggiorna
           </button>
           <button
-            onClick={scaricaPdf}
-            disabled={isFetching}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30 disabled:opacity-40"
+            onClick={() => stampa(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs hover:bg-emerald-500/30"
           >
-            <Download className="h-3.5 w-3.5" /> Scarica limiti privati (PDF)
+            <Printer className="h-3.5 w-3.5" /> Stampa elenco completo (A→Z)
+          </button>
+          <button
+            onClick={() => stampa(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 text-xs hover:bg-amber-500/30"
+          >
+            <Download className="h-3.5 w-3.5" /> Solo in allerta (PDF)
           </button>
           <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">{items.length} in allerta</span>
         </div>
