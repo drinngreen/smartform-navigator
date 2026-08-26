@@ -73,6 +73,7 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
         allerta: tutti.filter((p) => p.kg >= LIMITE_KG * 0.8).sort(perNome),
         movimenti: rows.length,
         movimentiAltriAnni: scartati,
+        movimentiAltriTenant: altriTenant,
         senzaIdentificativo,
         kgTotali: tutti.reduce((s, p) => s + p.kg, 0),
       };
