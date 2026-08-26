@@ -306,7 +306,8 @@ export function DevPrivatiModule() {
     return null;
   };
 
-  const { preferiti: PREFERITI_CER, tutti: ALL_CER } = useConferimentoCerOptions();
+  // Solo CER ammessi ai privati (capitolo 20 + varianti già usate nei conferimenti privati)
+  const { preferiti: PREFERITI_CER, tutti: ALL_CER } = useConferimentoCerOptions({ soloPrivati: true });
 
 
   const baseCerList = mostraTuttiCer ? ALL_CER : PREFERITI_CER;
