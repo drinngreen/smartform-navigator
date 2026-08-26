@@ -585,6 +585,7 @@ export function DevPrivatiModule() {
   return (
     <div className="space-y-4">
       <PrivatiLimitiWidget tenantId={MULTY_TENANT_ID} />
+      <PrivatiTargheWidget tenantId={MULTY_TENANT_ID} />
       {/* Global Limit Alert */}
       <Card className="bg-red-950/30 border-red-500/30">
         <CardHeader>
