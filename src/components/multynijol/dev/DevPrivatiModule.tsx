@@ -219,6 +219,8 @@ export function DevPrivatiModule() {
     toast.success("Targa/veicolo aggiornati");
     setEditVeicoloConfId(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
   };
 
 
@@ -234,6 +236,8 @@ export function DevPrivatiModule() {
     toast.success("Data conferimento aggiornata");
     setEditDateConfId(null);
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     invalidateInventoryQueries();
   };
@@ -244,6 +248,8 @@ export function DevPrivatiModule() {
     if (error) { toast.error(error.message); return; }
     toast.success("✅ Conferimento eliminato e giacenza aggiornata");
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-anno"] });
     invalidateInventoryQueries();
   };
@@ -555,6 +561,8 @@ export function DevPrivatiModule() {
     setPrivatoForm({ ...EMPTY_PRIVATO_FORM });
     setScadenzaDate(undefined);
     queryClient.invalidateQueries({ queryKey: ["dev-privati"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
+    queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
   };
 
   const filteredPrivati = privati?.filter(p =>
