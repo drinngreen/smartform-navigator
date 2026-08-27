@@ -548,6 +548,13 @@ export function DevPrivatiModule() {
     const scadenzaStr = scadenzaDate
       ? `${scadenzaDate.getFullYear()}-${String(scadenzaDate.getMonth() + 1).padStart(2, "0")}-${String(scadenzaDate.getDate()).padStart(2, "0")}`
       : null;
+    const veicoliPuliti: VeicoloPrivato[] = (privatoForm.veicoli || [])
+      .map(v => ({ modello: (v.modello || "").trim(), targa: (v.targa || "").trim().toUpperCase() }))
+      .filter(v => v.targa || v.modello);
+    const primario = veicoliPuliti[0] || {
+      modello: (privatoForm.modello_automezzo || "").trim(),
+      targa: (privatoForm.targa_automezzo || "").trim().toUpperCase(),
+    };
     const payload = {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
@@ -561,9 +568,10 @@ export function DevPrivatiModule() {
       cellulare: privatoForm.cellulare?.trim() || null,
       telefono: privatoForm.telefono?.trim() || null,
       email: privatoForm.email?.trim() || null,
-      modello_automezzo: privatoForm.modello_automezzo || null,
-      automezzo: privatoForm.modello_automezzo || null,
-      targa_automezzo: privatoForm.targa_automezzo || null,
+      modello_automezzo: primario.modello || null,
+      automezzo: primario.modello || null,
+      targa_automezzo: primario.targa || null,
+      veicoli: veicoliPuliti,
       tipo_utenza: "domestica",
       attivo: true,
     };
@@ -571,15 +579,21 @@ export function DevPrivatiModule() {
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
       if (error) { toast.error(error.message); return; }
-      // Propaga la targa (anche se svuotata) ai conferimenti del soggetto
+      // Propaga la targa ai conferimenti solo se il soggetto ha un unico mezzo
+      // (con più mezzi ogni movimento mantiene la targa realmente usata).
       const nuovaTarga = payload.targa_automezzo ? String(payload.targa_automezzo).trim().toUpperCase() : null;
-      const { error: confErr } = await supabase
-        .from("privati_conferimenti")
-        .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
-        .eq("privato_id", editPrivatoId);
-      if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
-      toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+      if (veicoliPuliti.length <= 1) {
+        const { error: confErr } = await supabase
+          .from("privati_conferimenti")
+          .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
+          .eq("privato_id", editPrivatoId);
+        if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
+        toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+      } else {
+        toast.success(`✅ Privato aggiornato (${veicoliPuliti.length} mezzi associati)`);
+      }
     } else {
+
       const { data: created, error } = await supabase
         .from("anagrafica_privati")
         .insert({ ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId } as any)
