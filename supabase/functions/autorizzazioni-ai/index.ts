@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const MODEL = "google/gemini-3.5-flash";
+const MODEL = "google/gemini-2.5-flash";
 const MAX_CONTEXT_CHARS = 220000;
 
 function admin() {
