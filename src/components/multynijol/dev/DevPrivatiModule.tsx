@@ -69,6 +69,9 @@ export function DevPrivatiModule() {
   const [showNewPrivato, setShowNewPrivato] = useState(false);
   const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const [editPrivatoId, setEditPrivatoId] = useState<string | null>(null);
+  // Targa/modello del privato al momento dell'apertura della scheda:
+  // serve per propagare ai movimenti SOLO se la targa è stata realmente modificata.
+  const origVeicoloRef = useRef<{ targa: string; modello: string }>({ targa: "", modello: "" });
   const [cerSearch, setCerSearch] = useState("");
   const [showCerDropdown, setShowCerDropdown] = useState(false);
   // Righe materiali del conferimento (multi-materiale: es. ferro + rame nella stessa ricevuta)
