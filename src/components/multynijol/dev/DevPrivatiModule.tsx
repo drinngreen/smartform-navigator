@@ -1023,8 +1023,40 @@ export function DevPrivatiModule() {
               <DateFieldIT value={scadenzaDate} onChange={setScadenzaDate} />
               <p className="text-[10px] text-muted-foreground mt-1">Scrivi 12/03/2027 (o 12032027) oppure usa il calendario</p>
             </div>
-            <div><Label>Modello Automezzo</Label><Input value={privatoForm.modello_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
-            <div className="col-span-2"><Label>Targa Automezzo</Label><Input value={privatoForm.targa_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div className="col-span-2 space-y-2 rounded-lg border border-border/40 p-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2"><Truck className="h-4 w-4 text-emerald-400" /> Mezzi (modello + targa)</Label>
+                <Button type="button" size="sm" variant="outline" className="gap-1"
+                  onClick={() => setPrivatoForm(p => ({ ...p, veicoli: [...(p.veicoli || []), { modello: "", targa: "" }] }))}>
+                  <Plus className="h-3 w-3" /> Aggiungi mezzo
+                </Button>
+              </div>
+              {(privatoForm.veicoli || []).length === 0 && (
+                <p className="text-xs text-muted-foreground">Nessun mezzo associato. Clicca "Aggiungi mezzo" per inserire modello e targa.</p>
+              )}
+              {(privatoForm.veicoli || []).map((v, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Input
+                    placeholder="Modello (es. Fiat Doblò)"
+                    value={v.modello}
+                    onChange={(e) => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.map((x, i) => i === idx ? { ...x, modello: e.target.value } : x) }))}
+                  />
+                  <Input
+                    placeholder="Targa"
+                    className="font-mono"
+                    value={v.targa}
+                    onChange={(e) => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.map((x, i) => i === idx ? { ...x, targa: e.target.value.toUpperCase() } : x) }))}
+                  />
+                  <Button type="button" size="icon" variant="ghost"
+                    title="Rimuovi mezzo"
+                    onClick={() => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.filter((_, i) => i !== idx) }))}>
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground">Il primo mezzo dell'elenco è quello principale e viene proposto in automatico nei conferimenti.</p>
+            </div>
+
             <div><Label>Cellulare</Label><Input value={privatoForm.cellulare} onChange={(e) => setPrivatoForm(p => ({ ...p, cellulare: e.target.value }))} placeholder="333 1234567" className="font-mono" /></div>
             <div><Label>Telefono fisso</Label><Input value={privatoForm.telefono} onChange={(e) => setPrivatoForm(p => ({ ...p, telefono: e.target.value }))} placeholder="011 1234567" className="font-mono" /></div>
             <div className="col-span-2"><Label>Email</Label><Input value={privatoForm.email} onChange={(e) => setPrivatoForm(p => ({ ...p, email: e.target.value }))} placeholder="nome@email.it" /></div>
