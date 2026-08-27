@@ -516,6 +516,10 @@ export function DevPrivatiModule() {
 
   const openEditPrivato = (p: any) => {
     setEditPrivatoId(p.id);
+    origVeicoloRef.current = {
+      targa: String(p.targa_automezzo || "").trim().toUpperCase(),
+      modello: String(p.modello_automezzo || p.automezzo || "").trim(),
+    };
     setPrivatoForm({
       nome: p.nome || "",
       cognome: p.cognome || "",
