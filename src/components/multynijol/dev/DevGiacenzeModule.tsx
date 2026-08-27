@@ -11,6 +11,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { CER_CATALOG } from "@/data/cerCatalog";
+import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -94,12 +95,10 @@ export function DevGiacenzeModule() {
     if (!movimenti) return [];
     const map: Record<string, CerRow> = {};
     const descriptionsByCer: Record<string, string> = {};
-    const isTechnicalDesc = (d: string) =>
-      /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(d);
 
     for (const m of movimenti) {
       const d = m.descrizione_rifiuto?.trim();
-      if (d && !isTechnicalDesc(d)) descriptionsByCer[m.cer] = d;
+      if (d) descriptionsByCer[m.cer] = d;
     }
 
     // Se richiesto, mostra l'intero catalogo CER/EER (843 codici) con saldo 0 se senza movimenti
@@ -108,7 +107,7 @@ export function DevGiacenzeModule() {
         if (!map[c.codice]) {
           map[c.codice] = {
             cer: c.codice,
-            descrizione: descriptionsByCer[c.codice] || c.descrizione,
+            descrizione: getCerDescrizionePerStampa(c.codice, descriptionsByCer[c.codice]),
             carico: 0,
             scarico: 0,
             saldo: 0,
@@ -122,7 +121,13 @@ export function DevGiacenzeModule() {
       if (dataDal && m.data_movimento < dataDal) continue;
       const key = m.cer;
       if (!map[key]) {
-        map[key] = { cer: m.cer, descrizione: descriptionsByCer[key] || "", carico: 0, scarico: 0, saldo: 0 };
+        map[key] = {
+          cer: m.cer,
+          descrizione: getCerDescrizionePerStampa(m.cer, descriptionsByCer[key]),
+          carico: 0,
+          scarico: 0,
+          saldo: 0,
+        };
       }
       const q = Number(m.quantita_kg) || 0;
       if (m.tipo_movimento === "CARICO") map[key].carico += q;

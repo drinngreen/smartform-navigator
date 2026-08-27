@@ -62,3 +62,20 @@ export function getCerDescrizioneCompleta(cer: unknown): string {
   if (!parti.length) return `Rifiuto CER ${code}`;
   return parti.join(" — ");
 }
+
+/**
+ * Descrizione da usare nelle giacenze e nelle stampe ufficiali.
+ * Il catalogo normativo prevale sempre sui testi salvati nei movimenti, che
+ * possono essere vuoti, abbreviati o contenere note tecniche di rettifica.
+ */
+export function getCerDescrizionePerStampa(cer: unknown, descrizioneSalvata?: string | null): string {
+  const code = clean(cer);
+  if (!code) return "";
+
+  const presenteNelCatalogo = CER_CATALOG.some((entry) => entry.codice === code);
+  if (presenteNelCatalogo) return getCerDescrizioneCompleta(code);
+
+  const salvata = descrizioneSalvata?.trim() ?? "";
+  const descrizioneTecnica = /rettifica di allineamento|allineamento ufficiale|import registro|storno/i.test(salvata);
+  return salvata && !descrizioneTecnica ? salvata : `Rifiuto CER ${code}`;
+}
