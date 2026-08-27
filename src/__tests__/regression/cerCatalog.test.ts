@@ -51,7 +51,7 @@ describe("catalogo CER", () => {
 
   it("la stampa giacenze usa sempre la descrizione CER estesa ufficiale", () => {
     const descrizione = getCerDescrizionePerStampa("20 01 40", "Rettifica di allineamento ufficiale");
-    expect(descrizione).toContain("Metalli");
+    expect(descrizione).toContain("Metallo");
     expect(descrizione).toContain("Frazioni oggetto di raccolta differenziata");
     expect(descrizione).toContain("Rifiuti urbani");
     expect(descrizione).not.toMatch(/rettifica/i);
