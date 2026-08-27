@@ -197,6 +197,7 @@ export default function MNAnagraficaPrivatiPage() {
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.codice_fiscale}</td>
                       <td className="px-4 py-3 text-muted-foreground">{item.comune_residenza || "—"}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.numero_tessera || "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.cellulare || item.telefono || "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">{item.automezzo || "—"}</td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{item.targa_automezzo || "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{item.tipo_utenza?.replace("_", " ")}</td>
