@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { exportToExcel } from "@/lib/exportUtils";
+import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonStock } from "@/hooks/dragon/useDragonStock";
 import { useDragonItems } from "@/hooks/dragon/useDragonItems";
@@ -153,7 +154,7 @@ export default function DragonMagazzinoPage() {
               exportToExcel(
                 balances.map(b => ({
                   codice_cer: b.item?.codice_cer || "",
-                  descrizione: b.item?.descrizione || "",
+                  descrizione: getCerDescrizionePerStampa(b.item?.codice_cer || "", b.item?.descrizione),
                   tipo: b.item?.item_type || "",
                   ambito: b.warehouse_scope,
                   giacenza: Number(b.balance),
@@ -195,7 +196,7 @@ export default function DragonMagazzinoPage() {
                   balances.map((b, i) => (
                     <TableRow key={`${b.item_id}-${b.warehouse_scope}-${i}`} className="border-border/10">
                       <TableCell className="font-mono text-sm">{b.item?.codice_cer}</TableCell>
-                      <TableCell className="text-sm">{b.item?.descrizione}</TableCell>
+                      <TableCell className="text-sm">{getCerDescrizionePerStampa(b.item?.codice_cer || "", b.item?.descrizione)}</TableCell>
                       <TableCell><Badge variant="outline" className="text-xs">{b.item?.item_type}</Badge></TableCell>
                       <TableCell><Badge variant="outline" className={b.warehouse_scope === "WASTE" ? "bg-amber-500/20 text-amber-300" : "bg-blue-500/20 text-blue-300"}>{b.warehouse_scope}</Badge></TableCell>
                       <TableCell className={`text-right font-mono font-bold ${b.balance >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{Number(b.balance).toLocaleString("it-IT")}</TableCell>

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { DateFieldIT } from "@/components/ui/date-field-it";
 import { AlertTriangle, Upload, FileText, Users, ShieldAlert, Plus, Receipt, Scale, Search, FileSpreadsheet, Printer, Trash2, Edit2, CalendarIcon, Truck } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ const toLocalDateLabel = (value: string | null | undefined) => {
 const EMPTY_PRIVATO_FORM = {
   nome: "", cognome: "", codice_fiscale: "", indirizzo: "", cap: "", comune_residenza: "", provincia: "",
   numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
+  cellulare: "", telefono: "", email: "",
 };
 
 export function DevPrivatiModule() {
@@ -503,6 +505,9 @@ export function DevPrivatiModule() {
       provincia: p.provincia || "",
       numero_documento: p.numero_documento || "",
       scadenza_documento: p.scadenza_documento || "",
+      cellulare: p.cellulare || "",
+      telefono: p.telefono || "",
+      email: p.email || "",
       modello_automezzo: p.modello_automezzo || p.automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
     });
@@ -533,6 +538,9 @@ export function DevPrivatiModule() {
       provincia: privatoForm.provincia ? privatoForm.provincia.toUpperCase() : null,
       numero_documento: privatoForm.numero_documento || null,
       scadenza_documento: scadenzaStr,
+      cellulare: privatoForm.cellulare?.trim() || null,
+      telefono: privatoForm.telefono?.trim() || null,
+      email: privatoForm.email?.trim() || null,
       modello_automezzo: privatoForm.modello_automezzo || null,
       automezzo: privatoForm.modello_automezzo || null,
       targa_automezzo: privatoForm.targa_automezzo || null,
@@ -656,6 +664,7 @@ export function DevPrivatiModule() {
                     { header: "Comune", key: "comune_residenza", width: 16 },
                     { header: "Documento", key: "numero_documento", width: 14 },
                     { header: "Targa", key: "targa_automezzo", width: 12 },
+                    { header: "Cellulare", key: "cellulare", width: 14 },
                   ];
                   exportToExcel(filteredPrivati, cols, "privati-dev", "Privati");
                 }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
@@ -670,6 +679,7 @@ export function DevPrivatiModule() {
                     { header: "Comune", key: "comune_residenza", width: 16 },
                     { header: "Documento", key: "numero_documento", width: 14 },
                     { header: "Targa", key: "targa_automezzo", width: 12 },
+                    { header: "Cellulare", key: "cellulare", width: 14 },
                   ];
                   exportToPdf(filteredPrivati, cols, "privati-dev", "Anagrafica Privati — Multyproget Dev");
                 }} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-7 text-xs">
@@ -705,7 +715,7 @@ export function DevPrivatiModule() {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {p.comune_residenza || "-"}{(p as any).targa_automezzo ? ` · ${(p as any).targa_automezzo}` : ""}
+                    {p.comune_residenza || "-"}{(p as any).targa_automezzo ? ` · ${(p as any).targa_automezzo}` : ""}{(p as any).cellulare ? ` · 📱 ${(p as any).cellulare}` : ""}
                   </div>
                 </div>
               );
@@ -976,18 +986,14 @@ export function DevPrivatiModule() {
             <div><Label>N° Documento</Label><Input value={privatoForm.numero_documento} onChange={(e) => setPrivatoForm(p => ({ ...p, numero_documento: e.target.value }))} /></div>
             <div>
               <Label>Scadenza Documento</Label>
-              <Popover>
-                <PopoverTrigger className={cn("w-full inline-flex items-center rounded-lg border border-slate-700 bg-transparent px-4 py-2 text-left text-sm", !scadenzaDate && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {scadenzaDate ? format(scadenzaDate, "dd/MM/yyyy") : "Seleziona data"}
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={scadenzaDate} onSelect={setScadenzaDate} locale={it} initialFocus className="p-3 pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
+              <DateFieldIT value={scadenzaDate} onChange={setScadenzaDate} />
+              <p className="text-[10px] text-muted-foreground mt-1">Scrivi 12/03/2027 (o 12032027) oppure usa il calendario</p>
             </div>
             <div><Label>Modello Automezzo</Label><Input value={privatoForm.modello_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Targa Automezzo</Label><Input value={privatoForm.targa_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div><Label>Cellulare</Label><Input value={privatoForm.cellulare} onChange={(e) => setPrivatoForm(p => ({ ...p, cellulare: e.target.value }))} placeholder="333 1234567" className="font-mono" /></div>
+            <div><Label>Telefono fisso</Label><Input value={privatoForm.telefono} onChange={(e) => setPrivatoForm(p => ({ ...p, telefono: e.target.value }))} placeholder="011 1234567" className="font-mono" /></div>
+            <div className="col-span-2"><Label>Email</Label><Input value={privatoForm.email} onChange={(e) => setPrivatoForm(p => ({ ...p, email: e.target.value }))} placeholder="nome@email.it" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewPrivato(false)}>Annulla</Button>
