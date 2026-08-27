@@ -1193,7 +1193,26 @@ export function DevPrivatiModule() {
                 </SelectContent>
               </Select>
             </div>
+            {normalizeVeicoli(activeConferimentoPrivato).length > 1 && (
+              <div className="col-span-2">
+                <Label className="flex items-center gap-2"><Truck className="h-4 w-4 text-emerald-400" /> Mezzo utilizzato</Label>
+                <Select
+                  value={confForm.targa_automezzo || undefined}
+                  onValueChange={(v) => {
+                    const veh = normalizeVeicoli(activeConferimentoPrivato).find(x => x.targa === v);
+                    setConfForm(p => ({ ...p, targa_automezzo: veh?.targa || v, modello_automezzo: veh?.modello || p.modello_automezzo }));
+                  }}>
+                  <SelectTrigger><SelectValue placeholder="Seleziona mezzo" /></SelectTrigger>
+                  <SelectContent>
+                    {normalizeVeicoli(activeConferimentoPrivato).filter(v => v.targa).map((v) => (
+                      <SelectItem key={v.targa} value={v.targa}>{v.targa}{v.modello ? ` — ${v.modello}` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Targa Automezzo</Label><Input value={confForm.targa_automezzo} onChange={(e) => setConfForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+
             <div><Label>Modello</Label><Input value={confForm.modello_automezzo} onChange={(e) => setConfForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
             <div><Label>Data Conferimento *</Label><Input type="date" value={confForm.data} onChange={(e) => setConfForm(p => ({ ...p, data: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
