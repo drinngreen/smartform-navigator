@@ -586,18 +586,27 @@ export function DevPrivatiModule() {
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
       if (error) { toast.error(error.message); return; }
-      // Propaga la targa ai conferimenti solo se il soggetto ha un unico mezzo
-      // (con più mezzi ogni movimento mantiene la targa realmente usata).
+      // Propaga la targa ai conferimenti SOLO se:
+      // - il soggetto ha un unico mezzo (con più mezzi ogni movimento tiene la sua targa)
+      // - la targa è stata realmente modificata in questo salvataggio
+      // - e solo sui movimenti privi di targa o con la vecchia targa (mai su targhe diverse)
       const nuovaTarga = payload.targa_automezzo ? String(payload.targa_automezzo).trim().toUpperCase() : null;
-      if (veicoliPuliti.length <= 1) {
-        const { error: confErr } = await supabase
+      const vecchiaTarga = origVeicoloRef.current.targa;
+      const targaCambiata = (nuovaTarga ?? "") !== vecchiaTarga;
+      if (veicoliPuliti.length <= 1 && targaCambiata) {
+        let q = supabase
           .from("privati_conferimenti")
           .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
           .eq("privato_id", editPrivatoId);
+        q = vecchiaTarga
+          ? q.or(`targa_automezzo.is.null,targa_automezzo.eq.${vecchiaTarga}`)
+          : q.is("targa_automezzo", null);
+        const { error: confErr } = await q;
         if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
-        toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+        else toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+        origVeicoloRef.current = { targa: nuovaTarga ?? "", modello: String(payload.modello_automezzo || "") };
       } else {
-        toast.success(`✅ Privato aggiornato (${veicoliPuliti.length} mezzi associati)`);
+        toast.success("✅ Privato aggiornato");
       }
     } else {
 
