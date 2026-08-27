@@ -17,6 +17,8 @@ interface Privato {
   attivo: boolean;
   automezzo: string | null;
   targa_automezzo: string | null;
+  cellulare: string | null;
+  telefono: string | null;
 }
 
 function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenantId: string; onClose: () => void }) {
@@ -32,6 +34,8 @@ function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenant
     note: item?.note || "",
     automezzo: item?.automezzo || "",
     targa_automezzo: item?.targa_automezzo || "",
+    cellulare: item?.cellulare || "",
+    telefono: item?.telefono || "",
   });
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -76,6 +80,8 @@ function PrivatoFormDialog({ item, tenantId, onClose }: { item?: Privato; tenant
           <Field label="Codice Fiscale" field="codice_fiscale" span={2} />
           <Field label="Comune Residenza" field="comune_residenza" />
           <Field label="N° Tessera" field="numero_tessera" />
+          <Field label="Cellulare" field="cellulare" />
+          <Field label="Telefono" field="telefono" />
           <Field label="Automezzo" field="automezzo" />
           <Field label="Targa Automezzo" field="targa_automezzo" />
           <div>
@@ -176,6 +182,7 @@ export default function MNAnagraficaPrivatiPage() {
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Codice Fiscale</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Comune</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Tessera</th>
+                    <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Cellulare</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Automezzo</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Targa</th>
                     <th className="px-4 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">Tipo</th>
