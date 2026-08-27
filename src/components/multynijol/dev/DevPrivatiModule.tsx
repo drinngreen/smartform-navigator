@@ -1007,7 +1007,7 @@ export function DevPrivatiModule() {
 
       {/* ─── New/Edit Privato Dialog ─── */}
       <Dialog open={showNewPrivato} onOpenChange={(o) => { setShowNewPrivato(o); if (!o) { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editPrivatoId ? "Modifica Privato" : "Nuovo Privato"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
