@@ -99,7 +99,8 @@ export function validateDataDocumento(value: string): string | null {
 }
 
 export function parseDate(value: string): Date | null {
-  const v = clean(value);
+  // Accetta anche i valori dei campi datetime-local / ISO ("2026-08-25T10:00").
+  const v = clean(value).split("T")[0].trim();
   let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
   if (m) return build(Number(m[1]), Number(m[2]), Number(m[3]));
   m = /^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/.exec(v);
