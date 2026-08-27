@@ -1,0 +1,1 @@
+ALTER TABLE public.anagrafica_privati ADD COLUMN IF NOT EXISTS veicoli jsonb NOT NULL DEFAULT '[]'::jsonb;

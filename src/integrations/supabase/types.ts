@@ -357,6 +357,7 @@ export type Database = {
           tenant_id: string | null
           tipo_utenza: string
           updated_at: string
+          veicoli: Json
         }
         Insert: {
           attivo?: boolean
@@ -391,6 +392,7 @@ export type Database = {
           tenant_id?: string | null
           tipo_utenza?: string
           updated_at?: string
+          veicoli?: Json
         }
         Update: {
           attivo?: boolean
@@ -425,6 +427,7 @@ export type Database = {
           tenant_id?: string | null
           tipo_utenza?: string
           updated_at?: string
+          veicoli?: Json
         }
         Relationships: [
           {

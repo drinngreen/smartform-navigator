@@ -33,11 +33,29 @@ const toLocalDateLabel = (value: string | null | undefined) => {
 };
 
 
+export type VeicoloPrivato = { modello: string; targa: string };
+
+const normalizeVeicoli = (p: any): VeicoloPrivato[] => {
+  const raw = Array.isArray(p?.veicoli) ? p.veicoli : [];
+  const list: VeicoloPrivato[] = raw
+    .map((v: any) => ({ modello: String(v?.modello || "").trim(), targa: String(v?.targa || "").trim().toUpperCase() }))
+    .filter((v: VeicoloPrivato) => v.targa || v.modello);
+  if (list.length === 0 && (p?.targa_automezzo || p?.modello_automezzo || p?.automezzo)) {
+    list.push({
+      modello: String(p?.modello_automezzo || p?.automezzo || "").trim(),
+      targa: String(p?.targa_automezzo || "").trim().toUpperCase(),
+    });
+  }
+  return list;
+};
+
 const EMPTY_PRIVATO_FORM = {
   nome: "", cognome: "", codice_fiscale: "", indirizzo: "", cap: "", comune_residenza: "", provincia: "",
   numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
   cellulare: "", telefono: "", email: "",
+  veicoli: [] as VeicoloPrivato[],
 };
+
 
 export function DevPrivatiModule() {
   const queryClient = useQueryClient();
@@ -510,7 +528,9 @@ export function DevPrivatiModule() {
       email: p.email || "",
       modello_automezzo: p.modello_automezzo || p.automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
+      veicoli: normalizeVeicoli(p),
     });
+
     if (p.scadenza_documento) {
       const [y, m, d] = p.scadenza_documento.split("-").map(Number);
       setScadenzaDate(new Date(y, m - 1, d));
@@ -528,6 +548,13 @@ export function DevPrivatiModule() {
     const scadenzaStr = scadenzaDate
       ? `${scadenzaDate.getFullYear()}-${String(scadenzaDate.getMonth() + 1).padStart(2, "0")}-${String(scadenzaDate.getDate()).padStart(2, "0")}`
       : null;
+    const veicoliPuliti: VeicoloPrivato[] = (privatoForm.veicoli || [])
+      .map(v => ({ modello: (v.modello || "").trim(), targa: (v.targa || "").trim().toUpperCase() }))
+      .filter(v => v.targa || v.modello);
+    const primario = veicoliPuliti[0] || {
+      modello: (privatoForm.modello_automezzo || "").trim(),
+      targa: (privatoForm.targa_automezzo || "").trim().toUpperCase(),
+    };
     const payload = {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
@@ -541,9 +568,10 @@ export function DevPrivatiModule() {
       cellulare: privatoForm.cellulare?.trim() || null,
       telefono: privatoForm.telefono?.trim() || null,
       email: privatoForm.email?.trim() || null,
-      modello_automezzo: privatoForm.modello_automezzo || null,
-      automezzo: privatoForm.modello_automezzo || null,
-      targa_automezzo: privatoForm.targa_automezzo || null,
+      modello_automezzo: primario.modello || null,
+      automezzo: primario.modello || null,
+      targa_automezzo: primario.targa || null,
+      veicoli: veicoliPuliti,
       tipo_utenza: "domestica",
       attivo: true,
     };
@@ -551,15 +579,21 @@ export function DevPrivatiModule() {
     if (editPrivatoId) {
       const { error } = await supabase.from("anagrafica_privati").update(payload as any).eq("id", editPrivatoId);
       if (error) { toast.error(error.message); return; }
-      // Propaga la targa (anche se svuotata) ai conferimenti del soggetto
+      // Propaga la targa ai conferimenti solo se il soggetto ha un unico mezzo
+      // (con più mezzi ogni movimento mantiene la targa realmente usata).
       const nuovaTarga = payload.targa_automezzo ? String(payload.targa_automezzo).trim().toUpperCase() : null;
-      const { error: confErr } = await supabase
-        .from("privati_conferimenti")
-        .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
-        .eq("privato_id", editPrivatoId);
-      if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
-      toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+      if (veicoliPuliti.length <= 1) {
+        const { error: confErr } = await supabase
+          .from("privati_conferimenti")
+          .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
+          .eq("privato_id", editPrivatoId);
+        if (confErr) toast.error(`Targa non propagata ai movimenti: ${confErr.message}`);
+        toast.success(nuovaTarga ? "✅ Privato aggiornato (targa propagata ai movimenti)" : "✅ Privato aggiornato (targa rimossa dai movimenti)");
+      } else {
+        toast.success(`✅ Privato aggiornato (${veicoliPuliti.length} mezzi associati)`);
+      }
     } else {
+
       const { data: created, error } = await supabase
         .from("anagrafica_privati")
         .insert({ ...payload, tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId } as any)
@@ -973,7 +1007,7 @@ export function DevPrivatiModule() {
 
       {/* ─── New/Edit Privato Dialog ─── */}
       <Dialog open={showNewPrivato} onOpenChange={(o) => { setShowNewPrivato(o); if (!o) { setEditPrivatoId(null); setPrivatoForm({ ...EMPTY_PRIVATO_FORM }); setScadenzaDate(undefined); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editPrivatoId ? "Modifica Privato" : "Nuovo Privato"}</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Nome *</Label><Input value={privatoForm.nome} onChange={(e) => setPrivatoForm(p => ({ ...p, nome: e.target.value }))} /></div>
@@ -989,8 +1023,40 @@ export function DevPrivatiModule() {
               <DateFieldIT value={scadenzaDate} onChange={setScadenzaDate} />
               <p className="text-[10px] text-muted-foreground mt-1">Scrivi 12/03/2027 (o 12032027) oppure usa il calendario</p>
             </div>
-            <div><Label>Modello Automezzo</Label><Input value={privatoForm.modello_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
-            <div className="col-span-2"><Label>Targa Automezzo</Label><Input value={privatoForm.targa_automezzo} onChange={(e) => setPrivatoForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+            <div className="col-span-2 space-y-2 rounded-lg border border-border/40 p-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2"><Truck className="h-4 w-4 text-emerald-400" /> Mezzi (modello + targa)</Label>
+                <Button type="button" size="sm" variant="outline" className="gap-1"
+                  onClick={() => setPrivatoForm(p => ({ ...p, veicoli: [...(p.veicoli || []), { modello: "", targa: "" }] }))}>
+                  <Plus className="h-3 w-3" /> Aggiungi mezzo
+                </Button>
+              </div>
+              {(privatoForm.veicoli || []).length === 0 && (
+                <p className="text-xs text-muted-foreground">Nessun mezzo associato. Clicca "Aggiungi mezzo" per inserire modello e targa.</p>
+              )}
+              {(privatoForm.veicoli || []).map((v, idx) => (
+                <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                  <Input
+                    placeholder="Modello (es. Fiat Doblò)"
+                    value={v.modello}
+                    onChange={(e) => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.map((x, i) => i === idx ? { ...x, modello: e.target.value } : x) }))}
+                  />
+                  <Input
+                    placeholder="Targa"
+                    className="font-mono"
+                    value={v.targa}
+                    onChange={(e) => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.map((x, i) => i === idx ? { ...x, targa: e.target.value.toUpperCase() } : x) }))}
+                  />
+                  <Button type="button" size="icon" variant="ghost"
+                    title="Rimuovi mezzo"
+                    onClick={() => setPrivatoForm(p => ({ ...p, veicoli: p.veicoli.filter((_, i) => i !== idx) }))}>
+                    <Trash2 className="h-4 w-4 text-red-400" />
+                  </Button>
+                </div>
+              ))}
+              <p className="text-[10px] text-muted-foreground">Il primo mezzo dell'elenco è quello principale e viene proposto in automatico nei conferimenti.</p>
+            </div>
+
             <div><Label>Cellulare</Label><Input value={privatoForm.cellulare} onChange={(e) => setPrivatoForm(p => ({ ...p, cellulare: e.target.value }))} placeholder="333 1234567" className="font-mono" /></div>
             <div><Label>Telefono fisso</Label><Input value={privatoForm.telefono} onChange={(e) => setPrivatoForm(p => ({ ...p, telefono: e.target.value }))} placeholder="011 1234567" className="font-mono" /></div>
             <div className="col-span-2"><Label>Email</Label><Input value={privatoForm.email} onChange={(e) => setPrivatoForm(p => ({ ...p, email: e.target.value }))} placeholder="nome@email.it" /></div>
@@ -1127,7 +1193,26 @@ export function DevPrivatiModule() {
                 </SelectContent>
               </Select>
             </div>
+            {normalizeVeicoli(activeConferimentoPrivato).length > 1 && (
+              <div className="col-span-2">
+                <Label className="flex items-center gap-2"><Truck className="h-4 w-4 text-emerald-400" /> Mezzo utilizzato</Label>
+                <Select
+                  value={confForm.targa_automezzo || undefined}
+                  onValueChange={(v) => {
+                    const veh = normalizeVeicoli(activeConferimentoPrivato).find(x => x.targa === v);
+                    setConfForm(p => ({ ...p, targa_automezzo: veh?.targa || v, modello_automezzo: veh?.modello || p.modello_automezzo }));
+                  }}>
+                  <SelectTrigger><SelectValue placeholder="Seleziona mezzo" /></SelectTrigger>
+                  <SelectContent>
+                    {normalizeVeicoli(activeConferimentoPrivato).filter(v => v.targa).map((v) => (
+                      <SelectItem key={v.targa} value={v.targa}>{v.targa}{v.modello ? ` — ${v.modello}` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Targa Automezzo</Label><Input value={confForm.targa_automezzo} onChange={(e) => setConfForm(p => ({ ...p, targa_automezzo: e.target.value.toUpperCase() }))} className="font-mono" /></div>
+
             <div><Label>Modello</Label><Input value={confForm.modello_automezzo} onChange={(e) => setConfForm(p => ({ ...p, modello_automezzo: e.target.value }))} /></div>
             <div><Label>Data Conferimento *</Label><Input type="date" value={confForm.data} onChange={(e) => setConfForm(p => ({ ...p, data: e.target.value }))} /></div>
             <div className="col-span-2"><Label>Note</Label><Textarea value={confForm.note} onChange={(e) => setConfForm(p => ({ ...p, note: e.target.value }))} rows={2} /></div>
