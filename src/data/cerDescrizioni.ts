@@ -70,7 +70,8 @@ export function getCerDescrizioneCompleta(cer: unknown): string {
  */
 export function getCerDescrizionePerStampa(cer: unknown, descrizioneSalvata?: string | null): string {
   const code = clean(cer);
-  if (!code) return "";
+  // Articoli senza codice numerico (MPS/materiali tipo "FERRO"): resta la descrizione dell'articolo.
+  if (!code) return descrizioneSalvata?.trim() ?? "";
 
   const presenteNelCatalogo = CER_CATALOG.some((entry) => entry.codice === code);
   if (presenteNelCatalogo) return getCerDescrizioneCompleta(code);
