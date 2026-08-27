@@ -528,7 +528,9 @@ export function DevPrivatiModule() {
       email: p.email || "",
       modello_automezzo: p.modello_automezzo || p.automezzo || "",
       targa_automezzo: p.targa_automezzo || "",
+      veicoli: normalizeVeicoli(p),
     });
+
     if (p.scadenza_documento) {
       const [y, m, d] = p.scadenza_documento.split("-").map(Number);
       setScadenzaDate(new Date(y, m - 1, d));
