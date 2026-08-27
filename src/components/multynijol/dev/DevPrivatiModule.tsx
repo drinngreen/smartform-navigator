@@ -33,11 +33,29 @@ const toLocalDateLabel = (value: string | null | undefined) => {
 };
 
 
+export type VeicoloPrivato = { modello: string; targa: string };
+
+const normalizeVeicoli = (p: any): VeicoloPrivato[] => {
+  const raw = Array.isArray(p?.veicoli) ? p.veicoli : [];
+  const list: VeicoloPrivato[] = raw
+    .map((v: any) => ({ modello: String(v?.modello || "").trim(), targa: String(v?.targa || "").trim().toUpperCase() }))
+    .filter((v: VeicoloPrivato) => v.targa || v.modello);
+  if (list.length === 0 && (p?.targa_automezzo || p?.modello_automezzo || p?.automezzo)) {
+    list.push({
+      modello: String(p?.modello_automezzo || p?.automezzo || "").trim(),
+      targa: String(p?.targa_automezzo || "").trim().toUpperCase(),
+    });
+  }
+  return list;
+};
+
 const EMPTY_PRIVATO_FORM = {
   nome: "", cognome: "", codice_fiscale: "", indirizzo: "", cap: "", comune_residenza: "", provincia: "",
   numero_documento: "", scadenza_documento: "", modello_automezzo: "", targa_automezzo: "",
   cellulare: "", telefono: "", email: "",
+  veicoli: [] as VeicoloPrivato[],
 };
+
 
 export function DevPrivatiModule() {
   const queryClient = useQueryClient();
