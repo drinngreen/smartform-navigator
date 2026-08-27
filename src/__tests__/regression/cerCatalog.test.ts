@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CER_CATALOG } from "@/data/cerCatalog";
+import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 
 const normalize = (code: string) => code.replace(/\D/g, "");
 
@@ -46,5 +47,13 @@ describe("catalogo CER", () => {
   it("il codice normalizzato è sempre di 6 cifre", () => {
     const wrong = CER_CATALOG.filter((entry) => normalize(entry.codice).length !== 6);
     expect(wrong.map((entry) => entry.codice)).toEqual([]);
+  });
+
+  it("la stampa giacenze usa sempre la descrizione CER estesa ufficiale", () => {
+    const descrizione = getCerDescrizionePerStampa("20 01 40", "Rettifica di allineamento ufficiale");
+    expect(descrizione).toContain("Metalli");
+    expect(descrizione).toContain("Frazioni oggetto di raccolta differenziata");
+    expect(descrizione).toContain("Rifiuti urbani");
+    expect(descrizione).not.toMatch(/rettifica/i);
   });
 });
