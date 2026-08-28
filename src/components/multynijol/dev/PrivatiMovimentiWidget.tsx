@@ -242,7 +242,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
               <User className="h-4 w-4 mr-1 text-emerald-400" />
               <SelectValue placeholder="Scegli privato..." />
             </SelectTrigger>
-            <SelectContent className="max-h-80">
+            <SelectContent>
               <SelectItem value="all">Tutti i privati</SelectItem>
               {privatiOptions.map((p) => (
                 <SelectItem key={p.key} value={p.key}>{p.label} ({p.count})</SelectItem>
