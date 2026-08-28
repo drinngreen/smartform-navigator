@@ -112,7 +112,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         normKey(nome),
         normKey(a.denominazione || ""),
       ].filter(Boolean);
-      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello });
+      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello, luogo });
     }
     return map;
   }, [anagrafiche]);
