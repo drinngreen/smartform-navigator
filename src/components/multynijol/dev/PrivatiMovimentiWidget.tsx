@@ -342,12 +342,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     try {
       const rows = buildExportRows();
       if (!rows.length) return toast.error("Nessun movimento da esportare");
-      exportToPdf(
+exportToPdf(
         rows,
         EXPORT_COLUMNS,
         `registro_movimenti_privati_${anno}`,
         exportHeaderLines(rows).join("\n"),
-        { fontSize: 7.5 },
+        { fontSize: 9.5 },
       );
       toast.success(`Export PDF generato: ${rows.length} movimenti`);
     } catch (e: any) {
@@ -404,7 +404,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       if (!rows.length) return toast.error("Nessun movimento da esportare");
       const name = `registro_privati_breve_${anno}`;
       if (kind === "pdf") {
-        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"), { fontSize: 8.5 });
+        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"), { fontSize: 10.5 });
       } else {
         exportToExcel(rows, SHORT_COLUMNS, name, "Registro breve", shortHeader(rows));
       }
