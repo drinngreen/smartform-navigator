@@ -642,10 +642,9 @@ export function DevPrivatiModule() {
     const veicoliPuliti: VeicoloPrivato[] = (privatoForm.veicoli || [])
       .map(v => ({ modello: (v.modello || "").trim(), targa: (v.targa || "").trim().toUpperCase() }))
       .filter(v => v.targa || v.modello);
-    const primario = veicoliPuliti[0] || {
-      modello: (privatoForm.modello_automezzo || "").trim(),
-      targa: (privatoForm.targa_automezzo || "").trim().toUpperCase(),
-    };
+    // Se l'elenco mezzi è stato svuotato volutamente, la targa principale va azzerata
+    // (niente fallback sui vecchi valori, altrimenti la targa errata resta per sempre)
+    const primario = veicoliPuliti[0] || { modello: "", targa: "" };
     const payload = {
       nome: privatoForm.nome,
       cognome: privatoForm.cognome,
@@ -709,9 +708,10 @@ export function DevPrivatiModule() {
     setEditPrivatoId(null);
     setPrivatoForm({ ...EMPTY_PRIVATO_FORM });
     setScadenzaDate(undefined);
-    queryClient.invalidateQueries({ queryKey: ["dev-privati"] });
-    queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
-    queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
+    ["dev-privati", "privati-targhe-widget", "privati-limiti-widget",
+     "privati-movimenti-widget", "privati-anagrafica-veicoli",
+     "dev-conferimenti-privato", "dev-conferimenti-anno"]
+      .forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
   };
 
   const filteredPrivati = privati?.filter(p =>
