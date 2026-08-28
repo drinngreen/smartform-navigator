@@ -81,6 +81,16 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     },
   });
 
+  /** Chiave normalizzata: maiuscolo, senza punteggiatura, token ordinati (nome/cognome invertiti). */
+  const normKey = (v: string) =>
+    String(v || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9 ]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .sort()
+      .join(" ");
+
   const anagraficaMap = useMemo(() => {
     const map = new Map<string, { targa: string | null; modello: string | null }>();
     for (const a of anagrafiche ?? []) {
@@ -90,9 +100,14 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       const modello = a.modello_automezzo || a.automezzo || first.modello || null;
       if (!targa && !modello) continue;
       const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
-      const keys = [a.codice_fiscale, nome, a.denominazione]
-        .filter(Boolean)
-        .map((k: string) => String(k).trim().toUpperCase());
+      const cf = String(a.codice_fiscale || "").trim().toUpperCase();
+      const keys = [
+        cf,
+        // tolleranza su singolo carattere errato nel CF (errori di battitura anagrafica)
+        cf ? `CF7:${cf.slice(0, 4)}${cf.slice(5)}` : "",
+        normKey(nome),
+        normKey(a.denominazione || ""),
+      ].filter(Boolean);
       for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello });
     }
     return map;
@@ -100,9 +115,11 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   /** Ritorna mezzo/targa del movimento, con fallback sull'anagrafica del privato. */
   const resolveVeicolo = (m: any) => {
+    const cf = String(m.cf_pi || "").trim().toUpperCase();
     const fromAnag =
-      anagraficaMap.get(String(m.cf_pi || "").trim().toUpperCase()) ||
-      anagraficaMap.get(String(m.nome_privato || "").trim().toUpperCase());
+      anagraficaMap.get(cf) ||
+      (cf ? anagraficaMap.get(`CF7:${cf.slice(0, 4)}${cf.slice(5)}`) : undefined) ||
+      anagraficaMap.get(normKey(m.nome_privato || ""));
     return {
       targa: m.targa_automezzo || fromAnag?.targa || null,
       modello: m.modello_automezzo || fromAnag?.modello || null,
