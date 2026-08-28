@@ -127,6 +127,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     return {
       targa: m.targa_automezzo || fromAnag?.targa || null,
       modello: m.modello_automezzo || fromAnag?.modello || null,
+      luogo: fromAnag?.luogo || null,
     };
   };
 
