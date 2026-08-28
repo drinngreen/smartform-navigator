@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, RefreshCw, FileSpreadsheet, FileText, ListOrdered, User } from "lucide-react";
+import { Trash2, RefreshCw, FileSpreadsheet, FileText, ListOrdered, User, MapPin } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
