@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { useConferimentoCerOptions } from "@/hooks/useConferimentoCerOptions";
 import { PrivatiLimitiWidget } from "./PrivatiLimitiWidget";
 import { PrivatiTargheWidget } from "./PrivatiTargheWidget";
+import { PrivatiMovimentiWidget } from "./PrivatiMovimentiWidget";
+
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
