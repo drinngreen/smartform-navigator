@@ -404,7 +404,7 @@ exportToPdf(
       if (!rows.length) return toast.error("Nessun movimento da esportare");
       const name = `registro_privati_breve_${anno}`;
       if (kind === "pdf") {
-        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"), { fontSize: 8.5 });
+        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"), { fontSize: 10.5 });
       } else {
         exportToExcel(rows, SHORT_COLUMNS, name, "Registro breve", shortHeader(rows));
       }
