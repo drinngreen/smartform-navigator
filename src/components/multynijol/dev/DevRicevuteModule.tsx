@@ -606,12 +606,8 @@ export function DevRicevuteModule() {
 
           <div className="space-y-3">
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">Data emissione</div>
-              <Input
-                type="date"
-                value={editForm.data_emissione}
-                onChange={(e) => setEditForm((s) => ({ ...s, data_emissione: e.target.value }))}
-              />
+              <div className="text-xs text-muted-foreground">Data emissione (segue il movimento)</div>
+              <Input type="date" value={editForm.data_emissione} readOnly disabled />
             </div>
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">Importo (€)</div>
