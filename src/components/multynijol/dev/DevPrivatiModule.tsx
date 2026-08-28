@@ -848,6 +848,15 @@ export function DevPrivatiModule() {
                         <Edit2 className="h-3.5 w-3.5" />
                         Modifica
                       </button>
+                      <button
+                        className="h-7 px-2 inline-flex items-center gap-1 rounded-md border border-red-500/40 hover:bg-red-500/20 text-red-400 text-xs font-medium"
+                        onClick={(e) => { e.stopPropagation(); handleDeletePrivato(p); }}
+                        title="Elimina privato e tutti i suoi movimenti"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Elimina
+                      </button>
+
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
