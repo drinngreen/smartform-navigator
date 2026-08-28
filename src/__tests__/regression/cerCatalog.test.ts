@@ -49,11 +49,12 @@ describe("catalogo CER", () => {
     expect(wrong.map((entry) => entry.codice)).toEqual([]);
   });
 
-  it("la stampa giacenze usa sempre la descrizione CER estesa ufficiale", () => {
+it("la stampa giacenze usa la descrizione CER estesa ufficiale senza il capitolo", () => {
     const descrizione = getCerDescrizionePerStampa("20 01 40", "Rettifica di allineamento ufficiale");
     expect(descrizione).toContain("Metallo");
     expect(descrizione).toContain("Frazioni oggetto di raccolta differenziata");
-    expect(descrizione).toContain("Rifiuti urbani");
+    // il capitolo lungo ("Rifiuti urbani...") viene escluso per non allungare/tagliare le stampe
+    expect(descrizione).not.toMatch(/Rifiuti urbani \(/i);
     expect(descrizione).not.toMatch(/rettifica/i);
   });
 });
