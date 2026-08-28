@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2, RefreshCw, FileSpreadsheet, ListOrdered } from "lucide-react";
 import { exportToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { getCerDescrizione } from "@/data/cerDescrizioni";
+import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
 
 type Props = { tenantId: string };
 
@@ -108,7 +108,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     exportToExcel(
       filtered.map((m) => ({
         ...m,
-        descrizione: getCerDescrizione(m.cer),
+        descrizione: getCerDescrizioneCompleta(m.cer),
         data_it: fmtDate(m.data),
       })),
       [
@@ -186,7 +186,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
                     <td className="p-2 whitespace-nowrap">{fmtDate(m.data)}</td>
                     <td className="p-2">{m.nome_privato || "—"}</td>
                     <td className="p-2 font-mono text-xs">{m.cer}</td>
-                    <td className="p-2 text-xs text-muted-foreground">{getCerDescrizione(m.cer)}</td>
+                    <td className="p-2 text-xs text-muted-foreground">{getCerDescrizioneCompleta(m.cer)}</td>
                     <td className="p-2 text-right font-mono">{Number(m.kg_pesati || 0).toLocaleString("it-IT")}</td>
                     <td className="p-2 text-right font-mono">{Number(m.importo_pagato || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
                     <td className="p-2 font-mono text-xs">{m.targa_automezzo || "—"}</td>
