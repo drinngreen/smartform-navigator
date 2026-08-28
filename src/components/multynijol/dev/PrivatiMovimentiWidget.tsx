@@ -608,7 +608,7 @@ exportToPdf(
         open={addrDialogOpen}
         onOpenChange={setAddrDialogOpen}
         tenantId={tenantId}
-        invalidateKeys={[...INVALIDATE_KEYS]}
+        invalidateKeys={[...INVALIDATE_KEYS, "privati-movimenti-widget"]}
       />
     </Card>
   );
