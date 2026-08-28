@@ -466,6 +466,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
             <FileText className="h-4 w-4" /> PDF
           </Button>
+          <Button size="sm" onClick={() => handleExportShort("pdf")} className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
+            <FileText className="h-4 w-4" /> Esporta versione breve (PDF)
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleExportShort("xlsx")} className="gap-1">
+            <FileSpreadsheet className="h-4 w-4" /> Breve (Excel)
+          </Button>
           <Button
             variant="destructive"
             size="sm"
