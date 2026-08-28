@@ -264,6 +264,8 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         documento: m.numero_fir ? `FIR ${m.numero_fir}` : `Ricevuta n. ${m.numero_progressivo ?? "—"}/${m.anno_dbt ?? String(m.data).slice(0, 4)}`,
         kg: Number(m.kg_pesati || 0),
         importo: Number(m.importo_pagato || 0),
+        modello_automezzo: resolveVeicolo(m).modello ?? "",
+        targa_automezzo: resolveVeicolo(m).targa ?? "",
       }));
 
   const EXPORT_COLUMNS = [
