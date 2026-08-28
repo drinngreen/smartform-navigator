@@ -54,7 +54,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("privati_conferimenti")
-        .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, note, tipo_utenza, stato_rifiuto, numero_fir, codice_ce, prezzo_kg, created_at")
+        .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, privato_id, note, tipo_utenza, stato_rifiuto, numero_fir, codice_ce, prezzo_kg, created_at")
         .eq("tenant_id", tenantId)
         .order("data", { ascending: false })
         .limit(5000);
@@ -73,7 +73,21 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("anagrafica_privati")
-        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli, indirizzo, comune_residenza, provincia")
+        .select("id, nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli, indirizzo, cap, comune_residenza, provincia")
+        .eq("tenant_id", tenantId)
+        .limit(5000);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  /** Rubrica sincronizzata: seconda fonte per recuperare indirizzi presenti ma non replicati nell'anagrafica privati. */
+  const { data: contatti } = useQuery({
+    queryKey: ["privati-rubrica-export", tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rubrica_contatti")
+        .select("anagrafica_id, nome, cognome, ragione_sociale, codice_fiscale, indirizzo, cap, comune, provincia")
         .eq("tenant_id", tenantId)
         .limit(5000);
       if (error) throw error;
@@ -91,6 +105,16 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       .sort()
       .join(" ");
 
+  const normCf = (v: string) => String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  const formatLuogo = (indirizzo: unknown, cap: unknown, comune: unknown, provincia: unknown) => {
+    const localita = [String(cap || "").trim(), String(comune || "").trim()].filter(Boolean).join(" ");
+    const localitaConProvincia = localita
+      ? `${localita}${provincia ? ` (${String(provincia).trim()})` : ""}`
+      : "";
+    return [String(indirizzo || "").trim(), localitaConProvincia].filter(Boolean).join(", ") || null;
+  };
+
   const anagraficaMap = useMemo(() => {
     const map = new Map<string, { targa: string | null; modello: string | null; luogo: string | null }>();
     for (const a of anagrafiche ?? []) {
@@ -98,29 +122,50 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       const first = veicoli.find((v: any) => v?.targa) || {};
       const targa = a.targa_automezzo || first.targa || null;
       const modello = a.modello_automezzo || a.automezzo || first.modello || null;
-      const luogo =
-        [a.indirizzo, a.comune_residenza && `${a.comune_residenza}${a.provincia ? ` (${a.provincia})` : ""}`]
-          .filter(Boolean)
-          .join(", ") || null;
+      const luogo = formatLuogo(a.indirizzo, a.cap, a.comune_residenza, a.provincia);
       if (!targa && !modello && !luogo) continue;
       const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
-      const cf = String(a.codice_fiscale || "").trim().toUpperCase();
+      const cf = normCf(a.codice_fiscale);
       const keys = [
+        a.id ? `ID:${a.id}` : "",
         cf,
         // tolleranza su singolo carattere errato nel CF (errori di battitura anagrafica)
         cf ? `CF7:${cf.slice(0, 4)}${cf.slice(5)}` : "",
         normKey(nome),
         normKey(a.denominazione || ""),
       ].filter(Boolean);
-      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello, luogo });
+      for (const k of keys) {
+        const current = map.get(k);
+        map.set(k, {
+          targa: current?.targa || targa,
+          modello: current?.modello || modello,
+          luogo: current?.luogo || luogo,
+        });
+      }
+    }
+    for (const c of contatti ?? []) {
+      const luogo = formatLuogo(c.indirizzo, c.cap, c.comune, c.provincia);
+      if (!luogo) continue;
+      const nome = [c.nome, c.cognome].filter(Boolean).join(" ").trim() || c.ragione_sociale || "";
+      const keys = [
+        c.anagrafica_id ? `ID:${c.anagrafica_id}` : "",
+        normCf(c.codice_fiscale),
+        normKey(nome),
+        normKey(c.ragione_sociale || ""),
+      ].filter(Boolean);
+      for (const k of keys) {
+        const current = map.get(k);
+        map.set(k, { targa: current?.targa || null, modello: current?.modello || null, luogo: current?.luogo || luogo });
+      }
     }
     return map;
-  }, [anagrafiche]);
+  }, [anagrafiche, contatti]);
 
   /** Ritorna mezzo/targa del movimento, con fallback sull'anagrafica del privato. */
   const resolveVeicolo = (m: any) => {
-    const cf = String(m.cf_pi || "").trim().toUpperCase();
+    const cf = normCf(m.cf_pi);
     const fromAnag =
+      (m.privato_id ? anagraficaMap.get(`ID:${m.privato_id}`) : undefined) ||
       anagraficaMap.get(cf) ||
       (cf ? anagraficaMap.get(`CF7:${cf.slice(0, 4)}${cf.slice(5)}`) : undefined) ||
       anagraficaMap.get(normKey(m.nome_privato || ""));
@@ -287,6 +332,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         importo: Number(m.importo_pagato || 0),
         modello_automezzo: resolveVeicolo(m).modello ?? "",
         targa_automezzo: resolveVeicolo(m).targa ?? "",
+        luogo_produzione: resolveVeicolo(m).luogo ?? "",
       }));
 
   const EXPORT_COLUMNS = [
@@ -302,6 +348,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     { header: "Operazione R/D", key: "operazione", width: 22 },
     { header: "Produttore / Detentore", key: "produttore", width: 36 },
     { header: "Codice fiscale", key: "cf_pi", width: 20 },
+    { header: "Luogo di produzione del rifiuto", key: "luogo_produzione", width: 34 },
     { header: "Tipo utenza", key: "tipo_utenza", width: 16 },
     { header: "Mezzo", key: "modello_automezzo", width: 18 },
     { header: "Targa", key: "targa_automezzo", width: 12 },
