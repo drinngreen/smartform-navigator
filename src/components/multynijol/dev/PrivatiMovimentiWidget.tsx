@@ -54,7 +54,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("privati_conferimenti")
-        .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, note")
+        .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, note, tipo_utenza, stato_rifiuto, numero_fir, codice_ce, prezzo_kg, created_at")
         .eq("tenant_id", tenantId)
         .order("data", { ascending: false })
         .limit(5000);
