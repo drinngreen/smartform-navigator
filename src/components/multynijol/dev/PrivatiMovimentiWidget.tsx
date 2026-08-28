@@ -73,7 +73,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("anagrafica_privati")
-        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli")
+        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli, indirizzo, comune_residenza, provincia")
         .eq("tenant_id", tenantId)
         .limit(5000);
       if (error) throw error;
