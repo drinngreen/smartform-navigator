@@ -145,16 +145,12 @@ export function DevRicevuteModule() {
     });
   }, [ricevute, search, privatiMap]);
 
+  // Numero e data della ricevuta seguono sempre il movimento: non sono modificabili qui.
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("ricevute_privati" as any)
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async (_id: string) => {
+      throw new Error("La ricevuta non è eliminabile da sola: elimina il movimento collegato");
     },
     onSuccess: () => {
-      toast.success("Ricevuta eliminata");
       qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
       qc.invalidateQueries({ queryKey: ["dev-ricevute"] });
     },
@@ -165,7 +161,7 @@ export function DevRicevuteModule() {
     mutationFn: async (payload: { id: string; importo: number; note: string | null; data_emissione: string }) => {
       const { error } = await supabase
         .from("ricevute_privati" as any)
-        .update({ importo: payload.importo, note: payload.note, data_emissione: payload.data_emissione })
+        .update({ importo: payload.importo, note: payload.note })
         .eq("id", payload.id);
       if (error) throw error;
     },
