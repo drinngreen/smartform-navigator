@@ -314,36 +314,17 @@ export default function MNMagazzinoPage() {
     fetchAll();
   };
 
-  const generateRicevuta = async (conf: Conferimento) => {
-    const anno = new Date().getFullYear();
-    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
-    const { error } = await supabase.from("ricevute_privati" as any).insert({
-      tenant_id: TENANT_ID, impianto_id: selectedImpianto, conferimento_id: conf.id, privato_id: conf.privato_id,
-      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-      importo: conf.importo_pagato || 0, note: `CER ${conf.cer} - ${conf.kg_pesati} kg${conf.targa_automezzo ? ` — Targa: ${conf.targa_automezzo}` : ""}${conf.modello_automezzo ? ` — Modello: ${conf.modello_automezzo}` : ""}`,
-    } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ricevuta generata");
+  // Le ricevute sono generate automaticamente dal movimento (trigger DB):
+  // numero e data seguono sempre il progressivo del movimento.
+  const generateRicevuta = async (_conf: Conferimento) => {
+    toast.info("La ricevuta viene generata automaticamente dal movimento");
     fetchAll();
   };
 
   const saveRicevutaManuale = async () => {
-    const anno = new Date().getFullYear();
-    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: selectedImpianto, p_anno: anno } as any);
-    const privato = privati.find(p => p.id === ricevutaForm.privato_id);
-    const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : ricevutaForm.nome_manuale || "";
-    const noteFinale = [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ");
-    const { error } = await supabase.from("ricevute_privati" as any).insert({
-      tenant_id: TENANT_ID, impianto_id: selectedImpianto, privato_id: ricevutaForm.privato_id || null,
-      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-      importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
-      note: noteFinale || null,
-    } as any);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ricevuta creata");
+    toast.error("Non è possibile creare ricevute manuali: registra il movimento, la ricevuta viene emessa in automatico");
     setShowNewRicevuta(false);
     setRicevutaForm({ privato_id: "", nome_manuale: "", importo: "", note: "" });
-    fetchAll();
   };
 
   const deletePrivato = async (id: string) => {

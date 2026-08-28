@@ -537,39 +537,16 @@ export function DevPrivatiModule() {
   };
 
 
+  // Ricevute pilotate dal movimento: niente emissione o cancellazione isolata.
   const handleSaveRicevutaManuale = async () => {
-    const targetPrivatoId = ricevutaPrivatoId ?? selectedPrivatoId;
-    if (!targetPrivatoId) { toast.error("Seleziona un privato"); return; }
-    if (!impiantoId) { toast.error("Nessun impianto configurato"); return; }
-
-    const privato = privati?.find((p) => p.id === targetPrivatoId);
-    const nomeNote = privato ? `${privato.cognome} ${privato.nome}` : "";
-    const anno = new Date().getFullYear();
-    const { data: numData } = await supabase.rpc("next_ricevuta_number", { p_impianto_id: impiantoId, p_anno: anno } as any);
-    const { error } = await supabase.from("ricevute_privati" as any).insert({
-      tenant_id: MULTY_TENANT_ID, impianto_id: impiantoId, privato_id: targetPrivatoId,
-      numero_ricevuta: (numData as any) || `${Date.now()}`, anno,
-      importo: ricevutaForm.importo ? parseFloat(ricevutaForm.importo) : 0,
-      note: [nomeNote, ricevutaForm.note].filter(Boolean).join(" — ") || null,
-    } as any);
-
-    if (error) { toast.error(error.message); return; }
-    toast.success("✅ Ricevuta manuale generata!");
+    toast.error("Non è possibile creare ricevute manuali: registra il conferimento, la ricevuta viene emessa in automatico con il numero del movimento");
     setShowNewRicevuta(false);
     setRicevutaPrivatoId(null);
     setRicevutaForm({ importo: "", note: "" });
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
   };
 
-  const handleDeleteRicevuta = async (ricevutaId: string) => {
-    const ok = window.confirm("Eliminare questa ricevuta?");
-    if (!ok) return;
-    const { error } = await supabase.from("ricevute_privati" as any).delete().eq("id", ricevutaId);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Ricevuta eliminata");
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
-    queryClient.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
+  const handleDeleteRicevuta = async (_ricevutaId: string) => {
+    toast.error("La ricevuta non è eliminabile da sola: elimina il movimento collegato");
   };
 
   const handlePrintRicevute = () => {
