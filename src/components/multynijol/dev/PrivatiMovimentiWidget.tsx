@@ -10,6 +10,7 @@ import { Trash2, RefreshCw, FileSpreadsheet, FileText, ListOrdered, User, MapPin
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
+import PrivatiIndirizziDialog from "./PrivatiIndirizziDialog";
 
 type Props = { tenantId: string };
 
@@ -48,7 +49,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [completingAddr, setCompletingAddr] = useState(false);
+  const [addrDialogOpen, setAddrDialogOpen] = useState(false);
 
   const { data: movimenti, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["privati-movimenti-widget", tenantId, anno],
@@ -462,66 +463,6 @@ exportToPdf(
     }
   };
 
-  /**
-   * Completa gli indirizzi mancanti in anagrafica privati recuperandoli dalla rubrica
-   * (match per codice fiscale, poi per nome/cognome normalizzato).
-   */
-  const handleCompletaIndirizzi = async () => {
-    if (completingAddr) return;
-    setCompletingAddr(true);
-    try {
-      const rubricaMap = new Map<string, any>();
-      for (const c of contatti ?? []) {
-        if (!String(c.indirizzo || "").trim()) continue;
-        const nome = [c.nome, c.cognome].filter(Boolean).join(" ").trim() || c.ragione_sociale || "";
-        for (const k of [
-          c.anagrafica_id ? `ID:${c.anagrafica_id}` : "",
-          normCf(c.codice_fiscale),
-          normKey(nome),
-        ].filter(Boolean)) {
-          if (!rubricaMap.has(k)) rubricaMap.set(k, c);
-        }
-      }
-
-      const daCompletare = (anagrafiche ?? []).filter((a) => !String(a.indirizzo || "").trim());
-      let aggiornati = 0;
-      const nonTrovati: string[] = [];
-
-      for (const a of daCompletare) {
-        const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
-        const cf = normCf(a.codice_fiscale);
-        const hit =
-          rubricaMap.get(`ID:${a.id}`) ||
-          (cf ? rubricaMap.get(cf) : undefined) ||
-          rubricaMap.get(normKey(nome));
-        if (!hit) {
-          nonTrovati.push(nome || cf || a.id);
-          continue;
-        }
-        const payload: Record<string, any> = { indirizzo: String(hit.indirizzo).trim() };
-        if (!String(a.cap || "").trim() && hit.cap) payload.cap = String(hit.cap).trim();
-        if (!String(a.comune_residenza || "").trim() && hit.comune) payload.comune_residenza = String(hit.comune).trim();
-        if (!String(a.provincia || "").trim() && hit.provincia) payload.provincia = String(hit.provincia).trim();
-        const { error } = await supabase.from("anagrafica_privati").update(payload).eq("id", a.id);
-        if (error) throw error;
-        aggiornati += 1;
-      }
-
-      for (const k of INVALIDATE_KEYS) queryClient.invalidateQueries({ queryKey: [k] });
-      queryClient.invalidateQueries({ queryKey: ["privati-anagrafica-veicoli"] });
-      queryClient.invalidateQueries({ queryKey: ["dev-privati"] });
-
-      if (!daCompletare.length) toast.success("Nessun indirizzo mancante: anagrafica già completa");
-      else if (aggiornati) toast.success(`Indirizzi completati: ${aggiornati}. Non trovati in rubrica: ${nonTrovati.length}`);
-      else toast.warning(`Nessun indirizzo recuperabile dalla rubrica (${nonTrovati.length} privati da compilare a mano)`);
-    } catch (e: any) {
-      toast.error("Errore completamento indirizzi: " + (e?.message || e));
-    } finally {
-      setCompletingAddr(false);
-    }
-  };
-
-
   return (
     <Card className="bg-card/60 border-border/30">
       <CardHeader className="pb-3">
@@ -579,13 +520,13 @@ exportToPdf(
           <Button
             variant="outline"
             size="sm"
-            onClick={handleCompletaIndirizzi}
-            disabled={completingAddr}
+            onClick={() => setAddrDialogOpen(true)}
             className="gap-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
           >
-            <MapPin className={`h-4 w-4 ${completingAddr ? "animate-pulse" : ""}`} />
-            {completingAddr ? "Completamento..." : "Completa indirizzi"}
+            <MapPin className="h-4 w-4" />
+            Completa indirizzi
           </Button>
+
           <Button
             variant="destructive"
             size="sm"
@@ -663,6 +604,12 @@ exportToPdf(
           </table>
         </div>
       </CardContent>
+      <PrivatiIndirizziDialog
+        open={addrDialogOpen}
+        onOpenChange={setAddrDialogOpen}
+        tenantId={tenantId}
+        invalidateKeys={[...INVALIDATE_KEYS, "privati-movimenti-widget"]}
+      />
     </Card>
   );
 }
