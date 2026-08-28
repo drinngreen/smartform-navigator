@@ -73,7 +73,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("anagrafica_privati")
-        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli")
+        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli, indirizzo, comune_residenza, provincia")
         .eq("tenant_id", tenantId)
         .limit(5000);
       if (error) throw error;
@@ -92,13 +92,17 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       .join(" ");
 
   const anagraficaMap = useMemo(() => {
-    const map = new Map<string, { targa: string | null; modello: string | null }>();
+    const map = new Map<string, { targa: string | null; modello: string | null; luogo: string | null }>();
     for (const a of anagrafiche ?? []) {
       const veicoli = Array.isArray(a.veicoli) ? a.veicoli : [];
       const first = veicoli.find((v: any) => v?.targa) || {};
       const targa = a.targa_automezzo || first.targa || null;
       const modello = a.modello_automezzo || a.automezzo || first.modello || null;
-      if (!targa && !modello) continue;
+      const luogo =
+        [a.indirizzo, a.comune_residenza && `${a.comune_residenza}${a.provincia ? ` (${a.provincia})` : ""}`]
+          .filter(Boolean)
+          .join(", ") || null;
+      if (!targa && !modello && !luogo) continue;
       const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
       const cf = String(a.codice_fiscale || "").trim().toUpperCase();
       const keys = [
@@ -108,7 +112,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         normKey(nome),
         normKey(a.denominazione || ""),
       ].filter(Boolean);
-      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello });
+      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello, luogo });
     }
     return map;
   }, [anagrafiche]);
@@ -123,6 +127,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     return {
       targa: m.targa_automezzo || fromAnag?.targa || null,
       modello: m.modello_automezzo || fromAnag?.modello || null,
+      luogo: fromAnag?.luogo || null,
     };
   };
 
@@ -351,6 +356,68 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     }
   };
 
+  /** ---- VERSIONE BREVE: stesse voci del modulo allegato (registro cronologico) ---- */
+  const SHORT_COLUMNS = [
+    { header: "N.", key: "n_riga", width: 6 },
+    { header: "Data", key: "data_it", width: 12 },
+    { header: "Caus.", key: "causale", width: 10 },
+    { header: "Cod. EER", key: "cer", width: 11 },
+    { header: "Descrizione del rifiuto", key: "descrizione", width: 40 },
+    { header: "Stato", key: "stato_breve", width: 7 },
+    { header: "Produttore / conferente", key: "nome_privato", width: 26 },
+    { header: "Codice fiscale", key: "cf_pi", width: 18 },
+    { header: "Luogo di produzione del rifiuto", key: "luogo_produzione", width: 32 },
+    { header: "Trasportatore", key: "trasportatore_breve", width: 24 },
+    { header: "MEZZO", key: "modello_automezzo", width: 16 },
+    { header: "TARGA", key: "targa_automezzo", width: 12 },
+    { header: "Carico (kg)", key: "carico_kg", width: 11 },
+    { header: "Scarico (kg)", key: "scarico_kg", width: 11 },
+    { header: "Giacenza (kg)", key: "giacenza_kg", width: 12 },
+  ];
+
+  const buildShortRows = () => {
+    let progressiva = 0;
+    return buildExportRows().map((r: any) => {
+      const v = resolveVeicolo(r);
+      progressiva += Number(r.kg || 0);
+      return {
+        ...r,
+        stato_breve: /liquid/i.test(String(r.stato_fisico)) ? "L" : "S",
+        nome_privato: r.nome_privato || "—",
+        luogo_produzione: v.luogo || "—",
+        trasportatore_breve: r.nome_privato || "—",
+        modello_automezzo: v.modello || "—",
+        targa_automezzo: v.targa || "NON REGISTRATA",
+        carico_kg: Number(r.kg || 0),
+        scarico_kg: "—",
+        giacenza_kg: progressiva,
+      };
+    });
+  };
+
+  const shortHeader = (rows: any[]) => [
+    `REGISTRO CRONOLOGICO DI CARICO / SCARICO — UTENZE PRIVATE — ANNO ${anno === "all" ? "TUTTI" : anno}`,
+    "Multyproget S.r.l. — Impianto di recupero — Tenuto ai sensi dell'art. 190 del D.Lgs. 152/2006 e s.m.i.",
+    `Movimenti: ${rows.length} — Totale kg: ${rows.reduce((s, r) => s + r.carico_kg, 0).toLocaleString("it-IT")}`,
+  ];
+
+  const handleExportShort = (kind: "pdf" | "xlsx") => {
+    try {
+      const rows = buildShortRows();
+      if (!rows.length) return toast.error("Nessun movimento da esportare");
+      const name = `registro_privati_breve_${anno}`;
+      if (kind === "pdf") {
+        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"));
+      } else {
+        exportToExcel(rows, SHORT_COLUMNS, name, "Registro breve", shortHeader(rows));
+      }
+      toast.success(`Export versione breve generato: ${rows.length} movimenti`);
+    } catch (e: any) {
+      toast.error("Errore export versione breve: " + (e?.message || e));
+    }
+  };
+
+
   return (
     <Card className="bg-card/60 border-border/30">
       <CardHeader className="pb-3">
@@ -398,6 +465,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
           </Button>
           <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
             <FileText className="h-4 w-4" /> PDF
+          </Button>
+          <Button size="sm" onClick={() => handleExportShort("pdf")} className="gap-1 bg-emerald-600 hover:bg-emerald-500 text-white">
+            <FileText className="h-4 w-4" /> Esporta versione breve (PDF)
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleExportShort("xlsx")} className="gap-1">
+            <FileSpreadsheet className="h-4 w-4" /> Breve (Excel)
           </Button>
           <Button
             variant="destructive"
