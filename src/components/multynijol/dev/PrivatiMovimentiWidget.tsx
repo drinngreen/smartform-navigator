@@ -48,6 +48,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [completingAddr, setCompletingAddr] = useState(false);
 
   const { data: movimenti, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["privati-movimenti-widget", tenantId, anno],
