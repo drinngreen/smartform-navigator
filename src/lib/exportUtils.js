@@ -28,7 +28,7 @@ export function exportToExcel(data, columns, filename, sheetName = "Dati", heade
 /**
  * Export data to PDF (landscape table)
  */
-export function exportToPdf(data, columns, filename, title) {
+export function exportToPdf(data, columns, filename, title, opts) {
     // Auto-pick page format/orientation based on column count to avoid overlap
     const colCount = columns.length;
     const format = colCount > 20 ? "a2" : colCount > 12 ? "a3" : "a4";
@@ -62,7 +62,7 @@ export function exportToPdf(data, columns, filename, title) {
         return String(raw);
     }));
     // Adaptive font size based on column density
-    const fontSize = colCount > 25 ? 5.5 : colCount > 18 ? 6 : colCount > 12 ? 6.5 : 8;
+    const fontSize = opts?.fontSize ?? (colCount > 25 ? 5.5 : colCount > 18 ? 6 : colCount > 12 ? 6.5 : 8);
     autoTable(doc, {
         head,
         body,

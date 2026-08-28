@@ -54,14 +54,15 @@ export function exportToPdf(
   data: Record<string, any>[],
   columns: ExportColumn[],
   filename: string,
-  title?: string
+  title?: string,
+  opts?: { fontSize?: number }
 ) {
   // Auto-pick page format/orientation based on column count to avoid overlap
   const colCount = columns.length;
   const format: string = colCount > 20 ? "a2" : colCount > 12 ? "a3" : "a4";
   const orientation: "landscape" | "portrait" = colCount > 4 ? "landscape" : "portrait";
 
-  const doc = new jsPDF({ orientation, unit: "mm", format });
+  const doc = new jsPDF({ orientation, unit: "mm", format, compress: true });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 8;
@@ -97,8 +98,8 @@ export function exportToPdf(
     })
   );
 
-  // Adaptive font size based on column density
-  const fontSize = colCount > 25 ? 5.5 : colCount > 18 ? 6 : colCount > 12 ? 6.5 : 8;
+  // Adaptive font size based on column density (overridable for readability)
+  const fontSize = opts?.fontSize ?? (colCount > 25 ? 5.5 : colCount > 18 ? 6 : colCount > 12 ? 6.5 : 8);
 
   autoTable(doc, {
     head,

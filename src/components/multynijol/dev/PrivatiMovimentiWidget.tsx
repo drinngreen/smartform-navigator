@@ -281,7 +281,6 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         pericoloso: /\*/.test(String(m.cer)) ? "SI" : "NO",
         operazione: "R13 - Messa in riserva",
         produttore: `${m.nome_privato || "—"} (privato/utenza domestica)`,
-        trasportatore: "Conferimento diretto a cura del produttore",
         destinatario: "MULTYPROGET SRL - impianto autorizzato",
         documento: m.numero_fir ? `FIR ${m.numero_fir}` : `Ricevuta n. ${m.numero_progressivo ?? "—"}/${m.anno_dbt ?? String(m.data).slice(0, 4)}`,
         kg: Number(m.kg_pesati || 0),
@@ -304,7 +303,6 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     { header: "Produttore / Detentore", key: "produttore", width: 36 },
     { header: "Codice fiscale", key: "cf_pi", width: 20 },
     { header: "Tipo utenza", key: "tipo_utenza", width: 16 },
-    { header: "Trasportatore", key: "trasportatore", width: 34 },
     { header: "Mezzo", key: "modello_automezzo", width: 18 },
     { header: "Targa", key: "targa_automezzo", width: 12 },
     { header: "Destinatario / Impianto", key: "destinatario", width: 34 },
@@ -349,6 +347,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         EXPORT_COLUMNS,
         `registro_movimenti_privati_${anno}`,
         exportHeaderLines(rows).join("\n"),
+        { fontSize: 7.5 },
       );
       toast.success(`Export PDF generato: ${rows.length} movimenti`);
     } catch (e: any) {
@@ -367,7 +366,6 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     { header: "Produttore / conferente", key: "nome_privato", width: 26 },
     { header: "Codice fiscale", key: "cf_pi", width: 18 },
     { header: "Luogo di produzione del rifiuto", key: "luogo_produzione", width: 32 },
-    { header: "Trasportatore", key: "trasportatore_breve", width: 24 },
     { header: "MEZZO", key: "modello_automezzo", width: 16 },
     { header: "TARGA", key: "targa_automezzo", width: 12 },
     { header: "Carico (kg)", key: "carico_kg", width: 11 },
@@ -385,7 +383,6 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         stato_breve: /liquid/i.test(String(r.stato_fisico)) ? "L" : "S",
         nome_privato: r.nome_privato || "—",
         luogo_produzione: v.luogo || "—",
-        trasportatore_breve: r.nome_privato || "—",
         modello_automezzo: v.modello || "—",
         targa_automezzo: v.targa || "NON REGISTRATA",
         carico_kg: Number(r.kg || 0),
@@ -407,7 +404,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       if (!rows.length) return toast.error("Nessun movimento da esportare");
       const name = `registro_privati_breve_${anno}`;
       if (kind === "pdf") {
-        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"));
+        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"), { fontSize: 8.5 });
       } else {
         exportToExcel(rows, SHORT_COLUMNS, name, "Registro breve", shortHeader(rows));
       }
