@@ -67,6 +67,48 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     },
   });
 
+  /** Anagrafica privati: usata come fallback per mezzo/targa mancanti sul movimento. */
+  const { data: anagrafiche } = useQuery({
+    queryKey: ["privati-anagrafica-veicoli", tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("anagrafica_privati")
+        .select("nome, cognome, denominazione, codice_fiscale, automezzo, modello_automezzo, targa_automezzo, veicoli")
+        .eq("tenant_id", tenantId)
+        .limit(5000);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  const anagraficaMap = useMemo(() => {
+    const map = new Map<string, { targa: string | null; modello: string | null }>();
+    for (const a of anagrafiche ?? []) {
+      const veicoli = Array.isArray(a.veicoli) ? a.veicoli : [];
+      const first = veicoli.find((v: any) => v?.targa) || {};
+      const targa = a.targa_automezzo || first.targa || null;
+      const modello = a.modello_automezzo || a.automezzo || first.modello || null;
+      if (!targa && !modello) continue;
+      const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
+      const keys = [a.codice_fiscale, nome, a.denominazione]
+        .filter(Boolean)
+        .map((k: string) => String(k).trim().toUpperCase());
+      for (const k of keys) if (!map.has(k)) map.set(k, { targa, modello });
+    }
+    return map;
+  }, [anagrafiche]);
+
+  /** Ritorna mezzo/targa del movimento, con fallback sull'anagrafica del privato. */
+  const resolveVeicolo = (m: any) => {
+    const fromAnag =
+      anagraficaMap.get(String(m.cf_pi || "").trim().toUpperCase()) ||
+      anagraficaMap.get(String(m.nome_privato || "").trim().toUpperCase());
+    return {
+      targa: m.targa_automezzo || fromAnag?.targa || null,
+      modello: m.modello_automezzo || fromAnag?.modello || null,
+    };
+  };
+
   /** Elenco privati (chiave = CF se presente, altrimenti nome) ricavato dai movimenti. */
   const privatiOptions = useMemo(() => {
     const map = new Map<string, { key: string; label: string; count: number }>();
@@ -222,6 +264,8 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         documento: m.numero_fir ? `FIR ${m.numero_fir}` : `Ricevuta n. ${m.numero_progressivo ?? "—"}/${m.anno_dbt ?? String(m.data).slice(0, 4)}`,
         kg: Number(m.kg_pesati || 0),
         importo: Number(m.importo_pagato || 0),
+        modello_automezzo: resolveVeicolo(m).modello ?? "",
+        targa_automezzo: resolveVeicolo(m).targa ?? "",
       }));
 
   const EXPORT_COLUMNS = [
@@ -396,7 +440,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
                     <td className="p-2 text-xs text-muted-foreground">{getCerDescrizioneCompleta(m.cer)}</td>
                     <td className="p-2 text-right font-mono">{Number(m.kg_pesati || 0).toLocaleString("it-IT")}</td>
                     <td className="p-2 text-right font-mono">{Number(m.importo_pagato || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
-                    <td className="p-2 font-mono text-xs">{m.targa_automezzo || "—"}</td>
+                    <td className="p-2 font-mono text-xs">{resolveVeicolo(m).targa || "—"}</td>
                     <td className="p-2">
                       <Button
                         variant="ghost"
