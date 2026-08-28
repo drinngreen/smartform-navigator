@@ -440,7 +440,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
                     <td className="p-2 text-xs text-muted-foreground">{getCerDescrizioneCompleta(m.cer)}</td>
                     <td className="p-2 text-right font-mono">{Number(m.kg_pesati || 0).toLocaleString("it-IT")}</td>
                     <td className="p-2 text-right font-mono">{Number(m.importo_pagato || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
-                    <td className="p-2 font-mono text-xs">{m.targa_automezzo || "—"}</td>
+                    <td className="p-2 font-mono text-xs">{resolveVeicolo(m).targa || "—"}</td>
                     <td className="p-2">
                       <Button
                         variant="ghost"
