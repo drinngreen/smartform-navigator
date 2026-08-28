@@ -579,13 +579,13 @@ exportToPdf(
           <Button
             variant="outline"
             size="sm"
-            onClick={handleCompletaIndirizzi}
-            disabled={completingAddr}
+            onClick={() => setAddrDialogOpen(true)}
             className="gap-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
           >
-            <MapPin className={`h-4 w-4 ${completingAddr ? "animate-pulse" : ""}`} />
-            {completingAddr ? "Completamento..." : "Completa indirizzi"}
+            <MapPin className="h-4 w-4" />
+            Completa indirizzi
           </Button>
+
           <Button
             variant="destructive"
             size="sm"
