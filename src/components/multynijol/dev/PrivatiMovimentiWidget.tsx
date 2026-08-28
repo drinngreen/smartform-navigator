@@ -92,13 +92,17 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       .join(" ");
 
   const anagraficaMap = useMemo(() => {
-    const map = new Map<string, { targa: string | null; modello: string | null }>();
+    const map = new Map<string, { targa: string | null; modello: string | null; luogo: string | null }>();
     for (const a of anagrafiche ?? []) {
       const veicoli = Array.isArray(a.veicoli) ? a.veicoli : [];
       const first = veicoli.find((v: any) => v?.targa) || {};
       const targa = a.targa_automezzo || first.targa || null;
       const modello = a.modello_automezzo || a.automezzo || first.modello || null;
-      if (!targa && !modello) continue;
+      const luogo =
+        [a.indirizzo, a.comune_residenza && `${a.comune_residenza}${a.provincia ? ` (${a.provincia})` : ""}`]
+          .filter(Boolean)
+          .join(", ") || null;
+      if (!targa && !modello && !luogo) continue;
       const nome = [a.nome, a.cognome].filter(Boolean).join(" ").trim() || a.denominazione || "";
       const cf = String(a.codice_fiscale || "").trim().toUpperCase();
       const keys = [
