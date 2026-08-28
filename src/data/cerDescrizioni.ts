@@ -51,14 +51,18 @@ export const CER_SOTTOCAPITOLI: Record<string, string> = {
 
 const clean = (cer: unknown) => String(cer ?? "").replace(/\D/g, "");
 
-/** Ritorna la descrizione estesa del CER: voce + sottocapitolo + capitolo. */
+/**
+ * Ritorna la descrizione estesa del CER: voce + sottocapitolo.
+ * Il capitolo ("Rifiuti urbani...") è volutamente escluso: rende le stampe
+ * PDF troppo lunghe e rischia di far tagliare il testo nelle stampe
+ * ufficiali da consegnare agli organi di controllo.
+ */
 export function getCerDescrizioneCompleta(cer: unknown): string {
   const code = clean(cer);
   if (!code) return "";
   const voce = CER_CATALOG.find((c) => c.codice === code)?.descrizione;
   const sotto = CER_SOTTOCAPITOLI[code.slice(0, 4)];
-  const capitolo = CER_CAPITOLI[code.slice(0, 2)];
-  const parti = [voce, sotto, capitolo].filter(Boolean) as string[];
+  const parti = [voce, sotto].filter(Boolean) as string[];
   if (!parti.length) return `Rifiuto CER ${code}`;
   return parti.join(" — ");
 }
