@@ -202,8 +202,9 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     }
   };
 
-  const handleExport = () => {
-    const rows = [...filtered]
+  /** Righe normalizzate con tutti i parametri di legge (art. 190 D.Lgs. 152/2006). */
+  const buildExportRows = () =>
+    [...filtered]
       .sort((a, b) => String(a.data).localeCompare(String(b.data)) || (a.numero_progressivo ?? 0) - (b.numero_progressivo ?? 0))
       .map((m, i) => ({
         ...m,
@@ -214,51 +215,79 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         causale: "CARICO",
         stato_fisico: m.stato_rifiuto || "SOLIDO NON PULVERULENTO",
         pericoloso: /\*/.test(String(m.cer)) ? "SI" : "NO",
-        operazione: "R13 — Messa in riserva",
+        operazione: "R13 - Messa in riserva",
         produttore: `${m.nome_privato || "—"} (privato/utenza domestica)`,
         trasportatore: "Conferimento diretto a cura del produttore",
-        destinatario: "MULTYPROGET SRL — impianto autorizzato",
+        destinatario: "MULTYPROGET SRL - impianto autorizzato",
         documento: m.numero_fir ? `FIR ${m.numero_fir}` : `Ricevuta n. ${m.numero_progressivo ?? "—"}/${m.anno_dbt ?? String(m.data).slice(0, 4)}`,
         kg: Number(m.kg_pesati || 0),
         importo: Number(m.importo_pagato || 0),
       }));
 
-    exportToExcel(
-      rows,
-      [
-        { header: "N.", key: "n_riga", width: 6 },
-        { header: "Progressivo/Anno", key: "progressivo", width: 16 },
-        { header: "Data movimento", key: "data_it", width: 14 },
-        { header: "Causale", key: "causale", width: 10 },
-        { header: "Codice EER (CER)", key: "cer", width: 16 },
-        { header: "Descrizione rifiuto", key: "descrizione", width: 44 },
-        { header: "Pericoloso", key: "pericoloso", width: 11 },
-        { header: "Stato fisico", key: "stato_fisico", width: 24 },
-        { header: "Quantità (kg)", key: "kg", width: 13 },
-        { header: "Operazione R/D", key: "operazione", width: 22 },
-        { header: "Produttore / Detentore", key: "produttore", width: 36 },
-        { header: "Codice fiscale", key: "cf_pi", width: 20 },
-        { header: "Tipo utenza", key: "tipo_utenza", width: 16 },
-        { header: "Trasportatore", key: "trasportatore", width: 34 },
-        { header: "Mezzo", key: "modello_automezzo", width: 18 },
-        { header: "Targa", key: "targa_automezzo", width: 12 },
-        { header: "Destinatario / Impianto", key: "destinatario", width: 34 },
-        { header: "Documento di riferimento", key: "documento", width: 26 },
-        { header: "Importo €", key: "importo", width: 12 },
-        { header: "Metodo pagamento", key: "metodo_pag", width: 18 },
-        { header: "Annotazioni", key: "note", width: 30 },
-      ],
-      `registro_movimenti_privati_${anno}`,
-      "Registro C/S Privati",
-      [
-        "REGISTRO CRONOLOGICO DI CARICO E SCARICO — art. 190 D.Lgs. 152/2006",
-        "MULTYPROGET SRL — conferimenti da utenze domestiche / privati",
-        `Periodo: ${anno === "all" ? "tutti gli anni" : anno}${privato !== "all" ? ` · Soggetto: ${privato}` : ""}`,
-        `Movimenti: ${rows.length} · Totale kg: ${rows.reduce((s, r) => s + r.kg, 0).toLocaleString("it-IT")}`,
-        `Estratto il ${new Date().toLocaleDateString("it-IT")}`,
-      ],
-    );
-    toast.success(`Export Excel generato: ${rows.length} movimenti`);
+  const EXPORT_COLUMNS = [
+    { header: "N.", key: "n_riga", width: 6 },
+    { header: "Progressivo/Anno", key: "progressivo", width: 16 },
+    { header: "Data movimento", key: "data_it", width: 14 },
+    { header: "Causale", key: "causale", width: 10 },
+    { header: "Codice EER (CER)", key: "cer", width: 16 },
+    { header: "Descrizione rifiuto", key: "descrizione", width: 44 },
+    { header: "Pericoloso", key: "pericoloso", width: 11 },
+    { header: "Stato fisico", key: "stato_fisico", width: 24 },
+    { header: "Quantita (kg)", key: "kg", width: 13 },
+    { header: "Operazione R/D", key: "operazione", width: 22 },
+    { header: "Produttore / Detentore", key: "produttore", width: 36 },
+    { header: "Codice fiscale", key: "cf_pi", width: 20 },
+    { header: "Tipo utenza", key: "tipo_utenza", width: 16 },
+    { header: "Trasportatore", key: "trasportatore", width: 34 },
+    { header: "Mezzo", key: "modello_automezzo", width: 18 },
+    { header: "Targa", key: "targa_automezzo", width: 12 },
+    { header: "Destinatario / Impianto", key: "destinatario", width: 34 },
+    { header: "Documento di riferimento", key: "documento", width: 26 },
+    { header: "Importo EUR", key: "importo", width: 12 },
+    { header: "Metodo pagamento", key: "metodo_pag", width: 18 },
+    { header: "Annotazioni", key: "note", width: 30 },
+  ];
+
+  const exportHeaderLines = (rows: any[]) => [
+    "REGISTRO CRONOLOGICO DI CARICO E SCARICO - art. 190 D.Lgs. 152/2006",
+    "MULTYPROGET SRL - conferimenti da utenze domestiche / privati",
+    `Periodo: ${anno === "all" ? "tutti gli anni" : anno}${privato !== "all" ? ` - Soggetto: ${privato}` : ""}`,
+    `Movimenti: ${rows.length} - Totale kg: ${rows.reduce((s, r) => s + r.kg, 0).toLocaleString("it-IT")}`,
+    `Estratto il ${new Date().toLocaleDateString("it-IT")}`,
+  ];
+
+  const handleExport = () => {
+    try {
+      const rows = buildExportRows();
+      if (!rows.length) return toast.error("Nessun movimento da esportare");
+      // NB: il nome del foglio non può contenere : \ / ? * [ ]
+      exportToExcel(
+        rows,
+        EXPORT_COLUMNS,
+        `registro_movimenti_privati_${anno}`,
+        "Registro CS Privati",
+        exportHeaderLines(rows),
+      );
+      toast.success(`Export Excel generato: ${rows.length} movimenti`);
+    } catch (e: any) {
+      toast.error("Errore export Excel: " + (e?.message || e));
+    }
+  };
+
+  const handleExportPdf = () => {
+    try {
+      const rows = buildExportRows();
+      if (!rows.length) return toast.error("Nessun movimento da esportare");
+      exportToPdf(
+        rows,
+        EXPORT_COLUMNS,
+        `registro_movimenti_privati_${anno}`,
+        exportHeaderLines(rows).join("\n"),
+      );
+      toast.success(`Export PDF generato: ${rows.length} movimenti`);
+    } catch (e: any) {
+      toast.error("Errore export PDF: " + (e?.message || e));
+    }
   };
 
   return (
