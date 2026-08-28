@@ -203,25 +203,62 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   };
 
   const handleExport = () => {
-    exportToExcel(
-      filtered.map((m) => ({
+    const rows = [...filtered]
+      .sort((a, b) => String(a.data).localeCompare(String(b.data)) || (a.numero_progressivo ?? 0) - (b.numero_progressivo ?? 0))
+      .map((m, i) => ({
         ...m,
-        descrizione: getCerDescrizioneCompleta(m.cer),
+        n_riga: i + 1,
+        progressivo: m.numero_progressivo ? `${m.numero_progressivo}/${m.anno_dbt ?? String(m.data).slice(0, 4)}` : "—",
         data_it: fmtDate(m.data),
-      })),
+        descrizione: getCerDescrizioneCompleta(m.cer),
+        causale: "CARICO",
+        stato_fisico: m.stato_rifiuto || "SOLIDO NON PULVERULENTO",
+        pericoloso: /\*/.test(String(m.cer)) ? "SI" : "NO",
+        operazione: "R13 — Messa in riserva",
+        produttore: `${m.nome_privato || "—"} (privato/utenza domestica)`,
+        trasportatore: "Conferimento diretto a cura del produttore",
+        destinatario: "MULTYPROGET SRL — impianto autorizzato",
+        documento: m.numero_fir ? `FIR ${m.numero_fir}` : `Ricevuta n. ${m.numero_progressivo ?? "—"}/${m.anno_dbt ?? String(m.data).slice(0, 4)}`,
+        kg: Number(m.kg_pesati || 0),
+        importo: Number(m.importo_pagato || 0),
+      }));
+
+    exportToExcel(
+      rows,
       [
-        { header: "Data", key: "data_it", width: 12 },
-        { header: "Privato", key: "nome_privato", width: 28 },
-        { header: "CF/PI", key: "cf_pi", width: 20 },
-        { header: "CER", key: "cer", width: 14 },
-        { header: "Descrizione", key: "descrizione", width: 34 },
-        { header: "Kg", key: "kg_pesati", width: 10 },
-        { header: "Importo €", key: "importo_pagato", width: 12 },
+        { header: "N.", key: "n_riga", width: 6 },
+        { header: "Progressivo/Anno", key: "progressivo", width: 16 },
+        { header: "Data movimento", key: "data_it", width: 14 },
+        { header: "Causale", key: "causale", width: 10 },
+        { header: "Codice EER (CER)", key: "cer", width: 16 },
+        { header: "Descrizione rifiuto", key: "descrizione", width: 44 },
+        { header: "Pericoloso", key: "pericoloso", width: 11 },
+        { header: "Stato fisico", key: "stato_fisico", width: 24 },
+        { header: "Quantità (kg)", key: "kg", width: 13 },
+        { header: "Operazione R/D", key: "operazione", width: 22 },
+        { header: "Produttore / Detentore", key: "produttore", width: 36 },
+        { header: "Codice fiscale", key: "cf_pi", width: 20 },
+        { header: "Tipo utenza", key: "tipo_utenza", width: 16 },
+        { header: "Trasportatore", key: "trasportatore", width: 34 },
         { header: "Mezzo", key: "modello_automezzo", width: 18 },
         { header: "Targa", key: "targa_automezzo", width: 12 },
+        { header: "Destinatario / Impianto", key: "destinatario", width: 34 },
+        { header: "Documento di riferimento", key: "documento", width: 26 },
+        { header: "Importo €", key: "importo", width: 12 },
+        { header: "Metodo pagamento", key: "metodo_pag", width: 18 },
+        { header: "Annotazioni", key: "note", width: 30 },
       ],
-      `movimenti_privati_${anno}`,
+      `registro_movimenti_privati_${anno}`,
+      "Registro C/S Privati",
+      [
+        "REGISTRO CRONOLOGICO DI CARICO E SCARICO — art. 190 D.Lgs. 152/2006",
+        "MULTYPROGET SRL — conferimenti da utenze domestiche / privati",
+        `Periodo: ${anno === "all" ? "tutti gli anni" : anno}${privato !== "all" ? ` · Soggetto: ${privato}` : ""}`,
+        `Movimenti: ${rows.length} · Totale kg: ${rows.reduce((s, r) => s + r.kg, 0).toLocaleString("it-IT")}`,
+        `Estratto il ${new Date().toLocaleDateString("it-IT")}`,
+      ],
     );
+    toast.success(`Export Excel generato: ${rows.length} movimenti`);
   };
 
   return (
