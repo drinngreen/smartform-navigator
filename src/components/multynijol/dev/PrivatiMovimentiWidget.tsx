@@ -356,6 +356,68 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     }
   };
 
+  /** ---- VERSIONE BREVE: stesse voci del modulo allegato (registro cronologico) ---- */
+  const SHORT_COLUMNS = [
+    { header: "N.", key: "n_riga", width: 6 },
+    { header: "Data", key: "data_it", width: 12 },
+    { header: "Caus.", key: "causale", width: 10 },
+    { header: "Cod. EER", key: "cer", width: 11 },
+    { header: "Descrizione del rifiuto", key: "descrizione", width: 40 },
+    { header: "Stato", key: "stato_breve", width: 7 },
+    { header: "Produttore / conferente", key: "nome_privato", width: 26 },
+    { header: "Codice fiscale", key: "cf_pi", width: 18 },
+    { header: "Luogo di produzione del rifiuto", key: "luogo_produzione", width: 32 },
+    { header: "Trasportatore", key: "trasportatore_breve", width: 24 },
+    { header: "MEZZO", key: "modello_automezzo", width: 16 },
+    { header: "TARGA", key: "targa_automezzo", width: 12 },
+    { header: "Carico (kg)", key: "carico_kg", width: 11 },
+    { header: "Scarico (kg)", key: "scarico_kg", width: 11 },
+    { header: "Giacenza (kg)", key: "giacenza_kg", width: 12 },
+  ];
+
+  const buildShortRows = () => {
+    let progressiva = 0;
+    return buildExportRows().map((r: any) => {
+      const v = resolveVeicolo(r);
+      progressiva += Number(r.kg || 0);
+      return {
+        ...r,
+        stato_breve: /liquid/i.test(String(r.stato_fisico)) ? "L" : "S",
+        nome_privato: r.nome_privato || "—",
+        luogo_produzione: v.luogo || "—",
+        trasportatore_breve: r.nome_privato || "—",
+        modello_automezzo: v.modello || "—",
+        targa_automezzo: v.targa || "NON REGISTRATA",
+        carico_kg: Number(r.kg || 0),
+        scarico_kg: "—",
+        giacenza_kg: progressiva,
+      };
+    });
+  };
+
+  const shortHeader = (rows: any[]) => [
+    `REGISTRO CRONOLOGICO DI CARICO / SCARICO — UTENZE PRIVATE — ANNO ${anno === "all" ? "TUTTI" : anno}`,
+    "Multyproget S.r.l. — Impianto di recupero — Tenuto ai sensi dell'art. 190 del D.Lgs. 152/2006 e s.m.i.",
+    `Movimenti: ${rows.length} — Totale kg: ${rows.reduce((s, r) => s + r.carico_kg, 0).toLocaleString("it-IT")}`,
+  ];
+
+  const handleExportShort = (kind: "pdf" | "xlsx") => {
+    try {
+      const rows = buildShortRows();
+      if (!rows.length) return toast.error("Nessun movimento da esportare");
+      const name = `registro_privati_breve_${anno}`;
+      if (kind === "pdf") {
+        exportToPdf(rows, SHORT_COLUMNS, name, shortHeader(rows).join("\n"));
+      } else {
+        exportToExcel(rows, SHORT_COLUMNS, name, "Registro breve", shortHeader(rows));
+      }
+      toast.success(`Export versione breve generato: ${rows.length} movimenti`);
+    } catch (e: any) {
+      toast.error("Errore export versione breve: " + (e?.message || e));
+    }
+  };
+
+
   return (
     <Card className="bg-card/60 border-border/30">
       <CardHeader className="pb-3">
