@@ -279,6 +279,88 @@ export function DevPrivatiModule() {
     invalidateInventoryQueries();
   };
 
+  /** Rinumera i progressivi DBT dei conferimenti rimasti, per anno (ordine cronologico). */
+  const renumberProgressivi = async (anni: number[]) => {
+    for (const anno of Array.from(new Set(anni))) {
+      const { data, error } = await supabase
+        .from("privati_conferimenti")
+        .select("id, data, created_at, numero_progressivo")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("anno_dbt", anno)
+        .order("data", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) { console.warn("Rinumerazione:", error.message); continue; }
+      let n = 0;
+      for (const row of (data ?? []) as any[]) {
+        n += 1;
+        if (Number(row.numero_progressivo) === n) continue;
+        const { error: upErr } = await supabase
+          .from("privati_conferimenti")
+          .update({ numero_progressivo: n } as any)
+          .eq("id", row.id);
+        if (upErr) console.warn("Rinumerazione riga:", upErr.message);
+      }
+    }
+  };
+
+  /** Elimina il privato con TUTTI i suoi movimenti, storna le giacenze e rinumera i progressivi. */
+  const handleDeletePrivato = async (p: any) => {
+    const nome = `${p.cognome || ""} ${p.nome || ""}`.trim();
+    const { data: confs, error: loadErr } = await supabase
+      .from("privati_conferimenti")
+      .select("id, cer, kg_pesati, impianto_id, anno_dbt")
+      .eq("tenant_id", MULTY_TENANT_ID)
+      .eq("privato_id", p.id);
+    if (loadErr) { toast.error(loadErr.message); return; }
+    const list = (confs ?? []) as any[];
+    const totKg = list.reduce((s, c) => s + Number(c.kg_pesati || 0), 0);
+
+    if (!window.confirm(
+      `Eliminare definitivamente il privato ${nome}?\n\n` +
+      `Verranno eliminati anche ${list.length} movimenti (${totKg.toLocaleString("it-IT")} kg) ` +
+      `con ricevute e pagamenti collegati.\nLe giacenze saranno stornate e i progressivi rinumerati.\n\nOperazione irreversibile.`
+    )) return;
+
+    // 1. Elimina i conferimenti (cascade su movimenti impianto / ricevute / pagamenti)
+    if (list.length > 0) {
+      const { error: delConfErr } = await supabase
+        .from("privati_conferimenti")
+        .delete()
+        .eq("privato_id", p.id)
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (delConfErr) { toast.error("Errore eliminazione movimenti: " + delConfErr.message); return; }
+    }
+
+    // 2. Elimina l'anagrafica
+    const { error: delErr } = await supabase.from("anagrafica_privati").delete().eq("id", p.id);
+    if (delErr) { toast.error("Errore eliminazione privato: " + delErr.message); return; }
+
+    // 3. Storno/ricalcolo giacenze per ogni coppia impianto+CER coinvolta
+    const pairs = new Map<string, { impianto_id: string; cer: string }>();
+    list.forEach((c) => {
+      if (c.impianto_id && c.cer) pairs.set(`${c.impianto_id}|${c.cer}`, { impianto_id: c.impianto_id, cer: String(c.cer).trim() });
+    });
+    for (const { impianto_id, cer } of pairs.values()) {
+      const { error: recErr } = await supabase.rpc("recalculate_magazzino_giacenza", {
+        p_tenant_id: MULTY_TENANT_ID,
+        p_impianto_id: impianto_id,
+        p_cer: cer,
+      } as any);
+      if (recErr) console.warn("Ricalcolo giacenza:", recErr.message);
+    }
+
+    // 4. Rinumerazione progressivi per gli anni toccati
+    await renumberProgressivi(list.map((c) => Number(c.anno_dbt)).filter(Boolean));
+
+    toast.success(`✅ ${nome} eliminato: ${list.length} movimenti rimossi, giacenze e progressivi aggiornati`);
+    if (selectedPrivatoId === p.id) setSelectedPrivatoId(null);
+    ["dev-privati", "dev-conferimenti-privato", "dev-conferimenti-anno", "privati-movimenti-widget",
+     "privati-limiti-widget", "privati-targhe-widget", "dev-ricevute", "dev-documenti"]
+      .forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
+    invalidateInventoryQueries();
+  };
+
+
   const { data: documenti } = useQuery({
     queryKey: ["dev-documenti", selectedPrivatoId],
     queryFn: async () => {
@@ -766,6 +848,15 @@ export function DevPrivatiModule() {
                         <Edit2 className="h-3.5 w-3.5" />
                         Modifica
                       </button>
+                      <button
+                        className="h-7 px-2 inline-flex items-center gap-1 rounded-md border border-red-500/40 hover:bg-red-500/20 text-red-400 text-xs font-medium"
+                        onClick={(e) => { e.stopPropagation(); handleDeletePrivato(p); }}
+                        title="Elimina privato e tutti i suoi movimenti"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Elimina
+                      </button>
+
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
