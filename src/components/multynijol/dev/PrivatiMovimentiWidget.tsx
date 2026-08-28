@@ -577,6 +577,16 @@ exportToPdf(
             <FileSpreadsheet className="h-4 w-4" /> Breve (Excel)
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCompletaIndirizzi}
+            disabled={completingAddr}
+            className="gap-1 border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+          >
+            <MapPin className={`h-4 w-4 ${completingAddr ? "animate-pulse" : ""}`} />
+            {completingAddr ? "Completamento..." : "Completa indirizzi"}
+          </Button>
+          <Button
             variant="destructive"
             size="sm"
             className="gap-1"
