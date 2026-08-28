@@ -342,12 +342,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     try {
       const rows = buildExportRows();
       if (!rows.length) return toast.error("Nessun movimento da esportare");
-      exportToPdf(
+exportToPdf(
         rows,
         EXPORT_COLUMNS,
         `registro_movimenti_privati_${anno}`,
         exportHeaderLines(rows).join("\n"),
-        { fontSize: 7.5 },
+        { fontSize: 9.5 },
       );
       toast.success(`Export PDF generato: ${rows.length} movimenti`);
     } catch (e: any) {
