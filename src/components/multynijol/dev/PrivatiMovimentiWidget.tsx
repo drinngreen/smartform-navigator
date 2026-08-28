@@ -335,6 +335,9 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
           <Button variant="outline" size="sm" onClick={handleExport} className="gap-1">
             <FileSpreadsheet className="h-4 w-4" /> Excel
           </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+            <FileText className="h-4 w-4" /> PDF
+          </Button>
           <Button
             variant="destructive"
             size="sm"
