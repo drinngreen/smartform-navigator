@@ -6765,6 +6765,10 @@ export type Database = {
         Args: { p_fir_id: string; p_fir_number: string }
         Returns: boolean
       }
+      ricevuta_numero_da_movimento: {
+        Args: { p_anno: number; p_progressivo: number }
+        Returns: string
+      }
       toggle_fir_suspension: {
         Args: { p_fir_number_id: string; p_suspend: boolean }
         Returns: undefined
