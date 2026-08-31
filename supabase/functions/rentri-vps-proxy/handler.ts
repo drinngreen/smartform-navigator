@@ -306,8 +306,10 @@ export function buildUpstreamBody(
     registro_id: resolveRegistryId(n, safe),
 
     identificativo: safe.identificativo ?? issuer,
-    payload: safe,
-    dati_inviati: safe,
+    // RENTRI accetta anche corpi array (es. registrazioni di registro): non vanno normalizzati a oggetto
+    payload: Array.isArray(payload) || typeof payload === "string" ? payload : safe,
+    dati_inviati: Array.isArray(payload) || typeof payload === "string" ? payload : safe,
+
     ...qtyFields,
   };
 }
