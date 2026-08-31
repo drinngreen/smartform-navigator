@@ -29,13 +29,36 @@ Il test resta lì per sempre: è la garanzia che quel bug non torni.
 
 ## 4. Verifica dati (giacenze, FIR, registri)
 
-I test sopra non toccano il database. Per le modifiche che riguardano saldi o
-formulari serve, in aggiunta:
+I test sopra non toccano il database. Per i dati esiste un check unico:
+
+```
+scripts/check_coerenza.sql   -- read-only, 10 controlli, ogni riga deve dare 0 anomalie
+```
+
+Controlla: giacenze negative (Dragon e magazzino), conferimenti senza ricevuta,
+ricevute orfane, ricevute anteriori al movimento, CER duplicati per differenze di
+maiuscole, numeri FIR duplicati (formulari e pool), disallineamento tra registro
+Dragon e magazzino operativo.
+
+Per le modifiche che riguardano saldi o formulari serve, in aggiunta:
 
 1. snapshot del saldo prima della modifica (query di lettura);
 2. esecuzione dell'operazione reale;
 3. snapshot dopo, con delta atteso dichiarato esplicitamente;
 4. se il delta non coincide, la modifica è respinta.
+
+## 4-bis. Verifica canale RENTRI
+
+Prima di dichiarare operativo l'invio RENTRI dal programma:
+
+1. `LISTA_BLOCCHI` per `multy` e `niyol` deve tornare `success: true` (bridge e certificati vivi);
+2. lettura registro (`GET /dati-registri/v1.0/operatore/{ID}/registrazioni`) deve tornare 200;
+3. l'invio va provato prima in **Verifica configurazione (nessun invio)** dalla Console RENTRI;
+4. solo dopo l'esito positivo si esegue l'invio reale, che deve lasciare una riga in
+   `rentri_invii_registri` con `stato = 'SENT'` e un `transazione_id`.
+
+Nota: il cliente `global` non è supportato dal bridge (nessun certificato caricato).
+
 
 ## 5. Cosa non è una verifica
 
