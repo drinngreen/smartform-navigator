@@ -49,7 +49,7 @@ fir_dup as (
 ),
 fir_pool_dup as (
   select count(*) n from (
-    select numero_fir from fir_number_pool group by 1 having count(*) > 1
+    select fir_number from fir_number_pool group by 1 having count(*) > 1
   ) t
 ),
 doppio_binario as (
