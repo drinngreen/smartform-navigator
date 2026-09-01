@@ -53,21 +53,34 @@ fir_pool_dup as (
   ) t
 ),
 doppio_binario as (
-  -- delta tra registro Dragon (normativo) e magazzino operativo, per CER
+  -- delta tra registro Dragon (normativo) e magazzino operativo, per tenant e CER
   select count(*) n from (
-    select coalesce(d.cer, m.cer) cer,
+    select coalesce(d.tenant, m.tenant) tenant,
+           coalesce(d.cer, m.cer) cer,
            coalesce(d.kg,0) - coalesce(m.kg,0) delta
     from (
-      select upper(i.codice_cer) cer,
+      select sm.company_id tenant, upper(i.codice_cer) cer,
              sum(case when sm.sign='PLUS' then sm.quantity when sm.sign='MINUS' then -sm.quantity else 0 end) kg
       from dragon_stock_movements sm
       join dragon_items i on i.id = sm.item_id
-      where sm.test_session is null group by 1
+      where sm.test_session is null group by 1,2
     ) d
     full outer join (
-      select upper(cer) cer, sum(quantita_kg) kg from magazzino_giacenze group by 1
-    ) m on m.cer = d.cer
+      select tenant_id tenant, upper(cer) cer, sum(quantita_kg) kg from magazzino_giacenze group by 1,2
+    ) m on m.cer = d.cer and m.tenant = d.tenant
   ) t where abs(delta) > 0.5
+),
+sync_triggers as (
+  -- i due trigger che tengono allineati Dragon e magazzino devono esistere
+  select 2 - count(*) n from pg_trigger
+  where not tgisinternal
+    and tgname in ('trg_dragon_sync_stock_to_magazzino','trg_magazzino_sync_to_dragon')
+),
+sibill_fresco as (
+  -- l'archivio fatture Sibill deve essere stato riletto di recente
+  select case when coalesce(max(updated_at), 'epoch'::timestamptz) < now() - interval '2 days'
+              then 1 else 0 end n
+  from sibill_scan_state where id = 'recent'
 )
 select * from (
   values
@@ -80,6 +93,8 @@ select * from (
     ('CER duplicati per maiuscole (Magazz.)',(select n from cer_case_mag)),
     ('Numeri FIR duplicati (formulari)',    (select n from fir_dup)),
     ('Numeri FIR duplicati (pool)',         (select n from fir_pool_dup)),
-    ('Disallineamenti Dragon vs Magazzino', (select n from doppio_binario))
+    ('Disallineamenti Dragon vs Magazzino', (select n from doppio_binario)),
+    ('Trigger di allineamento mancanti',    (select n from sync_triggers)),
+    ('Archivio Sibill non aggiornato',      (select n from sibill_fresco))
 ) as v(controllo, anomalie)
 order by anomalie desc, controllo;

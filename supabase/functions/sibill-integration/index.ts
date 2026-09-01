@@ -298,6 +298,42 @@ Deno.serve(async (req) => {
       };
     };
 
+    /** Sincronizza SOLO i documenti più recenti (l'API restituisce i documenti dal più nuovo).
+     *  Serve a tenere aggiornato l'elenco senza rifare la scansione completa dell'archivio. */
+    const syncRecent = async (pages = 3) => {
+      let cursor: string | null = null;
+      let scanned = 0;
+      for (let page = 0; page < pages; page++) {
+        const url =
+          `${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents?page_size=100` +
+          (cursor ? `&cursor=${encodeURIComponent(cursor)}` : "");
+        const res = await fetch(url, { headers: sibillHeaders() });
+        if (!res.ok) { await res.text().catch(() => ""); break; }
+        const b = await res.json().catch(() => ({}));
+        const list: any[] = Array.isArray(b?.data) ? b.data : [];
+        scanned += list.length;
+        if (list.length) {
+          const rows = list.filter((d) => d?.id).map(mapDoc);
+          await admin.from("sibill_documents_cache").upsert(rows, { onConflict: "doc_id" });
+        }
+        const pg = b?.page || {};
+        if (!pg?.has_next_page || !pg?.cursor) break;
+        cursor = pg.cursor as string;
+        await sleep(150);
+      }
+      await admin.from("sibill_scan_state").upsert({
+        id: "recent", cursor: null, scanned, done: true, updated_at: new Date().toISOString(),
+      });
+      return scanned;
+    };
+
+    if (action === "sync_recent") {
+      if (mock) return json({ ok: true, mock: true, scanned: 0 });
+      const scanned = await syncRecent(Math.min(Number(body?.pages || 3), 10));
+      const { count } = await admin.from("sibill_documents_cache").select("doc_id", { count: "exact", head: true });
+      return json({ ok: true, scanned, cached: count ?? 0 });
+    }
+
     /** Scansione incrementale dei documenti Sibill: salva in cache locale e restituisce l'avanzamento.
      *  Va richiamata più volte dal client finché `done` non diventa true (Sibill non offre filtri lato API). */
     if (action === "scan_documents") {
@@ -367,6 +403,14 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Freschezza garantita: se l'ultimo aggiornamento recente è vecchio, rileggo le ultime pagine da Sibill.
+      let recentSynced = 0;
+      try {
+        const { data: rst } = await admin.from("sibill_scan_state").select("*").eq("id", "recent").maybeSingle();
+        const age = rst?.updated_at ? Date.now() - new Date(rst.updated_at).getTime() : Infinity;
+        if (body?.force || age > 10 * 60 * 1000) recentSynced = await syncRecent(3);
+      } catch (_e) { /* best-effort: l'elenco resta quello in cache */ }
+
       let q = admin.from("sibill_documents_cache").select("*").order("document_date", { ascending: false }).limit(3000);
       if (filter === "IN") q = q.eq("direction", "RECEIVED").eq("is_e_invoice", true);
       else if (filter === "P") q = q.eq("direction", "ISSUED").ilike("number", "%/P");
@@ -407,7 +451,7 @@ Deno.serve(async (req) => {
 
       const { data: st } = await admin.from("sibill_scan_state").select("*").eq("id", "documents").maybeSingle();
       return json({
-        ok: true, env: SIBILL_ENV, count: out.length,
+        ok: true, env: SIBILL_ENV, count: out.length, recent_synced: recentSynced,
         scanned: st?.scanned ?? 0, done: !!st?.done, partial: !st?.done,
         warning: st?.done ? null : "Scansione Sibill in corso: l'elenco si completa man mano.",
         documents: out,

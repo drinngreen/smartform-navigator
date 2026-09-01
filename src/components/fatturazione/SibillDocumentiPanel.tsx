@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2, DownloadCloud } from "lucide-react";
+import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2, DownloadCloud, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { elencaDocumentiSibillFull, scansionaDocumentiSibill, type SibillDocumento } from "@/lib/sibill";
+import { elencaDocumentiSibillFull, scansionaDocumentiSibill, sincronizzaRecentiSibill, type SibillDocumento } from "@/lib/sibill";
 import { FattureEmesseEsitoPanel } from "./FattureEmesseEsitoPanel";
 
 interface Props { mock?: boolean; tenantId?: string; initialMode?: "P" | "IN" }
@@ -60,6 +60,23 @@ export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Prop
     }
   };
 
+  /** Aggiornamento rapido: rilegge da Sibill soltanto i documenti più recenti. */
+  const aggiornaRecenti = async () => {
+    setScanning(true);
+    try {
+      const r = await sincronizzaRecentiSibill({ mock });
+      await queryClient.invalidateQueries({ queryKey: ["sibill-documenti-v3"] });
+      setScanInfo(`Ultimi documenti riletti da Sibill: ${r.scanned}`);
+      toast.success("Ultime fatture aggiornate da Sibill");
+    } catch (e: any) {
+      toast.error(e.message || "Errore aggiornamento Sibill");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+
+
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -103,10 +120,15 @@ export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Prop
           {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           Aggiorna elenco
         </button>
+        <button onClick={aggiornaRecenti} disabled={scanning}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15 text-emerald-200 text-sm hover:bg-emerald-500/25 disabled:opacity-40">
+          {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          Aggiorna ultime fatture
+        </button>
         <button onClick={() => sincronizza(true)} disabled={scanning}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/40 bg-primary/15 text-primary text-sm hover:bg-primary/25 disabled:opacity-40">
           {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <DownloadCloud className="h-4 w-4" />}
-          Sincronizza da Sibill
+          Sincronizza tutto l'archivio
         </button>
       </div>
 
