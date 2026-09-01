@@ -41,6 +41,7 @@ import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModu
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
 import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck } from "lucide-react";
+import { ReportStatoCard } from "@/components/multynijol/dev/ReportStatoCard";
 
 export default function MNDevDashboardPage() {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ export default function MNDevDashboardPage() {
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
+
+      {/* Report stato sistema (eliminabile) */}
+      <ReportStatoCard />
 
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
