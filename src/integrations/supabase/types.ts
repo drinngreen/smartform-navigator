@@ -5425,6 +5425,7 @@ export type Database = {
           qta_scaricata: number | null
           quantita: number | null
           raw: Json | null
+          registro: string | null
           respinto: string | null
           scaricato: string | null
           segno: string | null
@@ -5473,6 +5474,7 @@ export type Database = {
           qta_scaricata?: number | null
           quantita?: number | null
           raw?: Json | null
+          registro?: string | null
           respinto?: string | null
           scaricato?: string | null
           segno?: string | null
@@ -5521,6 +5523,7 @@ export type Database = {
           qta_scaricata?: number | null
           quantita?: number | null
           raw?: Json | null
+          registro?: string | null
           respinto?: string | null
           scaricato?: string | null
           segno?: string | null
@@ -5720,6 +5723,69 @@ export type Database = {
           tenant_id?: string | null
           tipo_operazione?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      rentri_registro_esiti: {
+        Row: {
+          azienda: string
+          cer: string | null
+          created_at: string
+          data_movimento: string
+          esito: string
+          id: string
+          identificativi_rentri: string[]
+          inviato_il: string | null
+          movimento: string | null
+          numero_fir: string | null
+          numero_interno: number
+          origine: string
+          progressivi: string[]
+          quantita_kg: number | null
+          registro_id: string
+          registro_label: string | null
+          tenant_id: string
+          transazione_id: string | null
+        }
+        Insert: {
+          azienda: string
+          cer?: string | null
+          created_at?: string
+          data_movimento: string
+          esito?: string
+          id?: string
+          identificativi_rentri?: string[]
+          inviato_il?: string | null
+          movimento?: string | null
+          numero_fir?: string | null
+          numero_interno: number
+          origine?: string
+          progressivi?: string[]
+          quantita_kg?: number | null
+          registro_id: string
+          registro_label?: string | null
+          tenant_id: string
+          transazione_id?: string | null
+        }
+        Update: {
+          azienda?: string
+          cer?: string | null
+          created_at?: string
+          data_movimento?: string
+          esito?: string
+          id?: string
+          identificativi_rentri?: string[]
+          inviato_il?: string | null
+          movimento?: string | null
+          numero_fir?: string | null
+          numero_interno?: number
+          origine?: string
+          progressivi?: string[]
+          quantita_kg?: number | null
+          registro_id?: string
+          registro_label?: string | null
+          tenant_id?: string
+          transazione_id?: string | null
         }
         Relationships: []
       }

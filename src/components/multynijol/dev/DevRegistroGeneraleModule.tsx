@@ -11,7 +11,15 @@ import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const PAGE_SIZE = 100;
+
+/** Registri ufficiali RENTRI gestiti (uno per numerazione/registro cronologico). */
+const REGISTRI = [
+  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID },
+  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID },
+  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID },
+] as const;
 
 const registroColumns = [
   { header: "N. Int.", key: "numero_interno", width: 10, align: "left" },
@@ -65,6 +73,7 @@ const formatCellValue = (value: unknown) => {
 };
 
 export function DevRegistroGeneraleModule() {
+  const [registroFilter, setRegistroFilter] = useState<string>("MULTY_IMPIANTO");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [cerFilter, setCerFilter] = useState("all");
@@ -76,16 +85,16 @@ export function DevRegistroGeneraleModule() {
 
 
 
-  const { data: rows, isLoading } = useQuery({
-    queryKey: ["dev-registro-generale", MULTY_TENANT_ID],
+  const { data: allRows, isLoading } = useQuery({
+    queryKey: ["dev-registro-generale", "multi"],
     queryFn: async () => {
       let all: any[] = [];
       let p = 0;
       while (true) {
         const { data, error } = await supabase
           .from("registro_generale" as any)
-          .select("id, numero_interno, numero_movimento, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, segno, quantita, peso_destino, qta_scaricata, data_ricezione, luogo_produzione, destinazione, classi_pericolo, stato_fisico, descrizione_tipica, scaricato, cod_magazzino, peso_lordo, tara, annotazioni, nota_int, cod_intermed, intermediario, indirizzo_intermed, flagnomud, origine_rifiuto, conai, att_orig_rif, pseudonimo_cantiere, indirizzo_cantiere, cap_cantiere, comune_cantiere, provincia_cantiere, data_emissione_formulario, form_urbano, ddt_ingresso, data_ddt_ingresso, respinto")
-          .eq("tenant_id", MULTY_TENANT_ID)
+          .select("id, tenant_id, registro, numero_interno, numero_movimento, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, segno, quantita, peso_destino, qta_scaricata, data_ricezione, luogo_produzione, destinazione, classi_pericolo, stato_fisico, descrizione_tipica, scaricato, cod_magazzino, peso_lordo, tara, annotazioni, nota_int, cod_intermed, intermediario, indirizzo_intermed, flagnomud, origine_rifiuto, conai, att_orig_rif, pseudonimo_cantiere, indirizzo_cantiere, cap_cantiere, comune_cantiere, provincia_cantiere, data_emissione_formulario, form_urbano, ddt_ingresso, data_ddt_ingresso, respinto")
+          .in("tenant_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
           .order("data_movimento", { ascending: false })
           .order("numero_interno", { ascending: false })
           .range(p * 1000, (p + 1) * 1000 - 1);
@@ -97,6 +106,12 @@ export function DevRegistroGeneraleModule() {
       return all as any[];
     },
   });
+
+  const rows = useMemo(() => {
+    if (!allRows) return [];
+    if (registroFilter === "all") return allRows;
+    return allRows.filter((r: any) => (r.registro ?? "MULTY_IMPIANTO") === registroFilter);
+  }, [allRows, registroFilter]);
 
   const cerList = useMemo(() => {
     if (!rows) return [];
