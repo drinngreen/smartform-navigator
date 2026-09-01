@@ -20,10 +20,31 @@ const SCENARIOS = [
   { key: "fir", label: "Testa FIR", icon: FileText, desc: "Bozza FIR di test, blocco duplicati, verifica che nessun numero reale venga consumato." },
 ] as const;
 
+type HealthCheck = { check: string; anomalie: number };
+type HealthReport = { generated_at: string; ok: boolean; checks: HealthCheck[] };
+
 export function DevSystemTestModule() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const [running, setRunning] = useState<string | null>(null);
   const [reports, setReports] = useState<TestReport[]>([]);
+  const [health, setHealth] = useState<HealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const runHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const { data, error } = await (supabase.rpc as any)("system_health_check");
+      if (error) throw error;
+      const report = data as HealthReport;
+      setHealth(report);
+      if (report.ok) toast.success("Controllo a 10 fattori: tutto regolare");
+      else toast.error("Controllo a 10 fattori: anomalie rilevate");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
 
   const run = async (scenario: string) => {
     if (!companyId) {
@@ -58,6 +79,44 @@ export function DevSystemTestModule() {
           I test eseguono operazioni reali sul database, verificano i risultati e poi eliminano integralmente i dati di test,
           confrontando le giacenze prima e dopo.
         </p>
+      </div>
+
+      {/* Controllo a 10 fattori (sola lettura) */}
+      <div className="rounded-xl border border-border/30 bg-card/60 p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div>
+            <h4 className="font-semibold text-sm text-emerald-300">Controllo a 10 fattori</h4>
+            <p className="text-xs text-muted-foreground">
+              Verifica in sola lettura di giacenze, allineamento registri, ricevute privati, codici materiale, numeri
+              formulario, ricevute RENTRI e cernite. Non modifica alcun dato.
+            </p>
+          </div>
+          <button
+            onClick={() => void runHealth()}
+            disabled={healthLoading}
+            className="ml-auto px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 disabled:opacity-50 flex items-center gap-2"
+          >
+            {healthLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+            Esegui controllo
+          </button>
+        </div>
+        {health && (
+          <div className="divide-y divide-border/20 rounded-lg border border-border/30">
+            {health.checks.map((c) => (
+              <div key={c.check} className="flex items-center gap-3 px-3 py-2 text-xs">
+                {Number(c.anomalie) === 0 ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                )}
+                <span className="flex-1">{c.check}</span>
+                <span className={Number(c.anomalie) === 0 ? "text-emerald-400" : "text-destructive font-semibold"}>
+                  {Number(c.anomalie) === 0 ? "OK" : `${c.anomalie} anomalie`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">

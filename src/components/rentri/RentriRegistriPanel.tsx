@@ -8,9 +8,10 @@ const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 
 /** Registri cronologici ufficiali gestiti dalla console. */
 export const REGISTRI_RENTRI = [
-  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40" },
-  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0" },
-  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0" },
+  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro" },
+  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro" },
+  { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati" },
+  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro" },
 ] as const;
 
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
@@ -49,15 +50,22 @@ export function RentriRegistriPanel() {
     queryKey: ["rentri-registri-panel", registro],
     queryFn: async () => {
       const [movRes, esitiRes] = await Promise.all([
-        supabase
-          .from("registro_generale" as any)
-          .select(
-            "id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, quantita",
-          )
-          .eq("tenant_id", cfg.tenant)
-          .eq("registro", registro)
-          .order("data_movimento", { ascending: true })
-          .order("numero_interno", { ascending: true }),
+        cfg.source === "privati"
+          ? supabase
+              .from("privati_conferimenti" as any)
+              .select("id, numero_progressivo, data, cer, kg_pesati, nome_privato")
+              .eq("tenant_id", cfg.tenant)
+              .order("data", { ascending: true })
+              .order("numero_progressivo", { ascending: true })
+          : supabase
+              .from("registro_generale" as any)
+              .select(
+                "id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, quantita",
+              )
+              .eq("tenant_id", cfg.tenant)
+              .eq("registro", registro)
+              .order("data_movimento", { ascending: true })
+              .order("numero_interno", { ascending: true }),
         supabase
           .from("rentri_registro_esiti" as any)
           .select("numero_interno, progressivi, identificativi_rentri, transazione_id, esito, registro_label")
@@ -65,8 +73,22 @@ export function RentriRegistriPanel() {
       ]);
       if (movRes.error) throw movRes.error;
       if (esitiRes.error) throw esitiRes.error;
+      const movimenti: RigaRegistro[] =
+        cfg.source === "privati"
+          ? (movRes.data ?? []).map((r: any) => ({
+              id: r.id,
+              numero_interno: r.numero_progressivo,
+              data_movimento: r.data,
+              cer: r.cer,
+              descrizione: r.nome_privato,
+              carico_scarico: "CARICO",
+              tipo_operazione: null,
+              numero_formulario: null,
+              quantita: r.kg_pesati,
+            }))
+          : ((movRes.data ?? []) as unknown as RigaRegistro[]);
       return {
-        movimenti: (movRes.data ?? []) as unknown as RigaRegistro[],
+        movimenti,
         esiti: (esitiRes.data ?? []) as unknown as EsitoRow[],
       };
     },
