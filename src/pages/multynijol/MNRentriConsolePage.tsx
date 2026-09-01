@@ -4,6 +4,7 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
 import { RentriRetryQueue } from "@/components/rentri/RentriRetryQueue";
+import { RentriRegistriPanel } from "@/components/rentri/RentriRegistriPanel";
 import { toast } from "sonner";
 import {
   listaBlocchi,
@@ -72,7 +73,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registriufficiali" | "registri" | "invii" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -92,6 +93,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
+  { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
   { id: "lemon", label: "Dark Lemon", icon: <Sparkles size={14} /> },
@@ -113,7 +115,7 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "registri", "invii", "lemon"];
+    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "registriufficiali", "registri", "invii", "lemon"];
     return ids.includes(t as TabId) ? (t as TabId) : "stato";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
@@ -961,6 +963,13 @@ export default function MNRentriConsolePage() {
               </div>
             )}
 
+          </div>
+        )}
+
+        {tab === "registriufficiali" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Registri RENTRI — inviati e da inviare</h3>
+            <RentriRegistriPanel />
           </div>
         )}
 
