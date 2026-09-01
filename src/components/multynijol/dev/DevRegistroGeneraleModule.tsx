@@ -206,6 +206,13 @@ export function DevRegistroGeneraleModule() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Cerca FIR, CER, descrizione..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-10 bg-card/60 border-border/50" />
         </div>
+        <Select value={registroFilter} onValueChange={v => { setRegistroFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-56 bg-card/60 border-emerald-500/40 text-emerald-300 font-semibold"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {REGISTRI.map(r => <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>)}
+            <SelectItem value="all">Tutti i registri</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={cerFilter} onValueChange={v => { setCerFilter(v); setPage(0); }}>
           <SelectTrigger className="w-44 bg-card/60 border-border/50"><SelectValue /></SelectTrigger>
           <SelectContent>
