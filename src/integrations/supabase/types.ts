@@ -6835,6 +6835,7 @@ export type Database = {
         Args: { p_anno: number; p_progressivo: number }
         Returns: string
       }
+      system_health_check: { Args: never; Returns: Json }
       toggle_fir_suspension: {
         Args: { p_fir_number_id: string; p_suspend: boolean }
         Returns: undefined
