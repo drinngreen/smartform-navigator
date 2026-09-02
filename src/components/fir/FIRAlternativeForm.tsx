@@ -1215,8 +1215,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
 
       // Sincronizzazione unica per entrambe le viste: instrada il FIR nei registri
       // coinvolti e aggiorna le giacenze Multy in base al suo ruolo effettivo.
-      // Anche il salvataggio in BOZZA deve aggiornare registro e giacenze.
-      if (tenantId && numeroFir) {
+      // REGOLA: la BOZZA non tocca mai registro né giacenze (solo il salvataggio definitivo).
+      if (mode === "final" && tenantId && numeroFir) {
         try {
           const result = await syncFirFinalToRegistryAndInventory({
             firId: targetId,
