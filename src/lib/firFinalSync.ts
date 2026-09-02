@@ -14,6 +14,19 @@ const norm = (v: unknown) => {
 const firstValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 
+/**
+ * I moduli permettono di scrivere il CER con spazi ("15 01 01"): le giacenze
+ * e il magazzino usano invece la forma compatta ("150101", "200140-FE").
+ */
+const normalizeCer = (value: unknown) => {
+  const raw = String(value ?? "").toUpperCase().trim();
+  if (!raw) return "";
+  const compact = raw.replace(/\s+/g, "");
+  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]{1,4}))?/);
+  if (!match) return compact;
+  return match[2] ? `${match[1]}-${match[2]}` : match[1];
+};
+
 const numberValue = (...values: unknown[]) => {
   const value = firstValue(...values);
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -82,7 +95,10 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   const numeroFir = (fir as any).numero_fir as string | null;
   const formData = ((fir as any).form_data || {}) as Record<string, any>;
 
-  const cer = firstValue((fir as any).codice_eer, formData.codice_eer, formData.codiceEER, formData.cer) as string | undefined;
+  const cer =
+    normalizeCer(
+      firstValue((fir as any).codice_eer, formData.codice_eer, formData.codiceEER, formData.cer)
+    ) || undefined;
   const desc = firstValue((fir as any).descrizione_rifiuto, formData.descrizione_rifiuto, formData.descrizione) as string | undefined;
   const qtaValid = numberValue((fir as any).quantita, formData.quantita, formData.quantita_partenza, formData.quantita_origine);
   const qtaDestinazione = numberValue(
