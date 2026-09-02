@@ -95,7 +95,10 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   const numeroFir = (fir as any).numero_fir as string | null;
   const formData = ((fir as any).form_data || {}) as Record<string, any>;
 
-  const cer = firstValue((fir as any).codice_eer, formData.codice_eer, formData.codiceEER, formData.cer) as string | undefined;
+  const cer =
+    normalizeCer(
+      firstValue((fir as any).codice_eer, formData.codice_eer, formData.codiceEER, formData.cer)
+    ) || undefined;
   const desc = firstValue((fir as any).descrizione_rifiuto, formData.descrizione_rifiuto, formData.descrizione) as string | undefined;
   const qtaValid = numberValue((fir as any).quantita, formData.quantita, formData.quantita_partenza, formData.quantita_origine);
   const qtaDestinazione = numberValue(
