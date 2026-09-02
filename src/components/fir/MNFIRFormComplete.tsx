@@ -498,6 +498,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
+    // Il numero FIR deve restare liberamente cancellabile e riscrivibile:
+    // nessun salvataggio/rerender mentre il relativo input ha il focus.
+    if (firNumberFocusedRef.current) return;
     if (firFormId && loadedFirFormId !== firFormId) return;
     const updatedAt = useMNFIRStore.getState().lastUpdatedAt;
     try {
@@ -551,10 +554,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     if (store.workflowStatus === "chiuso" || store.lastUpdatedBy !== "user") return;
     if (!store.lastUpdatedAt || lastAutosavedAtRef.current === store.lastUpdatedAt) return;
     const timer = window.setTimeout(() => {
-      if (useMNFIRStore.getState().editingFirId) { void doAutosave(); return; }
-      // Non creare la bozza mentre l'utente sta ancora digitando il numero FIR:
-      // altrimenti il campo viene disabilitato a metà digitazione.
       if (firNumberFocusedRef.current) return;
+      if (useMNFIRStore.getState().editingFirId) { void doAutosave(); return; }
+      // Non creare la bozza mentre l'utente sta ancora digitando il numero FIR.
       void createAndAutosaveManualDraft();
     }, 1200);
     return () => window.clearTimeout(timer);
@@ -1085,12 +1087,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             onFocus={() => { firNumberFocusedRef.current = true; }}
             onBlur={() => {
               firNumberFocusedRef.current = false;
-              // Al termine della digitazione (uscita dal campo) crea la bozza se serve.
-              if (!useMNFIRStore.getState().editingFirId) void createAndAutosaveManualDraft();
+              // Salva soltanto quando l'utente ha finito di cancellare/riscrivere.
+              if (useMNFIRStore.getState().editingFirId) void doAutosave();
+              else void createAndAutosaveManualDraft();
             }}
             placeholder="Es. FRVKM 001320 CM"
-            disabled={Boolean(store.editingFirId)}
-            className="h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground disabled:opacity-70"
+            className="h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground"
           />
           <p className="mt-1 text-[10px] font-mono text-muted-foreground">
             {store.editingFirId ? "Autosalvataggio attivo" : "Inserisci il numero: le modifiche verranno salvate automaticamente"}
