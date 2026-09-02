@@ -190,9 +190,10 @@ export async function syncFirFinalToRegistryAndInventory(params) {
                     throw existingError;
                 const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
                 const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
-                const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
                 const rows = existingRows || [];
-                const currentSignedQuantity = rows.reduce((total, row) => total + signedInventoryQuantity(row.tipo_movimento, row.quantita_kg), 0);
+                const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
+                const targetRows = rows.filter((row) => row.impianto_id === impiantoId && normalizeCer(row.cer) === cer);
+                const currentSignedQuantity = targetRows.reduce((total, row) => total + signedInventoryQuantity(row.tipo_movimento, row.quantita_kg), 0);
                 const correction = inventoryCorrection(desiredSignedQuantity, currentSignedQuantity);
                 if (correction) {
                     const { error: movementError } = await supabase.from("movimenti_impianto").insert({
@@ -218,15 +219,10 @@ export async function syncFirFinalToRegistryAndInventory(params) {
                 }
                 const touched = new Map();
                 for (const row of rows) {
-                    touched.set(`${row.impianto_id}|${normalizeCer(row.cer)}`, {
-                        impiantoId: row.impianto_id,
-                        cer: normalizeCer(row.cer),
-                    });
+                    touched.set(`${row.impianto_id}|${row.cer}`, { impiantoId: row.impianto_id, cer: row.cer });
                 }
                 for (const item of touched.values()) {
-                    if (item.impiantoId !== impiantoId || item.cer !== cer) {
-                        await recalculateMultyStock(item.impiantoId, item.cer);
-                    }
+                    await recalculateMultyStock(item.impiantoId, item.cer);
                 }
                 await recalculateMultyStock(impiantoId, cer);
                 inventoryOk = true;
