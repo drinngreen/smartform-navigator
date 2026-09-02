@@ -540,6 +540,25 @@ export function PresetAziendaSelector({
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
+  /** Autisti presenti in anagrafica ma collegati ad altre società del gruppo:
+   *  restano selezionabili in coda alla tendina, con il nome della società. */
+  const altriConducenti = useMemo(() => {
+    const gia = new Set(conducenti.map((c) => `${c.cognome}|${c.nome}`.toUpperCase()));
+    const nomiAzienda = new Map(allCompanies.map((a) => [a.id, a.ragione_sociale as string]));
+    const seen = new Set<string>();
+    return allConducenti
+      .filter((c) => {
+        const k = `${c.cognome}|${c.nome}`.toUpperCase();
+        if (gia.has(k) || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .map((c) => ({ ...c, azienda: nomiAzienda.get(c.cliente_id) || "" }))
+      .sort((a, b) =>
+        `${a.cognome} ${a.nome}`.localeCompare(`${b.cognome} ${b.nome}`, "it"),
+      );
+  }, [allConducenti, conducenti, allCompanies]);
+
   const q = query.trim().toUpperCase();
   const usaSoloRuolo = Boolean(ruolo && ruolo !== "PRODUTTORE" && soloRuolo && roleCompanies.length);
   const opzioni = useMemo(() => {
