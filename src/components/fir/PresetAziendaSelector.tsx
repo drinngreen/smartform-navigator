@@ -75,6 +75,7 @@ export function PresetAziendaSelector({
   const [cantieri, setCantieri] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
+  const [allConducenti, setAllConducenti] = useState<any[]>([]);
   const [partnerDefaults, setPartnerDefaults] = useState<any[]>([]);
   const [loadingDeps, setLoadingDeps] = useState(false);
   const [auts, setAuts] = useState<AutorizzazionePreset[]>([]);
@@ -124,6 +125,32 @@ export function PresetAziendaSelector({
       cancelled = true;
     };
   }, []);
+
+  /** Elenco completo degli autisti presenti in anagrafica: gli autisti sono
+   *  spesso registrati sotto una sola delle società del gruppo (es. Niyol) ma
+   *  devono restare selezionabili anche compilando un FIR di un'altra società. */
+  useEffect(() => {
+    if (!onSelectConducente) return;
+    let cancelled = false;
+    (async () => {
+      const rows: any[] = [];
+      for (let page = 0; page < 5; page++) {
+        const { data, error } = await supabase
+          .from("cliente_conducenti")
+          .select("id,cognome,nome,cliente_id")
+          .order("cognome")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (!cancelled) setAllConducenti(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Boolean(onSelectConducente)]);
 
   /** Azzera completamente la selezione: usato dalla gomma della sezione e dalla ✕ */
   const clearSelection = (emit: boolean) => {
@@ -513,6 +540,25 @@ export function PresetAziendaSelector({
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
+  /** Autisti presenti in anagrafica ma collegati ad altre società del gruppo:
+   *  restano selezionabili in coda alla tendina, con il nome della società. */
+  const altriConducenti = useMemo(() => {
+    const gia = new Set(conducenti.map((c) => `${c.cognome}|${c.nome}`.toUpperCase()));
+    const nomiAzienda = new Map(allCompanies.map((a) => [a.id, a.ragione_sociale as string]));
+    const seen = new Set<string>();
+    return allConducenti
+      .filter((c) => {
+        const k = `${c.cognome}|${c.nome}`.toUpperCase();
+        if (gia.has(k) || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .map((c) => ({ ...c, azienda: nomiAzienda.get(c.cliente_id) || "" }))
+      .sort((a, b) =>
+        `${a.cognome} ${a.nome}`.localeCompare(`${b.cognome} ${b.nome}`, "it"),
+      );
+  }, [allConducenti, conducenti, allCompanies]);
+
   const q = query.trim().toUpperCase();
   const usaSoloRuolo = Boolean(ruolo && ruolo !== "PRODUTTORE" && soloRuolo && roleCompanies.length);
   const opzioni = useMemo(() => {
@@ -788,16 +834,28 @@ export function PresetAziendaSelector({
               className={selectCls}
               defaultValue=""
               onChange={(e) => {
-                const c = conducenti.find((x) => x.id === e.target.value);
+                const c =
+                  conducenti.find((x) => x.id === e.target.value) ||
+                  altriConducenti.find((x) => x.id === e.target.value);
                 if (c) onSelectConducente({ cognome: c.cognome || "", nome: c.nome || "" });
               }}
             >
-              <option value="">-- Conducente ({conducenti.length}) --</option>
+              <option value="">-- Conducente ({conducenti.length + altriConducenti.length}) --</option>
               {conducenti.map((c) => (
                 <option key={c.id} value={c.id}>
                   {[c.cognome, c.nome].filter(Boolean).join(" ")}
                 </option>
               ))}
+              {altriConducenti.length > 0 && (
+                <optgroup label={`Altri autisti in anagrafica (${altriConducenti.length})`}>
+                  {altriConducenti.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {[c.cognome, c.nome].filter(Boolean).join(" ")}
+                      {c.azienda ? ` — ${c.azienda}` : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           )}
 
