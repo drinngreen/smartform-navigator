@@ -162,6 +162,38 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
     }
   };
 
+  /** Bozza → FIR operativo: crea il movimento a registro e aggiorna le giacenze. */
+  const caricaNelSistema = async (d: Draft) => {
+    if (!d.numero_fir) {
+      toast.error("Assegna prima un numero FIR alla bozza");
+      return;
+    }
+    if (!window.confirm(`Caricare nel sistema il formulario ${d.numero_fir}?\nVerrà creato il movimento a registro e aggiornate le giacenze.`)) return;
+    setBusyId(d.id);
+    try {
+      const { error: upErr } = await supabase
+        .from("fir_forms")
+        .update({ status: "completato", completed_at: new Date().toISOString() } as never)
+        .eq("id", d.id);
+      if (upErr) throw upErr;
+      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id });
+      if (res.warning) throw new Error(res.warning);
+      if (!res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
+      toast.success(
+        res.inventory
+          ? `FIR ${d.numero_fir} caricato: registro e giacenze aggiornati`
+          : `FIR ${d.numero_fir} caricato a registro (giacenze non interessate)`
+      );
+      await load();
+      onPoolChanged?.();
+    } catch (e: any) {
+      toast.error("Errore caricamento: " + (e?.message || String(e)));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+
   const inviaARentri = async (d: Draft) => {
     if (!d.numero_fir) {
       toast.error("Assegna prima un numero FIR alla bozza");
