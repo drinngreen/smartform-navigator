@@ -598,15 +598,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       try {
         const dbFields = mapStoreToDatabaseFields(store.data);
         await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
-        // Le giacenze devono aggiornarsi già al salvataggio in bozza.
-        const result = await syncFirFinalToRegistryAndInventory({
-          firId: store.editingFirId,
-          impiantoId: impiantoId || null,
-          registryMovementType: registryMovementType || "Carico",
-        });
-        if (result.warning) throw new Error(result.warning);
-        if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
-        toast.success("💾 Bozza salvata (registro + giacenze aggiornati)");
+        toast.success("💾 Bozza salvata (nessun movimento di giacenza)");
         window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
       } catch (e: any) {
         toast.error("Errore salvataggio bozza: " + (e?.message || String(e)));
@@ -695,21 +687,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         const created: any = await createFIR.mutateAsync(dbFields);
         savedId = created?.id || null;
       }
-      // Anche il salvataggio in bozza deve aggiornare registro e giacenze.
-      if (savedId) {
-        try {
-          const result = await syncFirFinalToRegistryAndInventory({
-            firId: savedId,
-            impiantoId: impiantoId || null,
-            registryMovementType: registryMovementType || "Carico",
-          });
-          if (result.warning) throw new Error(result.warning);
-          if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
-        } catch (e: any) {
-          throw new Error("Dati FIR salvati, ma giacenze non aggiornate: " + (e?.message || String(e)));
-        }
-      }
-      toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
+      toast.success("Bozza salvata senza modificare registro o giacenze.");
       return true;
     } catch (error: any) {
       toast.error(error?.message || "Errore nel salvataggio");
