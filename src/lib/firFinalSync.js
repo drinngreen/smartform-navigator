@@ -16,6 +16,19 @@ const numberValue = (...values) => {
     const parsed = parseFloat(String(value || "").replace(/\./g, "").replace(",", "."));
     return Number.isFinite(parsed) ? parsed : 0;
 };
+export const signedInventoryQuantity = (movementType, quantity) => {
+    const amount = Number(quantity) || 0;
+    return String(movementType).toUpperCase() === "CARICO" ? amount : -amount;
+};
+export const inventoryCorrection = (desiredSignedQuantity, currentSignedQuantity) => {
+    const delta = desiredSignedQuantity - currentSignedQuantity;
+    if (Math.abs(delta) < 0.001)
+        return null;
+    return {
+        tipoMovimento: delta > 0 ? "CARICO" : "SCARICO",
+        quantitaKg: Math.abs(delta),
+    };
+};
 async function recalculateMultyStock(impiantoId, cer) {
     const { error: stockError } = await supabase.rpc("recalculate_magazzino_giacenza", {
         p_tenant_id: MULTY_TENANT_ID,
@@ -167,80 +180,52 @@ export async function syncFirFinalToRegistryAndInventory(params) {
                         "Nessun impianto Multyproget disponibile per giacenze";
             }
             else {
-                // Un movimento può essere già stato creato da un import storico e poi
-                // collegato al FIR. Va riutilizzato indipendentemente dall'origine,
-                // altrimenti il successivo salvataggio dal modulo duplica la giacenza.
-                const { data: existing } = await supabase
+                // Riconcilia sempre l'effetto netto completo del FIR, compensazioni incluse.
+                const { data: existingRows, error: existingError } = await supabase
                     .from("movimenti_impianto")
                     .select("id, impianto_id, cer, quantita_kg, tipo_movimento, origine")
                     .eq("fir_id", firId)
-                    .neq("origine", "fir_adjust")
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+                    .order("created_at", { ascending: true });
+                if (existingError)
+                    throw existingError;
                 const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
                 const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
-                if (!existing) {
-                    const { error: mErr } = await supabase.from("movimenti_impianto").insert({
+                const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
+                const rows = existingRows || [];
+                const currentSignedQuantity = rows.reduce((total, row) => total + signedInventoryQuantity(row.tipo_movimento, row.quantita_kg), 0);
+                const correction = inventoryCorrection(desiredSignedQuantity, currentSignedQuantity);
+                if (correction) {
+                    const { error: movementError } = await supabase.from("movimenti_impianto").insert({
                         impianto_id: impiantoId,
                         tenant_id: MULTY_TENANT_ID,
                         cer,
                         descrizione_rifiuto: desc,
-                        quantita_kg: inventoryQuantity,
+                        quantita_kg: correction.quantitaKg,
                         data_movimento: movementDate,
-                        tipo_movimento: tipo,
+                        tipo_movimento: correction.tipoMovimento,
                         ruolo_impianto: ruolo,
-                        origine: "fir_final",
+                        origine: rows.length === 0 ? "fir_final" : "fir_adjust",
                         fir_id: firId,
                         numero_fir: numeroFir,
                         produttore_denominazione: prodDen,
                         destinatario_denominazione: destDen,
-                        note: "Salvataggio definitivo FIR (Modulo Standard)",
+                        note: rows.length === 0
+                            ? "Salvataggio definitivo FIR (Modulo Standard)"
+                            : `Riconciliazione automatica FIR: effetto netto richiesto ${desiredSignedQuantity} kg, precedente ${currentSignedQuantity} kg`,
                     });
-                    if (mErr)
-                        throw mErr;
+                    if (movementError)
+                        throw movementError;
                 }
-                else {
-                    const previous = existing;
-                    const changed = previous.impianto_id !== impiantoId
-                        || previous.cer !== cer
-                        || Number(previous.quantita_kg) !== inventoryQuantity
-                        || previous.tipo_movimento !== tipo;
-                    if (changed) {
-                        const { error: inverseError } = await supabase.from("movimenti_impianto").insert({
-                            impianto_id: previous.impianto_id,
-                            tenant_id: MULTY_TENANT_ID,
-                            cer: previous.cer,
-                            quantita_kg: Number(previous.quantita_kg) || 0,
-                            data_movimento: movementDate,
-                            tipo_movimento: previous.tipo_movimento === "CARICO" ? "SCARICO" : "CARICO",
-                            ruolo_impianto: ruolo,
-                            origine: "fir_adjust",
-                            fir_id: firId,
-                            numero_fir: numeroFir,
-                            note: "Compensazione automatica modifica FIR",
-                        });
-                        if (inverseError)
-                            throw inverseError;
-                        const { error: replacementError } = await supabase.from("movimenti_impianto").insert({
-                            impianto_id: impiantoId,
-                            tenant_id: MULTY_TENANT_ID,
-                            cer,
-                            descrizione_rifiuto: desc,
-                            quantita_kg: inventoryQuantity,
-                            data_movimento: movementDate,
-                            tipo_movimento: tipo,
-                            ruolo_impianto: ruolo,
-                            origine: "fir_final",
-                            fir_id: firId,
-                            numero_fir: numeroFir,
-                            produttore_denominazione: prodDen,
-                            destinatario_denominazione: destDen,
-                            note: "Rettifica automatica FIR",
-                        });
-                        if (replacementError)
-                            throw replacementError;
-                        await recalculateMultyStock(previous.impianto_id, previous.cer);
+                const touched = new Map();
+                for (const row of rows) {
+                    touched.set(`${row.impianto_id}|${normalizeCer(row.cer)}`, {
+                        impiantoId: row.impianto_id,
+                        cer: normalizeCer(row.cer),
+                    });
+                }
+                for (const item of touched.values()) {
+                    if (item.impiantoId !== impiantoId || item.cer !== cer) {
+                        await recalculateMultyStock(item.impiantoId, item.cer);
                     }
                 }
                 await recalculateMultyStock(impiantoId, cer);
