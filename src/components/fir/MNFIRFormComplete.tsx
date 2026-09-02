@@ -723,6 +723,49 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     await handlePrintFormulario(false);
   };
 
+  /**
+   * Trasforma la bozza in FIR OPERATIVO (cartaceo o digitale già emesso):
+   * scrive il movimento nel registro generale e aggiorna le giacenze
+   * (Carico se Multyproget è destinatario, Scarico se è produttore).
+   */
+  const handleCaricaNelSistema = async () => {
+    try {
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      let savedId = store.editingFirId;
+      if (!savedId) {
+        savedId = await createAndAutosaveManualDraft();
+        if (!savedId) {
+          const created: any = await createFIR.mutateAsync(dbFields);
+          savedId = created?.id || null;
+        }
+      }
+      if (!savedId) throw new Error("Inserisci prima il numero FIR");
+      await silentSaveFIR.mutateAsync({
+        id: savedId,
+        ...dbFields,
+        status: "completato",
+        completed_at: new Date().toISOString(),
+      } as any);
+      const result = await syncFirFinalToRegistryAndInventory({
+        firId: savedId,
+        impiantoId: impiantoId || null,
+        registryMovementType: registryMovementType || "Carico",
+      });
+      if (result.warning) throw new Error(result.warning);
+      if (!result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
+      useMNFIRStore.setState({ editingFirId: savedId, workflowStatus: "chiuso" });
+      toast.success(
+        result.inventory
+          ? "✅ FIR caricato nel sistema: registro e giacenze aggiornati"
+          : "✅ FIR caricato nel registro (giacenze non interessate: Multyproget non è produttore/destinatario)"
+      );
+      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: savedId } }));
+    } catch (e: any) {
+      toast.error("Errore caricamento nel sistema: " + (e?.message || String(e)));
+    }
+  };
+
+
 
   const handleNewFIR = async () => {
     if (store.editingFirId && store.workflowStatus !== 'chiuso') {
