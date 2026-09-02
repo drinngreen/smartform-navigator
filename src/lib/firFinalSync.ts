@@ -14,6 +14,19 @@ const norm = (v: unknown) => {
 const firstValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 
+/**
+ * I moduli permettono di scrivere il CER con spazi ("15 01 01"): le giacenze
+ * e il magazzino usano invece la forma compatta ("150101", "200140-FE").
+ */
+const normalizeCer = (value: unknown) => {
+  const raw = String(value ?? "").toUpperCase().trim();
+  if (!raw) return "";
+  const compact = raw.replace(/\s+/g, "");
+  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]{1,4}))?/);
+  if (!match) return compact;
+  return match[2] ? `${match[1]}-${match[2]}` : match[1];
+};
+
 const numberValue = (...values: unknown[]) => {
   const value = firstValue(...values);
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
