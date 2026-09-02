@@ -239,7 +239,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
         const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
         const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
         const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
-        const rows = (existingRows || []) as Array<{
+        const rows = (existingRows || []) as unknown as Array<{
           impianto_id: string;
           cer: string;
           quantita_kg: number;
