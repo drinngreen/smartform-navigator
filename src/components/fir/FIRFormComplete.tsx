@@ -450,17 +450,8 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
         const created = await createFIR.mutateAsync(dbFields);
         savedId = created?.id || null;
       }
-      if (savedId) {
-        const result = await syncFirFinalToRegistryAndInventory({ firId: savedId });
-        if (result.warning) throw new Error(result.warning);
-        const involvesMulty = [d.produttoreCF, d.destinatarioCF]
-          .map((value) => value.toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/^IT(?=\d{11}$)/, ""))
-          .includes("12347770013");
-        if (involvesMulty && !result.inventory) {
-          throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla CER, quantità e impianto");
-        }
-      }
-      toast.success("Bozza salvata e sincronizzata");
+      // REGOLA: una BOZZA non tocca mai registro né giacenze.
+      toast.success("💾 Bozza salvata (nessun movimento di registro/giacenze)");
       // Reset local state so user is free to leave - delay to ensure save completes
       setPdfBlobUrl(null);
       setHasPersistedRentriPdf(false);

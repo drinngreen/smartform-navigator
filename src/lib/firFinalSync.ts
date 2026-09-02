@@ -153,7 +153,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   if (numeroFir && isMultyInvolved) {
     try {
       const regType: "Carico" | "Scarico" = isMultyDestinatario ? "Carico" : "Scarico";
-      await upsertRegistro(MULTY_TENANT_ID, numeroFir, baseRow(regType));
+      await upsertRegistro(MULTY_TENANT_ID, numeroFir, { ...baseRow(regType), registro: "MULTY_IMPIANTO" });
       registryOk = true;
     } catch (e: any) {
       warning = "Registro Multy non aggiornato: " + (e?.message || String(e));
@@ -168,7 +168,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
         : isNiyolProducer
         ? "Scarico"
         : "Carico";
-      const row = baseRow(regType);
+      const row: Record<string, any> = { ...baseRow(regType), registro: "NIYOL" };
       if (!isNiyolProducer && !isNiyolDestinatario) {
         row.annotazioni = `Transito come trasportatore (${trspDen || "Niyol"}) — FIR Standard`;
       }
