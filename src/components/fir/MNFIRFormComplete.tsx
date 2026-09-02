@@ -1209,6 +1209,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </button>
           )}
 
+          {store.workflowStatus !== 'chiuso' && (
+            <button
+              onClick={() => void handleCaricaNelSistema()}
+              disabled={silentSaveFIR.isPending || createFIR.isPending}
+              className="w-full py-4 rounded-2xl bg-neon-green/20 border border-neon-green/60 text-neon-green font-display text-base tracking-wider hover:bg-neon-green/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="h-5 w-5" /> CARICA NEL SISTEMA (REGISTRO + GIACENZE)
+            </button>
+          )}
+
+
+
           {store.workflowStatus === 'inviato' && (
             <>
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
