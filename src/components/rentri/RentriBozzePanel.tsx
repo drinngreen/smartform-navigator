@@ -3,7 +3,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { emissioneFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
-import { FileText, Loader2, PenLine, RefreshCw, Search, Send, X } from "lucide-react";
+import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
+import { CheckCircle2, FileText, Loader2, PenLine, RefreshCw, Search, Send, X } from "lucide-react";
+
 
 const SHARED_POOL_USER_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -162,6 +164,38 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
     }
   };
 
+  /** Bozza → FIR operativo: crea il movimento a registro e aggiorna le giacenze. */
+  const caricaNelSistema = async (d: Draft) => {
+    if (!d.numero_fir) {
+      toast.error("Assegna prima un numero FIR alla bozza");
+      return;
+    }
+    if (!window.confirm(`Caricare nel sistema il formulario ${d.numero_fir}?\nVerrà creato il movimento a registro e aggiornate le giacenze.`)) return;
+    setBusyId(d.id);
+    try {
+      const { error: upErr } = await supabase
+        .from("fir_forms")
+        .update({ status: "completato", completed_at: new Date().toISOString() } as never)
+        .eq("id", d.id);
+      if (upErr) throw upErr;
+      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id });
+      if (res.warning) throw new Error(res.warning);
+      if (!res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
+      toast.success(
+        res.inventory
+          ? `FIR ${d.numero_fir} caricato: registro e giacenze aggiornati`
+          : `FIR ${d.numero_fir} caricato a registro (giacenze non interessate)`
+      );
+      await load();
+      onPoolChanged?.();
+    } catch (e: any) {
+      toast.error("Errore caricamento: " + (e?.message || String(e)));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+
   const inviaARentri = async (d: Draft) => {
     if (!d.numero_fir) {
       toast.error("Assegna prima un numero FIR alla bozza");
@@ -303,6 +337,15 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
                 >
                   {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Invia a RENTRI
                 </button>
+                <button
+                  onClick={() => caricaNelSistema(d)}
+                  disabled={busyId === d.id}
+                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                  title="Trasforma la bozza in FIR operativo: registro + giacenze"
+                >
+                  {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Carica nel sistema
+                </button>
+
               </div>
             </div>
           ))}

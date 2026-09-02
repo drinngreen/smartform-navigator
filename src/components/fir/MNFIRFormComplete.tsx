@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
-import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer } from "lucide-react";
+import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer, CheckCircle2 } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
 import { printOfficialFir } from "@/lib/firOfficialPrint";
 
@@ -723,6 +723,49 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     await handlePrintFormulario(false);
   };
 
+  /**
+   * Trasforma la bozza in FIR OPERATIVO (cartaceo o digitale già emesso):
+   * scrive il movimento nel registro generale e aggiorna le giacenze
+   * (Carico se Multyproget è destinatario, Scarico se è produttore).
+   */
+  const handleCaricaNelSistema = async () => {
+    try {
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      let savedId = store.editingFirId;
+      if (!savedId) {
+        savedId = await createAndAutosaveManualDraft();
+        if (!savedId) {
+          const created: any = await createFIR.mutateAsync(dbFields);
+          savedId = created?.id || null;
+        }
+      }
+      if (!savedId) throw new Error("Inserisci prima il numero FIR");
+      await silentSaveFIR.mutateAsync({
+        id: savedId,
+        ...dbFields,
+        status: "completato",
+        completed_at: new Date().toISOString(),
+      } as any);
+      const result = await syncFirFinalToRegistryAndInventory({
+        firId: savedId,
+        impiantoId: impiantoId || null,
+        registryMovementType: registryMovementType || "Carico",
+      });
+      if (result.warning) throw new Error(result.warning);
+      if (!result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
+      useMNFIRStore.setState({ editingFirId: savedId, workflowStatus: "chiuso" });
+      toast.success(
+        result.inventory
+          ? "✅ FIR caricato nel sistema: registro e giacenze aggiornati"
+          : "✅ FIR caricato nel registro (giacenze non interessate: Multyproget non è produttore/destinatario)"
+      );
+      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: savedId } }));
+    } catch (e: any) {
+      toast.error("Errore caricamento nel sistema: " + (e?.message || String(e)));
+    }
+  };
+
+
 
   const handleNewFIR = async () => {
     if (store.editingFirId && store.workflowStatus !== 'chiuso') {
@@ -1165,6 +1208,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <Printer className="h-5 w-5" /> SALVA E STAMPA FIR CARTACEO
             </button>
           )}
+
+          {store.workflowStatus !== 'chiuso' && (
+            <button
+              onClick={() => void handleCaricaNelSistema()}
+              disabled={silentSaveFIR.isPending || createFIR.isPending}
+              className="w-full py-4 rounded-2xl bg-neon-green/20 border border-neon-green/60 text-neon-green font-display text-base tracking-wider hover:bg-neon-green/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="h-5 w-5" /> CARICA NEL SISTEMA (REGISTRO + GIACENZE)
+            </button>
+          )}
+
+
 
           {store.workflowStatus === 'inviato' && (
             <>
