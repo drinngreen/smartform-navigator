@@ -815,16 +815,28 @@ export function PresetAziendaSelector({
               className={selectCls}
               defaultValue=""
               onChange={(e) => {
-                const c = conducenti.find((x) => x.id === e.target.value);
+                const c =
+                  conducenti.find((x) => x.id === e.target.value) ||
+                  altriConducenti.find((x) => x.id === e.target.value);
                 if (c) onSelectConducente({ cognome: c.cognome || "", nome: c.nome || "" });
               }}
             >
-              <option value="">-- Conducente ({conducenti.length}) --</option>
+              <option value="">-- Conducente ({conducenti.length + altriConducenti.length}) --</option>
               {conducenti.map((c) => (
                 <option key={c.id} value={c.id}>
                   {[c.cognome, c.nome].filter(Boolean).join(" ")}
                 </option>
               ))}
+              {altriConducenti.length > 0 && (
+                <optgroup label={`Altri autisti in anagrafica (${altriConducenti.length})`}>
+                  {altriConducenti.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {[c.cognome, c.nome].filter(Boolean).join(" ")}
+                      {c.azienda ? ` — ${c.azienda}` : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           )}
 
