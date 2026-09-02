@@ -1230,7 +1230,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         }
       }
 
-      toast.success(mode === "final" ? "✅ Formulario salvato DEFINITIVO (registro + giacenze)" : "💾 Bozza salvata (registro + giacenze aggiornati)");
+      toast.success(mode === "final" ? "✅ Formulario salvato DEFINITIVO (registro + giacenze)" : "💾 Bozza salvata (nessun movimento di registro/giacenze)");
       onSaved?.();
     } catch (err) {
       toast.error("Errore salvataggio: " + formatErr(err));
