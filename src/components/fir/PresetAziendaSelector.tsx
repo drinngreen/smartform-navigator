@@ -126,6 +126,32 @@ export function PresetAziendaSelector({
     };
   }, []);
 
+  /** Elenco completo degli autisti presenti in anagrafica: gli autisti sono
+   *  spesso registrati sotto una sola delle società del gruppo (es. Niyol) ma
+   *  devono restare selezionabili anche compilando un FIR di un'altra società. */
+  useEffect(() => {
+    if (!onSelectConducente) return;
+    let cancelled = false;
+    (async () => {
+      const rows: any[] = [];
+      for (let page = 0; page < 5; page++) {
+        const { data, error } = await supabase
+          .from("cliente_conducenti")
+          .select("id,cognome,nome,cliente_id")
+          .order("cognome")
+          .range(page * 1000, page * 1000 + 999);
+        if (error) break;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (!cancelled) setAllConducenti(rows);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Boolean(onSelectConducente)]);
+
   /** Azzera completamente la selezione: usato dalla gomma della sezione e dalla ✕ */
   const clearSelection = (emit: boolean) => {
     setClienteId(null);
