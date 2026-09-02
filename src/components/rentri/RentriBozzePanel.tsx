@@ -337,6 +337,15 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
                 >
                   {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Invia a RENTRI
                 </button>
+                <button
+                  onClick={() => caricaNelSistema(d)}
+                  disabled={busyId === d.id}
+                  className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+                  title="Trasforma la bozza in FIR operativo: registro + giacenze"
+                >
+                  {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Carica nel sistema
+                </button>
+
               </div>
             </div>
           ))}
