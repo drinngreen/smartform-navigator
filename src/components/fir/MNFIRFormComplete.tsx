@@ -547,8 +547,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     if (store.workflowStatus === "chiuso" || store.lastUpdatedBy !== "user") return;
     if (!store.lastUpdatedAt || lastAutosavedAtRef.current === store.lastUpdatedAt) return;
     const timer = window.setTimeout(() => {
-      if (useMNFIRStore.getState().editingFirId) void doAutosave();
-      else void createAndAutosaveManualDraft();
+      if (useMNFIRStore.getState().editingFirId) { void doAutosave(); return; }
+      // Non creare la bozza mentre l'utente sta ancora digitando il numero FIR:
+      // altrimenti il campo viene disabilitato a metà digitazione.
+      if (firNumberFocusedRef.current) return;
+      void createAndAutosaveManualDraft();
     }, 1200);
     return () => window.clearTimeout(timer);
   }, [store.data, store.lastUpdatedAt, store.lastUpdatedBy, store.workflowStatus, doAutosave, createAndAutosaveManualDraft]);
@@ -1061,6 +1064,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             type="text"
             value={d.selectedFirNumber}
             onChange={(event) => u("selectedFirNumber", event.target.value.toUpperCase())}
+            onFocus={() => { firNumberFocusedRef.current = true; }}
+            onBlur={() => {
+              firNumberFocusedRef.current = false;
+              // Al termine della digitazione (uscita dal campo) crea la bozza se serve.
+              if (!useMNFIRStore.getState().editingFirId) void createAndAutosaveManualDraft();
+            }}
             placeholder="Es. FRVKM 001320 CM"
             disabled={Boolean(store.editingFirId)}
             className="h-10 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground disabled:opacity-70"
