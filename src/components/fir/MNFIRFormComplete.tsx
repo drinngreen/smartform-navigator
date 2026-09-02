@@ -507,10 +507,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     } catch { /* silent */ }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
 
-  const createAndAutosaveManualDraft = useCallback(async () => {
+  const createAndAutosaveManualDraft = useCallback(async (): Promise<string | null> => {
     const current = useMNFIRStore.getState();
     const numeroFir = current.data.selectedFirNumber.trim().toUpperCase();
-    if (!creationMode || current.editingFirId || !numeroFir || !user?.id || !activeTenantId || creationSaveInFlight.current) return;
+    if (current.editingFirId) return current.editingFirId;
+    if (!creationMode || !numeroFir || !user?.id || !activeTenantId || creationSaveInFlight.current) return null;
 
     creationSaveInFlight.current = true;
     try {
@@ -527,8 +528,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       await silentSaveFIR.mutateAsync({ id: String(draftId), ...dbFields });
       setLoadedFirFormId(String(draftId));
       lastAutosavedAtRef.current = useMNFIRStore.getState().lastUpdatedAt;
+      return String(draftId);
     } catch (error: any) {
       toast.error("Autosalvataggio non riuscito: " + (error?.message || String(error)));
+      return null;
     } finally {
       creationSaveInFlight.current = false;
     }
@@ -680,8 +683,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
       let savedId = store.editingFirId;
-      if (store.editingFirId) {
-        await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+      if (!savedId && creationMode) {
+        savedId = await createAndAutosaveManualDraft();
+        if (!savedId) throw new Error("Inserisci prima il numero FIR manuale");
+      }
+      if (savedId) {
+        await silentSaveFIR.mutateAsync({ id: savedId, ...dbFields });
       } else {
         const created: any = await createFIR.mutateAsync(dbFields);
         savedId = created?.id || null;
@@ -701,10 +708,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
       }
       toast.success("Bozza salvata! Puoi riprendere dalla cronologia.");
-      setTimeout(() => { store.resetForm(); }, 300);
-    } catch {
-      toast.error("Errore nel salvataggio");
+      return true;
+    } catch (error: any) {
+      toast.error(error?.message || "Errore nel salvataggio");
+      return false;
     }
+  };
+
+  const handleSaveAndPrintCartaceo = async () => {
+    const saved = await handleSaveDraft();
+    if (!saved) return;
+    await handlePrintFormulario(false);
   };
 
 
@@ -774,7 +788,6 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
   const handleInviaFirma = async () => {
-    if (!store.editingFirId) return;
     if (d.formatoFir === "cartaceo") {
       toast.error("Formulario impostato come CARTACEO: nessun invio a RENTRI. Usa la stampa per l'archiviazione.");
       return;
@@ -786,16 +799,20 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
     setIsSigning(true);
     try {
+      let activeFirId = useMNFIRStore.getState().editingFirId;
+      if (!activeFirId && creationMode) activeFirId = await createAndAutosaveManualDraft();
+      if (!activeFirId) throw new Error("Inserisci prima il numero FIR manuale");
       const dbFields = mapStoreToDatabaseFields(store.data);
-      await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
+      await silentSaveFIR.mutateAsync({ id: activeFirId, ...dbFields });
       const societaId = resolveSocietaId(activeTenantId, activeMnContext);
       const result = await inviaFirmaRentri({ societaId, payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber } });
       const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
         store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({ id: store.editingFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
+        await silentSaveFIR.mutateAsync({ id: activeFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
       }
+      useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
       const qrFromFirma = toRentriImageSrc(
         result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
       );
@@ -836,7 +853,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
       }
       toast.success(`📤 FIR ${officialNumeroFir || d.selectedFirNumber || ""} inviato e firmato su RENTRI`);
-      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
+      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: activeFirId } }));
     } catch (error: any) {
       // Servizi RENTRI indisponibili: il FIR resta in bozza e finisce nella coda
       // "In attesa di reinvio" della Console RENTRI, per il rinvio in batch.
@@ -1132,19 +1149,19 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       </div>}
 
       {/* Workflow Action Buttons */}
-      {(isStarted || store.editingFirId) && (
+      {(creationMode || isStarted || store.editingFirId) && (
         <div className="space-y-2">
           {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
             <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
               {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
-              {isSigning ? "FIRMA IN CORSO..." : "INVIA E FIRMA PARTENZA"}
+              {isSigning ? "INVIO IN CORSO..." : "INVIA FIR DIGITALE A RENTRI"}
             </button>
           )}
 
           {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
-            <div className="w-full rounded-2xl border border-amber-500/40 bg-amber-500/10 py-3 px-4 text-center text-[11px] font-mono text-amber-200">
-              Formulario CARTACEO: invio a RENTRI disattivato. Compila, stampa e archivia il modulo.
-            </div>
+            <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-4 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-base tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              <Printer className="h-5 w-5" /> SALVA E STAMPA FIR CARTACEO
+            </button>
           )}
 
           {store.workflowStatus === 'inviato' && (
@@ -1242,7 +1259,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
         <div className="space-y-2">
           <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
-            <Printer className="h-3.5 w-3.5" /> STAMPA MODULO UFFICIALE (QR RENTRI)
+            <Printer className="h-3.5 w-3.5" /> ANTEPRIMA E STAMPA MODULO COMPILATO
           </button>
           <button onClick={() => void handlePrintDocumentoViaggio()} className="w-full py-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-display text-[11px] tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition-colors">
             <Printer className="h-3.5 w-3.5" /> STAMPA DOCUMENTO DI VIAGGIO (QR ufficiale)
