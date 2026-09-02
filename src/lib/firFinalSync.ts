@@ -168,7 +168,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
         : isNiyolProducer
         ? "Scarico"
         : "Carico";
-      const row = baseRow(regType);
+      const row = { ...baseRow(regType), registro: "NIYOL" };
       if (!isNiyolProducer && !isNiyolDestinatario) {
         row.annotazioni = `Transito come trasportatore (${trspDen || "Niyol"}) — FIR Standard`;
       }
