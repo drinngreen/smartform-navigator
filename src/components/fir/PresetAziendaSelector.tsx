@@ -75,6 +75,7 @@ export function PresetAziendaSelector({
   const [cantieri, setCantieri] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
+  const [allConducenti, setAllConducenti] = useState<any[]>([]);
   const [partnerDefaults, setPartnerDefaults] = useState<any[]>([]);
   const [loadingDeps, setLoadingDeps] = useState(false);
   const [auts, setAuts] = useState<AutorizzazionePreset[]>([]);
