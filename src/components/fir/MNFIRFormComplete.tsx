@@ -325,6 +325,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const activeMnContext = mnContext || profile?.mn_context;
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
+  const firNumberFocusedRef = useRef(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
