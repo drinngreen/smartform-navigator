@@ -1255,8 +1255,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         </div>
       )}
 
-      {/* Action Buttons — only when active and NOT closed */}
-      {(creationMode || isStarted || store.editingFirId) && store.workflowStatus !== 'chiuso' && (
+      {/* Il modulo compilato resta sempre consultabile e stampabile, anche dopo invio/chiusura. */}
+      {(creationMode || isStarted || store.editingFirId) && (
         <div className="space-y-2">
           <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
             <Printer className="h-3.5 w-3.5" /> ANTEPRIMA E STAMPA MODULO COMPILATO
@@ -1264,18 +1264,22 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           <button onClick={() => void handlePrintDocumentoViaggio()} className="w-full py-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-display text-[11px] tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition-colors">
             <Printer className="h-3.5 w-3.5" /> STAMPA DOCUMENTO DI VIAGGIO (QR ufficiale)
           </button>
-          <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
-            <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
-          </button>
+          {store.workflowStatus !== 'chiuso' && (
+            <>
+              <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
+                <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
+              </button>
 
-          <div className="flex gap-2">
-            <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
-              <Plus className="h-4 w-4" /> Nuovo FIR
-            </button>
-            <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
-              <Save className="h-4 w-4" /> Metti in Bozza
-            </button>
-          </div>
+              <div className="flex gap-2">
+                <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
+                  <Plus className="h-4 w-4" /> Nuovo FIR
+                </button>
+                <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
+                  <Save className="h-4 w-4" /> Metti in Bozza
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
