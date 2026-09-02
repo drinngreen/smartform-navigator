@@ -27,6 +27,13 @@ const fmt = (n: number) =>
 
 const fmtDate = (d: Date) => d.toLocaleDateString("it-IT");
 
+const normalizeCer = (value: string) => {
+  const compact = value.toUpperCase().trim().replace(/\s+/g, "");
+  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]{1,4}))?/);
+  if (!match) return compact;
+  return match[2] ? `${match[1]}-${match[2]}` : match[1];
+};
+
 interface Movimento {
   cer: string;
   descrizione_rifiuto: string | null;
@@ -75,8 +82,9 @@ export function DevGiacenzeModule() {
         const page = (data ?? []) as unknown as DragonStockRow[];
         for (const movement of page) {
           if (!movement.item?.codice_cer) continue;
+          const normalizedCer = normalizeCer(movement.item.codice_cer);
           rows.push({
-            cer: movement.item.codice_cer,
+            cer: normalizedCer,
             descrizione_rifiuto: movement.item.descrizione,
             tipo_movimento: movement.sign === "PLUS" ? "CARICO" : "SCARICO",
             quantita_kg: Number(movement.quantity) || 0,
