@@ -66,6 +66,11 @@ export function useDragonTransformBatches() {
     qc.invalidateQueries({ queryKey: ["dragon-register"] });
     qc.invalidateQueries({ queryKey: ["dragon-stock"] });
     qc.invalidateQueries({ queryKey: ["dragon-audit"] });
+    qc.invalidateQueries({ queryKey: ["dev-giacenze"] });
+    qc.invalidateQueries({ queryKey: ["dev-giacenze-baseline"] });
+    qc.invalidateQueries({ queryKey: ["dev-mag-giacenze"] });
+    qc.invalidateQueries({ queryKey: ["dev-mag-movimenti"] });
+    qc.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
   };
 
   const executeCernita = useMutation({
