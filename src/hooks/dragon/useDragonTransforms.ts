@@ -4,6 +4,9 @@ import { useMNContextStore } from "@/stores/mnContextStore";
 import { toast } from "sonner";
 import type { DragonTransformModel, DragonTransformBatch } from "@/types/dragon";
 
+// Cernita del 31/08/2026 (1840 kg) nascosta SOLO a vista su richiesta del cliente: nessuna modifica al DB.
+const HIDDEN_CERNITA_BATCH_ID = "4f67aac6-ca36-4831-a494-163853085960";
+
 export function useDragonTransformModels() {
   const companyId = useMNContextStore((s) => s.activeContext.tenantId);
   const qc = useQueryClient();
@@ -57,7 +60,8 @@ export function useDragonTransformBatches() {
         .eq("company_id", companyId)
         .order("execution_date", { ascending: false });
       if (error) throw error;
-      return data as DragonTransformBatch[];
+      // Solo vista: questa cernita (31/08/2026, 1840 kg) non deve comparire nell'elenco. Nessuna modifica al DB.
+      return (data as DragonTransformBatch[]).filter((b: any) => b.id !== HIDDEN_CERNITA_BATCH_ID);
     },
   });
 
