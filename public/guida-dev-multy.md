@@ -224,6 +224,16 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - Le descrizioni CER mostrano il **materiale reale** (niente più diciture tecniche tipo "rettifica di allineamento").
 - Pulsante **Sync giacenze** per il ricalcolo verificato.
 
+### 10-bis. Cernite, giacenze e registro — regole verificate (03/09/2026)
+
+- **Direzione**: il CER **in ingresso viene scaricato** (kg tolti), i CER **in uscita vengono caricati** (kg aggiunti). Prima della conferma la schermata mostra il riepilogo con "VERRANNO TOLTI" / "VERRANNO AGGIUNTI"; la conferma è un pannello interno (nessun popup di sistema).
+- **Percorso**: Centro di Comando → Magazzino Dev → **Cernite** → *Nuova Cernita*. L'operazione passa solo dalle funzioni atomiche `dragon_create_cernita_atomic` / `dragon_cancel_cernita_atomic`: giacenze Dragon e magazzino si aggiornano nella stessa transazione.
+- **Blocchi**: se i kg richiesti superano la disponibilità l'operazione viene rifiutata con il saldo reale; la disponibilità è calcolata sul maggiore tra saldo Dragon e magazzino (tolleranza 0,001 kg).
+- **Registro Generale** (TAB Registri → Registro Generale): oltre ai movimenti dei formulari mostra i movimenti di cernita confermati con codice `C-nn`. Le cernite **annullate** e i movimenti di test non compaiono.
+- **Formulari e giacenze**: le bozze non muovono nulla. Solo *Salva definitivo* / **CARICA NEL SISTEMA (REGISTRO + GIACENZE)** aggiorna registro e giacenze: Multyproget destinatario = CARICO, Multyproget produttore = SCARICO, conto terzi = nessun impatto sulle giacenze.
+- **Codici CER**: sempre senza spazi (`150101`), sigle materiale con trattino (`200140-FE`). Le vecchie forme `MET` / `MET MIX` equivalgono a `-MIX`.
+- **Controllo salute**: la card "Report stato sistema" nel Centro di Comando esegue `system_health_check()` (giacenze non negative, allineamento Dragon/magazzino, ricevute privati, cernite con output, duplicati).
+
 ---
 
 ## 11. TAB **Aree Riservate**
