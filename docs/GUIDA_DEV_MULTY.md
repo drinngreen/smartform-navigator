@@ -224,6 +224,16 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - Le descrizioni CER mostrano il **materiale reale** (niente più diciture tecniche tipo "rettifica di allineamento").
 - Pulsante **Sync giacenze** per il ricalcolo verificato.
 
+### 10-bis. Cernite, giacenze e registro — regole verificate (03/09/2026)
+
+- **Direzione**: il CER **in ingresso viene scaricato** (kg tolti), i CER **in uscita vengono caricati** (kg aggiunti). Prima della conferma la schermata mostra il riepilogo con "VERRANNO TOLTI" / "VERRANNO AGGIUNTI"; la conferma è un pannello interno (nessun popup di sistema).
+- **Percorso**: Centro di Comando → Magazzino Dev → **Cernite** → *Nuova Cernita*. L'operazione passa solo dalle funzioni atomiche `dragon_create_cernita_atomic` / `dragon_cancel_cernita_atomic`: giacenze Dragon e magazzino si aggiornano nella stessa transazione.
+- **Blocchi**: se i kg richiesti superano la disponibilità l'operazione viene rifiutata con il saldo reale; la disponibilità è calcolata sul maggiore tra saldo Dragon e magazzino (tolleranza 0,001 kg).
+- **Registro Generale** (TAB Registri → Registro Generale): oltre ai movimenti dei formulari mostra i movimenti di cernita confermati con codice `C-nn`. Le cernite **annullate** e i movimenti di test non compaiono.
+- **Formulari e giacenze**: le bozze non muovono nulla. Solo *Salva definitivo* / **CARICA NEL SISTEMA (REGISTRO + GIACENZE)** aggiorna registro e giacenze: Multyproget destinatario = CARICO, Multyproget produttore = SCARICO, conto terzi = nessun impatto sulle giacenze.
+- **Codici CER**: sempre senza spazi (`150101`), sigle materiale con trattino (`200140-FE`). Le vecchie forme `MET` / `MET MIX` equivalgono a `-MIX`.
+- **Controllo salute**: la card "Report stato sistema" nel Centro di Comando esegue `system_health_check()` (giacenze non negative, allineamento Dragon/magazzino, ricevute privati, cernite con output, duplicati).
+
 ---
 
 ## 11. TAB **Aree Riservate**
@@ -396,38 +406,3 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 ---
 
 Fine guida. Per aggiornamenti: modifica questo file (`public/guida-dev-multy.md`, copia in `docs/GUIDA_DEV_MULTY.md`) **integrando le novità nelle sezioni esistenti**, senza creare capitoli separati.
-
-## 📜 Autorizzazioni Multyproget & Niyol
-
-**Percorso:** Dashboard → icona **Autorizzazioni** (`/mn/admin/:context/autorizzazioni`)
-
-Archivio unico e navigabile di tutte le autorizzazioni ambientali del gruppo.
-
-### Cosa contiene
-- **MULTY PROGET S.R.L.**
-  - Albo Nazionale Gestori Ambientali **TO30695**: cat. **4/F** (rifiuti speciali non pericolosi), cat. **5/F** (pericolosi), cat. **8/F** (intermediazione e commercio senza detenzione).
-  - Impianto di Via Rivarossa 18/20 – Piscina (TO): **D.D. 187-17714/2016** (autorizzazione originaria), **D.D. 243-27099/2017** (modifica sostanziale), **D.D. 140-12530/2018** (modifica d'ufficio), **D.D. 325-5122/2020** (voltura da Piscina Recuperi a Multy Proget).
-  - **Iscrizione art. 216 n. 59/2022**, classe 5a (recupero in procedura semplificata).
-- **NIYOL ETICONS LOGISTICA S.R.L. SB**
-  - Albo **TO13487**: cat. **4/F** (rinnovo 2025) e cat. **5/F** (rinnovo 2026).
-
-### Funzioni della sezione
-- **Contatori in alto**: totale documenti, documenti per azienda e autorizzazioni **in scadenza entro 90 giorni** (evidenziate in rosso).
-- **Filtri**: per azienda (Multyproget / Niyol), per tipo (Albo, Impianto/art. 208, art. 216, AUA, Altro) e **ricerca full-text dentro il testo dei provvedimenti**.
-- **Scheda documento**: numero, ente, oggetto, data di rilascio, stato di validità (verde = valida, ambra = in scadenza, rosso = scaduta ⚠️).
-- **PDF**: pulsante **PDF** per scaricare/aprire il provvedimento originale (link firmato temporaneo).
-- **Testo**: pulsante **Testo** per leggere l'intero testo estratto del provvedimento.
-- **Aggiungi autorizzazione**: carica un nuovo PDF con i suoi metadati; il testo viene estratto e indicizzato automaticamente, quindi l'AI lo conosce subito.
-
-### AUTHORITY AI (assistente dedicato)
-Pannello in cima alla pagina. Risponde **solo** sui documenti in archivio, citando sempre il provvedimento di riferimento.
-Esempi di domande:
-- "Quali categorie Albo abbiamo e con quali scadenze?"
-- "Quali codici CER siamo autorizzati a ricevere in impianto?"
-- "Quali operazioni R e D sono autorizzate a Piscina?"
-- "Quali sono i quantitativi massimi di stoccaggio istantaneo?"
-
-Il filtro azienda selezionato definisce anche l'ambito delle risposte dell'AI. Il pulsante **Chiedi all'AI** su ogni scheda genera un riassunto puntuale di quel singolo provvedimento.
-
-### Dark Lemon
-Dark Lemon dispone dello strumento `search_autorizzazioni` e risponde alle stesse domande da qualsiasi punto del gestionale (es. mentre si compila un formulario: "siamo autorizzati a trasportare questo CER pericoloso?").
