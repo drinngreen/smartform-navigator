@@ -6690,6 +6690,10 @@ export type Database = {
         Args: { p_company_id: string; p_register_id: string }
         Returns: number
       }
+      dragon_reconcile_item_to_magazzino: {
+        Args: { p_company_id: string; p_item_id: string }
+        Returns: number
+      }
       dragon_split_lot_atomic: {
         Args: {
           p_lot_id: string
