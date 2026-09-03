@@ -462,15 +462,21 @@ const CHAPTERS: Chapter[] = [
       "Nelle lavorazioni il calo peso è normale e viene registrato in automatico: input meno somma degli output.",
       "Gli output MPS vanno nel magazzino MPS, separato da quello dei rifiuti: il CER padre scende, i figli salgono.",
       "L'annullamento non cancella niente: crea movimenti compensativi inversi che riportano i saldi come prima.",
+      "Direzione: il CER in ingresso viene SCARICATO (kg tolti), i CER in uscita vengono CARICATI (kg aggiunti). Prima di confermare leggi il riepilogo 'VERRANNO TOLTI' / 'VERRANNO AGGIUNTI'.",
+      "Le cernite confermate compaiono nel Registro Generale con il codice C-nn; le cernite annullate non si vedono nel registro.",
     ],
     steps: [
       "Apri Magazzino Dev → Cernita e scegli il CER padre: vedi subito la giacenza disponibile.",
       "Inserisci la quantità da lavorare e gli output (rifiuti e/o MPS), con eventuale codice lotto.",
       "Controlla il riquadro 'Calo peso': se il valore non ti torna, correggi le quantità di output.",
-      "Conferma: registro, giacenze e lotti si aggiornano in un'unica operazione atomica.",
+      "Premi 'Conferma e Genera Movimenti': compare il pannello di conferma interno con la direzione dei kg. Conferma con 'Sì, esegui la cernita'.",
+      "Verifica in Registri → Registro Generale: trovi i movimenti C-nn della cernita, e in Giacenze i saldi aggiornati.",
       "Per correggere, usa l'annullamento della lavorazione e ripeti: i saldi tornano automaticamente.",
     ],
-    warnings: ["Non creare formulari fittizi per giustificare una cernita: la lavorazione è un movimento interno e non deve consumare numeri FIR."],
+    warnings: [
+      "Non creare formulari fittizi per giustificare una cernita: la lavorazione è un movimento interno e non deve consumare numeri FIR.",
+      "Se la cernita viene rifiutata per giacenza insufficiente, il messaggio riporta i kg realmente disponibili: non forzare, controlla prima le giacenze.",
+    ],
     faq: [
       { q: "Perché il totale degli output è minore dell'ingresso?", a: "È il calo di lavorazione (polveri, umidità, scarti dispersi): viene registrato come 'Calo peso' ed è previsto." },
       { q: "Devo caricare un FIR per la cernita?", a: "No. Il FIR serve solo quando il rifiuto entra o esce fisicamente dall'impianto." },
