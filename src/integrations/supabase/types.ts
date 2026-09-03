@@ -6668,6 +6668,7 @@ export type Database = {
         }
         Returns: string
       }
+      dragon_ensure_config: { Args: { p_company_id: string }; Returns: string }
       dragon_get_stock_balance: {
         Args: {
           p_company_id: string
