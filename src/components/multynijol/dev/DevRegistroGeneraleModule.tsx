@@ -11,6 +11,8 @@ import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+// Cernita del 31/08/2026 (1840 kg) nascosta SOLO a vista su richiesta del cliente: nessuna modifica al DB.
+const HIDDEN_CERNITA_BATCH_ID = "4f67aac6-ca36-4831-a494-163853085960";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const PAGE_SIZE = 100;
 
