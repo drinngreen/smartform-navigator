@@ -93,7 +93,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
   impiantoId?: string | null;
   registryMovementType?: "Carico" | "Scarico";
-}): Promise<{ registry: boolean; inventory: boolean; warning?: string }> {
+}): Promise<{ registry: boolean; registryApplicable: boolean; inventory: boolean; warning?: string }> {
   const { firId } = params;
   if (!firId) throw new Error("firId mancante");
   logAgentActivity("Sincronizzazione FIR su registri e giacenze", "info", `FIR ${firId}`);
@@ -245,6 +245,41 @@ export async function syncFirFinalToRegistryAndInventory(params: {
           tipo_movimento: string;
         }>;
         const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
+
+        // 1) Neutralizza le righe su chiavi (impianto, CER) diverse da quella
+        //    corrente: succede quando il FIR viene corretto cambiando CER o
+        //    impianto. Senza compensazione i kg resterebbero contati due volte.
+        const staleGroups = new Map<string, { impiantoId: string; cer: string; signed: number }>();
+        for (const row of rows) {
+          const rowCer = normalizeCer(row.cer);
+          if (row.impianto_id === impiantoId && rowCer === cer) continue;
+          const key = `${row.impianto_id}|${rowCer}`;
+          const prev = staleGroups.get(key) || { impiantoId: row.impianto_id, cer: rowCer, signed: 0 };
+          prev.signed += signedInventoryQuantity(row.tipo_movimento, row.quantita_kg);
+          staleGroups.set(key, prev);
+        }
+        for (const group of staleGroups.values()) {
+          const reversal = inventoryCorrection(0, group.signed);
+          if (!reversal) continue;
+          const { error: revError } = await supabase.from("movimenti_impianto" as any).insert({
+            impianto_id: group.impiantoId,
+            tenant_id: MULTY_TENANT_ID,
+            cer: group.cer,
+            descrizione_rifiuto: desc,
+            quantita_kg: reversal.quantitaKg,
+            data_movimento: movementDate,
+            tipo_movimento: reversal.tipoMovimento,
+            ruolo_impianto: ruolo,
+            origine: "fir_adjust",
+            fir_id: firId,
+            numero_fir: numeroFir,
+            produttore_denominazione: prodDen,
+            destinatario_denominazione: destDen,
+            note: `Storno automatico: il FIR non fa più riferimento a ${group.cer} (impianto ${group.impiantoId})`,
+          } as any);
+          if (revError) throw revError;
+        }
+
         const targetRows = rows.filter(
           (row) => row.impianto_id === impiantoId && normalizeCer(row.cer) === cer,
         );
@@ -277,7 +312,8 @@ export async function syncFirFinalToRegistryAndInventory(params: {
 
         const touched = new Map<string, { impiantoId: string; cer: string }>();
         for (const row of rows) {
-          touched.set(`${row.impianto_id}|${row.cer}`, { impiantoId: row.impianto_id, cer: row.cer });
+          const rowCer = normalizeCer(row.cer);
+          touched.set(`${row.impianto_id}|${rowCer}`, { impiantoId: row.impianto_id, cer: rowCer });
         }
         for (const item of touched.values()) {
           await recalculateMultyStock(item.impiantoId, item.cer);
@@ -293,7 +329,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
     }
   }
 
-  return { registry: registryOk, inventory: inventoryOk, warning };
+  return { registry: registryOk, registryApplicable: isMultyInvolved || isNiyolInvolved, inventory: inventoryOk, warning };
 }
 
 /**

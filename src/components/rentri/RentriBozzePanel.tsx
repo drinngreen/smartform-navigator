@@ -180,9 +180,11 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
       if (upErr) throw upErr;
       const res = await syncFirFinalToRegistryAndInventory({ firId: d.id });
       if (res.warning) throw new Error(res.warning);
-      if (!res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
+      if (res.registryApplicable && !res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
       toast.success(
-        res.inventory
+        !res.registryApplicable
+          ? `FIR ${d.numero_fir} caricato (cliente terzo: nessun registro Multy/Niyol interessato)`
+          : res.inventory
           ? `FIR ${d.numero_fir} caricato: registro e giacenze aggiornati`
           : `FIR ${d.numero_fir} caricato a registro (giacenze non interessate)`
       );
