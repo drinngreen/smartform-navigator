@@ -104,11 +104,13 @@ export function DevRegistroGeneraleModule() {
         p++;
       }
 
+      // Regola: le cernite ANNULLATE (o di test) non devono MAI comparire nel registro generale.
       const { data: cernitaRows, error: cernitaError } = await supabase
         .from("dragon_register_movements")
-        .select("id, company_id, movement_number, movement_date, cer_code, description_snapshot, movement_type, quantity, unit_of_measure, sign, note, annotations, source_transform_batch_id, cause:dragon_causes(code, name)")
+        .select("id, company_id, movement_number, movement_date, cer_code, description_snapshot, movement_type, quantity, unit_of_measure, sign, note, annotations, source_transform_batch_id, cause:dragon_causes(code, name), batch:dragon_transform_batches!inner(status)")
         .in("company_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
         .not("source_transform_batch_id", "is", null)
+        .neq("dragon_transform_batches.status", "ANNULLATA")
         .is("deleted_at", null)
         .is("test_session", null)
         .order("movement_date", { ascending: false })
@@ -116,7 +118,9 @@ export function DevRegistroGeneraleModule() {
         .limit(1000);
       if (cernitaError) throw cernitaError;
 
-      const cerniteNelRegistro = (cernitaRows || []).map((movement: any) => ({
+      const cerniteNelRegistro = (cernitaRows || [])
+        .filter((movement: any) => movement.batch?.status !== "ANNULLATA")
+        .map((movement: any) => ({
         id: `cernita-${movement.id}`,
         tenant_id: movement.company_id,
         registro: movement.company_id === NIYOL_TENANT_ID ? "NIYOL" : "MULTY_IMPIANTO",
