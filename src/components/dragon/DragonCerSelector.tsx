@@ -33,8 +33,17 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
   const normalized = search.trim().toLocaleLowerCase("it");
   const digits = normalized.replace(/\D/g, "");
 
+  // Materiali Dragon con codice non presente nel catalogo europeo (es. "200140-FE", "200140-MIX"):
+  // devono essere selezionabili, altrimenti le cernite non trovano le giacenze reali.
+  const extraDragon = useMemo(() => {
+    const catalogCodes = new Set(tutti.map((entry) => entry.codice));
+    return items
+      .filter((item) => item.attivo !== false && item.codice_cer && !catalogCodes.has(item.codice_cer))
+      .map((item) => ({ codice: item.codice_cer, descrizione: item.descrizione || item.codice_cer, pericoloso: false }));
+  }, [items, tutti]);
+
   const results = useMemo(() => {
-    const base = showAll || normalized.length > 0 ? tutti : preferiti;
+    const base = [...extraDragon, ...(showAll || normalized.length > 0 ? tutti : preferiti)];
     return base.filter((entry) => {
       const item = existingByCode.get(entry.codice);
       if (item && item.id === excludeItemId) return false;
@@ -44,7 +53,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
       const matchText = entry.descrizione.toLocaleLowerCase("it").includes(normalized);
       return matchCode || matchText;
     }).slice(0, 300);
-  }, [digits, excludeItemId, existingByCode, normalized, preferiti, showAll, tutti]);
+  }, [digits, excludeItemId, existingByCode, extraDragon, normalized, preferiti, showAll, tutti]);
 
   useEffect(() => {
     if (!open) setSearch("");
