@@ -71,6 +71,7 @@ export function useDragonTransformBatches() {
     qc.invalidateQueries({ queryKey: ["dev-mag-giacenze"] });
     qc.invalidateQueries({ queryKey: ["dev-mag-movimenti"] });
     qc.invalidateQueries({ queryKey: ["dev-registro-movimenti"] });
+    qc.invalidateQueries({ queryKey: ["dev-registro-generale"] });
   };
 
   const executeCernita = useMutation({
