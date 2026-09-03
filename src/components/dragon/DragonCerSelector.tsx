@@ -158,7 +158,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
 
           <div className="-mx-1 flex-1 space-y-1 overflow-y-auto px-1">
             {results.map((entry) => {
-              const existing = existingByCode.get(entry.codice);
+              const existing = existingByCode.get(cerKey(entry.codice));
               const isSelected = existing?.id === value;
               return (
                 <button
