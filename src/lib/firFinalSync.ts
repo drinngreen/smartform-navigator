@@ -93,7 +93,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
   impiantoId?: string | null;
   registryMovementType?: "Carico" | "Scarico";
-}): Promise<{ registry: boolean; inventory: boolean; warning?: string }> {
+}): Promise<{ registry: boolean; registryApplicable: boolean; inventory: boolean; warning?: string }> {
   const { firId } = params;
   if (!firId) throw new Error("firId mancante");
   logAgentActivity("Sincronizzazione FIR su registri e giacenze", "info", `FIR ${firId}`);
