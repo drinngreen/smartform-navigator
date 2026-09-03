@@ -730,10 +730,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         registryMovementType: registryMovementType || "Carico",
       });
       if (result.warning) throw new Error(result.warning);
-      if (!result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
+      if (result.registryApplicable && !result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
       useMNFIRStore.setState({ editingFirId: savedId, workflowStatus: "chiuso" });
       toast.success(
-        result.inventory
+        !result.registryApplicable
+          ? "✅ FIR caricato nel sistema (cliente terzo: nessun registro Multy/Niyol interessato)"
+          : result.inventory
           ? "✅ FIR caricato nel sistema: registro e giacenze aggiornati"
           : "✅ FIR caricato nel registro (giacenze non interessate: Multyproget non è produttore/destinatario)"
       );
