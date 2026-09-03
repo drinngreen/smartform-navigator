@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal } from "lucide-react";
+import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
@@ -48,6 +48,7 @@ export default function DragonCerniteBatchPage() {
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [appliedModelId, setAppliedModelId] = useState<string | null>(null);
   const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [confirmationMode, setConfirmationMode] = useState<"execute" | "deferred" | null>(null);
 
   // Form state
   const [inputItemId, setInputItemId] = useState("");
@@ -115,6 +116,7 @@ export default function DragonCerniteBatchPage() {
     setOutputRows([createOutputRow()]);
     setAppliedModelId(null);
     setEditingBatchId(null);
+    setConfirmationMode(null);
   };
 
   const serializeOutputs = () => outputRows.map((row) => ({
@@ -123,22 +125,14 @@ export default function DragonCerniteBatchPage() {
     lot_code: row.lot_code.trim() || undefined,
   }));
 
-  const handleCreate = async (deferred = false) => {
+  const requestConfirmation = (deferred = false) => {
     if (!inputItemId || inputQty <= 0 || (!deferred && !isFormValid)) return;
-    // Riepilogo direzione OBBLIGATORIO: evita cernite con input/output invertiti
-    const righe: string[] = [
-      `➖ SCARICO: −${inputQty.toLocaleString("it-IT")} kg da ${inputItem?.codice_cer} — ${inputItem?.descrizione ?? ""}`,
-    ];
-    if (!deferred) {
-      for (const o of serializeOutputs()) {
-        const it = items.find(i => i.id === o.item_id);
-        righe.push(`➕ CARICO: +${o.quantity.toLocaleString("it-IT")} kg su ${it?.codice_cer ?? "?"} — ${it?.descrizione ?? ""}`);
-      }
-    } else {
-      righe.push("(cernita pendente: gli output verranno indicati al completamento)");
-    }
-    righe.push("", "Le giacenze si muoveranno ESATTAMENTE in questa direzione. Confermi?");
-    if (!window.confirm(righe.join("\n"))) return;
+    setConfirmationMode(deferred ? "deferred" : "execute");
+  };
+
+  const handleCreate = async () => {
+    if (!confirmationMode) return;
+    const deferred = confirmationMode === "deferred";
     setCreating(true);
     try {
       if (editingBatchId) {
@@ -422,12 +416,30 @@ export default function DragonCerniteBatchPage() {
               <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Note opzionali..." />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {!editingBatchId && <Button variant="outline" onClick={() => handleCreate(true)} disabled={creating || !inputItemId || inputQty <= 0}>Salva come Pendente</Button>}
-              <Button onClick={() => handleCreate(false)} disabled={creating || !isFormValid} className={editingBatchId ? "col-span-2" : ""}>
-                {creating ? "Conferma in corso..." : editingBatchId ? "Completa Cernita" : "Conferma e Genera Movimenti"}
-              </Button>
-            </div>
+            {confirmationMode ? (
+              <div className="space-y-3 rounded-lg border border-primary/40 bg-primary/10 p-4">
+                <div className="flex items-center gap-2 font-semibold">
+                  <ShieldCheck className="h-5 w-5 text-primary" /> Conferma definitiva
+                </div>
+                <p className="text-sm">
+                  Verranno tolti <strong>{inputQty.toLocaleString("it-IT")} kg</strong> da <strong>{inputItem?.codice_cer}</strong>
+                  {confirmationMode === "deferred" ? " e la lavorazione resterà pendente." : " e verranno caricati gli output indicati sopra."}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button type="button" variant="outline" disabled={creating} onClick={() => setConfirmationMode(null)}>Indietro</Button>
+                  <Button type="button" disabled={creating} onClick={handleCreate}>
+                    {creating ? "Registrazione in corso..." : "Sì, esegui la cernita"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {!editingBatchId && <Button variant="outline" onClick={() => requestConfirmation(true)} disabled={creating || !inputItemId || inputQty <= 0}>Salva come Pendente</Button>}
+                <Button onClick={() => requestConfirmation(false)} disabled={creating || !isFormValid} className={editingBatchId ? "col-span-2" : ""}>
+                  {editingBatchId ? "Completa Cernita" : "Conferma e Genera Movimenti"}
+                </Button>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
