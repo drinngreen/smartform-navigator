@@ -28,7 +28,17 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
     if (fallback && !/^cer\s*[\d\s*.]+$/i.test(fallback.trim())) return fallback;
     return "";
   };
-  const existingByCode = useMemo(() => new Map(items.map((item) => [item.codice_cer, item])), [items]);
+  // Chiave normalizzata (maiuscole, senza separatori) per riconoscere lo stesso CER
+  // scritto in modi diversi: "200140-fe", "200140 FE", "200140FE".
+  const cerKey = (code: string) => String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const existingByCode = useMemo(() => {
+    const map = new Map<string, (typeof items)[number]>();
+    items.forEach((item) => {
+      if (!item.codice_cer) return;
+      map.set(cerKey(item.codice_cer), item);
+    });
+    return map;
+  }, [items]);
   const preferredCodes = useMemo(() => new Set(preferiti.map((entry) => entry.codice)), [preferiti]);
   const normalized = search.trim().toLocaleLowerCase("it");
   const digits = normalized.replace(/\D/g, "");
@@ -36,22 +46,28 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
   // Materiali Dragon con codice non presente nel catalogo europeo (es. "200140-FE", "200140-MIX"):
   // devono essere selezionabili, altrimenti le cernite non trovano le giacenze reali.
   const extraDragon = useMemo(() => {
-    const catalogCodes = new Set(tutti.map((entry) => entry.codice));
+    const catalogCodes = new Set(tutti.map((entry) => cerKey(entry.codice)));
     return items
-      .filter((item) => item.attivo !== false && item.codice_cer && !catalogCodes.has(item.codice_cer))
+      .filter((item) => item.attivo !== false && item.codice_cer && !catalogCodes.has(cerKey(item.codice_cer)))
       .map((item) => ({ codice: item.codice_cer, descrizione: item.descrizione || item.codice_cer, pericoloso: false }));
   }, [items, tutti]);
 
   const results = useMemo(() => {
     const base = [...extraDragon, ...(showAll || normalized.length > 0 ? tutti : preferiti)];
+    const seen = new Set<string>();
     return base.filter((entry) => {
-      const item = existingByCode.get(entry.codice);
+      const key = cerKey(entry.codice);
+      if (seen.has(key)) return false;
+      const item = existingByCode.get(key);
       if (item && item.id === excludeItemId) return false;
-      if (!normalized) return true;
-      const code = entry.codice.toLocaleLowerCase("it");
-      const matchCode = digits.length > 0 && code.replace(/\D/g, "").includes(digits);
-      const matchText = entry.descrizione.toLocaleLowerCase("it").includes(normalized);
-      return matchCode || matchText;
+      if (normalized) {
+        const code = entry.codice.toLocaleLowerCase("it");
+        const matchCode = digits.length > 0 && code.replace(/\D/g, "").includes(digits);
+        const matchText = entry.descrizione.toLocaleLowerCase("it").includes(normalized);
+        if (!matchCode && !matchText) return false;
+      }
+      seen.add(key);
+      return true;
     }).slice(0, 300);
   }, [digits, excludeItemId, existingByCode, extraDragon, normalized, preferiti, showAll, tutti]);
 
@@ -60,24 +76,35 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
   }, [open]);
 
   const choose = async (code: string) => {
-    const existing = existingByCode.get(code);
+    const existing = existingByCode.get(cerKey(code));
     if (existing) {
       onChange(existing.id);
       setOpen(false);
       return;
     }
-    const catalogEntry = tutti.find((entry) => entry.codice === code);
+    const catalogEntry = tutti.find((entry) => cerKey(entry.codice) === cerKey(code));
     if (!catalogEntry) return;
-    const created = await create.mutateAsync({
-      codice_cer: catalogEntry.codice,
-      descrizione: catalogEntry.descrizione,
-      pericoloso: catalogEntry.pericoloso,
-      item_type: "WASTE_CER",
-      attivo: true,
-      metadata: { source: "catalogo_cer_globale" },
-    });
-    onChange(created.id);
-    setOpen(false);
+    try {
+      const created = await create.mutateAsync({
+        codice_cer: catalogEntry.codice,
+        descrizione: catalogEntry.descrizione,
+        pericoloso: catalogEntry.pericoloso,
+        item_type: "WASTE_CER",
+        attivo: true,
+        metadata: { source: "catalogo_cer_globale" },
+      });
+      onChange(created.id);
+      setOpen(false);
+    } catch (error) {
+      // Se il materiale esiste già (codice scritto diversamente) lo riusiamo invece di bloccare la cernita.
+      const fallback = items.find((item) => cerKey(item.codice_cer) === cerKey(code));
+      if (fallback) {
+        onChange(fallback.id);
+        setOpen(false);
+        return;
+      }
+      throw error;
+    }
   };
 
   return (
