@@ -125,6 +125,20 @@ export default function DragonCerniteBatchPage() {
 
   const handleCreate = async (deferred = false) => {
     if (!inputItemId || inputQty <= 0 || (!deferred && !isFormValid)) return;
+    // Riepilogo direzione OBBLIGATORIO: evita cernite con input/output invertiti
+    const righe: string[] = [
+      `➖ SCARICO: −${inputQty.toLocaleString("it-IT")} kg da ${inputItem?.codice_cer} — ${inputItem?.descrizione ?? ""}`,
+    ];
+    if (!deferred) {
+      for (const o of serializeOutputs()) {
+        const it = items.find(i => i.id === o.item_id);
+        righe.push(`➕ CARICO: +${o.quantity.toLocaleString("it-IT")} kg su ${it?.codice_cer ?? "?"} — ${it?.descrizione ?? ""}`);
+      }
+    } else {
+      righe.push("(cernita pendente: gli output verranno indicati al completamento)");
+    }
+    righe.push("", "Le giacenze si muoveranno ESATTAMENTE in questa direzione. Confermi?");
+    if (!window.confirm(righe.join("\n"))) return;
     setCreating(true);
     try {
       if (editingBatchId) {
@@ -380,6 +394,17 @@ export default function DragonCerniteBatchPage() {
                   </p>
                 </div>
               </div>
+              {inputItem && inputQty > 0 && (
+                <div className="rounded-lg border border-border/40 bg-background/60 p-3 space-y-1 text-xs">
+                  <p className="font-mono font-bold text-red-400">➖ VERRANNO TOLTI {inputQty.toLocaleString("it-IT")} kg da {inputItem.codice_cer} — {inputItem.descrizione}</p>
+                  {!editingBatchId && outputRows.filter(r => r.item_id && parseFloat(r.quantity) > 0).map((r) => {
+                    const it = items.find(i => i.id === r.item_id);
+                    return (
+                      <p key={r.id} className="font-mono font-bold text-emerald-400">➕ VERRANNO AGGIUNTI {(parseFloat(r.quantity) || 0).toLocaleString("it-IT")} kg su {it?.codice_cer ?? "?"} — {it?.descrizione ?? ""}</p>
+                    );
+                  })}
+                </div>
+              )}
               {difference < -0.01 && (
                 <p className="text-xs text-rose-400 text-center">⚠ L'uscita supera l'ingresso — controlla le quantità</p>
               )}
