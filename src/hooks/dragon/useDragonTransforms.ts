@@ -57,7 +57,8 @@ export function useDragonTransformBatches() {
         .eq("company_id", companyId)
         .order("execution_date", { ascending: false });
       if (error) throw error;
-      return data as DragonTransformBatch[];
+      // Solo vista: questa cernita (31/08/2026, 1840 kg) non deve comparire nell'elenco. Nessuna modifica al DB.
+      return (data as DragonTransformBatch[]).filter((b: any) => b.id !== HIDDEN_CERNITA_BATCH_ID);
     },
   });
 

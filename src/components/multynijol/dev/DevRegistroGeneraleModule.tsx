@@ -127,6 +127,8 @@ export function DevRegistroGeneraleModule() {
 
       const cerniteNelRegistro = (cernitaRows || [])
         .filter((movement: any) => movement.batch?.status !== "ANNULLATA")
+        // Solo vista: questa cernita (31/08/2026, 1840 kg) non deve comparire nel registro. Nessuna modifica al DB.
+        .filter((movement: any) => movement.source_transform_batch_id !== HIDDEN_CERNITA_BATCH_ID)
         .map((movement: any) => ({
         id: `cernita-${movement.id}`,
         tenant_id: movement.company_id,
