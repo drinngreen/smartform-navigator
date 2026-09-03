@@ -6806,6 +6806,7 @@ export type Database = {
         Args: { p_anno: number; p_impianto_id: string }
         Returns: string
       }
+      normalize_cer: { Args: { p_value: string }; Returns: string }
       notify_fir_pool_empty: {
         Args: {
           p_societa_id: string

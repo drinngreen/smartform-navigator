@@ -22,7 +22,9 @@ const normalizeCer = (value: unknown) => {
   const raw = String(value ?? "").toUpperCase().trim();
   if (!raw) return "";
   const compact = raw.replace(/\s+/g, "");
-  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]{1,4}))?/);
+  // Il suffisso materiale può essere più lungo di 4 caratteri (es. "CAVO", "MIX"):
+  // deve combaciare con public.normalize_cer lato database.
+  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]+))?/);
   if (!match) return compact;
   return match[2] ? `${match[1]}-${match[2]}` : match[1];
 };
