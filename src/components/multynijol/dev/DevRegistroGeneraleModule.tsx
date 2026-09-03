@@ -105,18 +105,25 @@ export function DevRegistroGeneraleModule() {
       }
 
       // Regola: le cernite ANNULLATE (o di test) non devono MAI comparire nel registro generale.
-      const { data: cernitaRows, error: cernitaError } = await supabase
-        .from("dragon_register_movements")
-        .select("id, company_id, movement_number, movement_date, cer_code, description_snapshot, movement_type, quantity, unit_of_measure, sign, note, annotations, source_transform_batch_id, cause:dragon_causes(code, name), batch:dragon_transform_batches!inner(status)")
-        .in("company_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
-        .not("source_transform_batch_id", "is", null)
-        .neq("dragon_transform_batches.status", "ANNULLATA")
-        .is("deleted_at", null)
-        .is("test_session", null)
-        .order("movement_date", { ascending: false })
-        .order("movement_number", { ascending: false })
-        .limit(1000);
-      if (cernitaError) throw cernitaError;
+      // NB: il registro principale non deve MAI sparire se questa query secondaria fallisce.
+      let cernitaRows: any[] = [];
+      try {
+        const { data, error: cernitaError } = await supabase
+          .from("dragon_register_movements")
+          .select("id, company_id, movement_number, movement_date, cer_code, description_snapshot, movement_type, quantity, unit_of_measure, sign, note, annotations, source_transform_batch_id, cause:dragon_causes(code, name), batch:dragon_transform_batches(status)")
+          .in("company_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
+          .not("source_transform_batch_id", "is", null)
+          .is("deleted_at", null)
+          .is("test_session", null)
+          .order("movement_date", { ascending: false })
+          .order("movement_number", { ascending: false })
+          .limit(1000);
+        if (cernitaError) throw cernitaError;
+        cernitaRows = data || [];
+      } catch (e) {
+        console.warn("[RegistroGenerale] cernite non caricate:", e);
+        cernitaRows = [];
+      }
 
       const cerniteNelRegistro = (cernitaRows || [])
         .filter((movement: any) => movement.batch?.status !== "ANNULLATA")
