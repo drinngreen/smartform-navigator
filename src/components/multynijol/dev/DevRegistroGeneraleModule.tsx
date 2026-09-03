@@ -103,7 +103,43 @@ export function DevRegistroGeneraleModule() {
         if (!data || data.length < 1000) break;
         p++;
       }
-      return all as any[];
+
+      const { data: cernitaRows, error: cernitaError } = await supabase
+        .from("dragon_register_movements")
+        .select("id, company_id, movement_number, movement_date, cer_code, description_snapshot, movement_type, quantity, unit_of_measure, sign, note, annotations, source_transform_batch_id, cause:dragon_causes(code, name)")
+        .in("company_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
+        .not("source_transform_batch_id", "is", null)
+        .is("deleted_at", null)
+        .is("test_session", null)
+        .order("movement_date", { ascending: false })
+        .order("movement_number", { ascending: false })
+        .limit(1000);
+      if (cernitaError) throw cernitaError;
+
+      const cerniteNelRegistro = (cernitaRows || []).map((movement: any) => ({
+        id: `cernita-${movement.id}`,
+        tenant_id: movement.company_id,
+        registro: movement.company_id === NIYOL_TENANT_ID ? "NIYOL" : "MULTY_IMPIANTO",
+        numero_interno: movement.movement_number ? `C-${movement.movement_number}` : "Cernita",
+        numero_movimento: movement.movement_number || null,
+        data_movimento: movement.movement_date,
+        cer: movement.cer_code,
+        descrizione: movement.description_snapshot,
+        carico_scarico: movement.movement_type === "CARICO" ? "Carico" : "Scarico",
+        tipo_operazione: movement.cause?.name || (movement.movement_type === "CARICO" ? "Carico da lavorazione" : "Scarico per lavorazione"),
+        numero_formulario: null,
+        segno: movement.sign === "PLUS" ? "+" : "-",
+        quantita: Number(movement.quantity || 0),
+        stato_fisico: movement.unit_of_measure,
+        annotazioni: movement.annotations || movement.note || "Movimento generato da cernita",
+        nota_int: `Cernita ${movement.source_transform_batch_id}`,
+      }));
+
+      return [...all, ...cerniteNelRegistro].sort((a, b) => {
+        const byDate = String(b.data_movimento || "").localeCompare(String(a.data_movimento || ""));
+        if (byDate !== 0) return byDate;
+        return Number(b.numero_movimento || 0) - Number(a.numero_movimento || 0);
+      });
     },
   });
 
