@@ -118,7 +118,9 @@ export function DevRegistroGeneraleModule() {
         .limit(1000);
       if (cernitaError) throw cernitaError;
 
-      const cerniteNelRegistro = (cernitaRows || []).map((movement: any) => ({
+      const cerniteNelRegistro = (cernitaRows || [])
+        .filter((movement: any) => movement.batch?.status !== "ANNULLATA")
+        .map((movement: any) => ({
         id: `cernita-${movement.id}`,
         tenant_id: movement.company_id,
         registro: movement.company_id === NIYOL_TENANT_ID ? "NIYOL" : "MULTY_IMPIANTO",
