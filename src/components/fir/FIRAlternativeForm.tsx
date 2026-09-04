@@ -1604,7 +1604,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               // Render fields for this page
               fields.filter(f => f.page === pageNum).forEach(field => {
                 const isNumero = isNumeroFirFieldName(field.name);
-                const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
+                const val = isNumero
+                  ? (numeroToPrint || String(values[field.id] || ""))
+                  : formatPrintValue(String(values[field.id] || ""), field.type);
                 if (!val) return;
                 if (isNumero) return; // il numero viene stampato dalle decorazioni (alto e basso a destra)
                  const geometry = officialPrintFieldGeometry(field);
