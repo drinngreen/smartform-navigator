@@ -9,7 +9,7 @@ import pag3 from "@/assets/formulario_pag_3.png";
 import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafiche";
 import { FIRRentriActions } from "./FIRRentriActions";
 import { resolveFirQrDataUrl, buildPageDecorationsHtml } from "@/lib/firPrintDecorations";
-import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
+import { officialPrintFieldGeometry, formatPrintValue } from "@/lib/firPrintLayout";
 
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
@@ -1604,7 +1604,9 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
               // Render fields for this page
               fields.filter(f => f.page === pageNum).forEach(field => {
                 const isNumero = isNumeroFirFieldName(field.name);
-                const val = isNumero ? (numeroToPrint || String(values[field.id] || "")) : String(values[field.id] || "");
+                const val = isNumero
+                  ? (numeroToPrint || String(values[field.id] || ""))
+                  : formatPrintValue(String(values[field.id] || ""), field.type);
                 if (!val) return;
                 if (isNumero) return; // il numero viene stampato dalle decorazioni (alto e basso a destra)
                  const geometry = officialPrintFieldGeometry(field);
