@@ -68,3 +68,21 @@ export function officialPrintFieldGeometry(field: TemplateField): Pick<TemplateF
     height: clamp(bottom - y, 0, 100 - clamp(y, 0, 100)),
   };
 }
+/**
+ * Sul modulo ministeriale le date vanno stampate in formato italiano gg/mm/aaaa.
+ * In editor restano ISO (input type=date), quindi la conversione avviene solo in stampa.
+ */
+export function formatPrintValue(value: string, fieldType?: string): string {
+  if (!value) return value;
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso && (fieldType === "date" || fieldType === undefined)) {
+    return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  }
+  const isoDateTime = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (isoDateTime) {
+    return fieldType === "time"
+      ? `${isoDateTime[4]}:${isoDateTime[5]}`
+      : `${isoDateTime[3]}/${isoDateTime[2]}/${isoDateTime[1]}`;
+  }
+  return value;
+}
