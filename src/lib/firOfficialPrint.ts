@@ -22,7 +22,7 @@ import {
   resolveFirQrDataUrl,
   type PrintCliente,
 } from "@/lib/firPrintDecorations";
-import { officialPrintFieldGeometry } from "@/lib/firPrintLayout";
+import { officialPrintFieldGeometry, formatPrintValue } from "@/lib/firPrintLayout";
 
 const PAGE_IMAGES = [pag1, pag2, pag3];
 
