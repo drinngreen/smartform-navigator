@@ -56,7 +56,7 @@ function buildPagesHtml(
         .map((field) => {
           if (isNumeroFirFieldName(field.name)) return ""; // stampato dalle decorazioni
           const raw = values[field.id];
-          const val = typeof raw === "boolean" ? (raw ? "X" : "") : String(raw ?? "");
+          const val = typeof raw === "boolean" ? (raw ? "X" : "") : formatPrintValue(String(raw ?? ""), field.type);
           if (!val) return "";
           const geometry = officialPrintFieldGeometry(field);
           return `<span style="position:absolute;left:${geometry.x}%;top:${geometry.y}%;width:${geometry.width}%;height:${geometry.height}%;display:flex;align-items:center;font-family:'Courier New',monospace;font-size:3.2mm;font-weight:700;line-height:1;color:#12275c;overflow:hidden;white-space:nowrap;padding:0 0.6mm;box-sizing:border-box;">${escapeHtml(val)}</span>`;
