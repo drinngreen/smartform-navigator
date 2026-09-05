@@ -140,6 +140,14 @@ export function validateEmail(value: string): string | null {
   return null;
 }
 
+/** Codice destinatario SDI: 6 caratteri (privati) o 7 (PA), alfanumerico */
+export function validateCodiceSdi(value: string): string | null {
+  const v = clean(value).toUpperCase();
+  if (!v) return null;
+  if (!/^[A-Z0-9]{6,7}$/.test(v)) return "Il codice SDI ha 6 o 7 caratteri (lettere e numeri)";
+  return null;
+}
+
 export function validateTelefono(value: string): string | null {
   const v = clean(value);
   if (!v) return null;
