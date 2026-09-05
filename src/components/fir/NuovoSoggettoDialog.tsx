@@ -39,6 +39,7 @@ const EMPTY = {
   cellulare: "",
   email: "",
   pec: "",
+  codiceSdi: "",
   autorizzazioni: "",
   note: "",
 };
@@ -81,6 +82,7 @@ export function NuovoSoggettoDialog({
         cellulare: form.cellulare.trim(),
         email: form.email.trim(),
         pec: form.pec.trim(),
+        codiceSdi: form.codiceSdi.trim(),
         categoria,
         autorizzazioni: form.autorizzazioni.trim(),
         note: form.note.trim(),
@@ -130,7 +132,7 @@ export function NuovoSoggettoDialog({
   const hasErrors = Object.entries(form).some(([k, v]) => {
     const labels: Record<string, string> = {
       codiceFiscale: "Codice Fiscale", partitaIva: "Partita IVA", cap: "CAP", provincia: "Provincia",
-      telefono: "Telefono", cellulare: "Cellulare", email: "Email", pec: "PEC",
+      telefono: "Telefono", cellulare: "Cellulare", email: "Email", pec: "PEC", codiceSdi: "Codice SDI",
     };
     return labels[k] ? !!autoValidateByLabel(labels[k], String(v ?? "")) : false;
   });
@@ -170,6 +172,7 @@ export function NuovoSoggettoDialog({
           {f("cellulare", "Cellulare")}
           {f("email", "Email")}
           {f("pec", "PEC")}
+          {f("codiceSdi", "Codice SDI (fatturazione)")}
         </div>
         {f("autorizzazioni", "Autorizzazioni")}
         {f("note", "Note")}
