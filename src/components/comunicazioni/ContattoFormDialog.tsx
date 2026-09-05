@@ -25,6 +25,7 @@ const EMPTY = {
   cellulare: "",
   email: "",
   pec: "",
+  codice_sdi: "",
   codice_fiscale: "",
   partita_iva: "",
   indirizzo: "",
@@ -100,6 +101,7 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, cont
         cellulare: form.cellulare,
         email: form.email,
         pec: form.pec,
+        codiceSdi: form.codice_sdi,
         categoria,
         autorizzazioni: form.autorizzazioni,
         note: form.note,
@@ -161,6 +163,7 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, cont
           {f("cellulare", "Cellulare (WhatsApp)")}
           {f("email", "Email")}
           {f("pec", "PEC")}
+          {f("codice_sdi", "Codice SDI (fatturazione)")}
           {f("codice_fiscale", "Codice Fiscale")}
           {f("partita_iva", "Partita IVA")}
           {f("indirizzo", "Indirizzo")}
