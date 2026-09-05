@@ -58,6 +58,7 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, cont
         cellulare: contatto.cellulare || "",
         email: contatto.email || "",
         pec: contatto.pec || "",
+        codice_sdi: contatto.codice_sdi || contatto.codice_destinatario || "",
         codice_fiscale: contatto.codice_fiscale || "",
         partita_iva: contatto.partita_iva || "",
         indirizzo: contatto.indirizzo || "",
