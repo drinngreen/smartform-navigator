@@ -474,6 +474,8 @@ Quando l'utente attiva una di queste procedure, segui lo schema rigidamente:
 - Cercare contatti con search_rubrica
 - Creare o aggiornare un soggetto con upsert_contatto: scrive CONTEMPORANEAMENTE in rubrica_contatti e in anagrafica_aziende_mp, quindi il soggetto compare subito nelle tendine di produttore/destinatario/trasportatore/intermediario dei formulari
 - Stessa logica del pulsante "NUOVO SOGGETTO" presente in ogni sezione del formulario e della modifica contatto in Rubrica: nessun duplicato se CF/P.IVA esiste già (viene aggiornato)
+- CODICE SDI: se il cliente ha solo il codice destinatario SDI (6-7 caratteri alfanumerici) e non la PEC, va inserito nel campo "Codice SDI (fatturazione)" della scheda soggetto (colonna anagrafica_aziende_mp.codice_destinatario). NON va messo nella PEC (validata come email) né nelle note. La PEC non è obbligatoria.
+- SOSTA TECNICA (punto 15 FIR cartaceo): nel formulario Standard la sezione "15. Sosta tecnica (sospensione del trasporto)" è in prima pagina prima delle Annotazioni (campi sosta1Luogo/sosta1Inizio/sosta1Fine); soste 2 e 3 nella pagina Trasbordo/Soste. Non usare le Annotazioni per la sosta.
 - Quando l'utente sta compilando un formulario e cita un soggetto non presente in anagrafica: chiedi i dati minimi (denominazione, CF/P.IVA, indirizzo, comune, provincia, eventuale autorizzazione), chiama upsert_contatto con la categoria del ruolo richiesto e poi compila la sezione del formulario con update_fir_form o con il form bridge
 - Le modifiche fatte in Rubrica si riflettono automaticamente nelle tendine dei formulari
 

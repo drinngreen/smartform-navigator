@@ -26,6 +26,8 @@ export interface SoggettoInput {
   cellulare?: string;
   email?: string;
   pec?: string;
+  /** Codice destinatario SDI per la fatturazione elettronica (6-7 caratteri) */
+  codiceSdi?: string;
   categoria?: string;
   autorizzazioni?: string;
   note?: string;
@@ -65,7 +67,16 @@ export async function upsertSoggetto(input: SoggettoInput): Promise<SoggettoResu
     p_contatto_id: input.contattoId || null,
   } as any);
   if (error) throw error;
-  return data as unknown as SoggettoResult;
+  const res = data as unknown as SoggettoResult;
+  // Il codice SDI viaggia sulla colonna dedicata dell'anagrafica aziende (codice_destinatario)
+  const sdi = (input.codiceSdi || "").trim().toUpperCase();
+  if (sdi && res?.azienda_id) {
+    await supabase
+      .from("anagrafica_aziende_mp")
+      .update({ codice_destinatario: sdi })
+      .eq("id", res.azienda_id);
+  }
+  return res;
 }
 
 /** Indirizzo formattato come nelle tendine anagrafica */

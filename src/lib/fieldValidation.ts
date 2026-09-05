@@ -140,6 +140,14 @@ export function validateEmail(value: string): string | null {
   return null;
 }
 
+/** Codice destinatario SDI: 6 caratteri (privati) o 7 (PA), alfanumerico */
+export function validateCodiceSdi(value: string): string | null {
+  const v = clean(value).toUpperCase();
+  if (!v) return null;
+  if (!/^[A-Z0-9]{6,7}$/.test(v)) return "Il codice SDI ha 6 o 7 caratteri (lettere e numeri)";
+  return null;
+}
+
 export function validateTelefono(value: string): string | null {
   const v = clean(value);
   if (!v) return null;
@@ -183,6 +191,7 @@ export function autoValidateByLabel(label: string, value: string): string | null
   if (l.includes("codice fiscale") || /\bcf\b/.test(l)) return validateCfPiva(value);
   if (/\bcap\b/.test(l)) return validateCap(value);
   if (l.includes("provincia")) return validateProvincia(value);
+  if (l.includes("sdi") || l.includes("destinatario fatturazione")) return validateCodiceSdi(value);
   if (l.includes("email") || l.includes("pec")) return validateEmail(value);
   if (l.includes("telefono") || l.includes("cellulare")) return validateTelefono(value);
   if (l.includes("targa")) return validateTarga(value);

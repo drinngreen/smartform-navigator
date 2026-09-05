@@ -1709,6 +1709,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Check label="In attesa di verifica analitica" checked={d.inAttesaVerificaAnalitica} onChange={(v) => u("inAttesaVerificaAnalitica", v)} />
           </Section>
 
+          <Section title="15. Sosta tecnica (sospensione del trasporto)" onClear={() => clearFields(["sosta1Luogo","sosta1Inizio","sosta1Fine"])}>
+            <p className="text-xs text-white/60 mb-2">
+              Corrisponde al punto 15 del formulario cartaceo. Le soste 2 e 3 si compilano nella pagina "Trasbordo / Soste".
+            </p>
+            <Field label="Luogo della sosta" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
+            <Row>
+              <Field label="Inizio Sospensione" value={d.sosta1Inizio} onChange={(v) => u("sosta1Inizio", v)} type="datetime-local" />
+              <Field label="Fine Sospensione" value={d.sosta1Fine} onChange={(v) => u("sosta1Fine", v)} type="datetime-local" />
+            </Row>
+          </Section>
+
           <Section title="17. Annotazioni" onClear={() => clearFields(["annotazioni"])}>
             <TextArea label="Annotazioni" value={d.annotazioni} onChange={(v) => u("annotazioni", v)} rows={3} />
           </Section>
@@ -1765,7 +1776,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Data/Ora Presa in Carico" value={d.trasbordoTotDataPresaCarico} onChange={(v) => u("trasbordoTotDataPresaCarico", v)} type="datetime-local" />
           </Section>
 
-          <Section title="14. Soste Tecniche" onClear={() => clearFields(["sosta1Luogo","sosta1Inizio","sosta1Fine","sosta2Luogo","sosta2Inizio","sosta2Fine","sosta3Luogo","sosta3Inizio","sosta3Fine"])}>
+          <Section title="15. Soste Tecniche (punto 15 FIR cartaceo)" onClear={() => clearFields(["sosta1Luogo","sosta1Inizio","sosta1Fine","sosta2Luogo","sosta2Inizio","sosta2Fine","sosta3Luogo","sosta3Inizio","sosta3Fine"])}>
             <p className="text-xs text-white/60 mb-2">Sosta 1</p>
             <Field label="Luogo" value={d.sosta1Luogo} onChange={(v) => u("sosta1Luogo", v)} />
             <Row>
