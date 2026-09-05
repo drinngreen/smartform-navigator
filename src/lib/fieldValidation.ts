@@ -183,6 +183,7 @@ export function autoValidateByLabel(label: string, value: string): string | null
   if (l.includes("codice fiscale") || /\bcf\b/.test(l)) return validateCfPiva(value);
   if (/\bcap\b/.test(l)) return validateCap(value);
   if (l.includes("provincia")) return validateProvincia(value);
+  if (l.includes("sdi") || l.includes("destinatario fatturazione")) return validateCodiceSdi(value);
   if (l.includes("email") || l.includes("pec")) return validateEmail(value);
   if (l.includes("telefono") || l.includes("cellulare")) return validateTelefono(value);
   if (l.includes("targa")) return validateTarga(value);
