@@ -68,12 +68,13 @@ export async function upsertSoggetto(input: SoggettoInput): Promise<SoggettoResu
   } as any);
   if (error) throw error;
   const res = data as unknown as SoggettoResult;
-  // Il codice SDI viaggia sulla colonna dedicata dell'anagrafica aziende (codice_destinatario)
-  const sdi = (input.codiceSdi || "").trim().toUpperCase();
-  if (sdi && res?.azienda_id) {
+  // Il codice SDI viaggia sulla colonna dedicata dell'anagrafica aziende (codice_destinatario).
+  // Se il campo è stato passato (anche vuoto) va sempre scritto: così si può anche cancellare.
+  if (input.codiceSdi !== undefined && res?.azienda_id) {
+    const sdi = input.codiceSdi.trim().toUpperCase();
     await supabase
       .from("anagrafica_aziende_mp")
-      .update({ codice_destinatario: sdi })
+      .update({ codice_destinatario: sdi || null })
       .eq("id", res.azienda_id);
   }
   return res;
