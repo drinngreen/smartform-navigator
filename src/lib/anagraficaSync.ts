@@ -94,3 +94,45 @@ export const formatIndirizzoSoggetto = (r: {
 
 /** Tenant dell'anagrafica condivisa Multyproget usata dalle tendine dei formulari */
 export const ANAGRAFICA_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+
+/**
+ * Legge il codice SDI (codice_destinatario) dall'anagrafica aziende collegata a un contatto di rubrica.
+ * La rubrica non ha una colonna dedicata: il dato vive solo in anagrafica_aziende_mp.
+ */
+export async function fetchCodiceSdi(params: {
+  anagraficaId?: string | null;
+  codiceFiscale?: string | null;
+  partitaIva?: string | null;
+}): Promise<string> {
+  try {
+    if (params.anagraficaId) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("codice_destinatario")
+        .eq("id", params.anagraficaId)
+        .maybeSingle();
+      if (data?.codice_destinatario) return data.codice_destinatario;
+    }
+    const piva = (params.partitaIva || "").trim();
+    const cf = (params.codiceFiscale || "").trim();
+    if (piva) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("codice_destinatario")
+        .eq("partita_iva", piva)
+        .maybeSingle();
+      if (data?.codice_destinatario) return data.codice_destinatario;
+    }
+    if (cf) {
+      const { data } = await supabase
+        .from("anagrafica_aziende_mp")
+        .select("codice_destinatario")
+        .eq("codice_fiscale", cf)
+        .maybeSingle();
+      if (data?.codice_destinatario) return data.codice_destinatario;
+    }
+  } catch {
+    /* il codice SDI è opzionale: in caso di errore si lascia vuoto */
+  }
+  return "";
+}
