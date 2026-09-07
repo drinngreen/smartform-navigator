@@ -50,6 +50,12 @@ export function ContattoFormDialog({ open, onOpenChange, tenantId, prefill, cont
   useEffect(() => {
     if (!open) return;
     if (contatto) {
+      // Il codice SDI non è in rubrica: si legge dall'anagrafica aziende collegata
+      fetchCodiceSdi({
+        anagraficaId: contatto.anagrafica_id,
+        codiceFiscale: contatto.codice_fiscale,
+        partitaIva: contatto.partita_iva,
+      }).then((sdi) => setForm((p) => ({ ...p, codice_sdi: p.codice_sdi || sdi })));
       setForm({
         nome: contatto.nome || "",
         cognome: contatto.cognome || "",
