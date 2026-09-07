@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { CATEGORIE_SOGGETTO, upsertSoggetto } from "@/lib/anagraficaSync";
+import { CATEGORIE_SOGGETTO, upsertSoggetto, fetchCodiceSdi } from "@/lib/anagraficaSync";
 
 interface ContattoFormDialogProps {
   open: boolean;
