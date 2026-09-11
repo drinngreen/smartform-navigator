@@ -561,6 +561,8 @@ const CHAPTERS: Chapter[] = [
     faq: [
       { q: "Non trovo nessuna fattura.", a: "Il modulo parte vuoto per ogni società: verifica di essere nel contesto giusto (Multyproget o Niyol) in alto a sinistra." },
       { q: "Posso fatturare più formulari insieme?", a: "Sì: seleziona i formulari del periodo per lo stesso cliente e genera un'unica fattura con più righe." },
+      { q: "Dove gestisco i canoni mensili (cassoni, compattatori)?", a: "Nella scheda 'Contratti a canone'. Ogni contratto elenca le voci: quelle con il simbolo di ripetizione generano la fattura automatica, le altre sono listino a consumo." },
+      { q: "Ho generato due volte le fatture dello stesso mese?", a: "No: il sistema blocca la duplicazione per contratto-periodo. Se premi di nuovo 'Genera fatture del mese' per lo stesso mese, non crea nuove fatture." },
     ],
     route: "/mn/admin/dev-multyproget/fatturazione",
   },
