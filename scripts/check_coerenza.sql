@@ -74,7 +74,7 @@ sync_triggers as (
   -- i due trigger che tengono allineati Dragon e magazzino devono esistere
   select 2 - count(*) n from pg_trigger
   where not tgisinternal
-    and tgname in ('trg_dragon_sync_stock_to_magazzino','trg_magazzino_sync_to_dragon')
+    and tgname in ('trg_dragon_strict_stock_reconciliation','trg_magazzino_sync_to_dragon')
 ),
 sibill_fresco as (
   -- l'archivio fatture Sibill deve essere stato riletto di recente

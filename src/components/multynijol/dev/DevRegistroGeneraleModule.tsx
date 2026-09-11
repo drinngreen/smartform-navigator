@@ -81,6 +81,8 @@ export function DevRegistroGeneraleModule() {
   const [cerFilter, setCerFilter] = useState("all");
   const [csFilter, setCsFilter] = useState("all");
   const [dataFilter, setDataFilter] = useState<string>("");
+  const [dataDa, setDataDa] = useState<string>("");
+  const [dataA, setDataA] = useState<string>("");
   const [contoTerziOpen, setContoTerziOpen] = useState(false);
   const [scaricoLavOpen, setScaricoLavOpen] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
@@ -181,6 +183,9 @@ export function DevRegistroGeneraleModule() {
       if (cerFilter !== "all" && r.cer !== cerFilter) return false;
       if (csFilter !== "all" && r.carico_scarico !== csFilter) return false;
       if (dataFilter && r.data_movimento !== dataFilter) return false;
+      const giorno = String(r.data_movimento || "").slice(0, 10);
+      if (dataDa && (!giorno || giorno < dataDa)) return false;
+      if (dataA && (!giorno || giorno > dataA)) return false;
       if (search) {
         const s = search.toLowerCase();
         return (
@@ -196,7 +201,17 @@ export function DevRegistroGeneraleModule() {
       }
       return true;
     });
-  }, [rows, search, cerFilter, csFilter, dataFilter]);
+  }, [rows, search, cerFilter, csFilter, dataFilter, dataDa, dataA]);
+
+  const itDate = (v: string) => (v ? v.split("-").reverse().join("/") : "");
+  const periodoLabel = dataDa || dataA
+    ? `Periodo dal ${itDate(dataDa) || "inizio"} al ${itDate(dataA) || "oggi"}`
+    : dataFilter
+      ? `Giorno ${itDate(dataFilter)}`
+      : "Tutto il periodo";
+  const registroLabel = REGISTRI.find((r) => r.id === registroFilter)?.label ?? "Tutti i registri";
+  const exportFileName = `registro-${registroFilter.toLowerCase()}${dataDa ? `-dal-${dataDa}` : ""}${dataA ? `-al-${dataA}` : ""}`;
+  const exportTitle = `Registro Cronologico — ${registroLabel}\n${periodoLabel}`;
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -293,11 +308,34 @@ export function DevRegistroGeneraleModule() {
             </Button>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={() => filtered.length && exportToExcel(filtered, exportCols, "registro-generale-multy", "Registro Generale")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+        <div className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-card/60 px-2 py-1">
+          <span className="text-xs text-muted-foreground">Dal</span>
+          <Input
+            type="date"
+            value={dataDa}
+            onChange={(e) => { setDataDa(e.target.value); setPage(0); }}
+            className="w-36 h-8 bg-background/40 border-border/50"
+            title="Data iniziale del periodo da stampare"
+          />
+          <span className="text-xs text-muted-foreground">al</span>
+          <Input
+            type="date"
+            value={dataA}
+            onChange={(e) => { setDataA(e.target.value); setPage(0); }}
+            className="w-36 h-8 bg-background/40 border-border/50"
+            title="Data finale del periodo da stampare"
+          />
+          {(dataDa || dataA) && (
+            <Button variant="ghost" size="sm" onClick={() => { setDataDa(""); setDataA(""); setPage(0); }} className="h-8 w-8 p-0" title="Rimuovi intervallo">
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        <Button variant="outline" size="sm" onClick={() => filtered.length && exportToExcel(filtered, exportCols, exportFileName, "Registro", [registroLabel, periodoLabel])} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <FileSpreadsheet className="h-3 w-3" /> Excel
         </Button>
-        <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, "registro-generale-multy", "Registro Generale Multyproget")} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
-          <Printer className="h-3 w-3" /> PDF
+        <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, exportFileName, exportTitle)} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
+          <Printer className="h-3 w-3" /> Stampa PDF (periodo)
         </Button>
         <Button size="sm" onClick={() => setContoTerziOpen(true)} className="gap-1 bg-amber-500 text-black hover:bg-amber-400">
           <Truck className="h-3 w-3" /> Conto Terzi (cartaceo)
@@ -383,7 +421,7 @@ export function DevRegistroGeneraleModule() {
             <button
               className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2 text-emerald-300"
               onClick={() => {
-                if (filtered.length) exportToExcel(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale");
+                if (filtered.length) exportToExcel(filtered, exportCols, exportFileName, "Registro", [registroLabel, periodoLabel]);
                 setCtxMenu(null);
               }}
             >
@@ -393,7 +431,7 @@ export function DevRegistroGeneraleModule() {
             <button
               className="w-full text-left px-3 py-2 hover:bg-emerald-500/10 flex items-center gap-2"
               onClick={() => {
-                if (filtered.length) exportToPdf(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale Multyproget");
+                if (filtered.length) exportToPdf(filtered, exportCols, exportFileName, exportTitle);
                 setCtxMenu(null);
               }}
             >
