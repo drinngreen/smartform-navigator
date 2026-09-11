@@ -328,6 +328,7 @@ const CHAPTERS: Chapter[] = [
       { q: "Come registro un formulario cartaceo ricevuto da terzi?", a: "Usa la funzione Conto Terzi Manuale: entra nel registro come gli altri documenti." },
       { q: "Ho inviato al RENTRI un periodo sbagliato.", a: "Un invio consolidato non si annulla dal gestionale: va gestito come rettifica. Per questo conviene controllare sempre il periodo prima di confermare." },
       { q: "Serve l'esportazione per il commercialista?", a: "Sì: l'export in Excel del periodo è il formato più comodo da consegnare." },
+      { q: "Posso stampare solo un mese o una settimana?", a: "Sì: nel Registro Generale imposta 'Dal' e 'al' e usa 'Stampa PDF (periodo)'. I movimenti fuori dall'intervallo vengono esclusi automaticamente." },
     ],
     route: "/mn/admin/dev-multyproget?tab=registri",
   },
