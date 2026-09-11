@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -173,9 +173,8 @@ export function ContrattiTab({ tenantId }: ContrattiTabProps) {
                 {filtrati.map((c: any) => {
                   const aperto = espanso === c.id;
                   return (
-                    <>
+                    <Fragment key={c.id}>
                       <tr
-                        key={c.id}
                         className="border-b border-border/10 hover:bg-muted/10 transition-colors cursor-pointer"
                         onClick={() => setEspanso(aperto ? null : c.id)}
                       >
@@ -205,7 +204,7 @@ export function ContrattiTab({ tenantId }: ContrattiTabProps) {
                         </td>
                       </tr>
                       {aperto && (
-                        <tr key={`${c.id}-righe`} className="border-b border-border/10 bg-background/40">
+                        <tr className="border-b border-border/10 bg-background/40">
                           <td colSpan={7} className="px-6 py-3">
                             <div className="space-y-1">
                               {(c.righe || []).map((r: any) => (
@@ -233,7 +232,7 @@ export function ContrattiTab({ tenantId }: ContrattiTabProps) {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
