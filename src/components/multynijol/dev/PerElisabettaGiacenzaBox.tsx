@@ -134,6 +134,8 @@ export function PerElisabettaGiacenzaBox() {
     },
   ];
 
+  if (fatto) return null;
+
   return (
     <Card className="border-2 border-pink-500/50 bg-gradient-to-r from-pink-500/10 to-fuchsia-500/10">
       <CardHeader className="pb-2">
