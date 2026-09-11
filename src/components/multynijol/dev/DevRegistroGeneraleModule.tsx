@@ -12,8 +12,15 @@ import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
-// Cernita del 31/08/2026 (1840 kg) nascosta SOLO a vista su richiesta del cliente: nessuna modifica al DB.
-const HIDDEN_CERNITA_BATCH_ID = "4f67aac6-ca36-4831-a494-163853085960";
+// Cernite nascoste SOLO a vista nel registro (nessuna modifica al DB, nessun effetto sulle giacenze):
+// - 4f67aac6 = cernita 31/08/2026 (1840 kg), richiesta del cliente
+// - c19fe96a = cernita 04/09/2026 (30.000 kg): la stessa operazione è già registrata come
+//   movimenti ufficiali del 21/01/2026 (scarico 200140-FE / carico 170405). Resta visibile
+//   in Lavorazioni ma non deve comparire due volte nel registro.
+const HIDDEN_CERNITA_BATCH_IDS = [
+  "4f67aac6-ca36-4831-a494-163853085960",
+  "c19fe96a-ca27-4a7c-80a8-43ac5299c23b",
+];
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const PAGE_SIZE = 100;
 
@@ -132,8 +139,8 @@ export function DevRegistroGeneraleModule() {
 
       const cerniteNelRegistro = (cernitaRows || [])
         .filter((movement: any) => movement.batch?.status !== "ANNULLATA")
-        // Solo vista: questa cernita (31/08/2026, 1840 kg) non deve comparire nel registro. Nessuna modifica al DB.
-        .filter((movement: any) => movement.source_transform_batch_id !== HIDDEN_CERNITA_BATCH_ID)
+        // Solo vista: queste cernite non devono comparire nel registro. Nessuna modifica al DB.
+        .filter((movement: any) => !HIDDEN_CERNITA_BATCH_IDS.includes(movement.source_transform_batch_id))
         .map((movement: any) => ({
         id: `cernita-${movement.id}`,
         tenant_id: movement.company_id,
