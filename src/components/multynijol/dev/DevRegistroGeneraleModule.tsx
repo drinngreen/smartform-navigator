@@ -376,6 +376,9 @@ export function DevRegistroGeneraleModule() {
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, exportFileName, exportTitle)} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <Printer className="h-3 w-3" /> Stampa PDF (periodo)
         </Button>
+        <Button variant="outline" size="sm" onClick={() => filtered.length && stampaRegistroModelloRentri(filtered as any, `${exportFileName}-modello-rentri`, { operatore: "Multyproget S.r.l.", registro: registroLabel, periodo: periodoLabel })} className="gap-1 border-sky-500/40 text-sky-300 hover:bg-sky-500/10">
+          <FileText className="h-3 w-3" /> Stampa Modello RENTRI
+        </Button>
         <Button size="sm" onClick={() => setContoTerziOpen(true)} className="gap-1 bg-amber-500 text-black hover:bg-amber-400">
           <Truck className="h-3 w-3" /> Conto Terzi (cartaceo)
         </Button>
