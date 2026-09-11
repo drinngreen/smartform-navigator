@@ -309,6 +309,7 @@ const CHAPTERS: Chapter[] = [
     explain: [
       "Intermediario raccoglie i movimenti di sola intermediazione (categoria 8), senza detenzione del rifiuto.",
       "Registro Generale è la cronologia completa: filtri per giorno, società, CER, tipo o testo libero; col tasto destro su una riga esporti la selezione in Excel.",
+      "Per stampare un intervallo di date usa i campi 'Dal' e 'al' sopra l'elenco: i pulsanti Excel e 'Stampa PDF (periodo)' producono solo i movimenti di quel periodo, con in testa il registro selezionato e le date.",
       "'Conto Terzi Manuale' serve quando un cliente porta fisicamente un formulario cartaceo: lo registri e viene trattato come un formulario digitale, registro e giacenze compresi.",
       "'Scarico Lavorazione R13' sposta il materiale dai CER dei privati al CER aziendale generando in un colpo solo lo scarico e il carico corrispondente.",
       "Negli Invii al RENTRI scegli registro e data limite e consolidi l'invio; sotto trovi lo storico con identificativo transazione ed esito.",
