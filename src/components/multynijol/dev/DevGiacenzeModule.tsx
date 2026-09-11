@@ -357,6 +357,7 @@ export function DevGiacenzeModule() {
 
   return (
     <div className="space-y-4">
+      <PerElisabettaGiacenzaBox />
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-card/60 border-emerald-500/30">
