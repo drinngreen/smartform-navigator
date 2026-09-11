@@ -535,6 +535,7 @@ const CHAPTERS: Chapter[] = [
       "L'invio allo SDI avviene in formato FatturaPA (XML) tramite il provider collegato; l'esito torna in automatico e aggiorna lo stato.",
       "Le schede Piano dei Conti, Tabelle Fiscali e Prima Nota servono alla parte contabile: aliquote IVA, causali, registrazioni in partita doppia.",
       "I noleggi (es. cassoni) hanno una gestione dedicata e possono confluire come righe in fattura.",
+      "La scheda 'Contratti a canone' genera fatture in bozza ogni mese per i canoni ricorrenti (noleggi, compattatori, press-container): basta scegliere mese/anno e premere 'Genera fatture del mese'.",
       "Nell'app degli autisti la fatturazione non compare: è un'area riservata all'ufficio.",
     ],
     steps: [
