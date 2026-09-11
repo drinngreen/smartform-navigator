@@ -675,6 +675,7 @@ const CHAPTERS: Chapter[] = [
       "Il salvataggio è atomico: scarico del padre, carichi dei figli, lotti e legami di rintracciabilità riescono tutti insieme oppure non viene scritto nulla.",
       "La somma degli output può essere minore dell'ingresso: la differenza è il calo peso. Non può mai superare i kg lavorati.",
       "Annullare non cancella lo storico: crea movimenti compensativi inversi e riporta le giacenze alla situazione precedente.",
+      "Lo storico mostra la cernita interna del 4 settembre da 30.000 kg. Il Registro Generale mostra il trasferimento una sola volta tramite i movimenti ufficiali, evitando qualsiasi doppio conteggio.",
     ],
     steps: [
       "Apri Magazzino Dev, scegli Cernita e premi Apri Cernita.",
@@ -683,6 +684,7 @@ const CHAPTERS: Chapter[] = [
       "Aggiungi gli articoli/CER in uscita e distribuisci i kg.",
       "Controlla il riepilogo e l'eventuale calo peso.",
       "Conferma e verifica che il CER padre diminuisca e i figli aumentino nelle Giacenze Dragon.",
+      "Apri Registro Generale e verifica la presenza dei movimenti della nuova cernita; le cernite annullate e quelle di test non devono comparire.",
       "Usa Lotti & Rintraccia per vedere il collegamento padre-figli.",
     ],
     fields: [
