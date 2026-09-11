@@ -19,6 +19,10 @@ export function FatturazioneModule({ tenantId }: FatturazioneModuleProps) {
           <FileText className="h-4 w-4" />
           Fatture Vendita
         </TabsTrigger>
+        <TabsTrigger value="contratti" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+          <FileSignature className="h-4 w-4" />
+          Contratti a canone
+        </TabsTrigger>
         <TabsTrigger value="anagrafiche" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
           <Users className="h-4 w-4" />
           Anagrafiche
