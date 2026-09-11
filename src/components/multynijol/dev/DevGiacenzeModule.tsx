@@ -13,6 +13,7 @@ import * as XLSX from "xlsx";
 import { CER_CATALOG } from "@/data/cerCatalog";
 import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { logAgentActivity } from "@/stores/agentActivityStore";
+import { PerElisabettaGiacenzaBox } from "./PerElisabettaGiacenzaBox";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -357,6 +358,7 @@ export function DevGiacenzeModule() {
 
   return (
     <div className="space-y-4">
+      <PerElisabettaGiacenzaBox />
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-card/60 border-emerald-500/30">
