@@ -13,13 +13,9 @@ import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 // Cernite nascoste SOLO a vista nel registro (nessuna modifica al DB, nessun effetto sulle giacenze):
-// - 4f67aac6 = cernita 31/08/2026 (1840 kg), richiesta del cliente
-// - c19fe96a = cernita 04/09/2026 (30.000 kg): la stessa operazione è già registrata come
-//   movimenti ufficiali del 21/01/2026 (scarico 200140-FE / carico 170405). Resta visibile
-//   in Lavorazioni ma non deve comparire due volte nel registro.
+// - 4f67aac6 = cernita 31/08/2026 (1840 kg), unica esclusione richiesta dal cliente.
 const HIDDEN_CERNITA_BATCH_IDS = [
   "4f67aac6-ca36-4831-a494-163853085960",
-  "c19fe96a-ca27-4a7c-80a8-43ac5299c23b",
 ];
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const PAGE_SIZE = 100;
