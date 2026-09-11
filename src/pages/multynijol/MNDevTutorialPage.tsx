@@ -309,6 +309,7 @@ const CHAPTERS: Chapter[] = [
     explain: [
       "Intermediario raccoglie i movimenti di sola intermediazione (categoria 8), senza detenzione del rifiuto.",
       "Registro Generale è la cronologia completa: filtri per giorno, società, CER, tipo o testo libero; col tasto destro su una riga esporti la selezione in Excel.",
+      "Per stampare un intervallo di date usa i campi 'Dal' e 'al' sopra l'elenco: i pulsanti Excel e 'Stampa PDF (periodo)' producono solo i movimenti di quel periodo, con in testa il registro selezionato e le date.",
       "'Conto Terzi Manuale' serve quando un cliente porta fisicamente un formulario cartaceo: lo registri e viene trattato come un formulario digitale, registro e giacenze compresi.",
       "'Scarico Lavorazione R13' sposta il materiale dai CER dei privati al CER aziendale generando in un colpo solo lo scarico e il carico corrispondente.",
       "Negli Invii al RENTRI scegli registro e data limite e consolidi l'invio; sotto trovi lo storico con identificativo transazione ed esito.",
@@ -316,6 +317,7 @@ const CHAPTERS: Chapter[] = [
     steps: [
       "Seleziona il sotto-registro (Intermediario, Generale, Invii RENTRI).",
       "Filtra per data e controlla la progressione cronologica.",
+      "Per stampare un periodo imposta 'Dal' e 'al' e premi 'Stampa PDF (periodo)' o 'Excel': il file conterrà solo i movimenti di quell'intervallo.",
       "Esporta in Excel con il tasto destro se ti serve per il commercialista.",
       "Registra eventuali formulari cartacei con Conto Terzi Manuale.",
       "Invia al RENTRI e verifica l'esito nello storico e nella Console RENTRI.",
@@ -326,6 +328,7 @@ const CHAPTERS: Chapter[] = [
       { q: "Come registro un formulario cartaceo ricevuto da terzi?", a: "Usa la funzione Conto Terzi Manuale: entra nel registro come gli altri documenti." },
       { q: "Ho inviato al RENTRI un periodo sbagliato.", a: "Un invio consolidato non si annulla dal gestionale: va gestito come rettifica. Per questo conviene controllare sempre il periodo prima di confermare." },
       { q: "Serve l'esportazione per il commercialista?", a: "Sì: l'export in Excel del periodo è il formato più comodo da consegnare." },
+      { q: "Posso stampare solo un mese o una settimana?", a: "Sì: nel Registro Generale imposta 'Dal' e 'al' e usa 'Stampa PDF (periodo)'. I movimenti fuori dall'intervallo vengono esclusi automaticamente." },
     ],
     route: "/mn/admin/dev-multyproget?tab=registri",
   },
@@ -532,6 +535,7 @@ const CHAPTERS: Chapter[] = [
       "L'invio allo SDI avviene in formato FatturaPA (XML) tramite il provider collegato; l'esito torna in automatico e aggiorna lo stato.",
       "Le schede Piano dei Conti, Tabelle Fiscali e Prima Nota servono alla parte contabile: aliquote IVA, causali, registrazioni in partita doppia.",
       "I noleggi (es. cassoni) hanno una gestione dedicata e possono confluire come righe in fattura.",
+      "La scheda 'Contratti a canone' genera fatture in bozza ogni mese per i canoni ricorrenti (noleggi, compattatori, press-container): basta scegliere mese/anno e premere 'Genera fatture del mese'.",
       "Nell'app degli autisti la fatturazione non compare: è un'area riservata all'ufficio.",
     ],
     steps: [
@@ -541,6 +545,7 @@ const CHAPTERS: Chapter[] = [
       "Controlla righe, aliquote IVA e totali.",
       "Salva in bozza, genera il PDF di cortesia e invialo al cliente se serve.",
       "Invia allo SDI e segui l'esito nello stato della fattura.",
+      "Per i canoni mensili apri la scheda 'Contratti a canone', scegli mese e anno e premi 'Genera fatture del mese': il sistema crea una fattura in bozza per ogni contratto attivo, senza mai duplicare lo stesso periodo.",
       "Registra l'incasso in Prima Nota quando arriva il pagamento.",
     ],
     fields: [
@@ -556,6 +561,8 @@ const CHAPTERS: Chapter[] = [
     faq: [
       { q: "Non trovo nessuna fattura.", a: "Il modulo parte vuoto per ogni società: verifica di essere nel contesto giusto (Multyproget o Niyol) in alto a sinistra." },
       { q: "Posso fatturare più formulari insieme?", a: "Sì: seleziona i formulari del periodo per lo stesso cliente e genera un'unica fattura con più righe." },
+      { q: "Dove gestisco i canoni mensili (cassoni, compattatori)?", a: "Nella scheda 'Contratti a canone'. Ogni contratto elenca le voci: quelle con il simbolo di ripetizione generano la fattura automatica, le altre sono listino a consumo." },
+      { q: "Ho generato due volte le fatture dello stesso mese?", a: "No: il sistema blocca la duplicazione per contratto-periodo. Se premi di nuovo 'Genera fatture del mese' per lo stesso mese, non crea nuove fatture." },
     ],
     route: "/mn/admin/dev-multyproget/fatturazione",
   },
@@ -607,6 +614,49 @@ const CHAPTERS: Chapter[] = [
       { q: "Il cliente dice di non aver ricevuto la fattura.", a: "Se lo stato è 'Non recapitata' il documento è comunque valido ed è disponibile nel suo cassetto fiscale: inviagli il PDF di cortesia." },
     ],
     tip: "Regola pratica: la prima fattura del mese falla in sandbox se hai cambiato qualcosa nelle anagrafiche. Trenta secondi di prova evitano uno scarto.",
+    route: "/mn/admin/dev-multyproget/fatturazione",
+  },
+  {
+    id: "contratti-canone",
+    title: "Contratti a canone",
+    subtitle: "Fatture automatiche mensili per noleggi e servizi ricorrenti",
+    image: "/tutorial/16-fatturazione.png",
+    level: "Avanzato",
+    minutes: 4,
+    intro:
+      "La scheda 'Contratti a canone' gestisce i contratti cliente che devono produrre una fattura ogni mese fino a recessione: noleggi cassoni, compattatori, press-container, abbonamenti. Le voci a consumo (smaltimento, trasporto a kg) restano nel listino e NON generano canoni.",
+    explain: [
+      "Ogni contratto ha una testa (cliente, numero contratto, date di inizio/fine) e una o più righe: le righe marcate ricorrenti generano fatture automatiche, le altre sono solo listino di riferimento.",
+      "Scegli mese e anno, poi premi 'Genera fatture del mese': il sistema crea una fattura in bozza per ogni contratto attivo, con le righe ricorrenti del periodo. Lo stesso mese non può essere fatturato due volte per lo stesso contratto.",
+      "Il pulsante 'Recesso' ferma la generazione futura; 'Riattiva' lo rimette in funzione. I contratti con data fine passata non generano più fatture.",
+      "Le fatture generate restano in bozza: devi ancora controllarle, generare il PDF di cortesia e inviarle allo SDI come le altre fatture.",
+    ],
+    steps: [
+      "Apri il modulo Fatturazione e seleziona la scheda 'Contratti a canone'.",
+      "Verifica che ogni contratto attivo abbia cliente, numero contratto, data inizio e almeno una riga ricorrente.",
+      "Scegli mese e anno da fatturare.",
+      "Premi 'Genera fatture del mese' e attendi il riepilogo.",
+      "Vai in 'Fatture Vendita' per trovare le bozze create, controlla righe e totali.",
+      "Procedi con PDF di cortesia e invio SDI come per le fatture normali.",
+    ],
+    fields: [
+      { label: "Contratto", desc: "Testa con cliente, numero, date di validità e stato (attivo/recesso)." },
+      { label: "Riga ricorrente", desc: "Voce con il simbolo di ripetizione: genera automaticamente una riga di fattura ogni mese." },
+      { label: "Riga listino", desc: "Voce non ricorrente: serve solo come riferimento prezzi per fatture manuali." },
+      { label: "Periodicità", desc: "Di default mensile (1 mese); può essere diversa per contratti con fatturazione trimestrale/annuale." },
+      { label: "Recesso / Riattiva", desc: "Interrompe o riprende la generazione automatica senza cancellare il contratto." },
+    ],
+    warnings: [
+      "La generazione crea fatture REALI in bozza: controllale prima di inviarle allo SDI.",
+      "Una volta inviata una fattura di canone allo SDI, eventuali errori vanno corretti con nota di credito, non modificando la fattura.",
+    ],
+    faq: [
+      { q: "Posso generare fatture per un mese passato?", a: "Sì, purché non siano già state generate per quel contratto-periodo. Il sistema blocca solo i duplicati." },
+      { q: "Cosa succede se modifico una riga ricorrente dopo aver già generato fatture?", a: "Le fatture già generate restano invariate; le prossime useranno i nuovi importi." },
+      { q: "Un contratto senza righe ricorrenti genera fatture?", a: "No: serve almeno una riga marcata ricorrente. Le righe listino servono solo da riferimento." },
+      { q: "Dove trovo le fatture generate?", a: "Nella scheda 'Fatture Vendita', in stato Bozza, con il cliente e il periodo indicati." },
+    ],
+    tip: "Prima di generare un mese con molti contratti, prova con un solo contratto: così verifichi che righe, importi e periodo siano corretti.",
     route: "/mn/admin/dev-multyproget/fatturazione",
   },
 

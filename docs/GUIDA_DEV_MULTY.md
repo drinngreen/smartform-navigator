@@ -1,7 +1,7 @@
 # 📘 Guida Completa — Dev Multy (Multyproget · Centro di Comando)
 
 > Documento operativo unico. Chi lo legge deve poter usare Dev Multy dal primo click all'ultimo, senza esperienza pregressa.
-> **Ultimo aggiornamento: 18 agosto 2026.** Tutte le novità sono **integrate nelle rispettive sezioni** (non c'è più un capitolo separato "Novità"): quello che leggi qui è lo stato attuale del software.
+> **Ultimo aggiornamento: 11 settembre 2026.** Tutte le novità sono **integrate nelle rispettive sezioni** (non c'è più un capitolo separato "Novità"): quello che leggi qui è lo stato attuale del software.
 
 ---
 
