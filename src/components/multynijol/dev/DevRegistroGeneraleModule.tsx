@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen, Truck, Scissors, X } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { stampaRegistroModelloRentri } from "@/lib/registroRentriPrint";
 import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
@@ -152,7 +153,45 @@ export function DevRegistroGeneraleModule() {
         nota_int: `Cernita ${movement.source_transform_batch_id}`,
       }));
 
-      return [...all, ...cerniteNelRegistro].sort((a, b) => {
+      // Conferimenti dei PRIVATI: fanno parte del registro unico (carichi da privato).
+      let privatiRows: any[] = [];
+      try {
+        const { data, error: privatiError } = await supabase
+          .from("privati_conferimenti" as any)
+          .select("id, tenant_id, data, cer, kg_pesati, nome_privato, numero_progressivo, anno_dbt, targa_automezzo, numero_fir")
+          .in("tenant_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
+          .order("data", { ascending: false })
+          .limit(2000);
+        if (privatiError) throw privatiError;
+        privatiRows = data || [];
+      } catch (e) {
+        console.warn("[RegistroGenerale] privati non caricati:", e);
+        privatiRows = [];
+      }
+
+      const privatiNelRegistro = privatiRows.map((p: any) => ({
+        id: `privato-${p.id}`,
+        tenant_id: p.tenant_id,
+        registro: p.tenant_id === NIYOL_TENANT_ID ? "NIYOL" : "MULTY_IMPIANTO",
+        numero_interno: p.numero_progressivo ? `P-${p.numero_progressivo}` : "Privato",
+        numero_movimento: p.numero_progressivo || null,
+        data_movimento: p.data,
+        cer: (p.cer || "").toUpperCase(),
+        descrizione: "metalli",
+        carico_scarico: "Carico",
+        tipo_operazione: "da Privato",
+        numero_formulario: p.numero_fir || null,
+        segno: "+",
+        quantita: Number(p.kg_pesati || 0),
+        qta_scaricata: Number(p.kg_pesati || 0),
+        luogo_produzione: p.nome_privato,
+        destinazione: "R13",
+        stato_fisico: "2",
+        origine_rifiuto: "Rifiuto",
+        annotazioni: `Conferimento privato ${p.numero_progressivo || ""}/${p.anno_dbt || ""}${p.targa_automezzo ? ` - targa ${p.targa_automezzo}` : ""}`,
+      }));
+
+      return [...all, ...cerniteNelRegistro, ...privatiNelRegistro].sort((a, b) => {
         const byDate = String(b.data_movimento || "").localeCompare(String(a.data_movimento || ""));
         if (byDate !== 0) return byDate;
         return Number(b.numero_movimento || 0) - Number(a.numero_movimento || 0);
@@ -336,6 +375,9 @@ export function DevRegistroGeneraleModule() {
         </Button>
         <Button variant="outline" size="sm" onClick={() => filtered.length && exportToPdf(filtered, exportCols, exportFileName, exportTitle)} className="gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
           <Printer className="h-3 w-3" /> Stampa PDF (periodo)
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => filtered.length && stampaRegistroModelloRentri(filtered as any, `${exportFileName}-modello-rentri`, { operatore: "Multyproget S.r.l.", registro: registroLabel, periodo: periodoLabel })} className="gap-1 border-sky-500/40 text-sky-300 hover:bg-sky-500/10">
+          <FileText className="h-3 w-3" /> Stampa Modello RENTRI
         </Button>
         <Button size="sm" onClick={() => setContoTerziOpen(true)} className="gap-1 bg-amber-500 text-black hover:bg-amber-400">
           <Truck className="h-3 w-3" /> Conto Terzi (cartaceo)
