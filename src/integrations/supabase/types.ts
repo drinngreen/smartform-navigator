@@ -1162,6 +1162,181 @@ export type Database = {
           },
         ]
       }
+      contratti_clienti: {
+        Row: {
+          cliente_codice: string | null
+          cliente_id: string | null
+          cliente_ragione_sociale: string
+          created_at: string
+          data_fine: string | null
+          data_inizio: string | null
+          data_ordine: string | null
+          data_recesso: string | null
+          id: string
+          note: string | null
+          numero: string
+          stato: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_codice?: string | null
+          cliente_id?: string | null
+          cliente_ragione_sociale: string
+          created_at?: string
+          data_fine?: string | null
+          data_inizio?: string | null
+          data_ordine?: string | null
+          data_recesso?: string | null
+          id?: string
+          note?: string | null
+          numero: string
+          stato?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_codice?: string | null
+          cliente_id?: string | null
+          cliente_ragione_sociale?: string
+          created_at?: string
+          data_fine?: string | null
+          data_inizio?: string | null
+          data_ordine?: string | null
+          data_recesso?: string | null
+          id?: string
+          note?: string | null
+          numero?: string
+          stato?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratti_clienti_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "erp_anagrafiche"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratti_clienti_righe: {
+        Row: {
+          aliquota_iva: number
+          articolo_cer: string | null
+          attiva: boolean
+          contratto_id: string
+          created_at: string
+          data_fine: string | null
+          data_inizio: string | null
+          descrizione: string
+          id: string
+          mese_fatturazione: string | null
+          periodicita_mesi: number
+          prezzo_unitario: number
+          quantita: number
+          ricorrente: boolean
+          sconto_percentuale: number
+          servizio: string | null
+          unita_misura: string | null
+          updated_at: string
+        }
+        Insert: {
+          aliquota_iva?: number
+          articolo_cer?: string | null
+          attiva?: boolean
+          contratto_id: string
+          created_at?: string
+          data_fine?: string | null
+          data_inizio?: string | null
+          descrizione: string
+          id?: string
+          mese_fatturazione?: string | null
+          periodicita_mesi?: number
+          prezzo_unitario?: number
+          quantita?: number
+          ricorrente?: boolean
+          sconto_percentuale?: number
+          servizio?: string | null
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aliquota_iva?: number
+          articolo_cer?: string | null
+          attiva?: boolean
+          contratto_id?: string
+          created_at?: string
+          data_fine?: string | null
+          data_inizio?: string | null
+          descrizione?: string
+          id?: string
+          mese_fatturazione?: string | null
+          periodicita_mesi?: number
+          prezzo_unitario?: number
+          quantita?: number
+          ricorrente?: boolean
+          sconto_percentuale?: number
+          servizio?: string | null
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratti_clienti_righe_contratto_id_fkey"
+            columns: ["contratto_id"]
+            isOneToOne: false
+            referencedRelation: "contratti_clienti"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contratti_fatture_generate: {
+        Row: {
+          contratto_id: string
+          created_at: string
+          fattura_id: string | null
+          id: string
+          importo_totale: number
+          periodo: string
+          tenant_id: string
+        }
+        Insert: {
+          contratto_id: string
+          created_at?: string
+          fattura_id?: string | null
+          id?: string
+          importo_totale?: number
+          periodo: string
+          tenant_id: string
+        }
+        Update: {
+          contratto_id?: string
+          created_at?: string
+          fattura_id?: string | null
+          id?: string
+          importo_totale?: number
+          periodo?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratti_fatture_generate_contratto_id_fkey"
+            columns: ["contratto_id"]
+            isOneToOne: false
+            referencedRelation: "contratti_clienti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratti_fatture_generate_fattura_id_fkey"
+            columns: ["fattura_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fatture_vendita"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ddt_forms: {
         Row: {
           anno: number
@@ -6745,6 +6920,10 @@ export type Database = {
       }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }
       exec_sql_write: { Args: { query: string }; Returns: Json }
+      genera_fatture_contratti: {
+        Args: { p_periodo: string; p_tenant_id: string }
+        Returns: Json
+      }
       generate_fir_numbers_for_user: {
         Args: { p_user_id: string }
         Returns: undefined
