@@ -545,6 +545,7 @@ const CHAPTERS: Chapter[] = [
       "Controlla righe, aliquote IVA e totali.",
       "Salva in bozza, genera il PDF di cortesia e invialo al cliente se serve.",
       "Invia allo SDI e segui l'esito nello stato della fattura.",
+      "Per i canoni mensili apri la scheda 'Contratti a canone', scegli mese e anno e premi 'Genera fatture del mese': il sistema crea una fattura in bozza per ogni contratto attivo, senza mai duplicare lo stesso periodo.",
       "Registra l'incasso in Prima Nota quando arriva il pagamento.",
     ],
     fields: [
