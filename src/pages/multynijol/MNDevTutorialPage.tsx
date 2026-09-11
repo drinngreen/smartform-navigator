@@ -616,6 +616,49 @@ const CHAPTERS: Chapter[] = [
     tip: "Regola pratica: la prima fattura del mese falla in sandbox se hai cambiato qualcosa nelle anagrafiche. Trenta secondi di prova evitano uno scarto.",
     route: "/mn/admin/dev-multyproget/fatturazione",
   },
+  {
+    id: "contratti-canone",
+    title: "Contratti a canone",
+    subtitle: "Fatture automatiche mensili per noleggi e servizi ricorrenti",
+    image: "/tutorial/16-fatturazione.png",
+    level: "Avanzato",
+    minutes: 4,
+    intro:
+      "La scheda 'Contratti a canone' gestisce i contratti cliente che devono produrre una fattura ogni mese fino a recessione: noleggi cassoni, compattatori, press-container, abbonamenti. Le voci a consumo (smaltimento, trasporto a kg) restano nel listino e NON generano canoni.",
+    explain: [
+      "Ogni contratto ha una testa (cliente, numero contratto, date di inizio/fine) e una o più righe: le righe marcate ricorrenti generano fatture automatiche, le altre sono solo listino di riferimento.",
+      "Scegli mese e anno, poi premi 'Genera fatture del mese': il sistema crea una fattura in bozza per ogni contratto attivo, con le righe ricorrenti del periodo. Lo stesso mese non può essere fatturato due volte per lo stesso contratto.",
+      "Il pulsante 'Recesso' ferma la generazione futura; 'Riattiva' lo rimette in funzione. I contratti con data fine passata non generano più fatture.",
+      "Le fatture generate restano in bozza: devi ancora controllarle, generare il PDF di cortesia e inviarle allo SDI come le altre fatture.",
+    ],
+    steps: [
+      "Apri il modulo Fatturazione e seleziona la scheda 'Contratti a canone'.",
+      "Verifica che ogni contratto attivo abbia cliente, numero contratto, data inizio e almeno una riga ricorrente.",
+      "Scegli mese e anno da fatturare.",
+      "Premi 'Genera fatture del mese' e attendi il riepilogo.",
+      "Vai in 'Fatture Vendita' per trovare le bozze create, controlla righe e totali.",
+      "Procedi con PDF di cortesia e invio SDI come per le fatture normali.",
+    ],
+    fields: [
+      { label: "Contratto", desc: "Testa con cliente, numero, date di validità e stato (attivo/recesso)." },
+      { label: "Riga ricorrente", desc: "Voce con il simbolo di ripetizione: genera automaticamente una riga di fattura ogni mese." },
+      { label: "Riga listino", desc: "Voce non ricorrente: serve solo come riferimento prezzi per fatture manuali." },
+      { label: "Periodicità", desc: "Di default mensile (1 mese); può essere diversa per contratti con fatturazione trimestrale/annuale." },
+      { label: "Recesso / Riattiva", desc: "Interrompe o riprende la generazione automatica senza cancellare il contratto." },
+    ],
+    warnings: [
+      "La generazione crea fatture REALI in bozza: controllale prima di inviarle allo SDI.",
+      "Una volta inviata una fattura di canone allo SDI, eventuali errori vanno corretti con nota di credito, non modificando la fattura.",
+    ],
+    faq: [
+      { q: "Posso generare fatture per un mese passato?", a: "Sì, purché non siano già state generate per quel contratto-periodo. Il sistema blocca solo i duplicati." },
+      { q: "Cosa succede se modifico una riga ricorrente dopo aver già generato fatture?", a: "Le fatture già generate restano invariate; le prossime useranno i nuovi importi." },
+      { q: "Un contratto senza righe ricorrenti genera fatture?", a: "No: serve almeno una riga marcata ricorrente. Le righe listino servono solo da riferimento." },
+      { q: "Dove trovo le fatture generate?", a: "Nella scheda 'Fatture Vendita', in stato Bozza, con il cliente e il periodo indicati." },
+    ],
+    tip: "Prima di generare un mese con molti contratti, prova con un solo contratto: così verifichi che righe, importi e periodo siano corretti.",
+    route: "/mn/admin/dev-multyproget/fatturazione",
+  },
 
   {
     id: "cernite-dragon",
