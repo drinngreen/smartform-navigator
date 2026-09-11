@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookOpen, Truck, Scissors, X } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { stampaRegistroModelloRentri } from "@/lib/registroRentriPrint";
 import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
 
