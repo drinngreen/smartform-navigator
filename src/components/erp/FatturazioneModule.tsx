@@ -44,6 +44,9 @@ export function FatturazioneModule({ tenantId }: FatturazioneModuleProps) {
       <TabsContent value="fatture">
         <FattureVenditaTab tenantId={tenantId} />
       </TabsContent>
+      <TabsContent value="contratti">
+        <ContrattiTab tenantId={tenantId} />
+      </TabsContent>
       <TabsContent value="anagrafiche">
         <AnagraficheTab tenantId={tenantId} />
       </TabsContent>
