@@ -317,6 +317,7 @@ const CHAPTERS: Chapter[] = [
     steps: [
       "Seleziona il sotto-registro (Intermediario, Generale, Invii RENTRI).",
       "Filtra per data e controlla la progressione cronologica.",
+      "Per stampare un periodo imposta 'Dal' e 'al' e premi 'Stampa PDF (periodo)' o 'Excel': il file conterrà solo i movimenti di quell'intervallo.",
       "Esporta in Excel con il tasto destro se ti serve per il commercialista.",
       "Registra eventuali formulari cartacei con Conto Terzi Manuale.",
       "Invia al RENTRI e verifica l'esito nello storico e nella Console RENTRI.",
