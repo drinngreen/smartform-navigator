@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, Calculator, BookOpen, BookOpenCheck } from "lucide-react";
+import { Users, FileText, Calculator, BookOpen, BookOpenCheck, FileSignature } from "lucide-react";
 import { AnagraficheTab } from "./AnagraficheTab";
+import { ContrattiTab } from "./ContrattiTab";
 import { FattureVenditaTab } from "./FattureVenditaTab";
 import { PianoContiTab } from "./PianoContiTab";
 import { TabelleFiscaliTab } from "./TabelleFiscaliTab";
