@@ -318,9 +318,10 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const buildExportRows = () =>
     [...filtered]
       .sort((a, b) => String(b.data).localeCompare(String(a.data)) || (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0))
-      .map((m, i) => ({
+      .map((m) => ({
         ...m,
-        n_riga: i + 1,
+        // N. = stesso numero progressivo della ricevuta (nessuna rinumerazione di stampa)
+        n_riga: m.numero_progressivo ?? "—",
         progressivo: m.numero_progressivo ? `${m.numero_progressivo}/${m.anno_dbt ?? String(m.data).slice(0, 4)}` : "—",
         data_it: fmtDate(m.data),
         descrizione: getCerDescrizioneCompleta(m.cer),
@@ -339,7 +340,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       }));
 
   const EXPORT_COLUMNS = [
-    { header: "N.", key: "n_riga", width: 6 },
+    { header: "N. ricevuta", key: "n_riga", width: 12 },
     { header: "Progressivo/Anno", key: "progressivo", width: 16 },
     { header: "Data movimento", key: "data_it", width: 14 },
     { header: "Causale", key: "causale", width: 10 },
@@ -407,7 +408,7 @@ exportToPdf(
 
   /** ---- VERSIONE BREVE: stesse voci del modulo allegato (registro cronologico) ---- */
   const SHORT_COLUMNS = [
-    { header: "N.", key: "n_riga", width: 6 },
+    { header: "N. ricevuta", key: "n_riga", width: 12 },
     { header: "Data", key: "data_it", width: 12 },
     { header: "Caus.", key: "causale", width: 10 },
     { header: "Cod. EER", key: "cer", width: 11 },
