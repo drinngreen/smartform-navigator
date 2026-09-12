@@ -17,6 +17,9 @@ interface ZoliDarkLemonWidgetState {
   setWorking: (working: boolean) => void;
   currentConversationId: string | null;
   setCurrentConversationId: (id: string | null) => void;
+  /** Conversazione attiva per ogni vista (laterale, fluttuante, barra, pagina...) */
+  conversationBySurface: Record<string, string | null>;
+  setSurfaceConversationId: (surface: string, id: string | null) => void;
   topBarCollapsed: boolean;
   setTopBarCollapsed: (collapsed: boolean) => void;
 }
@@ -82,6 +85,12 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
   setWorking: (isWorking) => set({ isWorking }),
   currentConversationId: null,
   setCurrentConversationId: (currentConversationId) => set({ currentConversationId }),
+  conversationBySurface: {},
+  setSurfaceConversationId: (surface, id) =>
+    set((state) => ({
+      conversationBySurface: { ...state.conversationBySurface, [surface]: id },
+      currentConversationId: id ?? state.currentConversationId,
+    })),
   topBarCollapsed: initial.topBarCollapsed,
   setTopBarCollapsed: (topBarCollapsed) => {
     set({ topBarCollapsed });

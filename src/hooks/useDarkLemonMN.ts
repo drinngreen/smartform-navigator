@@ -22,14 +22,17 @@ export interface DLMessage {
   createdAt: Date;
 }
 
-export type DLSurface = "side" | "floating" | "console" | "page";
+export type DLSurface = "side" | "floating" | "console" | "page" | "top";
 
 export const DL_SURFACE_LABELS: Record<DLSurface, string> = {
   side: "Vista laterale",
   floating: "Vista fluttuante",
   console: "Console RENTRI",
   page: "Pagina Dark Lemon",
+  top: "Barra in alto",
 };
+
+const DL_SURFACES: DLSurface[] = ["side", "floating", "console", "page", "top"];
 
 export interface DLConversation {
   id: string;
@@ -154,9 +157,16 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
   const [conversations, setConversations] = useState<DLConversation[]>([]);
   const normalizedContext = normalizeMNContext(context);
 
-  // Shared conversation ID from zustand store
-  const currentConversationId = useZoliDarkLemonWidgetStore((s) => s.currentConversationId);
-  const setCurrentConversationId = useZoliDarkLemonWidgetStore((s) => s.setCurrentConversationId);
+  // Conversazione attiva DI QUESTA vista: finché la vista resta aperta lavora
+  // solo sulla sua conversazione; la cronologia resta condivisa fra tutte le viste.
+  const currentConversationId = useZoliDarkLemonWidgetStore(
+    (s) => s.conversationBySurface[surface] ?? null
+  );
+  const setSurfaceConversationId = useZoliDarkLemonWidgetStore((s) => s.setSurfaceConversationId);
+  const setCurrentConversationId = useCallback(
+    (id: string | null) => setSurfaceConversationId(surface, id),
+    [setSurfaceConversationId, surface]
+  );
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -223,9 +233,17 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
         attachments: getAttachmentsFromMetadata(m.metadata),
         createdAt: new Date(m.created_at),
       })));
+      // La conversazione viene "presa in carico" da questa vista: se era aperta
+      // in un'altra vista, quella la rilascia.
+      const store = useZoliDarkLemonWidgetStore.getState();
+      for (const other of DL_SURFACES) {
+        if (other !== surface && store.conversationBySurface[other] === conversationId) {
+          store.setSurfaceConversationId(other, null);
+        }
+      }
       setCurrentConversationId(conversationId);
     }
-  }, [setCurrentConversationId]);
+  }, [setCurrentConversationId, surface]);
 
   const sendMessage = useCallback(async (
     content: string,
@@ -342,10 +360,13 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
   const deleteConversation = useCallback(async (conversationId: string) => {
     await supabase.from("ai_messages").delete().eq("conversation_id", conversationId);
     await supabase.from("ai_conversations").delete().eq("id", conversationId);
-    if (currentConversationId === conversationId) {
-      setCurrentConversationId(null);
-      setMessages([]);
+    const store = useZoliDarkLemonWidgetStore.getState();
+    for (const other of DL_SURFACES) {
+      if (store.conversationBySurface[other] === conversationId) {
+        store.setSurfaceConversationId(other, null);
+      }
     }
+    if (currentConversationId === conversationId) setMessages([]);
     await loadConversations();
   }, [currentConversationId, loadConversations, setCurrentConversationId]);
 

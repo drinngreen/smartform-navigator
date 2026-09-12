@@ -27,7 +27,7 @@ interface Props {
  */
 export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: Props) {
   const navigate = useNavigate();
-  const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "floating");
+  const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "top");
   const { capturePageContent } = usePageContext();
   const { getRegisteredFields } = useFormBridgeContext();
   const topBarCollapsed = useZoliDarkLemonWidgetStore((s) => s.topBarCollapsed);
