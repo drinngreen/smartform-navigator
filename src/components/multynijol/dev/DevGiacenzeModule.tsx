@@ -162,10 +162,12 @@ export function DevGiacenzeModule() {
       
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
+    const elencoKeys = new Set((cerElenco ?? []).map((c) => normalizeCer(c.cer)));
     return Object.values(map)
-      .filter((r) => showAllCer || r.carico !== 0 || r.scarico !== 0)
+      .filter((r) => showAllCer || elencoKeys.has(r.cer) || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, dataAl, dataDal, showAllCer]);
+  }, [movimenti, dataAl, dataDal, showAllCer, cerElenco]);
+
 
 
 
