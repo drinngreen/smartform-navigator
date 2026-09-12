@@ -439,6 +439,8 @@ export function DevRegistroGeneraleModule() {
         </CardContent>
       </Card>
 
+      <ScrollJumpButtons containerRef={bottomScrollRef} />
+
       {/* Right-click context menu → export filtered rows to Excel */}
       {ctxMenu && (
         <>
