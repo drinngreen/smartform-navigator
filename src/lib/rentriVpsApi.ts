@@ -19,6 +19,7 @@ export type RentriTipoOperazione =
   | "LISTA_BLOCCHI"
   | "DETTAGLIO_FIR"
   | "RICERCA_FIR"
+  | "LISTA_FIR_SOGGETTO"
   | "FIRMA_RICEZIONE"
   | "RICERCA_MOVIMENTI"
   | "TRANSAZIONE_REGISTRO"
