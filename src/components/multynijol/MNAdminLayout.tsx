@@ -59,6 +59,12 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
     return routeColors["/mn/admin"];
   }, [location.pathname]);
 
+  const dlContext = useMemo(() => {
+    if (location.pathname.includes("/niyol")) return "niyol";
+    if (location.pathname.includes("/dev-multyproget")) return "dev-multyproget";
+    return "multyproget";
+  }, [location.pathname]);
+
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
       <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "mr-[max(20vw,280px)]" : ""}`}>
