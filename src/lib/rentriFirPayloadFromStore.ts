@@ -9,6 +9,7 @@
 import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
+import { resolveComuneId } from "@/lib/comuneIstat";
 
 type Bag = Record<string, unknown>;
 
@@ -93,7 +94,7 @@ export async function mapStoreToRentriFirPayload(
         codice_fiscale: s(data.produttoreCF),
         nazione_id: "IT",
         indirizzo: {
-          citta: { comune_id: "" },
+          citta: { comune_id: prodComuneId },
           indirizzo: prodAddr.indirizzo,
           cap: prodAddr.cap,
         },
@@ -112,7 +113,7 @@ export async function mapStoreToRentriFirPayload(
         nazione_id: "IT",
         attivita: operazione,
         indirizzo: {
-          citta: { comune_id: "" },
+          citta: { comune_id: destComuneId },
           indirizzo: destAddr.indirizzo,
           cap: destAddr.cap,
         },

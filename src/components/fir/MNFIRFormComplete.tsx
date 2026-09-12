@@ -838,7 +838,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const cfProduttore = String(d.produttoreCF || "").replace(/\s/g, "").toUpperCase();
       const firmaComeProduttore =
         !!cfgTenant?.issuer && cfProduttore === String(cfgTenant.issuer).toUpperCase();
-      const payloadRentri = mapStoreToRentriFirPayload(societaId as any, store.data as any, {
+      const payloadRentri = await mapStoreToRentriFirPayload(societaId as any, store.data as any, {
         firmaComeProduttore,
       });
       const result = await inviaFirmaRentri({ societaId, payloadFir: payloadRentri });
