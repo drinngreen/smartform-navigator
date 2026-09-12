@@ -187,6 +187,7 @@ export function resolveRoute(
 ): RouteInfo {
   const key = configKey(cliente);
   const issuer = ISSUER_MAP[norm(cliente)] ?? "";
+  const unitId = String(payload.num_iscr_sito ?? UNIT_ID_MAP[key] ?? "");
   const registryId = resolveRegistryId(cliente, payload);
   const blocks = BLOCK_CODES[key] ?? [];
   const codiceBlocco = String(payload.codice_blocco ?? payload.blocco ?? blocks[0]?.code ?? "");
