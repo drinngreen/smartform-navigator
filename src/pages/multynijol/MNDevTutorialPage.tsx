@@ -813,7 +813,10 @@ const CHAPTERS: Chapter[] = [
     intro:
       "Dark Lemon è l'assistente intelligente integrato nel gestionale: non è una semplice chat, è un agente che legge davvero i dati dell'azienda, controlla la coerenza di giacenze, formulari e conferimenti, e può eseguire azioni operative al posto tuo.",
     explain: [
-      "Dove si trova: puoi aprirlo in tre modi. Il pulsante limone in alto a destra apre il widget fluttuante; l'icona a pannello apre la vista laterale affiancata al lavoro; nella Console RENTRI c'è una vista dedicata alle pratiche. È sempre lo stesso assistente, cambia solo la finestra.",
+      "Dove si trova: c'è una barra compatta di Dark Lemon in cima a ogni pagina di Multy Dev, che resta al suo posto anche cambiando schermata. In più puoi aprirlo con il pulsante limone (widget fluttuante), con l'icona a pannello (colonna laterale) e nella Console RENTRI. È sempre lo stesso assistente, cambia solo la finestra.",
+      "Se la barra in alto dà fastidio, chiudila con il pulsante «−»: resta un segnalibro «Dark Lemon» in alto a destra per riaprirla quando vuoi. La scelta viene ricordata anche cambiando pagina.",
+      "Ogni conversazione resta legata alla finestra da cui l'hai iniziata finché è aperta; quando la chiudi finisce nella cronologia condivisa e puoi riprenderla da qualunque finestra.",
+      "Può inserire blocchi di dati: gli dai un elenco (per esempio più anagrafiche o più righe da caricare) e li inserisce in una volta sola, invece di uno alla volta.",
       "Cosa sa: Dark Lemon legge il database aziendale — giacenze, movimenti di magazzino, formulari, registri, conferimenti privati, ricevute, anagrafiche, fatture e stato RENTRI. Può quindi rispondere a domande come «quanti kg di 200140 ho oggi?» oppure «quali conferimenti di luglio non hanno movimento collegato?».",
       "Cosa vede: con il pulsante 📸 fa uno screenshot della schermata su cui stai lavorando e la analizza. Serve quando non sai spiegare a parole cosa non torna: gli mostri lo schermo e lui legge i campi.",
       "Cosa controlla: ha una diagnostica interna che verifica la coerenza del magazzino (saldi contro movimenti), le anomalie sui formulari e sui conferimenti privati, e ti segnala i casi sospetti prima che diventino un problema in ispezione.",
