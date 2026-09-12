@@ -10,6 +10,15 @@ import {
   RENTRI_UNITA_LOCALI,
   type RentriCliente,
 } from "@/lib/rentriVpsApi";
+import { supabase } from "@/lib/supabaseClient";
+
+/** Impianti di destino per cliente: solo dove esiste un impianto autorizzato a ricevere. */
+const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string }> = {
+  multy: {
+    impianto_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    tenant_id: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  },
+};
 
 interface FirRow {
   numero_fir: string;
@@ -157,6 +166,38 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       );
       if (!res.success) throw new Error(res.error || "Errore firma");
       toast.success(`FIR ${firmaFir.numero_fir} accettato su RENTRI`);
+
+      // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
+      const destino = IMPIANTO_DESTINO[configKey];
+      if (esito !== "respinto" && destino) {
+        const { error: movErr } = await supabase.from("movimenti_impianto" as any).insert({
+          impianto_id: destino.impianto_id,
+          tenant_id: destino.tenant_id,
+          cer: firmaFir.codice_eer,
+          quantita_kg: Number(kg),
+          quantita_presunta: firmaFir.quantita || null,
+          data_movimento: dataArrivo,
+          tipo_movimento: "CARICO",
+          ruolo_impianto: "DESTINATARIO",
+          origine: "RENTRI_ACCETTAZIONE",
+          numero_fir: firmaFir.numero_fir,
+          produttore_denominazione: firmaFir.produttore_nome || null,
+          trasportatore_denominazione: firmaFir.trasportatore_nome || null,
+          destinatario_denominazione: firmaFir.destinatario_nome || null,
+          esito_accettazione: esito === "parziale" ? "parziale" : "accettato",
+          note: motivazione || null,
+        } as any);
+        if (movErr) {
+          toast.error(
+            `Firma inviata, ma il carico in impianto non è stato registrato: ${movErr.message}`,
+          );
+        } else {
+          toast.success("Carico registrato in impianto e giacenze aggiornate");
+        }
+      } else if (esito !== "respinto" && !destino) {
+        toast.info("Firma inviata. Per questa società non è configurato un impianto di destino.");
+      }
+
       setFirmaFir(null);
       carica();
     } catch (e: any) {

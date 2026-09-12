@@ -203,7 +203,6 @@ const SECTIONS: Section[] = [
         <h4 className="font-semibold text-foreground mt-2">Edge Functions:</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li><code className="text-primary">rentri-vps-proxy</code> — Orchestratore RENTRI → VPS Bridge</li>
-          <li><code className="text-primary">rentri-action-proxy</code> — Proxy per azioni specifiche (emissione)</li>
           <li><code className="text-primary">rentri-get-pdf</code> — Download PDF FIR firmati</li>
           <li><code className="text-primary">rentri-refresh-media</code> — Refresh media RENTRI</li>
           <li><code className="text-primary">ai-agent / social-ai-agent / dark-lemon-mn</code> — Chatbot AI</li>

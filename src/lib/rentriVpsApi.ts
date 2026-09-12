@@ -19,6 +19,7 @@ export type RentriTipoOperazione =
   | "LISTA_BLOCCHI"
   | "DETTAGLIO_FIR"
   | "RICERCA_FIR"
+  | "LISTA_FIR_SOGGETTO"
   | "FIRMA_RICEZIONE"
   | "RICERCA_MOVIMENTI"
   | "TRANSAZIONE_REGISTRO"
@@ -381,6 +382,111 @@ export function statoTransazioneVidimazione(cliente: RentriCliente, transazioneI
 
 export function firmaRicezione(cliente: RentriCliente, firPayload: Record<string, unknown>) {
   return inviaOperazioneRentri({ cliente, tipo_operazione: "FIRMA_RICEZIONE", payload: firPayload });
+}
+
+/** Elenco dei formulari del soggetto (fonte unica per i "FIR in arrivo da firmare"). */
+export function listaFirSoggetto(
+  cliente: RentriCliente,
+  opts: { numIscrSito?: string; dataDa?: string; dataA?: string } = {},
+) {
+  return inviaOperazioneRentri({
+    cliente,
+    tipo_operazione: "LISTA_FIR_SOGGETTO",
+    payload: {
+      ...(opts.numIscrSito ? { num_iscr_sito: opts.numIscrSito } : {}),
+      ...(opts.dataDa ? { data_da: opts.dataDa } : {}),
+      ...(opts.dataA ? { data_a: opts.dataA } : {}),
+    },
+  });
+}
+
+/** Estrae il transaction id dalla risposta RENTRI, comunque annidato. */
+export function estraiTransazioneId(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const r = data as Record<string, unknown>;
+  const direct = r.transazione_id ?? r.transazioneId ?? r.identificativo_transazione ?? r.id_transazione;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  for (const nested of [r.data, r.risposta, r.result]) {
+    const found = estraiTransazioneId(nested);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Progressivo successivo calcolato dal listato reale del registro RENTRI.
+ * Mai dedotto da suggerimenti automatici: se il registro non è leggibile, restituisce null.
+ */
+export async function prossimoProgressivoRegistro(
+  cliente: RentriCliente,
+  registroId: string,
+  dataDa: string,
+  dataA: string,
+): Promise<number | null> {
+  const res = await ricercaMovimenti(cliente, dataDa, dataA, registroId);
+  if (!res.success) return null;
+  const raw = res.data as unknown;
+  const rows: unknown[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as Record<string, unknown>)?.movimenti)
+      ? ((raw as Record<string, unknown>).movimenti as unknown[])
+      : [];
+  let max = 0;
+  for (const row of rows) {
+    const r = row as Record<string, unknown>;
+    const n = Number(r?.progressivo ?? r?.numero_progressivo ?? r?.numeroProgressivo ?? 0);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
+export interface EsitoVerificato {
+  invio: RentriVpsResponse;
+  transazioneId: string | null;
+  /** IN_VERIFICA | CONFERMATO | DA_ANALIZZARE */
+  esitoFinale: "IN_VERIFICA" | "CONFERMATO" | "DA_ANALIZZARE";
+  dettaglioTransazione?: RentriVpsResponse;
+}
+
+/**
+ * Invia i movimenti al registro e verifica davvero l'esito:
+ * `202 Accepted` non è considerato successo finché la transazione non risulta conclusa.
+ */
+export async function inviaMovimentiRegistroVerificato(
+  cliente: RentriCliente,
+  movimenti: unknown[],
+  registroId?: string,
+  opts: { tentativi?: number; attesaMs?: number } = {},
+): Promise<EsitoVerificato> {
+  const invio = await inserimentoMovimento(cliente, movimenti, registroId);
+  const transazioneId = estraiTransazioneId(invio.data);
+
+  if (!invio.success) {
+    return { invio, transazioneId, esitoFinale: "DA_ANALIZZARE" };
+  }
+  if (!transazioneId) {
+    // Nessuna transazione da seguire: l'esito è quello dell'API.
+    return { invio, transazioneId: null, esitoFinale: invio.status === 202 ? "IN_VERIFICA" : "CONFERMATO" };
+  }
+
+  const tentativi = opts.tentativi ?? 5;
+  const attesaMs = opts.attesaMs ?? 3000;
+  let dettaglio: RentriVpsResponse | undefined;
+
+  for (let i = 0; i < tentativi; i++) {
+    await new Promise((r) => setTimeout(r, attesaMs));
+    dettaglio = await statoTransazioneRegistro(cliente, transazioneId, registroId);
+    if (!dettaglio.success) continue;
+    const testo = JSON.stringify(dettaglio.data ?? {}).toUpperCase();
+    if (/ERRORE|SCARTAT|RIFIUTAT|KO\b/.test(testo)) {
+      return { invio, transazioneId, esitoFinale: "DA_ANALIZZARE", dettaglioTransazione: dettaglio };
+    }
+    if (/CONCLUS|COMPLETAT|ACQUISIT|REGISTRAT|OK\b/.test(testo)) {
+      return { invio, transazioneId, esitoFinale: "CONFERMATO", dettaglioTransazione: dettaglio };
+    }
+  }
+
+  return { invio, transazioneId, esitoFinale: "IN_VERIFICA", dettaglioTransazione: dettaglio };
 }
 
 export function inviaOperazioneRentriCustom(

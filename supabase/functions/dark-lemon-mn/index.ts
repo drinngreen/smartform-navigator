@@ -848,7 +848,7 @@ Pulsanti in testa:
 
 ### 5.3 Invii al RENTRI
 - Selettore Registro (Produttore / Intermediazione / Conto Proprio) + data limite.
-- **Consolida e Invia RENTRI** → chiama \`rentri-action-proxy\`.
+- **Consolida e Invia RENTRI** → chiama \`rentri-vps-proxy\`.
 - Se la VPS è offline (timeout/500) → pop‑up "Server VPS RENTRI non raggiungibile" con opzione **Simulazione d'Invio (Mock)** che genera esito positivo fittizio per dimostrazioni.
 - In basso: tabella storico con \`transaction_id\`, data, movimenti consolidati, esito.
 
@@ -1031,7 +1031,7 @@ Da consegnare così com'è al tecnico incaricato del MUD.
 
 - **Frontend**: React 18 + Vite, \`@/lib/supabaseClient\` (client custom).
 - **Backend**: Lovable Cloud (Supabase) + Edge Functions Deno.
-- **Edge Functions chiave**: \`admin-user-manage\`, \`import-elisabetta\`, \`send-whatsapp\`, \`send-email\`, \`rentri-vps-proxy\`, \`rentri-action-proxy\`.
+- **Edge Functions chiave**: \`admin-user-manage\`, \`import-elisabetta\`, \`send-whatsapp\`, \`send-email\`, \`rentri-vps-proxy\`.
 - **Storage**: \`documenti_cliente\` (privato), \`fir-documents\` (pubblico QR RENTRI), \`avatars\`, ecc.
 
 ---
