@@ -10,6 +10,15 @@ import {
   RENTRI_UNITA_LOCALI,
   type RentriCliente,
 } from "@/lib/rentriVpsApi";
+import { supabase } from "@/lib/supabaseClient";
+
+/** Impianti di destino per cliente: solo dove esiste un impianto autorizzato a ricevere. */
+const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string }> = {
+  multy: {
+    impianto_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    tenant_id: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+  },
+};
 
 interface FirRow {
   numero_fir: string;
