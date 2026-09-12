@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { CalendarDays, FileSpreadsheet, FileText, Pencil, Printer, Receipt, Trash2 } from "lucide-react";
 import { stampaRicevuta, stampaRicevute, type RicevutaPrintData } from "@/lib/ricevutaPrivatoPrint";
 import { CER_CATALOG } from "@/data/cerCatalog";
+import { ScrollJumpButtons } from "./ScrollJumpButtons";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -88,6 +89,7 @@ const byRicevutaDecrescente = (a: RicevutaRow, b: RicevutaRow) =>
 
 export function DevRicevuteModule() {
   const qc = useQueryClient();
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editing, setEditing] = useState<RicevutaRow | null>(null);
@@ -485,7 +487,7 @@ export function DevRicevuteModule() {
           ) : !filtered.length ? (
             <div className="text-sm text-muted-foreground">Nessuna ricevuta trovata</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div ref={tableContainerRef} className="overflow-auto max-h-[65vh]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/30 text-left">
@@ -613,6 +615,8 @@ export function DevRicevuteModule() {
           )}
         </CardContent>
       </Card>
+
+      <ScrollJumpButtons containerRef={tableContainerRef} />
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
