@@ -48,7 +48,7 @@ export function DevRicevuteModule() {
                 .from("ricevute_privati")
                 .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
                 .eq("tenant_id", MULTY_TENANT_ID)
-                .order("data_emissione", { ascending: false })
+                .order("data_emissione", { ascending: true })
                 .limit(1000));
             if (error)
                 throw error;

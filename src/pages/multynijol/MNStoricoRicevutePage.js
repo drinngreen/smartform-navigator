@@ -33,7 +33,7 @@ export default function MNStoricoRicevutePage() {
                 .from("storico_ricevute_privati")
                 .select("*")
                 .eq("tenant_id", TENANT_ID)
-                .order("data_doc", { ascending: false });
+                .order("data_doc", { ascending: true });
             if (error)
                 throw error;
             return data || [];
