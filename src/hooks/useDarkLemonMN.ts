@@ -360,10 +360,13 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
   const deleteConversation = useCallback(async (conversationId: string) => {
     await supabase.from("ai_messages").delete().eq("conversation_id", conversationId);
     await supabase.from("ai_conversations").delete().eq("id", conversationId);
-    if (currentConversationId === conversationId) {
-      setCurrentConversationId(null);
-      setMessages([]);
+    const store = useZoliDarkLemonWidgetStore.getState();
+    for (const other of DL_SURFACES) {
+      if (store.conversationBySurface[other] === conversationId) {
+        store.setSurfaceConversationId(other, null);
+      }
     }
+    if (currentConversationId === conversationId) setMessages([]);
     await loadConversations();
   }, [currentConversationId, loadConversations, setCurrentConversationId]);
 
