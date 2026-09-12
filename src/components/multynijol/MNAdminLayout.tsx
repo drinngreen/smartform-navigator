@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
 import { MNAdminHeader } from "./MNAdminHeader";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { DarkLemonTopBar } from "@/components/ai/DarkLemonTopBar";
 
 interface MNAdminLayoutProps {
   children: ReactNode;
@@ -103,6 +104,8 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6 relative z-10">
+          {/* Chat compatta Dark Lemon: resta in cima a ogni pagina */}
+          <DarkLemonTopBar context={dlContext} fullPagePath="/mn/admin/multyproget/dark-lemon" />
           {children}
         </main>
       </div>
