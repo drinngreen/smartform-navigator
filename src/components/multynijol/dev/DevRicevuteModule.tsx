@@ -89,6 +89,7 @@ const byRicevutaDecrescente = (a: RicevutaRow, b: RicevutaRow) =>
 
 export function DevRicevuteModule() {
   const qc = useQueryClient();
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [editing, setEditing] = useState<RicevutaRow | null>(null);
