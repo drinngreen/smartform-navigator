@@ -650,6 +650,26 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
 
       console.log(`[rentri-vps] Risposta bridge: status=${res.status}, cliente=${upstream.cliente}, rentri_path=${route.path}`);
 
+      const transazioneId = extractTransazioneId(data);
+      await tracciaOperazione(fetchImpl, {
+        cliente: upstream.cliente,
+        company: upstream.company,
+        registro_id: upstream.registro_id || null,
+        tipo_operazione: tipoOp,
+        rentri_method: route.method,
+        rentri_path: route.path,
+        payload_inviato: upstream.payload ?? null,
+        risposta: data ?? null,
+        transazione_id: transazioneId,
+        identificativo_rentri: extractIdentificativoRentri(data),
+        http_status: res.status,
+        success: res.ok,
+        error_code: res.ok ? null : errorCodeForStatus(res.status),
+        error_message: res.ok ? null : sanitizeMessage(msg, bridgeKey) || null,
+        // 202 Accepted non è un successo finale: resta in verifica finché non si controlla il listato
+        esito_finale: !res.ok ? "DA_ANALIZZARE" : res.status === 202 || transazioneId ? "IN_VERIFICA" : "CONFERMATO",
+      });
+
       if (res.ok) {
         return json({ success: true, status: res.status, mode: "real", error_code: null, data, attempts }, res.status);
       }
