@@ -10,6 +10,7 @@ import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowUpDown, BookO
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
 import { ScaricoLavorazioneDialog } from "./ScaricoLavorazioneDialog";
+import { ScrollJumpButtons } from "./ScrollJumpButtons";
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
 // Colonne ridotte su richiesta del cliente: rimosse le voci che rendevano la stampa illeggibile.
