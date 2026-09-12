@@ -487,7 +487,7 @@ export function DevRicevuteModule() {
           ) : !filtered.length ? (
             <div className="text-sm text-muted-foreground">Nessuna ricevuta trovata</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div ref={tableContainerRef} className="overflow-auto max-h-[65vh]">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/30 text-left">
