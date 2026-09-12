@@ -17,6 +17,8 @@ interface ZoliDarkLemonWidgetState {
   setWorking: (working: boolean) => void;
   currentConversationId: string | null;
   setCurrentConversationId: (id: string | null) => void;
+  topBarCollapsed: boolean;
+  setTopBarCollapsed: (collapsed: boolean) => void;
 }
 
 const STORAGE_KEY = "dark-lemon-widget";
@@ -29,7 +31,7 @@ function getDefaultPosition(): Position {
   };
 }
 
-function loadState(): { isOpen: boolean; position: Position; size: Size } {
+function loadState(): { isOpen: boolean; position: Position; size: Size; topBarCollapsed: boolean } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -38,15 +40,16 @@ function loadState(): { isOpen: boolean; position: Position; size: Size } {
         isOpen: !!parsed.isOpen,
         position: parsed.position || getDefaultPosition(),
         size: parsed.size || { width: 380, height: 400 },
+        topBarCollapsed: !!parsed.topBarCollapsed,
       };
     }
   } catch {}
-  return { isOpen: false, position: getDefaultPosition(), size: { width: 380, height: 400 } };
+  return { isOpen: false, position: getDefaultPosition(), size: { width: 380, height: 400 }, topBarCollapsed: false };
 }
 
-function saveState(isOpen: boolean, position: Position, size: Size) {
+function saveState(isOpen: boolean, position: Position, size: Size, topBarCollapsed: boolean) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ isOpen, position, size }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ isOpen, position, size, topBarCollapsed }));
   } catch {}
 }
 
@@ -56,22 +59,22 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
   isOpen: initial.isOpen,
   setOpen: (open) => {
     set({ isOpen: open });
-    saveState(open, get().position, get().size);
+    saveState(open, get().position, get().size, get().topBarCollapsed);
   },
   toggle: () => {
     const next = !get().isOpen;
     set({ isOpen: next });
-    saveState(next, get().position, get().size);
+    saveState(next, get().position, get().size, get().topBarCollapsed);
   },
   position: initial.position,
   setPosition: (position) => {
     set({ position });
-    saveState(get().isOpen, position, get().size);
+    saveState(get().isOpen, position, get().size, get().topBarCollapsed);
   },
   size: initial.size,
   setSize: (size) => {
     set({ size });
-    saveState(get().isOpen, get().position, size);
+    saveState(get().isOpen, get().position, size, get().topBarCollapsed);
   },
   sidePanel: false,
   setSidePanel: (sidePanel) => set({ sidePanel }),
@@ -79,4 +82,9 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
   setWorking: (isWorking) => set({ isWorking }),
   currentConversationId: null,
   setCurrentConversationId: (currentConversationId) => set({ currentConversationId }),
+  topBarCollapsed: initial.topBarCollapsed,
+  setTopBarCollapsed: (topBarCollapsed) => {
+    set({ topBarCollapsed });
+    saveState(get().isOpen, get().position, get().size, topBarCollapsed);
+  },
 }));
