@@ -53,6 +53,7 @@ export default function DragonCerniteBatchPage() {
   // Form state
   const [inputItemId, setInputItemId] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
+  const [executionDate, setExecutionDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [outputRows, setOutputRows] = useState<OutputRow[]>(() => [createOutputRow()]);
 
@@ -107,11 +108,12 @@ export default function DragonCerniteBatchPage() {
     setOutputRows(rows => rows.map(row => row.id === rowId ? { ...row, [field]: value } : row));
 
   const hasEnoughStock = inputQty <= availableQty;
-  const isFormValid = inputItemId && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
+  const isFormValid = inputItemId && !!executionDate && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
 
   const resetForm = () => {
     setInputItemId("");
     setInputQuantity("");
+    setExecutionDate(new Date().toISOString().split("T")[0]);
     setNotes("");
     setOutputRows([createOutputRow()]);
     setAppliedModelId(null);
@@ -144,6 +146,7 @@ export default function DragonCerniteBatchPage() {
           input_quantity: inputQty,
           outputs: deferred ? [] : serializeOutputs(),
           model_id: appliedModelId,
+          execution_date: executionDate,
           notes,
           deferred,
         });
@@ -302,7 +305,20 @@ export default function DragonCerniteBatchPage() {
                     </button>
                   )}
                 </div>
-
+                <div className="col-span-2">
+                  <Label>Data lavorazione *</Label>
+                  <Input
+                    type="date"
+                    value={executionDate}
+                    max={new Date().toISOString().split("T")[0]}
+                    onChange={e => setExecutionDate(e.target.value)}
+                    disabled={!!editingBatchId}
+                    className="font-mono"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Puoi retrodatare: indica il giorno in cui la cernita è stata fatta davvero.
+                  </p>
+                </div>
               </div>
               {inputItem && (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
