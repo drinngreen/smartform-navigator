@@ -30,6 +30,8 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
   const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "floating");
   const { capturePageContent } = usePageContext();
   const { getRegisteredFields } = useFormBridgeContext();
+  const topBarCollapsed = useZoliDarkLemonWidgetStore((s) => s.topBarCollapsed);
+  const setTopBarCollapsed = useZoliDarkLemonWidgetStore((s) => s.setTopBarCollapsed);
   const [open, setOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
