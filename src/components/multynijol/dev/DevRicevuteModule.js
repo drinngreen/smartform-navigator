@@ -32,6 +32,7 @@ const byRicevutaDecrescente = (a, b) => String(b.data_emissione).localeCompare(S
     String(b.numero_ricevuta ?? "").localeCompare(String(a.numero_ricevuta ?? ""));
 export function DevRicevuteModule() {
     const qc = useQueryClient();
+    const tableContainerRef = useRef(null);
     const [search, setSearch] = useState("");
     const [editing, setEditing] = useState(null);
     const [editForm, setEditForm] = useState({ importo: "", note: "", data_emissione: "" });
