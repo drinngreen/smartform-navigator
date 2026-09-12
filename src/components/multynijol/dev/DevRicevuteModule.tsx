@@ -616,6 +616,8 @@ export function DevRicevuteModule() {
         </CardContent>
       </Card>
 
+      <ScrollJumpButtons containerRef={tableContainerRef} />
+
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
