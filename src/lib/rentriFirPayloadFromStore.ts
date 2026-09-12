@@ -152,7 +152,8 @@ export async function mapStoreToRentriFirPayload(
       rifiuto: {
         codice_eer: eerRaw.replace(/[.\s*]/g, ""),
         descrizione: s(data.descrizione),
-        provenienza: s(data.provenienza).toLowerCase() === "urbano" ? "Urbano" : "Speciale",
+        // Codifica RENTRI: "U" = urbano, "S" = speciale
+        provenienza: s(data.provenienza).toLowerCase() === "urbano" ? "U" : "S",
         stato_fisico: statoFisico(s(data.statoFisico)),
         pericoloso: hp.length > 0 || eerRaw.includes("*"),
         quantita: {
