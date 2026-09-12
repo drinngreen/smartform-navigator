@@ -596,6 +596,20 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
           cliente: upstream.cliente, company: upstream.company,
           status: 502, success: false, message, rentri_path: route.path,
         });
+        await tracciaOperazione(fetchImpl, {
+          cliente: upstream.cliente,
+          company: upstream.company,
+          registro_id: upstream.registro_id || null,
+          tipo_operazione: tipoOp,
+          rentri_method: route.method,
+          rentri_path: route.path,
+          payload_inviato: upstream.payload ?? null,
+          http_status: 502,
+          success: false,
+          error_code: errorCodeForStatus(502),
+          error_message: message,
+          esito_finale: "DA_ANALIZZARE",
+        });
         return json(
           {
             success: false,
