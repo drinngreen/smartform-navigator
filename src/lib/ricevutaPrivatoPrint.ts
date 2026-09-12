@@ -59,10 +59,11 @@ export function normalizzaMateriali(materiali: RicevutaMateriale[]): RicevutaMat
 }
 
 const RICEVUTA_CSS = `
-  @page { size: A4; margin: 12mm; }
+  /* Margine pagina a zero: impedisce al browser di aggiungere data, titolo e URL. */
+  @page { size: A4; margin: 0; }
   html, body { background:#fff !important; color:#000 !important; margin:0; padding:0; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; }
-  .doc-page { page-break-after: always; }
+  .doc-page { page-break-after: always; box-sizing:border-box; width:210mm; min-height:297mm; padding:12mm; }
   .doc-page:last-child { page-break-after: auto; }
   .titolo { text-align:center; font-weight:bold; font-size:13px; line-height:1.35; margin-bottom:18px; text-transform:uppercase; }
   .top { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin-bottom:26px; }
@@ -255,7 +256,7 @@ function wrapDocument(title: string, bodies: string[]): string {
 <head>
 <meta charset="utf-8" />
 <meta name="color-scheme" content="only light" />
-<title>${esc(title)}</title>
+<title></title>
 <style>${RICEVUTA_CSS}</style>
 </head>
 <body>

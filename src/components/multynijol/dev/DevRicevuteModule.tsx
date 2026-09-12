@@ -266,9 +266,11 @@ export function DevRicevuteModule() {
       }
     }
 
-    // Tiene solo le note scritte dall'operatore: scarta il riepilogo automatico (DBT #… - CER … - Totale … kg - Pag.: …)
+    // Tiene solo le note scritte dall'operatore: scarta i riepiloghi automatici già presenti nella ricevuta.
     const isRiepilogoAuto = (line: string) =>
-      /^DBT\s*#/i.test(line) || (/\bCER\s*\d{6}\b/i.test(line) && /Totale\s|Pag\.:/i.test(line));
+      /^DBT\s*#/i.test(line) ||
+      (/\bCER\s*\d{6}(?:-[A-Z0-9]+)?\b/i.test(line) && /Totale\s|Pag\.:/i.test(line)) ||
+      /^.+\s+[—-]\s+CER\s+\d{6}(?:-[A-Z0-9]+)?\s+[—-]\s+[\d.,]+\s*kg(?:\s+[—-]\s+(?:Targa|Modello):?.*)?$/i.test(line);
 
     const noteComplete = [r.note ?? "", r.conferimento?.note ?? ""]
       .flatMap((n) => (n || "").split("\n"))
