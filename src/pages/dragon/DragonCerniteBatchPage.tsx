@@ -113,6 +113,7 @@ export default function DragonCerniteBatchPage() {
   const resetForm = () => {
     setInputItemId("");
     setInputQuantity("");
+    setExecutionDate(new Date().toISOString().split("T")[0]);
     setNotes("");
     setOutputRows([createOutputRow()]);
     setAppliedModelId(null);
