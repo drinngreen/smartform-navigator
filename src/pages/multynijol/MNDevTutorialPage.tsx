@@ -860,6 +860,39 @@ const CHAPTERS: Chapter[] = [
     tip: "Usalo come un collega esperto: più la domanda è precisa (CER, data, società), più la risposta è utile. «Controlla il 200140 CAVI dal 1 al 18 agosto» funziona molto meglio di «controlla il magazzino».",
     route: "/mn/admin/dev-multyproget?tab=impianto",
   },
+  {
+    id: "sicurezza",
+    title: "Sicurezza e accessi",
+    subtitle: "Cosa è cambiato con l'irrigidimento dei permessi",
+    image: "/tutorial/17-dark-lemon.png",
+    level: "Base",
+    minutes: 3,
+    intro:
+      "Il gestionale è stato messo in sicurezza senza toccare né i dati né le schermate: cambia solo chi può far partire certe operazioni.",
+    explain: [
+      "Le operazioni riservate (assegnare un numero di formulario, eseguire una cernita, salvare un soggetto in anagrafica, i controlli di stato del sistema) funzionano ora soltanto con l'accesso effettuato. Senza sessione valida non partono più: è voluto.",
+      "Le procedure automatiche interne del database non sono più richiamabili dall'esterno: continuano a lavorare da sole quando salvi un movimento o una ricevuta.",
+      "Sulle password è attivo il controllo delle password compromesse: se scegli una password già finita in una fuga di dati pubblica, il sistema la rifiuta e ne chiede un'altra.",
+      "Nessuna giacenza, ricevuta, formulario o registro è stato modificato: i numeri che vedi sono gli stessi di prima.",
+    ],
+    steps: [
+      "Accedi sempre con il tuo utente prima di lavorare: non usare schede rimaste aperte da giorni.",
+      "Se un'operazione risponde «non autorizzato», esci e rientra: quasi sempre la sessione è scaduta.",
+      "Quando cambi password, scegline una nuova e non riutilizzata altrove.",
+      "Non condividere credenziali in chat, nemmeno con Dark Lemon.",
+    ],
+    warnings: [
+      "Se qualcuno lavorava senza aver effettuato l'accesso, da ora deve autenticarsi.",
+      "Le password rifiutate non sono un errore del gestionale: sono password risultate compromesse pubblicamente.",
+    ],
+    faq: [
+      { q: "Mi dice che la password non è accettata.", a: "È finita in una fuga di dati pubblica: scegline una diversa, non usata su altri siti." },
+      { q: "Un pulsante che usavo dà errore di permessi.", a: "Verifica di aver fatto l'accesso con il tuo utente; se il problema resta, segnalalo indicando la schermata e l'ora." },
+      { q: "Sono cambiati i miei dati o le giacenze?", a: "No. L'intervento ha riguardato solo i permessi: dati, tabelle e numeri sono rimasti identici." },
+    ],
+    tip: "Regola pratica: se un'operazione importante non parte, il primo controllo è sempre «sono ancora dentro con il mio utente?».",
+    route: "/mn/admin/dev-multyproget",
+  },
 ];
 
 
