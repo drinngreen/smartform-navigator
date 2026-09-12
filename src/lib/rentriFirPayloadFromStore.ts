@@ -13,13 +13,17 @@ import { resolveComuneId } from "@/lib/comuneIstat";
 
 type Bag = Record<string, unknown>;
 
+// Codifica ufficiale RENTRI verificata in produzione:
+// S = solido, SP = solido pulverulento, FP = fangoso palabile,
+// L = liquido, VS = vischioso sciropposo, GA = gassoso compresso o liquefatto.
 const STATO_FISICO_MAP: Record<string, string> = {
-  solido: "SP",
+  solido: "S",
+  "solido non pulverulento": "S",
   "solido pulverulento": "SP",
-  "solido non pulverulento": "SNP",
+  polverulento: "SP",
   fangoso: "FP",
   "fangoso palabile": "FP",
-  liquido: "LI",
+  liquido: "L",
   vischioso: "VS",
   "vischioso sciropposo": "VS",
   gassoso: "GA",
