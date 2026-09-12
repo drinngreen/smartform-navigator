@@ -65,6 +65,10 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
     return "multyproget";
   }, [location.pathname]);
 
+  // Dark Lemon deve comparire solo dopo aver scelto un contesto operativo,
+  // non nella pagina di selezione /mn/admin.
+  const showDarkLemon = location.pathname !== "/mn/admin";
+
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
       <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "mr-[max(20vw,280px)]" : ""}`}>
@@ -110,8 +114,10 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6 relative z-10">
-          {/* Chat compatta Dark Lemon: resta in cima a ogni pagina */}
-          <DarkLemonTopBar context={dlContext} fullPagePath={`/mn/admin/${dlContext}/zoli-dark-lemon`} />
+          {/* Chat compatta Dark Lemon: visibile solo dentro un contesto operativo */}
+          {showDarkLemon && (
+            <DarkLemonTopBar context={dlContext} fullPagePath={`/mn/admin/${dlContext}/zoli-dark-lemon`} />
+          )}
           {children}
         </main>
       </div>
