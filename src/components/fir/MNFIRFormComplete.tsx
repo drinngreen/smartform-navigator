@@ -23,6 +23,8 @@ import { CerPickerField } from "@/components/fir/CerPickerField";
 import { HpSelector } from "@/components/fir/HpSelector";
 
 import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST, NIYOL_TENANT_ID_CONST } from "@/lib/firFinalSync";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 
 // ── Neon color map per section ──────────────────────────────
