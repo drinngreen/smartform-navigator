@@ -1231,6 +1231,27 @@ const tools = [
       }
     }
   },
+  {
+    type: "function",
+    function: {
+      name: "bulk_insert_rows",
+      description: "Inserisce un BLOCCO di righe in una tabella (max 200). Usalo quando l'utente incolla o descrive un elenco di dati da caricare. Aggiunge automaticamente tenant_id se la tabella lo prevede. Prima di usarlo verifica lo schema con schema_introspect.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: { type: "string", description: "Nome tabella (schema public)" },
+          rows: {
+            type: "array",
+            description: "Array di oggetti chiave/valore, uno per riga da inserire",
+            items: { type: "object" }
+          },
+          add_tenant: { type: "boolean", description: "Aggiungi tenant_id alle righe (default true)" },
+          explanation: { type: "string", description: "Spiegazione dell'operazione" }
+        },
+        required: ["table", "rows", "explanation"]
+      }
+    }
+  },
 
   // === FIR MANAGEMENT ===
   {
