@@ -53,6 +53,7 @@ export default function DragonCerniteBatchPage() {
   // Form state
   const [inputItemId, setInputItemId] = useState("");
   const [inputQuantity, setInputQuantity] = useState("");
+  const [executionDate, setExecutionDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [outputRows, setOutputRows] = useState<OutputRow[]>(() => [createOutputRow()]);
 
