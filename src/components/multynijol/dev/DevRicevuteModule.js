@@ -17,6 +17,17 @@ const formatIndirizzoPrivato = (p) => {
     const cittaParts = [p.cap, p.comune_residenza, p.provincia ? `(${p.provincia})` : ""].filter(Boolean).join(" ").trim();
     return [p.indirizzo, cittaParts].filter(Boolean).join(" - ");
 };
+const ricevutaProgressivo = (numero) => {
+    const match = String(numero ?? "").match(/\d+/);
+    return match ? Number(match[0]) : -1;
+};
+const ricevutaAnno = (r) => {
+    const annoNumero = String(r.numero_ricevuta ?? "").match(/\/(\d{4})/);
+    return Number(annoNumero?.[1] ?? r.anno ?? 0);
+};
+const byRicevutaDecrescente = (a, b) => ricevutaAnno(b) - ricevutaAnno(a) ||
+    ricevutaProgressivo(b.numero_ricevuta) - ricevutaProgressivo(a.numero_ricevuta) ||
+    String(b.data_emissione).localeCompare(String(a.data_emissione));
 export function DevRicevuteModule() {
     const qc = useQueryClient();
     const [search, setSearch] = useState("");
@@ -48,7 +59,7 @@ export function DevRicevuteModule() {
                 .from("ricevute_privati")
                 .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
                 .eq("tenant_id", MULTY_TENANT_ID)
-                .order("data_emissione", { ascending: true })
+                .order("data_emissione", { ascending: false })
                 .limit(1000));
             if (error)
                 throw error;
@@ -70,7 +81,7 @@ export function DevRicevuteModule() {
                     if (r.gruppo_id)
                         r.materiali = byGruppo.get(r.gruppo_id);
             }
-            return rows;
+            return rows.sort(byRicevutaDecrescente);
         },
     });
     const filtered = useMemo(() => {

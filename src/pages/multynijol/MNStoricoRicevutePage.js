@@ -20,6 +20,17 @@ const COLS = [
     { header: "Prov.", key: "provincia", width: 6 },
     { header: "Pagamento", key: "metodo_pagamento", width: 14 },
 ];
+const numeroProgressivo = (numero) => {
+    const match = String(numero || "").match(/\d+/);
+    return match ? Number(match[0]) : -1;
+};
+const annoDocumento = (ricevuta) => {
+    const match = String(ricevuta.numero_doc || "").match(/\/(\d{4})/);
+    return Number(match?.[1] ?? String(ricevuta.data_doc || "").slice(0, 4) ?? 0);
+};
+const byNumeroDecrescente = (a, b) => annoDocumento(b) - annoDocumento(a) ||
+    numeroProgressivo(b.numero_doc) - numeroProgressivo(a.numero_doc) ||
+    String(b.data_doc).localeCompare(String(a.data_doc));
 export default function MNStoricoRicevutePage() {
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");
@@ -33,10 +44,10 @@ export default function MNStoricoRicevutePage() {
                 .from("storico_ricevute_privati")
                 .select("*")
                 .eq("tenant_id", TENANT_ID)
-                .order("data_doc", { ascending: true });
+                .order("data_doc", { ascending: false });
             if (error)
                 throw error;
-            return data || [];
+            return (data || []).sort(byNumeroDecrescente);
         },
     });
     const filtered = items.filter((i) => {
