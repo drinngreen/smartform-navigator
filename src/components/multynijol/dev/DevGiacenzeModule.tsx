@@ -97,6 +97,19 @@ export function DevGiacenzeModule() {
     },
   });
 
+  // Elenco CER del magazzino (codici autorizzati): devono comparire SEMPRE, anche a zero.
+  const { data: cerElenco } = useQuery({
+    queryKey: ["magazzino-cer-elenco", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("magazzino_giacenze")
+        .select("cer, descrizione_cer")
+        .eq("tenant_id", MULTY_TENANT_ID);
+      if (error) throw error;
+      return (data ?? []) as { cer: string; descrizione_cer: string | null }[];
+    },
+  });
+
   // Aggregazione contabile per CER: Saldo = Carico − Scarico sui movimenti del periodo,
   // esattamente come la stampa ufficiale "Registrazioni per C.E.R.".
   const rows: CerRow[] = useMemo(() => {
@@ -109,20 +122,26 @@ export function DevGiacenzeModule() {
       if (d) descriptionsByCer[m.cer] = d;
     }
 
+    const addEmpty = (codice: string, descr?: string | null) => {
+      const key = normalizeCer(codice);
+      if (map[key]) return;
+      map[key] = {
+        cer: key,
+        descrizione: getCerDescrizionePerStampa(key, descriptionsByCer[key] || descr || undefined),
+        carico: 0,
+        scarico: 0,
+        saldo: 0,
+      };
+    };
+
+    // Tutti i CER presenti nell'elenco giacenze (anche a saldo zero)
+    for (const c of cerElenco ?? []) addEmpty(c.cer, c.descrizione_cer);
+
     // Se richiesto, mostra l'intero catalogo CER/EER (843 codici) con saldo 0 se senza movimenti
     if (showAllCer) {
-      for (const c of CER_CATALOG) {
-        if (!map[c.codice]) {
-          map[c.codice] = {
-            cer: c.codice,
-            descrizione: getCerDescrizionePerStampa(c.codice, descriptionsByCer[c.codice]),
-            carico: 0,
-            scarico: 0,
-            saldo: 0,
-          };
-        }
-      }
+      for (const c of CER_CATALOG) addEmpty(c.codice);
     }
+
 
     for (const m of movimenti) {
       if (dataAl && m.data_movimento > dataAl) continue;
