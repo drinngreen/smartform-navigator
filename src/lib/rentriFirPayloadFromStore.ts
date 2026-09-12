@@ -56,16 +56,24 @@ export interface MapStoreOptions {
   firmaComeProduttore?: boolean;
 }
 
-export function mapStoreToRentriFirPayload(
+export async function mapStoreToRentriFirPayload(
   cliente: RentriCliente,
   data: Bag,
   options: MapStoreOptions = {},
-): Bag {
+): Promise<Bag> {
   const key = String(cliente).toLowerCase();
   const cfg = (TENANT_RENTRI as Record<string, { unitId?: string; issuer?: string }>)[key] ?? {};
 
-  const prodAddr = splitIndirizzo(s(data.produttoreUnitaLocale) || s(data.cantiereIndirizzo));
-  const destAddr = splitIndirizzo(s(data.destinatarioUnitaLocale));
+  const prodTesto = s(data.produttoreUnitaLocale) || s(data.cantiereIndirizzo);
+  const destTesto = s(data.destinatarioUnitaLocale);
+  const prodAddr = splitIndirizzo(prodTesto);
+  const destAddr = splitIndirizzo(destTesto);
+  const prodComuneId = await resolveComuneId(
+    prodTesto || s(data.cantiereComune),
+    prodAddr.cap || s(data.cantiereCAP),
+    s(data.cantiereProvincia) || undefined,
+  );
+  const destComuneId = await resolveComuneId(destTesto, destAddr.cap);
   const conducente = splitNome(s(data.conducenteNomeCognome) || s(data.trasportatoreNomeAutista));
 
   const eerRaw = s(data.codiceEER);
