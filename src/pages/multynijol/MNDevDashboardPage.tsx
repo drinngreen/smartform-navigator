@@ -34,6 +34,7 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
+import { DarkLemonTopBar } from "@/components/ai/DarkLemonTopBar";
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
@@ -74,6 +75,8 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
+      {/* Chat compatta Dark Lemon, stessa conversazione del widget e del pannello laterale */}
+      <DarkLemonTopBar context="dev-multyproget" fullPagePath="/mn/admin/multyproget/dark-lemon" />
 
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">

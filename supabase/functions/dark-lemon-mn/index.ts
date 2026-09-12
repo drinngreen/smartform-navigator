@@ -1178,6 +1178,7 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 - Se un controllo è FAIL, usa \`explain_and_fix\`: prima mostra problema + SQL proposto (senza confirm), poi esegui SOLO dopo che l'utente ha scritto CONFERMO.
 - Se ricevi il blocco "AZIONI RECENTI DELL'UTENTE NELL'APP", verificane SEMPRE gli effetti reali con \`review_recent_actions\` e segnala per primo ciò che non ha funzionato.
 - In MODALITÀ AUTOPILOT concatena i tool da solo, verifica ogni scrittura e riporta l'elenco dei passi eseguiti. Le operazioni distruttive restano dietro conferma.
+- Se l'utente ti fornisce un ELENCO o un BLOCCO di dati da caricare (contatti, privati, CER, righe di registro, contratti...), verifica lo schema con \`schema_introspect\` e usa \`bulk_insert_rows\` (max 200 righe per volta), poi riepiloga quante righe hai inserito e su quale tabella.
 - NON puoi modificare il codice sorgente né fare deploy dell'app: se serve una modifica software usa \`request_app_change\` per registrare la richiesta strutturata al Super Admin, spiegandolo all'utente in una riga.
 ${memoryBlock}`;
 
@@ -1228,6 +1229,27 @@ const tools = [
           filter: { type: "string", description: "WHERE aggiuntivo (opzionale)" }
         },
         required: ["table"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "bulk_insert_rows",
+      description: "Inserisce un BLOCCO di righe in una tabella (max 200). Usalo quando l'utente incolla o descrive un elenco di dati da caricare. Aggiunge automaticamente tenant_id se la tabella lo prevede. Prima di usarlo verifica lo schema con schema_introspect.",
+      parameters: {
+        type: "object",
+        properties: {
+          table: { type: "string", description: "Nome tabella (schema public)" },
+          rows: {
+            type: "array",
+            description: "Array di oggetti chiave/valore, uno per riga da inserire",
+            items: { type: "object" }
+          },
+          add_tenant: { type: "boolean", description: "Aggiungi tenant_id alle righe (default true)" },
+          explanation: { type: "string", description: "Spiegazione dell'operazione" }
+        },
+        required: ["table", "rows", "explanation"]
       }
     }
   },
@@ -2338,6 +2360,31 @@ async function handleTool(
       if (args.filter) q += ` AND (${args.filter})`;
       const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
       return error ? { error: error.message } : data;
+    }
+
+    case "bulk_insert_rows": {
+      const table = String(args.table || "").replace(/[^a-zA-Z0-9_]/g, "");
+      const rows = Array.isArray(args.rows) ? args.rows : [];
+      if (!table) return { error: "Tabella mancante." };
+      if (rows.length === 0) return { error: "Nessuna riga da inserire." };
+      if (rows.length > 200) return { error: "Massimo 200 righe per blocco: suddividi l'inserimento." };
+
+      const addTenant = args.add_tenant !== false;
+      const payload = rows.map((r: Record<string, unknown>) =>
+        addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r
+      );
+
+      const { data, error } = await db.from(table).insert(payload).select();
+      if (error) {
+        // Se la tabella non ha tenant_id, riprova senza aggiungerlo
+        if (addTenant && /tenant_id/i.test(error.message)) {
+          const retry = await db.from(table).insert(rows).select();
+          if (retry.error) return { error: retry.error.message };
+          return { success: true, inserite: retry.data?.length ?? 0, data: retry.data?.slice(0, 5) };
+        }
+        return { error: error.message };
+      }
+      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5) };
     }
 
     // ---------- DIAGNOSTICA / TEST ----------
