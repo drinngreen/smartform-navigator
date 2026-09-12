@@ -11,22 +11,37 @@ export function ScrollJumpButtons({ containerRef, className = "" }: ScrollJumpBu
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
+    let raf: number;
+    let ro: ResizeObserver | null = null;
 
-    const check = () => {
-      const canScroll = el.scrollHeight > el.clientHeight + 2;
-      setVisible(canScroll);
+    const attach = (el: HTMLElement) => {
+      const check = () => {
+        const canScroll = el.scrollHeight > el.clientHeight + 2;
+        setVisible(canScroll);
+      };
+      check();
+      el.addEventListener("scroll", check, { passive: true });
+      ro = new ResizeObserver(check);
+      ro.observe(el);
+      return () => {
+        el.removeEventListener("scroll", check);
+        ro?.disconnect();
+      };
     };
 
-    check();
-    el.addEventListener("scroll", check, { passive: true });
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
+    const tryAttach = () => {
+      const el = containerRef.current;
+      if (!el) {
+        raf = requestAnimationFrame(tryAttach);
+        return;
+      }
+      attach(el);
+    };
 
+    tryAttach();
     return () => {
-      el.removeEventListener("scroll", check);
-      ro.disconnect();
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
     };
   }, [containerRef]);
 
