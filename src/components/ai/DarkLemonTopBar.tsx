@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Maximize2, Bot } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Plus, Maximize2, Bot, Camera, ScanSearch } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import { usePageContext } from "@/hooks/usePageContext";
+import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import { MessageCopyButton } from "./MessageCopyButton";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
