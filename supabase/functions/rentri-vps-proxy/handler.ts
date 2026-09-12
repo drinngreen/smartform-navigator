@@ -370,6 +370,51 @@ export function sanitizeMessage(raw: string, secret?: string): string {
 }
 
 
+/** Estrae il transaction id dalla risposta RENTRI/bridge, con i nomi usati dai vari endpoint. */
+export function extractTransazioneId(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const r = data as Record<string, unknown>;
+  const direct = r.transazione_id ?? r.transazioneId ?? r.identificativo_transazione ?? r.id_transazione;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const nested = r.data ?? r.risposta ?? r.result;
+  if (nested && typeof nested === "object") return extractTransazioneId(nested);
+  return null;
+}
+
+export function extractIdentificativoRentri(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const r = data as Record<string, unknown>;
+  const direct = r.identificativo ?? r.numero_fir ?? r.numeroFir ?? r.uuid_fir ?? r.uuid;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const nested = r.data ?? r.risposta ?? r.result;
+  if (nested && typeof nested === "object") return extractIdentificativoRentri(nested);
+  return null;
+}
+
+/** Tracciamento obbligatorio: best-effort, non deve mai bloccare l'operazione RENTRI. */
+async function tracciaOperazione(
+  fetchImpl: typeof fetch,
+  row: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const url = env("SUPABASE_URL");
+    const serviceKey = env("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceKey) return;
+    await fetchImpl(`${url}/rest/v1/rentri_operazioni`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(row),
+    });
+  } catch (err) {
+    console.warn("[rentri-vps] tracciamento non riuscito:", err instanceof Error ? err.message : String(err));
+  }
+}
+
 export async function handleRentriProxy(req: Request, options: HandlerOptions = {}): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
