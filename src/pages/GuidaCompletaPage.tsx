@@ -380,8 +380,17 @@ const SECTIONS: Section[] = [
         <h4 className="font-semibold text-foreground mt-2">Audit Trail:</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li>Tabella <code className="text-primary">rentri_logs</code> per tutte le operazioni RENTRI</li>
+          <li>Tabella <code className="text-primary">rentri_operazioni</code> con transazione, esito finale (IN_VERIFICA / CONFERMATO / DA_ANALIZZARE) e risposta integrale del bridge</li>
           <li>Solo la Service Role Key può inserire log</li>
           <li>Tracciamento per cliente, ruolo, stato, dati inviati, risposta</li>
+        </ul>
+        <h4 className="font-semibold text-foreground mt-2">Hardening permessi (12/09/2026):</h4>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>Funzioni di trigger <code className="text-primary">SECURITY DEFINER</code>: EXECUTE revocato a <code className="text-primary">anon</code>, <code className="text-primary">authenticated</code> e PUBLIC (restano invocabili solo dal motore dei trigger)</li>
+          <li>Funzioni operative privilegiate riservate a <code className="text-primary">authenticated</code>/<code className="text-primary">service_role</code>: admin_set_fir_number, esegui_cernita_atomica, upsert_soggetto_anagrafica, dragon_ensure_config, check_giacenze_allineate, system_health_check</li>
+          <li>Helper usati dalle policy RLS (has_role, get_user_tenant, get_user_org_ids, can_read_mp_registry) volutamente invariati</li>
+          <li>Protezione password compromesse (HIBP) attiva su registrazione e cambio password</li>
+          <li>Nessuna tabella, colonna, riga o policy modificata: solo revoca di permessi di esecuzione</li>
         </ul>
       </div>
     ),
