@@ -80,7 +80,7 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
   return (
-    <div data-dark-lemon="true" className="mb-4 rounded-xl border border-cyan-500/30 bg-card/70 backdrop-blur-xl overflow-hidden">
+    <div data-dark-lemon="true" className="sticky top-0 z-30 mb-4 rounded-xl border border-cyan-500/30 bg-card/90 backdrop-blur-xl overflow-hidden shadow-lg">
       {/* Riga compatta */}
       <div className="flex items-center gap-3 px-3 py-2">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7 shrink-0" />
@@ -94,6 +94,22 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={handleScreenshot}
+            disabled={isLoading}
+            title="Fotografa la pagina e analizzala"
+            className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors disabled:opacity-50"
+          >
+            <Camera className="h-4 w-4 text-cyan-300" />
+          </button>
+          <button
+            onClick={handleAnalyzePage}
+            disabled={isLoading}
+            title="Analizza il contenuto della pagina"
+            className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors disabled:opacity-50"
+          >
+            <ScanSearch className="h-4 w-4 text-cyan-300" />
+          </button>
           <button
             onClick={newChat}
             title="Nuova conversazione"
