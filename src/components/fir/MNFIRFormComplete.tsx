@@ -23,6 +23,8 @@ import { CerPickerField } from "@/components/fir/CerPickerField";
 import { HpSelector } from "@/components/fir/HpSelector";
 
 import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CONST, NIYOL_TENANT_ID_CONST } from "@/lib/firFinalSync";
+import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 
 // ── Neon color map per section ──────────────────────────────
@@ -830,7 +832,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: activeFirId, ...dbFields });
       const societaId = resolveSocietaId(activeTenantId, activeMnContext);
-      const result = await inviaFirmaRentri({ societaId, payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber } });
+      // Il RENTRI accetta solo il payload strutturato (`dati_partenza`): i campi
+      // "piatti" del formulario vengono convertiti qui.
+      const cfgTenant = getTenantConfig(societaId);
+      const cfProduttore = String(d.produttoreCF || "").replace(/\s/g, "").toUpperCase();
+      const firmaComeProduttore =
+        !!cfgTenant?.issuer && cfProduttore === String(cfgTenant.issuer).toUpperCase();
+      const payloadRentri = await mapStoreToRentriFirPayload(societaId as any, store.data as any, {
+        firmaComeProduttore,
+      });
+      const result = await inviaFirmaRentri({ societaId, payloadFir: payloadRentri });
       const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
