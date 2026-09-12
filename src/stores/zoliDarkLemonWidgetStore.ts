@@ -17,6 +17,9 @@ interface ZoliDarkLemonWidgetState {
   setWorking: (working: boolean) => void;
   currentConversationId: string | null;
   setCurrentConversationId: (id: string | null) => void;
+  /** Conversazione attiva per ogni vista (laterale, fluttuante, barra, pagina...) */
+  conversationBySurface: Record<string, string | null>;
+  setSurfaceConversationId: (surface: string, id: string | null) => void;
   topBarCollapsed: boolean;
   setTopBarCollapsed: (collapsed: boolean) => void;
 }
