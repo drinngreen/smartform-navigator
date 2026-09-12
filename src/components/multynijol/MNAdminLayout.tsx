@@ -65,6 +65,10 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
     return "multyproget";
   }, [location.pathname]);
 
+  // Dark Lemon deve comparire solo dopo aver scelto un contesto operativo,
+  // non nella pagina di selezione /mn/admin.
+  const showDarkLemon = location.pathname !== "/mn/admin";
+
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
       <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "mr-[max(20vw,280px)]" : ""}`}>
