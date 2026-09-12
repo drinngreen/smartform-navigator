@@ -830,7 +830,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: activeFirId, ...dbFields });
       const societaId = resolveSocietaId(activeTenantId, activeMnContext);
-      const result = await inviaFirmaRentri({ societaId, payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber } });
+      // Il RENTRI accetta solo il payload strutturato (`dati_partenza`): i campi
+      // "piatti" del formulario vengono convertiti qui.
+      const cfgTenant = getTenantConfig(societaId);
+      const cfProduttore = String(d.produttoreCF || "").replace(/\s/g, "").toUpperCase();
+      const firmaComeProduttore =
+        !!cfgTenant?.issuer && cfProduttore === String(cfgTenant.issuer).toUpperCase();
+      const payloadRentri = mapStoreToRentriFirPayload(societaId as any, store.data as any, {
+        firmaComeProduttore,
+      });
+      const result = await inviaFirmaRentri({ societaId, payloadFir: payloadRentri });
       const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
