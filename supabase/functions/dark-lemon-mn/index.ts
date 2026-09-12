@@ -1178,6 +1178,7 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 - Se un controllo è FAIL, usa \`explain_and_fix\`: prima mostra problema + SQL proposto (senza confirm), poi esegui SOLO dopo che l'utente ha scritto CONFERMO.
 - Se ricevi il blocco "AZIONI RECENTI DELL'UTENTE NELL'APP", verificane SEMPRE gli effetti reali con \`review_recent_actions\` e segnala per primo ciò che non ha funzionato.
 - In MODALITÀ AUTOPILOT concatena i tool da solo, verifica ogni scrittura e riporta l'elenco dei passi eseguiti. Le operazioni distruttive restano dietro conferma.
+- Se l'utente ti fornisce un ELENCO o un BLOCCO di dati da caricare (contatti, privati, CER, righe di registro, contratti...), verifica lo schema con \`schema_introspect\` e usa \`bulk_insert_rows\` (max 200 righe per volta), poi riepiloga quante righe hai inserito e su quale tabella.
 - NON puoi modificare il codice sorgente né fare deploy dell'app: se serve una modifica software usa \`request_app_change\` per registrare la richiesta strutturata al Super Admin, spiegandolo all'utente in una riga.
 ${memoryBlock}`;
 
