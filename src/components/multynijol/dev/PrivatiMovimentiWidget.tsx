@@ -59,6 +59,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
         .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, privato_id, note, tipo_utenza, stato_rifiuto, numero_fir, codice_ce, prezzo_kg, created_at")
         .eq("tenant_id", tenantId)
         .order("data", { ascending: false })
+        .order("numero_progressivo", { ascending: false })
         .limit(5000);
       if (anno !== "all") {
         q = q.gte("data", `${anno}-01-01`).lte("data", `${anno}-12-31`);
@@ -316,7 +317,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   /** Righe normalizzate con tutti i parametri di legge (art. 190 D.Lgs. 152/2006). */
   const buildExportRows = () =>
     [...filtered]
-      .sort((a, b) => String(a.data).localeCompare(String(b.data)) || (a.numero_progressivo ?? 0) - (b.numero_progressivo ?? 0))
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)) || (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0))
       .map((m, i) => ({
         ...m,
         n_riga: i + 1,
