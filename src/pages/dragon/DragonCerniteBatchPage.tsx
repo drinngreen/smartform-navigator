@@ -146,6 +146,7 @@ export default function DragonCerniteBatchPage() {
           input_quantity: inputQty,
           outputs: deferred ? [] : serializeOutputs(),
           model_id: appliedModelId,
+          execution_date: executionDate,
           notes,
           deferred,
         });
