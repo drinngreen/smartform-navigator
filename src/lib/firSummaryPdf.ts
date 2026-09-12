@@ -178,7 +178,7 @@ export async function generateFIRSummaryPdf(
   doc.setFont("Helvetica", "italic");
   doc.setFontSize(7);
   doc.text("Documento generato automaticamente - Riepilogo non sostitutivo del formulario ministeriale", margin, 285);
-  doc.text(`Generato il ${new Date().toLocaleString("it-IT")}`, W - margin, 285, { align: "right" });
+  
 
 
   return doc.output("blob");
