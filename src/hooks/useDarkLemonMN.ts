@@ -22,14 +22,17 @@ export interface DLMessage {
   createdAt: Date;
 }
 
-export type DLSurface = "side" | "floating" | "console" | "page";
+export type DLSurface = "side" | "floating" | "console" | "page" | "top";
 
 export const DL_SURFACE_LABELS: Record<DLSurface, string> = {
   side: "Vista laterale",
   floating: "Vista fluttuante",
   console: "Console RENTRI",
   page: "Pagina Dark Lemon",
+  top: "Barra in alto",
 };
+
+const DL_SURFACES: DLSurface[] = ["side", "floating", "console", "page", "top"];
 
 export interface DLConversation {
   id: string;
