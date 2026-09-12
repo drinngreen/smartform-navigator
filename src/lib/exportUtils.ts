@@ -77,15 +77,6 @@ export function exportToPdf(
       doc.text(line, marginX, y);
       y += idx === 0 ? 5 : 4;
     });
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(110, 110, 110);
-    doc.text(
-      `Esportato il ${new Date().toLocaleDateString("it-IT")} — ${data.length} record`,
-      marginX,
-      y + 3
-    );
-    y += 6;
   }
 
   // Build head/body
