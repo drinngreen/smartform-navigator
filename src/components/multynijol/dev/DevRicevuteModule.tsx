@@ -104,7 +104,7 @@ export function DevRicevuteModule() {
         .from("ricevute_privati")
         .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, prezzo_kg, importo_pagato, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("data_emissione", { ascending: false })
+        .order("data_emissione", { ascending: true })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
       const rows = (data ?? []) as RicevutaRow[];
@@ -294,18 +294,21 @@ export function DevRicevuteModule() {
   const printSingleSoloData = (r: RicevutaRow) =>
     stampaRicevuta({ ...buildRicevutaData(r), soloData: true });
 
+  const byDataCrescente = (a: RicevutaRow, b: RicevutaRow) =>
+    String(a.data_emissione).localeCompare(String(b.data_emissione));
+
   /** Esporta tutte le ricevute filtrate nel layout "solo date" */
   const esportaSoloDate = () => {
     if (!filtered.length) return toast.error("Nessuna ricevuta da esportare");
     stampaRicevute(
-      filtered.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      [...filtered].sort(byDataCrescente).map((r) => ({ ...buildRicevutaData(r), soloData: true })),
       "Ricevute - solo date",
     );
   };
 
   /** Esporta SOLO le ricevute selezionate in un unico PDF cumulativo */
   const esportaSelezionateSoloDate = () => {
-    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byDataCrescente);
     if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
     stampaRicevute(
       sel.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
@@ -315,7 +318,7 @@ export function DevRicevuteModule() {
 
   /** Esporta le ricevute selezionate con numero progressivo, in un unico PDF */
   const esportaSelezionateComplete = () => {
-    const sel = filtered.filter((r) => selectedIds.includes(r.id));
+    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byDataCrescente);
     if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
     stampaRicevute(sel.map((r) => buildRicevutaData(r)), `Ricevute selezionate (${sel.length})`);
   };
