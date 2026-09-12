@@ -214,6 +214,16 @@ export function resolveRoute(
         method: "GET",
         path: `/formulari/v1.0?numeroFir=${encodeURIComponent(numeroFir)}&identificativo_soggetto=${issuer}`,
       };
+    case "LISTA_FIR_SOGGETTO": {
+      const params = new URLSearchParams();
+      params.set("identificativo_soggetto", issuer);
+      if (unitId) params.set("num_iscr_sito", unitId);
+      const dal = String(payload.data_da ?? "");
+      const al = String(payload.data_a ?? "");
+      if (dal) params.set("dataEmissioneDa", dal);
+      if (al) params.set("dataEmissioneA", al);
+      return { method: "GET", path: `/formulari/v1.0?${params.toString()}` };
+    }
     case "REGISTRO":
       return { method: "POST", path: `/dati-registri/v1.0/operatore/${registryId}/movimenti` };
     case "RICERCA_MOVIMENTI": {
