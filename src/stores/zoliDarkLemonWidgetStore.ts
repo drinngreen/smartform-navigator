@@ -85,6 +85,12 @@ export const useZoliDarkLemonWidgetStore = create<ZoliDarkLemonWidgetState>((set
   setWorking: (isWorking) => set({ isWorking }),
   currentConversationId: null,
   setCurrentConversationId: (currentConversationId) => set({ currentConversationId }),
+  conversationBySurface: {},
+  setSurfaceConversationId: (surface, id) =>
+    set((state) => ({
+      conversationBySurface: { ...state.conversationBySurface, [surface]: id },
+      currentConversationId: id ?? state.currentConversationId,
+    })),
   topBarCollapsed: initial.topBarCollapsed,
   setTopBarCollapsed: (topBarCollapsed) => {
     set({ topBarCollapsed });
