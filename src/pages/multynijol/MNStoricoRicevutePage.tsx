@@ -73,7 +73,7 @@ export default function MNStoricoRicevutePage() {
         .eq("tenant_id", TENANT_ID)
         .order("data_doc", { ascending: false });
       if (error) throw error;
-      return ((data as Ricevuta[]) || []).sort(byNumeroDecrescente);
+      return (((data as unknown) as Ricevuta[]) || []).sort(byNumeroDecrescente);
     },
   });
 
