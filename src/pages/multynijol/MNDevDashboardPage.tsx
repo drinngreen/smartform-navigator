@@ -74,6 +74,8 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
+      {/* Chat compatta Dark Lemon, stessa conversazione del widget e del pannello laterale */}
+      <DarkLemonTopBar context="dev-multyproget" fullPagePath="/mn/admin/multyproget/dark-lemon" />
 
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
