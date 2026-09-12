@@ -848,7 +848,7 @@ Pulsanti in testa:
 
 ### 5.3 Invii al RENTRI
 - Selettore Registro (Produttore / Intermediazione / Conto Proprio) + data limite.
-- **Consolida e Invia RENTRI** → chiama \`rentri-action-proxy\`.
+- **Consolida e Invia RENTRI** → chiama \`rentri-vps-proxy\`.
 - Se la VPS è offline (timeout/500) → pop‑up "Server VPS RENTRI non raggiungibile" con opzione **Simulazione d'Invio (Mock)** che genera esito positivo fittizio per dimostrazioni.
 - In basso: tabella storico con \`transaction_id\`, data, movimenti consolidati, esito.
 
