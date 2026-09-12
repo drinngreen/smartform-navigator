@@ -157,9 +157,16 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
   const [conversations, setConversations] = useState<DLConversation[]>([]);
   const normalizedContext = normalizeMNContext(context);
 
-  // Shared conversation ID from zustand store
-  const currentConversationId = useZoliDarkLemonWidgetStore((s) => s.currentConversationId);
-  const setCurrentConversationId = useZoliDarkLemonWidgetStore((s) => s.setCurrentConversationId);
+  // Conversazione attiva DI QUESTA vista: finché la vista resta aperta lavora
+  // solo sulla sua conversazione; la cronologia resta condivisa fra tutte le viste.
+  const currentConversationId = useZoliDarkLemonWidgetStore(
+    (s) => s.conversationBySurface[surface] ?? null
+  );
+  const setSurfaceConversationId = useZoliDarkLemonWidgetStore((s) => s.setSurfaceConversationId);
+  const setCurrentConversationId = useCallback(
+    (id: string | null) => setSurfaceConversationId(surface, id),
+    [setSurfaceConversationId, surface]
+  );
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
