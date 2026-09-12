@@ -28,6 +28,7 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
   const navigate = useNavigate();
   const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "floating");
   const { capturePageContent } = usePageContext();
+  const { getRegisteredFields } = useFormBridgeContext();
   const [open, setOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -35,10 +36,46 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
     if (open) endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
+  // Contesto pagina + campi form registrati (compilazione in tempo reale su ogni pagina)
+  const buildContext = useCallback(() => {
+    const ctx = capturePageContent();
+    const bridgeFields = getRegisteredFields();
+    const bridgeInfo = bridgeFields.length > 0
+      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map((f) => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
+      : "";
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
+
   const handleSend = (content: string, attachments?: any[]) => {
     setOpen(true);
-    sendMessage(content, attachments, capturePageContent());
+    sendMessage(content, attachments, buildContext());
   };
+
+  const handleAnalyzePage = useCallback(() => {
+    if (isLoading) return;
+    setOpen(true);
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [isLoading, sendMessage, buildContext]);
+
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    setOpen(true);
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
+      return;
+    }
+    toast.success("Screenshot catturato!", { id: toastId });
+    sendMessage(
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
+    );
+  }, [isLoading, sendMessage, buildContext]);
+
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
