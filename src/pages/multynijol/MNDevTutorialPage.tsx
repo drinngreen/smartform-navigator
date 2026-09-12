@@ -780,14 +780,21 @@ const CHAPTERS: Chapter[] = [
       "I numeri FIR si scaricano dal RENTRI e poi si distribuiscono dal Centro App & FIR.",
       "I formulari in attesa di firma generano un badge arancione sulla campanella delle notifiche: è l'alert da controllare ogni mattina.",
       "La firma può richiedere una doppia sottoscrizione (partenza e accettazione a destino) a seconda del ruolo delle società coinvolte.",
+      "Novità settembre 2026: ogni invio viene registrato automaticamente con numero di transazione, risposta ricevuta ed esito. Gli esiti possibili sono tre: IN VERIFICA (il RENTRI ha preso in carico ma non ha ancora confermato), CONFERMATO (verificato davvero) e DA ANALIZZARE (errore o ponte non raggiungibile).",
+      "Regola d'oro: la risposta «accettato» non significa «registrato». Un invio è valido solo quando risulta confermato dalla verifica successiva o compare nell'elenco formulari del RENTRI.",
+      "I formulari in arrivo da altre aziende si leggono chiedendo al RENTRI l'elenco dei formulari della nostra unità locale: quelli senza accettazione sono i documenti da firmare come impianto. Dopo la firma con esito diverso da «respinto» viene scritto in automatico il movimento dell'impianto e si aggiornano le giacenze.",
     ],
     steps: [
       "Controlla il semaforo di stato del bridge.",
       "Scarica i numeri FIR e copiali con l'icona copia.",
       "Firma i formulari in attesa quando la campanella mostra il badge arancione.",
       "Verifica lo storico invii per identificativo transazione ed esito.",
+      "Dopo ogni invio controlla che l'esito passi da IN VERIFICA a CONFERMATO: se resta DA ANALIZZARE, correggi il dato segnalato e ripeti.",
     ],
-    warnings: ["In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco."],
+    warnings: [
+      "In caso di blocco temporaneo del RENTRI attendi prima di riprovare: i tentativi ravvicinati allungano il blocco.",
+      "Non considerare concluso un invio solo perché la risposta è «accettato»: serve la conferma della verifica.",
+    ],
     faq: [
       { q: "Il semaforo del bridge è rosso: cosa faccio?", a: "Non insistere con gli invii: attendi qualche minuto e riprova. I tentativi ravvicinati possono allungare il blocco lato RENTRI." },
       { q: "Ho scaricato i numeri FIR ma gli autisti non li vedono.", a: "Scaricare non basta: i numeri vanno distribuiti dal Centro App & FIR, oppure marcati come 'ufficio' se li usa l'admin." },
