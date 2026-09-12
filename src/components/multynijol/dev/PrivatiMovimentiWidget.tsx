@@ -340,7 +340,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       }));
 
   const EXPORT_COLUMNS = [
-    { header: "N.", key: "n_riga", width: 6 },
+    { header: "N. ricevuta", key: "n_riga", width: 12 },
     { header: "Progressivo/Anno", key: "progressivo", width: 16 },
     { header: "Data movimento", key: "data_it", width: 14 },
     { header: "Causale", key: "causale", width: 10 },
@@ -408,7 +408,7 @@ exportToPdf(
 
   /** ---- VERSIONE BREVE: stesse voci del modulo allegato (registro cronologico) ---- */
   const SHORT_COLUMNS = [
-    { header: "N.", key: "n_riga", width: 6 },
+    { header: "N. ricevuta", key: "n_riga", width: 12 },
     { header: "Data", key: "data_it", width: 12 },
     { header: "Caus.", key: "causale", width: 10 },
     { header: "Cod. EER", key: "cer", width: 11 },
