@@ -266,8 +266,16 @@ export function resolveRoute(
       };
 
 
-    case "FIRMA_RICEZIONE":
-      return { method: "POST", path: `/formulari/v1.0` };
+    case "FIRMA_RICEZIONE": {
+      const fir = numeroFir || uuidFir;
+      const params = new URLSearchParams();
+      params.set("identificativo_soggetto", issuer);
+      if (unitId) params.set("num_iscr_sito", unitId);
+      return {
+        method: "POST",
+        path: `/formulari/v1.0/${encodeURIComponent(fir)}/accettazione?${params.toString()}`,
+      };
+    }
     default:
       return { method: "POST", path: `/invia-operazione` };
   }
