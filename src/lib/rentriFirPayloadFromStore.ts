@@ -46,7 +46,7 @@ function splitNome(raw: string): { nome: string; cognome: string } {
 }
 
 function statoFisico(raw: string): string {
-  return STATO_FISICO_MAP[raw.trim().toLowerCase()] || "SNP";
+  return STATO_FISICO_MAP[raw.trim().toLowerCase()] || "S";
 }
 
 function dataOraTrasporto(d: Bag): string {
