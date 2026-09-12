@@ -169,3 +169,30 @@ Priorità:
 5. **Tracciamento**: scrivere sempre su `rentri_operation_history` / `rentri_logs`.
 6. **Verifica GET di consultazione registri** (in passato 401 `invalidIssuer` su alcune
    liste — da riprovare ora che il bridge risponde).
+
+---
+
+## 10. Addendum — analisi approfondita del codice
+
+- **Percorso legacy mai dismesso**: le funzioni `rentri-action-proxy`, `rentri-get-pdf`,
+  `rentri-refresh-media` puntano ancora a un vecchio tunnel ngrok su un PC locale
+  (risultava offline nei report interni). Vanno rimosse o ricollegate al bridge.
+- **Rischio sicurezza**: nella cartella `bridge-service/` sono versionati i certificati
+  `certificato.p12`, `multyproget.p12`, `niyol.p12` con le relative password scritte in
+  chiaro nel sorgente (`bridge-service/Program.cs`). Da rimuovere dal repository e
+  ruotare.
+- **Il bridge nel repo non è quello in produzione**: `bridge-service/Program.cs` espone
+  `/send-rentri` sulla porta 8765, mentre la piattaforma chiama `/invia-operazione`.
+  Il sorgente reale del VPS non è nel progetto.
+- **Incoerenza `FIRMA_RICEZIONE`**: lato server la rotta punta a `/formulari/v1.0`
+  (stesso path dell'emissione). La firma di accettazione corretta funziona solo perché
+  il client usa la rotta diretta `/formulari/v1.0/{numero}/accettazione`.
+- **Pagina vuota**: `/mn/admin/:context/fir-digitali` (`MNFirDigitaliPage.tsx`) è un
+  segnaposto senza funzionalità.
+- **Hook abbandonato**: `src/hooks/useRENTRIFir.ts` lavora su tabelle `fir`/`fir_events`
+  non usate dal form reale (`fir_forms`).
+- **423 `sys.issuerIsBanned`**: non è gestito a runtime, compare solo come testo nella
+  guida. Serve un blocco automatico con attesa.
+- **Errori storici su registro C/S**: `401 agIDInterop.invalidIssuer`, `403`, `404` su
+  `/dati-registri/...` per disallineamento tra issuer, ID operatore e ID registro.
+  Oggi il canale risponde 200 sui formulari: va riprovato il registro.
