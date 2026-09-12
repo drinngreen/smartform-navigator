@@ -318,9 +318,10 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const buildExportRows = () =>
     [...filtered]
       .sort((a, b) => String(b.data).localeCompare(String(a.data)) || (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0))
-      .map((m, i) => ({
+      .map((m) => ({
         ...m,
-        n_riga: i + 1,
+        // N. = stesso numero progressivo della ricevuta (nessuna rinumerazione di stampa)
+        n_riga: m.numero_progressivo ?? "—",
         progressivo: m.numero_progressivo ? `${m.numero_progressivo}/${m.anno_dbt ?? String(m.data).slice(0, 4)}` : "—",
         data_it: fmtDate(m.data),
         descrizione: getCerDescrizioneCompleta(m.cer),
