@@ -233,9 +233,17 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
         attachments: getAttachmentsFromMetadata(m.metadata),
         createdAt: new Date(m.created_at),
       })));
+      // La conversazione viene "presa in carico" da questa vista: se era aperta
+      // in un'altra vista, quella la rilascia.
+      const store = useZoliDarkLemonWidgetStore.getState();
+      for (const other of DL_SURFACES) {
+        if (other !== surface && store.conversationBySurface[other] === conversationId) {
+          store.setSurfaceConversationId(other, null);
+        }
+      }
       setCurrentConversationId(conversationId);
     }
-  }, [setCurrentConversationId]);
+  }, [setCurrentConversationId, surface]);
 
   const sendMessage = useCallback(async (
     content: string,
