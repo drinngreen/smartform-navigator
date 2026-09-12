@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Maximize2, Bot, Camera, ScanSearch } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Maximize2, Minus, Bot, Camera, ScanSearch } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import { usePageContext } from "@/hooks/usePageContext";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import { MessageCopyButton } from "./MessageCopyButton";
@@ -29,6 +30,8 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
   const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "floating");
   const { capturePageContent } = usePageContext();
   const { getRegisteredFields } = useFormBridgeContext();
+  const topBarCollapsed = useZoliDarkLemonWidgetStore((s) => s.topBarCollapsed);
+  const setTopBarCollapsed = useZoliDarkLemonWidgetStore((s) => s.setTopBarCollapsed);
   const [open, setOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +82,23 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
+  // Modalità minimizzata: badge sottile che non invade la pagina
+  if (topBarCollapsed) {
+    return (
+      <div className="sticky top-0 z-30 mb-2 flex justify-end">
+        <button
+          onClick={() => setTopBarCollapsed(false)}
+          title="Ripristina barra Dark Lemon"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-500/30 bg-card/80 backdrop-blur-md shadow-sm hover:bg-cyan-500/10 transition-colors"
+        >
+          <img src={zoliLemonIcon} alt="Dark Lemon" className="h-5 w-5 shrink-0" />
+          <span className="text-xs font-semibold text-cyan-300">Dark Lemon</span>
+          <Maximize2 className="h-3.5 w-3.5 text-cyan-300" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div data-dark-lemon="true" className="sticky top-0 z-30 mb-4 rounded-xl border border-cyan-500/30 bg-card/90 backdrop-blur-xl overflow-hidden shadow-lg">
       {/* Riga compatta */}
@@ -126,6 +146,13 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
               <Maximize2 className="h-4 w-4 text-cyan-300" />
             </button>
           )}
+          <button
+            onClick={() => setTopBarCollapsed(true)}
+            title="Nascondi barra"
+            className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors"
+          >
+            <Minus className="h-4 w-4 text-cyan-300" />
+          </button>
           <button
             onClick={() => setOpen((v) => !v)}
             title={open ? "Riduci conversazione" : "Mostra conversazione"}
