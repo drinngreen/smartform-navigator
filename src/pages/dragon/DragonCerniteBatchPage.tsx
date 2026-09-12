@@ -305,7 +305,20 @@ export default function DragonCerniteBatchPage() {
                     </button>
                   )}
                 </div>
-
+                <div className="col-span-2">
+                  <Label>Data lavorazione *</Label>
+                  <Input
+                    type="date"
+                    value={executionDate}
+                    max={new Date().toISOString().split("T")[0]}
+                    onChange={e => setExecutionDate(e.target.value)}
+                    disabled={!!editingBatchId}
+                    className="font-mono"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Puoi retrodatare: indica il giorno in cui la cernita è stata fatta davvero.
+                  </p>
+                </div>
               </div>
               {inputItem && (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
