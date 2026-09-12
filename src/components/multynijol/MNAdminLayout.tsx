@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { MNAdminTopNav } from "./MNAdminTopNav";
 import { MNAdminHeader } from "./MNAdminHeader";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { DarkLemonTopBar } from "@/components/ai/DarkLemonTopBar";
 
 interface MNAdminLayoutProps {
   children: ReactNode;
@@ -58,6 +59,12 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
     return routeColors["/mn/admin"];
   }, [location.pathname]);
 
+  const dlContext = useMemo(() => {
+    if (location.pathname.includes("/niyol")) return "niyol";
+    if (location.pathname.includes("/dev-multyproget")) return "dev-multyproget";
+    return "multyproget";
+  }, [location.pathname]);
+
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
       <div className={`flex flex-col flex-1 overflow-hidden relative transition-all duration-300 ${sidePanel ? "mr-[max(20vw,280px)]" : ""}`}>
@@ -103,6 +110,8 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-6 relative z-10">
+          {/* Chat compatta Dark Lemon: resta in cima a ogni pagina */}
+          <DarkLemonTopBar context={dlContext} fullPagePath="/mn/admin/multyproget/dark-lemon" />
           {children}
         </main>
       </div>

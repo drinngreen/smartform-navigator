@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Maximize2, Bot } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Plus, Maximize2, Bot, Camera, ScanSearch } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
 import { usePageContext } from "@/hooks/usePageContext";
+import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
+import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import { MessageCopyButton } from "./MessageCopyButton";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
@@ -25,6 +28,7 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
   const navigate = useNavigate();
   const { messages, isLoading, sendMessage, newChat } = useDarkLemonMN(context, "floating");
   const { capturePageContent } = usePageContext();
+  const { getRegisteredFields } = useFormBridgeContext();
   const [open, setOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -32,15 +36,51 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
     if (open) endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
+  // Contesto pagina + campi form registrati (compilazione in tempo reale su ogni pagina)
+  const buildContext = useCallback(() => {
+    const ctx = capturePageContent();
+    const bridgeFields = getRegisteredFields();
+    const bridgeInfo = bridgeFields.length > 0
+      ? `\n\n🔗 BRIDGE FIELDS:\n${bridgeFields.map((f) => `- ${f.id}: "${f.label}" [${f.type}] = "${f.value}"`).join("\n")}`
+      : "";
+    return { ...ctx, content: (ctx.content || "") + bridgeInfo };
+  }, [capturePageContent, getRegisteredFields]);
+
   const handleSend = (content: string, attachments?: any[]) => {
     setOpen(true);
-    sendMessage(content, attachments, capturePageContent());
+    sendMessage(content, attachments, buildContext());
   };
+
+  const handleAnalyzePage = useCallback(() => {
+    if (isLoading) return;
+    setOpen(true);
+    sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
+  }, [isLoading, sendMessage, buildContext]);
+
+  const handleScreenshot = useCallback(async () => {
+    if (isLoading) return;
+    setOpen(true);
+    const toastId = toast.loading("📸 Cattura schermata in corso...");
+    const shot = await captureWorkspaceScreenshot();
+    const ctx = buildContext();
+    if (!shot) {
+      toast.error("Screenshot non riuscito: analizzo la pagina come testo", { id: toastId });
+      sendMessage("Analizza la pagina che sto visualizzando (screenshot non disponibile) e dimmi cosa vedi.", undefined, ctx);
+      return;
+    }
+    toast.success("Screenshot catturato!", { id: toastId });
+    sendMessage(
+      "Ecco lo screenshot della pagina attuale. Analizzalo e dimmi cosa vedi.",
+      [{ type: shot.type, name: shot.name, dataUrl: shot.dataUrl }],
+      ctx
+    );
+  }, [isLoading, sendMessage, buildContext]);
+
 
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
 
   return (
-    <div data-dark-lemon="true" className="mb-4 rounded-xl border border-cyan-500/30 bg-card/70 backdrop-blur-xl overflow-hidden">
+    <div data-dark-lemon="true" className="sticky top-0 z-30 mb-4 rounded-xl border border-cyan-500/30 bg-card/90 backdrop-blur-xl overflow-hidden shadow-lg">
       {/* Riga compatta */}
       <div className="flex items-center gap-3 px-3 py-2">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-7 w-7 shrink-0" />
@@ -54,6 +94,22 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={handleScreenshot}
+            disabled={isLoading}
+            title="Fotografa la pagina e analizzala"
+            className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors disabled:opacity-50"
+          >
+            <Camera className="h-4 w-4 text-cyan-300" />
+          </button>
+          <button
+            onClick={handleAnalyzePage}
+            disabled={isLoading}
+            title="Analizza il contenuto della pagina"
+            className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors disabled:opacity-50"
+          >
+            <ScanSearch className="h-4 w-4 text-cyan-300" />
+          </button>
           <button
             onClick={newChat}
             title="Nuova conversazione"
