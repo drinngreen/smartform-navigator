@@ -43,6 +43,22 @@ const COLS = [
   { header: "Pagamento", key: "metodo_pagamento", width: 14 },
 ];
 
+const numeroProgressivo = (numero: string) => {
+  const match = String(numero || "").match(/\d+/);
+  return match ? Number(match[0]) : -1;
+};
+
+const annoDocumento = (ricevuta: Ricevuta) => {
+  const match = String(ricevuta.numero_doc || "").match(/\/(\d{4})/);
+  return Number(match?.[1] ?? String(ricevuta.data_doc || "").slice(0, 4) ?? 0);
+};
+
+const byNumeroDecrescente = (a: Ricevuta, b: Ricevuta) =>
+  String(b.data_doc).localeCompare(String(a.data_doc)) ||
+  annoDocumento(b) - annoDocumento(a) ||
+  numeroProgressivo(b.numero_doc) - numeroProgressivo(a.numero_doc) ||
+  String(b.numero_doc).localeCompare(String(a.numero_doc));
+
 export default function MNStoricoRicevutePage() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -56,9 +72,9 @@ export default function MNStoricoRicevutePage() {
         .from("storico_ricevute_privati" as any)
         .select("*")
         .eq("tenant_id", TENANT_ID)
-        .order("data_doc", { ascending: true });
+        .order("data_doc", { ascending: false });
       if (error) throw error;
-      return (data as any[]) || [];
+      return (((data as unknown) as Ricevuta[]) || []).sort(byNumeroDecrescente);
     },
   });
 

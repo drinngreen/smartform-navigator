@@ -70,6 +70,22 @@ const formatIndirizzoPrivato = (p?: PrivatoLite) => {
   return [p.indirizzo, cittaParts].filter(Boolean).join(" - ");
 };
 
+const ricevutaProgressivo = (numero: string | null | undefined) => {
+  const match = String(numero ?? "").match(/\d+/);
+  return match ? Number(match[0]) : -1;
+};
+
+const ricevutaAnno = (r: RicevutaRow) => {
+  const annoNumero = String(r.numero_ricevuta ?? "").match(/\/(\d{4})/);
+  return Number(annoNumero?.[1] ?? r.anno ?? 0);
+};
+
+const byRicevutaDecrescente = (a: RicevutaRow, b: RicevutaRow) =>
+  String(b.data_emissione).localeCompare(String(a.data_emissione)) ||
+  ricevutaAnno(b) - ricevutaAnno(a) ||
+  ricevutaProgressivo(b.numero_ricevuta) - ricevutaProgressivo(a.numero_ricevuta) ||
+  String(b.numero_ricevuta ?? "").localeCompare(String(a.numero_ricevuta ?? ""));
+
 export function DevRicevuteModule() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -104,7 +120,7 @@ export function DevRicevuteModule() {
         .from("ricevute_privati")
         .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, prezzo_kg, importo_pagato, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
-        .order("data_emissione", { ascending: true })
+        .order("data_emissione", { ascending: false })
         .limit(1000)) as { data: RicevutaRow[] | null; error: any };
       if (error) throw error;
       const rows = (data ?? []) as RicevutaRow[];
@@ -123,7 +139,7 @@ export function DevRicevuteModule() {
         }
         for (const r of rows) if (r.gruppo_id) r.materiali = byGruppo.get(r.gruppo_id);
       }
-      return rows;
+      return rows.sort(byRicevutaDecrescente);
     },
   });
 
@@ -294,21 +310,18 @@ export function DevRicevuteModule() {
   const printSingleSoloData = (r: RicevutaRow) =>
     stampaRicevuta({ ...buildRicevutaData(r), soloData: true });
 
-  const byDataCrescente = (a: RicevutaRow, b: RicevutaRow) =>
-    String(a.data_emissione).localeCompare(String(b.data_emissione));
-
   /** Esporta tutte le ricevute filtrate nel layout "solo date" */
   const esportaSoloDate = () => {
     if (!filtered.length) return toast.error("Nessuna ricevuta da esportare");
     stampaRicevute(
-      [...filtered].sort(byDataCrescente).map((r) => ({ ...buildRicevutaData(r), soloData: true })),
+      [...filtered].sort(byRicevutaDecrescente).map((r) => ({ ...buildRicevutaData(r), soloData: true })),
       "Ricevute - solo date",
     );
   };
 
   /** Esporta SOLO le ricevute selezionate in un unico PDF cumulativo */
   const esportaSelezionateSoloDate = () => {
-    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byDataCrescente);
+    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byRicevutaDecrescente);
     if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
     stampaRicevute(
       sel.map((r) => ({ ...buildRicevutaData(r), soloData: true })),
@@ -318,7 +331,7 @@ export function DevRicevuteModule() {
 
   /** Esporta le ricevute selezionate con numero progressivo, in un unico PDF */
   const esportaSelezionateComplete = () => {
-    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byDataCrescente);
+    const sel = filtered.filter((r) => selectedIds.includes(r.id)).sort(byRicevutaDecrescente);
     if (!sel.length) return toast.error("Seleziona almeno una ricevuta");
     stampaRicevute(sel.map((r) => buildRicevutaData(r)), `Ricevute selezionate (${sel.length})`);
   };
