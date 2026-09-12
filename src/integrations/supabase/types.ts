@@ -5901,6 +5901,72 @@ export type Database = {
         }
         Relationships: []
       }
+      rentri_operazioni: {
+        Row: {
+          cliente: string
+          company: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          esito_finale: string
+          http_status: number | null
+          id: string
+          identificativo_rentri: string | null
+          payload_inviato: Json | null
+          registro_id: string | null
+          rentri_method: string | null
+          rentri_path: string | null
+          risposta: Json | null
+          success: boolean
+          tipo_operazione: string
+          transazione_id: string | null
+          updated_at: string
+          verificato_at: string | null
+        }
+        Insert: {
+          cliente: string
+          company?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          esito_finale?: string
+          http_status?: number | null
+          id?: string
+          identificativo_rentri?: string | null
+          payload_inviato?: Json | null
+          registro_id?: string | null
+          rentri_method?: string | null
+          rentri_path?: string | null
+          risposta?: Json | null
+          success?: boolean
+          tipo_operazione: string
+          transazione_id?: string | null
+          updated_at?: string
+          verificato_at?: string | null
+        }
+        Update: {
+          cliente?: string
+          company?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          esito_finale?: string
+          http_status?: number | null
+          id?: string
+          identificativo_rentri?: string | null
+          payload_inviato?: Json | null
+          registro_id?: string | null
+          rentri_method?: string | null
+          rentri_path?: string | null
+          risposta?: Json | null
+          success?: boolean
+          tipo_operazione?: string
+          transazione_id?: string | null
+          updated_at?: string
+          verificato_at?: string | null
+        }
+        Relationships: []
+      }
       rentri_registro_esiti: {
         Row: {
           azienda: string
