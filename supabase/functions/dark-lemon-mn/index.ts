@@ -2361,6 +2361,31 @@ async function handleTool(
       return error ? { error: error.message } : data;
     }
 
+    case "bulk_insert_rows": {
+      const table = String(args.table || "").replace(/[^a-zA-Z0-9_]/g, "");
+      const rows = Array.isArray(args.rows) ? args.rows : [];
+      if (!table) return { error: "Tabella mancante." };
+      if (rows.length === 0) return { error: "Nessuna riga da inserire." };
+      if (rows.length > 200) return { error: "Massimo 200 righe per blocco: suddividi l'inserimento." };
+
+      const addTenant = args.add_tenant !== false;
+      const payload = rows.map((r: Record<string, unknown>) =>
+        addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r
+      );
+
+      const { data, error } = await db.from(table).insert(payload).select();
+      if (error) {
+        // Se la tabella non ha tenant_id, riprova senza aggiungerlo
+        if (addTenant && /tenant_id/i.test(error.message)) {
+          const retry = await db.from(table).insert(rows).select();
+          if (retry.error) return { error: retry.error.message };
+          return { success: true, inserite: retry.data?.length ?? 0, data: retry.data?.slice(0, 5) };
+        }
+        return { error: error.message };
+      }
+      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5) };
+    }
+
     // ---------- DIAGNOSTICA / TEST ----------
     case "run_system_test": {
       const area = String(args.area || "all").toLowerCase();
