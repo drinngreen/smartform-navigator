@@ -160,5 +160,5 @@ export function DevRegistroGeneraleModule() {
                                     if (filtered.length)
                                         exportToPdf(filtered, exportCols, `registro-generale-${dataFilter || "filtrato"}`, "Registro Generale Multyproget");
                                     setCtxMenu(null);
-                                }, children: [_jsx(FileText, { className: "h-4 w-4" }), " Esporta PDF (righe filtrate)"] })] })] })), _jsx(ContoTerziManualDialog, { open: contoTerziOpen, onClose: () => setContoTerziOpen(false) }), _jsx(ScaricoLavorazioneDialog, { open: scaricoLavOpen, onClose: () => setScaricoLavOpen(false) })] }));
+                                }, children: [_jsx(FileText, { className: "h-4 w-4" }), " Esporta PDF (righe filtrate)"] })] })] })), _jsx(ScrollJumpButtons, { containerRef: bottomScrollRef }), _jsx(ContoTerziManualDialog, { open: contoTerziOpen, onClose: () => setContoTerziOpen(false) }), _jsx(ScaricoLavorazioneDialog, { open: scaricoLavOpen, onClose: () => setScaricoLavOpen(false) })] }));
 }
