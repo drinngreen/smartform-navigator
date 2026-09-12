@@ -81,9 +81,10 @@ const ricevutaAnno = (r: RicevutaRow) => {
 };
 
 const byRicevutaDecrescente = (a: RicevutaRow, b: RicevutaRow) =>
+  String(b.data_emissione).localeCompare(String(a.data_emissione)) ||
   ricevutaAnno(b) - ricevutaAnno(a) ||
   ricevutaProgressivo(b.numero_ricevuta) - ricevutaProgressivo(a.numero_ricevuta) ||
-  String(b.data_emissione).localeCompare(String(a.data_emissione));
+  String(b.numero_ricevuta ?? "").localeCompare(String(a.numero_ricevuta ?? ""));
 
 export function DevRicevuteModule() {
   const qc = useQueryClient();

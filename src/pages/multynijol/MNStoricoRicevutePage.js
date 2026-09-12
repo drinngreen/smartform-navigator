@@ -28,9 +28,10 @@ const annoDocumento = (ricevuta) => {
     const match = String(ricevuta.numero_doc || "").match(/\/(\d{4})/);
     return Number(match?.[1] ?? String(ricevuta.data_doc || "").slice(0, 4) ?? 0);
 };
-const byNumeroDecrescente = (a, b) => annoDocumento(b) - annoDocumento(a) ||
+const byNumeroDecrescente = (a, b) => String(b.data_doc).localeCompare(String(a.data_doc)) ||
+    annoDocumento(b) - annoDocumento(a) ||
     numeroProgressivo(b.numero_doc) - numeroProgressivo(a.numero_doc) ||
-    String(b.data_doc).localeCompare(String(a.data_doc));
+    String(b.numero_doc).localeCompare(String(a.numero_doc));
 export default function MNStoricoRicevutePage() {
     const [search, setSearch] = useState("");
     const [dateFrom, setDateFrom] = useState("");

@@ -25,9 +25,10 @@ const ricevutaAnno = (r) => {
     const annoNumero = String(r.numero_ricevuta ?? "").match(/\/(\d{4})/);
     return Number(annoNumero?.[1] ?? r.anno ?? 0);
 };
-const byRicevutaDecrescente = (a, b) => ricevutaAnno(b) - ricevutaAnno(a) ||
+const byRicevutaDecrescente = (a, b) => String(b.data_emissione).localeCompare(String(a.data_emissione)) ||
+    ricevutaAnno(b) - ricevutaAnno(a) ||
     ricevutaProgressivo(b.numero_ricevuta) - ricevutaProgressivo(a.numero_ricevuta) ||
-    String(b.data_emissione).localeCompare(String(a.data_emissione));
+    String(b.numero_ricevuta ?? "").localeCompare(String(a.numero_ricevuta ?? ""));
 export function DevRicevuteModule() {
     const qc = useQueryClient();
     const [search, setSearch] = useState("");
