@@ -108,7 +108,7 @@ export default function DragonCerniteBatchPage() {
     setOutputRows(rows => rows.map(row => row.id === rowId ? { ...row, [field]: value } : row));
 
   const hasEnoughStock = inputQty <= availableQty;
-  const isFormValid = inputItemId && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
+  const isFormValid = inputItemId && !!executionDate && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
 
   const resetForm = () => {
     setInputItemId("");
