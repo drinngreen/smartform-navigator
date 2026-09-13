@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList } from "lucide-react";
+import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock } from "lucide-react";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -15,6 +15,7 @@ export const REGISTRI_RENTRI = [
 ] as const;
 
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
+type Filtro = "tutti" | "da_inviare" | "inviati";
 
 interface RigaRegistro {
   id: string;
@@ -38,9 +39,12 @@ interface EsitoRow {
 }
 
 const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("it-IT");
+const fmtData = (d: string | null | undefined) =>
+  d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
 
 export function RentriRegistriPanel() {
   const [registro, setRegistro] = useState<RegistroId>("MULTY_IMPIANTO");
+  const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [popup, setPopup] = useState(false);
 
@@ -55,8 +59,8 @@ export function RentriRegistriPanel() {
               .from("privati_conferimenti" as any)
               .select("id, numero_progressivo, data, cer, kg_pesati, nome_privato")
               .eq("tenant_id", cfg.tenant)
-              .order("data", { ascending: true })
-              .order("numero_progressivo", { ascending: true })
+              .order("data", { ascending: false })
+              .order("numero_progressivo", { ascending: false })
           : supabase
               .from("registro_generale" as any)
               .select(
@@ -64,8 +68,8 @@ export function RentriRegistriPanel() {
               )
               .eq("tenant_id", cfg.tenant)
               .eq("registro", registro)
-              .order("data_movimento", { ascending: true })
-              .order("numero_interno", { ascending: true }),
+              .order("data_movimento", { ascending: false })
+              .order("numero_interno", { ascending: false }),
         supabase
           .from("rentri_registro_esiti" as any)
           .select("numero_interno, progressivi, identificativi_rentri, transazione_id, esito, registro_label")
@@ -113,13 +117,13 @@ export function RentriRegistriPanel() {
   }, [data, esitiMap]);
 
   const inviati = useMemo(() => righe.filter((x) => x.esito), [righe]);
-  const daInviare = useMemo(() => righe.filter((x) => !x.esito).map((x) => x.riga), [righe]);
+  const daInviare = useMemo(() => righe.filter((x) => !x.esito), [righe]);
 
   const visibili = useMemo(() => {
     if (filtro === "inviati") return inviati;
-    if (filtro === "da_inviare") return righe.filter((x) => !x.esito);
+    if (filtro === "da_inviare") return daInviare;
     return righe;
-  }, [filtro, righe, inviati]);
+  }, [filtro, righe, inviati, daInviare]);
 
   const ultimoInvio = useMemo(() => {
     const date = inviati.map((x) => x.riga.data_movimento ?? "").filter(Boolean).sort();
@@ -133,7 +137,14 @@ export function RentriRegistriPanel() {
       return n;
     });
 
-  const allSelected = daInviare.length > 0 && daInviare.every((r) => sel.has(r.id));
+  const daInviareVisibili = visibili.filter((x) => !x.esito);
+  const allSelected = daInviareVisibili.length > 0 && daInviareVisibili.every((x) => sel.has(x.riga.id));
+
+  const FILTRI: { key: Filtro; label: string; count: number }[] = [
+    { key: "tutti", label: "Tutti", count: righe.length },
+    { key: "da_inviare", label: "Da inviare", count: daInviare.length },
+    { key: "inviati", label: "Inviati", count: inviati.length },
+  ];
 
   return (
     <div className="space-y-4">
@@ -167,148 +178,117 @@ export function RentriRegistriPanel() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Registro RENTRI <span className="font-mono text-foreground">{cfg.registroId}</span> — movimenti inviati e ricevute
-        ufficiali, movimenti ancora da trasmettere.
+        Registro RENTRI <span className="font-mono text-foreground">{cfg.registroId}</span> — elenco cronologico dal
+        movimento più recente al più vecchio, con lo stato di trasmissione di ogni riga.
+        {ultimoInvio && (
+          <>
+            {" "}Ultimo movimento con ricevuta RENTRI: <strong className="text-foreground">{fmtData(ultimoInvio)}</strong>.
+          </>
+        )}
       </p>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Caricamento registro...</p>
       ) : (
-        <>
-          {/* DA INVIARE */}
-          <div className="rounded-2xl border border-amber-500/30 bg-card/60 p-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h4 className="text-sm font-bold text-amber-300">
-                Da inviare al RENTRI — {daInviare.length} movimenti
-              </h4>
-              <div className="ml-auto flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSel(allSelected ? new Set() : new Set(daInviare.map((r) => r.id)))}
-                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold"
-                >
-                  {allSelected ? "Deseleziona tutti" : "Seleziona tutti"}
-                </button>
-                <button
-                  type="button"
-                  disabled={sel.size === 0}
-                  onClick={() => setPopup(true)}
-                  className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-black disabled:opacity-40"
-                >
-                  <Send size={13} /> Invia selezionati ({sel.size})
-                </button>
-                <button
-                  type="button"
-                  disabled={daInviare.length === 0}
-                  onClick={() => setPopup(true)}
-                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-40"
-                >
-                  <Send size={13} /> Invia tutti
-                </button>
-              </div>
-            </div>
-            <div className="max-h-[420px] overflow-auto rounded-xl border border-border/30">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-secondary/70 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2" />
-                    <th className="px-3 py-2 text-left">N. Int.</th>
-                    <th className="px-3 py-2 text-left">Data</th>
-                    <th className="px-3 py-2 text-left">C./S.</th>
-                    <th className="px-3 py-2 text-left">CER</th>
-                    <th className="px-3 py-2 text-right">Kg</th>
-                    <th className="px-3 py-2 text-left">Formulario</th>
-                    <th className="px-3 py-2 text-right">Azione</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {daInviare.map((r) => (
-                    <tr key={r.id} className="border-t border-border/20">
-                      <td className="px-3 py-2">
-                        <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} />
-                      </td>
-                      <td className="px-3 py-2 font-mono">{r.numero_interno ?? "—"}</td>
-                      <td className="px-3 py-2">{r.data_movimento ?? "—"}</td>
-                      <td className="px-3 py-2">{r.carico_scarico ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono">{r.cer ?? "—"}</td>
-                      <td className="px-3 py-2 text-right font-mono">{fmtKg(r.quantita)}</td>
-                      <td className="px-3 py-2 font-mono text-xs">{r.numero_formulario ?? "—"}</td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setPopup(true)}
-                          className="rounded-lg border border-primary/50 px-3 py-1 text-xs font-semibold"
-                        >
-                          Invia
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {daInviare.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                        Nessun movimento da inviare.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+        <div className="rounded-2xl border border-border/30 bg-card/60 p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTRI.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFiltro(f.key)}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  filtro === f.key
+                    ? "border-primary bg-primary/15 text-primary"
+                    : "border-border/50 bg-secondary/40 text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                {f.label} ({f.count})
+              </button>
+            ))}
+            <div className="ml-auto flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={daInviareVisibili.length === 0}
+                onClick={() =>
+                  setSel(allSelected ? new Set() : new Set(daInviareVisibili.map((x) => x.riga.id)))
+                }
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                {allSelected ? "Deseleziona tutti" : "Seleziona da inviare"}
+              </button>
+              <button
+                type="button"
+                disabled={sel.size === 0}
+                onClick={() => setPopup(true)}
+                className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-black disabled:opacity-40"
+              >
+                <Send size={13} /> Invia selezionati ({sel.size})
+              </button>
             </div>
           </div>
 
-          {/* INVIATI */}
-          <div className="rounded-2xl border border-emerald-500/30 bg-card/60 p-4 space-y-3">
-            <h4 className="text-sm font-bold text-emerald-300">
-              Inviati al RENTRI — {inviati.length} movimenti (ricevuta ufficiale)
-            </h4>
-            <div className="max-h-[460px] overflow-auto rounded-xl border border-border/30">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-secondary/70 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-left">N. Int.</th>
-                    <th className="px-3 py-2 text-left">Data</th>
-                    <th className="px-3 py-2 text-left">CER</th>
-                    <th className="px-3 py-2 text-right">Kg</th>
-                    <th className="px-3 py-2 text-left">Formulario</th>
-                    <th className="px-3 py-2 text-left">Progressivi RENTRI</th>
-                    <th className="px-3 py-2 text-left">Identificativo RENTRI</th>
-                    <th className="px-3 py-2 text-left">Transazione</th>
-                    <th className="px-3 py-2 text-left">Esito</th>
+          <div className="max-h-[620px] overflow-auto rounded-xl border border-border/30">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-secondary/80 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2" />
+                  <th className="px-3 py-2 text-left">Stato</th>
+                  <th className="px-3 py-2 text-left">N. Int.</th>
+                  <th className="px-3 py-2 text-left">Data</th>
+                  <th className="px-3 py-2 text-left">C./S.</th>
+                  <th className="px-3 py-2 text-left">CER</th>
+                  <th className="px-3 py-2 text-right">Kg</th>
+                  <th className="px-3 py-2 text-left">Formulario</th>
+                  <th className="px-3 py-2 text-left">Progressivo RENTRI</th>
+                  <th className="px-3 py-2 text-left">Identificativo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibili.map(({ riga: r, esito: e }) => (
+                  <tr
+                    key={r.id}
+                    className={`border-t border-border/20 ${e ? "bg-emerald-500/5" : "bg-amber-500/5"}`}
+                  >
+                    <td className="px-3 py-2">
+                      {!e && (
+                        <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} />
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {e ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                          <CheckCircle2 size={11} /> INVIATO
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                          <Clock size={11} /> DA INVIARE
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 font-mono">{r.numero_interno ?? "—"}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{fmtData(r.data_movimento)}</td>
+                    <td className="px-3 py-2">{r.carico_scarico ?? "—"}</td>
+                    <td className="px-3 py-2 font-mono">{r.cer ?? "—"}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmtKg(r.quantita)}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{r.numero_formulario ?? "—"}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{(e?.progressivi ?? []).join(", ") || "—"}</td>
+                    <td className="px-3 py-2 font-mono text-[11px]">
+                      {(e?.identificativi_rentri ?? []).join(" | ") || "—"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {inviati.map((r) => {
-                    const e = esitiMap.get(Number(r.numero_interno))!;
-                    return (
-                      <tr key={r.id} className="border-t border-border/20 bg-emerald-500/5">
-                        <td className="px-3 py-2 font-mono">{r.numero_interno ?? "—"}</td>
-                        <td className="px-3 py-2">{r.data_movimento ?? "—"}</td>
-                        <td className="px-3 py-2 font-mono">{r.cer ?? "—"}</td>
-                        <td className="px-3 py-2 text-right font-mono">{fmtKg(r.quantita)}</td>
-                        <td className="px-3 py-2 font-mono text-xs">{r.numero_formulario ?? "—"}</td>
-                        <td className="px-3 py-2 font-mono text-xs">{(e.progressivi ?? []).join(", ")}</td>
-                        <td className="px-3 py-2 font-mono text-[11px]">{(e.identificativi_rentri ?? []).join(" | ")}</td>
-                        <td className="px-3 py-2 font-mono text-[11px]">{e.transazione_id ?? "—"}</td>
-                        <td className="px-3 py-2">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
-                            <CheckCircle2 size={11} /> INVIATO
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {inviati.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
-                        Nessun invio registrato per questo registro.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))}
+                {visibili.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
+                      Nessun movimento in questa vista.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </>
+        </div>
       )}
 
       {popup && (
