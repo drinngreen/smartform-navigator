@@ -5766,6 +5766,54 @@ export type Database = {
           },
         ]
       }
+      rentri_invii_reali: {
+        Row: {
+          azienda: string
+          causale: string | null
+          created_at: string
+          data_registrazione: string
+          data_trasmissione: string | null
+          fir: string | null
+          fir_norm: string | null
+          id: string
+          id_rentri: string | null
+          nome_registro: string
+          progressivo_anno: string | null
+          registro: string
+          unique_key: string | null
+        }
+        Insert: {
+          azienda: string
+          causale?: string | null
+          created_at?: string
+          data_registrazione: string
+          data_trasmissione?: string | null
+          fir?: string | null
+          fir_norm?: string | null
+          id?: string
+          id_rentri?: string | null
+          nome_registro: string
+          progressivo_anno?: string | null
+          registro: string
+          unique_key?: string | null
+        }
+        Update: {
+          azienda?: string
+          causale?: string | null
+          created_at?: string
+          data_registrazione?: string
+          data_trasmissione?: string | null
+          fir?: string | null
+          fir_norm?: string | null
+          id?: string
+          id_rentri?: string | null
+          nome_registro?: string
+          progressivo_anno?: string | null
+          registro?: string
+          unique_key?: string | null
+        }
+        Relationships: []
+      }
       rentri_invii_registri: {
         Row: {
           cliente: string
