@@ -9,3 +9,4 @@
 - [x] Ripristinare la visibilità delle sole cernite corrette ed escludere esclusivamente quella indicata dal cliente
 - [x] Allineare giacenze a saldi 2025, registro 2026 e privati senza valori negativi né doppi conteggi
 - [x] Aggiornare Dark Lemon, guida e tutorial dopo la verifica reale completa
+- [ ] Elenco reale RENTRI (3 registri, 3.007 righe) analizzato solo in lettura; attendere istruzioni su come usarlo per lo stato "inviato".
