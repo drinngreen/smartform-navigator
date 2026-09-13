@@ -1,4 +1,8 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sibill-signature, x-sibill-webhook-secret, x-webhook-secret",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+};
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Ambienti Sibill (da docs.sibill.com/api-reference)
