@@ -100,14 +100,31 @@ export function RentriRegistriPanel() {
     return m;
   }, [data]);
 
-  const { inviati, daInviare } = useMemo(() => {
-    const inviati: RigaRegistro[] = [];
-    const daInviare: RigaRegistro[] = [];
-    (data?.movimenti ?? []).forEach((r) => {
-      (esitiMap.has(Number(r.numero_interno)) ? inviati : daInviare).push(r);
+  /** Tutti i movimenti in ordine cronologico inverso (più recente in alto). */
+  const righe = useMemo(() => {
+    const list = [...(data?.movimenti ?? [])];
+    list.sort((a, b) => {
+      const da = a.data_movimento ?? "";
+      const db = b.data_movimento ?? "";
+      if (da !== db) return db.localeCompare(da);
+      return Number(b.numero_interno ?? 0) - Number(a.numero_interno ?? 0);
     });
-    return { inviati, daInviare };
+    return list.map((r) => ({ riga: r, esito: esitiMap.get(Number(r.numero_interno)) ?? null }));
   }, [data, esitiMap]);
+
+  const inviati = useMemo(() => righe.filter((x) => x.esito), [righe]);
+  const daInviare = useMemo(() => righe.filter((x) => !x.esito).map((x) => x.riga), [righe]);
+
+  const visibili = useMemo(() => {
+    if (filtro === "inviati") return inviati;
+    if (filtro === "da_inviare") return righe.filter((x) => !x.esito);
+    return righe;
+  }, [filtro, righe, inviati]);
+
+  const ultimoInvio = useMemo(() => {
+    const date = inviati.map((x) => x.riga.data_movimento ?? "").filter(Boolean).sort();
+    return date.length ? date[date.length - 1] : null;
+  }, [inviati]);
 
   const toggle = (id: string) =>
     setSel((prev) => {
