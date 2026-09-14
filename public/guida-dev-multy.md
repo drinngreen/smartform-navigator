@@ -399,6 +399,17 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 
 ---
 
+## 22-ter. Invii RENTRI dei privati (novità 14/09/2026)
+
+- **Archivio dedicato**: tabella `rentri_invii_privati` — una riga per ogni invio di conferimento privato verso il registro RENTRI impianto Multyproget (`RAH20NP7O40`). Campi principali: `data_movimento`, `data_invio`, `cer`, `kg`, `produttore`, `mezzo`, `progressivo_rentri` (es. `2026/1`), `transazione_id`, `id_ricevuta`, `esito`, `origine` (`TERMINALE` / `APP`), `stato` (`CONFERMATO` / `IN_VERIFICA` / `ERRORE` / `DA_ANALIZZARE`), `conferimento_id` (collegamento a `privati_conferimenti`, può essere nullo).
+- **Tab "Invii privati"** nella Console RENTRI (`/mn/admin/{context}/rentri-console?tab=privati`): riepilogo in alto (totale, kg, confermati, aperti, da terminale), tabella con identificativi copiabili, ricerca (nome/CER/progressivo/ricevuta/mezzo), filtri per mese e origine, esportazione Excel/PDF, pulsante **Verifica** per ricontrollare lo stato di una transazione APP.
+- **Origine**: etichetta gialla "Eseguito da terminale" per gli invii storici fatti sul portale RENTRI (data invio 30/08/2026); etichetta verde "Inviato dall'app" per quelli partiti dalla console.
+- **Riquadro "Privati da inviare al RENTRI"**: in cima alla tab, elenca i conferimenti privati non ancora presenti in archivio (confronto per `conferimento_id` e per chiave data+CER+kg). Selezione multipla → **Invia selezionati**: l'invio passa da `rentri-vps-proxy` (cliente `multy`, registro `RAH20NP7O40`, movimento di CARICO da produttore privato) e la riga viene scritta in `rentri_invii_privati` con origine APP, progressivo, transazione e ricevuta.
+- **Codice**: `src/lib/rentriPrivatiSync.ts` (mapping, invio, verifica) + `src/components/rentri/RentriInviiPrivatiPanel.tsx` (UI).
+- ⚠️ **Regola ferrea**: questa funzione scrive SOLO su `rentri_invii_privati`. Mai su `movimenti_impianto`, `magazzino_giacenze`, `privati_conferimenti`, ricevute. Vale la regola del 202: "accettato" non è "registrato" — serve lo stato CONFERMATO.
+
+---
+
 ## 23. Cosa non fare mai
 
 1. Non riattivare l'assegnazione automatica dei numeri FIR: sempre manuale (workspace o Centro App & FIR).
