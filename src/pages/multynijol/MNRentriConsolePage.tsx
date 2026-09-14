@@ -73,7 +73,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registriufficiali" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registriufficiali" | "registri" | "invii" | "privati" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
