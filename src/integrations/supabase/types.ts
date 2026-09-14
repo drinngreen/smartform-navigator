@@ -5769,6 +5769,69 @@ export type Database = {
           },
         ]
       }
+      rentri_invii_privati: {
+        Row: {
+          cer: string
+          conferimento_id: string | null
+          created_at: string
+          data_movimento: string
+          esito: string | null
+          id: string
+          id_ricevuta: string | null
+          kg: number
+          mezzo: string | null
+          numero_riga: number | null
+          origine: string
+          produttore: string | null
+          progressivo_rentri: string | null
+          stato: string
+          tenant_id: string
+          transazione_id: string | null
+          unique_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          cer: string
+          conferimento_id?: string | null
+          created_at?: string
+          data_movimento: string
+          esito?: string | null
+          id?: string
+          id_ricevuta?: string | null
+          kg?: number
+          mezzo?: string | null
+          numero_riga?: number | null
+          origine?: string
+          produttore?: string | null
+          progressivo_rentri?: string | null
+          stato?: string
+          tenant_id: string
+          transazione_id?: string | null
+          unique_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cer?: string
+          conferimento_id?: string | null
+          created_at?: string
+          data_movimento?: string
+          esito?: string | null
+          id?: string
+          id_ricevuta?: string | null
+          kg?: number
+          mezzo?: string | null
+          numero_riga?: number | null
+          origine?: string
+          produttore?: string | null
+          progressivo_rentri?: string | null
+          stato?: string
+          tenant_id?: string
+          transazione_id?: string | null
+          unique_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rentri_invii_reali: {
         Row: {
           azienda: string
