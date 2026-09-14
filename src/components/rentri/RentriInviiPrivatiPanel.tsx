@@ -321,7 +321,7 @@ export function RentriInviiPrivatiPanel({
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="text-center py-10 text-muted-foreground">
+                  <td colSpan={13} className="text-center py-10 text-muted-foreground">
                     Nessun invio trovato
                   </td>
                 </tr>
