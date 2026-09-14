@@ -27,6 +27,7 @@ import {
 } from "@/lib/rentriRegistroSync";
 import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
+import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
