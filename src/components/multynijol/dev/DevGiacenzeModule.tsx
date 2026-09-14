@@ -76,6 +76,7 @@ export function DevGiacenzeModule() {
           .from("dragon_stock_movements")
           .select("quantity, sign, movement_date, item:dragon_items!inner(codice_cer, descrizione)")
           .eq("company_id", MULTY_TENANT_ID)
+          .eq("is_system_hidden", false)
           .order("movement_date", { ascending: true })
           .range(from, from + pageSize - 1);
         if (error) throw error;

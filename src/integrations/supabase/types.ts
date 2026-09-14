@@ -2152,6 +2152,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          is_system_hidden: boolean
           item_id: string
           lot_reference: string | null
           movement_date: string
@@ -2171,6 +2172,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_system_hidden?: boolean
           item_id: string
           lot_reference?: string | null
           movement_date?: string
@@ -2190,6 +2192,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          is_system_hidden?: boolean
           item_id?: string
           lot_reference?: string | null
           movement_date?: string
