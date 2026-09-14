@@ -330,6 +330,9 @@ export function RentriInviiPrivatiPanel({
                   <tr key={i.id} className="border-b border-border/10 hover:bg-primary/5">
                     <td className="px-3 py-2 text-xs text-muted-foreground">{i.numero_riga ?? "—"}</td>
                     <td className="px-3 py-2 text-xs">{fmtData(i.data_movimento)}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {i.data_invio ? fmtData(i.data_invio) : "—"}
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{i.cer}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs">
                       {Number(i.kg ?? 0).toLocaleString("it-IT")}
