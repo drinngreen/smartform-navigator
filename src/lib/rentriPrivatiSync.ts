@@ -26,6 +26,7 @@ export interface InvioPrivatoRow {
   transazione_id: string | null;
   id_ricevuta: string | null;
   esito: string | null;
+  data_invio: string | null;
   stato: string;
   origine: string;
   created_at: string;
