@@ -17,6 +17,7 @@ export function useDragonStock(scope?: DragonWarehouseScope) {
           .from("dragon_stock_movements")
           .select(`*, item:dragon_items(*), cause:dragon_causes(*)`)
           .eq("company_id", companyId)
+          .eq("is_system_hidden", false)
           .order("movement_date", { ascending: false })
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
