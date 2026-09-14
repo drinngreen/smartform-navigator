@@ -98,6 +98,7 @@ export function RentriInviiPrivatiPanel({
   const exportCols = [
     { header: "N.", key: "numero_riga", width: 6 },
     { header: "Data", key: "data_movimento", width: 12, format: (v: string) => fmtData(v) },
+    { header: "Data invio", key: "data_invio", width: 12, format: (v: string) => (v ? fmtData(v) : "—") },
     { header: "CER", key: "cer", width: 14 },
     { header: "Kg", key: "kg", width: 10 },
     { header: "Produttore", key: "produttore", width: 40 },
