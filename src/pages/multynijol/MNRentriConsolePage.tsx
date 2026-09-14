@@ -27,6 +27,7 @@ import {
 } from "@/lib/rentriRegistroSync";
 import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
+import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
@@ -73,7 +74,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registriufficiali" | "registri" | "invii" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "registriufficiali" | "registri" | "invii" | "privati" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -96,6 +97,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
+  { id: "privati", label: "Invii privati", icon: <Users size={14} /> },
   { id: "lemon", label: "Dark Lemon", icon: <Sparkles size={14} /> },
 ];
 
@@ -992,6 +994,10 @@ export default function MNRentriConsolePage() {
             <h3 className="text-base font-display tracking-wider">Formulari su RENTRI da firmare come destinatario</h3>
             <RentriFirDaFirmarePanel cliente={cliente} />
           </div>
+        )}
+
+        {tab === "privati" && (
+          <RentriInviiPrivatiPanel tenantId={mnCtx.tenantId} cliente={cliente} />
         )}
 
         {tab === "invii" && (
