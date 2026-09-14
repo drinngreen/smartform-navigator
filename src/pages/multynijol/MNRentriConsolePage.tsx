@@ -995,6 +995,10 @@ export default function MNRentriConsolePage() {
           </div>
         )}
 
+        {tab === "privati" && (
+          <RentriInviiPrivatiPanel tenantId={mnCtx.tenantId} cliente={cliente} />
+        )}
+
         {tab === "invii" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Invii registri effettuati</h3>
