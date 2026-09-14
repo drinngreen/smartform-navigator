@@ -305,6 +305,7 @@ export function RentriInviiPrivatiPanel({
               <tr>
                 <th className="px-3 py-2 text-left">N.</th>
                 <th className="px-3 py-2 text-left">Data</th>
+                <th className="px-3 py-2 text-left">Data invio</th>
                 <th className="px-3 py-2 text-left">CER</th>
                 <th className="px-3 py-2 text-right">Kg</th>
                 <th className="px-3 py-2 text-left">Produttore</th>
