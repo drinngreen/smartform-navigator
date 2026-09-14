@@ -98,6 +98,7 @@ export function RentriInviiPrivatiPanel({
   const exportCols = [
     { header: "N.", key: "numero_riga", width: 6 },
     { header: "Data", key: "data_movimento", width: 12, format: (v: string) => fmtData(v) },
+    { header: "Data invio", key: "data_invio", width: 12, format: (v: string) => (v ? fmtData(v) : "—") },
     { header: "CER", key: "cer", width: 14 },
     { header: "Kg", key: "kg", width: 10 },
     { header: "Produttore", key: "produttore", width: 40 },
@@ -304,6 +305,7 @@ export function RentriInviiPrivatiPanel({
               <tr>
                 <th className="px-3 py-2 text-left">N.</th>
                 <th className="px-3 py-2 text-left">Data</th>
+                <th className="px-3 py-2 text-left">Data invio</th>
                 <th className="px-3 py-2 text-left">CER</th>
                 <th className="px-3 py-2 text-right">Kg</th>
                 <th className="px-3 py-2 text-left">Produttore</th>
@@ -319,7 +321,7 @@ export function RentriInviiPrivatiPanel({
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="text-center py-10 text-muted-foreground">
+                  <td colSpan={13} className="text-center py-10 text-muted-foreground">
                     Nessun invio trovato
                   </td>
                 </tr>
@@ -328,6 +330,9 @@ export function RentriInviiPrivatiPanel({
                   <tr key={i.id} className="border-b border-border/10 hover:bg-primary/5">
                     <td className="px-3 py-2 text-xs text-muted-foreground">{i.numero_riga ?? "—"}</td>
                     <td className="px-3 py-2 text-xs">{fmtData(i.data_movimento)}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {i.data_invio ? fmtData(i.data_invio) : "—"}
+                    </td>
                     <td className="px-3 py-2 font-mono text-xs">{i.cer}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs">
                       {Number(i.kg ?? 0).toLocaleString("it-IT")}

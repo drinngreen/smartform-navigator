@@ -26,6 +26,7 @@ export interface InvioPrivatoRow {
   transazione_id: string | null;
   id_ricevuta: string | null;
   esito: string | null;
+  data_invio: string | null;
   stato: string;
   origine: string;
   created_at: string;
@@ -131,6 +132,7 @@ export async function inviaConferimentiPrivati(params: {
     produttore: c.nome_privato,
     mezzo: [c.modello_automezzo, c.targa_automezzo].filter(Boolean).join(" "),
     transazione_id: transazioneId,
+    data_invio: new Date().toISOString().slice(0, 10),
     esito: response.success
       ? `Inviato dall'app (HTTP ${response.status}). In attesa di verifica.`
       : (response.userMessage ?? response.error ?? "Invio non riuscito"),

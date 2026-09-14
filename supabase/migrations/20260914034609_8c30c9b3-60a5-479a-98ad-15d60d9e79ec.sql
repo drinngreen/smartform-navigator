@@ -1,0 +1,1 @@
+ALTER TABLE public.rentri_invii_privati ADD COLUMN IF NOT EXISTS data_invio date;

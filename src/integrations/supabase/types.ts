@@ -5774,6 +5774,7 @@ export type Database = {
           cer: string
           conferimento_id: string | null
           created_at: string
+          data_invio: string | null
           data_movimento: string
           esito: string | null
           id: string
@@ -5794,6 +5795,7 @@ export type Database = {
           cer: string
           conferimento_id?: string | null
           created_at?: string
+          data_invio?: string | null
           data_movimento: string
           esito?: string | null
           id?: string
@@ -5814,6 +5816,7 @@ export type Database = {
           cer?: string
           conferimento_id?: string | null
           created_at?: string
+          data_invio?: string | null
           data_movimento?: string
           esito?: string | null
           id?: string
