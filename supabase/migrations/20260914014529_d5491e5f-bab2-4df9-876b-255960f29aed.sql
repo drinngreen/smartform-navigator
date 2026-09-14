@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_magazzino_sync_to_dragon ON public.magazzino_giacenze;
