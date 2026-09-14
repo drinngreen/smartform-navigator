@@ -96,6 +96,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
+  { id: "privati", label: "Invii privati", icon: <Users size={14} /> },
   { id: "lemon", label: "Dark Lemon", icon: <Sparkles size={14} /> },
 ];
 
