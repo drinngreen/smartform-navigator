@@ -333,6 +333,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autosaveFailuresRef = useRef(0);
+  const autosaveWarnedRef = useRef(false);
   const creationSaveInFlight = useRef(false);
   const lastAutosavedAtRef = useRef<string | null>(null);
   const [fatturaFrom, setFatturaFrom] = useState<
