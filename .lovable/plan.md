@@ -28,13 +28,26 @@ Nessun dato esistente viene modificato: non si toccano giacenze, cernite, regist
 ### 3. Paletti prima della firma
 Il formulario non si firma se manca anche uno solo di: produttore (denominazione, codice fiscale, indirizzo), destinatario (denominazione, codice fiscale, indirizzo, autorizzazione, operazione R/D), trasportatore e sua iscrizione albo, conducente, targa, codice CER valido, descrizione rifiuto, stato fisico, quantità > 0, unità di misura, caratteristiche di pericolo se rifiuto pericoloso, data e ora di partenza. L'elenco dei campi mancanti compare a schermo, con il campo evidenziato.
 
-### 4. Chiusura a destino e giacenze — la parte centrale
-Regola unica: **le giacenze si muovono solo alla chiusura, mai alla firma.**
+### 4. Chiusura a destino e giacenze — due percorsi distinti
 
-- **Multyproget è partenza (produttore):** alla firma nessun movimento. Quando il destinatario chiude il formulario con il peso reale, il formulario risulta chiuso anche qui e la giacenza scarica il CER con il peso confermato o rettificato.
-- **Multyproget è arrivo (destinatario):** il formulario in viaggio compare nella schermata impianto; all'inserimento del peso si chiude il formulario e la giacenza carica **in automatico** il CER letto dal formulario, senza ridigitare nulla.
-- **Formulario cartaceo o portato da terzi:** gli operatori lo caricano e hanno un pulsante **"Chiudi formulario e aggiorna giacenze"**, da premere quando il destinatario conferma o rettifica il peso; prima di allora nessun movimento.
-- Ogni chiusura, da qualsiasi percorso, passa per la stessa procedura unica: registro generale e giacenze aggiornati allo stesso modo, senza doppioni (la procedura è già idempotente).
+Correzione rispetto alla versione precedente: **digitale e cartaceo si comportano in modo diverso.**
+
+**A) Formulario digitale (xFIR RENTRI) — tutto automatico**
+Come prevede la norma: produttore/detentore e trasportatore firmano prima della partenza; eventuali trasportatori intermedi aggiungono e firmano le proprie integrazioni durante il viaggio; **è il destinatario che chiude il formulario al momento della presa in carico**, registrando data/ora di arrivo, accettazione o respingimento (totale o parziale), peso riscontrato, e firmando digitalmente l'esito. Solo allora si genera la copia completa, da restituire agli altri soggetti entro 2 giorni lavorativi, ed è quella copia completa a essere trasmessa al RENTRI.
+
+Nel programma:
+- Alla firma di partenza **nessun movimento di giacenza**: il formulario risulta "in viaggio".
+- Nella schermata del destinatario si inseriscono accettazione/respingimento, data e ora di arrivo e peso riscontrato, poi si firma.
+- **Alla firma del destinatario le giacenze si aggiornano da sole**, senza alcun pulsante: carico se Multyproget è destinatario (peso riscontrato), scarico se Multyproget è produttore (peso confermato o rettificato). Registro generale aggiornato nello stesso momento.
+- In caso di **respingimento totale** nessun carico a destino e nessuno scarico al produttore; in caso di **respingimento parziale** si registra solo la quota accettata e resta traccia della quota respinta.
+- Il formulario passa a "chiuso" e la copia completa viene trasmessa al RENTRI.
+
+**B) Formulario cartaceo (o portato da terzi) — chiusura manuale**
+Non esiste firma digitale del destinatario, quindi non c'è nulla che possa scattare da solo:
+- Gli operatori caricano il formulario e, quando il destinatario conferma o rettifica il peso sulla copia di ritorno, premono **"Chiudi formulario e aggiorna giacenze"**, indicando peso riscontrato ed esito.
+- Prima di quel clic nessun movimento di giacenza.
+
+- In entrambi i casi la scrittura passa per la **stessa procedura unica** (registro generale + giacenze), già idempotente: cambia solo chi la fa scattare (la firma del destinatario nel digitale, il pulsante nel cartaceo).
 
 ### 5. Vedere lo stato dal programma
 - Elenco unico dei formulari con stato ben visibile: bozza, firmato/in viaggio, chiuso, con peso di partenza e peso a destino, differenza e data di chiusura.
@@ -52,8 +65,8 @@ Regola unica: **le giacenze si muovono solo alla chiusura, mai alla firma.**
 - Nuovo store `mnDriverCompanyStore` (persistito) + pagina unica `/mn/app` che monta `MNFIRFormComplete` con tenant/contesto dinamici; `MNMultyprogetAppPage` e `MNNiyolAppPage` diventano wrapper che preimpostano la società.
 - `validateDeparture` esteso e restituzione dei nomi campo per l'evidenziazione; nuovo modulo `src/lib/firRequiredFields.ts` con l'elenco unico usato sia dall'app sia dalla console.
 - Tendine: nuove costanti in `src/data/` (unità di misura, imballaggi, ADR) e riuso di `codiciRecuperoSmaltimento.ts`; conducente da `cliente_conducenti`/`profiles` della società attiva.
-- Chiusura: `handleConfirmClosure` e `MNImpiantoDestinatarioPage.handleSave` chiamano entrambi `syncFirFinalToRegistryAndInventory` dopo l'update di stato, con `registryMovementType` derivato dal ruolo (CF Multy produttore → Scarico, destinatario → Carico) e quantità = peso a destino se presente.
-- Nuovo pulsante "Chiudi formulario e aggiorna giacenze" nella lista formulari admin (Centro App FIR), abilitato solo su formulari non ancora chiusi, con conferma e campo peso confermato/rettificato.
+- Chiusura digitale: la firma del destinatario (`MNImpiantoDestinatarioPage` + chiusura da app) è l'unico innesco; dopo l'update di stato a `completato` con `data_arrivo`, `esito_accettazione` (ACCETTATO/RESPINTO/PARZIALE), `peso_destino`, chiama `syncFirFinalToRegistryAndInventory` con `registryMovementType` derivato dal ruolo (CF Multy produttore → Scarico, destinatario → Carico) e quantità = peso riscontrato (quota accettata se parziale); respinto totale → nessuna scrittura su giacenze.
+- Chiusura cartacea: pulsante "Chiudi formulario e aggiorna giacenze" nella lista formulari admin (Centro App FIR), visibile **solo** sui formulari con formato cartaceo/esterno non ancora chiusi, con conferma, peso riscontrato ed esito; chiama la stessa funzione di sync.
 - Nessun trigger nuovo sul database; nessuna migrazione sui dati. Eventuale unica migrazione strutturale: colonna `peso_destino`/`chiuso_da` su `fir_forms` se assente (verifica prima, con GRANT e RLS invariati per il resto).
 - RENTRI: `src/services/rentriApi.ts` riceve un selettore di canale per società (`bridge` | `api`), con log in `rentri_logs`; nessuna modifica ai flussi privati già archiviati.
 - Verifica a ogni passo: `node scripts/verify.mjs --smoke`, più screenshot reale della schermata toccata e rilettura del conteggio giacenze prima/dopo per dimostrare che nulla si è mosso.
@@ -61,6 +74,6 @@ Regola unica: **le giacenze si muovono solo alla chiusura, mai alla firma.**
 ## Ordine di lavoro
 
 1. App unica con selettore società + tendine complete + paletti alla firma.
-2. Chiusura unificata (autista, impianto, pulsante manuale) con giacenze solo alla chiusura.
+2. Chiusura digitale con firma del destinatario e giacenze automatiche; chiusura cartacea con pulsante manuale.
 3. Visibilità stati e riquadro "in attesa di chiusura".
 4. Passaggio graduale alle API RENTRI, partendo da Niyol, con prova in bianco.
