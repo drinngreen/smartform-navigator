@@ -74,6 +74,6 @@ Non esiste firma digitale del destinatario, quindi non c'è nulla che possa scat
 ## Ordine di lavoro
 
 1. App unica con selettore società + tendine complete + paletti alla firma.
-2. Chiusura unificata (autista, impianto, pulsante manuale) con giacenze solo alla chiusura.
+2. Chiusura digitale con firma del destinatario e giacenze automatiche; chiusura cartacea con pulsante manuale.
 3. Visibilità stati e riquadro "in attesa di chiusura".
 4. Passaggio graduale alle API RENTRI, partendo da Niyol, con prova in bianco.
