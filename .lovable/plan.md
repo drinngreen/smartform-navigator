@@ -55,6 +55,7 @@ Non esiste firma digitale del destinatario, quindi non c'è nulla che possa scat
 
 ### 5. Vedere lo stato dal programma
 - Elenco unico dei formulari con stato ben visibile: bozza, firmato/in viaggio, chiuso, con peso di partenza e peso a destino, differenza e data di chiusura.
+- **Movimenti a registro etichettati "incompleto"** finché non scatta la chiusura: nel digitale con la firma del destinatario, nel cartaceo con il pulsante di conferma. Un movimento incompleto è visibile ma chiaramente non valido (badge), e nessun totale di giacenze lo conta.
 - Semaforo in app autista coerente: diventa "chiuso" solo quando il destinatario ha chiuso davvero.
 - Riquadro "In attesa di chiusura" per gli operatori Multyproget, con i formulari fermi da più di 48 ore.
 
@@ -71,7 +72,8 @@ Non esiste firma digitale del destinatario, quindi non c'è nulla che possa scat
 - Tendine: nuove costanti in `src/data/` (unità di misura, imballaggi, ADR) e riuso di `codiciRecuperoSmaltimento.ts`; conducente da `cliente_conducenti`/`profiles` della società attiva.
 - Chiusura digitale: la firma del destinatario (`MNImpiantoDestinatarioPage` + chiusura da app) è l'unico innesco; dopo l'update di stato a `completato` con `data_arrivo`, `esito_accettazione` (ACCETTATO/RESPINTO/PARZIALE), `peso_destino`, chiama `syncFirFinalToRegistryAndInventory` con `registryMovementType` derivato dal ruolo (CF Multy produttore → Scarico, destinatario → Carico) e quantità = peso riscontrato (quota accettata se parziale); respinto totale → nessuna scrittura su giacenze.
 - Chiusura cartacea: pulsante "Chiudi formulario e aggiorna giacenze" nella lista formulari admin (Centro App FIR), visibile **solo** sui formulari con formato cartaceo/esterno non ancora chiusi, con conferma, peso riscontrato ed esito; chiama la stessa funzione di sync.
-- Nessun trigger nuovo sul database; nessuna migrazione sui dati. Eventuale unica migrazione strutturale: colonna `peso_destino`/`chiuso_da` su `fir_forms` se assente (verifica prima, con GRANT e RLS invariati per il resto).
+- **Movimenti "incompleti"**: nuova colonna di stato (es. `stato_completamento`: `INCOMPLETO`/`COMPLETO`, default `COMPLETO` per tutto il preesistente) sulle righe di registro create dai formulari; le righe nate da una firma di partenza nascono `INCOMPLETO` e passano `COMPLETO` solo alla chiusura; filtri/totali giacenze escludono gli incompleti. Migrazione strutturale con GRANT e RLS invariati per il resto.
+- Nessun trigger nuovo sul database; nessuna migrazione sui dati. Eventuali uniche migrazioni strutturali: colonna `peso_destino`/`chiuso_da` su `fir_forms` e la colonna di stato sopra (verifica prima, con GRANT e RLS invariati per il resto).
 - RENTRI: `src/services/rentriApi.ts` riceve un selettore di canale per società (`bridge` | `api`), con log in `rentri_logs`; nessuna modifica ai flussi privati già archiviati.
 - Verifica a ogni passo: `node scripts/verify.mjs --smoke`, più screenshot reale della schermata toccata e rilettura del conteggio giacenze prima/dopo per dimostrare che nulla si è mosso.
 
