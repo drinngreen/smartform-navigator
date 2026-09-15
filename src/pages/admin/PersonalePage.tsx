@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
+import { messaggioErroreEdge } from "@/lib/edgeErrors";
 import { toast } from "sonner";
 import { Users, Shield, Eye, Pencil, Trash2, Search, RefreshCw, Loader2, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -77,13 +78,12 @@ export default function PersonalePage() {
       const { data, error } = await supabase.functions.invoke("admin-user-manage", {
         body: { action: "reset_password", user_id: passwordDialog.user.id, new_password: newPassword },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error || data?.error) throw new Error(await messaggioErroreEdge(error, data));
       toast.success("Password aggiornata per " + (passwordDialog.user.profile?.nome || passwordDialog.user.email));
       setPasswordDialog({ open: false, user: null });
       setNewPassword("");
     } catch (e: any) {
-      toast.error("Errore: " + e.message);
+      toast.error("Errore: " + (e.message || "operazione fallita"));
     } finally {
       setActionLoading(false);
     }
