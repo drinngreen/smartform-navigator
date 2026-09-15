@@ -32,13 +32,16 @@ Il formulario non si firma se manca anche uno solo di: produttore (denominazione
 
 Correzione rispetto alla versione precedente: **digitale e cartaceo si comportano in modo diverso.**
 
-**A) Formulario digitale (xFIR RENTRI) — tutto automatico**
+**A) Formulario digitale (xFIR RENTRI) — tutto automatico, senza intervento umano**
 Come prevede la norma: produttore/detentore e trasportatore firmano prima della partenza; eventuali trasportatori intermedi aggiungono e firmano le proprie integrazioni durante il viaggio; **è il destinatario che chiude il formulario al momento della presa in carico**, registrando data/ora di arrivo, accettazione o respingimento (totale o parziale), peso riscontrato, e firmando digitalmente l'esito. Solo allora si genera la copia completa, da restituire agli altri soggetti entro 2 giorni lavorativi, ed è quella copia completa a essere trasmessa al RENTRI.
 
 Nel programma:
 - Alla firma di partenza **nessun movimento di giacenza**: il formulario risulta "in viaggio".
 - Nella schermata del destinatario si inseriscono accettazione/respingimento, data e ora di arrivo e peso riscontrato, poi si firma.
-- **Alla firma del destinatario le giacenze si aggiornano da sole**, senza alcun pulsante: carico se Multyproget è destinatario (peso riscontrato), scarico se Multyproget è produttore (peso confermato o rettificato). Registro generale aggiornato nello stesso momento.
+- **Ogni formulario digitale chiuso dal destinatario aggiorna le giacenze in automatico, senza nessun intervento umano e senza pulsanti** — e questo vale per qualunque destinatario:
+  - **destinatario Multyproget** → carico del CER con il peso riscontrato;
+  - **destinatario esterno** (Multyproget è produttore) → scarico del CER con il peso confermato o rettificato a destino;
+  - se Multyproget non è coinvolto come produttore né destinatario, nessuna giacenza da muovere, ma il formulario si chiude comunque.
 - In caso di **respingimento totale** nessun carico a destino e nessuno scarico al produttore; in caso di **respingimento parziale** si registra solo la quota accettata e resta traccia della quota respinta.
 - Il formulario passa a "chiuso" e la copia completa viene trasmessa al RENTRI.
 
