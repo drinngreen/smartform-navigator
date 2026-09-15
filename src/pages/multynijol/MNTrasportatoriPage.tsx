@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateTransporterDialog, type TenantConfig } from "@/components/admin/CreateTransporterDialog";
+import { messaggioErroreEdge } from "@/lib/edgeErrors";
 import {
   AlertDialog,
   AlertDialogAction,
