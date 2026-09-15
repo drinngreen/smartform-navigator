@@ -240,8 +240,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
           targa_rimorchio: accessForm.targaRimorchio.trim().toUpperCase() || null,
         },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error || data?.error) throw new Error(await messaggioErroreEdge(error, data));
       toast.success(`Accessi aggiornati per app ${targetTenant.label}`);
       setAccessDialog({ open: false, user: null });
       fetchUsers();
@@ -259,13 +258,12 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       const { data, error } = await supabase.functions.invoke("admin-user-manage", {
         body: { action: "reset_password", user_id: passwordDialog.user.id, new_password: newPassword },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (error || data?.error) throw new Error(await messaggioErroreEdge(error, data));
       toast.success("Password aggiornata");
       setPasswordDialog({ open: false, user: null });
       setNewPassword("");
     } catch (e: any) {
-      toast.error("Errore: " + e.message);
+      toast.error("Errore: " + (e.message || "operazione fallita"));
     } finally {
       setActionLoading(false);
     }
