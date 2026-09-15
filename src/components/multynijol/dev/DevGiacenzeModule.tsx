@@ -23,8 +23,8 @@ const GIACENZE_BASELINE_DATE = "2026-09-12";
 const GIACENZE_BASELINE_OVERRIDES: Record<string, Pick<CerRow, "carico" | "scarico" | "saldo">> = {
   "150103": { carico: 9503, scarico: 0, saldo: 9503 },
   "150106": { carico: 22237, scarico: 17340, saldo: 4897 },
-  "191202": { carico: 0, scarico: 1800, saldo: -1800 },
-  "191204": { carico: 0, scarico: 173, saldo: -173 },
+  "191202": { carico: 1800, scarico: 1800, saldo: 0 },
+  "191204": { carico: 173, scarico: 173, saldo: 0 },
   "200140-FE": { carico: 157179, scarico: 102498.5, saldo: 54680.5 },
   "200140-MIX": { carico: 37298, scarico: 23784, saldo: 13514 },
   "200140-OT": { carico: 8544, scarico: 4848, saldo: 3696 },
