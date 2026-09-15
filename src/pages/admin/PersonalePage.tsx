@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
+import { messaggioErroreEdge } from "@/lib/edgeErrors";
 import { toast } from "sonner";
 import { Users, Shield, Eye, Pencil, Trash2, Search, RefreshCw, Loader2, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
