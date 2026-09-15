@@ -250,8 +250,48 @@ export default function MNImpiantoDestinatarioPage() {
 
           <div className="space-y-3 mt-2">
             <div>
-              <Label className="text-xs text-muted-foreground">Numero FIR *</Label>
-              <Input value={form.numero_fir} onChange={(e) => setForm({ ...form, numero_fir: e.target.value })} placeholder="Numero formulario in arrivo" />
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <Label className="text-xs text-muted-foreground">Formulario in arrivo *</Label>
+                <button
+                  type="button"
+                  onClick={() => { setManualMode((v) => !v); setSelectedFirId(""); }}
+                  className="text-[11px] underline text-muted-foreground hover:text-foreground"
+                >
+                  {manualMode ? "Scegli dall'elenco" : "Non è in elenco: inserisci a mano"}
+                </button>
+              </div>
+              {manualMode ? (
+                <Input
+                  value={form.numero_fir}
+                  onChange={(e) => setForm({ ...form, numero_fir: e.target.value })}
+                  placeholder="Numero formulario in arrivo"
+                />
+              ) : (
+                <Select value={selectedFirId} onValueChange={handleSelectFir}>
+                  <SelectTrigger className="bg-secondary/50 border-border">
+                    <SelectValue placeholder={loadingFir ? "Caricamento formulari…" : "Seleziona il formulario firmato dall'autista"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {firInViaggio.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Nessun formulario in viaggio</div>
+                    ) : firInViaggio.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {(f.numero_fir || "senza numero")} — {f.codice_eer || "?"} — {f.produttore_denominazione || "produttore n.d."}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {manualMode && (
+                <p className="mt-1 text-[11px] text-amber-300">
+                  Attenzione: inserendo a mano, il formulario dell'autista non verrà chiuso automaticamente.
+                </p>
+              )}
+              {selectedFir && (
+                <p className="mt-1 text-[11px] text-emerald-300">
+                  Dati presi dal formulario firmato: alla registrazione verrà chiuso automaticamente.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
