@@ -21,6 +21,29 @@ import { it } from "date-fns/locale";
 
 interface Impianto { id: string; nome: string; }
 
+/** Formulario realmente emesso dall'autista, in viaggio verso l'impianto. */
+interface FirInViaggio {
+  id: string;
+  numero_fir: string | null;
+  codice_eer: string | null;
+  descrizione_rifiuto: string | null;
+  produttore_denominazione: string | null;
+  trasportatore_denominazione: string | null;
+  destinatario_denominazione: string | null;
+  quantita: number | null;
+  unita_misura: string | null;
+  data_partenza: string | null;
+  submitted_at: string | null;
+}
+
+const emptyForm = {
+  numero_fir: "", cer: "", descrizione_rifiuto: "",
+  produttore_denominazione: "", trasportatore_denominazione: "",
+  quantita_presunta: "", quantita_kg: "",
+  esito_accettazione: "accettato" as "accettato" | "parziale" | "respinto",
+  note: "",
+};
+
 export default function MNImpiantoDestinatarioPage() {
   const { context } = useParams<{ context: string }>();
   const { user } = useAuth();
@@ -29,17 +52,17 @@ export default function MNImpiantoDestinatarioPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Formulari in viaggio (emessi e firmati dall'autista, non ancora chiusi)
+  const [firInViaggio, setFirInViaggio] = useState<FirInViaggio[]>([]);
+  const [loadingFir, setLoadingFir] = useState(false);
+  const [selectedFirId, setSelectedFirId] = useState<string>("");
+  const [manualMode, setManualMode] = useState(false);
+
   const { movimenti, isLoading, createMovimento, stats } = useMovimentiImpianto(
     selectedImpianto || undefined, "DESTINATARIO"
   );
 
-  const [form, setForm] = useState({
-    numero_fir: "", cer: "", descrizione_rifiuto: "",
-    produttore_denominazione: "", trasportatore_denominazione: "",
-    quantita_presunta: "", quantita_kg: "",
-    esito_accettazione: "accettato" as "accettato" | "parziale" | "respinto",
-    note: "",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
     supabase.from("impianti").select("id, nome").then(({ data }) => {
@@ -50,15 +73,60 @@ export default function MNImpiantoDestinatarioPage() {
     });
   }, []);
 
+  const loadFirInViaggio = async () => {
+    setLoadingFir(true);
+    const { data, error } = await supabase
+      .from("fir_forms")
+      .select("id, numero_fir, codice_eer, descrizione_rifiuto, produttore_denominazione, trasportatore_denominazione, destinatario_denominazione, quantita, unita_misura, data_partenza, submitted_at")
+      .eq("status", "inviato")
+      .eq("deleted_by_user", false)
+      .order("submitted_at", { ascending: false, nullsFirst: false })
+      .limit(200);
+    setLoadingFir(false);
+    if (error) { toast.error("Impossibile caricare i formulari in viaggio: " + error.message); return; }
+    setFirInViaggio((data ?? []) as FirInViaggio[]);
+  };
+
+  useEffect(() => { if (dialogOpen) void loadFirInViaggio(); }, [dialogOpen]);
+
+  const selectedFir = firInViaggio.find((f) => f.id === selectedFirId) ?? null;
+
+  const handleSelectFir = (id: string) => {
+    setSelectedFirId(id);
+    const fir = firInViaggio.find((f) => f.id === id);
+    if (!fir) return;
+    setManualMode(false);
+    setForm({
+      ...emptyForm,
+      numero_fir: fir.numero_fir ?? "",
+      cer: fir.codice_eer ?? "",
+      descrizione_rifiuto: fir.descrizione_rifiuto ?? "",
+      produttore_denominazione: fir.produttore_denominazione ?? "",
+      trasportatore_denominazione: fir.trasportatore_denominazione ?? "",
+      quantita_presunta: fir.quantita != null ? String(fir.quantita) : "",
+    });
+  };
+
+  const resetDialog = () => {
+    setForm(emptyForm);
+    setSelectedFirId("");
+    setManualMode(false);
+  };
+
   const handleSave = async () => {
+    if (!selectedFirId && !manualMode) {
+      toast.error("Seleziona il formulario in arrivo, oppure attiva l'inserimento manuale");
+      return;
+    }
     if (!form.numero_fir.trim()) { toast.error("Il Numero FIR è obbligatorio"); return; }
     if (!form.cer.trim() || !form.quantita_kg) { toast.error("CER e Quantità pesata sono obbligatori"); return; }
 
     const kgPesati = parseFloat(form.quantita_kg);
+    if (!Number.isFinite(kgPesati) || kgPesati <= 0) { toast.error("La quantità pesata deve essere maggiore di zero"); return; }
     const kgPresunta = form.quantita_presunta ? parseFloat(form.quantita_presunta) : null;
 
     // Auto-detect esito based on weight comparison
-    let esito = form.esito_accettazione;
+    const esito = form.esito_accettazione;
     if (kgPresunta && kgPresunta > 0) {
       const diff = Math.abs(kgPesati - kgPresunta);
       const pctDiff = (diff / kgPresunta) * 100;
@@ -76,6 +144,7 @@ export default function MNImpiantoDestinatarioPage() {
       tipo_movimento: "CARICO",
       ruolo_impianto: "DESTINATARIO",
       numero_fir: form.numero_fir.trim(),
+      fir_id: selectedFirId || null,
       produttore_denominazione: form.produttore_denominazione || null,
       trasportatore_denominazione: form.trasportatore_denominazione || null,
       esito_accettazione: esito,
@@ -84,13 +153,27 @@ export default function MNImpiantoDestinatarioPage() {
     };
 
     await createMovimento.mutateAsync(payload);
+
+    // Chiusura del formulario dell'autista: senza questo passaggio il FIR
+    // resterebbe "in viaggio" anche dopo l'arrivo e la pesata.
+    if (selectedFirId) {
+      const { error: closeError } = await supabase
+        .from("fir_forms")
+        .update({
+          status: "completato",
+          completed_at: new Date().toISOString(),
+          data_arrivo: new Date().toISOString().split("T")[0],
+        })
+        .eq("id", selectedFirId);
+      if (closeError) {
+        toast.error("Arrivo registrato, ma il formulario non risulta chiuso: " + closeError.message);
+      } else {
+        toast.success("Arrivo registrato e formulario chiuso");
+      }
+    }
+
     setDialogOpen(false);
-    setForm({
-      numero_fir: "", cer: "", descrizione_rifiuto: "",
-      produttore_denominazione: "", trasportatore_denominazione: "",
-      quantita_presunta: "", quantita_kg: "",
-      esito_accettazione: "accettato", note: "",
-    });
+    resetDialog();
   };
 
   const filtered = movimenti?.filter((m) => {
