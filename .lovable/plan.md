@@ -28,13 +28,26 @@ Nessun dato esistente viene modificato: non si toccano giacenze, cernite, regist
 ### 3. Paletti prima della firma
 Il formulario non si firma se manca anche uno solo di: produttore (denominazione, codice fiscale, indirizzo), destinatario (denominazione, codice fiscale, indirizzo, autorizzazione, operazione R/D), trasportatore e sua iscrizione albo, conducente, targa, codice CER valido, descrizione rifiuto, stato fisico, quantità > 0, unità di misura, caratteristiche di pericolo se rifiuto pericoloso, data e ora di partenza. L'elenco dei campi mancanti compare a schermo, con il campo evidenziato.
 
-### 4. Chiusura a destino e giacenze — la parte centrale
-Regola unica: **le giacenze si muovono solo alla chiusura, mai alla firma.**
+### 4. Chiusura a destino e giacenze — due percorsi distinti
 
-- **Multyproget è partenza (produttore):** alla firma nessun movimento. Quando il destinatario chiude il formulario con il peso reale, il formulario risulta chiuso anche qui e la giacenza scarica il CER con il peso confermato o rettificato.
-- **Multyproget è arrivo (destinatario):** il formulario in viaggio compare nella schermata impianto; all'inserimento del peso si chiude il formulario e la giacenza carica **in automatico** il CER letto dal formulario, senza ridigitare nulla.
-- **Formulario cartaceo o portato da terzi:** gli operatori lo caricano e hanno un pulsante **"Chiudi formulario e aggiorna giacenze"**, da premere quando il destinatario conferma o rettifica il peso; prima di allora nessun movimento.
-- Ogni chiusura, da qualsiasi percorso, passa per la stessa procedura unica: registro generale e giacenze aggiornati allo stesso modo, senza doppioni (la procedura è già idempotente).
+Correzione rispetto alla versione precedente: **digitale e cartaceo si comportano in modo diverso.**
+
+**A) Formulario digitale (xFIR RENTRI) — tutto automatico**
+Come prevede la norma: produttore/detentore e trasportatore firmano prima della partenza; eventuali trasportatori intermedi aggiungono e firmano le proprie integrazioni durante il viaggio; **è il destinatario che chiude il formulario al momento della presa in carico**, registrando data/ora di arrivo, accettazione o respingimento (totale o parziale), peso riscontrato, e firmando digitalmente l'esito. Solo allora si genera la copia completa, da restituire agli altri soggetti entro 2 giorni lavorativi, ed è quella copia completa a essere trasmessa al RENTRI.
+
+Nel programma:
+- Alla firma di partenza **nessun movimento di giacenza**: il formulario risulta "in viaggio".
+- Nella schermata del destinatario si inseriscono accettazione/respingimento, data e ora di arrivo e peso riscontrato, poi si firma.
+- **Alla firma del destinatario le giacenze si aggiornano da sole**, senza alcun pulsante: carico se Multyproget è destinatario (peso riscontrato), scarico se Multyproget è produttore (peso confermato o rettificato). Registro generale aggiornato nello stesso momento.
+- In caso di **respingimento totale** nessun carico a destino e nessuno scarico al produttore; in caso di **respingimento parziale** si registra solo la quota accettata e resta traccia della quota respinta.
+- Il formulario passa a "chiuso" e la copia completa viene trasmessa al RENTRI.
+
+**B) Formulario cartaceo (o portato da terzi) — chiusura manuale**
+Non esiste firma digitale del destinatario, quindi non c'è nulla che possa scattare da solo:
+- Gli operatori caricano il formulario e, quando il destinatario conferma o rettifica il peso sulla copia di ritorno, premono **"Chiudi formulario e aggiorna giacenze"**, indicando peso riscontrato ed esito.
+- Prima di quel clic nessun movimento di giacenza.
+
+- In entrambi i casi la scrittura passa per la **stessa procedura unica** (registro generale + giacenze), già idempotente: cambia solo chi la fa scattare (la firma del destinatario nel digitale, il pulsante nel cartaceo).
 
 ### 5. Vedere lo stato dal programma
 - Elenco unico dei formulari con stato ben visibile: bozza, firmato/in viaggio, chiuso, con peso di partenza e peso a destino, differenza e data di chiusura.
