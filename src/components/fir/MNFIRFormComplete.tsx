@@ -333,6 +333,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autosaveFailuresRef = useRef(0);
+  const autosaveWarnedRef = useRef(false);
   const creationSaveInFlight = useRef(false);
   const lastAutosavedAtRef = useRef<string | null>(null);
   const [fatturaFrom, setFatturaFrom] = useState<
@@ -509,7 +511,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       lastAutosavedAtRef.current = updatedAt;
-    } catch { /* silent */ }
+      autosaveFailuresRef.current = 0;
+    } catch (error: any) {
+      // Un fallimento isolato può dipendere da una micro-interruzione di rete:
+      // si avvisa l'autista solo quando l'autosalvataggio non riesce due volte
+      // di fila, così non perde dati credendoli salvati.
+      autosaveFailuresRef.current += 1;
+      if (autosaveFailuresRef.current >= 2 && !autosaveWarnedRef.current) {
+        autosaveWarnedRef.current = true;
+        toast.error("Salvataggio automatico non riuscito: controlla la connessione e premi Salva prima di chiudere.");
+      }
+    }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
 
   const createAndAutosaveManualDraft = useCallback(async (): Promise<string | null> => {
@@ -811,6 +823,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     if (!d.codiceEER.trim()) errors.push("Codice EER");
     if (!d.produttoreDenominazione.trim()) errors.push("Produttore");
     if (!d.destinatarioDenominazione.trim()) errors.push("Destinatario");
+    if (!String(d.trasportatoreDenominazione ?? "").trim()) errors.push("Trasportatore");
+    if (!String(d.conducenteNomeCognome ?? "").trim()) errors.push("Conducente");
+    if (!String(d.statoFisico ?? "").trim()) errors.push("Stato fisico");
+    if (!String(d.unitaMisura ?? "").trim()) errors.push("Unità di misura");
+    const quantita = Number(String(d.quantita ?? "").replace(",", "."));
+    if (!String(d.quantita ?? "").trim() || !Number.isFinite(quantita) || quantita <= 0) {
+      errors.push("Quantità (maggiore di zero)");
+    }
     return errors;
   };
 
