@@ -77,7 +77,7 @@ interface CerRow {
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();
   const [searchCer, setSearchCer] = useState("");
-  const [dataAl, setDataAl] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [dataAl, setDataAl] = useState<string>(GIACENZE_BASELINE_DATE);
   const [dataDal, setDataDal] = useState<string>("");
   const [showAllCer, setShowAllCer] = useState(false);
 
