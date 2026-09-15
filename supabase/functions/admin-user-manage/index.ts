@@ -424,8 +424,15 @@ serve(async (req) => {
     });
   } catch (err: any) {
     console.error("admin-user-manage error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Internal error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const code = err?.code || "";
+    const raw = String(err?.message || "");
+    const isWeak = code === "weak_password" || /weak|pwned/i.test(raw);
+    const message = isWeak
+      ? "Password troppo debole o già comparsa in violazioni note: scegline un'altra (almeno 8 caratteri, con lettere e numeri, evita password comuni come 123456 o 123stella)."
+      : raw || "Errore interno";
+    return new Response(JSON.stringify({ error: message, message, code: code || undefined }), {
+      status: isWeak ? 400 : 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
