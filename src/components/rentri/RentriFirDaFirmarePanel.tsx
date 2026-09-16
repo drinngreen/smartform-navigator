@@ -19,6 +19,8 @@ import {
   registraScaricoProduttore,
   ruoliFir,
   scaricoProduttoreAmmesso,
+  ALIAS_MULTY,
+  ALIAS_NIYOL,
   MULTY_CF,
 } from "@/lib/firProduttoreGiacenza";
 
@@ -35,7 +37,16 @@ const SOCIETA: { key: "multy" | "niyol"; label: string }[] = [
   { key: "niyol", label: "Niyol" },
 ];
 
-const SOGGETTI = SOCIETA.map((s) => ({ cf: RENTRI_CF_SOGGETTO[s.key] ?? "", label: s.label }));
+const ALIAS: Record<"multy" | "niyol", string[]> = { multy: ALIAS_MULTY, niyol: ALIAS_NIYOL };
+
+const SOGGETTI = SOCIETA.map((s) => ({
+  cf: RENTRI_CF_SOGGETTO[s.key] ?? "",
+  label: s.label,
+  alias: ALIAS[s.key],
+}));
+
+const chiaveDaLabel = (label: string): "multy" | "niyol" | null =>
+  SOCIETA.find((s) => s.label === label)?.key ?? null;
 
 interface FirRow {
   societa: "multy" | "niyol";
@@ -55,24 +66,62 @@ interface FirRow {
   trasportatore_cf: string;
   ruoli: string[];
   ruolo: string;
+  societaFirma: "multy" | "niyol" | null;
   accettato: boolean;
   raw: Record<string, unknown>;
 }
 
 function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string): FirRow {
-  const dest = Array.isArray(d.destinatari) ? d.destinatari[0] ?? {} : d.destinatario ?? {};
-  const tras = Array.isArray(d.trasportatori) ? d.trasportatori[0] ?? {} : d.trasportatore ?? {};
+  const destinatari: any[] = Array.isArray(d.destinatari)
+    ? d.destinatari
+    : [d.destinatario ?? { codice_fiscale: d.destinatario_codice_fiscale }].filter(Boolean);
+  const trasportatori: any[] = Array.isArray(d.trasportatori)
+    ? d.trasportatori
+    : [d.trasportatore].filter(Boolean);
   const prod = d.produttore ?? {};
+  const prodCf = String(prod.codice_fiscale ?? "");
+
+  // Ruoli: unione su tutti i destinatari/trasportatori indicati sul formulario.
+  const ruoliSet = new Set<string>();
+  const combinazioni = Math.max(destinatari.length, trasportatori.length, 1);
+  for (let i = 0; i < combinazioni; i++) {
+    const dst = destinatari[i] ?? destinatari[0] ?? {};
+    const trs = trasportatori[i] ?? trasportatori[0] ?? {};
+    for (const r of ruoliFir(
+      {
+        produttore_cf: prodCf,
+        produttore_nome: prod.denominazione,
+        trasportatore_cf: String(trs.codice_fiscale ?? ""),
+        trasportatore_nome: trs.denominazione,
+        destinatario_cf: String(dst.codice_fiscale ?? ""),
+        destinatario_nome: dst.denominazione,
+      },
+      SOGGETTI,
+    ))
+      ruoliSet.add(r);
+  }
+  const ruoli = [...ruoliSet];
+
+  // Destinatario da mostrare: se uno dei nostri è destinatario, si mostra quello.
+  const nostroDest =
+    destinatari.find((x) =>
+      SOGGETTI.some(
+        (s) =>
+          normalizzaCf(x?.codice_fiscale) === normalizzaCf(s.cf) ||
+          ruoli.includes(`${s.label} destinatario`),
+      ),
+    ) ?? destinatari[0] ?? {};
+  const dest = nostroDest;
+  const tras = trasportatori[0] ?? {};
   const destCf = String(dest.codice_fiscale ?? d.destinatario_codice_fiscale ?? "");
   const trasCf = String(tras.codice_fiscale ?? "");
-  const prodCf = String(prod.codice_fiscale ?? "");
-  const ruoli = ruoliFir(
-    { produttore_cf: prodCf, trasportatore_cf: trasCf, destinatario_cf: destCf },
-    SOGGETTI,
-  );
+
+  const labelDest = SOGGETTI.find((s) => ruoli.includes(`${s.label} destinatario`))?.label ?? null;
+
   return {
     societa,
     societaLabel,
+    societaFirma: labelDest ? chiaveDaLabel(labelDest) : null,
     numero_fir: normalizzaNumeroFir(d.numero_fir),
     codice_eer: String(d.codice_eer ?? ""),
     quantita: Number(d.quantita ?? 0),
@@ -219,6 +268,32 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     }
   };
 
+  /** Scarico dal magazzino Multyproget: solo conferma umana, riga per riga. */
+  const scaricaMagazzino = async (r: FirRow) => {
+    const conferma = window.confirm(
+      `Registrare lo SCARICO dal magazzino Multyproget?\n\nFormulario ${r.numero_fir}\nCER ${r.codice_eer}\nQuantità ${r.quantita.toLocaleString("it-IT")} ${r.unita_misura}`,
+    );
+    if (!conferma) return;
+    setScaricando(r.numero_fir);
+    try {
+      await registraScaricoProduttore({
+        numero_fir: r.numero_fir,
+        codice_eer: r.codice_eer,
+        quantita: r.quantita,
+        produttore_cf: r.produttore_cf,
+        produttore_nome: r.produttore_nome,
+        data_emissione: r.data_emissione,
+        data_creazione: r.data_creazione,
+        descrizione: `Uscita da magazzino Multyproget — FIR ${r.numero_fir} (${r.trasportatore_nome || "trasportatore"})`,
+      });
+      toast.success(`Scarico registrato per il formulario ${r.numero_fir}`);
+    } catch (e: any) {
+      toast.error(`Scarico non registrato: ${e.message}`);
+    } finally {
+      setScaricando(null);
+    }
+  };
+
   const apriFirma = (r: FirRow) => {
     setFirmaFir(r);
     setKg(String(r.quantita || ""));
@@ -232,10 +307,11 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     if (!window.confirm(`Firmare l'accettazione del FIR ${firmaFir.numero_fir} su RENTRI?`)) return;
     setFirmando(true);
     try {
-      const cfSoggetto = RENTRI_CF_SOGGETTO[firmaFir.societa] ?? "";
-      const unitaLocale = RENTRI_UNITA_LOCALI[firmaFir.societa] ?? "";
+      const chiaveFirma = firmaFir.societaFirma ?? firmaFir.societa;
+      const cfSoggetto = RENTRI_CF_SOGGETTO[chiaveFirma] ?? "";
+      const unitaLocale = RENTRI_UNITA_LOCALI[chiaveFirma] ?? "";
       const res = await accettaFirInArrivoDestinatario(
-        firmaFir.societa as RentriCliente,
+        chiaveFirma as RentriCliente,
         firmaFir.numero_fir,
         {
           data_ora_ricezione: new Date(`${dataArrivo}T${oraArrivo}:00`).toISOString(),
@@ -256,7 +332,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
 
       // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
       // La pesata certificata passa obbligatoriamente dal punto unico idempotente.
-      const destino = IMPIANTO_DESTINO[firmaFir.societa];
+      const destino = IMPIANTO_DESTINO[firmaFir.societaFirma ?? firmaFir.societa];
       if (esito !== "respinto" && destino) {
         const { error: movErr } = await (supabase as any).rpc("applica_movimento_giacenza", {
           p_tenant_id: destino.tenant_id,
@@ -388,7 +464,9 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           <tbody>
             {visibili.map((r) => (
               <tr key={`${r.societa}-${r.numero_fir}`} className="border-t border-border">
-                <td className="px-3 py-2 text-xs font-semibold">{r.societaLabel}</td>
+                <td className="px-3 py-2 text-xs font-semibold">
+                  {[...new Set(r.ruoli.map((x) => x.split(" ")[0]))].join(" + ") || r.societaLabel}
+                </td>
                 <td className="px-3 py-2 font-mono text-xs font-bold">{r.numero_fir}</td>
                 <td className="px-3 py-2 text-xs">{r.ruolo}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.codice_eer}</td>
@@ -416,7 +494,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                     >
                       Dettaglio
                     </button>
-                    {!r.accettato && r.destinatario_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
+                    {!r.accettato && r.societaFirma && (
                       <button
                         onClick={() => apriFirma(r)}
                         className="inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-black"
@@ -424,13 +502,33 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                         <PenLine size={11} /> Firma destinatario
                       </button>
                     )}
-                    {!r.accettato &&
-                      r.produttore_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") &&
-                      r.destinatario_cf !== (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
-                        <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
-                          Come produttore · {r.stato || "in lavorazione"}
-                        </span>
-                      )}
+                    {!r.accettato && !r.societaFirma && r.ruoli.some((x) => x.endsWith("produttore")) && (
+                      <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
+                        Come produttore · {r.stato || "in lavorazione"}
+                      </span>
+                    )}
+                    {scaricoProduttoreAmmesso({
+                      numero_fir: r.numero_fir,
+                      codice_eer: r.codice_eer,
+                      quantita: r.quantita,
+                      produttore_cf: r.produttore_cf,
+                      produttore_nome: r.produttore_nome,
+                      data_emissione: r.data_emissione,
+                      data_creazione: r.data_creazione,
+                    }).ok && (
+                      <button
+                        onClick={() => scaricaMagazzino(r)}
+                        disabled={scaricando === r.numero_fir}
+                        className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                      >
+                        {scaricando === r.numero_fir ? (
+                          <Loader2 className="animate-spin" size={11} />
+                        ) : (
+                          <PackageMinus size={11} />
+                        )}
+                        Registra lo scarico dal magazzino
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
