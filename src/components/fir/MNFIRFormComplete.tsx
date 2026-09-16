@@ -1301,10 +1301,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       });
 
       const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+      const quantitaDichiarata = Number(String(d.quantita ?? "").replace(",", "."));
+      const pesoNumerico = Number(pesoReale || "0");
+      const quantitaRespinta =
+        arrivo.esito === "respinto"
+          ? Number.isFinite(quantitaDichiarata) ? quantitaDichiarata : 0
+          : arrivo.esito === "parziale" && Number.isFinite(quantitaDichiarata)
+            ? Math.max(0, quantitaDichiarata - pesoNumerico)
+            : 0;
       await chiudiFirRentri({
         societaId,
         numero_fir: d.selectedFirNumber,
-        peso_accettato: parseFloat(pesoReale || "0"),
+        peso_accettato: pesoNumerico,
         data_arrivo: dataOraArrivo,
         destinatario_denominazione: d.destinatarioDenominazione,
         destinatario_codice_fiscale: d.destinatarioCF,
@@ -1312,7 +1320,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
         destinatario_numero_aut: d.destinatarioNumeroAut,
         unita_misura: d.unitaMisura,
+        esito: arrivo.esito,
+        quantita_respinta: quantitaRespinta,
+        motivazione: arrivo.motivazione || null,
+        operazione: d.destinatarioCodiceOperazione || null,
       });
+
 
       await closeFIR.mutateAsync(store.editingFirId);
       useMNFIRStore.setState({ workflowStatus: 'chiuso' });
