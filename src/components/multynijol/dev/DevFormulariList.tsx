@@ -41,6 +41,9 @@ interface Props {
 const normalizeCf = (v: string | null | undefined) =>
   (v || "").toString().replace(/\s+/g, "").toUpperCase();
 
+const normalizeFir = (v: string | null | undefined) =>
+  (v || "").toString().replace(/[^A-Z0-9]/gi, "").toUpperCase();
+
 const firstValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
 
@@ -132,6 +135,26 @@ export function DevFormulariList({
         for (const f of extras) if (!seen.has(f.id)) base.push({ ...f, _cross_tenant: true });
       }
       return base;
+    },
+  });
+
+  // Le conferme asincrone LOTTO possono arrivare dopo il salvataggio locale.
+  // L'elenco deve quindi riconoscere il numero ufficiale già confermato dal
+  // RENTRI, senza modificare il formulario o dipendere da form_data incompleti.
+  const { data: confirmedFirNumbers = new Set<string>() } = useQuery({
+    queryKey: ["dev-formulari-rentri-confirmed", tenantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rentri_operazioni")
+        .select("identificativo_rentri")
+        .eq("success", true)
+        .eq("tipo_operazione", "LOTTO")
+        .eq("esito_finale", "CONFERMATO")
+        .not("identificativo_rentri", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(5000);
+      if (error) return new Set<string>();
+      return new Set((data ?? []).map((row) => normalizeFir(row.identificativo_rentri)).filter(Boolean));
     },
   });
 
@@ -260,7 +283,11 @@ export function DevFormulariList({
 
   // Lo stato mostrato è quello reale: "inviato" solo se il RENTRI ha davvero
   // restituito l'identificativo ufficiale del formulario.
-  const statoReale = (f: any) => resolveWorkflowStatus(f.status, f.form_data);
+  const statoReale = (f: any) => {
+    const statoLocale = resolveWorkflowStatus(f.status, f.form_data);
+    if (statoLocale !== "bozza") return statoLocale;
+    return confirmedFirNumbers.has(normalizeFir(f.numero_fir)) ? "inviato" : "bozza";
+  };
 
   const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
