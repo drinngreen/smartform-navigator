@@ -423,9 +423,17 @@ export function PresetAziendaSelector({
           .in("cliente_id", ids)
           .order("denominazione")
           .limit(1000),
+        // Molte sedi operative sono state importate come righe separate della
+        // stessa azienda (stesso CF/P.IVA, indirizzo diverso): vanno proposte
+        // come sedi operative, altrimenti resta selezionabile solo la sede legale.
+        supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap")
+          .in("id", ids)
+          .limit(1000),
       ]);
       if (cancelled) return;
-      const failed = [a, c, t, k, p, ul].find((response) => response.error);
+      const failed = [a, c, t, k, p, ul, an].find((response) => response.error);
       if (failed) setLoadError("Alcuni dati collegati non sono leggibili");
       const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
         const seen = new Set<string>();
