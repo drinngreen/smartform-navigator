@@ -96,15 +96,37 @@ function tipoAutorizzazione(raw: string): string {
   return ALIAS_AUTORIZZAZIONE[k] ?? "";
 }
 
+const ELENCO_TIPI_LEGGIBILE =
+  "Art. 208, Art. 208 impianti mobili, Ricerca e sperimentazione, AIA, Art. 216 (procedura semplificata), Operazioni di bonifica, Straordinario, Comunicazione/Autorizzazione trattamento acque reflue";
+
 /**
- * Blocco autorizzazione conforme. Il RENTRI richiede il tipo quando il blocco
- * è presente (sys.required): se la dicitura non è ufficiale si omette tutto il blocco.
+ * Blocco autorizzazione conforme. Il RENTRI richiede numero e tipo insieme
+ * (sys.required): se mancano o il tipo non è ufficiale l'invio viene bloccato
+ * qui con un messaggio chiaro, invece di farlo rifiutare dal RENTRI.
  */
-function bloccoAutorizzazione(numero: string, tipo: string): Bag | null {
+function bloccoAutorizzazione(
+  numero: string,
+  tipo: string,
+  ruolo: string,
+  obbligatorio: boolean,
+): Bag | null {
   const num = numero.trim();
-  if (!num) return null;
   const t = tipoAutorizzazione(tipo);
-  return t ? { numero: num, tipo: t } : null;
+  if (!num && !tipo.trim()) {
+    if (!obbligatorio) return null;
+    throw new Error(
+      `Autorizzazione del ${ruolo} mancante: inserisci numero e tipo di autorizzazione (valori ammessi: ${ELENCO_TIPI_LEGGIBILE}).`,
+    );
+  }
+  if (!num) {
+    throw new Error(`Numero di autorizzazione del ${ruolo} mancante: il RENTRI lo richiede insieme al tipo.`);
+  }
+  if (!t) {
+    throw new Error(
+      `Tipo di autorizzazione del ${ruolo} non valido per il RENTRI («${tipo.trim()}»). Usa uno dei valori ufficiali: ${ELENCO_TIPI_LEGGIBILE}.`,
+    );
+  }
+  return { numero: num, tipo: t };
 }
 
 /**
