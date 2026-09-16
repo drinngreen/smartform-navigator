@@ -13,5 +13,12 @@
 - [ ] Certificare in sola lettura app autisti Multy/Niyol, uso d'ufficio, assegnazioni, firme e QR ufficiale.
 - [ ] Certificare in sola lettura collegamento RENTRI, pesca FIR, registri, code, 423 e isolamento tenant.
 - [ ] Dimostrare con snapshot prima/dopo che test e navigazione non modificano giacenze o cernite.
-- [ ] Correggere esclusivamente i difetti applicativi emersi, senza scritture operative, poi ripetere tutte le prove.
-- [ ] Aggiornare Dark Lemon, tutorial e guide soltanto con funzioni realmente verificate e limiti ancora aperti.
+- [x] Correggere esclusivamente i difetti applicativi emersi, senza scritture operative, poi ripetere tutte le prove.
+- [x] Aggiornare Dark Lemon, tutorial e guide soltanto con funzioni realmente verificate e limiti ancora aperti.
+
+## Limiti ancora bloccanti per la certificazione completa
+
+- [ ] Eseguire una prova reale RENTRI autorizzata, completa e reversibile: nessun invio reale è stato eseguito durante l'audit in sola lettura.
+- [ ] Unificare tecnicamente anche privati, cernite e conferma cartacea nello stesso punto database, senza cambiare dati storici e senza interrompere le cernite.
+- [ ] Eliminare gli stati RENTRI determinati da testo libero e introdurre riconciliazione esplicita degli invii rimasti in attesa.
+- [ ] Chiudere i finding di sicurezza pertinenti: il controllo attuale riporta ancora 69 segnalazioni.

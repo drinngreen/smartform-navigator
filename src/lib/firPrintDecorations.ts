@@ -119,7 +119,7 @@ function base64ToBytes(b64: string): Uint8Array {
 
 /** Estrae codice blocco e progressivo dal numero FIR (es. "FRVKM 001320 CM"). */
 export function parseNumeroFir(numeroFir: string): { codiceBlocco: string; progressivo: string } | null {
-  const m = String(numeroFir).toUpperCase().match(/([A-Z]{4,6})\s*[-]?\s*(\d{4,8})/);
+  const m = String(numeroFir).toUpperCase().match(/\b([A-Z]{5})\b\s*[-]?\s*(\d{4,8})/);
   if (!m) return null;
   return { codiceBlocco: m[1], progressivo: m[2] };
 }

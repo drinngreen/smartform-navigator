@@ -1033,6 +1033,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     try {
       const numero = d.selectedFirNumber || "";
       const qr = qrCodeData || (numero ? await resolveFirQrDataUrl(numero, printCliente()) : null);
+      if (numero && !qr) {
+        toast.error("QR ufficiale RENTRI non disponibile: documento bloccato per evitare una copia incompleta");
+        return;
+      }
       const blob = await generateFIRSummaryPdf(store.data, { qrCodeBase64: qr || undefined, cliente: printCliente() });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

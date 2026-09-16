@@ -5,7 +5,7 @@ import {
   type TemplateField,
 } from "../../components/fir/FIRAlternativeForm";
 import { officialPrintFieldGeometry } from "../../lib/firPrintLayout";
-import { base45Encode } from "../../lib/firPrintDecorations";
+import { base45Encode, parseNumeroFir } from "../../lib/firPrintDecorations";
 
 function field(
   id: string,
@@ -23,6 +23,12 @@ describe("stampa del formulario ufficiale", () => {
   it("codifica i byte firmati RENTRI in Base45 secondo RFC 9285", () => {
     expect(base45Encode(Uint8Array.from([0x41, 0x42]))).toBe("BB8");
     expect(base45Encode(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]))).toBe("CW4IS801");
+  });
+
+  it("accetta solo il blocco FIR ufficiale di cinque lettere", () => {
+    expect(parseNumeroFir("ABCDE 001234 CM")).toEqual({ codiceBlocco: "ABCDE", progressivo: "001234" });
+    expect(parseNumeroFir("ABCD 001234 CM")).toBeNull();
+    expect(parseNumeroFir("ABCDEF 001234 CM")).toBeNull();
   });
 
   it("proietta i campi della vecchia scansione sulle righe del nuovo foglio 1", () => {

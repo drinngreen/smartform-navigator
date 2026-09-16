@@ -60,16 +60,24 @@ export async function pescaFormulariRentri(params: {
   const selezione = listaRaw.filter((r) => inPeriodo(r, dataDa, dataA));
 
   // Archivio locale per il tenant
-  const { data: locali } = await supabase
-    .from("fir_forms")
-    .select("id, numero_fir, form_data")
-    .eq("tenant_id", tenantId)
-    .not("numero_fir", "is", null)
-    .limit(5000);
+  const locali: { id: string; numero_fir: string | null; form_data: Record<string, unknown> | null }[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("fir_forms")
+      .select("id, numero_fir, form_data")
+      .eq("tenant_id", tenantId)
+      .not("numero_fir", "is", null)
+      .order("created_at", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    locali.push(...((data ?? []) as typeof locali));
+    if ((data?.length ?? 0) < pageSize) break;
+  }
   const perNumero = new Map<string, { id: string; form_data: Record<string, unknown> }>();
-  for (const r of locali ?? []) {
+  for (const r of locali) {
     const n = String((r as Record<string, unknown>).numero_fir ?? "").replace(/\s+/g, "").toUpperCase();
-    if (n) perNumero.set(n, r as { id: string; form_data: Record<string, unknown> });
+    if (n) perNumero.set(n, { id: r.id, form_data: r.form_data ?? {} });
   }
 
   const risultato: RisultatoPesca = { letti: selezione.length, nuovi: 0, aggiornati: 0, differenze: [], dettagli: [] };

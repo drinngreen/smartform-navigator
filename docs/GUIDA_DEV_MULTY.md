@@ -185,13 +185,10 @@ I formulari creati da qui seguono le stesse regole della Sezione 1.
 - Kg pesati per ogni materiale.
 - **Metodo di Pagamento** obbligatorio: `contanti` | `tracciabile`.
 
-### 8.2 Garanzia automatica sulle giacenze
-Il salvataggio passa dalla RPC **`crea_conferimento_privato_atomico`**, che in un'unica transazione:
-1. prende un **lock anti‑concorrenza** sul CER/impianto;
-2. crea conferimento, ricevuta e **movimento di magazzino legato al conferimento**;
-3. ricalcola il saldo e **verifica** il risultato (`assert_magazzino_giacenza`).
+### 8.2 Conferma del peso e giacenze
+Il conferimento privato modifica la giacenza soltanto dopo la conferma umana del peso nella procedura dedicata. La variazione deve essere tracciata e non può essere sostituita da ricalcoli o riallineamenti automatici.
 
-Se il saldo non torna, **l'inserimento fallisce**: non esistono più conferimenti "salvati ma non contabilizzati".
+Se il saldo non torna, fermarsi e usare il confronto in sola lettura prima di qualsiasi correzione.
 Un conferimento certificato non si cancella: eventuali correzioni richiedono uno storno umano tracciato.
 
 ### 8.3 Numerazione e limiti
@@ -371,11 +368,11 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 | Sintomo | Causa probabile | Fix operativo |
 |---|---|---|
 | Giacenza non aggiornata dopo un FIR | Multy non è né produttore né destinatario | Corretto: la giacenza cambia solo se Multy è parte del formulario. |
-| Giacenza non aggiornata dopo un privato | Salvataggio interrotto | Non può succedere: la procedura atomica fallisce e avvisa. Usa il confronto saldi in sola lettura e non ricalcolare. |
+| Giacenza non aggiornata dopo un privato | Conferma o applicazione non completata | Fermati, usa il confronto saldi in sola lettura e non ricalcolare. |
 | Riga FIR gialla | Manca `peso_destino` su FIR completato | Apri il FIR, compila la quantità arrivo, salva. |
 | "Numero FIR già utilizzato" | Numero duplicato nello stesso tenant | Cambia numero o cestina il duplicato. |
 | Non trovo un CER nella tendina | Filtro sui soli materiali movimentati | Spunta "Mostra tutti i CER del catalogo europeo". |
-| Bridge RENTRI offline | Proxy giù o WAF ban 423 | Usa la **Simulazione (Mock)** oppure attendi 30' e riprova. |
+| Bridge RENTRI offline | Collegamento indisponibile o blocco 423 | Non simulare l'invio. Attendi il tempo indicato, poi usa soltanto il reinvio manuale. |
 | Ricevuta con data errata | Data conferimento sbagliata | Modifica la data nel Privato → la ricevuta si rigenera. |
 | App autista mostra un FIR "misterioso" | Assegnazione manuale precedente | Personale → Storico FIR → Bozze → cestina. |
 | Errore creando un utente app | CF non valido o autofill del browser | Ricontrolla il Codice Fiscale (16 caratteri) e riscrivilo a mano. |

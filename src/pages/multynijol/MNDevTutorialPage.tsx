@@ -83,7 +83,7 @@ const CHAPTERS: Chapter[] = [
       "Si parte SEMPRE dal numero: digiti il numero FIR (quello stampato sul blocco o scaricato dal RENTRI) e premi 'Crea formulario'. La bozza si apre immediatamente e da quel momento è tua, modificabile.",
       "Il formulario ha due viste — Standard e Alternativo — che sono lo stesso documento. Se scrivi il peso nella vista Standard, lo ritrovi nella vista Alternativa mentre stai ancora digitando. Non esistono due formulari: esiste un formulario con due facce.",
       "Salva bozza = documento modificabile. Il digitale aggiorna le giacenze solo alla firma del destinatario; il cartaceo solo alla conferma manuale.",
-      "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino in alto, invece, elimina l'intero formulario e storna in automatico registro e giacenze: nessuna riga resta orfana.",
+      "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino elimina soltanto una bozza; un formulario effettivo richiede uno storno umano separato e tracciato.",
     ],
     steps: [
       "Digita il numero FIR nel campo dedicato e premi 'Crea formulario'.",
@@ -106,11 +106,11 @@ const CHAPTERS: Chapter[] = [
       { label: "Operazione R/D", desc: "Recupero (R1–R13) o smaltimento (D1–D15). Serve per registri e MUD." },
     ],
     warnings: [
-      "Non usare il cestino per 'ripulire' un campo: cancella tutto il formulario e storna i movimenti. Per una sezione usa la gomma.",
-      "Se il formulario è già definitivo, modificare i pesi cambia le giacenze: verifica sempre il saldo dopo la modifica.",
+      "Non usare il cestino per 'ripulire' un campo: sulle bozze rimuove il formulario; sui movimenti effettivi serve uno storno umano separato e tracciato.",
+      "Un formulario definitivo non deve modificare automaticamente i pesi o le giacenze: ogni correzione richiede un nuovo passaggio umano tracciato.",
     ],
     faq: [
-      { q: "Ho creato un formulario col numero sbagliato.", a: "Eliminalo con il cestino: il sistema storna in automatico registro e giacenze. Poi ricrealo con il numero corretto." },
+      { q: "Ho creato un formulario col numero sbagliato.", a: "Se è ancora bozza, cestinalo e ricrealo. Se è effettivo, fermati: serve uno storno umano separato e tracciato." },
       { q: "Ho compilato in Standard ma in Alternativo non vedo nulla.", a: "Chiudi e riapri il formulario: le due viste si sincronizzano in tempo reale, un mancato aggiornamento indica solo una vista rimasta aperta da prima." },
     ],
     tip: "La tendina dei preset Multyproget riempie produttore o destinatario con dati anagrafici già verificati: usala sempre, riduce gli errori di battitura.",
@@ -891,8 +891,8 @@ const CHAPTERS: Chapter[] = [
     ],
     faq: [
       { q: "Non risponde o resta in caricamento.", a: "Chiudi e riapri il widget e riprova con una domanda più corta. Se avevi allegato uno screenshot molto grande, riprova senza immagine: le catture vengono compresse ma una pagina enorme può rallentare la risposta." },
-      { q: "Mi ha dato un numero di giacenza diverso da quello che vedo.", a: "Chiedigli di ricalcolare e sincronizzare le giacenze e di mostrarti i movimenti su cui si basa: il valore corretto è sempre quello che deriva dai movimenti." },
-      { q: "Può inserire un conferimento al posto mio?", a: "Sì, può eseguire operazioni sui dati, ma la responsabilità della verifica resta tua: controlla sempre il risultato nella schermata corrispondente." },
+      { q: "Mi ha dato un numero di giacenza diverso da quello che vedo.", a: "Fermati e chiedi un confronto in sola lettura con i movimenti visibili e nascosti. Non autorizzare ricalcoli o riallineamenti." },
+      { q: "Può inserire un conferimento al posto mio?", a: "Può preparare la compilazione, ma peso e conferimento diventano effettivi solo dopo la tua conferma nel percorso previsto." },
       { q: "Le conversazioni restano salvate?", a: "Sì, con l'indicazione della vista da cui sono partite. Puoi eliminarle singolarmente dalla Cronologia." },
       { q: "Perché a volte chiede conferma e a volte no?", a: "Le operazioni di sola lettura e quelle reversibili procedono da sole; quelle irreversibili — firme, invii ufficiali — richiedono conferma esplicita." },
     ],

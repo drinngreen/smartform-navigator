@@ -67,6 +67,11 @@ export default function DragonMagazzinoPage() {
   });
 
   const handleAdjust = async () => {
+    const percorsoAutorizzato = false;
+    if (!percorsoAutorizzato) {
+      toast.error("Rettifica diretta disattivata: serve un nuovo movimento umano, certificato e tracciato");
+      return;
+    }
     if (!adjustForm.item_id || !adjustForm.quantity || !adjustForm.reason) {
       toast.error("Compila tutti i campi obbligatori");
       return;
