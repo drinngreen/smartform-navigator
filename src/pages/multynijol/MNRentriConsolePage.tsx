@@ -28,6 +28,7 @@ import {
 import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmarePanel";
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { RentriPescaFirPanel } from "@/components/rentri/RentriPescaFirPanel";
+import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
 import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { RentriInviiRentriPanel } from "@/components/rentri/RentriInviiRentriPanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
@@ -77,7 +78,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "pesca" | "registriufficiali" | "registri" | "invii" | "privati" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "cartacei" | "pesca" | "registriufficiali" | "registri" | "invii" | "privati" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -97,6 +98,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
+  { id: "cartacei", label: "FIR cartacei", icon: <FileText size={14} /> },
   { id: "pesca", label: "Pesca dal RENTRI", icon: <Download size={14} /> },
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
@@ -997,6 +999,13 @@ export default function MNRentriConsolePage() {
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Formulari sul RENTRI — Multy e Niyol, da firmare e non</h3>
             <RentriFirDaFirmarePanel cliente={cliente} />
+          </div>
+        )}
+
+        {tab === "cartacei" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Formulari cartacei — {label}</h3>
+            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} />
           </div>
         )}
 
