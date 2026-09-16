@@ -252,6 +252,7 @@ export function DevFirCartaceoModule() {
                 <th className="text-right px-3 py-2 font-medium">Kg</th>
                 <th className="text-left px-3 py-2 font-medium">Produttore</th>
                 <th className="text-left px-3 py-2 font-medium">Destinatario</th>
+                <th className="text-center px-3 py-2 font-medium">Stato</th>
                 <th className="text-center px-3 py-2 font-medium">RENTRI</th>
               </tr>
             </thead>
