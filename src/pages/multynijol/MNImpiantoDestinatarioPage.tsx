@@ -150,6 +150,9 @@ export default function MNImpiantoDestinatarioPage() {
       esito_accettazione: esito,
       note: form.note || null,
       data_movimento: new Date().toISOString().split("T")[0],
+      // Il peso è certificato qui, alla pesata del destinatario: il movimento
+      // diventa effettivo. Un carico respinto non diventa mai effettivo.
+      stato_movimento: esito === "respinto" ? "annullato" : "effettivo",
     };
 
     await createMovimento.mutateAsync(payload);
