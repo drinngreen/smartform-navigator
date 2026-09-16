@@ -146,7 +146,11 @@ export async function fetchOfficialQrPayload(
   if (!parsed) return null;
   try {
     const { leggiLotto } = await import("@/lib/rentriVpsApi");
-    const res = await leggiLotto(printClienteKey(cliente) as any, parsed.codiceBlocco, String(Number(parsed.progressivo)));
+    // RENTRI richiede il progressivo FIR nel formato ufficiale a 6 cifre.
+    // Non convertirlo in numero: "000772" diventava "772" e il recupero del
+    // QR falliva anche se il lotto esisteva ed era già stato confermato.
+    const progressivoUfficiale = parsed.progressivo.padStart(6, "0");
+    const res = await leggiLotto(printClienteKey(cliente) as any, parsed.codiceBlocco, progressivoUfficiale);
     if (!res?.success) return null;
     const root: any = res.data;
     const node = Array.isArray(root) ? root[0] : (root?.data ?? root);
