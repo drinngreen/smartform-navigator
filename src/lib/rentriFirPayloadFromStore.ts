@@ -185,8 +185,18 @@ export async function mapStoreToRentriFirPayload(
     s(data.destinatarioCodiceOperazione),
     s(data.destinatarioOperazione).toUpperCase().startsWith("D"),
   );
-  const autProduttore = bloccoAutorizzazione(s(data.produttoreNumeroAut), s(data.produttoreTipoAut));
-  const autDestinatario = bloccoAutorizzazione(s(data.destinatarioNumeroAut), s(data.destinatarioTipoAut));
+  const autProduttore = bloccoAutorizzazione(
+    s(data.produttoreNumeroAut),
+    s(data.produttoreTipoAut),
+    "produttore",
+    false,
+  );
+  const autDestinatario = bloccoAutorizzazione(
+    s(data.destinatarioNumeroAut),
+    s(data.destinatarioTipoAut),
+    "destinatario",
+    true,
+  );
 
   return {
     num_iscr_sito: cfg.unitId,
