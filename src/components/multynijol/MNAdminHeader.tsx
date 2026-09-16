@@ -73,6 +73,7 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
         )}
       </div>
+      </div>
 
       <div className="flex items-center gap-2">
         {/* AI Widget toggle */}
