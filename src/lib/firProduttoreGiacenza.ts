@@ -116,9 +116,11 @@ export const partenzaDallaSedeMulty = (fir: {
   produttore_indirizzo?: unknown;
   num_iscr_sito?: unknown;
 }): boolean => {
+  // L'indirizzo del produttore deve essere la sede di via Rivarossa: da un
+  // cantiere il materiale non esce dal magazzino e le giacenze non si toccano.
+  if (!normalizzaNome(fir.produttore_indirizzo).includes(MULTY_SEDE_INDIRIZZO)) return false;
   const sito = String(fir.num_iscr_sito ?? "").toUpperCase().trim();
-  if (sito) return sito === MULTY_UNITA_LOCALE;
-  return normalizzaNome(fir.produttore_indirizzo).includes(MULTY_SEDE_INDIRIZZO);
+  return !sito || sito === MULTY_UNITA_LOCALE;
 };
 
 export interface FirProduttoreCandidato {
