@@ -26,7 +26,7 @@ Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certifica
 Correggo il formato dei dati che il RENTRI ha respinto: numero del formulario con il blocco e le sei cifre, codici fiscali ripuliti e validati, stato fisico preso dai codici ufficiali. Prima dell'invio una verifica a video elenca in italiano cosa manca, così l'invio parte solo quando è completo. Poi provo per davvero un invio e mostro la risposta del RENTRI.
 
 **2. Niyol allo stesso livello di Multy.**
-Niyol è solo trasportatore: gli do il suo registro di trasporto, il suo codice fiscale e la sua unità locale in ogni passaggio, compresa l'accettazione dei formulari in arrivo, che oggi funziona solo per Multy. Ogni schermata mostra sempre con quale azienda sta operando.
+Niyol è solo trasportatore: gli do il suo registro di trasporto, il suo codice fiscale, la sua unità locale e i suoi parametri RENTRI in ogni passaggio in cui è soggetto attivo. Ogni schermata mostra sempre con quale azienda sta operando.
 
 **3. Invio del registro carico/scarico, senza doppioni.**
 I movimenti candidati diventano solo quelli effettivi, escludendo automaticamente quelli già inviati. Ogni invio viene archiviato con numero di transazione ed esito, e una verifica ricontrolla poco dopo se il RENTRI lo ha davvero acquisito. Se qualcosa viene scartato, appare il motivo in italiano e il movimento resta in coda, mai perso.
@@ -38,21 +38,21 @@ Un pulsante scarica i formulari del periodo scelto per Multy e per Niyol e li po
 Blocco temporaneo, linea giù, lentezza: messaggi chiari, attesa automatica prima di riprovare, e il lavoro continua in locale. Resta sempre disponibile il cartaceo. Nessun dato si perde e nessun invio parte due volte.
 
 **6. App autisti Multy e Niyol operative.**
-L'autista sceglie con quale azienda opera, apre il formulario assegnato, lo compila con tutte le tendine, e firma solo se le parti obbligatorie sono complete. Il destinatario vede il formulario, inserisce il peso riscontrato e l'esito, e con la sua firma il formulario si chiude e le giacenze si aggiornano da sole, come già impostato. I formulari cartacei restano con il pulsante di conferma manuale.
+L'autista sceglie con quale azienda opera, apre il formulario assegnato, lo compila con tutte le tendine, e firma solo se le parti obbligatorie sono complete. Il destinatario vede il formulario, inserisce il peso riscontrato e l'esito, e con la sua firma il formulario si chiude. Solo attraverso il punto unico giacenze vengono aggiornati movimento, registro e giacenze. I formulari cartacei restano con il pulsante di conferma manuale.
 
 **7. L'ufficio comanda le app degli autisti, in tempo reale.**
 Dalla postazione dell'ufficio si vede l'elenco degli autisti in servizio e il formulario che ciascuno ha aperto. L'ufficio può compilare il formulario al posto dell'autista, correggerlo mentre lui lo sta guardando, assegnargliene un altro, bloccarlo o sbloccarlo. Le modifiche compaiono sul telefono dell'autista entro pochi secondi, senza che debba ricaricare nulla, e ogni intervento resta tracciato con nome e ora. Quando l'autista ha già firmato, l'ufficio non può più cambiare il formulario: può solo annullarlo e rifarlo, così la firma resta valida.
 
-**7-bis. Assegnazione libera dei formulari e uso d'ufficio.**
+**8. Assegnazione libera dei formulari e uso d'ufficio.**
 Nessun limite al numero di formulari assegnabili a un autista: si assegnano quanti se ne vuole, in blocco o uno per uno, e si possono togliere e ridare a un altro finché non sono firmati. La segretaria può compilare e usare il formulario direttamente dall'ufficio, anche per una ditta esterna che si presenta a caricare da Multyproget: sceglie il trasportatore, compila i dati, stampa o firma, senza passare da un'app autista. Lo stesso formulario può essere preparato in anticipo e ripreso al momento del carico. Chi ha fatto cosa resta sempre scritto.
 
-**7-ter. Formulari altrui dove Multyproget è produttore.**
+**9. Formulari altrui dove Multyproget è produttore.**
 Quando arriva qualcuno con un formulario suo, dalla console si cercano sul RENTRI i formulari in cui Multyproget compare come produttore e si vede subito quello giusto, con tutti i dati e lo stato. Sola lettura dal RENTRI: si può importarlo in archivio per lavorarlo, mai modificarlo da noi.
 
-**8. Controllo su strada: QR code reale.**
+**10. Controllo su strada: QR code reale.**
 Sul telefono dell'autista un pulsante ben visibile apre la schermata di controllo con il QR code del formulario in corso. Vigili o polizia lo inquadrano e aprono una pagina pubblica di sola lettura con i dati del formulario: numero, data, produttore, destinatario, trasportatore, targhe, codice CER, descrizione del rifiuto, peso, firme presenti e stato. Nessun dato riservato, nessuna possibilità di modifica. La schermata funziona anche con poco segnale perché mostra comunque i dati già scaricati, e il QR resta leggibile a schermo luminoso.
 
-**9. Una sola schermata di controllo.**
+**11. Una sola schermata di controllo.**
 In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, invii respinti con motivo, formulari da firmare, autisti in viaggio, ultimo aggiornamento. Tutto in un colpo d'occhio, così ci si accorge subito se qualcosa si è fermato.
 
 ## Cosa non tocco
