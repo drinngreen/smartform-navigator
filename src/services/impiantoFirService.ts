@@ -219,8 +219,16 @@ export function parseRentriToSummary(raw: Record<string, unknown>): Partial<FirS
   return {
     numero_fir: d.numero_fir || d.numeroFir || d.numero || "",
     produttore: d.produttore?.denominazione || d.produttore_denominazione || "",
-    trasportatore: d.trasportatore?.denominazione || d.trasportatore_denominazione || "",
-    destinatario: d.destinatario?.denominazione || d.destinatario_denominazione || "",
+    trasportatore:
+      d.trasportatore?.denominazione ||
+      d.trasportatori?.[0]?.denominazione ||
+      d.trasportatore_denominazione ||
+      "",
+    destinatario:
+      d.destinatario?.denominazione ||
+      d.destinatari?.[0]?.denominazione ||
+      d.destinatario_denominazione ||
+      "",
     cer: d.codice_eer || d.rifiuto?.codice_eer || "",
     quantita: Number(d.quantita || d.rifiuto?.quantita || 0),
     unita_misura: d.unita_misura || d.rifiuto?.unita_misura || "kg",
