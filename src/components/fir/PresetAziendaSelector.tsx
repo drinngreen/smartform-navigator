@@ -33,6 +33,14 @@ interface Props {
   onSelectAzienda: (data: PresetFill) => void;
   /** Chiamato quando si sceglie l'autorizzazione: numero, tipo, data */
   onSelectAutorizzazione: (aut: { numero: string; tipo: string; data: string }) => void;
+  /** Opzionale: sede operativa / unità locale del cliente selezionato */
+  onSelectUnitaLocale?: (s: {
+    denominazione: string;
+    indirizzo: string;
+    comune: string;
+    provincia: string;
+    cap: string;
+  }) => void;
   /** Opzionale: cantiere / unità locale del cliente selezionato */
   onSelectCantiere?: (c: {
     denominazione: string;
@@ -63,6 +71,7 @@ export function PresetAziendaSelector({
 
   onSelectAutorizzazione,
   onSelectCantiere,
+  onSelectUnitaLocale,
   onSelectTarga,
   onSelectConducente,
   onSelectPartnerDefault,
@@ -73,6 +82,7 @@ export function PresetAziendaSelector({
   const [clienteNome, setClienteNome] = useState("");
   const [dbAuts, setDbAuts] = useState<any[]>([]);
   const [cantieri, setCantieri] = useState<any[]>([]);
+  const [unitaLocali, setUnitaLocali] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
   const [allConducenti, setAllConducenti] = useState<any[]>([]);
@@ -340,6 +350,7 @@ export function PresetAziendaSelector({
     if (ids.length === 0) {
       setDbAuts([]);
       setCantieri([]);
+      setUnitaLocali([]);
       setTarghe([]);
       setConducenti([]);
       setPartnerDefaults([]);
@@ -348,7 +359,7 @@ export function PresetAziendaSelector({
     let cancelled = false;
     setLoadingDeps(true);
     (async () => {
-      const [a, c, t, k, p] = await Promise.all([
+      const [a, c, t, k, p, ul] = await Promise.all([
         supabase
           .from("cliente_autorizzazioni")
           .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
@@ -379,9 +390,15 @@ export function PresetAziendaSelector({
           .in("cliente_id", ids)
           .order("ruolo")
           .limit(500),
+        supabase
+          .from("cliente_unita_locali")
+          .select("id,denominazione,indirizzo,comune,provincia,cap")
+          .in("cliente_id", ids)
+          .order("denominazione")
+          .limit(1000),
       ]);
       if (cancelled) return;
-      const failed = [a, c, t, k, p].find((response) => response.error);
+      const failed = [a, c, t, k, p, ul].find((response) => response.error);
       if (failed) setLoadError("Alcuni dati collegati non sono leggibili");
       const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
         const seen = new Set<string>();
@@ -396,6 +413,7 @@ export function PresetAziendaSelector({
       // avere date/validità differenti e devono restare tutte selezionabili.
       setDbAuts(a.data || []);
       setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
+      setUnitaLocali(dedup(ul.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
       setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
       setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
       setPartnerDefaults(dedup(p.data, (r) => `${r.ruolo}|${r.ragione_sociale}|${r.indirizzo}`.toUpperCase()));
@@ -779,6 +797,37 @@ export function PresetAziendaSelector({
             <p className="text-[10px] text-white/50">
               Nei file importati non risulta alcun numero di autorizzazione per questo ruolo: usa ＋ per aggiungerlo.
             </p>
+          )}
+
+          {onSelectUnitaLocale && (
+            <select
+              className={selectCls}
+              defaultValue=""
+              onChange={(e) => {
+                const s = unitaLocali.find((x) => x.id === e.target.value);
+                if (s)
+                  onSelectUnitaLocale({
+                    denominazione: s.denominazione || "",
+                    indirizzo: [s.indirizzo, [s.cap, s.comune, s.provincia ? `(${s.provincia})` : ""].filter(Boolean).join(" ")]
+                      .filter(Boolean)
+                      .join(" - "),
+                    comune: s.comune || "",
+                    provincia: s.provincia || "",
+                    cap: s.cap || "",
+                  });
+              }}
+            >
+              <option value="">
+                {unitaLocali.length
+                  ? `-- Sede operativa / unità locale (${unitaLocali.length}) --`
+                  : "-- Nessuna sede operativa in anagrafica: usa la sede legale --"}
+              </option>
+              {unitaLocali.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {[s.denominazione, s.indirizzo, s.cap, s.comune, s.provincia].filter(Boolean).join(" · ")}
+                </option>
+              ))}
+            </select>
           )}
 
           {onSelectCantiere && (
