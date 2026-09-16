@@ -123,6 +123,43 @@ function Field({ label, value, onChange, placeholder, type = "text", validate }:
 }
 
 
+/**
+ * Tipo di autorizzazione: va scelto tra le 9 voci ufficiali, perché il RENTRI
+ * rifiuta qualsiasi altra dicitura. Un eventuale valore già presente (per es.
+ * importato dall'anagrafica) resta selezionato e visibile finché non si sceglie
+ * la voce corretta.
+ */
+function TipoAutField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const ufficiale = TIPI_AUTORIZZAZIONE_UFFICIALI.some((t) => t.testo === value);
+  const mancante = value.trim() !== "" && !ufficiale;
+  return (
+    <div>
+      <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${mancante ? "text-red-300" : "text-white/80"}`}>{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        title={value}
+        className={`w-full rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 ${
+          mancante
+            ? "bg-red-500/15 border border-red-500 focus:ring-red-400"
+            : "bg-sky-400/10 border border-sky-400/40 focus:ring-sky-300"
+        }`}
+      >
+        <option value="">— Seleziona il tipo di autorizzazione —</option>
+        {mancante && <option value={value}>{value} (dicitura non ufficiale)</option>}
+        {TIPI_AUTORIZZAZIONE_UFFICIALI.map((t) => (
+          <option key={t.codice} value={t.testo} title={t.testo}>
+            {t.breve}
+          </option>
+        ))}
+      </select>
+      {mancante && (
+        <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ Il RENTRI non accetta questa dicitura: scegli una delle voci ufficiali.</p>
+      )}
+    </div>
+  );
+}
+
 function TextArea({ label, value, onChange, placeholder, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (
     <div>
