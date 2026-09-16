@@ -602,7 +602,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           if (ricerca.success && risposta.includes(cercato)) numeroConfermato = numeroFir;
         }
         if (!active || !numeroConfermato) return;
-        setOfficialEmissionAt(conferma?.created_at ?? new Date().toISOString());
+        setOfficialEmissionAt(conferma?.created_at ?? null);
         const qr = await resolveFirQrDataUrl(numeroConfermato, societaId);
         if (!active) return;
         if (qr) setQrCodeData(qr);

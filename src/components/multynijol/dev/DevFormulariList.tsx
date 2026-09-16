@@ -20,6 +20,8 @@ import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
+import { ricercaFir } from "@/lib/rentriVpsApi";
+import { resolveSocietaId } from "@/services/rentriApi";
 
 
 
@@ -142,7 +144,8 @@ export function DevFormulariList({
   // L'elenco deve quindi riconoscere il numero ufficiale già confermato dal
   // RENTRI, senza modificare il formulario o dipendere da form_data incompleti.
   const { data: confirmedFirNumbers = new Set<string>() } = useQuery({
-    queryKey: ["dev-formulari-rentri-confirmed", tenantId],
+    queryKey: ["dev-formulari-rentri-confirmed", tenantId, forms.map((f: any) => `${f.numero_fir}:${f.status}`).join("|")],
+    enabled: forms.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rentri_operazioni")
@@ -153,8 +156,26 @@ export function DevFormulariList({
         .not("identificativo_rentri", "is", null)
         .order("created_at", { ascending: false })
         .limit(5000);
-      if (error) return new Set<string>();
-      return new Set((data ?? []).map((row) => normalizeFir(row.identificativo_rentri)).filter(Boolean));
+      const confermati = new Set(
+        error ? [] : (data ?? []).map((row) => normalizeFir(row.identificativo_rentri)).filter(Boolean),
+      );
+      const daVerificare = forms.filter((form: any) => {
+        const locale = resolveWorkflowStatus(form.status, form.form_data);
+        return locale === "bozza" && String(form.status ?? "").toLowerCase() === "inviato" && form.numero_fir;
+      });
+      if (daVerificare.length === 0) return confermati;
+      const cliente = resolveSocietaId(tenantId, mnContext) as any;
+      await Promise.all(daVerificare.map(async (form: any) => {
+        try {
+          const res = await ricercaFir(cliente, form.numero_fir);
+          const numero = normalizeFir(form.numero_fir);
+          const risposta = normalizeFir(JSON.stringify(res.data ?? {}));
+          if (res.success && risposta.includes(numero)) confermati.add(numero);
+        } catch {
+          // La mancata lettura non promuove mai una bozza a inviato.
+        }
+      }));
+      return confermati;
     },
   });
 
