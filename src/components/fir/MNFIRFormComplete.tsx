@@ -93,13 +93,25 @@ function Section({ title, defaultOpen = false, onClear, children }: { title: str
 }
 
 /**
- * Lo scroll del mouse sopra un campo data/ora/numero ne cambia il valore
- * (comportamento nativo del browser): togliamo il focus così lo scroll
- * scorre la pagina senza cancellare o alterare quanto scritto.
+ * Impedisce al browser di cambiare date, ore e numeri con la rotellina.
+ * Il campo NON perde il focus: sfocare una data parzialmente digitata la
+ * farebbe diventare vuota. Lo scorrimento viene trasferito al contenitore.
  */
-function blurOnWheel(e: React.WheelEvent<HTMLInputElement>) {
-  const el = e.currentTarget;
-  if (document.activeElement === el) el.blur();
+function preserveValueOnWheel(e: React.WheelEvent<HTMLInputElement>) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  let parent = e.currentTarget.parentElement;
+  while (parent) {
+    const style = window.getComputedStyle(parent);
+    const canScroll = /(auto|scroll)/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight;
+    if (canScroll) {
+      parent.scrollTop += e.deltaY;
+      return;
+    }
+    parent = parent.parentElement;
+  }
+  window.scrollBy({ top: e.deltaY, behavior: "auto" });
 }
 
 function Field({ label, value, onChange, placeholder, type = "text", validate }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null }) {
@@ -111,7 +123,7 @@ function Field({ label, value, onChange, placeholder, type = "text", validate }:
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onWheel={blurOnWheel}
+        onWheel={preserveValueOnWheel}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         className={`w-full rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 transition-all ${
@@ -388,7 +400,7 @@ function ArrivoDestinoPopup({
             type="number"
             value={peso}
             onChange={(e) => setPeso(e.target.value)}
-            onWheel={blurOnWheel}
+            onWheel={preserveValueOnWheel}
             placeholder="Peso verificato alla pesa"
             className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary"
             autoFocus
@@ -397,11 +409,11 @@ function ArrivoDestinoPopup({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Data arrivo</label>
-            <input type="date" value={data} onChange={(e) => setData(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            <input type="date" value={data} onChange={(e) => setData(e.target.value)} onWheel={preserveValueOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <div>
             <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Ora arrivo</label>
-            <input type="time" value={ora} onChange={(e) => setOra(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            <input type="time" value={ora} onChange={(e) => setOra(e.target.value)} onWheel={preserveValueOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
         </div>
         <div>
@@ -1618,7 +1630,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Data Emissione</label>
-            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} onWheel={preserveValueOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <div>
             <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Registro</label>
