@@ -307,6 +307,20 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           ))}
         </div>
 
+        <div className="flex overflow-hidden rounded-md border border-border">
+          {(["tutti", "produttore", "trasportatore", "destinatario"] as const).map((rl) => (
+            <button
+              key={rl}
+              onClick={() => setRuoloSel(rl)}
+              className={`px-3 py-2 text-xs font-semibold ${
+                ruoloSel === rl ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+              }`}
+            >
+              {rl === "tutti" ? "Tutti i ruoli" : rl === "produttore" ? "Produttore" : rl === "trasportatore" ? "Trasportatore" : "Destinatario"}
+            </button>
+          ))}
+        </div>
+
         <div className="relative">
           <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
