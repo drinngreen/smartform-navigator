@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { registraAnagraficheFormulario, descriviEsitoRegistrazione } from "@/lib/anagraficaAutoRegistrazione";
+import { resolveWorkflowStatus, isFalseSubmitted } from "@/lib/firWorkflowStatus";
 
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer, CheckCircle2 } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
@@ -1772,7 +1773,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             />
 
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
-            <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
+            <Field label="Indirizzo di scarico (sede operativa)" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} placeholder="Indirizzo dove il rifiuto viene realmente scaricato" />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
             <Row>
               <div>
