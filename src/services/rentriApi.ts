@@ -69,7 +69,20 @@ export interface RentriChiusuraPayload {
   destinatario_numero_aut?: string;
   peso_accettato: number;
   unita_misura?: string;
+  /**
+   * Esito reale dichiarato dall'impianto. Obbligatorio: senza questo dato
+   * l'arrivo veniva trasmesso al RENTRI sempre come "accettato", anche quando
+   * il carico era stato respinto.
+   */
+  esito?: "accettato" | "parziale" | "respinto";
+  /** Quantità respinta, nel caso di accettazione parziale o respingimento. */
+  quantita_respinta?: number;
+  /** Motivazione obbligatoria quando il carico non è accettato per intero. */
+  motivazione?: string | null;
+  /** Codice dell'operazione di recupero/smaltimento a destino (es. R13). */
+  operazione?: string | null;
 }
+
 
 export interface RentriVidimateResponse {
   numeri: string[];
