@@ -861,7 +861,7 @@ export function PresetAziendaSelector({
               className={selectCls}
               defaultValue=""
               onChange={(e) => {
-                const s = unitaLocali.find((x) => x.id === e.target.value);
+                const s = sediDisponibili.find((x) => x.id === e.target.value);
                 if (s)
                   onSelectUnitaLocale({
                     denominazione: s.denominazione || "",
