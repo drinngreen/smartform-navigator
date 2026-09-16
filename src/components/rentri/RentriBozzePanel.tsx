@@ -238,9 +238,22 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
         toast.error(res.userMessage ?? "Invio a RENTRI fallito", { description: res.error, duration: 12000 });
         return;
       }
+      const responseRoot = (res.data ?? {}) as Record<string, any>;
+      const root = (responseRoot.data || responseRoot.risposta || responseRoot.result || responseRoot) as Record<string, any>;
+      const identificativoUfficiale = String(
+        root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "",
+      ).trim();
+      if (!identificativoUfficiale) {
+        toast.error("Partenza non confermata dal RENTRI: manca l’identificativo ufficiale. Il FIR resta in bozza.");
+        return;
+      }
       await supabase
         .from("fir_forms")
-        .update({ status: "inviato", submitted_at: new Date().toISOString() } as never)
+        .update({
+          status: "inviato",
+          submitted_at: new Date().toISOString(),
+          form_data: { ...extra, rentri_fir_id: identificativoUfficiale },
+        } as never)
         .eq("id", d.id);
       toast.success(`Formulario ${d.numero_fir} inviato a RENTRI`);
       await load();

@@ -66,7 +66,8 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
   const retryOne = async (row: PendingFir): Promise<boolean> => {
     const payload = { ...(row.form_data ?? {}), numero_fir: row.numero_fir };
     const result = await inviaFirmaRentri({ societaId, payloadFir: payload });
-    const numero = String(result.numero_fir || row.numero_fir || "").trim();
+    const numero = String(result.numero_fir || "").trim();
+    if (!numero) throw new Error("Partenza non confermata dal RENTRI: manca l’identificativo ufficiale");
     await supabase
       .from("fir_forms")
       .update({
