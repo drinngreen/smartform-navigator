@@ -18,6 +18,9 @@ export interface FirQrData {
 export function buildFirQrPayload(data: FirQrData): string {
   const rows = [
     `FIR:${data.numero_fir ?? ""}`,
+    // URL pubblico di verifica con token opaco: i vigili scansionano e leggono
+    // la sintesi del formulario senza credenziali.
+    data.verifyUrl ? `URL:${data.verifyUrl}` : null,
     data.cer ? `EER:${data.cer}` : null,
     data.produttore ? `PRO:${data.produttore}` : null,
     data.trasportatore ? `TRA:${data.trasportatore}` : null,
@@ -26,6 +29,19 @@ export function buildFirQrPayload(data: FirQrData): string {
     data.data_partenza ? `DATA:${data.data_partenza}` : null,
   ].filter(Boolean);
   return rows.join("|");
+}
+
+export interface FirQrData {
+  numero_fir: string;
+  cer?: string | null;
+  produttore?: string | null;
+  trasportatore?: string | null;
+  destinatario?: string | null;
+  quantita?: number | string | null;
+  unita_misura?: string | null;
+  data_partenza?: string | null;
+  /** URL pubblico di verifica (pagina /fir/:token). */
+  verifyUrl?: string | null;
 }
 
 interface Props extends FirQrData {
