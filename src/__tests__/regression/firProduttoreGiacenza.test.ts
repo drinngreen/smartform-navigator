@@ -14,6 +14,7 @@ const base = {
   codice_eer: "120102",
   quantita: 1000,
   produttore_cf: MULTY_CF,
+  produttore_indirizzo: "VIA RIVAROSSA 18-20",
 };
 
 describe("scarico giacenze da FIR con Multyproget produttore — solo da oggi ore 08:00", () => {
@@ -51,6 +52,35 @@ describe("scarico giacenze da FIR con Multyproget produttore — solo da oggi or
     );
     expect(v.ok).toBe(false);
     expect(v.motivo).toContain("Multyproget");
+  });
+
+  it("rifiuta un carico partito da un cantiere e non dalla sede di via Rivarossa", () => {
+    const v = scaricoProduttoreAmmesso(
+      {
+        ...base,
+        produttore_indirizzo: "VIA TORINO 5 — CANTIERE",
+        data_emissione: "2026-09-16T10:30:00+02:00",
+      },
+      CUTOFF,
+    );
+    expect(v.ok).toBe(false);
+    expect(v.motivo).toContain("cantiere");
+  });
+
+  it("rifiuta il formulario BPJMG 000488 LL: nome Multyproget ma codice fiscale Niyol", () => {
+    const v = scaricoProduttoreAmmesso(
+      {
+        numero_fir: "BPJMG000488LL",
+        codice_eer: "120102",
+        quantita: 10000,
+        produttore_cf: "09879800010",
+        produttore_nome: "MULTYPROGET SRL",
+        produttore_indirizzo: "VIA RIVAROSSA 18-20",
+        data_emissione: "2026-09-16T06:15:22Z",
+      },
+      CUTOFF,
+    );
+    expect(v.ok).toBe(false);
   });
 
   it("rifiuta senza data/ora leggibile", () => {
