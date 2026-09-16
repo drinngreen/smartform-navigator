@@ -373,18 +373,20 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               return current == null ? "" : String(current);
             },
             setValue: (next: string) => {
+              const apply = useMNFIRStore.getState().updateField as (
+                field: keyof FIRDataStore,
+                value: unknown,
+              ) => void;
               const current = useMNFIRStore.getState().data[key];
               if (typeof current === "boolean" || typeof initial === "boolean") {
-                const truthy = ["true", "1", "si", "sì", "yes", "x"].includes(next.trim().toLowerCase());
-                useMNFIRStore.getState().updateField(key, truthy as never);
+                apply(key, ["true", "1", "si", "sì", "yes", "x"].includes(next.trim().toLowerCase()));
                 return;
               }
               if (Array.isArray(initial)) {
-                const parts = next.split(/[,;]/).map((p) => p.trim()).filter(Boolean);
-                useMNFIRStore.getState().updateField(key, parts as never);
+                apply(key, next.split(/[,;]/).map((p) => p.trim()).filter(Boolean));
                 return;
               }
-              useMNFIRStore.getState().updateField(key, next as never);
+              apply(key, next);
             },
           };
         }),
