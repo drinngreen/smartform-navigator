@@ -25,15 +25,19 @@ export default function MNAppCronologiaPage() {
   const [filter, setFilter] = useState<FilterStatus>("all");
 
   const allForms = firForms || [];
+  // Stato reale: un formulario è "inviato" solo con conferma del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, f.form_data);
   const counts = {
     all: allForms.length,
-    draft: allForms.filter((f: any) => f.status === "bozza").length,
-    submitted: allForms.filter((f: any) => f.status === "inviato").length,
-    completed: allForms.filter((f: any) => f.status === "completato").length,
+    draft: allForms.filter((f: any) => statoReale(f) === "bozza").length,
+    submitted: allForms.filter((f: any) => statoReale(f) === "inviato").length,
+    completed: allForms.filter((f: any) => statoReale(f) === "chiuso").length,
   };
 
-  const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", completato: "completed" };
-  const filtered = allForms.filter((fir: any) => filter === "all" || statusMap[fir.status] === filter);
+  const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", chiuso: "completed" };
+  const filtered = allForms.filter((fir: any) => filter === "all" || statusMap[statoReale(fir)] === filter);
+
+
 
   const handleEdit = (fir: any) => { loadFromDatabase(fir); navigate(basePath); };
   const handleDelete = (fir: any) => { if (window.confirm(`Eliminare FIR ${fir.numero_fir || "senza numero"}?`)) deleteFIR.mutate(fir.id); };
