@@ -1522,7 +1522,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
             <Row>
               <Field label="RENTRI / Autorizzazione" value={d.produttoreNumeroAut} onChange={(v) => u("produttoreNumeroAut", v)} />
-              <Field label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => u("produttoreTipoAut", v)} />
+              <TipoAutField label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => u("produttoreTipoAut", v)} />
             </Row>
             <Field label="Luogo produzione (se diverso)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
             <Field label="Data Autorizzazione" value={d.produttoreDataAut} onChange={(v) => u("produttoreDataAut", v)} type="date" />
@@ -1594,6 +1594,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 u("destinatarioUnitaLocale", a.indirizzo);
                 u("destinatarioCF", a.piva || a.cf);
               }}
+              onSelectUnitaLocale={(s) => u("destinatarioUnitaLocale", s.indirizzo)}
               onSelectAutorizzazione={(aut) => {
                 u("destinatarioNumeroAut", aut.numero);
                 u("destinatarioTipoAut", aut.tipo);
@@ -1616,7 +1617,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </Row>
             <Row>
               <Field label="N° Autorizzazione" value={d.destinatarioNumeroAut} onChange={(v) => u("destinatarioNumeroAut", v)} />
-              <Field label="Tipo Aut." value={d.destinatarioTipoAut} onChange={(v) => u("destinatarioTipoAut", v)} />
+              <TipoAutField label="Tipo Aut." value={d.destinatarioTipoAut} onChange={(v) => u("destinatarioTipoAut", v)} />
             </Row>
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
