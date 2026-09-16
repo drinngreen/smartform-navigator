@@ -188,14 +188,7 @@ export async function mapStoreToRentriFirPayload(
           indirizzo: destAddr.indirizzo,
           cap: destAddr.cap,
         },
-        ...(s(data.destinatarioNumeroAut)
-          ? {
-              autorizzazione: {
-                numero: s(data.destinatarioNumeroAut),
-                tipo: s(data.destinatarioTipoAut) || "AIA",
-              },
-            }
-          : {}),
+        ...(autDestinatario ? { autorizzazione: autDestinatario } : {}),
       },
       trasportatori: [
         {
