@@ -4,6 +4,7 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovimentiImpianto } from "@/hooks/useMovimentiImpianto";
+import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
