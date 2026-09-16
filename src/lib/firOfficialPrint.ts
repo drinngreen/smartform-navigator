@@ -90,6 +90,9 @@ export async function printOfficialFir(options: OfficialPrintOptions): Promise<b
   const qrDataUrl = numeroFir
     ? await resolveFirQrDataUrl(numeroFir, options.cliente)
     : null;
+  if (numeroFir && !qrDataUrl) {
+    throw new Error("QR ufficiale RENTRI non disponibile: stampa bloccata per evitare un formulario incompleto");
+  }
 
   const producedAt = new Date();
   const decorationsFor = (page: number) =>

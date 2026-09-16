@@ -59,19 +59,25 @@ export function mapMovimentiToRentri(
 
 /** Id dei movimenti già presenti negli invii archiviati: non vanno mai inviati due volte. */
 async function movimentiGiaInviati(tenantId: string): Promise<Set<string>> {
-  const { data } = await supabase
-    .from("rentri_invii_registri")
-    .select("movimenti")
-    .eq("tenant_id", tenantId)
-    .limit(2000);
   const inviati = new Set<string>();
-  for (const row of data ?? []) {
-    const movs = (row as { movimenti?: unknown }).movimenti;
-    if (!Array.isArray(movs)) continue;
-    for (const m of movs) {
-      const rif = (m as Record<string, unknown>)?.riferimento_interno;
-      if (typeof rif === "string" && rif) inviati.add(rif);
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("rentri_invii_registri")
+      .select("movimenti")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const movs = (row as { movimenti?: unknown }).movimenti;
+      if (!Array.isArray(movs)) continue;
+      for (const m of movs) {
+        const rif = (m as Record<string, unknown>)?.riferimento_interno;
+        if (typeof rif === "string" && rif) inviati.add(rif);
+      }
     }
+    if ((data?.length ?? 0) < pageSize) break;
   }
   return inviati;
 }
