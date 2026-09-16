@@ -135,8 +135,12 @@ export async function inviaFirmaRentri(
   const res = await emissioneFir(cliente, enrichedPayload);
 
   if (res.success) {
-    const root = (res.data as any) || {};
-    const firId = root.firId || root.numero_fir || root.fir_id || "";
+    const responseRoot = (res.data as any) || {};
+    const root = (responseRoot.data || responseRoot.risposta || responseRoot.result || responseRoot) as Record<string, any>;
+    const firId = String(root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "").trim();
+    if (!firId) {
+      throw new Error("Il RENTRI non ha restituito un identificativo ufficiale del FIR: la partenza non è confermata");
+    }
     return {
       ...(root as Record<string, unknown>),
       numero_fir: firId,

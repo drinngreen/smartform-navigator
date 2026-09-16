@@ -1063,30 +1063,29 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         firmaComeProduttore,
       });
       const result = await inviaFirmaRentri({ societaId, payloadFir: payloadRentri });
-      const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
+      const officialNumeroFir = String(result.numero_fir || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
-      if (officialNumeroFir) {
-        store.updateField("selectedFirNumber", officialNumeroFir);
-        const fdPrev = (dbFields.form_data ?? {}) as Record<string, any>;
-        const diarioPrev = Array.isArray(fdPrev.diario) ? fdPrev.diario : [];
-        await silentSaveFIR.mutateAsync({
-          id: activeFirId,
-          numero_fir: officialNumeroFir,
-          form_data: {
-            ...fdPrev,
-            diario: [...diarioPrev, { autore: diarioAutore, azione: "firmato e inviato su RENTRI", ora: new Date().toISOString() }],
-            rentri_fir_id: rentriFirId || null,
-            rentri_retry_pending: false,
-            rentri_retry_since: null,
-          },
-          status: "inviato",
-          submitted_at: new Date().toISOString(),
-        });
-      }
+      if (!officialNumeroFir) throw new Error("Partenza non confermata dal RENTRI: manca il numero ufficiale del FIR");
+
+      store.updateField("selectedFirNumber", officialNumeroFir);
+      const qrFromFirma = await resolveFirQrDataUrl(officialNumeroFir, societaId);
+      const fdPrev = (dbFields.form_data ?? {}) as Record<string, any>;
+      const diarioPrev = Array.isArray(fdPrev.diario) ? fdPrev.diario : [];
+      await silentSaveFIR.mutateAsync({
+        id: activeFirId,
+        numero_fir: officialNumeroFir,
+        form_data: {
+          ...fdPrev,
+          diario: [...diarioPrev, { autore: diarioAutore, azione: "partenza confermata dal RENTRI", ora: new Date().toISOString() }],
+          rentri_fir_id: rentriFirId || officialNumeroFir,
+          rentri_retry_pending: false,
+          rentri_retry_since: null,
+          rentri_qr_pending: !qrFromFirma,
+        },
+        status: "inviato",
+        submitted_at: new Date().toISOString(),
+      });
       useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
-      const qrFromFirma = officialNumeroFir
-        ? await resolveFirQrDataUrl(officialNumeroFir, societaId)
-        : null;
       if (qrFromFirma && d.selectedFirNumber) {
         setQrCodeData(qrFromFirma);
         await supabase.from("fir_number_pool").update({ qr_code_data: qrFromFirma } as any).eq("fir_number", d.selectedFirNumber);
@@ -1116,7 +1115,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           }
         }
       }
-      toast.success(`📤 FIR ${officialNumeroFir || d.selectedFirNumber || ""} inviato e firmato su RENTRI`);
+      if (qrFromFirma) {
+        toast.success(`📤 FIR ${officialNumeroFir} emesso dal RENTRI: QR ufficiale pronto`);
+      } else {
+        toast.error(`FIR ${officialNumeroFir} acquisito dal RENTRI, ma QR ufficiale non disponibile: viaggio bloccato`);
+      }
       window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: activeFirId } }));
     } catch (error: any) {
       // Servizi RENTRI indisponibili: il FIR resta in bozza e finisce nella coda
@@ -1133,7 +1136,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
         toast.error("RENTRI non raggiungibile: il FIR resta in bozza ed è in coda di reinvio (Console RENTRI)");
       } else {
-        toast.error(`Errore firma RENTRI: ${error.message}`);
+        useMNFIRStore.setState({ workflowStatus: "bozza" });
+        toast.error(`Partenza NON inviata al RENTRI: ${error.message}. Il FIR resta in bozza e il viaggio non può iniziare.`);
       }
     } finally {
       setIsSigning(false);
@@ -1483,14 +1487,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {store.workflowStatus === 'inviato' && (
             <>
-              <div className="rounded-2xl border border-neon-green/30 bg-neon-green/5 py-2 text-center">
-                <p className="text-xs font-display uppercase tracking-widest text-neon-green">Viaggio in corso</p>
-                <p className="mt-0.5 text-[10px] font-mono text-white/60">Partenza già trasmessa al RENTRI · QR ufficiale valido</p>
+              <div className={`rounded-2xl border py-2 text-center ${qrCodeData ? "border-neon-green/30 bg-neon-green/5" : "border-destructive/40 bg-destructive/10"}`}>
+                <p className={`text-xs font-display uppercase tracking-widest ${qrCodeData ? "text-neon-green" : "text-destructive"}`}>
+                  {qrCodeData ? "Viaggio in corso" : "Viaggio bloccato: QR ufficiale assente"}
+                </p>
+                <p className="mt-0.5 text-[10px] font-mono text-white/60">
+                  {qrCodeData ? "Partenza trasmessa al RENTRI · QR ufficiale valido" : "Recupera il QR dal RENTRI prima della partenza"}
+                </p>
               </div>
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                <Shield className="h-5 w-5 icon-led" /> CONTROLLO POLIZIA (QR CODE)
+                <Shield className="h-5 w-5 icon-led" /> {qrCodeData ? "CONTROLLO POLIZIA (QR CODE)" : "RECUPERA QR UFFICIALE RENTRI"}
               </button>
-              <button onClick={handleArrivato} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+              <button onClick={handleArrivato} disabled={!qrCodeData} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
                 <MapPin className="h-5 w-5 icon-led" /> 2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO
               </button>
               <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
