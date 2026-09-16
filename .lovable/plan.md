@@ -2,11 +2,11 @@
 
 Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certificato**. Un movimento entra nel registro RENTRI solo quando è effettivo (peso certificato: firma del destinatario nel digitale, conferma manuale nel cartaceo, pesa in impianto per i privati).
 
-**Vincolo sui dati esistenti.** Nessun dato storico già consolidato viene modificato: giacenze pregresse, cernite, registro privati, ricevute privati, movimenti e formulari già emessi restano come sono. Le modifiche valgono solo per i nuovi formulari e per i nuovi passaggi automatici.
+**Vincolo sui dati esistenti.** Nessun dato storico già consolidato viene modificato: giacenze pregresse, movimenti storici, formulari già emessi, registro privati, ricevute privati restano come sono. Le modifiche valgono solo per i nuovi formulari e per i nuovi passaggi automatici.
 
-**Regola sulle giacenze.** La chiusura reale del formulario digitale — peso finale inserito e firma del destinatario — è l'unico punto autorizzato a generare movimento, riga di registro e aggiornamento di giacenza, e lo fa una sola volta. Nessun evento precedente o parallelo tocca i saldi: non l'apertura del formulario, non la firma di partenza, non i salvataggi provvisori, non automatismi separati, non lavorazioni successive. I formulari cartacei restano sul percorso di conferma manuale. Nessun saldo storico viene ricalcolato.
+**Regola sulle giacenze.** Le giacenze sono modificabili solo da quattro eventi autorizzati: conferimento privato effettivo, cernita effettiva, chiusura reale del formulario digitale, chiusura manuale del formulario cartaceo. Tutti e quattro passano dallo stesso punto unico di aggiornamento, idempotente e tracciato. Nessun altro evento tocca i saldi: non l'apertura del formulario, non la firma di partenza, non i salvataggi provvisori, non le sincronizzazioni intermedie, non l'import dal RENTRI, non lavorazioni automatiche separate, non percorsi duplicati fra ufficio, app autista e impianto.
 
-**Tracciamento obbligatorio.** Ogni aggiornamento di giacenza salva almeno: formulario, azienda, peso finale usato, valore prima, valore dopo, data e ora, e chi o cosa ha eseguito la chiusura. Se la traccia non si può scrivere, l'aggiornamento non parte.
+**Tracciamento obbligatorio.** Ogni aggiornamento di giacenza salva almeno: tipo evento (privato, cernita, fir digitale, fir cartaceo), documento o movimento di origine, azienda, CER, quantità, valore prima, valore dopo, data e ora, utente o processo che ha eseguito l'operazione. Se la traccia non si può scrivere, l'aggiornamento non parte.
 
 ## Cosa risulta oggi, letto ora dal database
 
@@ -51,7 +51,7 @@ In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, 
 
 ## Cosa non tocco
 
-Giacenze, cernite e lavorazioni, conferimenti privati, registro e ricevute dei privati, archivio dei 361 invii privati già fatti da terminale. Nessun saldo cambia di un chilo.
+Giacenze pregresse, storico già consolidato, archivio dei 359 invii privati già fatti da terminale, ricevute privati, movimenti già chiusi e formulari già emessi. Nessun ricalcolo dello storico.
 
 ## Dettagli tecnici
 
