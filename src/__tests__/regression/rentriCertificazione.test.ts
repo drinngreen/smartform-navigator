@@ -166,7 +166,7 @@ describe("Certificazione RENTRI — configurazione e transazioni", () => {
 });
 
 describe("Valori ufficiali RENTRI: autorizzazione e attività destinatario", () => {
-  it("normalizza il tipo autorizzazione e l'operazione R/D, omettendo i tipi non ufficiali", async () => {
+  it("normalizza il tipo autorizzazione e l'operazione R/D, bloccando i tipi non ufficiali", async () => {
     const { mapStoreToRentriFirPayload } = await import("@/lib/rentriFirPayloadFromStore");
     const base = {
       selectedFirNumber: "ZRZXR 000772 TM",
