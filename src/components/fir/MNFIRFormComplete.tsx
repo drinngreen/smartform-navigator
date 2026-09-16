@@ -1309,9 +1309,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
       }
     } catch (error: any) {
-      toast.error("Errore chiusura: " + error.message);
+      toast.error(
+        `Arrivo NON registrato sul RENTRI: ${error.message}. Il formulario resta in viaggio e le giacenze non sono state toccate.`,
+      );
+    } finally {
+      setInviandoArrivo(false);
     }
   };
+
 
   const handleDestinatarioSelect = (soggetto: Soggetto) => {
     u("destinatarioDenominazione", soggetto.nome);
