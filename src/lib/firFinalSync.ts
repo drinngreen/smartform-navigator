@@ -95,8 +95,17 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
   impiantoId?: string | null;
   registryMovementType?: "Carico" | "Scarico";
+  /**
+   * Un movimento pesa sulle giacenze SOLO quando è effettivo, cioè quando il
+   * peso è stato certificato dal destinatario (firma digitale) oppure
+   * confermato a mano da un operatore (formulario cartaceo).
+   * Finché è potenziale resta visibile e tracciato, ma non conta nei saldi.
+   */
+  effettivo?: boolean;
 }): Promise<{ registry: boolean; registryApplicable: boolean; inventory: boolean; warning?: string }> {
   const { firId } = params;
+  const effettivo = params.effettivo === true;
+  const statoMovimento = effettivo ? "effettivo" : "potenziale";
   if (!firId) throw new Error("firId mancante");
   logAgentActivity("Sincronizzazione FIR su registri e giacenze", "info", `FIR ${firId}`);
 
