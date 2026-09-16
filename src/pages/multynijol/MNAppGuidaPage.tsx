@@ -6,11 +6,12 @@ import { ChevronRight } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const guideSteps = [
-  { icon: "📋", title: "Ricevi il FIR", subtitle: "L'ufficio prepara tutto", label: "UFFICIO", sublabel: "Vidima", color: "text-neon-cyan", desc: "L'ufficio crea e vidima il FIR. Tu ricevi una notifica quando è pronto.", tip: "Controlla le notifiche prima di partire" },
-  { icon: "🚛", title: "Parti col carico", subtitle: "Firma e vai", label: "AUTISTA", sublabel: "Parte", color: "text-primary", desc: "Premi INVIA E FIRMA PARTENZA. Il sistema registra ora e GPS automaticamente.", tip: "Controlla che la targa sia corretta" },
-  { icon: "📍", title: "Trasporto", subtitle: "GPS attivo", label: "TRASPORTO", sublabel: "Tappe", color: "text-neon-green", desc: "Durante il viaggio il GPS traccia la posizione. In caso di controllo usa il QR Code.", tip: "Tieni il GPS attivo durante tutto il viaggio" },
-  { icon: "🏭", title: "Arrivo a destino", subtitle: "Pesatura", label: "IMPIANTO", sublabel: "Accetta", color: "text-neon-magenta", desc: "All'arrivo premi ARRIVATO e inserisci il peso verificato dall'impianto.", tip: "Chiedi sempre la ricevuta di pesatura" },
-  { icon: "✅", title: "Chiusura FIR", subtitle: "Completato", label: "CHIUSO", sublabel: "Completato", color: "text-neon-green", desc: "Il FIR viene chiuso automaticamente. Puoi scaricarlo in PDF dalla cronologia.", tip: "Verifica i dati prima della chiusura" },
+  { icon: "📋", title: "Ricevi il FIR", subtitle: "L'ufficio prepara tutto", label: "UFFICIO", sublabel: "Prepara", color: "text-neon-cyan", desc: "L'ufficio prepara il formulario e te lo assegna. Finché è in bozza può ancora correggerlo, anche mentre sei in viaggio.", tip: "Controlla le notifiche prima di partire" },
+  { icon: "🚛", title: "Parti col carico", subtitle: "Primo invio al RENTRI", label: "PARTENZA", sublabel: "1° invio", color: "text-primary", desc: "Premi EMETTI FIR E FIRMA LA PARTENZA: il formulario viene trasmesso al RENTRI e ricevi numero ufficiale e QR valido.", tip: "Controlla targa e quantità prima di firmare" },
+  { icon: "📍", title: "Trasporto", subtitle: "QR ufficiale", label: "VIAGGIO", sublabel: "In corso", color: "text-neon-green", desc: "In viaggio mostri il QR ufficiale RENTRI a polizia e vigili. Le giacenze non sono ancora cambiate.", tip: "Il QR vale solo dopo l'invio della partenza" },
+  { icon: "🏭", title: "Arrivo a destino", subtitle: "Secondo invio al RENTRI", label: "ARRIVO", sublabel: "2° invio", color: "text-neon-magenta", desc: "Premi SONO ARRIVATO, inserisci peso reale, data, ora ed esito, poi firma: l'arrivo viene trasmesso al RENTRI.", tip: "Chiedi sempre la ricevuta di pesatura" },
+  { icon: "✅", title: "Chiusura FIR", subtitle: "Completato", label: "CHIUSO", sublabel: "Completato", color: "text-neon-green", desc: "Solo dopo la risposta positiva del RENTRI il formulario si chiude e le giacenze si aggiornano. Se l'invio fallisce resti in viaggio.", tip: "Se vedi un errore, il formulario NON è chiuso" },
+
 ];
 
 export default function MNAppGuidaPage() {
