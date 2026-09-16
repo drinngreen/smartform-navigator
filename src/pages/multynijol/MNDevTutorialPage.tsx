@@ -179,7 +179,7 @@ const CHAPTERS: Chapter[] = [
       "Un formulario aperto dall'autista resta modificabile finché è in bozza: dopo il salvataggio definitivo va corretto dall'ufficio.",
     ],
     faq: [
-      { q: "L'autista ha sbagliato formulario.", a: "Dall'ufficio elimina la bozza col cestino (storno automatico) e riassegna il numero corretto." },
+      { q: "L'autista ha sbagliato formulario.", a: "Se è ancora bozza, eliminala e riassegna il numero. Se è effettivo, serve uno storno umano tracciato." },
       { q: "Come creo un nuovo login autista?", a: "Dal capitolo Personale: crei l'utente con il codice fiscale e scegli se assegnarlo all'app Multyproget o Niyol." },
     ],
     tip: "Fai provare l'app a ogni nuovo autista con un numero FIR di prova prima di mandarlo in strada.",
@@ -281,19 +281,19 @@ const CHAPTERS: Chapter[] = [
     intro:
       "In Conto Proprio gestisci i formulari dove Multyproget trasporta i propri rifiuti con mezzi propri (categoria 2-bis).",
     explain: [
-      "Stesse regole di ovunque: numero FIR manuale, due viste sincronizzate, bozza modificabile, cestino con storno automatico.",
+      "Stesse regole di ovunque: numero FIR manuale, due viste sincronizzate e bozza modificabile; nessuno storno automatico.",
       "Le intermediazioni (categoria 8) NON stanno qui: hanno una sezione dedicata dentro Registri.",
     ],
     steps: [
       "Crea un nuovo formulario inserendo manualmente il numero FIR.",
       "Scegli la vista Standard o Alternativa: si compilano in sincrono.",
       "Salva in bozza: le giacenze restano invariate.",
-      "Usa il cestino per eliminare: soft delete + storno automatico del movimento.",
+      "Il cestino elimina soltanto una bozza; un movimento effettivo richiede uno storno umano tracciato.",
     ],
     faq: [
       { q: "Perché in Conto Proprio non vedo i formulari dell'impianto?", a: "Sono contesti separati: il Conto Proprio riguarda i trasporti fatti in proprio, l'Impianto l'attività di gestione rifiuti." },
       { q: "Il formulario aggiorna le giacenze?", a: "Solo se Multyproget è produttore o destinatario del rifiuto: se è solo trasportatore, il magazzino non si muove." },
-      { q: "Ho cancellato un formulario per sbaglio.", a: "L'eliminazione è un soft delete con storno automatico del movimento: i dati restano tracciati e il saldo torna al valore precedente." },
+      { q: "Ho cancellato un formulario per sbaglio.", a: "Una bozza è recuperabile dai dati tracciati. Un FIR effettivo non deve essere cancellato: richiede uno storno umano." },
     ],
     route: "/mn/admin/dev-multyproget?tab=conto-proprio",
   },

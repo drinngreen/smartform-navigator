@@ -192,7 +192,7 @@ Il salvataggio passa dalla RPC **`crea_conferimento_privato_atomico`**, che in u
 3. ricalcola il saldo e **verifica** il risultato (`assert_magazzino_giacenza`).
 
 Se il saldo non torna, **l'inserimento fallisce**: non esistono più conferimenti "salvati ma non contabilizzati".
-Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico collegati (storno automatico).
+Un conferimento certificato non si cancella: eventuali correzioni richiedono uno storno umano tracciato.
 
 ### 8.3 Numerazione e limiti
 - Trigger `assign_dbt_progressivo` → **numero progressivo DBT annuale** univoco (`numero_progressivo` + `anno_dbt`).
