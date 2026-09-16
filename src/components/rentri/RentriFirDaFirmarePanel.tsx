@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, PenLine, Search } from "lucide-react";
+import { Loader2, RefreshCw, PenLine, Search, PackageMinus } from "lucide-react";
 import {
   elencoFormulariRentri,
   dettaglioFormularioRentri,
@@ -11,6 +11,16 @@ import {
   type RentriCliente,
 } from "@/lib/rentriVpsApi";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  dataFir,
+  normalizzaCf,
+  normalizzaNumeroFir,
+  oggiIso,
+  registraScaricoProduttore,
+  ruoliFir,
+  scaricoProduttoreAmmesso,
+  MULTY_CF,
+} from "@/lib/firProduttoreGiacenza";
 
 /** Impianti di destino per cliente: solo dove esiste un impianto autorizzato a ricevere. */
 const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string }> = {
@@ -24,6 +34,8 @@ const SOCIETA: { key: "multy" | "niyol"; label: string }[] = [
   { key: "multy", label: "Multyproget" },
   { key: "niyol", label: "Niyol" },
 ];
+
+const SOGGETTI = SOCIETA.map((s) => ({ cf: RENTRI_CF_SOGGETTO[s.key] ?? "", label: s.label }));
 
 interface FirRow {
   societa: "multy" | "niyol";
@@ -41,26 +53,27 @@ interface FirRow {
   destinatario_cf: string;
   trasportatore_nome: string;
   trasportatore_cf: string;
+  ruoli: string[];
   ruolo: string;
   accettato: boolean;
   raw: Record<string, unknown>;
 }
 
-function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string, cfSoggetto: string): FirRow {
+function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string): FirRow {
   const dest = Array.isArray(d.destinatari) ? d.destinatari[0] ?? {} : d.destinatario ?? {};
   const tras = Array.isArray(d.trasportatori) ? d.trasportatori[0] ?? {} : d.trasportatore ?? {};
   const prod = d.produttore ?? {};
   const destCf = String(dest.codice_fiscale ?? d.destinatario_codice_fiscale ?? "");
   const trasCf = String(tras.codice_fiscale ?? "");
   const prodCf = String(prod.codice_fiscale ?? "");
-  const ruoli: string[] = [];
-  if (prodCf && prodCf === cfSoggetto) ruoli.push("Produttore");
-  if (trasCf && trasCf === cfSoggetto) ruoli.push("Trasportatore");
-  if (destCf && destCf === cfSoggetto) ruoli.push("Destinatario");
+  const ruoli = ruoliFir(
+    { produttore_cf: prodCf, trasportatore_cf: trasCf, destinatario_cf: destCf },
+    SOGGETTI,
+  );
   return {
     societa,
     societaLabel,
-    numero_fir: String(d.numero_fir ?? ""),
+    numero_fir: normalizzaNumeroFir(d.numero_fir),
     codice_eer: String(d.codice_eer ?? ""),
     quantita: Number(d.quantita ?? 0),
     unita_misura: String(d.unita_misura ?? "kg"),
@@ -73,6 +86,7 @@ function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string, cfSogg
     destinatario_cf: destCf,
     trasportatore_nome: String(tras.denominazione ?? ""),
     trasportatore_cf: trasCf,
+    ruoli,
     ruolo: ruoli.join(" + ") || "—",
     accettato: Boolean(d.accettazione) || String(d.stato ?? "").toLowerCase().startsWith("accett"),
     raw: d,
@@ -89,11 +103,14 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
   const [societaSel, setSocietaSel] = useState<"tutte" | "multy" | "niyol">("tutte");
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<FirRow[]>([]);
-  const [filtro, setFiltro] = useState<"da_firmare" | "tutti">("da_firmare");
+  const [filtro, setFiltro] = useState<"da_firmare" | "tutti">("tutti");
   const [ruoloSel, setRuoloSel] = useState<"tutti" | "produttore" | "trasportatore" | "destinatario">("tutti");
   const [q, setQ] = useState("");
+  const [dataDa, setDataDa] = useState(() => `${new Date().getFullYear()}-01-01`);
+  const [dataA, setDataA] = useState(() => oggiIso());
   const [detail, setDetail] = useState<{ numero: string; data: unknown } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [scaricando, setScaricando] = useState<string | null>(null);
 
   // firma
   const [firmaFir, setFirmaFir] = useState<FirRow | null>(null);
@@ -104,16 +121,13 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
   const [motivazione, setMotivazione] = useState("");
   const [firmando, setFirmando] = useState(false);
 
-  const daLeggere = useMemo(
-    () => (societaSel === "tutte" ? SOCIETA : SOCIETA.filter((s) => s.key === societaSel)),
-    [societaSel],
-  );
-
   const carica = useCallback(async () => {
     setLoading(true);
-    const acc: FirRow[] = [];
+    // Si leggono SEMPRE entrambe le società: un formulario trasportato da Niyol può
+    // avere Multyproget come produttore e deve comunque risultare visibile.
+    const perNumero = new Map<string, FirRow>();
     const errori: string[] = [];
-    for (const s of daLeggere) {
+    for (const s of SOCIETA) {
       const cf = RENTRI_CF_SOGGETTO[s.key] ?? "";
       const ul = RENTRI_UNITA_LOCALI[s.key] ?? "";
       try {
@@ -121,17 +135,28 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         if (!res.success) throw new Error(res.error || "Errore RENTRI");
         const raw = res.data as any;
         const list = Array.isArray(raw) ? raw : raw?.formulari ?? raw?.items ?? raw?.content ?? [];
-        for (const d of Array.isArray(list) ? list : []) acc.push(mapRow(d, s.key, s.label, cf));
+        for (const d of Array.isArray(list) ? list : []) {
+          const row = mapRow(d, s.key, s.label);
+          if (!row.numero_fir) continue;
+          const data = dataFir(row);
+          if (data && (data < dataDa || data > dataA)) continue;
+          const esistente = perNumero.get(row.numero_fir);
+          // un solo record per numero: si tiene quello con più informazioni
+          if (!esistente || (!esistente.codice_eer && row.codice_eer) || (!esistente.stato && row.stato)) {
+            perNumero.set(row.numero_fir, row);
+          }
+        }
       } catch (e: any) {
         errori.push(`${s.label}: ${e.message}`);
       }
     }
+    const acc = [...perNumero.values()];
     acc.sort((a, b) => (b.data_emissione ?? b.data_creazione).localeCompare(a.data_emissione ?? a.data_creazione));
     setRows(acc);
     setLoading(false);
     if (errori.length) toast.error(`RENTRI — ${errori.join(" · ")}`);
     else toast.success(`${acc.length} formulari letti dal RENTRI`);
-  }, [daLeggere]);
+  }, [dataDa, dataA]);
 
   useEffect(() => {
     carica();
@@ -139,37 +164,36 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
 
   const visibili = useMemo(() => {
     const term = q.trim().toLowerCase();
+    const labelSel = societaSel === "tutte" ? null : SOCIETA.find((s) => s.key === societaSel)?.label ?? null;
     return rows
+      .filter((r) => (labelSel ? r.ruoli.some((x) => x.startsWith(labelSel)) : true))
       .filter((r) => (filtro === "tutti" ? true : !r.accettato))
-      .filter((r) =>
-        ruoloSel === "tutti"
-          ? true
-          : ruoloSel === "produttore"
-            ? r.ruolo.includes("Produttore")
-            : ruoloSel === "trasportatore"
-              ? r.ruolo.includes("Trasportatore")
-              : r.ruolo.includes("Destinatario"),
-      )
+      .filter((r) => {
+        if (ruoloSel === "tutti") return true;
+        const cerca = (suffisso: string) =>
+          r.ruoli.some((x) => (labelSel ? x === `${labelSel} ${suffisso}` : x.endsWith(suffisso)));
+        return cerca(ruoloSel);
+      })
       .filter((r) =>
         !term
           ? true
-          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.societaLabel]
+          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.ruolo]
               .join(" ")
               .toLowerCase()
               .includes(term),
       );
-  }, [rows, filtro, ruoloSel, q]);
+  }, [rows, societaSel, filtro, ruoloSel, q]);
 
   const conteggi = useMemo(() => {
     const out: Record<string, { tutti: number; daFirmare: number; produttore: number; trasportatore: number; destinatario: number }> = {};
     for (const s of SOCIETA) {
-      const r = rows.filter((x) => x.societa === s.key);
+      const r = rows.filter((x) => x.ruoli.some((v) => v.startsWith(s.label)));
       out[s.key] = {
         tutti: r.length,
         daFirmare: r.filter((x) => !x.accettato).length,
-        produttore: r.filter((x) => x.ruolo.includes("Produttore")).length,
-        trasportatore: r.filter((x) => x.ruolo.includes("Trasportatore")).length,
-        destinatario: r.filter((x) => x.ruolo.includes("Destinatario")).length,
+        produttore: r.filter((x) => x.ruoli.includes(`${s.label} produttore`)).length,
+        trasportatore: r.filter((x) => x.ruoli.includes(`${s.label} trasportatore`)).length,
+        destinatario: r.filter((x) => x.ruoli.includes(`${s.label} destinatario`)).length,
       };
     }
     return out;
