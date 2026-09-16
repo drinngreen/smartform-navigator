@@ -486,6 +486,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   // ── Driver app starts clean: assigned FIRs are opened only by explicit click ─────────────
   const hasAutoRestored = useRef(false);
+  // Timestamp dell'ultimo salvataggio locale riuscito: serve a distinguere
+  // l'eco dei nostri salvataggi dalle modifiche realmente fatte dall'ufficio.
+  const lastLocalSaveAtRef = useRef<number>(0);
   useEffect(() => {
     if (firFormId || draftData?.id) return;
     // La pulizia automatica serve solo all'ingresso iniziale delle app autisti.
@@ -527,6 +530,45 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       }
     }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
+
+  // ── Ufficio → app in tempo reale: l'ufficio può compilare/modificare il formulario ──────
+  // dell'autista mentre è in viaggio. Solo in stato bozza: dopo la firma è sola lettura.
+  const diarioAutore = `${profile?.nome ?? ""} ${profile?.cognome ?? ""}`.trim() || user?.email || "app";
+  useEffect(() => {
+    if (!store.editingFirId || store.workflowStatus !== "bozza") return;
+    const id = store.editingFirId;
+    const ch = supabase
+      .channel(`fir-form-office-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "fir_forms", filter: `id=eq.${id}` },
+        (payload: any) => {
+          const row = payload?.new;
+          if (!row?.updated_at) return;
+          // Eco del nostro stesso autosalvataggio: nessuna azione.
+          if (Date.now() - lastLocalSaveAtRef.current < 6000) return;
+          void (async () => {
+            const { data, error } = await supabase.from("fir_forms").select("*").eq("id", id).maybeSingle();
+            if (error || !data) return;
+            const cur = useMNFIRStore.getState();
+            if (cur.editingFirId !== id || cur.workflowStatus !== "bozza") return;
+            const fd = (data.form_data ?? {}) as Record<string, any>;
+            // Diario: chi ha modificato e quando, così l'autista vede la storia.
+            const diario = Array.isArray(fd.diario) ? [...fd.diario] : [];
+            diario.push({ autore: "ufficio", azione: "formulario modificato dall'ufficio", ora: data.updated_at });
+            const merged = { ...fd, diario };
+            store.loadFromDatabase({ ...data, form_data: merged } as any);
+            toast.info("Formulario aggiornato dall'ufficio");
+          })();
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.editingFirId, store.workflowStatus]);
+
 
   const createAndAutosaveManualDraft = useCallback(async (): Promise<string | null> => {
     const current = useMNFIRStore.getState();
