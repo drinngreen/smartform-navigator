@@ -43,13 +43,13 @@ L'autista sceglie con quale azienda opera, apre il formulario assegnato, lo comp
 **7. L'ufficio comanda le app degli autisti, in tempo reale.**
 Dalla postazione dell'ufficio si vede l'elenco degli autisti in servizio e il formulario che ciascuno ha aperto. L'ufficio può compilare il formulario al posto dell'autista, correggerlo mentre lui lo sta guardando, assegnargliene un altro, bloccarlo o sbloccarlo. Le modifiche compaiono sul telefono dell'autista entro pochi secondi, senza che debba ricaricare nulla, e ogni intervento resta tracciato con nome e ora. Quando l'autista ha già firmato, l'ufficio non può più cambiare il formulario: può solo annullarlo e rifarlo, così la firma resta valida.
 
-**7-bis. Assegnazione libera dei formulari e uso d'ufficio.**
+**8. Assegnazione libera dei formulari e uso d'ufficio.**
 Nessun limite al numero di formulari assegnabili a un autista: si assegnano quanti se ne vuole, in blocco o uno per uno, e si possono togliere e ridare a un altro finché non sono firmati. La segretaria può compilare e usare il formulario direttamente dall'ufficio, anche per una ditta esterna che si presenta a caricare da Multyproget: sceglie il trasportatore, compila i dati, stampa o firma, senza passare da un'app autista. Lo stesso formulario può essere preparato in anticipo e ripreso al momento del carico. Chi ha fatto cosa resta sempre scritto.
 
-**7-ter. Formulari altrui dove Multyproget è produttore.**
+**9. Formulari altrui dove Multyproget è produttore.**
 Quando arriva qualcuno con un formulario suo, dalla console si cercano sul RENTRI i formulari in cui Multyproget compare come produttore e si vede subito quello giusto, con tutti i dati e lo stato. Sola lettura dal RENTRI: si può importarlo in archivio per lavorarlo, mai modificarlo da noi.
 
-**8. Controllo su strada: QR code reale.**
+**10. Controllo su strada: QR code reale.**
 Sul telefono dell'autista un pulsante ben visibile apre la schermata di controllo con il QR code del formulario in corso. Vigili o polizia lo inquadrano e aprono una pagina pubblica di sola lettura con i dati del formulario: numero, data, produttore, destinatario, trasportatore, targhe, codice CER, descrizione del rifiuto, peso, firme presenti e stato. Nessun dato riservato, nessuna possibilità di modifica. La schermata funziona anche con poco segnale perché mostra comunque i dati già scaricati, e il QR resta leggibile a schermo luminoso.
 
 **9. Una sola schermata di controllo.**
