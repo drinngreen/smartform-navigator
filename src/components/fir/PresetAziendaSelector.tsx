@@ -386,7 +386,7 @@ export function PresetAziendaSelector({
     let cancelled = false;
     setLoadingDeps(true);
     (async () => {
-      const [a, c, t, k, p, ul] = await Promise.all([
+      const [a, c, t, k, p, ul, an] = await Promise.all([
         supabase
           .from("cliente_autorizzazioni")
           .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
