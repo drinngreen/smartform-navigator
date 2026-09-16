@@ -50,7 +50,7 @@ export function DevFirCartaceoModule() {
       const { data, error } = await supabase
         .from("movimenti_impianto")
         .select(
-          "id, cer, descrizione_rifiuto, quantita_kg, data_movimento, tipo_movimento, numero_fir, produttore_denominazione, destinatario_denominazione, origine",
+          "id, cer, descrizione_rifiuto, quantita_kg, data_movimento, tipo_movimento, numero_fir, produttore_denominazione, destinatario_denominazione, origine, impianto_id, stato_movimento",
         )
         .eq("tenant_id", MULTY_TENANT_ID)
         .in("origine", ORIGINI_CARTACEE)
