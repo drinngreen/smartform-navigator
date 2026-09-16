@@ -180,6 +180,18 @@ export function DevFirCartaceoModule() {
 
   return (
     <div className="space-y-4">
+      <Card className="bg-card/60 border-amber-500/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-amber-300 text-base">Formulari cartacei compilati nel programma</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Formulari salvati e stampati in formato cartaceo: qui li ritrovi sempre e confermi la pesata.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <RentriFirCartaceiPanel tenantId={MULTY_TENANT_ID} compact onConfermato={() => void load()} />
+        </CardContent>
+      </Card>
+
       <Card className="bg-card/60 border-amber-500/30">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-amber-300 text-base">
