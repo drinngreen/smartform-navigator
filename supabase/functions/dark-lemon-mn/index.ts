@@ -351,8 +351,8 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 - La cernita si esegue SOLO con la RPC atomica \`dragon_create_cernita_atomic\` e si annulla SOLO con \`dragon_cancel_cernita_atomic\`. Mai UPDATE diretti su giacenze o movimenti per correggere una cernita.
 - Disponibilità: la RPC verifica il saldo usando il maggiore tra saldo Dragon e magazzino con tolleranza 0,001 kg. Se manca capienza, riporta i kg disponibili reali, non forzare.
 - CODICI CER: sempre normalizzati senza spazi (150101, non "15 01 01"); le sigle materiale restano con trattino (200140-FE, 200140-MIX). Le vecchie forme "MET"/" MET MIX" sono equivalenti a "-MIX".
-- GIACENZE: Dragon (\`dragon_stock_movements\`) e magazzino (\`magazzino_giacenze\`) sono tenuti allineati da trigger; il ricalcolo si fa con \`recalculate_magazzino_giacenza\`, mai con UPDATE manuali.
-- FIR E GIACENZE: solo il salvataggio definitivo / "CARICA NEL SISTEMA" muove registro e giacenze. Le BOZZE non muovono nulla. Multyproget in uscita = SCARICO, in ingresso = CARICO; se Multyproget non è produttore né destinatario il formulario NON tocca le giacenze (conto terzi).
+- GIACENZE: ogni variazione passa da un evento certificato e dal punto unico autorizzato. Non proporre né eseguire ricalcoli, UPDATE diretti o riallineamenti automatici.
+- FIR E GIACENZE: un FIR digitale muove le giacenze solo dopo la firma del destinatario; un cartaceo solo dopo conferma manuale. Le bozze e il semplice "CARICA NEL SISTEMA" non muovono nulla. Multyproget in uscita = SCARICO, in ingresso = CARICO; se Multyproget non è produttore né destinatario il formulario NON tocca le giacenze.
 - REGISTRO GENERALE: mostra i movimenti \`registro_generale\` più la proiezione delle cernite confermate (codici C-nn). I batch ANNULLATA e i movimenti di test non compaiono.
 - STORICO MULTYPROGET: la cernita interna del 04/09/2026 da 30.000 kg (200140-FE → 170405) deve restare visibile nello storico Cernite; nel Registro Generale il trasferimento compare una sola volta tramite i movimenti ufficiali del 21/01/2026. La cernita allegata del 31/08/2026 da 1.840 kg resta nascosta solo nelle viste, senza alterare dati o giacenze.
 - SALDI RICONCILIATI: i saldi ufficiali derivano dal saldo 2025, dal registro 2026 e dai conferimenti privati reali, senza doppio conteggio delle cernite già presenti nel registro. Non creare rettifiche automatiche per reinterpretare questo storico.
@@ -1169,10 +1169,10 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 ### 4. Giacenze — garanzia atomica
 - Conferimenti privati: si passa SEMPRE dalla RPC \`crea_conferimento_privato_atomico\` (advisory lock \`pg_advisory_xact_lock\`, vincolo \`privati_conferimento_id\` su \`movimenti_impianto\`, verifica finale con \`assert_magazzino_giacenza\`). Se il saldo non torna, la transazione fallisce: non esistono inserimenti "a metà".
 - FIR: le giacenze cambiano SOLO se Multyproget è **produttore** o **destinatario**. I FIR importati (\`origine='import_registro_17_08'\`) sono deduplicati in \`firFinalSync.ts\`.
-- Anche i FIR salvati in **bozza** riportano le giacenze al valore di partenza.
-- Il pulsante **Sync giacenze** funziona (GRANT EXECUTE su \`recalculate_magazzino_giacenza\` e \`assert_magazzino_giacenza\` per \`authenticated\`).
+- I FIR salvati in **bozza** non modificano mai le giacenze.
+- Il ricalcolo delle giacenze dal client è disattivato. Qualunque variazione fuori dal punto unico autorizzato è un bug; Dark Lemon prepara soltanto bozze da confermare.
 - La voce **"Saldo iniziale"** è stata ELIMINATA dalle giacenze.
-- Eliminando un conferimento la ricevuta collegata cade in cascata (\`ON DELETE CASCADE\`) e la giacenza viene stornata.
+- Un conferimento certificato non si elimina per stornare il saldo: serve un nuovo storno umano e tracciato.
 
 ### 5. Privati, ricevute, CER
 - I conferimenti e le ricevute supportano **più materiali** nello stesso documento (raggruppati per \`gruppo_id\`) e la **data è modificabile**.
