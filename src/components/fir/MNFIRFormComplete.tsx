@@ -931,7 +931,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         savedId = created?.id || null;
       }
       toast.success("Bozza salvata senza modificare registro o giacenze.");
+      // Le aziende e le sedi scritte a mano finiscono subito in anagrafica:
+      // non tocca registro, giacenze o dati storici.
+      try {
+        const esito = await registraAnagraficheFormulario(store.data as any);
+        const messaggio = descriviEsitoRegistrazione(esito);
+        if (messaggio) toast.success(messaggio);
+        if (esito.errori.length) toast.error(`Anagrafica: ${esito.errori.join(" · ")}`);
+      } catch (e: any) {
+        toast.error(`Anagrafica non aggiornata: ${e?.message || e}`);
+      }
       return true;
+
     } catch (error: any) {
       toast.error(error?.message || "Errore nel salvataggio");
       return false;
