@@ -86,6 +86,31 @@ const ALIAS_AUTORIZZAZIONE: Record<string, string> = {
   "acquereflue": "AutTrattamentoAcqueReflue",
 };
 
+/**
+ * Riconoscimento per parole chiave delle diciture estese usate negli atti
+ * (es. «Operazioni di recupero mediante Comunicazione in Procedura
+ * Semplificata - artt. 214 e 216 … e autorizzazione unica ambientale (AUA)»).
+ * L'ordine conta: si valuta prima la fattispecie più specifica.
+ */
+function tipoDaTestoEsteso(v: string): string {
+  const t = v.toLowerCase();
+  const has = (...w: string[]) => w.some((x) => t.includes(x));
+
+  if (has("mobil")) return "RecSmalImpMobiliArt208";
+  if (has("208")) return "RecSmalArt208";
+  if (has("216", "214", "procedura semplificata", "proc. semplificata", "comunicazione"))
+    return "RecProcSemplificata";
+  if (has("ricerca", "sperimentazione")) return "RicercaSperimentazione";
+  if (has("bonifica")) return "OpBonifica";
+  if (has("straordinar")) return "Straordinario";
+  if (has("acque reflue")) return "AutTrattamentoAcqueReflue";
+  // AIA / AUA da sole: l'AUA non è una fattispecie RENTRI autonoma, ma quando
+  // compare senza altri riferimenti l'atto è un'autorizzazione integrata.
+  if (has("aia", "autorizzazione integrata")) return "AIA";
+  if (has("aua", "autorizzazione unica ambientale")) return "RecProcSemplificata";
+  return "";
+}
+
 /** Restituisce il codice ufficiale oppure "" se la dicitura non è riconducibile. */
 function tipoAutorizzazione(raw: string): string {
   const v = raw.trim();
@@ -93,7 +118,7 @@ function tipoAutorizzazione(raw: string): string {
   const esatto = TIPI_AUTORIZZAZIONE.find((t) => t.toLowerCase() === v.toLowerCase());
   if (esatto) return esatto;
   const k = v.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return ALIAS_AUTORIZZAZIONE[k] ?? "";
+  return ALIAS_AUTORIZZAZIONE[k] ?? tipoDaTestoEsteso(v);
 }
 
 const ELENCO_TIPI_LEGGIBILE =
