@@ -464,7 +464,9 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           <tbody>
             {visibili.map((r) => (
               <tr key={`${r.societa}-${r.numero_fir}`} className="border-t border-border">
-                <td className="px-3 py-2 text-xs font-semibold">{r.societaLabel}</td>
+                <td className="px-3 py-2 text-xs font-semibold">
+                  {[...new Set(r.ruoli.map((x) => x.split(" ")[0]))].join(" + ") || r.societaLabel}
+                </td>
                 <td className="px-3 py-2 font-mono text-xs font-bold">{r.numero_fir}</td>
                 <td className="px-3 py-2 text-xs">{r.ruolo}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.codice_eer}</td>
