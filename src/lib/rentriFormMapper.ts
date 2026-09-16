@@ -10,6 +10,13 @@
 import { TENANT_RENTRI, type TenantRentriConfig } from "@/lib/rentriBlockCodes";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
+import { resolveComuneId } from "@/lib/comuneIstat";
+import {
+  normalizzaNumeroFir,
+  normalizzaCF,
+  statoFisicoRentri,
+  provenienzaRentri,
+} from "@/lib/rentriValidazione";
 
 /** Known field name → normalized lookup key */
 const FIELD_MAP: Record<string, string> = {
@@ -123,14 +130,14 @@ function normalizeFormData(
   return result;
 }
 
-export function mapFormToRentriPayload(
+export async function mapFormToRentriPayload(
   cliente: RentriCliente,
   formData: Record<string, string | boolean>,
   options?: {
     firmaComeProduttore?: boolean;
     templateFields?: Array<{ id: string; name: string }>;
   }
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
   const cfg = TENANT_RENTRI[cliente];
   if (!cfg) throw new Error(`Configurazione RENTRI non trovata per: ${cliente}`);
 
@@ -142,8 +149,20 @@ export function mapFormToRentriPayload(
   const prodAddr = parseAddress(str("prod_indirizzo"));
   const destAddr = parseAddress(str("dest_indirizzo"));
 
-  // Determine provenienza
-  const provenienza = bool("provenienza_urbano") ? "U" : "S";
+  // Comune ISTAT obbligatorio per il RENTRI: mai inventato, "" se non determinabile
+  const prodComuneId = await resolveComuneId(
+    prodAddr.citta || str("prod_indirizzo"),
+    prodAddr.cap,
+    prodAddr.provincia || undefined,
+  );
+  const destComuneId = await resolveComuneId(
+    destAddr.citta || str("dest_indirizzo"),
+    destAddr.cap,
+    destAddr.provincia || undefined,
+  );
+
+  // Determine provenienza (codifica RENTRI: "U" = urbano, "S" = speciale)
+  const provenienza = provenienzaRentri(bool("provenienza_urbano") ? "U" : "S") || "S";
 
   // Build quantity
   const qtyStr = str("quantita") || str("peso_partenza");
@@ -160,18 +179,8 @@ export function mapFormToRentriPayload(
   const conducenteNome = conducenteParts[0] || "";
   const conducenteCognome = conducenteParts.slice(1).join(" ") || "";
 
-  // Stato fisico mapping
-  const statoFisicoRaw = str("stato_fisico").toUpperCase();
-  const statoFisicoMap: Record<string, string> = {
-    "SOLIDO POLVERULENTO": "SP",
-    "SOLIDO NON POLVERULENTO": "SNP",
-    "FANGOSO PALABILE": "FP",
-    "LIQUIDO": "LQ",
-    "GASSOSO": "GS",
-    "ALTRO": "AL",
-    "SP": "SP", "SNP": "SNP", "FP": "FP", "LQ": "LQ", "GS": "GS", "AL": "AL",
-  };
-  const statoFisico = statoFisicoMap[statoFisicoRaw] || "SNP";
+  // Stato fisico: solo i codici ufficiali RENTRI (S, SP, FP, L, VS, GA)
+  const statoFisico = statoFisicoRentri(str("stato_fisico")) || "S";
 
   // Build RENTRI-compatible payload
   const payload: Record<string, unknown> = {
