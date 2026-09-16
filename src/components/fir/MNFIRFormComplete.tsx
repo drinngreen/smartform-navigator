@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { registraAnagraficheFormulario, descriviEsitoRegistrazione } from "@/lib/anagraficaAutoRegistrazione";
+import { resolveWorkflowStatus, isFalseSubmitted } from "@/lib/firWorkflowStatus";
 
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer, CheckCircle2 } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
@@ -640,7 +641,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       ...draftData,
       form_data: draftData.form_data as Record<string, any> | null,
     });
-    useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: draftData.status === "completato" ? "chiuso" : (draftData.status as any) || "bozza" });
+    useMNFIRStore.setState({ editingFirId: draftData.id, workflowStatus: resolveWorkflowStatus(draftData.status, draftData.form_data) });
+    if (isFalseSubmitted(draftData.status, draftData.form_data)) {
+      toast.warning("Questo formulario non è mai partito verso il RENTRI: puoi correggerlo e reinviarlo.");
+    }
     setLoadedFirFormId(draftData.id);
   }, [draftData?.id]);
 
@@ -667,8 +671,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       });
       useMNFIRStore.setState({
         editingFirId: data.id,
-        workflowStatus: data.status === "completato" ? "chiuso" : data.status === "inviato" ? "inviato" : "bozza",
+        workflowStatus: resolveWorkflowStatus(data.status, data.form_data),
       });
+      if (isFalseSubmitted(data.status, data.form_data)) {
+        toast.warning("Questo formulario non è mai partito verso il RENTRI: puoi correggerlo e reinviarlo.");
+      }
       setLoadedFirFormId(data.id);
     };
 
@@ -753,7 +760,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             const merged = { ...fd, diario };
             store.loadFromDatabase({ ...data, form_data: merged } as any);
             useMNFIRStore.setState({
-              workflowStatus: data.status === "inviato" ? "inviato" : data.status === "completato" ? "chiuso" : "bozza",
+              workflowStatus: resolveWorkflowStatus(data.status, merged),
             });
             toast.info("Formulario aggiornato dall'ufficio");
           })();
@@ -997,8 +1004,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       ...form,
       form_data: form.form_data as Record<string, any> | null,
     });
-    const mappedStatus = form.status === "completato" || form.status === "completed" ? "chiuso" : form.status === "inviato" || form.status === "submitted" ? "inviato" : "bozza";
+    const mappedStatus = resolveWorkflowStatus(form.status, form.form_data);
     useMNFIRStore.setState({ editingFirId: form.id, workflowStatus: mappedStatus });
+    if (isFalseSubmitted(form.status, form.form_data)) {
+      toast.warning("Questo formulario non è mai partito verso il RENTRI: puoi correggerlo e reinviarlo.");
+    }
     if (!form.trasportatore_targa_automezzo && profile?.targa_automezzo) {
       store.updateField("targaAutomezzo", profile.targa_automezzo.trim());
     }
@@ -1763,7 +1773,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             />
 
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
-            <Field label="Unità locale / Indirizzo" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} />
+            <Field label="Indirizzo di scarico (sede operativa)" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} placeholder="Indirizzo dove il rifiuto viene realmente scaricato" />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
             <Row>
               <div>
