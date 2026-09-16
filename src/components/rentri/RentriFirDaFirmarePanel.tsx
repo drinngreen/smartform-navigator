@@ -133,6 +133,8 @@ function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string): FirRo
     data_emissione: d.data_emissione ? String(d.data_emissione) : undefined,
     produttore_nome: String(prod.denominazione ?? ""),
     produttore_cf: prodCf,
+    produttore_indirizzo: [prod.indirizzo, prod.civico, prod.comune].filter(Boolean).join(" "),
+    num_iscr_sito: String(d.num_iscr_sito ?? ""),
     destinatario_nome: String(dest.denominazione ?? ""),
     destinatario_cf: destCf,
     trasportatore_nome: String(tras.denominazione ?? ""),
