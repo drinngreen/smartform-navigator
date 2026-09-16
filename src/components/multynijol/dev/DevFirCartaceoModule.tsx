@@ -324,6 +324,38 @@ export function DevFirCartaceoModule() {
         onClose={() => setDialogOpen(false)}
         onSaved={() => void load()}
       />
+
+      <Dialog open={!!confermaRow} onOpenChange={(o) => !o && setConfermaRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Conferma pesata formulario cartaceo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              FIR {confermaRow?.numero_fir || "—"} · CER {confermaRow?.cer || "—"}. Le giacenze si aggiornano solo
+              adesso, con il peso realmente riscontrato.
+            </p>
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground mb-1">Peso reale (kg)</p>
+              <Input
+                value={pesoConfermato}
+                onChange={(e) => setPesoConfermato(e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfermaRow(null)} disabled={confermando}>
+                Annulla
+              </Button>
+              <Button size="sm" onClick={() => void confermaPesata()} disabled={confermando} className="gap-1">
+                {confermando ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                Conferma e aggiorna giacenze
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
