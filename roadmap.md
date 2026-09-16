@@ -43,3 +43,4 @@
 - [x] Evidenziare nel formulario i campi rifiutati dal RENTRI in rosso; ripristinare il colore normale dopo la correzione e azzerare gli errori dopo conferma.
 - [x] Accorpare le risposte asincrone HTTP 202 dello stesso FIR, distinguerle dall'esito finale e bloccare doppi clic/reinvii di FIR già presenti.
 - [x] Correggere il recupero QR ufficiale mantenendo il progressivo RENTRI a 6 cifre (`000772`, non `772`).
+- [x] Collegare il comando PDF alla copia ministeriale compilata con tutti i dati della scheda e distinguere l'originale RENTRI non compilato.

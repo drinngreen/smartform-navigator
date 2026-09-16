@@ -75,6 +75,8 @@ export interface OfficialPrintOptions {
   cliente?: PrintCliente | null;
   /** Se true stampa il modulo vuoto (solo decorazioni + numero FIR). */
   blank?: boolean;
+  /** QR ufficiale già recuperato dal RENTRI, per evitare una seconda lettura. */
+  qrDataUrl?: string | null;
 }
 
 /**
@@ -86,10 +88,13 @@ export async function printOfficialFir(options: OfficialPrintOptions): Promise<b
   const numeroFir = String(options.numeroFir || draft.numero_fir || "").trim();
 
   const fields = await loadOfficialTemplateFields();
+  if (fields.length === 0) {
+    throw new Error("Configurazione del modulo ufficiale non disponibile: PDF compilato non generato");
+  }
   const values = blank ? {} : buildDraftFieldValues(fields, draft);
-  const qrDataUrl = numeroFir
+  const qrDataUrl = options.qrDataUrl || (numeroFir
     ? await resolveFirQrDataUrl(numeroFir, options.cliente)
-    : null;
+    : null);
   if (numeroFir && !qrDataUrl) {
     throw new Error("QR ufficiale RENTRI non disponibile: stampa bloccata per evitare un formulario incompleto");
   }

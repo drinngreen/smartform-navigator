@@ -69,4 +69,35 @@ describe("stampa del formulario ufficiale", () => {
 
     expect(buildDraftFieldValues([templateField], draft)[templateField.id]).toBe("NUOVO TRASPORTATORE");
   });
+
+  it("riporta nel modulo ufficiale i dati principali presenti nel riepilogo", () => {
+    const fields = [
+      field("prod", "denominazione produttore", 1, 10, 10),
+      field("dest", "denominazione destinatario", 1, 10, 20),
+      field("trasp", "denominazione trasportatore", 1, 10, 30),
+      field("eer", "codice eer", 1, 10, 40),
+      field("descrizione", "descrizione rifiuto", 1, 10, 50),
+      field("quantita", "quantità", 1, 10, 60),
+      field("targa", "targa automezzo", 1, 10, 70),
+    ];
+    const draft: FIRAlternativeDraftData = {
+      produttore_denominazione: "PRODUTTORE TEST",
+      destinatario_denominazione: "DESTINATARIO TEST",
+      trasportatore_denominazione: "TRASPORTATORE TEST",
+      trasportatore_targa_automezzo: "AB123CD",
+      codice_eer: "170405",
+      descrizione_rifiuto: "Ferro e acciaio",
+      quantita: 1250,
+    };
+
+    expect(buildDraftFieldValues(fields, draft)).toEqual({
+      prod: "PRODUTTORE TEST",
+      dest: "DESTINATARIO TEST",
+      trasp: "TRASPORTATORE TEST",
+      eer: "170405",
+      descrizione: "Ferro e acciaio",
+      quantita: "1250",
+      targa: "AB123CD",
+    });
+  });
 });

@@ -1349,6 +1349,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         numeroFir: numero,
         cliente: printCliente(),
         blank,
+        qrDataUrl: blank ? undefined : qrCodeData,
       });
       if (!ok) { toast.error("Consenti i popup per stampare il formulario"); return; }
       toast.success(blank ? "Modulo vuoto pronto per la stampa" : "Modulo ufficiale pronto per la stampa");
@@ -1691,19 +1692,23 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                   <Download className="h-4 w-4" /> Scarica Riepilogo
                 </button>
                 <button
-                  onClick={() => {
-                    if (pdfBlobUrl) {
-                      window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
-                      return;
-                    }
-                    toast.error("PDF ufficiale non disponibile");
-                  }}
+                  onClick={() => void handlePrintFormulario(false)}
                   className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors"
                 >
-                  <FileText className="h-4 w-4" /> Apri PDF RENTRI
+                  <FileText className="h-4 w-4" /> PDF ufficiale compilato
                 </button>
                 <button onClick={() => setShowControlloStrada(false)} className="py-3 px-4 rounded-xl bg-muted/20 border border-border/30 text-muted-foreground font-display text-sm hover:bg-muted/30 transition-colors">Chiudi</button>
               </div>
+              {pdfBlobUrl && (
+                <div className="bg-card/60 px-3 pb-3">
+                  <button
+                    onClick={() => window.open(pdfBlobUrl, "_blank", "noopener,noreferrer")}
+                    className="w-full py-2 rounded-xl border border-border/30 text-muted-foreground font-display text-[10px] tracking-wider hover:bg-muted/20 transition-colors"
+                  >
+                    Apri originale RENTRI non compilato
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
