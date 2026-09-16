@@ -37,7 +37,16 @@ const SOCIETA: { key: "multy" | "niyol"; label: string }[] = [
   { key: "niyol", label: "Niyol" },
 ];
 
-const SOGGETTI = SOCIETA.map((s) => ({ cf: RENTRI_CF_SOGGETTO[s.key] ?? "", label: s.label }));
+const ALIAS: Record<"multy" | "niyol", string[]> = { multy: ALIAS_MULTY, niyol: ALIAS_NIYOL };
+
+const SOGGETTI = SOCIETA.map((s) => ({
+  cf: RENTRI_CF_SOGGETTO[s.key] ?? "",
+  label: s.label,
+  alias: ALIAS[s.key],
+}));
+
+const chiaveDaLabel = (label: string): "multy" | "niyol" | null =>
+  SOCIETA.find((s) => s.label === label)?.key ?? null;
 
 interface FirRow {
   societa: "multy" | "niyol";
