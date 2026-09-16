@@ -239,6 +239,11 @@ export default function MNFormulariPage() {
 
   const contextLabel = context === "niyol" ? "Niyol" : "Multy Dev";
 
+  if (legacyMultyRoute) {
+    const qs = searchParams.toString();
+    return <Navigate to={`/mn/admin/dev-multyproget/formulari${qs ? `?${qs}` : ""}`} replace />;
+  }
+
   return (
     <MNAdminLayout title={`Formulari — ${contextLabel}`} subtitle="Gestione formulari FIR creati dagli autisti">
       {/* Stats */}

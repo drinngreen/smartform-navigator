@@ -49,8 +49,24 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     }`;
   }, [isWidgetOpen]);
 
+  // Ritorno alla dashboard del contesto operativo corrente.
+  const dashboardPath = location.pathname.includes("/mn/admin/niyol")
+    ? "/mn/admin/niyol"
+    : "/mn/admin/dev-multyproget";
+  const showBack = location.pathname !== "/mn/admin" && location.pathname !== dashboardPath;
+
   return (
     <div className="px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {showBack && (
+          <button
+            onClick={() => navigate(dashboardPath)}
+            className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
+            title="Torna alla dashboard"
+          >
+            <ArrowLeft className="h-5 w-5 text-white/80" />
+          </button>
+        )}
       <div>
         <h1 className="text-2xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] tracking-wide">{title}</h1>
         {subtitle && (
