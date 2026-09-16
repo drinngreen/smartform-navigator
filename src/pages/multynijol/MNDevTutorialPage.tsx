@@ -83,7 +83,7 @@ const CHAPTERS: Chapter[] = [
       "Si parte SEMPRE dal numero: digiti il numero FIR (quello stampato sul blocco o scaricato dal RENTRI) e premi 'Crea formulario'. La bozza si apre immediatamente e da quel momento è tua, modificabile.",
       "Il formulario ha due viste — Standard e Alternativo — che sono lo stesso documento. Se scrivi il peso nella vista Standard, lo ritrovi nella vista Alternativa mentre stai ancora digitando. Non esistono due formulari: esiste un formulario con due facce.",
       "Salva bozza = documento modificabile. Il digitale aggiorna le giacenze solo alla firma del destinatario; il cartaceo solo alla conferma manuale.",
-      "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino in alto, invece, elimina l'intero formulario e storna in automatico registro e giacenze: nessuna riga resta orfana.",
+      "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino elimina soltanto una bozza; un formulario effettivo richiede uno storno umano separato e tracciato.",
     ],
     steps: [
       "Digita il numero FIR nel campo dedicato e premi 'Crea formulario'.",
