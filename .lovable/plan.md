@@ -33,8 +33,14 @@ Blocco temporaneo, linea giù, lentezza: messaggi chiari, attesa automatica prim
 **6. App autisti Multy e Niyol operative.**
 L'autista sceglie con quale azienda opera, apre il formulario assegnato, lo compila con tutte le tendine, e firma solo se le parti obbligatorie sono complete. Il destinatario vede il formulario, inserisce il peso riscontrato e l'esito, e con la sua firma il formulario si chiude e le giacenze si aggiornano da sole, come già impostato. I formulari cartacei restano con il pulsante di conferma manuale.
 
-**7. Una sola schermata di controllo.**
-In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, invii respinti con motivo, formulari da firmare, ultimo aggiornamento. Tutto in un colpo d'occhio, così ci si accorge subito se qualcosa si è fermato.
+**7. L'ufficio comanda le app degli autisti, in tempo reale.**
+Dalla postazione dell'ufficio si vede l'elenco degli autisti in servizio e il formulario che ciascuno ha aperto. L'ufficio può compilare il formulario al posto dell'autista, correggerlo mentre lui lo sta guardando, assegnargliene un altro, bloccarlo o sbloccarlo. Le modifiche compaiono sul telefono dell'autista entro pochi secondi, senza che debba ricaricare nulla, e ogni intervento resta tracciato con nome e ora. Quando l'autista ha già firmato, l'ufficio non può più cambiare il formulario: può solo annullarlo e rifarlo, così la firma resta valida.
+
+**8. Controllo su strada: QR code reale.**
+Sul telefono dell'autista un pulsante ben visibile apre la schermata di controllo con il QR code del formulario in corso. Vigili o polizia lo inquadrano e aprono una pagina pubblica di sola lettura con i dati del formulario: numero, data, produttore, destinatario, trasportatore, targhe, codice CER, descrizione del rifiuto, peso, firme presenti e stato. Nessun dato riservato, nessuna possibilità di modifica. La schermata funziona anche con poco segnale perché mostra comunque i dati già scaricati, e il QR resta leggibile a schermo luminoso.
+
+**9. Una sola schermata di controllo.**
+In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, invii respinti con motivo, formulari da firmare, autisti in viaggio, ultimo aggiornamento. Tutto in un colpo d'occhio, così ci si accorge subito se qualcosa si è fermato.
 
 ## Cosa non tocco
 
@@ -47,5 +53,7 @@ Giacenze, cernite e lavorazioni, conferimenti privati, registro e ricevute dei p
 - **Registro**: `caricaMovimentiCandidati` in `src/lib/rentriRegistroSync.ts` filtra `coalesce(stato_movimento,'effettivo')='effettivo'` ed esclude gli id già presenti in `rentri_invii_registri.movimenti`; `aggiornaStatoInvio` usa la stessa logica di verifica di `inviaMovimentiRegistroVerificato` (polling transazione + riconoscimento esiti) invece dell'esito binario attuale.
 - **Pesca FIR**: nuova funzione di import su `elencoFormulariRentri` + `dettaglioFormularioRentri`, upsert idempotente in `fir_forms` per `numero_fir` + tenant, differenze elencate in sola lettura. Nessuna scrittura su `movimenti_impianto` se non alla firma del destinatario.
 - **423 / offline**: gestione esplicita in `supabase/functions/rentri-vps-proxy/handler.ts` (`errorCodeForStatus` + backoff con `retry_after_ms`) e messaggio dedicato in `src/lib/rentriErrorMessages.ts`; la coda `RentriRetryQueue` riprova automaticamente allo scadere dell'attesa.
+- **Ufficio ↔ app in tempo reale**: `fir_forms` già condiviso; canale Realtime per `fir_forms` filtrato su tenant/autista, con sottoscrizione montata e smontata nel ciclo di vita del componente in `MNFIRFormComplete.tsx` e nella vista ufficio; scrittura lato ufficio bloccata quando `stato` è firmato/inviato; ogni intervento registrato con autore e ora nel diario del formulario.
+- **QR code di controllo**: pagina pubblica in sola lettura `/fir/controllo/:token` con token opaco per formulario (non indovinabile, revocabile alla chiusura), lettura via RPC `SECURITY DEFINER` che restituisce solo i campi da esibire; QR generato lato app dal token, senza dati personali dentro il codice.
 - **Tracciamento**: ogni operazione continua ad andare in `rentri_operazioni`; gli invii registro in `rentri_invii_registri`, i privati in `rentri_invii_privati` (invariati).
 - **Verifica a ogni passo**: `node scripts/verify.mjs --smoke`, conteggio e totale giacenze letti prima e dopo (incluse le righe nascoste), screenshot reale della console RENTRI e della schermata Giacenze, e per gli invii la risposta del RENTRI mostrata integralmente — nessuna affermazione senza prova appena letta.
