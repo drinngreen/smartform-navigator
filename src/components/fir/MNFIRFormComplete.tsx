@@ -1229,8 +1229,20 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     <div className="px-4 py-4 space-y-4">
       {showPesoPopup && <PesoDestinoPopup onConfirm={handleConfirmClosure} onCancel={() => setShowPesoPopup(false)} />}
 
-      <div className="text-center">
-        <h2 className="text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex-1 text-center text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
+        <button
+          type="button"
+          onClick={() => {
+            useZoliDarkLemonWidgetStore.getState().setSidePanel(true);
+            toast.info("Dark Lemon vede questo formulario: chiedigli di compilarlo, poi controlli e confermi tu.");
+          }}
+          title="Apri Dark Lemon per farti aiutare a compilare questo formulario"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-primary transition-colors hover:bg-primary/20"
+        >
+          <img src={zoliLemonIcon} alt="" className="h-4 w-4" />
+          Compila con Dark Lemon
+        </button>
       </div>
 
       {creationMode && (
