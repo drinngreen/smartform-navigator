@@ -502,6 +502,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
+    // Blocco modifiche dopo firma: una volta inviato/firmato il formulario non
+    // riceve più salvataggi automatici (né dall'app né dall'ufficio).
+    if (store.workflowStatus !== 'bozza') return;
     // Il numero FIR deve restare liberamente cancellabile e riscrivibile:
     // nessun salvataggio/rerender mentre il relativo input ha il focus.
     if (firNumberFocusedRef.current) return;
@@ -511,6 +514,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       lastAutosavedAtRef.current = updatedAt;
+      lastLocalSaveAtRef.current = Date.now();
       autosaveFailuresRef.current = 0;
     } catch (error: any) {
       // Un fallimento isolato può dipendere da una micro-interruzione di rete:
