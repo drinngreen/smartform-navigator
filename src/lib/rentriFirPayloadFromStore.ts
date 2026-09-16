@@ -50,6 +50,75 @@ function statoFisico(raw: string): string {
   return STATO_FISICO_MAP[raw.trim().toLowerCase()] || "S";
 }
 
+/**
+ * Valori ufficiali RENTRI (rentri-enum-1.0.xsd, simpleType TipoAutorizzazione).
+ * Qualsiasi altra dicitura viene rifiutata dal RENTRI con "sys.invalid".
+ */
+const TIPI_AUTORIZZAZIONE = [
+  "RecSmalArt208",
+  "RecSmalImpMobiliArt208",
+  "RicercaSperimentazione",
+  "AIA",
+  "RecProcSemplificata",
+  "OpBonifica",
+  "Straordinario",
+  "ComTrattamentoAcqueReflue",
+  "AutTrattamentoAcqueReflue",
+] as const;
+
+const ALIAS_AUTORIZZAZIONE: Record<string, string> = {
+  aia: "AIA",
+  "art208": "RecSmalArt208",
+  "art.208": "RecSmalArt208",
+  "articolo208": "RecSmalArt208",
+  "208": "RecSmalArt208",
+  "recuperosmaltimentoart208": "RecSmalArt208",
+  "impiantimobili": "RecSmalImpMobiliArt208",
+  "art208mobili": "RecSmalImpMobiliArt208",
+  "ricercasperimentazione": "RicercaSperimentazione",
+  "proceduresemplificate": "RecProcSemplificata",
+  "procedurasemplificata": "RecProcSemplificata",
+  "art216": "RecProcSemplificata",
+  "art.216": "RecProcSemplificata",
+  "216": "RecProcSemplificata",
+  "bonifica": "OpBonifica",
+  "straordinario": "Straordinario",
+  "acquereflue": "AutTrattamentoAcqueReflue",
+};
+
+/** Restituisce il codice ufficiale oppure "" se la dicitura non è riconducibile. */
+function tipoAutorizzazione(raw: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  const esatto = TIPI_AUTORIZZAZIONE.find((t) => t.toLowerCase() === v.toLowerCase());
+  if (esatto) return esatto;
+  const k = v.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return ALIAS_AUTORIZZAZIONE[k] ?? "";
+}
+
+/** Blocco autorizzazione conforme: il tipo è opzionale, quindi si omette se non valido. */
+function bloccoAutorizzazione(numero: string, tipo: string): Bag | null {
+  const num = numero.trim();
+  if (!num) return null;
+  const t = tipoAutorizzazione(tipo);
+  return t ? { numero: num, tipo: t } : { numero: num };
+}
+
+/**
+ * Operazione R/D del destinatario: pattern ufficiale [RD][0-9]+ limitato a
+ * R1..R13 / D1..D15 (rentri-formulario-1.0.xsd, OperazioneRecuperoSmaltimento).
+ */
+function attivitaDestinatario(raw: string, fallbackSmaltimento: boolean): string {
+  const m = raw.toUpperCase().match(/([RD])\s*0*(\d{1,2})/);
+  if (m) {
+    const lettera = m[1];
+    const n = Number(m[2]);
+    const max = lettera === "R" ? 13 : 15;
+    if (n >= 1 && n <= max) return `${lettera}${n}`;
+  }
+  return fallbackSmaltimento ? "D15" : "R13";
+}
+
 function dataOraTrasporto(d: Bag): string {
   const data = s(d.dataEmissione) || new Date().toISOString().slice(0, 10);
   const ora = s(d.oraInizioTrasporto) || s(d.oraDataInizioTrasporto).slice(11, 16) || "08:00";
@@ -87,8 +156,12 @@ export async function mapStoreToRentriFirPayload(
     Array.isArray(data.caratteristicheHP) ? (data.caratteristicheHP as string[]).join(" ") : s(data.caratteristicheHP),
   );
   const quantita = Number(String(data.quantita ?? "").replace(",", "."));
-  const operazione = s(data.destinatarioCodiceOperazione) ||
-    (s(data.destinatarioOperazione).toUpperCase() === "D" ? "D15" : "R13");
+  const operazione = attivitaDestinatario(
+    s(data.destinatarioCodiceOperazione),
+    s(data.destinatarioOperazione).toUpperCase().startsWith("D"),
+  );
+  const autProduttore = bloccoAutorizzazione(s(data.produttoreNumeroAut), s(data.produttoreTipoAut));
+  const autDestinatario = bloccoAutorizzazione(s(data.destinatarioNumeroAut), s(data.destinatarioTipoAut));
 
   return {
     num_iscr_sito: cfg.unitId,
@@ -103,14 +176,7 @@ export async function mapStoreToRentriFirPayload(
           indirizzo: prodAddr.indirizzo,
           cap: prodAddr.cap,
         },
-        ...(s(data.produttoreNumeroAut)
-          ? {
-              autorizzazione: {
-                numero: s(data.produttoreNumeroAut),
-                tipo: s(data.produttoreTipoAut) || "AIA",
-              },
-            }
-          : {}),
+        ...(autProduttore ? { autorizzazione: autProduttore } : {}),
       },
       destinatario: {
         denominazione: s(data.destinatarioDenominazione),
@@ -122,14 +188,7 @@ export async function mapStoreToRentriFirPayload(
           indirizzo: destAddr.indirizzo,
           cap: destAddr.cap,
         },
-        ...(s(data.destinatarioNumeroAut)
-          ? {
-              autorizzazione: {
-                numero: s(data.destinatarioNumeroAut),
-                tipo: s(data.destinatarioTipoAut) || "AIA",
-              },
-            }
-          : {}),
+        ...(autDestinatario ? { autorizzazione: autDestinatario } : {}),
       },
       trasportatori: [
         {

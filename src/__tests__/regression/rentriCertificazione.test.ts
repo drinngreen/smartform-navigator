@@ -164,3 +164,36 @@ describe("Certificazione RENTRI — configurazione e transazioni", () => {
     expect(estraiTransazioneId(null)).toBeNull();
   });
 });
+
+describe("Valori ufficiali RENTRI: autorizzazione e attività destinatario", () => {
+  it("normalizza il tipo autorizzazione e l'operazione R/D, omettendo i tipi non ufficiali", async () => {
+    const { mapStoreToRentriFirPayload } = await import("@/lib/rentriFirPayloadFromStore");
+    const base = {
+      selectedFirNumber: "ZRZXR 000772 TM",
+      produttoreDenominazione: "MULTY PROGET SRL",
+      produttoreCF: "12347770013",
+      destinatarioDenominazione: "FERMET SRL",
+      destinatarioCF: "08934760960",
+      codiceEER: "170405",
+      quantita: "1000",
+      produttoreNumeroAut: "AUT-1",
+      produttoreTipoAut: "Art. 208",
+      destinatarioNumeroAut: "AUT-2",
+      destinatarioTipoAut: "dicitura inventata",
+      destinatarioCodiceOperazione: "R 13 - messa in riserva",
+    };
+    const p = (await mapStoreToRentriFirPayload("multy", base)) as any;
+    expect(p.dati_partenza.produttore.autorizzazione).toEqual({ numero: "AUT-1", tipo: "RecSmalArt208" });
+    expect(p.dati_partenza.destinatario.autorizzazione).toEqual({ numero: "AUT-2" });
+    expect(p.dati_partenza.destinatario.attivita).toBe("R13");
+
+    const q = (await mapStoreToRentriFirPayload("multy", {
+      ...base,
+      destinatarioCodiceOperazione: "",
+      destinatarioOperazione: "D",
+      produttoreTipoAut: "AIA",
+    })) as any;
+    expect(q.dati_partenza.produttore.autorizzazione.tipo).toBe("AIA");
+    expect(q.dati_partenza.destinatario.attivita).toBe("D15");
+  });
+});
