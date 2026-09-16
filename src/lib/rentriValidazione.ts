@@ -66,45 +66,7 @@ export function normalizzaCF(raw: unknown): string {
   return String(raw ?? "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-/** Checksum partita IVA (11 cifre). */
-function pivaValida(v: string): boolean {
-  if (!/^\d{11}$/.test(v)) return false;
-  const soma = v
-    .slice(0, 10)
-    .split("")
-    .reduce((acc, ch, i) => {
-      let n = Number(ch);
-      if (i % 2 === 1) {
-        n *= 2;
-        if (n > 9) n -= 9;
-      }
-      return acc + n;
-    }, 0);
-  const atteso = (10 - (soma % 10)) % 10;
-  return atteso === Number(v[10]);
-}
-
 /** Checksum codice fiscale (16 caratteri). */
-function cfValido(v: string): boolean {
-  if (!/^[A-Z]\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z].?[A-Z]$/.test(v)) return false;
-  const odd = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const even = { 0: 1, 1: 0, 2: 5, 3: 7, 4: 9, 5: 13, 6: 15, 7: 17, 8: 19, 9: 21, A: 1, B: 0, C: 5, D: 7, E: 9, F: 13, G: 15, H: 17, I: 19, J: 21, K: 2, L: 4, M: 18, N: 20, O: 11, P: 3, Q: 13, R: 1, S: 2, T: 10, U: 21, V: 2, W: 4, X: 18, Y: 20, Z: 21 } as Record<string, number>;
-  let sum = 0;
-  for (let i = 0; i < 15; i++) {
-    const c = v[i];
-    sum += i % 2 === 0 ? (even[c] ?? 0) : odd.indexOf(c);
-  }
-  return odd[sum % 26] === v[15];
-}
-
-/** Codice fiscale o partita IVA italiani con checksum valido. */
-export function cfValido(raw: unknown): boolean {
-  const v = normalizzaCF(raw);
-  if (/^\d{11}$/.test(v)) return pivaValida(v);
-  if (v.length === 16) return cfValido16(v);
-  return false;
-}
-
 function cfValido16(v: string): boolean {
   const odd = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const even: Record<string, number> = {
@@ -119,6 +81,14 @@ function cfValido16(v: string): boolean {
     sum += i % 2 === 0 ? (even[c] ?? 0) : odd.indexOf(c);
   }
   return odd[sum % 26] === v[15];
+}
+
+/** Codice fiscale o partita IVA italiani con checksum valido. */
+export function cfValido(raw: unknown): boolean {
+  const v = normalizzaCF(raw);
+  if (/^\d{11}$/.test(v)) return pivaValida(v);
+  if (v.length === 16) return cfValido16(v);
+  return false;
 }
 
 export interface ErroreValidazione {
