@@ -156,8 +156,12 @@ export async function mapStoreToRentriFirPayload(
     Array.isArray(data.caratteristicheHP) ? (data.caratteristicheHP as string[]).join(" ") : s(data.caratteristicheHP),
   );
   const quantita = Number(String(data.quantita ?? "").replace(",", "."));
-  const operazione = s(data.destinatarioCodiceOperazione) ||
-    (s(data.destinatarioOperazione).toUpperCase() === "D" ? "D15" : "R13");
+  const operazione = attivitaDestinatario(
+    s(data.destinatarioCodiceOperazione),
+    s(data.destinatarioOperazione).toUpperCase().startsWith("D"),
+  );
+  const autProduttore = bloccoAutorizzazione(s(data.produttoreNumeroAut), s(data.produttoreTipoAut));
+  const autDestinatario = bloccoAutorizzazione(s(data.destinatarioNumeroAut), s(data.destinatarioTipoAut));
 
   return {
     num_iscr_sito: cfg.unitId,
