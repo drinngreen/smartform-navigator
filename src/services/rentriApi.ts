@@ -2,7 +2,7 @@
  * RENTRI API Service – routes through VPS proxy (rentri-vps-proxy edge function).
  */
 
-import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, type RentriCliente } from "@/lib/rentriVpsApi";
+import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, estraiTransazioneId, statoTransazioneFir, ricercaFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
 // ─── Tenant → company mapping ─────────────────────────────
@@ -120,6 +120,64 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 /**
  * 1. EMISSIONE — Send FIR data for signature via VPS proxy.
  */
+/** Estrae l'identificativo ufficiale del FIR da una risposta RENTRI, comunque annidata. */
+function estraiFirId(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const record = value as Record<string, unknown>;
+  for (const key of ["uuid_fir", "uuidFir", "fir_id", "firId", "numero_fir", "numeroFir"]) {
+    const raw = String(record[key] ?? "").trim();
+    if (raw) return raw;
+  }
+  for (const nested of Object.values(record)) {
+    if (nested && typeof nested === "object") {
+      const found = estraiFirId(nested);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+/**
+ * Emissione asincrona: attende la conclusione della transazione RENTRI e, in
+ * assenza di esito esplicito, verifica in sola lettura che il FIR esista.
+ */
+async function attendiConfermaEmissione(
+  cliente: RentriCliente,
+  rispostaInvio: unknown,
+  payloadInviato: Record<string, unknown>,
+): Promise<string> {
+  const transazioneId = estraiTransazioneId(rispostaInvio);
+  const numeroInviato = String(
+    ((payloadInviato as any)?.dati_partenza?.numero_fir ?? (payloadInviato as any)?.numero_fir ?? ""),
+  ).trim();
+
+  for (let tentativo = 0; tentativo < 5; tentativo++) {
+    await new Promise((r) => setTimeout(r, 3000));
+
+    if (transazioneId) {
+      const tx = await statoTransazioneFir(cliente, transazioneId);
+      if (tx.success) {
+        const testo = JSON.stringify(tx.data ?? {}).toUpperCase();
+        if (/ERRORE|SCARTAT|RIFIUTAT|"KO"/.test(testo)) {
+          throw new Error(`Il RENTRI ha scartato l'emissione: ${JSON.stringify(tx.data)}`);
+        }
+        const id = estraiFirId(tx.data);
+        if (id) return id;
+      }
+    }
+
+    if (numeroInviato) {
+      const ricerca = await ricercaFir(cliente, numeroInviato);
+      if (ricerca.success) {
+        const id = estraiFirId(ricerca.data);
+        if (id) return id;
+      }
+    }
+  }
+
+  return "";
+}
+
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
@@ -137,9 +195,15 @@ export async function inviaFirmaRentri(
   if (res.success) {
     const responseRoot = (res.data as any) || {};
     const root = (responseRoot.data || responseRoot.risposta || responseRoot.result || responseRoot) as Record<string, any>;
-    const firId = String(root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "").trim();
+    let firId = String(root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "").trim();
     if (!firId) {
-      throw new Error("Il RENTRI non ha restituito un identificativo ufficiale del FIR: la partenza non è confermata");
+      // Il RENTRI accetta l'emissione in modo asincrono (202 + transazione_id):
+      // la partenza è confermata solo quando la transazione si conclude o il FIR
+      // risulta davvero presente sul RENTRI. Nessun reinvio: solo letture.
+      firId = await attendiConfermaEmissione(cliente, res.data, enrichedPayload);
+    }
+    if (!firId) {
+      throw new Error("Il RENTRI ha accettato la richiesta ma non ha ancora confermato il FIR: riprova tra qualche istante senza rifare l'invio");
     }
     return {
       ...(root as Record<string, unknown>),
