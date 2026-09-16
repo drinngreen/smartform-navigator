@@ -109,6 +109,7 @@ export function PresetAziendaSelector({
   const [dbAuts, setDbAuts] = useState<any[]>([]);
   const [cantieri, setCantieri] = useState<any[]>([]);
   const [unitaLocali, setUnitaLocali] = useState<any[]>([]);
+  const [sediAnagrafica, setSediAnagrafica] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
   const [allConducenti, setAllConducenti] = useState<any[]>([]);
@@ -385,7 +386,7 @@ export function PresetAziendaSelector({
     let cancelled = false;
     setLoadingDeps(true);
     (async () => {
-      const [a, c, t, k, p, ul] = await Promise.all([
+      const [a, c, t, k, p, ul, an] = await Promise.all([
         supabase
           .from("cliente_autorizzazioni")
           .select("id,numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza,note")
@@ -422,9 +423,17 @@ export function PresetAziendaSelector({
           .in("cliente_id", ids)
           .order("denominazione")
           .limit(1000),
+        // Molte sedi operative sono state importate come righe separate della
+        // stessa azienda (stesso CF/P.IVA, indirizzo diverso): vanno proposte
+        // come sedi operative, altrimenti resta selezionabile solo la sede legale.
+        supabase
+          .from("anagrafica_aziende_mp")
+          .select("id,ragione_sociale,indirizzo,citta,provincia,cap")
+          .in("id", ids)
+          .limit(1000),
       ]);
       if (cancelled) return;
-      const failed = [a, c, t, k, p, ul].find((response) => response.error);
+      const failed = [a, c, t, k, p, ul, an].find((response) => response.error);
       if (failed) setLoadError("Alcuni dati collegati non sono leggibili");
       const dedup = (rows: any[] | null, keyFn: (r: any) => string) => {
         const seen = new Set<string>();
@@ -440,6 +449,19 @@ export function PresetAziendaSelector({
       setDbAuts(a.data || []);
       setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
       setUnitaLocali(dedup(ul.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
+      setSediAnagrafica(
+        dedup(
+          (an.data || []).map((r: any) => ({
+            id: `az-${r.id}`,
+            denominazione: r.ragione_sociale || "Sede",
+            indirizzo: r.indirizzo || "",
+            comune: r.citta || "",
+            provincia: r.provincia || "",
+            cap: r.cap || "",
+          })),
+          (r) => `${r.indirizzo}|${r.comune}`.toUpperCase(),
+        ),
+      );
       setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
       setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
       setPartnerDefaults(dedup(p.data, (r) => `${r.ruolo}|${r.ragione_sociale}|${r.indirizzo}`.toUpperCase()));
@@ -591,6 +613,19 @@ export function PresetAziendaSelector({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbAuts, loadingDeps, ruolo, clienteId]);
 
+
+  /** Sedi operative selezionabili: unità locali registrate + righe di anagrafica
+   *  della stessa azienda su indirizzi diversi (sedi importate come record a sé). */
+  const sediDisponibili = useMemo(() => {
+    const chiave = (s: any) => `${s.indirizzo || ""}|${s.comune || ""}`.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    const viste = new Set<string>();
+    return [...unitaLocali, ...sediAnagrafica].filter((s) => {
+      const k = chiave(s);
+      if (!s.indirizzo || viste.has(k)) return false;
+      viste.add(k);
+      return true;
+    });
+  }, [unitaLocali, sediAnagrafica]);
 
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
@@ -834,12 +869,19 @@ export function PresetAziendaSelector({
             </p>
           )}
 
+          {autId && dbAuts.some((a) => a.id === autId && !tipoUfficialeDaAutorizzazione(a)) && (
+            <p className="text-[10px] text-amber-300">
+              Il numero di autorizzazione è compilato, ma in anagrafica non è indicato il tipo ufficiale:
+              scegli il tipo nella tendina «Tipo Aut.» del formulario prima di inviare al RENTRI.
+            </p>
+          )}
+
           {onSelectUnitaLocale && (
             <select
               className={selectCls}
               defaultValue=""
               onChange={(e) => {
-                const s = unitaLocali.find((x) => x.id === e.target.value);
+                const s = sediDisponibili.find((x) => x.id === e.target.value);
                 if (s)
                   onSelectUnitaLocale({
                     denominazione: s.denominazione || "",
@@ -853,11 +895,11 @@ export function PresetAziendaSelector({
               }}
             >
               <option value="">
-                {unitaLocali.length
-                  ? `-- Sede operativa / unità locale (${unitaLocali.length}) --`
+                {sediDisponibili.length
+                  ? `-- Sede operativa / unità locale (${sediDisponibili.length}) --`
                   : "-- Nessuna sede operativa in anagrafica: usa la sede legale --"}
               </option>
-              {unitaLocali.map((s) => (
+              {sediDisponibili.map((s) => (
                 <option key={s.id} value={s.id}>
                   {[s.denominazione, s.indirizzo, s.cap, s.comune, s.provincia].filter(Boolean).join(" · ")}
                 </option>
