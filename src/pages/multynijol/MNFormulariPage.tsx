@@ -321,7 +321,7 @@ export default function MNFormulariPage() {
               <tbody>
                 {filtered.map((form) => (
                   <tr key={form.id} className="border-b border-border/10 hover:bg-secondary/30 transition-colors">
-                    <td className="p-3">{statusBadge(form.status)}</td>
+                    <td className="p-3">{statusBadge(statoReale(form))}</td>
                     <td className="p-3 font-mono text-xs text-foreground">{form.numero_fir || "—"}</td>
                     <td className="p-3 text-foreground">{form.user_profile ? `${form.user_profile.nome} ${form.user_profile.cognome}` : "—"}</td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{form.codice_eer || "—"}</td>
