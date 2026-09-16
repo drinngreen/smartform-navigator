@@ -176,14 +176,7 @@ export async function mapStoreToRentriFirPayload(
           indirizzo: prodAddr.indirizzo,
           cap: prodAddr.cap,
         },
-        ...(s(data.produttoreNumeroAut)
-          ? {
-              autorizzazione: {
-                numero: s(data.produttoreNumeroAut),
-                tipo: s(data.produttoreTipoAut) || "AIA",
-              },
-            }
-          : {}),
+        ...(autProduttore ? { autorizzazione: autProduttore } : {}),
       },
       destinatario: {
         denominazione: s(data.destinatarioDenominazione),
