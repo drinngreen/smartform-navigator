@@ -54,10 +54,42 @@ export const istanteFir = (riga: { data_emissione?: unknown; data_creazione?: un
   return Number.isNaN(ms) ? null : ms;
 };
 
-/** Ruoli del formulario calcolati su TUTTI i codici fiscali aziendali, non solo su quello letto. */
+/** Nome normalizzato per il confronto delle ragioni sociali. */
+export const normalizzaNome = (v: unknown) =>
+  String(v ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/** Alias ufficiali delle ragioni sociali: sul RENTRI capita che il CF inserito sia errato. */
+export const ALIAS_MULTY = ["MULTYPROGET", "MULTYPROGETTO"];
+export const ALIAS_NIYOL = ["NIYOL"];
+
+export const nomeCorrisponde = (nome: unknown, alias: string[]): boolean => {
+  const n = normalizzaNome(nome);
+  return !!n && alias.some((a) => n.includes(a));
+};
+
+export interface SoggettoRuolo {
+  cf: string;
+  label: string;
+  alias?: string[];
+}
+
+/**
+ * Ruoli del formulario calcolati su TUTTI i codici fiscali aziendali (non solo su
+ * quello con cui si legge) e, in aggiunta, sulla ragione sociale: sul portale RENTRI
+ * capita che il produttore sia scritto con il nome giusto ma il CF di un'altra società.
+ */
 export function ruoliFir(
-  riga: { produttore_cf?: unknown; trasportatore_cf?: unknown; destinatario_cf?: unknown },
-  soggetti: { cf: string; label: string }[],
+  riga: {
+    produttore_cf?: unknown;
+    trasportatore_cf?: unknown;
+    destinatario_cf?: unknown;
+    produttore_nome?: unknown;
+    trasportatore_nome?: unknown;
+    destinatario_nome?: unknown;
+    altri_cf?: unknown[];
+    altri_nomi?: unknown[];
+  },
+  soggetti: SoggettoRuolo[],
 ): string[] {
   const prod = normalizzaCf(riga.produttore_cf);
   const tras = normalizzaCf(riga.trasportatore_cf);
@@ -65,10 +97,12 @@ export function ruoliFir(
   const out: string[] = [];
   for (const s of soggetti) {
     const cf = normalizzaCf(s.cf);
-    if (!cf) continue;
-    if (prod === cf) out.push(`${s.label} produttore`);
-    if (tras === cf) out.push(`${s.label} trasportatore`);
-    if (dest === cf) out.push(`${s.label} destinatario`);
+    const alias = s.alias ?? [];
+    const match = (valCf: string, nome: unknown) =>
+      (!!cf && valCf === cf) || (alias.length > 0 && nomeCorrisponde(nome, alias));
+    if (match(prod, riga.produttore_nome)) out.push(`${s.label} produttore`);
+    if (match(tras, riga.trasportatore_nome)) out.push(`${s.label} trasportatore`);
+    if (match(dest, riga.destinatario_nome)) out.push(`${s.label} destinatario`);
   }
   return out;
 }
