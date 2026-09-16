@@ -2398,6 +2398,8 @@ async function handleTool(
     case "write_database": {
       const sql = (args.sql || "").trim();
       if (sql.toUpperCase().startsWith("SELECT")) return { error: "Usa query_database per le SELECT." };
+      const vietata = sqlAgenteVietata(sql);
+      if (vietata) return { error: vietata };
       const { data: rows, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
       return error ? { error: error.message } : { success: true, data: rows };
     }
@@ -2416,24 +2418,27 @@ async function handleTool(
       if (!table) return { error: "Tabella mancante." };
       if (rows.length === 0) return { error: "Nessuna riga da inserire." };
       if (rows.length > 200) return { error: "Massimo 200 righe per blocco: suddividi l'inserimento." };
+      if (table === "magazzino_giacenze")
+        return { error: "Le giacenze non possono essere scritte dall'assistente: serve la conferma di una persona." };
 
       const addTenant = args.add_tenant !== false;
       const payload = rows.map((r: Record<string, unknown>) =>
-        addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r
+        bozzaAgente(table, addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r)
       );
 
       const { data, error } = await db.from(table).insert(payload).select();
       if (error) {
         // Se la tabella non ha tenant_id, riprova senza aggiungerlo
         if (addTenant && /tenant_id/i.test(error.message)) {
-          const retry = await db.from(table).insert(rows).select();
+          const retry = await db.from(table).insert(rows.map((r: Record<string, unknown>) => bozzaAgente(table, r))).select();
           if (retry.error) return { error: retry.error.message };
           return { success: true, inserite: retry.data?.length ?? 0, data: retry.data?.slice(0, 5) };
         }
         return { error: error.message };
       }
-      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5) };
+      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5), nota: TABELLE_STATO_MOVIMENTO.includes(table) ? "Righe create come bozze potenziali: servono conferma e pesata umana." : undefined };
     }
+
 
     // ---------- DIAGNOSTICA / TEST ----------
     case "run_system_test": {
