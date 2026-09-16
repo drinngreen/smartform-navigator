@@ -39,3 +39,5 @@
 - [ ] Inventariare e bloccare ogni percorso non autorizzato che può modificare giacenze; verificare cernite e saldi prima/dopo.
 - [ ] Rendere Dark Lemon utile solo per diagnosi e preparazione assistita, mantenendo ogni effetto operativo subordinato alla conferma umana.
 - [ ] Produrre un referto operativo con prova associata a ogni voce e limiti non ancora certificabili.
+- [x] Separare nella Console RENTRI gli invii reali dai controlli automatici GET/PDF e rendere leggibili i tentativi effettivi.
+- [x] Evidenziare nel formulario i campi rifiutati dal RENTRI in rosso; ripristinare il colore normale dopo la correzione e azzerare gli errori dopo conferma.

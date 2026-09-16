@@ -112,4 +112,10 @@ describe("RentriHistoryPanel", () => {
     expect(screen.getAllByTestId("history-row")).toHaveLength(1);
     expect(screen.getByText("ZRZXR 000772 TM")).toBeInTheDocument();
   });
+
+  it("spiega che la cronologia contiene solo invii reali", async () => {
+    fetchRentriHistory.mockResolvedValue([]);
+    render(<RentriHistoryPanel />);
+    expect(await screen.findByText(/controlli automatici, ricerche e PDF sono esclusi/i)).toBeInTheDocument();
+  });
 });

@@ -58,6 +58,18 @@ interface RentriErrorResponse {
   model_state?: Record<string, string[]>;
 }
 
+export class RentriSubmissionError extends Error {
+  readonly fieldErrors: Record<string, string[]>;
+  readonly status: number;
+
+  constructor(message: string, fieldErrors: Record<string, string[]>, status: number) {
+    super(message);
+    this.name = "RentriSubmissionError";
+    this.fieldErrors = fieldErrors;
+    this.status = status;
+  }
+}
+
 export interface RentriChiusuraPayload {
   societaId?: string;
   numero_fir: string;
@@ -235,7 +247,7 @@ export async function inviaFirmaRentri(
     .join("; ");
 
   const errMsg = modelErrors || res.error || errData?.error || errData?.details || `Errore server (${res.status})`;
-  throw new Error(errMsg);
+  throw new RentriSubmissionError(errMsg, modelState, res.status);
 }
 
 /** Translate RENTRI model_state field names to Italian for user-friendly errors */

@@ -19,7 +19,7 @@ import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf } from "@/services/rentriApi";
+import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, RentriSubmissionError } from "@/services/rentriApi";
 import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
 import { findConfirmedFirEmission } from "@/lib/rentriHistory";
@@ -116,8 +116,8 @@ function preserveValueOnWheel(e: React.WheelEvent<HTMLInputElement>) {
   window.scrollBy({ top: e.deltaY, behavior: "auto" });
 }
 
-function Field({ label, value, onChange, placeholder, type = "text", validate }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null }) {
-  const error = (validate ? validate(value) : autoValidateByLabel(label, value)) || null;
+function Field({ label, value, onChange, placeholder, type = "text", validate, rentriError }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null; rentriError?: string | null }) {
+  const error = rentriError || (validate ? validate(value) : autoValidateByLabel(label, value)) || null;
   return (
     <div>
       <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${error ? "text-red-300" : "text-white/80"}`}>{label}</label>
@@ -146,18 +146,19 @@ function Field({ label, value, onChange, placeholder, type = "text", validate }:
  * importato dall'anagrafica) resta selezionato e visibile finché non si sceglie
  * la voce corretta.
  */
-function TipoAutField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function TipoAutField({ label, value, onChange, rentriError }: { label: string; value: string; onChange: (v: string) => void; rentriError?: string | null }) {
   const ufficiale = TIPI_AUTORIZZAZIONE_UFFICIALI.some((t) => t.testo === value);
   const mancante = value.trim() !== "" && !ufficiale;
+  const error = rentriError || (mancante ? "Il RENTRI non accetta questa dicitura: scegli una delle voci ufficiali." : null);
   return (
     <div>
-      <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${mancante ? "text-red-300" : "text-white/80"}`}>{label}</label>
+      <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${error ? "text-red-300" : "text-white/80"}`}>{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         title={value}
         className={`w-full rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 ${
-          mancante
+          error
             ? "bg-red-500/15 border border-red-500 focus:ring-red-400"
             : "bg-sky-400/10 border border-sky-400/40 focus:ring-sky-300"
         }`}
@@ -170,9 +171,7 @@ function TipoAutField({ label, value, onChange }: { label: string; value: string
           </option>
         ))}
       </select>
-      {mancante && (
-        <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ Il RENTRI non accetta questa dicitura: scegli una delle voci ufficiali.</p>
-      )}
+      {error && <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ {error}</p>}
     </div>
   );
 }
@@ -483,6 +482,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [officialEmissionAt, setOfficialEmissionAt] = useState<string | null>(null);
+  const [rentriFieldErrors, setRentriFieldErrors] = useState<Record<string, string>>({});
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autosaveFailuresRef = useRef(0);
@@ -495,6 +495,43 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+
+  const clearRentriError = (key: string) => {
+    setRentriFieldErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+  const updateFirField = (key: keyof FIRDataStore, value: any) => {
+    clearRentriError(String(key));
+    store.updateField(key, value);
+  };
+  const mapRentriFieldErrors = (source: Record<string, string[]>): Record<string, string> => {
+    const pathToStore: Record<string, string> = {
+      "dati_partenza.rifiuto.codice_eer": "codiceEER",
+      "dati_partenza.rifiuto.stato_fisico": "statoFisico",
+      "dati_partenza.produttore.codice_fiscale": "produttoreCF",
+      "dati_partenza.produttore.indirizzo": "produttoreUnitaLocale",
+      "dati_partenza.produttore.indirizzo.citta.comune_id": "produttoreUnitaLocale",
+      "dati_partenza.produttore.autorizzazione.numero": "produttoreNumeroAut",
+      "dati_partenza.produttore.autorizzazione.tipo": "produttoreTipoAut",
+      "dati_partenza.destinatario.codice_fiscale": "destinatarioCF",
+      "dati_partenza.destinatario.indirizzo": "destinatarioUnitaLocale",
+      "dati_partenza.destinatario.indirizzo.citta.comune_id": "destinatarioUnitaLocale",
+      "dati_partenza.destinatario.attivita": "destinatarioCodiceOperazione",
+      "dati_partenza.destinatario.autorizzazione.numero": "destinatarioNumeroAut",
+      "dati_partenza.destinatario.autorizzazione.tipo": "destinatarioTipoAut",
+      "dati_partenza.trasportatori[0].numero_iscrizione_albo": "trasportatoreNumeroAlbo",
+    };
+    return Object.fromEntries(Object.entries(source).flatMap(([path, messages]) => {
+      const key = pathToStore[path];
+      if (!key) return [];
+      const message = messages.map((item) => item === "sys.required" ? "Campo richiesto dal RENTRI" : item === "sys.invalid" ? "Valore rifiutato dal RENTRI" : item).join("; ");
+      return [[key, message]];
+    }));
+  };
 
   // ── Dark Lemon: vede e compila questo formulario (proposte, conferma umana) ──
   // Ogni campo del formulario viene registrato sul ponte: l'assistente legge i valori
@@ -1109,6 +1146,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         firmaComeProduttore,
       });
       const result = await inviaFirmaRentri({ societaId, payloadFir: payloadRentri });
+      setRentriFieldErrors({});
       const officialNumeroFir = String(result.numero_fir || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (!officialNumeroFir) throw new Error("Partenza non confermata dal RENTRI: manca il numero ufficiale del FIR");
@@ -1168,6 +1206,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       }
       window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: activeFirId } }));
     } catch (error: any) {
+      if (error instanceof RentriSubmissionError) {
+        const mapped = mapRentriFieldErrors(error.fieldErrors);
+        setRentriFieldErrors(mapped);
+        if (Object.keys(mapped).length > 0) setActiveTab(0);
+      }
       // Servizi RENTRI indisponibili: il FIR resta in bozza e finisce nella coda
       // "In attesa di reinvio" della Console RENTRI, per il rinvio in batch.
       if (isRentriConnectivityError(error?.message ?? "")) {
@@ -1730,11 +1773,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             />
 
             <Field label="Denominazione" value={d.produttoreDenominazione} onChange={(v) => u("produttoreDenominazione", v)} placeholder="Ragione sociale" />
-            <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => u("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" />
-            <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => u("produttoreCF", v)} />
+            <Field label="Unità locale / Indirizzo" value={d.produttoreUnitaLocale} onChange={(v) => updateFirField("produttoreUnitaLocale", v)} placeholder="Indirizzo completo" rentriError={rentriFieldErrors.produttoreUnitaLocale} />
+            <Field label="Codice Fiscale / P.IVA" value={d.produttoreCF} onChange={(v) => updateFirField("produttoreCF", v)} rentriError={rentriFieldErrors.produttoreCF} />
             <Row>
-              <Field label="RENTRI / Autorizzazione" value={d.produttoreNumeroAut} onChange={(v) => u("produttoreNumeroAut", v)} />
-              <TipoAutField label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => u("produttoreTipoAut", v)} />
+              <Field label="RENTRI / Autorizzazione" value={d.produttoreNumeroAut} onChange={(v) => updateFirField("produttoreNumeroAut", v)} rentriError={rentriFieldErrors.produttoreNumeroAut} />
+              <TipoAutField label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => updateFirField("produttoreTipoAut", v)} rentriError={rentriFieldErrors.produttoreTipoAut} />
             </Row>
             <Field label="Luogo produzione (se diverso)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
             <Field label="Data Autorizzazione" value={d.produttoreDataAut} onChange={(v) => u("produttoreDataAut", v)} type="date" />
@@ -1815,8 +1858,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             />
 
             <Field label="Denominazione" value={d.destinatarioDenominazione} onChange={(v) => u("destinatarioDenominazione", v)} placeholder="Ragione sociale impianto" />
-            <Field label="Indirizzo di scarico (sede operativa)" value={d.destinatarioUnitaLocale} onChange={(v) => u("destinatarioUnitaLocale", v)} placeholder="Indirizzo dove il rifiuto viene realmente scaricato" />
-            <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => u("destinatarioCF", v)} />
+            <Field label="Indirizzo di scarico (sede operativa)" value={d.destinatarioUnitaLocale} onChange={(v) => updateFirField("destinatarioUnitaLocale", v)} placeholder="Indirizzo dove il rifiuto viene realmente scaricato" rentriError={rentriFieldErrors.destinatarioUnitaLocale} />
+            <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => updateFirField("destinatarioCF", v)} rentriError={rentriFieldErrors.destinatarioCF} />
             <Row>
               <div>
                 <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Operazione</label>
@@ -1825,11 +1868,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                   <option value="D">Smaltimento (D)</option>
                 </select>
               </div>
-              <Field label="Codice Operazione" value={d.destinatarioCodiceOperazione} onChange={(v) => u("destinatarioCodiceOperazione", v)} placeholder="es. R13" />
+              <Field label="Codice Operazione" value={d.destinatarioCodiceOperazione} onChange={(v) => updateFirField("destinatarioCodiceOperazione", v)} placeholder="es. R13" rentriError={rentriFieldErrors.destinatarioCodiceOperazione} />
             </Row>
             <Row>
-              <Field label="N° Autorizzazione" value={d.destinatarioNumeroAut} onChange={(v) => u("destinatarioNumeroAut", v)} />
-              <TipoAutField label="Tipo Aut." value={d.destinatarioTipoAut} onChange={(v) => u("destinatarioTipoAut", v)} />
+              <Field label="N° Autorizzazione" value={d.destinatarioNumeroAut} onChange={(v) => updateFirField("destinatarioNumeroAut", v)} rentriError={rentriFieldErrors.destinatarioNumeroAut} />
+              <TipoAutField label="Tipo Aut." value={d.destinatarioTipoAut} onChange={(v) => updateFirField("destinatarioTipoAut", v)} rentriError={rentriFieldErrors.destinatarioTipoAut} />
             </Row>
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
           </Section>
@@ -1865,7 +1908,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
-              <Field label="N° Iscrizione Albo" value={d.trasportatoreNumeroAlbo} onChange={(v) => u("trasportatoreNumeroAlbo", v)} />
+              <Field label="N° Iscrizione Albo" value={d.trasportatoreNumeroAlbo} onChange={(v) => updateFirField("trasportatoreNumeroAlbo", v)} rentriError={rentriFieldErrors.trasportatoreNumeroAlbo} />
               <Field label="Data Iscrizione" value={d.trasportatoreDataAlbo} onChange={(v) => u("trasportatoreDataAlbo", v)} type="date" />
             </Row>
             <Field label="Situato in" value={d.trasportatoreSituatoIn} onChange={(v) => u("trasportatoreSituatoIn", v)} />
@@ -1898,12 +1941,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <CerPickerField
               label="Codice EER / CER"
               value={d.codiceEER}
-              onChange={(v) => u("codiceEER", v)}
+              onChange={(v) => updateFirField("codiceEER", v)}
               onSelect={(codice, descrizione) => {
                 u("codiceEER", codice);
                 if (descrizione) u("descrizione", descrizione);
               }}
               placeholder="es. 17 04 05 — cerca codice o descrizione"
+              error={rentriFieldErrors.codiceEER}
             />
             <Field label="Descrizione Rifiuto" value={d.descrizione} onChange={(v) => u("descrizione", v)} placeholder="Descrizione del rifiuto" />
             <Row>
