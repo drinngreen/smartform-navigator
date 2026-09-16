@@ -29,6 +29,7 @@ import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmareP
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { RentriPescaFirPanel } from "@/components/rentri/RentriPescaFirPanel";
 import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
+import { RentriInviiRentriPanel } from "@/components/rentri/RentriInviiRentriPanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
@@ -1011,8 +1012,12 @@ export default function MNRentriConsolePage() {
         )}
 
         {tab === "invii" && (
-          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-            <h3 className="text-base font-display tracking-wider">Invii registri effettuati</h3>
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-6">
+            <div className="space-y-3">
+              <h3 className="text-base font-display tracking-wider">Movimenti presenti sui registri RENTRI — Multy e Niyol</h3>
+              <RentriInviiRentriPanel />
+            </div>
+            <h3 className="text-base font-display tracking-wider">Invii registri effettuati dal programma</h3>
             <div className="max-h-[520px] overflow-auto rounded-xl border border-border/30">
               <table className="w-full text-sm">
                 <thead className="bg-secondary/60 text-xs uppercase text-muted-foreground">
