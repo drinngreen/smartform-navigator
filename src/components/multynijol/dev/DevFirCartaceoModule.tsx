@@ -103,8 +103,58 @@ export function DevFirCartaceoModule() {
       return n;
     });
 
-  const invia = async (target: MovimentoImpiantoRow[]) => {
+  const isEffettivo = (r: RigaCartacea) => (r.stato_movimento ?? "effettivo") === "effettivo";
+
+  const apriConferma = (r: RigaCartacea) => {
+    setConfermaRow(r);
+    setPesoConfermato(r.quantita_kg != null ? String(r.quantita_kg) : "");
+  };
+
+  /**
+   * Cartaceo: le giacenze si muovono SOLO qui, con la conferma di una persona
+   * che inserisce il peso realmente riscontrato dal destinatario.
+   */
+  const confermaPesata = async () => {
+    if (!confermaRow) return;
+    const peso = parseFloat(String(pesoConfermato).replace(",", "."));
+    if (!Number.isFinite(peso) || peso <= 0) {
+      toast.error("Inserisci il peso reale riscontrato (maggiore di zero)");
+      return;
+    }
+    setConfermando(true);
+    try {
+      const { error } = await supabase
+        .from("movimenti_impianto")
+        .update({ quantita_kg: peso, stato_movimento: "effettivo" } as any)
+        .eq("id", confermaRow.id);
+      if (error) throw error;
+
+      if (confermaRow.impianto_id && confermaRow.cer) {
+        const { error: recErr } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
+          p_tenant_id: MULTY_TENANT_ID,
+          p_impianto_id: confermaRow.impianto_id,
+          p_cer: confermaRow.cer,
+        });
+        if (recErr) throw recErr;
+      }
+      toast.success("Pesata confermata: movimento effettivo e giacenze aggiornate");
+      setConfermaRow(null);
+      await load();
+    } catch (e: any) {
+      toast.error("Conferma non riuscita: " + (e?.message ?? "sconosciuto"));
+    } finally {
+      setConfermando(false);
+    }
+  };
+
+  const invia = async (target: RigaCartacea[]) => {
     if (!registroId) return toast.error("Seleziona un registro RENTRI");
+    const nonEffettivi = target.filter((r) => !isEffettivo(r));
+    if (nonEffettivi.length > 0) {
+      return toast.error(
+        `${nonEffettivi.length} movimenti non sono ancora effettivi: conferma prima la pesata`,
+      );
+    }
     const payload = mapMovimentiToRentri(target, CLIENTE);
     if (payload.length === 0) return toast.error("Nessun movimento valido da inviare");
     setInviando(true);
