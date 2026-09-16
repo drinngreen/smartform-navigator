@@ -614,6 +614,19 @@ export function PresetAziendaSelector({
   }, [dbAuts, loadingDeps, ruolo, clienteId]);
 
 
+  /** Sedi operative selezionabili: unità locali registrate + righe di anagrafica
+   *  della stessa azienda su indirizzi diversi (sedi importate come record a sé). */
+  const sediDisponibili = useMemo(() => {
+    const chiave = (s: any) => `${s.indirizzo || ""}|${s.comune || ""}`.toUpperCase().replace(/[^0-9A-Z]/g, "");
+    const viste = new Set<string>();
+    return [...unitaLocali, ...sediAnagrafica].filter((s) => {
+      const k = chiave(s);
+      if (!s.indirizzo || viste.has(k)) return false;
+      viste.add(k);
+      return true;
+    });
+  }, [unitaLocali, sediAnagrafica]);
+
   const selectCls =
     "w-full bg-secondary/50 border border-primary/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
