@@ -126,7 +126,9 @@ export function scaricoProduttoreAmmesso(
   fir: FirProduttoreCandidato,
   cutoff = cutoffGiacenzeDaFir(),
 ): { ok: boolean; motivo?: string } {
-  if (normalizzaCf(fir.produttore_cf) !== MULTY_CF)
+  const prodMulty =
+    normalizzaCf(fir.produttore_cf) === MULTY_CF || nomeCorrisponde(fir.produttore_nome, ALIAS_MULTY);
+  if (!prodMulty)
     return { ok: false, motivo: "Il produttore non è Multyproget: nessun effetto sulle giacenze." };
   const istante = istanteFir(fir);
   if (istante === null)
