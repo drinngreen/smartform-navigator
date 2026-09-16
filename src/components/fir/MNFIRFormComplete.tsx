@@ -1234,31 +1234,50 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     setShowPesoPopup(true);
   };
 
-  const handleConfirmClosure = async (peso: string) => {
+  /**
+   * Secondo invio ufficiale al RENTRI: arrivo a destino.
+   * Se il RENTRI non accetta, il formulario resta in viaggio: niente chiusura,
+   * niente registro, niente giacenze.
+   */
+  const handleConfirmClosure = async (arrivo: ArrivoDestino) => {
     if (!store.editingFirId) return;
+    setInviandoArrivo(true);
     try {
-      store.updateField("pesoRicevuto", peso);
+      const pesoReale = arrivo.esito === "respinto" ? "0" : arrivo.peso;
+      const dataOraArrivo = new Date(`${arrivo.data}T${arrivo.ora}:00`).toISOString();
+      store.updateField("pesoRicevuto", pesoReale);
       const dbFields = mapStoreToDatabaseFields(store.data);
-      await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields, form_data: { ...dbFields.form_data, peso_ricevuto: peso } });
-      try {
-        const societaId = resolveSocietaId(activeTenantId, activeMnContext);
-        await chiudiFirRentri({
-          societaId,
-          numero_fir: d.selectedFirNumber,
-          peso_accettato: parseFloat(peso),
-          data_arrivo: new Date().toISOString(),
-          destinatario_denominazione: d.destinatarioDenominazione,
-          destinatario_codice_fiscale: d.destinatarioCF,
-          destinatario_indirizzo: d.destinatarioUnitaLocale,
-          destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
-          destinatario_numero_aut: d.destinatarioNumeroAut,
-          unita_misura: d.unitaMisura,
-        });
-      } catch (renderErr: any) { console.warn("[RENTRI] Chiusura server error:", renderErr.message); }
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        ...dbFields,
+        form_data: {
+          ...dbFields.form_data,
+          peso_ricevuto: pesoReale,
+          arrivo_data_ora: dataOraArrivo,
+          arrivo_esito: arrivo.esito,
+          arrivo_motivazione: arrivo.motivazione || null,
+        },
+      });
+
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+      await chiudiFirRentri({
+        societaId,
+        numero_fir: d.selectedFirNumber,
+        peso_accettato: parseFloat(pesoReale || "0"),
+        data_arrivo: dataOraArrivo,
+        destinatario_denominazione: d.destinatarioDenominazione,
+        destinatario_codice_fiscale: d.destinatarioCF,
+        destinatario_indirizzo: d.destinatarioUnitaLocale,
+        destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
+        destinatario_numero_aut: d.destinatarioNumeroAut,
+        unita_misura: d.unitaMisura,
+      });
+
       await closeFIR.mutateAsync(store.editingFirId);
       useMNFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
-      toast.success("🏁 FIR chiuso definitivamente!");
+      toast.success("🏁 Arrivo inviato al RENTRI e formulario chiuso");
+
 
       // ── AUTO EMAIL to impianto ──
       const emailDest = d.destinatarioEmail;
