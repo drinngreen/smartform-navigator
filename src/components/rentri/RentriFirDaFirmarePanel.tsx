@@ -90,6 +90,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<FirRow[]>([]);
   const [filtro, setFiltro] = useState<"da_firmare" | "tutti">("da_firmare");
+  const [ruoloSel, setRuoloSel] = useState<"tutti" | "produttore" | "trasportatore" | "destinatario">("tutti");
   const [q, setQ] = useState("");
   const [detail, setDetail] = useState<{ numero: string; data: unknown } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
