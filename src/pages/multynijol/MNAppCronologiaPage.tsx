@@ -10,6 +10,8 @@ import { FileText, Clock, CheckCircle, Edit, Download, Trash2 } from "lucide-rea
 import logoDragon from "@/assets/logo-dragon.png";
 import { toast } from "sonner";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
+import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
+
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 

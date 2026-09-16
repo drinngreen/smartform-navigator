@@ -10,6 +10,8 @@ import { FileText, Clock, CheckCircle, Send, Edit, Download, Printer, Trash2 } f
 import logoDragon from "@/assets/logo-dragon.png";
 import { toast } from "sonner";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
+import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
+
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
