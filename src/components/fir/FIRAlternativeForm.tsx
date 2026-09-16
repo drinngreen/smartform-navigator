@@ -1213,9 +1213,8 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
       const { error: updateErr } = await supabase.from("fir_forms").update(updates).eq("id", targetId);
       if (updateErr) throw updateErr;
 
-      // Sincronizzazione unica per entrambe le viste: instrada il FIR nei registri
-      // coinvolti e aggiorna le giacenze Multy in base al suo ruolo effettivo.
-      // REGOLA: la BOZZA non tocca mai registro né giacenze (solo il salvataggio definitivo).
+      // Sincronizzazione delle sole informazioni incomplete: senza firma del
+      // destinatario o conferma cartacea non si modifica alcuna giacenza.
       if (mode === "final" && tenantId && numeroFir) {
         try {
           const result = await syncFirFinalToRegistryAndInventory({
@@ -1226,7 +1225,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           });
           if (result.warning) throw new Error(result.warning);
         } catch (syncError) {
-          throw new Error("Dati FIR salvati, ma giacenze non aggiornate: " + formatErr(syncError));
+          throw new Error("Dati FIR salvati, ma registrazione incompleta non riuscita: " + formatErr(syncError));
         }
       }
 

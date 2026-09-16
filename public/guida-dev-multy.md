@@ -56,11 +56,11 @@ Queste regole valgono in **tutti** i punti in cui si compila un formulario: Impi
 
 
 ### 1.3 Cancellazione e reset
-- Ogni bozza si elimina con l'icona **🗑 cestino** (soft delete `deleted_by_user`): registro e giacenze vengono **stornati automaticamente**.
+- Ogni bozza si elimina con l'icona **🗑 cestino** (soft delete `deleted_by_user`): la bozza viene rimossa senza modificare giacenze; un movimento effettivo richiede uno storno umano tracciato.
 - Ogni sezione del modulo (Produttore, Destinatario, Trasportatore, Rifiuto, Quantità, Trasporto) ha il pulsante **gomma 🧽 "Cancella sezione"**: azzera solo quel blocco, lasciando intatto il resto.
 
 ### 1.4 Salvataggio e sincronizzazione
-- **Salva bozza**: il formulario resta modificabile; le giacenze tornano al valore di partenza (una bozza non movimenta il magazzino).
+- **Salva bozza**: il formulario resta modificabile; la bozza non modifica mai le giacenze.
 - **Salva definitivo** (`completato`): parte `syncFirFinalToRegistryAndInventory` (`src/lib/firFinalSync.ts`):
   - scrive in `registro_generale` per **ogni** tenant coinvolto (Multy e/o Niyol) in base al Codice Fiscale;
   - aggiorna `movimenti_impianto` **solo se Multyproget è produttore o destinatario** (`origine='fir_final'`, idempotente su `fir_id`).
@@ -82,7 +82,7 @@ Modulo storico dell'impianto Multyproget (via Rivarossa 18/20).
 - Elenco formulari (`DevFormulariList`) con: CER, produttore, destinatario, trasportatore, **quantità partenza / quantità arrivo**.
   - Riga **gialla/ambra** se il formulario è `completato` ma manca `peso_destino`.
   - Pulsanti fine riga: **Standard**, **Alternativo**, **Duplica**, **🗑 Cestino** (vedi Sezione 1).
-- Pulsante **Sync giacenze** sui movimenti: ricalcola i saldi (permessi corretti, funziona).
+- **Sync giacenze è disattivato**: i saldi cambiano solo nel punto unico autorizzato.
 
 ### 2.2 Regole giacenze (tassative)
 Le giacenze si aggiornano **solo** se Multyproget è produttore o destinatario. Se Multy è solo trasportatore → nessun impatto su `magazzino_giacenze` (è corretto, non è un bug).
@@ -226,7 +226,7 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - La voce **"Saldo iniziale" è stata rimossa**: si legge solo il saldo reale.
 - Toggle **"Mostra tutti i CER a magazzino (anche a zero)"** per vedere anche i materiali azzerati.
 - Le descrizioni CER mostrano il **materiale reale** (niente più diciture tecniche tipo "rettifica di allineamento").
-- Pulsante **Sync giacenze** per il ricalcolo verificato.
+- **Sync giacenze è disattivato**; usare il confronto saldi in sola lettura.
 
 ### 10-bis. Cernite, giacenze e registro — regole verificate con prova reale (11/09/2026)
 
@@ -236,7 +236,7 @@ Alla cancellazione di un conferimento vengono eliminati anche ricevuta e carico 
 - **Registro Generale** (TAB Registri → Registro Generale): oltre ai movimenti dei formulari mostra i movimenti di cernita confermati con codice `C-nn`. Le cernite **annullate** e i movimenti di test non compaiono.
 - **Storico riconciliato**: la cernita interna del 04/09/2026 da 30.000 kg (`200140-FE` → `170405`) resta visibile nello storico Cernite. Nel Registro Generale lo stesso trasferimento compare una sola volta tramite i movimenti ufficiali del 21/01/2026. La cernita allegata del 31/08/2026 da 1.840 kg resta nascosta solo nelle viste, senza modificare saldi o dati storici.
 - **Base dei saldi**: saldo finale 2025 + registro 2026 + conferimenti privati reali, evitando di sommare nuovamente le cernite già rappresentate nel registro. Le giacenze riconciliate non hanno valori negativi.
-- **Formulari e giacenze**: le bozze non muovono nulla. Solo *Salva definitivo* / **CARICA NEL SISTEMA (REGISTRO + GIACENZE)** aggiorna registro e giacenze: Multyproget destinatario = CARICO, Multyproget produttore = SCARICO, conto terzi = nessun impatto sulle giacenze.
+- **Formulari e giacenze**: le bozze non muovono nulla. Il caricamento rende il movimento incompleto. Il digitale diventa effettivo soltanto con la firma del destinatario; il cartaceo soltanto con conferma manuale. Multyproget destinatario = CARICO, produttore = SCARICO, conto terzi = nessun impatto.
 - **Codici CER**: sempre senza spazi (`150101`), sigle materiale con trattino (`200140-FE`). Le vecchie forme `MET` / `MET MIX` equivalgono a `-MIX`.
 - **Controllo salute**: la card "Report stato sistema" nel Centro di Comando esegue `system_health_check()` (giacenze non negative, allineamento Dragon/magazzino, ricevute privati, cernite con output, duplicati).
 
@@ -371,7 +371,7 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 | Sintomo | Causa probabile | Fix operativo |
 |---|---|---|
 | Giacenza non aggiornata dopo un FIR | Multy non è né produttore né destinatario | Corretto: la giacenza cambia solo se Multy è parte del formulario. |
-| Giacenza non aggiornata dopo un privato | Salvataggio interrotto | Non può succedere: la procedura atomica fallisce e avvisa. Usa **Sync giacenze** per riverificare. |
+| Giacenza non aggiornata dopo un privato | Salvataggio interrotto | Non può succedere: la procedura atomica fallisce e avvisa. Usa il confronto saldi in sola lettura e non ricalcolare. |
 | Riga FIR gialla | Manca `peso_destino` su FIR completato | Apri il FIR, compila la quantità arrivo, salva. |
 | "Numero FIR già utilizzato" | Numero duplicato nello stesso tenant | Cambia numero o cestina il duplicato. |
 | Non trovo un CER nella tendina | Filtro sui soli materiali movimentati | Spunta "Mostra tutti i CER del catalogo europeo". |

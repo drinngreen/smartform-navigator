@@ -765,9 +765,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
   /**
-   * Trasforma la bozza in FIR OPERATIVO (cartaceo o digitale già emesso):
-   * scrive il movimento nel registro generale e aggiorna le giacenze
-   * (Carico se Multyproget è destinatario, Scarico se è produttore).
+   * Carica la bozza come FIR incompleto. Il registro resta incompleto e le
+   * giacenze non cambiano finché manca firma digitale o conferma cartacea.
    */
   const handleCaricaNelSistema = async () => {
     try {

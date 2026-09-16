@@ -82,7 +82,7 @@ const CHAPTERS: Chapter[] = [
     explain: [
       "Si parte SEMPRE dal numero: digiti il numero FIR (quello stampato sul blocco o scaricato dal RENTRI) e premi 'Crea formulario'. La bozza si apre immediatamente e da quel momento è tua, modificabile.",
       "Il formulario ha due viste — Standard e Alternativo — che sono lo stesso documento. Se scrivi il peso nella vista Standard, lo ritrovi nella vista Alternativa mentre stai ancora digitando. Non esistono due formulari: esiste un formulario con due facce.",
-      "Salva bozza = il documento resta modificabile. Salva definitivo = il documento entra nei registri e aggiorna le giacenze secondo il ruolo di Multyproget.",
+      "Salva bozza = documento modificabile. Il digitale aggiorna le giacenze solo alla firma del destinatario; il cartaceo solo alla conferma manuale.",
       "Ogni sezione ha un pulsante gomma che azzera SOLO quella sezione. Il cestino in alto, invece, elimina l'intero formulario e storna in automatico registro e giacenze: nessuna riga resta orfana.",
     ],
     steps: [
@@ -94,7 +94,7 @@ const CHAPTERS: Chapter[] = [
       "Controlla data e ora di partenza, targa e conducente.",
       "Se il trasporto ha una sosta tecnica (punto 15 del formulario cartaceo), compila la sezione '15. Sosta tecnica' con luogo, inizio e fine sospensione: non va scritta nelle Annotazioni. Seconda e terza sosta si compilano nella pagina Trasbordo / Soste.",
       "Passa alla vista Alternativa per verificare che il modulo ufficiale sia leggibile e completo.",
-      "Salva in bozza per continuare dopo, oppure Salva definitivo per scrivere su registri e giacenze.",
+      "Salva in bozza per continuare dopo; il movimento resta incompleto fino alla certificazione prevista.",
     ],
     fields: [
       { label: "Numero FIR", desc: "Sempre manuale. È l'identificativo univoco: se sbagli, elimina il formulario e ricrealo col numero giusto." },
@@ -225,21 +225,21 @@ const CHAPTERS: Chapter[] = [
       "Un CARICO entra in magazzino (Multyproget è destinatario), uno SCARICO esce (Multyproget è produttore/mittente). La giacenza per CER è semplicemente la somma algebrica di queste righe.",
       "L'elenco formulari mostra CER, produttore, destinatario, trasportatore e le quantità di partenza e di arrivo: serve per il colpo d'occhio, prima di aprire il documento.",
       "Le righe ambra segnalano formulari chiusi ma senza peso a destino: vanno completate, altrimenti i saldi restano approssimati.",
-      "Il pulsante 'Sync giacenze' ricalcola i saldi partendo dai movimenti reali ed è una verifica indipendente: se dopo il sync il numero non cambia, il dato è corretto.",
+      "Il ricalcolo è disattivato. Il confronto saldi è una diagnosi in sola lettura e non modifica dati.",
     ],
     steps: [
       "Seleziona la tab Impianto.",
       "Filtra per periodo, CER, tipo (carico/scarico) e ruolo per isolare i movimenti che ti interessano.",
       "Controlla che ogni riga abbia data, CER, quantità e controparte corrette.",
       "Apri le righe ambra e inserisci la quantità di arrivo.",
-      "Lancia 'Sync giacenze' e confronta con la tab Magazzino Dev.",
+      "Apri il confronto saldi in sola lettura e segnala ogni differenza senza correggerla automaticamente.",
     ],
     warnings: ["I dati di Conto Proprio e Intermediazione NON compaiono qui: i contesti sono isolati per legge e per chiarezza."],
     tip: "Se un saldo non torna, non correggerlo a mano: cerca il movimento mancante o duplicato e sistema quello.",
     faq: [
       { q: "Perché qui non vedo i movimenti di Conto Proprio?", a: "I contesti sono isolati: la tab Impianto mostra solo l'attività dell'impianto, come richiesto dalla normativa e per evitare confusione nei registri." },
       { q: "Una riga è ambra: cosa manca?", a: "Manca la quantità in arrivo a destino. Finché non la inserisci il movimento non è completo e il saldo non è definitivo." },
-      { q: "Ho lanciato Sync giacenze e il saldo è cambiato.", a: "Significa che c'era un disallineamento: il valore giusto è quello ricalcolato dai movimenti. Se il salto è grosso, controlla i movimenti del periodo." },
+      { q: "Posso riallineare automaticamente una giacenza?", a: "No. Ogni differenza va analizzata in sola lettura; la correzione richiede un movimento umano tracciato." },
       { q: "Come distinguo carico e scarico?", a: "Il carico è il rifiuto che entra in impianto, lo scarico è quello che esce verso il destinatario finale. Il filtro tipo ti permette di vedere solo una delle due famiglie." },
     ],
     route: "/mn/admin/dev-multyproget?tab=impianto",
@@ -287,7 +287,7 @@ const CHAPTERS: Chapter[] = [
     steps: [
       "Crea un nuovo formulario inserendo manualmente il numero FIR.",
       "Scegli la vista Standard o Alternativa: si compilano in sincrono.",
-      "Salva in bozza: le giacenze si aggiornano coerentemente al ruolo di Multyproget.",
+      "Salva in bozza: le giacenze restano invariate.",
       "Usa il cestino per eliminare: soft delete + storno automatico del movimento.",
     ],
     faq: [
@@ -435,12 +435,12 @@ const CHAPTERS: Chapter[] = [
     explain: [
       "Ogni riga è la coppia CER + variante materiale (es. 200140 rame, 200140 cavi): sono saldi separati perché separata è la lavorazione.",
       "Di default vedi solo i CER con giacenza; attiva 'Mostra tutti i CER' per vedere anche quelli a zero, utile prima di un conferimento su un materiale nuovo.",
-      "Se un saldo ti sembra sbagliato, lancia Sync giacenze: ricalcola dai movimenti in modo atomico e ti dice il valore reale.",
+      "Se un saldo sembra sbagliato, usa il confronto in sola lettura: non eseguire riallineamenti automatici.",
     ],
     steps: [
       "Consulta i saldi per CER e variante.",
       "Attiva 'Mostra tutti i CER' per includere quelli a zero.",
-      "Lancia Sync giacenze e confronta con i movimenti della tab Impianto.",
+      "Confronta in sola lettura il saldo con i movimenti della tab Impianto.",
       "Se il saldo cambia dopo il sync, cerca il movimento che mancava.",
     ],
     warnings: ["Non esiste una casella per 'scrivere' una giacenza: si corregge solo aggiungendo o correggendo movimenti."],
@@ -448,7 +448,7 @@ const CHAPTERS: Chapter[] = [
       { q: "Un CER che carico spesso non compare in giacenze.", a: "Compare solo se ha movimenti. Attiva 'Mostra tutti i CER' per vedere anche quelli a zero." },
       { q: "La giacenza è diversa da quella che ho contato in piazzale.", a: "La differenza è sempre un movimento mancante o duplicato: confronta i movimenti del periodo nella tab Impianto e correggi lì." },
       { q: "Posso scrivere io il saldo corretto?", a: "No, e non è un limite ma una garanzia: il saldo deriva dai movimenti, così il registro resta difendibile in caso di controllo." },
-      { q: "Cosa fa esattamente 'Sync giacenze'?", a: "Ricalcola i saldi partendo da tutti i movimenti registrati e verifica che il risultato coincida: se cambia qualcosa, significa che c'era un disallineamento." },
+      { q: "Cosa faccio se i saldi non coincidono?", a: "Fermati e analizza il confronto in sola lettura. Non ricalcolare e non modificare automaticamente." },
     ],
     route: "/mn/admin/dev-multyproget?tab=magazzino-dev",
   },
