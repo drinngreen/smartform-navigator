@@ -182,14 +182,22 @@ describe("Valori ufficiali RENTRI: autorizzazione e attività destinatario", () 
       destinatarioTipoAut: "dicitura inventata",
       destinatarioCodiceOperazione: "R 13 - messa in riserva",
     };
-    const p = (await mapStoreToRentriFirPayload("multy", base)) as any;
+    // Il RENTRI esige numero e tipo del destinatario: dicitura non ufficiale => invio bloccato
+    await expect(mapStoreToRentriFirPayload("multy", base)).rejects.toThrow(/destinatario/i);
+
+    const valido = { ...base, destinatarioTipoAut: "AIA" };
+    const p = (await mapStoreToRentriFirPayload("multy", valido)) as any;
     expect(p.dati_partenza.produttore.autorizzazione).toEqual({ numero: "AUT-1", tipo: "RecSmalArt208" });
-    // Il RENTRI esige il tipo quando il blocco è presente: dicitura non ufficiale => blocco omesso
-    expect(p.dati_partenza.destinatario.autorizzazione).toBeUndefined();
+    expect(p.dati_partenza.destinatario.autorizzazione).toEqual({ numero: "AUT-2", tipo: "AIA" });
     expect(p.dati_partenza.destinatario.attivita).toBe("R13");
 
+    // Manca del tutto l'autorizzazione del destinatario => invio bloccato con messaggio chiaro
+    await expect(
+      mapStoreToRentriFirPayload("multy", { ...valido, destinatarioNumeroAut: "", destinatarioTipoAut: "" }),
+    ).rejects.toThrow(/Autorizzazione del destinatario mancante/);
+
     const q = (await mapStoreToRentriFirPayload("multy", {
-      ...base,
+      ...valido,
       destinatarioCodiceOperazione: "",
       destinatarioOperazione: "D",
       produttoreTipoAut: "AIA",
