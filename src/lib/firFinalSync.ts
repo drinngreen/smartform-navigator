@@ -289,6 +289,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             numero_fir: numeroFir,
             produttore_denominazione: prodDen,
             destinatario_denominazione: destDen,
+            stato_movimento: statoMovimento,
             note: `Storno automatico: il FIR non fa più riferimento a ${group.cer} (impianto ${group.impiantoId})`,
           } as any);
           if (revError) throw revError;
