@@ -32,12 +32,11 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
 
     try {
       // Map form fields to RENTRI-structured payload
-      const payload = mapFormToRentriPayload(cliente, formData, {
+      const payload = await mapFormToRentriPayload(cliente, formData, {
         firmaComeProduttore,
         templateFields,
       });
 
-      console.log("[RENTRI] Payload emissione:", JSON.stringify(payload, null, 2));
       const res = await emissioneFir(cliente, payload);
       setResult(res);
 
