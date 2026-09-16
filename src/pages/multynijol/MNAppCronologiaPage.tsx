@@ -81,13 +81,14 @@ export default function MNAppCronologiaPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (stato: string) => {
+    switch (stato) {
       case "bozza": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30"><Clock className="h-3 w-3" /> Bozza</span>;
-      case "inviato": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30"><CheckCircle className="h-3 w-3" /> Inviato</span>;
-      case "completato": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30"><CheckCircle className="h-3 w-3" /> Chiuso</span>;
+      case "inviato": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30"><CheckCircle className="h-3 w-3" /> Inviato al RENTRI</span>;
+      case "chiuso": return <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30"><CheckCircle className="h-3 w-3" /> Chiuso</span>;
       default: return null;
     }
+
   };
 
   return (
