@@ -1,6 +1,12 @@
 # RENTRI che funziona come un orologio — Multy e Niyol
 
-Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certificato**. Un movimento entra nel registro RENTRI solo quando è effettivo (peso certificato: firma del destinatario nel digitale, conferma manuale nel cartaceo, pesa in impianto per i privati). Niente cambia su giacenze, cernite, registro privati e ricevute privati.
+Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certificato**. Un movimento entra nel registro RENTRI solo quando è effettivo (peso certificato: firma del destinatario nel digitale, conferma manuale nel cartaceo, pesa in impianto per i privati).
+
+**Vincolo sui dati esistenti.** Nessun dato storico già consolidato viene modificato: giacenze pregresse, cernite, registro privati, ricevute privati, movimenti e formulari già emessi restano come sono. Le modifiche valgono solo per i nuovi formulari e per i nuovi passaggi automatici.
+
+**Regola sulle giacenze.** La chiusura reale del formulario digitale — peso finale inserito e firma del destinatario — è l'unico punto autorizzato a generare movimento, riga di registro e aggiornamento di giacenza, e lo fa una sola volta. Nessun evento precedente o parallelo tocca i saldi: non l'apertura del formulario, non la firma di partenza, non i salvataggi provvisori, non automatismi separati, non lavorazioni successive. I formulari cartacei restano sul percorso di conferma manuale. Nessun saldo storico viene ricalcolato.
+
+**Tracciamento obbligatorio.** Ogni aggiornamento di giacenza salva almeno: formulario, azienda, peso finale usato, valore prima, valore dopo, data e ora, e chi o cosa ha eseguito la chiusura. Se la traccia non si può scrivere, l'aggiornamento non parte.
 
 ## Cosa risulta oggi, letto ora dal database
 
@@ -12,6 +18,7 @@ Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certifica
 - I formulari scaricati dal RENTRI si possono vedere e firmare, ma non vengono importati in archivio; e l'accettazione scrive il movimento solo per Multy, mai per Niyol.
 - Nessun controllo automatico ripassa a verificare gli invii rimasti "in attesa", e la coda dei tentativi falliti si svuota solo a mano.
 - Il blocco temporaneo del RENTRI (errore 423) non è gestito da nessuna parte: oggi appare come errore generico.
+- Esistono ancora percorsi diversi che portano a risultati diversi fra chiusura del formulario, movimento d'impianto, registro e giacenze: vanno ridotti a un solo flusso, stessa azione stesso risultato.
 
 ## Cosa sistemo, in ordine
 
@@ -55,5 +62,10 @@ Giacenze, cernite e lavorazioni, conferimenti privati, registro e ricevute dei p
 - **423 / offline**: gestione esplicita in `supabase/functions/rentri-vps-proxy/handler.ts` (`errorCodeForStatus` + backoff con `retry_after_ms`) e messaggio dedicato in `src/lib/rentriErrorMessages.ts`; la coda `RentriRetryQueue` riprova automaticamente allo scadere dell'attesa.
 - **Ufficio ↔ app in tempo reale**: `fir_forms` già condiviso; canale Realtime per `fir_forms` filtrato su tenant/autista, con sottoscrizione montata e smontata nel ciclo di vita del componente in `MNFIRFormComplete.tsx` e nella vista ufficio; scrittura lato ufficio bloccata quando `stato` è firmato/inviato; ogni intervento registrato con autore e ora nel diario del formulario.
 - **QR code di controllo**: pagina pubblica in sola lettura `/fir/controllo/:token` con token opaco per formulario (non indovinabile, revocabile alla chiusura), lettura via RPC `SECURITY DEFINER` che restituisce solo i campi da esibire; QR generato lato app dal token, senza dati personali dentro il codice.
-- **Tracciamento**: ogni operazione continua ad andare in `rentri_operazioni`; gli invii registro in `rentri_invii_registri`, i privati in `rentri_invii_privati` (invariati).
+- **Punto unico giacenze**: la chiusura digitale e il pulsante cartaceo passano entrambi da `applica_movimento_giacenza`, idempotente su documento+CER+segno, che scrive il movimento effettivo e lascia traccia in `giacenze_audit_log` (formulario, azienda, peso usato, prima, dopo, ora, attore). Se il log non si scrive, la transazione non va a buon fine. Nessun backfill, nessun ricalcolo dello storico.
+- **Tracciamento**: ogni operazione continua ad andare in `rentri_operazioni`; gli invii registro in `rentri_invii_registri`, i privati in `rentri_invii_privati` (invariati), tenuti distinti fra formulari, registri e privati.
 - **Verifica a ogni passo**: `node scripts/verify.mjs --smoke`, conteggio e totale giacenze letti prima e dopo (incluse le righe nascoste), screenshot reale della console RENTRI e della schermata Giacenze, e per gli invii la risposta del RENTRI mostrata integralmente — nessuna affermazione senza prova appena letta.
+
+## Criterio finale di accettazione
+
+Il lavoro è concluso solo dopo una prova reale completa su un formulario nuovo: apertura, compilazione, firma di partenza, arrivo a destino, peso reale inserito, firma del destinatario, chiusura, creazione del movimento, aggiornamento del registro, aggiornamento delle giacenze, verifica finale coerente. Con prove lette al momento: risposta integrale del RENTRI, stato finale del formulario, conteggio e totale giacenze prima e dopo, screenshot reale della console e della schermata Giacenze.
