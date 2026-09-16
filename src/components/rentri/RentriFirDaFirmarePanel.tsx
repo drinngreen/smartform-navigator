@@ -164,37 +164,36 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
 
   const visibili = useMemo(() => {
     const term = q.trim().toLowerCase();
+    const labelSel = societaSel === "tutte" ? null : SOCIETA.find((s) => s.key === societaSel)?.label ?? null;
     return rows
+      .filter((r) => (labelSel ? r.ruoli.some((x) => x.startsWith(labelSel)) : true))
       .filter((r) => (filtro === "tutti" ? true : !r.accettato))
-      .filter((r) =>
-        ruoloSel === "tutti"
-          ? true
-          : ruoloSel === "produttore"
-            ? r.ruolo.includes("Produttore")
-            : ruoloSel === "trasportatore"
-              ? r.ruolo.includes("Trasportatore")
-              : r.ruolo.includes("Destinatario"),
-      )
+      .filter((r) => {
+        if (ruoloSel === "tutti") return true;
+        const cerca = (suffisso: string) =>
+          r.ruoli.some((x) => (labelSel ? x === `${labelSel} ${suffisso}` : x.endsWith(suffisso)));
+        return cerca(ruoloSel);
+      })
       .filter((r) =>
         !term
           ? true
-          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.societaLabel]
+          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.ruolo]
               .join(" ")
               .toLowerCase()
               .includes(term),
       );
-  }, [rows, filtro, ruoloSel, q]);
+  }, [rows, societaSel, filtro, ruoloSel, q]);
 
   const conteggi = useMemo(() => {
     const out: Record<string, { tutti: number; daFirmare: number; produttore: number; trasportatore: number; destinatario: number }> = {};
     for (const s of SOCIETA) {
-      const r = rows.filter((x) => x.societa === s.key);
+      const r = rows.filter((x) => x.ruoli.some((v) => v.startsWith(s.label)));
       out[s.key] = {
         tutti: r.length,
         daFirmare: r.filter((x) => !x.accettato).length,
-        produttore: r.filter((x) => x.ruolo.includes("Produttore")).length,
-        trasportatore: r.filter((x) => x.ruolo.includes("Trasportatore")).length,
-        destinatario: r.filter((x) => x.ruolo.includes("Destinatario")).length,
+        produttore: r.filter((x) => x.ruoli.includes(`${s.label} produttore`)).length,
+        trasportatore: r.filter((x) => x.ruoli.includes(`${s.label} trasportatore`)).length,
+        destinatario: r.filter((x) => x.ruoli.includes(`${s.label} destinatario`)).length,
       };
     }
     return out;
