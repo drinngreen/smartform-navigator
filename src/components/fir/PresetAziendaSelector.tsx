@@ -109,6 +109,7 @@ export function PresetAziendaSelector({
   const [dbAuts, setDbAuts] = useState<any[]>([]);
   const [cantieri, setCantieri] = useState<any[]>([]);
   const [unitaLocali, setUnitaLocali] = useState<any[]>([]);
+  const [sediAnagrafica, setSediAnagrafica] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
   const [conducenti, setConducenti] = useState<any[]>([]);
   const [allConducenti, setAllConducenti] = useState<any[]>([]);
