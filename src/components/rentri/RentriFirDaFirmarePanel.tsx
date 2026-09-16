@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, PenLine, Search } from "lucide-react";
 import {
@@ -20,7 +20,14 @@ const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string 
   },
 };
 
+const SOCIETA: { key: "multy" | "niyol"; label: string }[] = [
+  { key: "multy", label: "Multyproget" },
+  { key: "niyol", label: "Niyol" },
+];
+
 interface FirRow {
+  societa: "multy" | "niyol";
+  societaLabel: string;
   numero_fir: string;
   codice_eer: string;
   quantita: number;
@@ -29,17 +36,30 @@ interface FirRow {
   data_creazione: string;
   data_emissione?: string;
   produttore_nome: string;
+  produttore_cf: string;
   destinatario_nome: string;
   destinatario_cf: string;
   trasportatore_nome: string;
+  trasportatore_cf: string;
+  ruolo: string;
   accettato: boolean;
   raw: Record<string, unknown>;
 }
 
-function mapRow(d: any): FirRow {
+function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string, cfSoggetto: string): FirRow {
   const dest = Array.isArray(d.destinatari) ? d.destinatari[0] ?? {} : d.destinatario ?? {};
-  const tras = Array.isArray(d.trasportatori) ? d.trasportatori[0] ?? {} : {};
+  const tras = Array.isArray(d.trasportatori) ? d.trasportatori[0] ?? {} : d.trasportatore ?? {};
+  const prod = d.produttore ?? {};
+  const destCf = String(dest.codice_fiscale ?? d.destinatario_codice_fiscale ?? "");
+  const trasCf = String(tras.codice_fiscale ?? "");
+  const prodCf = String(prod.codice_fiscale ?? "");
+  const ruoli: string[] = [];
+  if (prodCf && prodCf === cfSoggetto) ruoli.push("Produttore");
+  if (trasCf && trasCf === cfSoggetto) ruoli.push("Trasportatore");
+  if (destCf && destCf === cfSoggetto) ruoli.push("Destinatario");
   return {
+    societa,
+    societaLabel,
     numero_fir: String(d.numero_fir ?? ""),
     codice_eer: String(d.codice_eer ?? ""),
     quantita: Number(d.quantita ?? 0),
@@ -47,10 +67,13 @@ function mapRow(d: any): FirRow {
     stato: String(d.stato ?? ""),
     data_creazione: String(d.data_creazione ?? ""),
     data_emissione: d.data_emissione ? String(d.data_emissione) : undefined,
-    produttore_nome: String(d.produttore?.denominazione ?? ""),
+    produttore_nome: String(prod.denominazione ?? ""),
+    produttore_cf: prodCf,
     destinatario_nome: String(dest.denominazione ?? ""),
-    destinatario_cf: String(dest.codice_fiscale ?? ""),
+    destinatario_cf: destCf,
     trasportatore_nome: String(tras.denominazione ?? ""),
+    trasportatore_cf: trasCf,
+    ruolo: ruoli.join(" + ") || "—",
     accettato: Boolean(d.accettazione) || String(d.stato ?? "").toLowerCase().startsWith("accett"),
     raw: d,
   };
@@ -63,10 +86,7 @@ function fmtDate(v?: string) {
 }
 
 export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente }) {
-  const configKey = rentriConfigKey(cliente);
-  const cfSoggetto = RENTRI_CF_SOGGETTO[configKey] ?? "";
-  const unitaLocale = RENTRI_UNITA_LOCALI[configKey] ?? "";
-
+  const [societaSel, setSocietaSel] = useState<"tutte" | "multy" | "niyol">("tutte");
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<FirRow[]>([]);
   const [filtro, setFiltro] = useState<"da_firmare" | "tutti">("da_firmare");
@@ -83,47 +103,72 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
   const [motivazione, setMotivazione] = useState("");
   const [firmando, setFirmando] = useState(false);
 
-  const carica = async () => {
+  const daLeggere = useMemo(
+    () => (societaSel === "tutte" ? SOCIETA : SOCIETA.filter((s) => s.key === societaSel)),
+    [societaSel],
+  );
+
+  const carica = useCallback(async () => {
     setLoading(true);
-    try {
-      const res = await elencoFormulariRentri(cliente, cfSoggetto, unitaLocale);
-      if (!res.success) throw new Error(res.error || "Errore RENTRI");
-      const raw = res.data as any;
-      const list = Array.isArray(raw) ? raw : raw?.formulari ?? raw?.items ?? raw?.content ?? [];
-      setRows((Array.isArray(list) ? list : []).map(mapRow));
-      toast.success(`${Array.isArray(list) ? list.length : 0} formulari letti da RENTRI`);
-    } catch (e: any) {
-      toast.error(`RENTRI: ${e.message}`);
-      setRows([]);
-    } finally {
-      setLoading(false);
+    const acc: FirRow[] = [];
+    const errori: string[] = [];
+    for (const s of daLeggere) {
+      const cf = RENTRI_CF_SOGGETTO[s.key] ?? "";
+      const ul = RENTRI_UNITA_LOCALI[s.key] ?? "";
+      try {
+        const res = await elencoFormulariRentri(s.key as RentriCliente, cf, ul);
+        if (!res.success) throw new Error(res.error || "Errore RENTRI");
+        const raw = res.data as any;
+        const list = Array.isArray(raw) ? raw : raw?.formulari ?? raw?.items ?? raw?.content ?? [];
+        for (const d of Array.isArray(list) ? list : []) acc.push(mapRow(d, s.key, s.label, cf));
+      } catch (e: any) {
+        errori.push(`${s.label}: ${e.message}`);
+      }
     }
-  };
+    acc.sort((a, b) => (b.data_emissione ?? b.data_creazione).localeCompare(a.data_emissione ?? a.data_creazione));
+    setRows(acc);
+    setLoading(false);
+    if (errori.length) toast.error(`RENTRI — ${errori.join(" · ")}`);
+    else toast.success(`${acc.length} formulari letti dal RENTRI`);
+  }, [daLeggere]);
 
   useEffect(() => {
     carica();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cliente]);
+  }, [carica]);
 
   const visibili = useMemo(() => {
     const term = q.trim().toLowerCase();
     return rows
-      .filter((r) => (filtro === "tutti" ? true : !r.accettato && r.destinatario_cf === cfSoggetto))
+      .filter((r) => (filtro === "tutti" ? true : !r.accettato))
       .filter((r) =>
         !term
           ? true
-          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome]
+          : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.societaLabel]
               .join(" ")
               .toLowerCase()
               .includes(term),
       );
-  }, [rows, filtro, q, cfSoggetto]);
+  }, [rows, filtro, q]);
+
+  const conteggi = useMemo(() => {
+    const out: Record<string, { tutti: number; daFirmare: number }> = {};
+    for (const s of SOCIETA) {
+      const r = rows.filter((x) => x.societa === s.key);
+      out[s.key] = { tutti: r.length, daFirmare: r.filter((x) => !x.accettato).length };
+    }
+    return out;
+  }, [rows]);
 
   const apriDettaglio = async (r: FirRow) => {
     setDetailLoading(true);
     setDetail({ numero: r.numero_fir, data: null });
     try {
-      const res = await dettaglioFormularioRentri(cliente, r.numero_fir, cfSoggetto, unitaLocale);
+      const res = await dettaglioFormularioRentri(
+        r.societa as RentriCliente,
+        r.numero_fir,
+        RENTRI_CF_SOGGETTO[r.societa] ?? "",
+        RENTRI_UNITA_LOCALI[r.societa] ?? "",
+      );
       if (!res.success) throw new Error(res.error || "Errore RENTRI");
       setDetail({ numero: r.numero_fir, data: res.data });
     } catch (e: any) {
@@ -147,8 +192,10 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     if (!window.confirm(`Firmare l'accettazione del FIR ${firmaFir.numero_fir} su RENTRI?`)) return;
     setFirmando(true);
     try {
+      const cfSoggetto = RENTRI_CF_SOGGETTO[firmaFir.societa] ?? "";
+      const unitaLocale = RENTRI_UNITA_LOCALI[firmaFir.societa] ?? "";
       const res = await accettaFirInArrivoDestinatario(
-        cliente,
+        firmaFir.societa as RentriCliente,
         firmaFir.numero_fir,
         {
           data_ora_ricezione: new Date(`${dataArrivo}T${oraArrivo}:00`).toISOString(),
@@ -169,7 +216,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
 
       // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
       // La pesata certificata passa obbligatoriamente dal punto unico idempotente.
-      const destino = IMPIANTO_DESTINO[configKey];
+      const destino = IMPIANTO_DESTINO[firmaFir.societa];
       if (esito !== "respinto" && destino) {
         const { error: movErr } = await (supabase as any).rpc("applica_movimento_giacenza", {
           p_tenant_id: destino.tenant_id,
@@ -215,6 +262,21 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           {loading ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
           Cerca su RENTRI
         </button>
+
+        <div className="flex overflow-hidden rounded-md border border-border">
+          {(["tutte", "multy", "niyol"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setSocietaSel(s)}
+              className={`px-3 py-2 text-xs font-semibold ${
+                societaSel === s ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+              }`}
+            >
+              {s === "tutte" ? "Multy + Niyol" : s === "multy" ? "Multyproget" : "Niyol"}
+            </button>
+          ))}
+        </div>
+
         <div className="flex overflow-hidden rounded-md border border-border">
           {(["da_firmare", "tutti"] as const).map((f) => (
             <button
@@ -228,6 +290,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
             </button>
           ))}
         </div>
+
         <div className="relative">
           <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -237,21 +300,26 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
             className="rounded-md border border-border bg-background py-2 pl-7 pr-3 text-sm"
           />
         </div>
-        <span className="text-xs text-muted-foreground">
-          Soggetto: {cfSoggetto} · U.L. {unitaLocale} · {visibili.length} risultati
-        </span>
-        {configKey === "niyol" && (
-          <span className="text-xs text-amber-500">
-            Niyol opera come trasportatore: non riceve rifiuti in impianto. I suoi formulari come trasportatore si gestiscono dal registro di trasporto.
+      </div>
+
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+        {SOCIETA.map((s) => (
+          <span key={s.key} className="rounded-md border border-border/50 px-2 py-1">
+            <strong className="text-foreground">{s.label}</strong> · {conteggi[s.key]?.tutti ?? 0} sul RENTRI ·{" "}
+            <span className="text-amber-500">{conteggi[s.key]?.daFirmare ?? 0} da firmare</span> · CF{" "}
+            {RENTRI_CF_SOGGETTO[s.key]}
           </span>
-        )}
+        ))}
+        <span>{visibili.length} righe mostrate</span>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="px-3 py-2 text-left">Società</th>
               <th className="px-3 py-2 text-left">Numero FIR</th>
+              <th className="px-3 py-2 text-left">Ruolo</th>
               <th className="px-3 py-2 text-left">CER</th>
               <th className="px-3 py-2 text-left">Produttore</th>
               <th className="px-3 py-2 text-left">Trasportatore</th>
@@ -264,8 +332,10 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           </thead>
           <tbody>
             {visibili.map((r) => (
-              <tr key={r.numero_fir} className="border-t border-border">
+              <tr key={`${r.societa}-${r.numero_fir}`} className="border-t border-border">
+                <td className="px-3 py-2 text-xs font-semibold">{r.societaLabel}</td>
                 <td className="px-3 py-2 font-mono text-xs font-bold">{r.numero_fir}</td>
+                <td className="px-3 py-2 text-xs">{r.ruolo}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.codice_eer}</td>
                 <td className="px-3 py-2 text-xs">{r.produttore_nome}</td>
                 <td className="px-3 py-2 text-xs">{r.trasportatore_nome}</td>
@@ -291,7 +361,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                     >
                       Dettaglio
                     </button>
-                    {!r.accettato && r.destinatario_cf === cfSoggetto && (
+                    {!r.accettato && r.destinatario_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
                       <button
                         onClick={() => apriFirma(r)}
                         className="inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-black"
@@ -305,7 +375,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
             ))}
             {visibili.length === 0 && !loading && (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-sm text-muted-foreground">
+                <td colSpan={11} className="px-3 py-6 text-center text-sm text-muted-foreground">
                   Nessun formulario trovato su RENTRI con questo filtro.
                 </td>
               </tr>
@@ -351,7 +421,9 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       {firmaFir && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md space-y-3 rounded-lg border border-border bg-card p-4">
-            <h3 className="font-bold">Firma accettazione · {firmaFir.numero_fir}</h3>
+            <h3 className="font-bold">
+              Firma accettazione · {firmaFir.numero_fir} ({firmaFir.societaLabel})
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs">
                 Data arrivo
