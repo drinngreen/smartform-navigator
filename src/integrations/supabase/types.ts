@@ -3948,6 +3948,51 @@ export type Database = {
           },
         ]
       }
+      giacenze_applicazioni: {
+        Row: {
+          attore: string
+          causale: string | null
+          cer: string
+          created_at: string
+          created_by: string | null
+          documento: string
+          id: string
+          impianto_id: string | null
+          movimento_id: string | null
+          quantita_kg: number
+          segno: string
+          tenant_id: string | null
+        }
+        Insert: {
+          attore?: string
+          causale?: string | null
+          cer: string
+          created_at?: string
+          created_by?: string | null
+          documento: string
+          id?: string
+          impianto_id?: string | null
+          movimento_id?: string | null
+          quantita_kg: number
+          segno: string
+          tenant_id?: string | null
+        }
+        Update: {
+          attore?: string
+          causale?: string | null
+          cer?: string
+          created_at?: string
+          created_by?: string | null
+          documento?: string
+          id?: string
+          impianto_id?: string | null
+          movimento_id?: string | null
+          quantita_kg?: number
+          segno?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       giacenze_audit_log: {
         Row: {
           actor_user_id: string | null
@@ -7021,6 +7066,22 @@ export type Database = {
         Args: { p_form_id: string; p_numero_fir: string }
         Returns: string
       }
+      applica_movimento_giacenza: {
+        Args: {
+          p_attore?: string
+          p_causale: string
+          p_cer: string
+          p_descrizione?: string
+          p_documento: string
+          p_fir_id?: string
+          p_impianto_id: string
+          p_numero_fir?: string
+          p_quantita_kg: number
+          p_segno: string
+          p_tenant_id: string
+        }
+        Returns: Json
+      }
       assert_magazzino_giacenza: {
         Args: { p_cer: string; p_impianto_id: string; p_tenant_id: string }
         Returns: undefined
@@ -7268,6 +7329,15 @@ export type Database = {
       ricevuta_numero_da_movimento: {
         Args: { p_anno: number; p_progressivo: number }
         Returns: string
+      }
+      simula_recalculate_magazzino_giacenza: {
+        Args: { p_cer: string; p_impianto_id: string; p_tenant_id: string }
+        Returns: {
+          cer: string
+          differenza: number
+          saldo_atteso: number
+          saldo_registrato: number
+        }[]
       }
       system_health_check: { Args: never; Returns: Json }
       toggle_fir_suspension: {
