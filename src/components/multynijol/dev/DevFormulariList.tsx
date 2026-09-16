@@ -256,6 +256,10 @@ export function DevFormulariList({
     : forms;
 
 
+  // Lo stato mostrato è quello reale: "inviato" solo se il RENTRI ha davvero
+  // restituito l'identificativo ufficiale del formulario.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, f.form_data);
+
   const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -263,18 +267,19 @@ export function DevFormulariList({
       String(firstValue(f.codice_eer, f.form_data?.cer, f.form_data?.codice_eer, f.form_data?.codiceEER) || "").toLowerCase().includes(q) ||
       String(firstValue(f.produttore_denominazione, f.form_data?.produttore_denominazione, f.form_data?.produttoreDenominazione) || "").toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
-    if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
-    if (tab === "completed") return matchSearch && (f.status === "completed" || f.status === "completato");
+    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
+    if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
   });
 
   const stats = {
     total: sourceForms.length,
-    draft: sourceForms.filter((f: any) => f.status === "draft" || f.status === "bozza").length,
-    submitted: sourceForms.filter((f: any) => f.status === "submitted" || f.status === "inviato").length,
-    completed: sourceForms.filter((f: any) => f.status === "completed" || f.status === "completato").length,
+    draft: sourceForms.filter((f: any) => statoReale(f) === "bozza").length,
+    submitted: sourceForms.filter((f: any) => statoReale(f) === "inviato").length,
+    completed: sourceForms.filter((f: any) => statoReale(f) === "chiuso").length,
   };
+
 
   const txt = `text-${accent}-400`;
   const border = `border-${accent}-500/30`;
