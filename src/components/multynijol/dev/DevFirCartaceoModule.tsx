@@ -274,7 +274,7 @@ export function DevFirCartaceoModule() {
                           type="checkbox"
                           checked={selezione.has(r.id)}
                           onChange={() => toggle(r.id)}
-                          disabled={inviato}
+                          disabled={inviato || !isEffettivo(r)}
                           className="accent-violet-500"
                         />
                       </td>
