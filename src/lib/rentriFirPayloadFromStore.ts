@@ -96,12 +96,15 @@ function tipoAutorizzazione(raw: string): string {
   return ALIAS_AUTORIZZAZIONE[k] ?? "";
 }
 
-/** Blocco autorizzazione conforme: il tipo è opzionale, quindi si omette se non valido. */
+/**
+ * Blocco autorizzazione conforme. Il RENTRI richiede il tipo quando il blocco
+ * è presente (sys.required): se la dicitura non è ufficiale si omette tutto il blocco.
+ */
 function bloccoAutorizzazione(numero: string, tipo: string): Bag | null {
   const num = numero.trim();
   if (!num) return null;
   const t = tipoAutorizzazione(tipo);
-  return t ? { numero: num, tipo: t } : { numero: num };
+  return t ? { numero: num, tipo: t } : null;
 }
 
 /**

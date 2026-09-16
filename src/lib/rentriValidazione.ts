@@ -7,6 +7,8 @@
  * comune_id obbligatorio negli indirizzi.
  */
 
+import { isValidCerCode } from "@/lib/cerValidation";
+
 export const STATO_FISICO_RENTRI = ["S", "SP", "FP", "L", "VS", "GA"] as const;
 
 /** Alias liberi → codici ufficiali RENTRI (verificati sulle risposte reali). */
@@ -178,6 +180,9 @@ export function validaPayloadFirRentri(payload: Record<string, unknown>): Errore
   const eer = String(rifiuto.codice_eer ?? "").replace(/\D/g, "");
   if (eer.length !== 6)
     errori.push({ campo: "dati_partenza.rifiuto.codice_eer", messaggio: `Codice CER «${String(rifiuto.codice_eer ?? "")}» non valido: devono essere 6 cifre` });
+  else if (!isValidCerCode(eer))
+    // Il RENTRI accetta solo codici presenti nel catalogo europeo (altrimenti sys.invalid).
+    errori.push({ campo: "dati_partenza.rifiuto.codice_eer", messaggio: `Codice CER «${eer}» inesistente nel catalogo europeo dei rifiuti` });
   const sf = String(rifiuto.stato_fisico ?? "").toUpperCase();
   if (!STATO_FISICO_RENTRI.includes(sf as (typeof STATO_FISICO_RENTRI)[number]))
     errori.push({ campo: "dati_partenza.rifiuto.stato_fisico", messaggio: `Stato fisico «${String(rifiuto.stato_fisico ?? "")}» non nella codifica RENTRI (valori ammessi: ${STATO_FISICO_RENTRI.join(", ")})` });
