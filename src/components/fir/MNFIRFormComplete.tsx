@@ -98,6 +98,7 @@ function Field({ label, value, onChange, placeholder, type = "text", validate }:
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onWheel={blurOnWheel}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         className={`w-full rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 transition-all ${
