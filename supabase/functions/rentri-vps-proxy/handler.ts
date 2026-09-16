@@ -348,12 +348,22 @@ export function errorCodeForStatus(status: number): string {
   if (status === 401) return "UNAUTHORIZED";
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
+  if (status === 423) return "RENTRI_LOCKED";
   if (status === 422) return "INVALID_DATA";
   if (status === 429) return "RATE_LIMITED";
   if (status === 502 || status === 503 || status === 504) return "BRIDGE_UNAVAILABLE";
   if (status >= 500) return "BRIDGE_ERROR";
   if (status >= 400) return "CLIENT_ERROR";
   return "OK";
+}
+
+/** Attesa consigliata dopo un blocco temporaneo del RENTRI (423), in ms. */
+export function retryAfterMs(headerValue?: string | null): number {
+  const seconds = Number(headerValue);
+  if (Number.isFinite(seconds) && seconds > 0) return Math.min(seconds * 1000, 6 * 60 * 60 * 1000);
+  // Default: 10 minuti, il ban WAF tipico del RENTRI dura di più ma un nuovo
+  // tentativo troppo presto allunga il blocco.
+  return 10 * 60 * 1000;
 }
 
 /** Rimuove eventuali tracce di segreti/stack trace dai messaggi propagati alla UI. */
@@ -698,6 +708,26 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         // Tutti i path hanno risposto 404: riporto l'ultimo esito come primario.
         primaryStatus = res.status;
         primaryData = data;
+      }
+
+      // Blocco temporaneo del RENTRI (ban WAF, 423 Locked): nessun retry automatico,
+      // il chiamante attende retry_after_ms e nel frattempo lavora in locale/cartaceo.
+      if (res.status === 423) {
+        const attesa = retryAfterMs(res.headers?.get?.("retry-after") ?? null);
+        console.warn(`[rentri-vps] 423 RENTRI bloccato: attesa consigliata ${attesa}ms`);
+        return json(
+          {
+            success: false,
+            status: 423,
+            mode: "real",
+            error_code: "RENTRI_LOCKED",
+            error: "Il RENTRI ha temporaneamente bloccato le richieste da questo sistema. Attendere prima di riprovare: si può continuare a lavorare in locale o con il formulario cartaceo.",
+            data: { rentri_locked: true, retry_after_ms: attesa },
+            attempts,
+            retry_after_ms: attesa,
+          },
+          423,
+        );
       }
 
       if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break outer;

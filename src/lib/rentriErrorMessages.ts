@@ -7,10 +7,12 @@ export type RentriErrorCode =
   | "OK"
   | "BAD_REQUEST"
   | "INVALID_DATA"
+  | "VALIDATION"
   | "UNAUTHORIZED"
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "RATE_LIMITED"
+  | "RENTRI_LOCKED"
   | "BRIDGE_ERROR"
   | "BRIDGE_UNAVAILABLE"
   | "CLIENT_ERROR"
@@ -22,6 +24,7 @@ export function rentriErrorCodeForStatus(status: number): RentriErrorCode {
   if (status === 401) return "UNAUTHORIZED";
   if (status === 403) return "FORBIDDEN";
   if (status === 404) return "NOT_FOUND";
+  if (status === 423) return "RENTRI_LOCKED";
   if (status === 422) return "INVALID_DATA";
   if (status === 429) return "RATE_LIMITED";
   if (status === 502 || status === 503 || status === 504) return "BRIDGE_UNAVAILABLE";
@@ -36,6 +39,8 @@ export function rentriUserMessage(status: number, fallback?: string): string {
   switch (rentriErrorCodeForStatus(status)) {
     case "OK":
       return "Operazione completata.";
+    case "RENTRI_LOCKED":
+      return "Il RENTRI ha temporaneamente bloccato le richieste da questo sistema. Attendere qualche minuto prima di riprovare; nel frattempo si può proseguire in locale o con il formulario cartaceo.";
     case "BAD_REQUEST":
     case "INVALID_DATA":
       return "Dati della richiesta non validi o incompleti.";

@@ -10,6 +10,7 @@ import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
+import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
 
 type Bag = Record<string, unknown>;
 
@@ -92,10 +93,10 @@ export async function mapStoreToRentriFirPayload(
   return {
     num_iscr_sito: cfg.unitId,
     dati_partenza: {
-      numero_fir: s(data.selectedFirNumber),
+      numero_fir: normalizzaNumeroFir(s(data.selectedFirNumber)),
       produttore: {
         denominazione: s(data.produttoreDenominazione),
-        codice_fiscale: s(data.produttoreCF),
+        codice_fiscale: normalizzaCF(s(data.produttoreCF)),
         nazione_id: "IT",
         indirizzo: {
           citta: { comune_id: prodComuneId },
@@ -113,7 +114,7 @@ export async function mapStoreToRentriFirPayload(
       },
       destinatario: {
         denominazione: s(data.destinatarioDenominazione),
-        codice_fiscale: s(data.destinatarioCF),
+        codice_fiscale: normalizzaCF(s(data.destinatarioCF)),
         nazione_id: "IT",
         attivita: operazione,
         indirizzo: {
@@ -133,7 +134,7 @@ export async function mapStoreToRentriFirPayload(
       trasportatori: [
         {
           denominazione: s(data.trasportatoreDenominazione) || s(cfg.issuer),
-          codice_fiscale: s(data.trasportatoreCF) || s(cfg.issuer),
+          codice_fiscale: normalizzaCF(s(data.trasportatoreCF)) || s(cfg.issuer),
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
           ...(s(data.trasportatoreNumeroAlbo)

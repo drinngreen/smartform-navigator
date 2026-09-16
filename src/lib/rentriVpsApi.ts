@@ -5,6 +5,11 @@ import {
   sanitizeRentriMessage,
   type RentriErrorCode,
 } from "@/lib/rentriErrorMessages";
+import {
+  normalizzaPayloadFirRentri,
+  validaPayloadFirRentri,
+  messaggioValidazione,
+} from "@/lib/rentriValidazione";
 
 
 /** "multyproget" è il tenant esposto dal bridge, alias configurativo di "multy". */
@@ -270,7 +275,22 @@ export function scaricaPdfLotto(cliente: RentriCliente, codiceBlocco: string, pr
 }
 
 export function emissioneFir(cliente: RentriCliente, firPayload: Record<string, unknown>) {
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload: firPayload });
+  // Validazione pre-invio: i dati non conformi non partono mai verso il RENTRI.
+  const payload = normalizzaPayloadFirRentri(firPayload);
+  const errori = validaPayloadFirRentri(payload);
+  if (errori.length > 0) {
+    const messaggio = messaggioValidazione(errori);
+    const risposta: RentriVpsResponse = {
+      success: false,
+      status: 0,
+      data: { model_state: Object.fromEntries(errori.map((e) => [e.campo, [e.messaggio]])) },
+      error: messaggio,
+      userMessage: messaggio,
+      errorCode: "VALIDATION",
+    };
+    return Promise.resolve(risposta);
+  }
+  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload });
 }
 
 export function dettaglioFir(cliente: RentriCliente, uuidFir: string) {

@@ -99,7 +99,7 @@ describe("tendine formulari - fonti dati anagrafica", () => {
 
   it("non sostituisce il produttore mancante con l'emittente RENTRI", () => {
     expect(rentriMapperSrc).toContain('denominazione: str("prod_denominazione")');
-    expect(rentriMapperSrc).toContain('codice_fiscale: str("prod_cf")');
+    expect(rentriMapperSrc).toContain('codice_fiscale: normalizzaCF(str("prod_cf"))');
     expect(rentriMapperSrc).not.toContain('str("prod_denominazione") || cfg.issuer');
     expect(rentriMapperSrc).not.toContain('str("prod_cf") || cfg.issuer');
   });

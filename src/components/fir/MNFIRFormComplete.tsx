@@ -486,6 +486,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   // ── Driver app starts clean: assigned FIRs are opened only by explicit click ─────────────
   const hasAutoRestored = useRef(false);
+  // Timestamp dell'ultimo salvataggio locale riuscito: serve a distinguere
+  // l'eco dei nostri salvataggi dalle modifiche realmente fatte dall'ufficio.
+  const lastLocalSaveAtRef = useRef<number>(0);
   useEffect(() => {
     if (firFormId || draftData?.id) return;
     // La pulizia automatica serve solo all'ingresso iniziale delle app autisti.
@@ -502,6 +505,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ── Autosave every 10 seconds ─────────────────────────
   const doAutosave = useCallback(async () => {
     if (!store.editingFirId || store.workflowStatus === 'chiuso') return;
+    // Blocco modifiche dopo firma: una volta inviato/firmato il formulario non
+    // riceve più salvataggi automatici (né dall'app né dall'ufficio).
+    if (store.workflowStatus !== 'bozza') return;
     // Il numero FIR deve restare liberamente cancellabile e riscrivibile:
     // nessun salvataggio/rerender mentre il relativo input ha il focus.
     if (firNumberFocusedRef.current) return;
@@ -511,6 +517,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const dbFields = mapStoreToDatabaseFields(store.data);
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       lastAutosavedAtRef.current = updatedAt;
+      lastLocalSaveAtRef.current = Date.now();
       autosaveFailuresRef.current = 0;
     } catch (error: any) {
       // Un fallimento isolato può dipendere da una micro-interruzione di rete:
@@ -523,6 +530,48 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       }
     }
   }, [store.editingFirId, store.workflowStatus, store.data, silentSaveFIR, firFormId, loadedFirFormId]);
+
+  // ── Ufficio → app in tempo reale: l'ufficio può compilare/modificare il formulario ──────
+  // dell'autista mentre è in viaggio. Solo in stato bozza: dopo la firma è sola lettura.
+  const diarioAutore = `${profile?.nome ?? ""} ${profile?.cognome ?? ""}`.trim() || user?.email || "app";
+  useEffect(() => {
+    if (!store.editingFirId || store.workflowStatus !== "bozza") return;
+    const id = store.editingFirId;
+    const ch = supabase
+      .channel(`fir-form-office-${id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "fir_forms", filter: `id=eq.${id}` },
+        (payload: any) => {
+          const row = payload?.new;
+          if (!row?.updated_at) return;
+          // Eco del nostro stesso autosalvataggio: nessuna azione.
+          if (Date.now() - lastLocalSaveAtRef.current < 6000) return;
+          void (async () => {
+            const { data, error } = await supabase.from("fir_forms").select("*").eq("id", id).maybeSingle();
+            if (error || !data) return;
+            const cur = useMNFIRStore.getState();
+            if (cur.editingFirId !== id || cur.workflowStatus !== "bozza") return;
+            const fd = (data.form_data ?? {}) as Record<string, any>;
+            // Diario: chi ha modificato e quando, così l'autista vede la storia.
+            const diario = Array.isArray(fd.diario) ? [...fd.diario] : [];
+            diario.push({ autore: "ufficio", azione: "formulario modificato dall'ufficio", ora: data.updated_at });
+            const merged = { ...fd, diario };
+            store.loadFromDatabase({ ...data, form_data: merged } as any);
+            useMNFIRStore.setState({
+              workflowStatus: data.status === "inviato" ? "inviato" : data.status === "completato" ? "chiuso" : "bozza",
+            });
+            toast.info("Formulario aggiornato dall'ufficio");
+          })();
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store.editingFirId, store.workflowStatus]);
+
 
   const createAndAutosaveManualDraft = useCallback(async (): Promise<string | null> => {
     const current = useMNFIRStore.getState();
@@ -866,7 +915,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
         store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({ id: activeFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
+        const fdPrev = (dbFields.form_data ?? {}) as Record<string, any>;
+        const diarioPrev = Array.isArray(fdPrev.diario) ? fdPrev.diario : [];
+        await silentSaveFIR.mutateAsync({
+          id: activeFirId,
+          numero_fir: officialNumeroFir,
+          form_data: {
+            ...fdPrev,
+            diario: [...diarioPrev, { autore: diarioAutore, azione: "firmato e inviato su RENTRI", ora: new Date().toISOString() }],
+            rentri_fir_id: rentriFirId || null,
+            rentri_retry_pending: false,
+            rentri_retry_since: null,
+          },
+          status: "inviato",
+          submitted_at: new Date().toISOString(),
+        });
       }
       useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
       const qrFromFirma = toRentriImageSrc(

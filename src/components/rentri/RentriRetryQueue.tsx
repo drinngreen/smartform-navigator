@@ -27,6 +27,8 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
   const [rows, setRows] = useState<PendingFir[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  /** Reinvio automatico ogni 5 minuti finché la coda non si svuota. */
+  const [auto, setAuto] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,6 +101,30 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
     await load();
   };
 
+  // Reinvio automatico: nessun doppio invio perché ogni FIR esce dalla coda
+  // (rentri_retry_pending=false) appena va a buon fine.
+  useEffect(() => {
+    if (!auto || rows.length === 0 || sending) return;
+    const t = setTimeout(() => {
+      void (async () => {
+        setSending(true);
+        let ok = 0;
+        for (const row of rows) {
+          try {
+            await retryOne(row);
+            ok += 1;
+          } catch {
+            break; // RENTRI ancora non disponibile: si riprova al giro successivo
+          }
+        }
+        setSending(false);
+        if (ok > 0) await load();
+      })();
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auto, rows, sending]);
+
   if (!loading && rows.length === 0) return null;
 
   return (
@@ -111,6 +137,10 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
           </h3>
         </div>
         <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} />
+            Reinvio automatico ogni 5 min
+          </label>
           <button
             type="button"
             onClick={() => void load()}
