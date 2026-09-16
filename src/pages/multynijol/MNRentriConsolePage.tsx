@@ -1002,6 +1002,13 @@ export default function MNRentriConsolePage() {
           </div>
         )}
 
+        {tab === "cartacei" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+            <h3 className="text-base font-display tracking-wider">Formulari cartacei — {label}</h3>
+            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} />
+          </div>
+        )}
+
         {tab === "pesca" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Pesca dei formulari dal RENTRI — {label}</h3>
