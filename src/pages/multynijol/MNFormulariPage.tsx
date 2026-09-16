@@ -211,7 +211,11 @@ export default function MNFormulariPage() {
   if (!isValid) return <Navigate to="/mn/admin" replace />;
 
   // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
-  const statoReale = (f: any) => resolveWorkflowStatus(f.status, (f as any).form_data);
+  const statoReale = (f: any) => {
+    const stato = resolveWorkflowStatus(f.status, (f as any).form_data);
+    if (stato !== "bozza") return stato;
+    return String(f.status ?? "").toLowerCase() === "inviato" ? "verifica" : "bozza";
+  };
 
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
@@ -222,7 +226,7 @@ export default function MNFormulariPage() {
       f.user_profile?.nome?.toLowerCase().includes(q) ||
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "draft") return matchSearch && ["bozza", "verifica"].includes(statoReale(f));
     if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
     if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
@@ -230,7 +234,7 @@ export default function MNFormulariPage() {
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => statoReale(f) === "bozza").length,
+    draft: forms.filter((f) => ["bozza", "verifica"].includes(statoReale(f))).length,
     submitted: forms.filter((f) => statoReale(f) === "inviato").length,
     completed: forms.filter((f) => statoReale(f) === "chiuso").length,
   };
@@ -239,6 +243,7 @@ export default function MNFormulariPage() {
   const statusBadge = (stato: string) => {
     switch (stato) {
       case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+      case "verifica": return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Verifica RENTRI</Badge>;
       case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato al RENTRI</Badge>;
       case "chiuso": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Chiuso</Badge>;
       default: return <Badge variant="outline">{stato}</Badge>;
