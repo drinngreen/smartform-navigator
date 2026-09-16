@@ -371,7 +371,7 @@ export default function MNRentriConsolePage() {
   };
 
   const apriFormularioEsistente = (firId: string) => {
-    const routeContext = configKey === "niyol" ? "niyol" : "multyproget";
+    const routeContext = configKey === "niyol" ? "niyol" : "dev-multyproget";
     navigate(`/mn/admin/${routeContext}/formulari?fir=${encodeURIComponent(firId)}`);
   };
 
@@ -395,7 +395,7 @@ export default function MNRentriConsolePage() {
       if (!draftId) throw new Error("Impossibile creare il formulario");
 
       await loadPool();
-      const routeContext = isNiyol ? "niyol" : "multyproget";
+      const routeContext = isNiyol ? "niyol" : "dev-multyproget";
       navigate(`/mn/admin/${routeContext}/formulari?fir=${encodeURIComponent(String(draftId))}`);
     } catch (e: any) {
       toast.error(`Errore apertura formulario: ${e.message}`);
