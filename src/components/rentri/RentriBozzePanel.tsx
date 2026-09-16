@@ -64,7 +64,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
         supabase
           .from("fir_forms")
           .select(
-            "id, numero_fir, status, user_id, codice_eer, quantita, produttore_denominazione, destinatario_denominazione, trasportatore_denominazione, produttore_codice_fiscale, destinatario_codice_fiscale, trasportatore_codice_fiscale, trasportatore_iscrizione_albo, descrizione_rifiuto, stato_fisico, unita_misura, produttore_indirizzo, destinatario_indirizzo, created_at",
+            "id, numero_fir, status, user_id, codice_eer, quantita, produttore_denominazione, destinatario_denominazione, trasportatore_denominazione, produttore_codice_fiscale, destinatario_codice_fiscale, trasportatore_codice_fiscale, trasportatore_iscrizione_albo, descrizione_rifiuto, stato_fisico, unita_misura, produttore_indirizzo, destinatario_indirizzo, created_at, form_data",
           )
           .eq("tenant_id", tenantId)
           .eq("status", "bozza")
