@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveWorkflowStatus, isFalseSubmitted, hasRentriEmission } from "@/lib/firWorkflowStatus";
+import { isConfirmedFirEvidence } from "@/lib/rentriHistory";
 
 describe("Stato formulario: 'inviato' solo con emissione RENTRI reale", () => {
   it("resta bozza se il RENTRI non ha mai restituito l'identificativo", () => {
@@ -18,5 +19,25 @@ describe("Stato formulario: 'inviato' solo con emissione RENTRI reale", () => {
   it("chiuso e bozza restano invariati", () => {
     expect(resolveWorkflowStatus("completato", {})).toBe("chiuso");
     expect(resolveWorkflowStatus("bozza", {})).toBe("bozza");
+  });
+});
+
+describe("Conferma asincrona emissione FIR", () => {
+  it("riconosce il LOTTO confermato restituito dopo una risposta 202", () => {
+    expect(isConfirmedFirEvidence({
+      success: true,
+      tipo_operazione: "LOTTO",
+      esito_finale: "CONFERMATO",
+      identificativo_rentri: "ZRZXR 000772 TM",
+    })).toBe(true);
+  });
+
+  it("non considera confermata una richiesta FIR ancora in verifica", () => {
+    expect(isConfirmedFirEvidence({
+      success: true,
+      tipo_operazione: "FIR_EMISSIONE",
+      esito_finale: "IN_VERIFICA",
+      identificativo_rentri: null,
+    })).toBe(false);
   });
 });

@@ -33,7 +33,7 @@
 
 ## Stabilizzazione operativa urgente — 17/09/2026
 
-- [ ] Rendere univoco lo stato di ogni FIR confrontando archivio locale e stato reale RENTRI, senza etichette contraddittorie.
+- [x] Rendere univoco lo stato di ogni FIR confrontando archivio locale e conferma RENTRI, incluso il LOTTO restituito dopo emissione asincrona.
 - [ ] Rendere visibili e utilizzabili dall'impianto i FIR in arrivo: pesata, esito, firma destinatario e motivo completo degli errori.
 - [ ] Dimostrare che app autisti e uso d'ufficio condividono lo stesso FIR, con partenza bloccata senza conferma e QR ufficiali.
 - [ ] Inventariare e bloccare ogni percorso non autorizzato che può modificare giacenze; verificare cernite e saldi prima/dopo.
