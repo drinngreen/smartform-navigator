@@ -2418,8 +2418,28 @@ async function handleTool(
       if (!table) return { error: "Tabella mancante." };
       if (rows.length === 0) return { error: "Nessuna riga da inserire." };
       if (rows.length > 200) return { error: "Massimo 200 righe per blocco: suddividi l'inserimento." };
-      if (table === "magazzino_giacenze")
-        return { error: "Le giacenze non possono essere scritte dall'assistente: serve la conferma di una persona." };
+      // Nessuna scrittura diretta dell'assistente su giacenze, magazzino,
+      // registri o lavorazioni: quei dati cambiano solo dal percorso unico
+      // confermato da una persona.
+      const TABELLE_VIETATE_AGENTE = [
+        "magazzino_giacenze",
+        "giacenze_applicazioni",
+        "giacenze_audit_log",
+        "dragon_stock_movements",
+        "dragon_register_movements",
+        "dragon_lot_movements",
+        "dragon_lots",
+        "dragon_movement_allocations",
+        "dragon_inventory_adjustments",
+        "dragon_transform_batches",
+        "dragon_transform_batch_outputs",
+        "cernite",
+        "cernita_output",
+        "registro_kg_privati",
+      ];
+      if (TABELLE_VIETATE_AGENTE.includes(table))
+        return { error: `La tabella ${table} non può essere scritta dall'assistente: giacenze, registri e lavorazioni cambiano solo dal percorso confermato da una persona.` };
+
 
       const addTenant = args.add_tenant !== false;
       const payload = rows.map((r: Record<string, unknown>) =>
