@@ -85,6 +85,18 @@ export interface ConfirmedFirEmission {
   esito_finale: string | null;
 }
 
+export function isConfirmedFirEvidence(row: {
+  success?: boolean | null;
+  tipo_operazione?: string | null;
+  esito_finale?: string | null;
+  identificativo_rentri?: string | null;
+}): boolean {
+  if (!row.success || !String(row.identificativo_rentri ?? "").trim()) return false;
+  const tipo = String(row.tipo_operazione ?? "").toUpperCase();
+  const esito = String(row.esito_finale ?? "").toUpperCase();
+  return (tipo === "FIR_EMISSIONE" && esito === "CONFERMATO") || tipo === "LOTTO";
+}
+
 /**
  * Cerca una conferma ufficiale già registrata dal bridge, senza interrogare o
  * modificare RENTRI. Serve a riallineare la sola visualizzazione quando la
@@ -95,14 +107,21 @@ export async function findConfirmedFirEmission(numeroFir: string): Promise<Confi
   if (!numero) return null;
   const { data, error } = await supabase
     .from("rentri_operazioni")
-    .select("id, identificativo_rentri, created_at, esito_finale")
+    .select("id, tipo_operazione, success, identificativo_rentri, created_at, esito_finale")
     .eq("success", true)
     .eq("identificativo_rentri", numero)
+    .in("tipo_operazione", ["FIR_EMISSIONE", "LOTTO"])
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data?.identificativo_rentri) return null;
-  return data as ConfirmedFirEmission;
+    .limit(10);
+  if (error) return null;
+  const conferma = (data ?? []).find(isConfirmedFirEvidence);
+  if (!conferma?.identificativo_rentri) return null;
+  return {
+    id: conferma.id,
+    identificativo_rentri: conferma.identificativo_rentri,
+    created_at: conferma.created_at,
+    esito_finale: conferma.esito_finale,
+  };
 }
 
 export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Promise<RentriHistoryRow[]> {
