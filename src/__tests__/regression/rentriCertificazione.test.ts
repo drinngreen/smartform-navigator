@@ -184,7 +184,8 @@ describe("Valori ufficiali RENTRI: autorizzazione e attività destinatario", () 
     };
     const p = (await mapStoreToRentriFirPayload("multy", base)) as any;
     expect(p.dati_partenza.produttore.autorizzazione).toEqual({ numero: "AUT-1", tipo: "RecSmalArt208" });
-    expect(p.dati_partenza.destinatario.autorizzazione).toEqual({ numero: "AUT-2" });
+    // Il RENTRI esige il tipo quando il blocco è presente: dicitura non ufficiale => blocco omesso
+    expect(p.dati_partenza.destinatario.autorizzazione).toBeUndefined();
     expect(p.dati_partenza.destinatario.attivita).toBe("R13");
 
     const q = (await mapStoreToRentriFirPayload("multy", {
