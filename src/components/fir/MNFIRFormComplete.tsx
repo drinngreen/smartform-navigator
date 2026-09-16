@@ -89,6 +89,16 @@ function Section({ title, defaultOpen = false, onClear, children }: { title: str
   );
 }
 
+/**
+ * Lo scroll del mouse sopra un campo data/ora/numero ne cambia il valore
+ * (comportamento nativo del browser): togliamo il focus così lo scroll
+ * scorre la pagina senza cancellare o alterare quanto scritto.
+ */
+function blurOnWheel(e: React.WheelEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  if (document.activeElement === el) el.blur();
+}
+
 function Field({ label, value, onChange, placeholder, type = "text", validate }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null }) {
   const error = (validate ? validate(value) : autoValidateByLabel(label, value)) || null;
   return (
@@ -98,6 +108,7 @@ function Field({ label, value, onChange, placeholder, type = "text", validate }:
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onWheel={blurOnWheel}
         placeholder={placeholder}
         aria-invalid={error ? true : undefined}
         className={`w-full rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 transition-all ${
@@ -289,7 +300,7 @@ function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) =
           <h3 className="font-display text-lg tracking-wider">PESO A DESTINO</h3>
         </div>
         <p className="text-sm text-white/70">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
-        <input type="number" value={peso} onChange={(e) => setPeso(e.target.value)} placeholder="Peso in Kg" className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary" autoFocus />
+        <input type="number" value={peso} onChange={(e) => setPeso(e.target.value)} onWheel={blurOnWheel} placeholder="Peso in Kg" className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary" autoFocus />
         <div className="flex gap-2">
           <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm">ANNULLA</button>
           <button onClick={() => { if (peso.trim()) onConfirm(peso); else toast.error("Inserisci il peso"); }} className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider">CHIUDI FIR</button>
@@ -1421,7 +1432,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Data Emissione</label>
-            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+            <input type="date" value={d.dataEmissione} onChange={(e) => u("dataEmissione", e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
           </div>
           <div>
             <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Registro</label>
