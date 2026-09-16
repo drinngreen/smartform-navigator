@@ -22,3 +22,5 @@
 - [ ] Unificare tecnicamente anche privati, cernite e conferma cartacea nello stesso punto database, senza cambiare dati storici e senza interrompere le cernite.
 - [ ] Eliminare gli stati RENTRI determinati da testo libero e introdurre riconciliazione esplicita degli invii rimasti in attesa.
 - [ ] Chiudere i finding di sicurezza pertinenti: il controllo attuale riporta ancora 69 segnalazioni.
+- [ ] Produrre il referto di certificazione RENTRI dove ogni voce riporta la prova a cui si riferisce.
+- [ ] Stop immediato obbligatorio se una prova altera i saldi fuori dai percorsi autorizzati (regola permanente del piano).
