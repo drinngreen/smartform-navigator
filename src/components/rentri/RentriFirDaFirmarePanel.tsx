@@ -66,24 +66,62 @@ interface FirRow {
   trasportatore_cf: string;
   ruoli: string[];
   ruolo: string;
+  societaFirma: "multy" | "niyol" | null;
   accettato: boolean;
   raw: Record<string, unknown>;
 }
 
 function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string): FirRow {
-  const dest = Array.isArray(d.destinatari) ? d.destinatari[0] ?? {} : d.destinatario ?? {};
-  const tras = Array.isArray(d.trasportatori) ? d.trasportatori[0] ?? {} : d.trasportatore ?? {};
+  const destinatari: any[] = Array.isArray(d.destinatari)
+    ? d.destinatari
+    : [d.destinatario ?? { codice_fiscale: d.destinatario_codice_fiscale }].filter(Boolean);
+  const trasportatori: any[] = Array.isArray(d.trasportatori)
+    ? d.trasportatori
+    : [d.trasportatore].filter(Boolean);
   const prod = d.produttore ?? {};
+  const prodCf = String(prod.codice_fiscale ?? "");
+
+  // Ruoli: unione su tutti i destinatari/trasportatori indicati sul formulario.
+  const ruoliSet = new Set<string>();
+  const combinazioni = Math.max(destinatari.length, trasportatori.length, 1);
+  for (let i = 0; i < combinazioni; i++) {
+    const dst = destinatari[i] ?? destinatari[0] ?? {};
+    const trs = trasportatori[i] ?? trasportatori[0] ?? {};
+    for (const r of ruoliFir(
+      {
+        produttore_cf: prodCf,
+        produttore_nome: prod.denominazione,
+        trasportatore_cf: String(trs.codice_fiscale ?? ""),
+        trasportatore_nome: trs.denominazione,
+        destinatario_cf: String(dst.codice_fiscale ?? ""),
+        destinatario_nome: dst.denominazione,
+      },
+      SOGGETTI,
+    ))
+      ruoliSet.add(r);
+  }
+  const ruoli = [...ruoliSet];
+
+  // Destinatario da mostrare: se uno dei nostri è destinatario, si mostra quello.
+  const nostroDest =
+    destinatari.find((x) =>
+      SOGGETTI.some(
+        (s) =>
+          normalizzaCf(x?.codice_fiscale) === normalizzaCf(s.cf) ||
+          ruoli.includes(`${s.label} destinatario`),
+      ),
+    ) ?? destinatari[0] ?? {};
+  const dest = nostroDest;
+  const tras = trasportatori[0] ?? {};
   const destCf = String(dest.codice_fiscale ?? d.destinatario_codice_fiscale ?? "");
   const trasCf = String(tras.codice_fiscale ?? "");
-  const prodCf = String(prod.codice_fiscale ?? "");
-  const ruoli = ruoliFir(
-    { produttore_cf: prodCf, trasportatore_cf: trasCf, destinatario_cf: destCf },
-    SOGGETTI,
-  );
+
+  const labelDest = SOGGETTI.find((s) => ruoli.includes(`${s.label} destinatario`))?.label ?? null;
+
   return {
     societa,
     societaLabel,
+    societaFirma: labelDest ? chiaveDaLabel(labelDest) : null,
     numero_fir: normalizzaNumeroFir(d.numero_fir),
     codice_eer: String(d.codice_eer ?? ""),
     quantita: Number(d.quantita ?? 0),
