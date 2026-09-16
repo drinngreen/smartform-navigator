@@ -3948,6 +3948,60 @@ export type Database = {
           },
         ]
       }
+      giacenze_audit_log: {
+        Row: {
+          actor_user_id: string | null
+          attore: string
+          cer: string | null
+          created_at: string
+          delta: number | null
+          documento: string | null
+          giacenza_id: string | null
+          id: string
+          impianto_id: string | null
+          note: string | null
+          operazione: string
+          origine: string | null
+          qty_dopo: number | null
+          qty_prima: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          attore?: string
+          cer?: string | null
+          created_at?: string
+          delta?: number | null
+          documento?: string | null
+          giacenza_id?: string | null
+          id?: string
+          impianto_id?: string | null
+          note?: string | null
+          operazione: string
+          origine?: string | null
+          qty_dopo?: number | null
+          qty_prima?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          attore?: string
+          cer?: string | null
+          created_at?: string
+          delta?: number | null
+          documento?: string | null
+          giacenza_id?: string | null
+          id?: string
+          impianto_id?: string | null
+          note?: string | null
+          operazione?: string
+          origine?: string | null
+          qty_dopo?: number | null
+          qty_prima?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       impianti: {
         Row: {
           autorizzaz_regione: string | null
@@ -4737,6 +4791,7 @@ export type Database = {
           cer: string
           created_at: string
           created_by: string | null
+          created_by_agent: boolean
           data_movimento: string
           descrizione_rifiuto: string | null
           destinatario_denominazione: string | null
@@ -4752,6 +4807,7 @@ export type Database = {
           quantita_kg: number
           quantita_presunta: number | null
           ruolo_impianto: string
+          stato_movimento: string
           tenant_id: string | null
           tipo_movimento: string
           trasportatore_denominazione: string | null
@@ -4761,6 +4817,7 @@ export type Database = {
           cer: string
           created_at?: string
           created_by?: string | null
+          created_by_agent?: boolean
           data_movimento?: string
           descrizione_rifiuto?: string | null
           destinatario_denominazione?: string | null
@@ -4776,6 +4833,7 @@ export type Database = {
           quantita_kg?: number
           quantita_presunta?: number | null
           ruolo_impianto: string
+          stato_movimento?: string
           tenant_id?: string | null
           tipo_movimento: string
           trasportatore_denominazione?: string | null
@@ -4785,6 +4843,7 @@ export type Database = {
           cer?: string
           created_at?: string
           created_by?: string | null
+          created_by_agent?: boolean
           data_movimento?: string
           descrizione_rifiuto?: string | null
           destinatario_denominazione?: string | null
@@ -4800,6 +4859,7 @@ export type Database = {
           quantita_kg?: number
           quantita_presunta?: number | null
           ruolo_impianto?: string
+          stato_movimento?: string
           tenant_id?: string | null
           tipo_movimento?: string
           trasportatore_denominazione?: string | null
@@ -5576,6 +5636,7 @@ export type Database = {
           comune_cantiere: string | null
           conai: string | null
           created_at: string | null
+          created_by_agent: boolean
           data_ddt_ingresso: string | null
           data_emissione_formulario: string | null
           data_movimento: string | null
@@ -5608,6 +5669,7 @@ export type Database = {
           scaricato: string | null
           segno: string | null
           stato_fisico: string | null
+          stato_movimento: string
           tara: number | null
           tenant_id: string
           tipo_operazione: string | null
@@ -5625,6 +5687,7 @@ export type Database = {
           comune_cantiere?: string | null
           conai?: string | null
           created_at?: string | null
+          created_by_agent?: boolean
           data_ddt_ingresso?: string | null
           data_emissione_formulario?: string | null
           data_movimento?: string | null
@@ -5657,6 +5720,7 @@ export type Database = {
           scaricato?: string | null
           segno?: string | null
           stato_fisico?: string | null
+          stato_movimento?: string
           tara?: number | null
           tenant_id: string
           tipo_operazione?: string | null
@@ -5674,6 +5738,7 @@ export type Database = {
           comune_cantiere?: string | null
           conai?: string | null
           created_at?: string | null
+          created_by_agent?: boolean
           data_ddt_ingresso?: string | null
           data_emissione_formulario?: string | null
           data_movimento?: string | null
@@ -5706,6 +5771,7 @@ export type Database = {
           scaricato?: string | null
           segno?: string | null
           stato_fisico?: string | null
+          stato_movimento?: string
           tara?: number | null
           tenant_id?: string
           tipo_operazione?: string | null
