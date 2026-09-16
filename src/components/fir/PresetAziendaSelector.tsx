@@ -15,6 +15,7 @@ import {
   removeAutorizzazione,
   type AutorizzazionePreset,
 } from "@/data/multyPresets";
+import { TIPI_AUTORIZZAZIONE_UFFICIALI } from "@/data/tipiAutorizzazione";
 
 export interface PresetFill {
   nome: string;
@@ -57,6 +58,31 @@ interface Props {
   onSelectPartnerDefault?: (p: PresetFill & { ruolo: string }) => void;
 }
 
+
+/** Le autorizzazioni importate riportano la natura del titolo in `ente_rilascio`
+ *  ("SEMPLIFICATA", "ORDINARIA", ...) oppure nelle note: il formulario e il
+ *  RENTRI richiedono invece una delle 9 diciture ufficiali. Senza questa
+ *  traduzione la tendina "Tipo Aut." restava vuota anche con l'autorizzazione
+ *  collegata in anagrafica. */
+const testoUfficiale = (codice: string) =>
+  TIPI_AUTORIZZAZIONE_UFFICIALI.find((t) => t.codice === codice)?.testo ?? "";
+
+const tipoUfficialeDaAutorizzazione = (row: any): string => {
+  const raw = [row?.ente_rilascio, row?.note, row?.tipo_autorizzazione]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (TIPI_AUTORIZZAZIONE_UFFICIALI.some((t) => t.testo.toLowerCase() === String(row?.ente_rilascio || "").toLowerCase()))
+    return String(row.ente_rilascio);
+  if (/mobil/.test(raw)) return testoUfficiale("RecSmalImpMobiliArt208");
+  if (/aia|integrata/.test(raw)) return testoUfficiale("AIA");
+  if (/semplificat|216|214|aua|comunicazione/.test(raw)) return testoUfficiale("RecProcSemplificata");
+  if (/ordinaria|208/.test(raw)) return testoUfficiale("RecSmalArt208");
+  if (/bonifica/.test(raw)) return testoUfficiale("OpBonifica");
+  if (/straordinar|191/.test(raw)) return testoUfficiale("Straordinario");
+  if (/ricerca|sperimenta/.test(raw)) return testoUfficiale("RicercaSperimentazione");
+  return "";
+};
 
 const fmtIndirizzo = (r: any) =>
   [r.indirizzo, [r.cap, r.citta ?? r.comune, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
@@ -494,7 +520,7 @@ export function PresetAziendaSelector({
     if (db) {
       onSelectAutorizzazione({
         numero: db.numero_autorizzazione || "",
-        tipo: db.ente_rilascio || db.tipo || "",
+        tipo: tipoUfficialeDaAutorizzazione(db),
         // in formulario si riporta la data di rilascio dell'autorizzazione
         data: db.data_inizio || db.data_scadenza || "",
       });
@@ -538,11 +564,20 @@ export function PresetAziendaSelector({
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
+  // Per il produttore vale l'autorizzazione dell'impianto (righe DESTINATARIO),
+  // non quella di trasporto: è quella che il RENTRI si aspetta.
   useEffect(() => {
     if (loadingDeps) return;
-    const best = [...autsOrdinate].sort((a, b) =>
-      String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""))
-    )[0];
+    const punteggio = (a: any) => {
+      const t = String(a.tipo || "").toUpperCase();
+      if (ruolo === "PRODUTTORE") return t === "DESTINATARIO" ? 2 : 1;
+      return 1;
+    };
+    const best = [...autsOrdinate].sort((a, b) => {
+      const diff = punteggio(b) - punteggio(a);
+      if (diff !== 0) return diff;
+      return String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""));
+    })[0];
     if (!best) return;
     const key = `${clienteId || ""}|${best.id}`;
     if (autoAutRef.current === key || autId) return;
@@ -550,7 +585,7 @@ export function PresetAziendaSelector({
     setAutId(best.id);
     onSelectAutorizzazione({
       numero: best.numero_autorizzazione || "",
-      tipo: best.ente_rilascio || best.tipo || "",
+      tipo: tipoUfficialeDaAutorizzazione(best),
       data: best.data_inizio || best.data_scadenza || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
