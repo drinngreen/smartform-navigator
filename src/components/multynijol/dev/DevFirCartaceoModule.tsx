@@ -328,17 +328,6 @@ export function DevFirCartaceoModule() {
         </div>
       </div>
 
-      <Card className="bg-card/60 border-amber-500/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-amber-300 text-base">Formulari cartacei compilati nel programma</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Formulari salvati e stampati in formato cartaceo: qui li ritrovi sempre, anche prima della pesata.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <RentriFirCartaceiPanel tenantId={MULTY_TENANT_ID} compact />
-        </CardContent>
-      </Card>
 
       <ContoTerziManualDialog
         open={dialogOpen}
