@@ -51,7 +51,7 @@ In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, 
 
 ## Cosa non tocco
 
-Giacenze, cernite e lavorazioni, conferimenti privati, registro e ricevute dei privati, archivio dei 361 invii privati già fatti da terminale. Nessun saldo cambia di un chilo.
+Giacenze pregresse, storico già consolidato, archivio dei 359 invii privati già fatti da terminale, ricevute privati, movimenti già chiusi e formulari già emessi. Nessun ricalcolo dello storico.
 
 ## Dettagli tecnici
 
