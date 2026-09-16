@@ -89,6 +89,16 @@ function Section({ title, defaultOpen = false, onClear, children }: { title: str
   );
 }
 
+/**
+ * Lo scroll del mouse sopra un campo data/ora/numero ne cambia il valore
+ * (comportamento nativo del browser): togliamo il focus così lo scroll
+ * scorre la pagina senza cancellare o alterare quanto scritto.
+ */
+function blurOnWheel(e: React.WheelEvent<HTMLInputElement>) {
+  const el = e.currentTarget;
+  if (document.activeElement === el) el.blur();
+}
+
 function Field({ label, value, onChange, placeholder, type = "text", validate }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; validate?: (v: string) => string | null }) {
   const error = (validate ? validate(value) : autoValidateByLabel(label, value)) || null;
   return (
