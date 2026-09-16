@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.fir_pubblico_sintesi(uuid) FROM PUBLIC;

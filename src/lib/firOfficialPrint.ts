@@ -88,7 +88,7 @@ export async function printOfficialFir(options: OfficialPrintOptions): Promise<b
   const fields = await loadOfficialTemplateFields();
   const values = blank ? {} : buildDraftFieldValues(fields, draft);
   const qrDataUrl = numeroFir
-    ? await resolveFirQrDataUrl(numeroFir, options.cliente, { allowLocalFallback: true })
+    ? await resolveFirQrDataUrl(numeroFir, options.cliente)
     : null;
 
   const producedAt = new Date();

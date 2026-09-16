@@ -4,8 +4,7 @@
  * Ogni pagina stampata deve avere:
  *  - il numero FIR in alto a destra E in basso a destra;
  *  - la dicitura di vidimazione virtuale nelle annotazioni (data e ora di produzione del FIR);
- *  - il QR code 28x28 mm collegato al RENTRI (ufficiale se disponibile, altrimenti generato
- *    localmente con il link di verifica: il RENTRI lo mostrerà vuoto finché il FIR non è registrato).
+ *  - esclusivamente il QR ufficiale ottenuto dai byte firmati restituiti da RENTRI.
  */
 import QRCode from "qrcode";
 import { supabase } from "@/lib/supabaseClient";
@@ -76,19 +75,6 @@ export function buildVidimazioneLabel(cliente?: PrintCliente | null, when: Date 
   return `Vid.Virt. del ${dt.replace(",", "")} per conto della ${info.cameraCommercio}, rich. da ${info.codiceFiscale} - ${info.ragioneSociale}`;
 }
 
-/** Genera localmente un QR (data URL PNG) con il link di verifica RENTRI. */
-export async function generateLocalFirQr(numeroFir: string, cliente?: PrintCliente | null): Promise<string> {
-  return QRCode.toDataURL(rentriFirVerifyUrl(numeroFir, cliente), {
-    errorCorrectionLevel: "M",
-    margin: 0,
-    width: 320,
-    color: { dark: "#000000", light: "#FFFFFF" },
-  });
-}
-
-const asDataUrl = (raw: string): string =>
-  raw.startsWith("data:") ? raw : `data:image/png;base64,${raw}`;
-
 /* ──────────────────────────────────────────────────────────────
  * QR ufficiale RENTRI
  * Documentazione: "Interpretazione dei dati sul QR code del FIR vidimato"
@@ -141,7 +127,7 @@ export function parseNumeroFir(numeroFir: string): { codiceBlocco: string; progr
 /** Genera l'immagine QR (data URL) a partire dalla stringa ufficiale RENTRI. */
 export async function qrImageFromPayload(payload: string): Promise<string> {
   return QRCode.toDataURL(payload, {
-    errorCorrectionLevel: "M",
+    errorCorrectionLevel: "H",
     margin: 0,
     width: 420,
     color: { dark: "#000000", light: "#FFFFFF" },
@@ -179,29 +165,17 @@ export async function fetchOfficialQrPayload(
 
 /**
  * Recupera il QR ufficiale RENTRI del formulario.
- * Ordine: QR già memorizzato nel pool → lotto di vidimazione (qr_code_bytes → Base45)
- * → proxy get-pdf/get-qr. Se il RENTRI non è raggiungibile e `allowLocalFallback`
- * è attivo viene generato un QR con il link di verifica (NON conforme alla vidimazione,
- * usato solo come promemoria di stampa).
+ * Legge il lotto di vidimazione e converte `qr_code_bytes` nel QR ufficiale.
+ * Non viene mai generato un QR locale sostitutivo.
  */
 export async function resolveFirQrDataUrl(
   numeroFir: string,
   cliente?: PrintCliente | null,
-  options?: { allowLocalFallback?: boolean },
 ): Promise<string | null> {
   if (!numeroFir) return null;
 
-  // 1) QR già memorizzato nel pool
-  try {
-    const { data } = await supabase
-      .from("fir_number_pool")
-      .select("qr_code_data")
-      .eq("fir_number", numeroFir)
-      .maybeSingle();
-    if ((data as any)?.qr_code_data) return asDataUrl(String((data as any).qr_code_data));
-  } catch { /* ignore */ }
-
-  // 2) QR ufficiale RENTRI (Base45 del COSE_Sign1 di vidimazione)
+  // Il vecchio cache può contenere QR locali precedenti: non è una fonte attendibile.
+  // Il QR viene sempre rigenerato dai byte firmati appena letti dal RENTRI.
   try {
     const payload = await fetchOfficialQrPayload(numeroFir, cliente);
     if (payload) {
@@ -216,21 +190,6 @@ export async function resolveFirQrDataUrl(
     }
   } catch { /* ignore */ }
 
-  // 3) Proxy get-pdf / get-qr
-  try {
-    const { data } = await supabase.functions.invoke("rentri-get-pdf", {
-      body: { firId: numeroFir, cliente: printClienteKey(cliente) },
-    });
-    const qr = (data as any)?.qrCode || (data as any)?.qr_code;
-    if (qr) return asDataUrl(String(qr));
-  } catch { /* ignore */ }
-
-  // 4) Fallback locale (solo se richiesto esplicitamente)
-  if (options?.allowLocalFallback) {
-    try {
-      return await generateLocalFirQr(numeroFir, cliente);
-    } catch { /* ignore */ }
-  }
   return null;
 }
 
