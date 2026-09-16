@@ -87,6 +87,16 @@
 
 @layer base {
   * { @apply border-border; }
+  select {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--input));
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--popover));
+  }
   body {
     @apply bg-background text-foreground font-body antialiased;
     background:

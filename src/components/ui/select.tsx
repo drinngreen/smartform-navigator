@@ -19,7 +19,7 @@ export function SelectTrigger({ children, className }: { children: React.ReactNo
   const ctx = useContext(Ctx)!
   return (
     <div className={`relative ${className ?? ''}`}>
-      <select className="w-full px-3 py-2 rounded-md bg-slate-900/60 border border-slate-800" value={ctx.value} onChange={(e)=>ctx.onValueChange && ctx.onValueChange(e.target.value)}>
+      <select className="w-full px-3 py-2 rounded-md bg-input border border-border text-foreground" value={ctx.value} onChange={(e)=>ctx.onValueChange && ctx.onValueChange(e.target.value)}>
         {ctx.items.map(it => <option key={it.value} value={it.value}>{it.label}</option>)}
       </select>
       {children}
