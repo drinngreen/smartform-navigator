@@ -2345,6 +2345,30 @@ async function resolveFirFormId(
   return { id: data.id, original: candidate, fir: data };
 }
 
+// ====================== CONFINE AGENTE ======================
+// L'agente può preparare e compilare, MAI rendere effettivo un movimento
+// o toccare le giacenze: quello richiede sempre una conferma umana.
+
+const TABELLE_STATO_MOVIMENTO = ["registro_generale", "movimenti_impianto"];
+
+function sqlAgenteVietata(sql: string): string | null {
+  const s = sql.toLowerCase();
+  const scrive = /\b(insert|update|delete|truncate|merge)\b/.test(s);
+  if (!scrive) return null;
+  if (/magazzino_giacenze/.test(s))
+    return "Le giacenze non possono essere modificate dall'assistente: serve la conferma di una persona (pesata certificata).";
+  if (/applica_movimento_giacenza|recalculate_magazzino_giacenza/.test(s))
+    return "Il punto unico di aggiornamento delle giacenze è riservato alle conferme umane.";
+  if (/stato_movimento\s*=\s*'effettivo'/.test(s))
+    return "L'assistente può creare solo movimenti potenziali: solo una persona può renderli effettivi.";
+  return null;
+}
+
+function bozzaAgente(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  if (!TABELLE_STATO_MOVIMENTO.includes(table) || !row || typeof row !== "object") return row;
+  return { ...row, stato_movimento: "potenziale", created_by_agent: true };
+}
+
 // ====================== TOOL HANDLERS ======================
 
 async function handleTool(
