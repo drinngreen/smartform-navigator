@@ -96,18 +96,18 @@ function tipoDaTestoEsteso(v: string): string {
   const t = v.toLowerCase();
   const has = (...w: string[]) => w.some((x) => t.includes(x));
 
-  if (has("mobil")) return "RecSmalImpMobiliArt208";
-  if (has("208")) return "RecSmalArt208";
-  if (has("216", "214", "procedura semplificata", "proc. semplificata", "comunicazione"))
-    return "RecProcSemplificata";
-  if (has("ricerca", "sperimentazione")) return "RicercaSperimentazione";
+  // L'ordine ricalca le 9 voci ufficiali della tendina: prima le fattispecie
+  // riconoscibili senza ambiguità, poi quelle che citano l'art. 208.
+  if (has("acque reflue"))
+    return has("comunicazione") ? "ComTrattamentoAcqueReflue" : "AutTrattamentoAcqueReflue";
   if (has("bonifica")) return "OpBonifica";
   if (has("straordinar")) return "Straordinario";
-  if (has("acque reflue")) return "AutTrattamentoAcqueReflue";
-  // AIA / AUA da sole: l'AUA non è una fattispecie RENTRI autonoma, ma quando
-  // compare senza altri riferimenti l'atto è un'autorizzazione integrata.
-  if (has("aia", "autorizzazione integrata")) return "AIA";
-  if (has("aua", "autorizzazione unica ambientale")) return "RecProcSemplificata";
+  if (has("ricerca", "sperimentazione")) return "RicercaSperimentazione";
+  if (has("aia", "integrata ambientale", "29-ter", "29 ter")) return "AIA";
+  if (has("mobil")) return "RecSmalImpMobiliArt208";
+  if (has("216", "214", "procedura semplificata", "proc. semplificata", "aua", "autorizzazione unica ambientale"))
+    return "RecProcSemplificata";
+  if (has("208")) return "RecSmalArt208";
   return "";
 }
 

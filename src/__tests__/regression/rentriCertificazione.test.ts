@@ -206,3 +206,35 @@ describe("Valori ufficiali RENTRI: autorizzazione e attività destinatario", () 
     expect(q.dati_partenza.destinatario.attivita).toBe("D15");
   });
 });
+
+describe("Tendina ufficiale delle autorizzazioni (9 voci)", () => {
+  const VOCI: Array<[string, string]> = [
+    ["Autorizzazione unica per i nuovi impianti di recupero/smaltimento - art. 208 decreto legislativo 3 aprile 2006, n. 152.", "RecSmalArt208"],
+    ["Autorizzazione all'esercizio di operazioni di recupero e/o smaltimento dei rifiuti con impianti mobili - art.208, comma 15 del decreto legislativo 3 aprile 2006, n. 152.", "RecSmalImpMobiliArt208"],
+    ["Autorizzazione alla realizzazione di impianti di ricerca e sperimentazione - art. 211 del decreto legislativo 3 aprile 2006, n. 152.", "RicercaSperimentazione"],
+    ["Autorizzazione Integrata Ambientale - artt. 29-ter e 213 del decreto legislativo 3 aprile 2006, n. 152.", "AIA"],
+    ["Operazioni di recupero mediante Comunicazione in 'Procedura Semplificata' - artt.214 e 216 del decreto legislativo 3 aprile 2006, n. 152 e autorizzazione unica ambientale (AUA) - Decreto Presidente Repubblica n.59 del 13 marzo 2013.", "RecProcSemplificata"],
+    ["Provvedimenti che autorizzano le operazioni di bonifica, ai sensi del comma 7 dell'art. 242 del decreto legislativo 3 aprile 2006, n. 152.", "OpBonifica"],
+    ["Autorizzazioni 'straordinarie' art. 191 del decreto legislativo 3 aprile 2006, n. 152.", "Straordinario"],
+    ["Comunicazione al trattamento di rifiuti e materiali in impianti di trattamento di acque reflue urbane - art. 110 c.3 del D.Lgs. 152/2006.", "ComTrattamentoAcqueReflue"],
+    ["Autorizzazione al trattamento di rifiuti liquidi in impianti di trattamento di acque reflue urbane - artt. 110 c.2 con provvedimento secondo artt. 208 oppure 29-ter e 213 del D.Lgs. 152/2006.", "AutTrattamentoAcqueReflue"],
+  ];
+
+  it.each(VOCI)("riconosce «%s»", async (testo, atteso) => {
+    const { mapStoreToRentriFirPayload } = await import("@/lib/rentriFirPayloadFromStore");
+    const payload = await mapStoreToRentriFirPayload("multy", {
+      selectedFirNumber: "ZRZXR 000772 TM",
+      produttoreDenominazione: "MULTY PROGET SRL",
+      produttoreCF: "12347770013",
+      destinatarioDenominazione: "FERMET SRL",
+      destinatarioCF: "08934760960",
+      codiceEER: "170405",
+      quantita: "1000",
+      destinatarioCodiceOperazione: "R13",
+      destinatarioNumeroAut: "AUA 302-11752",
+      destinatarioTipoAut: testo,
+    });
+    const dp = payload.dati_partenza as Record<string, any>;
+    expect(dp.destinatario.autorizzazione.tipo).toBe(atteso);
+  });
+});
