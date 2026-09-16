@@ -13,6 +13,7 @@ interface CerPickerFieldProps {
   inputClassName?: string;
   inputStyle?: React.CSSProperties;
   label?: string;
+  error?: string | null;
 }
 
 const normalize = (code: string) => String(code ?? "").replace(/\D/g, "");
@@ -32,6 +33,7 @@ export function CerPickerField({
   inputClassName,
   inputStyle,
   label,
+  error,
 }: CerPickerFieldProps) {
   const { preferiti, tutti } = useConferimentoCerOptions();
   const [open, setOpen] = useState(false);
@@ -73,7 +75,7 @@ export function CerPickerField({
   return (
     <div ref={wrapRef} className={overlay ? "relative overflow-visible" : "relative"} style={overlay ? overlayStyle : undefined}>
       {label && !overlay && (
-        <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">{label}</label>
+        <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${error ? "text-red-300" : "text-white/80"}`}>{label}</label>
       )}
       <input
         type="text"
@@ -87,10 +89,11 @@ export function CerPickerField({
         }}
         className={
           inputClassName ??
-          "w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          `w-full rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 ${error ? "bg-red-500/15 border border-red-500 focus:ring-red-400" : "bg-sky-400/10 border border-sky-400/40 focus:ring-sky-300"}`
         }
         style={overlay ? { width: "100%", height: "100%", ...inputStyle } : inputStyle}
       />
+      {error && <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ {error}</p>}
 
       {open && (
         <div className="absolute left-0 z-[90] mt-1 max-h-64 w-[min(28rem,80vw)] overflow-y-auto rounded-lg border border-border bg-popover shadow-xl">

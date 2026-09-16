@@ -109,6 +109,10 @@ export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Pr
   let query = supabase
     .from("rentri_operazioni")
     .select("id, cliente, tipo_operazione, rentri_method, rentri_path, http_status, success, error_code, error_message, payload_inviato, risposta, identificativo_rentri, transazione_id, esito_finale, created_at")
+    // Questa vista è il registro degli INVII, non la diagnostica tecnica.
+    // Esclude ricerche, polling transazioni e download PDF, che possono essere
+    // numerosi ma non rappresentano nuovi tentativi dell'operatore.
+    .in("tipo_operazione", ["FIR_EMISSIONE", "FIRMA_RICEZIONE", "REGISTRO"])
     .order("created_at", { ascending: false })
     .limit(filters.limit ?? 1000);
 

@@ -25,6 +25,12 @@ const CODICI_RENTRI: Record<string, string> = {
   "sys.invalid": "valore non valido",
 };
 
+const OPERAZIONI_LEGGIBILI: Record<string, string> = {
+  FIR_EMISSIONE: "Invio partenza FIR",
+  FIRMA_RICEZIONE: "Invio arrivo e firma destinatario",
+  REGISTRO: "Invio registro cronologico",
+};
+
 function motivoRifiuto(row: { error_message: string | null; risposta?: unknown }): string {
   const risposta = row.risposta && typeof row.risposta === "object"
     ? row.risposta as Record<string, unknown>
@@ -85,7 +91,10 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
     <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4" data-testid="rentri-history">
       <div className="flex items-center gap-2">
         <History size={16} className="text-primary" />
-        <h3 className="text-base font-display tracking-wider">Cronologia operazioni RENTRI</h3>
+        <div>
+          <h3 className="text-base font-display tracking-wider">Invii effettuati al RENTRI</h3>
+          <p className="text-xs text-muted-foreground">Solo invii reali: controlli automatici, ricerche e PDF sono esclusi.</p>
+        </div>
         <button
           onClick={() => void reload()}
           className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-secondary/50 border border-border/50 hover:bg-secondary"
@@ -167,7 +176,7 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                 {row.success
                   ? <CheckCircle2 size={14} className="text-primary" />
                   : <XCircle size={14} className="text-destructive" />}
-                <span className="font-semibold">{row.tipo_operazione}</span>
+                 <span className="font-semibold">{OPERAZIONI_LEGGIBILI[row.tipo_operazione] ?? row.tipo_operazione}</span>
                 {numeroFir && <span className="font-mono text-xs font-semibold">{numeroFir}</span>}
                 <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase">{row.cliente}</span>
                 {row.mode === "dry_run" && (
@@ -186,7 +195,7 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                    <p className="mt-1 text-sm text-foreground">{motivoRifiuto(row)}</p>
                  </div>
                )}
-              <details className="mt-1">
+               <details className="mt-1">
                 <summary className="cursor-pointer text-xs text-muted-foreground">Dettagli tecnici</summary>
                 <div className="mt-1 text-xs font-mono text-muted-foreground break-all">
                   HTTP {row.http_status ?? "—"} · {row.error_code ?? "OK"} · {row.rentri_method ?? "—"} {row.rentri_path ?? "—"}
