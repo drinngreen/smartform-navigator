@@ -443,7 +443,7 @@ export function DevFormulariList({
       )}
 
       {/* Full FIR Dialog with Standard/Alternative toggle */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
+      <Dialog open={viewDialog.open} modal={!darkLemonOpen} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent
           className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
           onPointerDownOutside={keepOpenOnDarkLemon}
