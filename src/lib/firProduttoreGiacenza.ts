@@ -2,8 +2,8 @@
  * Scarico di magazzino dai formulari RENTRI in cui Multyproget è PRODUTTORE.
  *
  * Regole non negoziabili:
- *  - vale SOLO per i formulari emessi OGGI (mai lo storico: altrimenti si alterano
- *    saldi già consolidati);
+ *  - vale SOLO per i formulari digitali datati da OGGI alle 08:00 (ora italiana)
+ *    in poi — MAI prima: altrimenti si alterano saldi già consolidati;
  *  - vale SOLO se il produttore è Multyproget;
  *  - non parte mai da solo: la funzione viene chiamata da un'azione umana esplicita;
  *  - passa unicamente dal punto autorizzato `applica_movimento_giacenza`;
