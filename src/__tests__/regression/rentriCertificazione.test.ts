@@ -221,8 +221,16 @@ describe("Tendina ufficiale delle autorizzazioni (9 voci)", () => {
   ];
 
   it.each(VOCI)("riconosce «%s»", async (testo, atteso) => {
-    const payload = await mapStoreToRentriFirPayload("multyproget", {
-      ...baseStore,
+    const { mapStoreToRentriFirPayload } = await import("@/lib/rentriFirPayloadFromStore");
+    const payload = await mapStoreToRentriFirPayload("multy", {
+      selectedFirNumber: "ZRZXR 000772 TM",
+      produttoreDenominazione: "MULTY PROGET SRL",
+      produttoreCF: "12347770013",
+      destinatarioDenominazione: "FERMET SRL",
+      destinatarioCF: "08934760960",
+      codiceEER: "170405",
+      quantita: "1000",
+      destinatarioCodiceOperazione: "R13",
       destinatarioNumeroAut: "AUA 302-11752",
       destinatarioTipoAut: testo,
     });
