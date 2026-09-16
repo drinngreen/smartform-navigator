@@ -307,7 +307,8 @@ export function DevFormulariList({
   const statoReale = (f: any) => {
     const statoLocale = resolveWorkflowStatus(f.status, f.form_data);
     if (statoLocale !== "bozza") return statoLocale;
-    return confirmedFirNumbers.has(normalizeFir(f.numero_fir)) ? "inviato" : "bozza";
+    if (confirmedFirNumbers.has(normalizeFir(f.numero_fir))) return "inviato";
+    return String(f.status ?? "").toLowerCase() === "inviato" ? "verifica" : "bozza";
   };
 
   const filtered = sourceForms.filter((f: any) => {
@@ -317,7 +318,7 @@ export function DevFormulariList({
       String(firstValue(f.codice_eer, f.form_data?.cer, f.form_data?.codice_eer, f.form_data?.codiceEER) || "").toLowerCase().includes(q) ||
       String(firstValue(f.produttore_denominazione, f.form_data?.produttore_denominazione, f.form_data?.produttoreDenominazione) || "").toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "draft") return matchSearch && ["bozza", "verifica"].includes(statoReale(f));
     if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
     if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
@@ -325,7 +326,7 @@ export function DevFormulariList({
 
   const stats = {
     total: sourceForms.length,
-    draft: sourceForms.filter((f: any) => statoReale(f) === "bozza").length,
+    draft: sourceForms.filter((f: any) => ["bozza", "verifica"].includes(statoReale(f))).length,
     submitted: sourceForms.filter((f: any) => statoReale(f) === "inviato").length,
     completed: sourceForms.filter((f: any) => statoReale(f) === "chiuso").length,
   };
@@ -412,7 +413,11 @@ export function DevFormulariList({
                     const trasportatore = firstValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—";
                     const dataRaw = firstValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo);
                     const stato = statoReale(form);
-                    const etichettaStato = stato === "bozza" ? "Bozza" : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
+                    const etichettaStato = stato === "bozza"
+                      ? "Bozza"
+                      : stato === "verifica"
+                        ? "Verifica RENTRI"
+                        : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
                     const missingDestino = stato === "chiuso" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
                     <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : undefined}
