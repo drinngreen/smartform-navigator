@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { keepOpenOnDarkLemon } from "@/lib/dialogGuards";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2, Receipt, BadgeEuro,
 } from "lucide-react";
@@ -64,6 +65,7 @@ export function DevFormulariList({
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
+  const darkLemonOpen = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [fatturaFrom, setFatturaFrom] = useState<{ righe: Riga[]; clienteFallback?: any } | null>(null);
   const [viewFatturaId, setViewFatturaId] = useState<string | null>(null);
@@ -441,7 +443,7 @@ export function DevFormulariList({
       )}
 
       {/* Full FIR Dialog with Standard/Alternative toggle */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
+      <Dialog open={viewDialog.open} modal={!darkLemonOpen} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent
           className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
           onPointerDownOutside={keepOpenOnDarkLemon}
