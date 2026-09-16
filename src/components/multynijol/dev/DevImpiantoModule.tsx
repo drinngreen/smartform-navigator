@@ -394,8 +394,9 @@ function ImpiantoFormulari() {
           descrizione: `FIR ${selectedIncoming.numero_fir} — ${selectedIncoming.produttore || "produttore"}`,
           causale: "FIR_DIGITALE_CHIUSO_RENTRI",
         });
-        if (esitoGiacenza.applicato) toast.success("Carico registrato in impianto e giacenze aggiornate");
+        if (esitoGiacenza.applicato === true) toast.success("Carico registrato in impianto e giacenze aggiornate");
         else toast.info(esitoGiacenza.motivo);
+
       } catch (e: any) {
         toast.error(`Firma inviata, ma il carico in impianto non è stato registrato: ${e?.message || String(e)}`);
       }
