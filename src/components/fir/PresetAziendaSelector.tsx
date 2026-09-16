@@ -869,6 +869,13 @@ export function PresetAziendaSelector({
             </p>
           )}
 
+          {autId && dbAuts.some((a) => a.id === autId && !tipoUfficialeDaAutorizzazione(a)) && (
+            <p className="text-[10px] text-amber-300">
+              Il numero di autorizzazione è compilato, ma in anagrafica non è indicato il tipo ufficiale:
+              scegli il tipo nella tendina «Tipo Aut.» del formulario prima di inviare al RENTRI.
+            </p>
+          )}
+
           {onSelectUnitaLocale && (
             <select
               className={selectCls}
