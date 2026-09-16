@@ -27,3 +27,4 @@
 - [x] Prove automatiche di certificazione RENTRI (65 test, verifica superata 09:08) con referto in docs/REFERTO_CERTIFICAZIONE_RENTRI_2026-09-16.md
 - [x] Controlli di collegamento in sola lettura RENTRI per Multy e Niyol (blocchi reali ricevuti 09:09)
 - [ ] Prova reale guidata di invio (1 FIR Multy scelto dall'utente, poi Niyol) — in attesa di via libera
+- [x] Regola giacenze da FIR produttore Multy: solo formulari digitali datati da oggi ore 08:00 (ora italiana) in poi — mai lo storico (src/lib/firProduttoreGiacenza.ts, 8 prove)

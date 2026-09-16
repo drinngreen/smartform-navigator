@@ -2,8 +2,8 @@
  * Scarico di magazzino dai formulari RENTRI in cui Multyproget è PRODUTTORE.
  *
  * Regole non negoziabili:
- *  - vale SOLO per i formulari emessi OGGI (mai lo storico: altrimenti si alterano
- *    saldi già consolidati);
+ *  - vale SOLO per i formulari digitali datati da OGGI alle 08:00 (ora italiana)
+ *    in poi — MAI prima: altrimenti si alterano saldi già consolidati;
  *  - vale SOLO se il produttore è Multyproget;
  *  - non parte mai da solo: la funzione viene chiamata da un'azione umana esplicita;
  *  - passa unicamente dal punto autorizzato `applica_movimento_giacenza`;
@@ -29,6 +29,30 @@ export const oggiIso = () => new Date().toISOString().slice(0, 10);
 
 export const dataFir = (riga: { data_emissione?: unknown; data_creazione?: unknown }) =>
   String(riga.data_emissione ?? riga.data_creazione ?? "").slice(0, 10);
+
+/** Data odierna nel fuso italiano (Europe/Rome), formato YYYY-MM-DD. */
+export const oggiRomaIso = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+
+/**
+ * Istante di inizio validità: OGGI alle 08:00 ora italiana.
+ * Le giacenze si aggiornano solo dai formulari digitali datati da questo
+ * istante in poi; tutto ciò che è precedente è storico e non si tocca.
+ */
+export const cutoffGiacenzeDaFir = (oggi = oggiRomaIso()): Date => {
+  const mezzogiornoUtc = Date.parse(`${oggi}T12:00:00Z`);
+  const romaString = new Date(mezzogiornoUtc).toLocaleString("en-US", { timeZone: "Europe/Rome" });
+  const offsetMs = new Date(romaString).getTime() - mezzogiornoUtc;
+  return new Date(Date.parse(`${oggi}T08:00:00Z`) - offsetMs);
+};
+
+/** Timestamp completo del formulario (data_emissione o, in mancanza, data_creazione). */
+export const istanteFir = (riga: { data_emissione?: unknown; data_creazione?: unknown }): number | null => {
+  const raw = String(riga.data_emissione ?? riga.data_creazione ?? "").trim();
+  if (!raw) return null;
+  const ms = Date.parse(raw.includes("T") ? raw : raw.replace(" ", "T"));
+  return Number.isNaN(ms) ? null : ms;
+};
 
 /** Ruoli del formulario calcolati su TUTTI i codici fiscali aziendali, non solo su quello letto. */
 export function ruoliFir(
@@ -59,17 +83,24 @@ export interface FirProduttoreCandidato {
   descrizione?: string;
 }
 
-/** true solo se: produttore Multyproget + emesso oggi + CER e quantità utilizzabili. */
+/**
+ * true solo se: produttore Multyproget + formulario datato da oggi alle 08:00
+ * (ora italiana) in poi + CER e quantità utilizzabili. Mai lo storico.
+ */
 export function scaricoProduttoreAmmesso(
   fir: FirProduttoreCandidato,
-  oggi = oggiIso(),
+  cutoff = cutoffGiacenzeDaFir(),
 ): { ok: boolean; motivo?: string } {
   if (normalizzaCf(fir.produttore_cf) !== MULTY_CF)
     return { ok: false, motivo: "Il produttore non è Multyproget: nessun effetto sulle giacenze." };
-  const data = dataFir(fir);
-  if (!data) return { ok: false, motivo: "Formulario senza data leggibile: nessun effetto sulle giacenze." };
-  if (data !== oggi)
-    return { ok: false, motivo: "Formulario non di oggi: storico, nessun effetto sulle giacenze." };
+  const istante = istanteFir(fir);
+  if (istante === null)
+    return { ok: false, motivo: "Formulario senza data/ora leggibile: nessun effetto sulle giacenze." };
+  if (istante < cutoff.getTime())
+    return {
+      ok: false,
+      motivo: "Formulario precedente a oggi ore 08:00: storico, nessun effetto sulle giacenze.",
+    };
   if (!String(fir.codice_eer ?? "").trim()) return { ok: false, motivo: "Codice CER mancante." };
   if (!(Number(fir.quantita) > 0)) return { ok: false, motivo: "Quantità non valida." };
   return { ok: true };
