@@ -120,6 +120,64 @@ export async function checkRentriHealth(): Promise<{ ok: boolean; url: string; s
 /**
  * 1. EMISSIONE — Send FIR data for signature via VPS proxy.
  */
+/** Estrae l'identificativo ufficiale del FIR da una risposta RENTRI, comunque annidata. */
+function estraiFirId(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const record = value as Record<string, unknown>;
+  for (const key of ["uuid_fir", "uuidFir", "fir_id", "firId", "numero_fir", "numeroFir"]) {
+    const raw = String(record[key] ?? "").trim();
+    if (raw) return raw;
+  }
+  for (const nested of Object.values(record)) {
+    if (nested && typeof nested === "object") {
+      const found = estraiFirId(nested);
+      if (found) return found;
+    }
+  }
+  return "";
+}
+
+/**
+ * Emissione asincrona: attende la conclusione della transazione RENTRI e, in
+ * assenza di esito esplicito, verifica in sola lettura che il FIR esista.
+ */
+async function attendiConfermaEmissione(
+  cliente: RentriCliente,
+  rispostaInvio: unknown,
+  payloadInviato: Record<string, unknown>,
+): Promise<string> {
+  const transazioneId = estraiTransazioneId(rispostaInvio);
+  const numeroInviato = String(
+    ((payloadInviato as any)?.dati_partenza?.numero_fir ?? (payloadInviato as any)?.numero_fir ?? ""),
+  ).trim();
+
+  for (let tentativo = 0; tentativo < 5; tentativo++) {
+    await new Promise((r) => setTimeout(r, 3000));
+
+    if (transazioneId) {
+      const tx = await statoTransazioneFir(cliente, transazioneId);
+      if (tx.success) {
+        const testo = JSON.stringify(tx.data ?? {}).toUpperCase();
+        if (/ERRORE|SCARTAT|RIFIUTAT|"KO"/.test(testo)) {
+          throw new Error(`Il RENTRI ha scartato l'emissione: ${JSON.stringify(tx.data)}`);
+        }
+        const id = estraiFirId(tx.data);
+        if (id) return id;
+      }
+    }
+
+    if (numeroInviato) {
+      const ricerca = await ricercaFir(cliente, numeroInviato);
+      if (ricerca.success) {
+        const id = estraiFirId(ricerca.data);
+        if (id) return id;
+      }
+    }
+  }
+
+  return "";
+}
+
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
