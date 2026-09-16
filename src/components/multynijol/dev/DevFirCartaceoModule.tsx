@@ -25,11 +25,19 @@ const fmtDate = (v: string | null) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v);
 };
 
+type RigaCartacea = MovimentoImpiantoRow & {
+  impianto_id?: string | null;
+  stato_movimento?: string | null;
+};
+
 export function DevFirCartaceoModule() {
   const registri = registriDisponibili(CLIENTE);
   const [registroId, setRegistroId] = useState(registri[0]?.id ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [rows, setRows] = useState<MovimentoImpiantoRow[]>([]);
+  const [confermaRow, setConfermaRow] = useState<RigaCartacea | null>(null);
+  const [pesoConfermato, setPesoConfermato] = useState("");
+  const [confermando, setConfermando] = useState(false);
+  const [rows, setRows] = useState<RigaCartacea[]>([]);
   const [inviatiIds, setInviatiIds] = useState<Set<string>>(new Set());
   const [selezione, setSelezione] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
