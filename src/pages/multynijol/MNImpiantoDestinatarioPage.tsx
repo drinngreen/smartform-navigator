@@ -4,7 +4,6 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovimentiImpianto } from "@/hooks/useMovimentiImpianto";
-import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,8 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 
 interface Impianto { id: string; nome: string; }
+
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 /** Formulario realmente emesso dall'autista, in viaggio verso l'impianto. */
 interface FirInViaggio {
@@ -52,6 +53,7 @@ export default function MNImpiantoDestinatarioPage() {
   const [selectedImpianto, setSelectedImpianto] = useState<string>("");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Formulari in viaggio (emessi e firmati dall'autista, non ancora chiusi)
   const [firInViaggio, setFirInViaggio] = useState<FirInViaggio[]>([]);
@@ -59,7 +61,7 @@ export default function MNImpiantoDestinatarioPage() {
   const [selectedFirId, setSelectedFirId] = useState<string>("");
   const [manualMode, setManualMode] = useState(false);
 
-  const { movimenti, isLoading, createMovimento, stats } = useMovimentiImpianto(
+  const { movimenti, isLoading, stats } = useMovimentiImpianto(
     selectedImpianto || undefined, "DESTINATARIO"
   );
 
@@ -136,27 +138,24 @@ export default function MNImpiantoDestinatarioPage() {
       }
     }
 
-    const payload: any = {
-      impianto_id: selectedImpianto,
-      cer: form.cer.trim(),
-      descrizione_rifiuto: form.descrizione_rifiuto || null,
-      quantita_kg: kgPesati,
-      quantita_presunta: kgPresunta,
-      tipo_movimento: "CARICO",
-      ruolo_impianto: "DESTINATARIO",
-      numero_fir: form.numero_fir.trim(),
-      fir_id: selectedFirId || null,
-      produttore_denominazione: form.produttore_denominazione || null,
-      trasportatore_denominazione: form.trasportatore_denominazione || null,
-      esito_accettazione: esito,
-      note: form.note || null,
-      data_movimento: new Date().toISOString().split("T")[0],
-      // Il peso è certificato qui, alla pesata del destinatario: il movimento
-      // diventa effettivo. Un carico respinto non diventa mai effettivo.
-      stato_movimento: esito === "respinto" ? "annullato" : "effettivo",
-    };
-
-    await createMovimento.mutateAsync(payload);
+    setSaving(true);
+    try {
+      if (esito !== "respinto") {
+        const { error: movementError } = await (supabase as any).rpc("applica_movimento_giacenza", {
+        p_tenant_id: MULTY_TENANT_ID,
+        p_impianto_id: selectedImpianto,
+        p_cer: form.cer.trim(),
+        p_quantita_kg: kgPesati,
+        p_segno: "CARICO",
+        p_causale: "FIR_DIGITALE_CHIUSO_DESTINATARIO",
+        p_documento: `FIR_DESTINO:${form.numero_fir.trim()}:ACCETTAZIONE`,
+        p_attore: "human",
+        p_descrizione: form.descrizione_rifiuto || null,
+        p_fir_id: selectedFirId || null,
+        p_numero_fir: form.numero_fir.trim(),
+        });
+        if (movementError) throw movementError;
+      }
 
     // Chiusura del formulario dell'autista: senza questo passaggio il FIR
     // resterebbe "in viaggio" anche dopo l'arrivo e la pesata.
@@ -172,28 +171,21 @@ export default function MNImpiantoDestinatarioPage() {
       if (closeError) {
         toast.error("Arrivo registrato, ma il formulario non risulta chiuso: " + closeError.message);
       } else {
-        // Chiusura digitale: la pesata del destinatario certifica il peso, i
-        // movimenti diventano effettivi e le giacenze si aggiornano da sole.
-        try {
-          const sync = await syncFirFinalToRegistryAndInventory({
-            firId: selectedFirId,
-            impiantoId: selectedImpianto,
-            effettivo: esito !== "respinto",
-          });
-          if (sync.warning) toast.warning(sync.warning);
-          toast.success(
-            esito === "respinto"
-              ? "Formulario chiuso come respinto: nessuna giacenza movimentata"
-              : "Formulario chiuso: giacenze aggiornate con il peso riscontrato",
-          );
-        } catch (e: any) {
-          toast.error("Formulario chiuso, ma registro e giacenze non aggiornati: " + (e?.message || String(e)));
-        }
+        toast.success(
+          esito === "respinto"
+            ? "Formulario chiuso come respinto: nessuna giacenza movimentata"
+            : "Formulario chiuso: giacenze aggiornate con il peso riscontrato",
+        );
       }
     }
 
-    setDialogOpen(false);
-    resetDialog();
+      setDialogOpen(false);
+      resetDialog();
+    } catch (e: any) {
+      toast.error("Arrivo non registrato: " + (e?.message || String(e)));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const filtered = movimenti?.filter((m) => {
@@ -366,8 +358,8 @@ export default function MNImpiantoDestinatarioPage() {
               <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2} className="bg-secondary/50 border-border" />
             </div>
 
-            <Button onClick={handleSave} disabled={createMovimento.isPending} className="w-full">
-              {createMovimento.isPending ? "Salvataggio..." : "Registra Arrivo"}
+            <Button onClick={handleSave} disabled={saving} className="w-full">
+              {saving ? "Salvataggio..." : "Registra Arrivo"}
             </Button>
           </div>
         </DialogContent>

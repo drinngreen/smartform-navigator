@@ -677,10 +677,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           firId: store.editingFirId,
           impiantoId: impiantoId || null,
           registryMovementType: registryMovementType || "Carico",
+          effettivo: false,
         });
         if (result.warning) throw new Error(result.warning);
-        if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
-        toast.success("✅ FIR salvato DEFINITIVO (registro + giacenze)");
+        toast.success("FIR salvato come incompleto: registro e giacenze attendono la firma del destinatario");
         window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: store.editingFirId } }));
       } catch (e: any) {
         toast.error("Errore salvataggio definitivo: " + (e?.message || String(e)));
@@ -791,6 +791,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         firId: savedId,
         impiantoId: impiantoId || null,
         registryMovementType: registryMovementType || "Carico",
+        effettivo: false,
       });
       if (result.warning) throw new Error(result.warning);
       if (result.registryApplicable && !result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
@@ -798,9 +799,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.success(
         !result.registryApplicable
           ? "✅ FIR caricato nel sistema (cliente terzo: nessun registro Multy/Niyol interessato)"
-          : result.inventory
-          ? "✅ FIR caricato nel sistema: registro e giacenze aggiornati"
-          : "✅ FIR caricato nel registro (giacenze non interessate: Multyproget non è produttore/destinatario)"
+          : "FIR caricato come incompleto: conferma manualmente il peso se cartaceo, oppure attendi la firma del destinatario se digitale"
       );
       window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: savedId } }));
     } catch (e: any) {

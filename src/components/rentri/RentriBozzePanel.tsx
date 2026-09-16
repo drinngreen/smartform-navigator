@@ -179,7 +179,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
         .update({ status: "completato", completed_at: new Date().toISOString() } as never)
         .eq("id", d.id);
       if (upErr) throw upErr;
-      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id });
+      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id, effettivo: false });
       if (res.warning) throw new Error(res.warning);
       if (res.registryApplicable && !res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
       toast.success(

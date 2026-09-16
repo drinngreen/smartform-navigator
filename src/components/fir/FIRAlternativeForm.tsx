@@ -1222,15 +1222,15 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
             firId: targetId,
             impiantoId: impiantoId || null,
             registryMovementType,
+            effettivo: false,
           });
           if (result.warning) throw new Error(result.warning);
-          if (!result.inventory) throw new Error("Il FIR non ha prodotto alcun movimento di giacenza: controlla ruolo Multyproget, CER e quantità");
         } catch (syncError) {
           throw new Error("Dati FIR salvati, ma giacenze non aggiornate: " + formatErr(syncError));
         }
       }
 
-      toast.success(mode === "final" ? "✅ Formulario salvato DEFINITIVO (registro + giacenze)" : "💾 Bozza salvata (nessun movimento di registro/giacenze)");
+      toast.success(mode === "final" ? "Formulario salvato come incompleto: nessuna giacenza fino alla conferma prevista" : "💾 Bozza salvata (nessun movimento di registro/giacenze)");
       onSaved?.();
     } catch (err) {
       toast.error("Errore salvataggio: " + formatErr(err));

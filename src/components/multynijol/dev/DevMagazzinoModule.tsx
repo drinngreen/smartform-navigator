@@ -92,20 +92,12 @@ export function DevMagazzinoModule() {
     );
   };
 
-  // Recalculate
+  // Diagnostica: il ricalcolo operativo è vietato dal client.
   const recalculate = useMutation({
     mutationFn: async () => {
-      for (const row of giacenze ?? []) {
-        if (!row.impianto_id) continue;
-        const { error } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
-          p_tenant_id: MULTY_TENANT_ID,
-          p_impianto_id: row.impianto_id,
-          p_cer: row.cer,
-        });
-        if (error) throw error;
-      }
+      throw new Error("Ricalcolo disattivato: le giacenze cambiano solo nei percorsi certificati");
     },
-    onSuccess: () => { invalidateAll(); toast.success("Giacenze ricalcolate"); },
+    onSuccess: () => { invalidateAll(); },
     onError: (e) => toast.error("Errore: " + e.message),
   });
 
@@ -116,7 +108,7 @@ export function DevMagazzinoModule() {
     const { error: movErr } = await supabase.from("movimenti_impianto" as any).insert({
       impianto_id: impiantoId, tenant_id: MULTY_TENANT_ID, cer, quantita_kg: quantita,
       tipo_movimento: tipo, ruolo_impianto: "DESTINATARIO", data_movimento: new Date().toISOString(),
-      note: nota || null, numero_fir: firNumero || null, created_by: user?.id,
+      note: nota || null, numero_fir: firNumero || null, stato_movimento: "potenziale", created_by: user?.id,
     } as any);
     if (movErr) throw movErr;
 
@@ -127,7 +119,7 @@ export function DevMagazzinoModule() {
     if (!opForm.cer || !opForm.quantita) { toast.error("CER e quantità obbligatori"); return; }
     try {
       await saveOperazione("CARICO", opForm.cer, parseFloat(opForm.quantita), opForm.nota, opForm.fir_numero);
-      toast.success("✅ Carico registrato");
+      toast.success("Bozza di carico registrata; giacenza invariata");
       setShowCarico(false);
       setOpForm({ cer: "", quantita: "", conferente: "privato", nota: "", fir_numero: "" });
     } catch (err: any) { toast.error(err.message); }

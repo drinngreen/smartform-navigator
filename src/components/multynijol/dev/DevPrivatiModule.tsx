@@ -315,6 +315,11 @@ export function DevPrivatiModule() {
     const list = (confs ?? []) as any[];
     const totKg = list.reduce((s, c) => s + Number(c.kg_pesati || 0), 0);
 
+    if (list.length > 0) {
+      toast.error("Eliminazione bloccata: i conferimenti certificati si correggono solo con uno storno tracciato");
+      return;
+    }
+
     if (!window.confirm(
       `Eliminare definitivamente il privato ${nome}?\n\n` +
       `Verranno eliminati anche ${list.length} movimenti (${totKg.toLocaleString("it-IT")} kg) ` +
@@ -335,24 +340,10 @@ export function DevPrivatiModule() {
     const { error: delErr } = await supabase.from("anagrafica_privati").delete().eq("id", p.id);
     if (delErr) { toast.error("Errore eliminazione privato: " + delErr.message); return; }
 
-    // 3. Storno/ricalcolo giacenze per ogni coppia impianto+CER coinvolta
-    const pairs = new Map<string, { impianto_id: string; cer: string }>();
-    list.forEach((c) => {
-      if (c.impianto_id && c.cer) pairs.set(`${c.impianto_id}|${c.cer}`, { impianto_id: c.impianto_id, cer: String(c.cer).trim() });
-    });
-    for (const { impianto_id, cer } of pairs.values()) {
-      const { error: recErr } = await supabase.rpc("recalculate_magazzino_giacenza", {
-        p_tenant_id: MULTY_TENANT_ID,
-        p_impianto_id: impianto_id,
-        p_cer: cer,
-      } as any);
-      if (recErr) console.warn("Ricalcolo giacenza:", recErr.message);
-    }
-
-    // 4. Rinumerazione progressivi per gli anni toccati
+    // 3. Rinumerazione progressivi (qui la lista è vuota per definizione)
     await renumberProgressivi(list.map((c) => Number(c.anno_dbt)).filter(Boolean));
 
-    toast.success(`✅ ${nome} eliminato: ${list.length} movimenti rimossi, giacenze e progressivi aggiornati`);
+    toast.success(`${nome} eliminato; nessun movimento o saldo è stato modificato`);
     if (selectedPrivatoId === p.id) setSelectedPrivatoId(null);
     ["dev-privati", "dev-conferimenti-privato", "dev-conferimenti-anno", "privati-movimenti-widget",
      "privati-limiti-widget", "privati-targhe-widget", "dev-ricevute", "dev-documenti"]

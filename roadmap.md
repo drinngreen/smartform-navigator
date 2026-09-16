@@ -10,3 +10,8 @@
 - [x] Allineare giacenze a saldi 2025, registro 2026 e privati senza valori negativi né doppi conteggi
 - [x] Aggiornare Dark Lemon, guida e tutorial dopo la verifica reale completa
 - [ ] Elenco reale RENTRI (3 registri, 3.007 righe) analizzato solo in lettura; attendere istruzioni su come usarlo per lo stato "inviato".
+- [ ] Certificare in sola lettura app autisti Multy/Niyol, uso d'ufficio, assegnazioni, firme e QR ufficiale.
+- [ ] Certificare in sola lettura collegamento RENTRI, pesca FIR, registri, code, 423 e isolamento tenant.
+- [ ] Dimostrare con snapshot prima/dopo che test e navigazione non modificano giacenze o cernite.
+- [ ] Correggere esclusivamente i difetti applicativi emersi, senza scritture operative, poi ripetere tutte le prove.
+- [ ] Aggiornare Dark Lemon, tutorial e guide soltanto con funzioni realmente verificate e limiti ancora aperti.

@@ -7111,6 +7111,14 @@ export type Database = {
           quantita_kg: number
         }[]
       }
+      conferma_movimento_cartaceo_giacenza: {
+        Args: {
+          p_documento: string
+          p_movimento_id: string
+          p_quantita_kg: number
+        }
+        Returns: Json
+      }
       consume_fir_number: { Args: { p_fir_id: string }; Returns: undefined }
       crea_conferimento_privato_atomico: {
         Args: {
