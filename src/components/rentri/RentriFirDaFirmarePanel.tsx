@@ -60,6 +60,8 @@ interface FirRow {
   data_emissione?: string;
   produttore_nome: string;
   produttore_cf: string;
+  produttore_indirizzo: string;
+  num_iscr_sito: string;
   destinatario_nome: string;
   destinatario_cf: string;
   trasportatore_nome: string;
