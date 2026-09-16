@@ -8,7 +8,7 @@ import {
   type RentriVpsResponse,
 } from "@/lib/rentriVpsApi";
 import { supabase } from "@/lib/supabaseClient";
-import type { FirSummary, FirDetail, FirDestinatarioPayload, FirEvent } from "@/types/impiantoFir";
+import type { FirSummary, FirDetail, FirDestinatarioPayload, FirEvent, FirStatusInterno } from "@/types/impiantoFir";
 
 function extractRentriFirItems(data: unknown): Record<string, unknown>[] {
   if (Array.isArray(data)) return data as Record<string, unknown>[];
