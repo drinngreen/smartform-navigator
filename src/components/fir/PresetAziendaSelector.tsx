@@ -91,7 +91,9 @@ export function PresetAziendaSelector({
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
   const [loadedCf, setLoadedCf] = useState("");
-  const [soloRuolo, setSoloRuolo] = useState(true);
+  // Nessun vincolo di autorizzazione: molte aziende non ne hanno.
+  // La tendina mostra tutte le aziende; il filtro è facoltativo.
+  const [soloRuolo, setSoloRuolo] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [nuovoSoggettoOpen, setNuovoSoggettoOpen] = useState(false);
   const prevCfRef = useRef<string | null>(null);
@@ -686,7 +688,7 @@ export function PresetAziendaSelector({
         {ruolo && ruolo !== "PRODUTTORE" && roleCompanies.length > 0 && (
           <label className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
             <input type="checkbox" checked={soloRuolo} onChange={(e) => setSoloRuolo(e.target.checked)} />
-            Solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
+            Filtro facoltativo: solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
             {loadingRoleCompanies && " — caricamento…"}
           </label>
         )}
