@@ -270,7 +270,20 @@ export function scaricaPdfLotto(cliente: RentriCliente, codiceBlocco: string, pr
 }
 
 export function emissioneFir(cliente: RentriCliente, firPayload: Record<string, unknown>) {
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload: firPayload });
+  // Validazione pre-invio: i dati non conformi non partono mai verso il RENTRI.
+  const payload = normalizzaPayloadFirRentri(firPayload);
+  const errori = validaPayloadFirRentri(payload);
+  if (errori.length > 0) {
+    return Promise.resolve({
+      success: false,
+      status: 0,
+      data: { model_state: Object.fromEntries(errori.map((e) => [e.campo, [e.messaggio]])) },
+      error: messaggioValidazione(errori),
+      userMessage: messaggioValidazione(errori),
+      errorCode: "VALIDATION" as const,
+    });
+  }
+  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload });
 }
 
 export function dettaglioFir(cliente: RentriCliente, uuidFir: string) {
