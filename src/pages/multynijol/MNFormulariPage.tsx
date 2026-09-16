@@ -55,6 +55,10 @@ export default function MNFormulariPage() {
     if (isValid) setActiveContext(mnCtx);
   }, [context, isValid]);
 
+  // Il contesto operativo unico è Multy Dev: il vecchio percorso "multyproget"
+  // viene reindirizzato mantenendo il formulario richiesto.
+  const legacyMultyRoute = context === "multyproget";
+
   const [forms, setForms] = useState<FirForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -233,7 +237,12 @@ export default function MNFormulariPage() {
     }
   };
 
-  const contextLabel = context === "niyol" ? "Niyol" : "Multyproget";
+  const contextLabel = context === "niyol" ? "Niyol" : "Multy Dev";
+
+  if (legacyMultyRoute) {
+    const qs = searchParams.toString();
+    return <Navigate to={`/mn/admin/dev-multyproget/formulari${qs ? `?${qs}` : ""}`} replace />;
+  }
 
   return (
     <MNAdminLayout title={`Formulari — ${contextLabel}`} subtitle="Gestione formulari FIR creati dagli autisti">

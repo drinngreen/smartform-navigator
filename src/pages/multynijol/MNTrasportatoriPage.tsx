@@ -190,7 +190,7 @@ export default function MNTrasportatoriPage({ embedded, context: contextProp }: 
       setManualFirDialog({ open: false, user: null });
       setManualFirNumber("");
       if (!embedded) {
-        const targetContext = assignTenant.mnContext || contextKey;
+        const targetContext = (assignTenant.mnContext || contextKey) === "niyol" ? "niyol" : "dev-multyproget";
         navigate(`/mn/admin/${targetContext}/formulari?fir=${draftId}`);
       }
     } catch (e: any) {

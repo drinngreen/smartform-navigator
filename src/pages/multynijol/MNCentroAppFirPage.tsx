@@ -417,7 +417,7 @@ export default function MNCentroAppFirPage() {
 
   const openForm = (draftId: string) => {
 
-    const routeCtx = company === "niyol" ? "niyol" : "multyproget";
+    const routeCtx = company === "niyol" ? "niyol" : "dev-multyproget";
     navigate(`/mn/admin/${routeCtx}/formulari?fir=${draftId}`);
   };
 

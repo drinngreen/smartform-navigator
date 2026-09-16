@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MessageSquare, PanelRight, LogOut } from "lucide-react";
+import { MessageSquare, PanelRight, LogOut, ArrowLeft } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,13 +49,30 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     }`;
   }, [isWidgetOpen]);
 
+  // Ritorno alla dashboard del contesto operativo corrente.
+  const dashboardPath = location.pathname.includes("/mn/admin/niyol")
+    ? "/mn/admin/niyol"
+    : "/mn/admin/dev-multyproget";
+  const showBack = location.pathname !== "/mn/admin" && location.pathname !== dashboardPath;
+
   return (
     <div className="px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {showBack && (
+          <button
+            onClick={() => navigate(dashboardPath)}
+            className="p-2 rounded-lg bg-secondary/50 border border-border hover:bg-secondary transition-colors"
+            title="Torna alla dashboard"
+          >
+            <ArrowLeft className="h-5 w-5 text-white/80" />
+          </button>
+        )}
       <div>
         <h1 className="text-2xl font-display text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)] tracking-wide">{title}</h1>
         {subtitle && (
           <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
         )}
+      </div>
       </div>
 
       <div className="flex items-center gap-2">
