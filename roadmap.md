@@ -42,3 +42,4 @@
 - [x] Separare nella Console RENTRI gli invii reali dai controlli automatici GET/PDF e rendere leggibili i tentativi effettivi.
 - [x] Evidenziare nel formulario i campi rifiutati dal RENTRI in rosso; ripristinare il colore normale dopo la correzione e azzerare gli errori dopo conferma.
 - [x] Accorpare le risposte asincrone HTTP 202 dello stesso FIR, distinguerle dall'esito finale e bloccare doppi clic/reinvii di FIR già presenti.
+- [x] Correggere il recupero QR ufficiale mantenendo il progressivo RENTRI a 6 cifre (`000772`, non `772`).

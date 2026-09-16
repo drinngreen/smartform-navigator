@@ -27,6 +27,7 @@ describe("stampa del formulario ufficiale", () => {
 
   it("accetta solo il blocco FIR ufficiale di cinque lettere", () => {
     expect(parseNumeroFir("ABCDE 001234 CM")).toEqual({ codiceBlocco: "ABCDE", progressivo: "001234" });
+    expect(parseNumeroFir("ZRZXR 000772 TM")).toEqual({ codiceBlocco: "ZRZXR", progressivo: "000772" });
     expect(parseNumeroFir("ABCD 001234 CM")).toBeNull();
     expect(parseNumeroFir("ABCDEF 001234 CM")).toBeNull();
   });
