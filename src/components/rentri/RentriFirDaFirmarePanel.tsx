@@ -286,6 +286,8 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         quantita: r.quantita,
         produttore_cf: r.produttore_cf,
         produttore_nome: r.produttore_nome,
+        produttore_indirizzo: r.produttore_indirizzo,
+        num_iscr_sito: r.num_iscr_sito,
         data_emissione: r.data_emissione,
         data_creazione: r.data_creazione,
         descrizione: `Uscita da magazzino Multyproget — FIR ${r.numero_fir} (${r.trasportatore_nome || "trasportatore"})`,
