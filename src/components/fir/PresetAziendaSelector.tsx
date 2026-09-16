@@ -91,7 +91,9 @@ export function PresetAziendaSelector({
   const [allCompanies, setAllCompanies] = useState<any[]>([]);
   const [loadingAll, setLoadingAll] = useState(false);
   const [loadedCf, setLoadedCf] = useState("");
-  const [soloRuolo, setSoloRuolo] = useState(true);
+  // Nessun vincolo di autorizzazione: molte aziende non ne hanno.
+  // La tendina mostra tutte le aziende; il filtro è facoltativo.
+  const [soloRuolo, setSoloRuolo] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [nuovoSoggettoOpen, setNuovoSoggettoOpen] = useState(false);
   const prevCfRef = useRef<string | null>(null);
