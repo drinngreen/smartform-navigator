@@ -172,7 +172,7 @@ export function validaPayloadFirRentri(payload: Record<string, unknown>): Errore
       errori.push({ campo: "dati_partenza.trasportatori[0].codice_fiscale", messaggio: `Codice fiscale trasportatore «${cfLeggibile(trasp.codice_fiscale)}» non valido (controllo ufficiale non superato)` });
     if (!String(trasp.numero_iscrizione_albo ?? "").trim())
       errori.push({ campo: "dati_partenza.trasportatori[0].numero_iscrizione_albo", messaggio: "Numero iscrizione albo trasportatore mancante" });
-ec  }
+  }
 
   // Rifiuto
   const eer = String(rifiuto.codice_eer ?? "").replace(/\D/g, "");
