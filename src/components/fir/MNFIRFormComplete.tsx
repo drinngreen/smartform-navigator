@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf } from "@/services/rentriApi";
 import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
+import { findConfirmedFirEmission } from "@/lib/rentriHistory";
 import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
 import { DESTINATARI, type Soggetto } from "@/data/anagrafiche";
@@ -481,6 +482,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [officialEmissionAt, setOfficialEmissionAt] = useState<string | null>(null);
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autosaveFailuresRef = useRef(0);
@@ -543,6 +545,28 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   useEffect(() => {
     if (forceRentriDigital && d.formatoFir !== "digitale") u("formatoFir", "digitale");
   }, [forceRentriDigital, d.formatoFir]);
+
+  // Recupero della conferma asincrona già presente nel log del bridge. È una
+  // lettura: non altera il formulario né lo storico e impedisce che un FIR
+  // ufficialmente emesso venga ancora mostrato come "da inviare".
+  useEffect(() => {
+    const numeroFir = String(d.selectedFirNumber ?? "").trim();
+    if (!numeroFir || d.formatoFir === "cartaceo" || store.workflowStatus !== "bozza") return;
+    let active = true;
+    void findConfirmedFirEmission(numeroFir).then(async (conferma) => {
+      if (!active || !conferma) return;
+      setOfficialEmissionAt(conferma.created_at);
+      useMNFIRStore.setState({ workflowStatus: "inviato" });
+      try {
+        const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+        const qr = await resolveFirQrDataUrl(conferma.identificativo_rentri, societaId);
+        if (active && qr) setQrCodeData(qr);
+      } catch {
+        // Lo stato ufficiale resta valido; l'assenza del QR mantiene il viaggio bloccato.
+      }
+    });
+    return () => { active = false; };
+  }, [d.selectedFirNumber, d.formatoFir, store.workflowStatus, activeTenantId, activeMnContext]);
 
 
 
@@ -1522,6 +1546,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {store.workflowStatus === 'inviato' && (
             <>
+              {officialEmissionAt && (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-center text-xs text-foreground">
+                  Invio confermato dal RENTRI il {new Date(officialEmissionAt).toLocaleString("it-IT")}
+                </div>
+              )}
               <div className={`rounded-2xl border py-2 text-center ${qrCodeData ? "border-neon-green/30 bg-neon-green/5" : "border-destructive/40 bg-destructive/10"}`}>
                 <p className={`text-xs font-display uppercase tracking-widest ${qrCodeData ? "text-neon-green" : "text-destructive"}`}>
                   {qrCodeData ? "Viaggio in corso" : "Viaggio bloccato: QR ufficiale assente"}
