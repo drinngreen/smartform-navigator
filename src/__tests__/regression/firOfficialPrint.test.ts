@@ -5,6 +5,7 @@ import {
   type TemplateField,
 } from "../../components/fir/FIRAlternativeForm";
 import { officialPrintFieldGeometry } from "../../lib/firPrintLayout";
+import { base45Encode } from "../../lib/firPrintDecorations";
 
 function field(
   id: string,
@@ -19,6 +20,11 @@ function field(
 }
 
 describe("stampa del formulario ufficiale", () => {
+  it("codifica i byte firmati RENTRI in Base45 secondo RFC 9285", () => {
+    expect(base45Encode(Uint8Array.from([0x41, 0x42]))).toBe("BB8");
+    expect(base45Encode(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d]))).toBe("UJCLQE7W581");
+  });
+
   it("proietta i campi della vecchia scansione sulle righe del nuovo foglio 1", () => {
     const produttore = officialPrintFieldGeometry(
       field("prod", "denominazione produttore", 1, 20.026, 13.083, 35.157),
