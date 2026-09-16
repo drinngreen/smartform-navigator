@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
+import { Navigate } from "react-router-dom";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { FIRFormComplete } from "@/components/fir/FIRFormComplete";
 import { FIRTrafficLight } from "@/components/fir/FIRTrafficLight";
 import { useAuth } from "@/hooks/useAuth";
 import { useFIRStore } from "@/stores/firStore";
@@ -11,9 +11,15 @@ import logoDragon from "@/assets/logo-dragon.png";
 export default function MobileAppPage() {
   const { profile, user } = useAuth();
   const firstName = profile?.nome?.split(" ")[0] || "Utente";
-  const workflowStatus = useFIRStore((s) => s.workflowStatus);
   const editingFirId = useFIRStore((s) => s.editingFirId);
   const gpsIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const mnContext = String(profile?.mn_context || "").toLowerCase();
+  const destination = mnContext === "niyol"
+    ? "/mn/app/niyol"
+    : (mnContext === "multyproget" || mnContext === "multyproget-impianto" || mnContext === "multyproget-intermediario")
+      ? "/mn/app/multyproget"
+      : null;
 
   const handleRefresh = () => {
     window.location.reload();
@@ -51,6 +57,8 @@ export default function MobileAppPage() {
     };
   }, [user?.id, editingFirId, profile?.tenant_id]);
 
+  if (destination) return <Navigate to={destination} replace />;
+
   return (
     <MobileShell>
       {/* ── Header ── */}
@@ -75,9 +83,8 @@ export default function MobileAppPage() {
         <FIRTrafficLight />
       </div>
 
-      {/* ── Form Content ── */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        <FIRFormComplete />
+      <div className="flex-1 overflow-y-auto p-6 pb-20 text-center text-sm text-muted-foreground">
+        Questa app legacy non gestisce più formulari. Usa l'app Multyproget o Niyol assegnata al tuo profilo.
       </div>
 
       <BottomNav />

@@ -175,11 +175,11 @@ Deno.serve(async (req) => {
 
         for (let i = 0; i < movToInsert.length; i += 100) {
           const chunk = movToInsert.slice(i, i + 100);
-          const { data: ins, error } = await admin.from("movimenti_impianto").insert(chunk).select("id");
+          const { data: ins, error } = await admin.from("movimenti_impianto").insert(chunk.map((row) => ({ ...row, stato_movimento: "potenziale" }))).select("id");
           if (error) {
             movErrors.push(`mov batch ${i}: ${error.message}`);
             for (const row of chunk) {
-              const { error: e2 } = await admin.from("movimenti_impianto").insert(row);
+              const { error: e2 } = await admin.from("movimenti_impianto").insert({ ...row, stato_movimento: "potenziale" });
               if (!e2) movInserted++;
               else movErrors.push(`mov n_int ${row.note}: ${e2.message}`);
             }

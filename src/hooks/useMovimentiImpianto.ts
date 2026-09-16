@@ -53,7 +53,7 @@ export function useMovimentiImpianto(impiantoId?: string, ruolo?: string) {
     mutationFn: async (mov: Partial<MovimentoImpianto> & { impianto_id: string; cer: string; quantita_kg: number; tipo_movimento: string; ruolo_impianto: string }) => {
       const { data, error } = await supabase
         .from("movimenti_impianto" as any)
-        .insert({ ...mov, created_by: user!.id } as any)
+        .insert({ ...mov, stato_movimento: "potenziale", created_by: user!.id } as any)
         .select()
         .single();
       if (error) throw error;
@@ -61,15 +61,14 @@ export function useMovimentiImpianto(impiantoId?: string, ruolo?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["movimenti-impianto"] });
-      toast.success("Movimento registrato");
+      toast.success("Bozza registrata; la giacenza non è stata modificata");
     },
     onError: (e) => toast.error("Errore: " + e.message),
   });
 
   const deleteMovimento = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("movimenti_impianto" as any).delete().eq("id", id);
-      if (error) throw error;
+      throw new Error(`Eliminazione disattivata per il movimento ${id}: usare uno storno umano tracciato`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["movimenti-impianto"] });

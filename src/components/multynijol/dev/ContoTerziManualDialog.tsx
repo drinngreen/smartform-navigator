@@ -18,9 +18,8 @@ interface Props {
 
 /**
  * Manual insertion of a paper-based ("cartaceo") FIR brought by a third-party
- * client (Conto Terzi). Emulates firFinalSync — updates registro_generale,
- * movimenti_impianto, and magazzino_giacenze at once — WITHOUT touching the
- * existing sync logic.
+ * client (Conto Terzi). Il salvataggio crea una riga POTENZIALE: il peso reale
+ * deve essere confermato separatamente prima di registro RENTRI e giacenze.
  */
 export function ContoTerziManualDialog({ open, onClose, onSaved }: Props) {
   const queryClient = useQueryClient();
@@ -137,11 +136,12 @@ export function ContoTerziManualDialog({ open, onClose, onSaved }: Props) {
         trasportatore_denominazione: form.trasportatore || null,
         destinatario_denominazione: "MULTY PROGET S.R.L.",
         esito_accettazione: "accettato",
+        stato_movimento: "potenziale",
         note: `Conto Terzi cartaceo — FIR ${numFir}${noteExtra ? " — " + noteExtra : ""}`,
       } as any);
       if (movErr) throw movErr;
 
-      toast.success(`FIR cartaceo ${numFir} registrato — +${qta} kg su ${cerNorm}`);
+      toast.success(`FIR cartaceo ${numFir} registrato come incompleto: conferma la pesata per aggiornare le giacenze`);
       queryClient.invalidateQueries({ queryKey: ["dev-registro-generale"] });
       queryClient.invalidateQueries({ queryKey: ["dev-movimenti-multy"] });
       queryClient.invalidateQueries({ queryKey: ["dev-giacenze"] });
@@ -164,7 +164,7 @@ export function ContoTerziManualDialog({ open, onClose, onSaved }: Props) {
             Caricamento Formulari Conto Terzi (Cartaceo)
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            Registra un formulario cartaceo portato fisicamente dal cliente. Aggiorna registro, movimenti e giacenze.
+            Registra un formulario cartaceo incompleto. Le giacenze cambiano solo dopo la conferma manuale del peso.
           </p>
         </DialogHeader>
 

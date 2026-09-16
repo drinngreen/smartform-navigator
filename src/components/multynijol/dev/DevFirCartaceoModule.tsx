@@ -104,7 +104,7 @@ export function DevFirCartaceoModule() {
       return n;
     });
 
-  const isEffettivo = (r: RigaCartacea) => (r.stato_movimento ?? "effettivo") === "effettivo";
+  const isEffettivo = (r: RigaCartacea) => r.stato_movimento === "effettivo";
 
   const apriConferma = (r: RigaCartacea) => {
     setConfermaRow(r);
@@ -124,20 +124,15 @@ export function DevFirCartaceoModule() {
     }
     setConfermando(true);
     try {
-      const { error } = await supabase
-        .from("movimenti_impianto")
-        .update({ quantita_kg: peso, stato_movimento: "effettivo" } as any)
-        .eq("id", confermaRow.id);
-      if (error) throw error;
-
-      if (confermaRow.impianto_id && confermaRow.cer) {
-        const { error: recErr } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
-          p_tenant_id: MULTY_TENANT_ID,
-          p_impianto_id: confermaRow.impianto_id,
-          p_cer: confermaRow.cer,
-        });
-        if (recErr) throw recErr;
+      if (!confermaRow.impianto_id || !confermaRow.cer) {
+        throw new Error("Impianto o CER mancanti: la pesata non può essere applicata");
       }
+      const { error } = await (supabase as any).rpc("conferma_movimento_cartaceo_giacenza", {
+        p_movimento_id: confermaRow.id,
+        p_quantita_kg: peso,
+        p_documento: `FIR_CARTACEO:${confermaRow.numero_fir || confermaRow.id}`,
+      });
+      if (error) throw error;
       toast.success("Pesata confermata: movimento effettivo e giacenze aggiornate");
       setConfermaRow(null);
       await load();

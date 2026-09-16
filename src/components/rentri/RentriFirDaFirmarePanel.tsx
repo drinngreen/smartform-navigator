@@ -168,27 +168,22 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       toast.success(`FIR ${firmaFir.numero_fir} accettato su RENTRI`);
 
       // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
-      // Il peso riscontrato qui è la certificazione: il movimento nasce già EFFETTIVO.
+      // La pesata certificata passa obbligatoriamente dal punto unico idempotente.
       const destino = IMPIANTO_DESTINO[configKey];
       if (esito !== "respinto" && destino) {
-        const { error: movErr } = await supabase.from("movimenti_impianto" as any).insert({
-          impianto_id: destino.impianto_id,
-          tenant_id: destino.tenant_id,
-          cer: firmaFir.codice_eer,
-          quantita_kg: Number(kg),
-          quantita_presunta: firmaFir.quantita || null,
-          data_movimento: dataArrivo,
-          tipo_movimento: "CARICO",
-          ruolo_impianto: "DESTINATARIO",
-          origine: "RENTRI_ACCETTAZIONE",
-          stato_movimento: "effettivo",
-          numero_fir: firmaFir.numero_fir,
-          produttore_denominazione: firmaFir.produttore_nome || null,
-          trasportatore_denominazione: firmaFir.trasportatore_nome || null,
-          destinatario_denominazione: firmaFir.destinatario_nome || null,
-          esito_accettazione: esito === "parziale" ? "parziale" : "accettato",
-          note: motivazione || null,
-        } as any);
+        const { error: movErr } = await (supabase as any).rpc("applica_movimento_giacenza", {
+          p_tenant_id: destino.tenant_id,
+          p_impianto_id: destino.impianto_id,
+          p_cer: firmaFir.codice_eer,
+          p_quantita_kg: Number(kg),
+          p_segno: "CARICO",
+          p_causale: "FIR_DIGITALE_CHIUSO_RENTRI",
+          p_documento: `RENTRI:${firmaFir.numero_fir}:ACCETTAZIONE_DESTINATARIO`,
+          p_attore: "human",
+          p_descrizione: `FIR ${firmaFir.numero_fir} — ${firmaFir.produttore_nome || "produttore"}`,
+          p_fir_id: null,
+          p_numero_fir: firmaFir.numero_fir,
+        });
         if (movErr) {
           toast.error(
             `Firma inviata, ma il carico in impianto non è stato registrato: ${movErr.message}`,

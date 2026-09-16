@@ -254,25 +254,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   /** Elimina un elenco di movimenti + ricalcolo giacenze + rinumerazione progressivi. */
   const deleteMovimenti = async (rows: any[]) => {
+    if (rows.length > 0) {
+      throw new Error("Eliminazione bloccata: usare uno storno umano tracciato per i conferimenti certificati");
+    }
     const ids = rows.map((r) => r.id);
     const { error } = await supabase.from("privati_conferimenti").delete().in("id", ids);
     if (error) throw error;
-
-    // Ricalcolo giacenze per ogni coppia impianto/CER coinvolta
-    const pairs = new Map<string, { impianto: string; cer: string }>();
-    for (const r of rows) {
-      if (r.impianto_id && r.cer) {
-        pairs.set(`${r.impianto_id}|${r.cer}`, { impianto: r.impianto_id, cer: String(r.cer).trim() });
-      }
-    }
-    for (const p of pairs.values()) {
-      const { error: recalcError } = await supabase.rpc("recalculate_magazzino_giacenza", {
-        p_tenant_id: tenantId,
-        p_impianto_id: p.impianto,
-        p_cer: p.cer,
-      } as any);
-      if (recalcError) console.warn("Ricalcolo giacenza:", recalcError.message);
-    }
 
     await renumberProgressivi(
       rows.map((r) => Number(r.anno_dbt) || Number(String(r.data).slice(0, 4))).filter(Boolean),

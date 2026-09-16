@@ -61,6 +61,12 @@ export function ScaricoLavorazioneDialog({ open, onClose }: Props) {
     if (qta > saldoFrom) return toast.error(`Quantità supera il saldo disponibile (${saldoFrom} kg)`);
     if (!impiantoId) return toast.error("Nessun impianto disponibile");
 
+    const procedi = false;
+    if (!procedi) {
+      toast.error("Percorso disattivato: usa Cernite, con verifica e conferma umana");
+      return;
+    }
+
     setBusy(true);
     try {
       const from = cerFrom.trim().toUpperCase();

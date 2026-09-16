@@ -662,10 +662,9 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
         form_data: { ...dbFields.form_data, peso_ricevuto: peso },
       });
 
-      // Send closure to RENTRI backend (firma-ricezione)
-      try {
-        const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
-        await chiudiFirRentri({
+      // La chiusura è valida solo se RENTRI conferma la firma del destinatario.
+      const societaId = resolveSocietaId(profile?.tenant_id, profile?.mn_context);
+      await chiudiFirRentri({
           societaId,
           numero_fir: d.selectedFirNumber,
           peso_accettato: parseFloat(peso),
@@ -676,13 +675,10 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
           destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
           destinatario_numero_aut: d.destinatarioNumeroAut,
           unita_misura: d.unitaMisura,
-        });
-      } catch (renderErr: any) {
-        console.warn("[RENTRI] Chiusura server error (proceeding locally):", renderErr.message);
-      }
+      });
 
       await closeFIR.mutateAsync(store.editingFirId);
-      const syncResult = await syncFirFinalToRegistryAndInventory({ firId: store.editingFirId });
+      const syncResult = await syncFirFinalToRegistryAndInventory({ firId: store.editingFirId, effettivo: true });
       if (syncResult.warning) throw new Error(syncResult.warning);
       useFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);

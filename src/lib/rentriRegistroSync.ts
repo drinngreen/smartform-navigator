@@ -93,7 +93,7 @@ export async function caricaMovimentiCandidati(
         "id, cer, descrizione_rifiuto, quantita_kg, data_movimento, tipo_movimento, numero_fir, produttore_denominazione, destinatario_denominazione, stato_movimento",
       )
       .eq("tenant_id", tenantId)
-      .or("stato_movimento.is.null,stato_movimento.eq.effettivo")
+      .eq("stato_movimento", "effettivo")
       .gte("data_movimento", dataDa)
       .lte("data_movimento", dataA)
       .order("data_movimento", { ascending: true }),

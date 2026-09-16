@@ -50,16 +50,6 @@ export const inventoryCorrection = (desiredSignedQuantity: number, currentSigned
   };
 };
 
-async function recalculateMultyStock(impiantoId: string, cer: string) {
-  const { error: stockError } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
-    p_tenant_id: MULTY_TENANT_ID,
-    p_impianto_id: impiantoId,
-    p_cer: cer,
-  });
-  if (stockError) throw stockError;
-}
-
-
 async function upsertRegistro(
   tenantId: string,
   numeroFir: string,
@@ -85,11 +75,10 @@ async function upsertRegistro(
  *  - upsert registro_generale for EACH tenant involved (Multy producer/dest,
  *    Niyol producer/dest/transporter), independently of the tenant that
  *    owns the fir_forms row.
- *  - upsert movimenti_impianto (giacenze) for Multyproget when it is
- *    producer or destinatario.
+ *  - applica la giacenza Multy solo alla chiusura digitale certificata,
+ *    attraverso l'unica RPC autorizzata.
  *
- * Idempotent per tenant (upsert by tenant_id + numero_formulario) and per
- * inventory movement (unique on fir_id + origine='fir_final').
+ * Idempotente per tenant e documento di applicazione della giacenza.
  */
 export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
@@ -217,7 +206,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   } else if (isMultyInvolved && inventoryQuantity <= 0) {
     warning = (warning ? warning + " · " : "") + "Quantità valida mancante: giacenze non aggiornate";
   }
-  if (isMultyInvolved && inventoryQuantity > 0 && cer) {
+  if (effettivo && isMultyInvolved && inventoryQuantity > 0 && cer) {
     try {
       const directImpiantoId =
         params.impiantoId?.trim() ||
@@ -240,119 +229,21 @@ export async function syncFirFinalToRegistryAndInventory(params: {
           (warning ? warning + " · " : "") +
           "Nessun impianto Multyproget disponibile per giacenze";
       } else {
-        // La verità è l'effetto NETTO di tutte le righe del FIR, incluse le
-        // compensazioni. Guardare solo l'ultima riga "fir_final" rendeva un FIR
-        // apparentemente presente ma con effetto zero dopo uno storno precedente.
-        const { data: existingRows, error: existingError } = await supabase
-          .from("movimenti_impianto" as any)
-          .select("id, impianto_id, cer, quantita_kg, tipo_movimento, origine")
-          .eq("fir_id", firId)
-          .order("created_at", { ascending: true });
-        if (existingError) throw existingError;
-
         const tipo = isMultyDestinatario ? "CARICO" : "SCARICO";
-        const ruolo = isMultyDestinatario ? "DESTINATARIO" : "PRODUTTORE";
-        const rows = (existingRows || []) as unknown as Array<{
-          impianto_id: string;
-          cer: string;
-          quantita_kg: number;
-          tipo_movimento: string;
-        }>;
-        const desiredSignedQuantity = signedInventoryQuantity(tipo, inventoryQuantity);
-
-        // 1) Neutralizza le righe su chiavi (impianto, CER) diverse da quella
-        //    corrente: succede quando il FIR viene corretto cambiando CER o
-        //    impianto. Senza compensazione i kg resterebbero contati due volte.
-        const staleGroups = new Map<string, { impiantoId: string; cer: string; signed: number }>();
-        for (const row of rows) {
-          const rowCer = normalizeCer(row.cer);
-          if (row.impianto_id === impiantoId && rowCer === cer) continue;
-          const key = `${row.impianto_id}|${rowCer}`;
-          const prev = staleGroups.get(key) || { impiantoId: row.impianto_id, cer: rowCer, signed: 0 };
-          prev.signed += signedInventoryQuantity(row.tipo_movimento, row.quantita_kg);
-          staleGroups.set(key, prev);
-        }
-        for (const group of staleGroups.values()) {
-          const reversal = inventoryCorrection(0, group.signed);
-          if (!reversal) continue;
-          const { error: revError } = await supabase.from("movimenti_impianto" as any).insert({
-            impianto_id: group.impiantoId,
-            tenant_id: MULTY_TENANT_ID,
-            cer: group.cer,
-            descrizione_rifiuto: desc,
-            quantita_kg: reversal.quantitaKg,
-            data_movimento: movementDate,
-            tipo_movimento: reversal.tipoMovimento,
-            ruolo_impianto: ruolo,
-            origine: "fir_adjust",
-            fir_id: firId,
-            numero_fir: numeroFir,
-            produttore_denominazione: prodDen,
-            destinatario_denominazione: destDen,
-            stato_movimento: statoMovimento,
-            note: `Storno automatico: il FIR non fa più riferimento a ${group.cer} (impianto ${group.impiantoId})`,
-          } as any);
-          if (revError) throw revError;
-        }
-
-        const targetRows = rows.filter(
-          (row) => row.impianto_id === impiantoId && normalizeCer(row.cer) === cer,
-        );
-        const currentSignedQuantity = targetRows.reduce(
-          (total, row) => total + signedInventoryQuantity(row.tipo_movimento, row.quantita_kg), 0,
-        );
-        const correction = inventoryCorrection(desiredSignedQuantity, currentSignedQuantity);
-
-        if (correction) {
-          const { error: movementError } = await supabase.from("movimenti_impianto" as any).insert({
-            impianto_id: impiantoId,
-            tenant_id: MULTY_TENANT_ID,
-            cer,
-            descrizione_rifiuto: desc,
-            quantita_kg: correction.quantitaKg,
-            data_movimento: movementDate,
-            tipo_movimento: correction.tipoMovimento,
-            ruolo_impianto: ruolo,
-            origine: rows.length === 0 ? "fir_final" : "fir_adjust",
-            fir_id: firId,
-            numero_fir: numeroFir,
-            produttore_denominazione: prodDen,
-            destinatario_denominazione: destDen,
-            stato_movimento: statoMovimento,
-            note: rows.length === 0
-              ? (effettivo
-                  ? "Salvataggio definitivo FIR (Modulo Standard)"
-                  : "FIR in viaggio: movimento potenziale, in attesa del peso certificato")
-              : `Riconciliazione automatica FIR: effetto netto richiesto ${desiredSignedQuantity} kg, precedente ${currentSignedQuantity} kg`,
-          } as any);
-          if (movementError) throw movementError;
-        }
-
-        // Il peso è certificato: tutte le righe ancora potenziali di questo FIR
-        // diventano effettive e da questo momento pesano sulle giacenze.
-        if (effettivo) {
-          const { error: promoteError } = await supabase
-            .from("movimenti_impianto" as any)
-            .update({ stato_movimento: "effettivo" } as any)
-            .eq("fir_id", firId)
-            .eq("stato_movimento", "potenziale");
-          if (promoteError) throw promoteError;
-          await supabase
-            .from("registro_generale" as any)
-            .update({ stato_movimento: "effettivo" } as any)
-            .filter("raw->>fir_form_id", "eq", firId)
-            .eq("stato_movimento", "potenziale");
-        }
-
-        const touched = new Map<string, { impiantoId: string; cer: string }>();
-        for (const row of rows) {
-          const rowCer = normalizeCer(row.cer);
-          touched.set(`${row.impianto_id}|${rowCer}`, { impiantoId: row.impianto_id, cer: rowCer });
-        }
-        for (const item of touched.values()) {
-          await recalculateMultyStock(item.impiantoId, item.cer);
-        }
-        await recalculateMultyStock(impiantoId, cer);
+        const { error: movementError } = await (supabase as any).rpc("applica_movimento_giacenza", {
+          p_tenant_id: MULTY_TENANT_ID,
+          p_impianto_id: impiantoId,
+          p_cer: cer,
+          p_quantita_kg: inventoryQuantity,
+          p_segno: tipo,
+          p_causale: "FIR_DIGITALE_CHIUSO",
+          p_documento: `FIR:${numeroFir || firId}:CHIUSURA_DESTINATARIO`,
+          p_attore: "human",
+          p_descrizione: desc || null,
+          p_fir_id: firId,
+          p_numero_fir: numeroFir,
+        });
+        if (movementError) throw movementError;
         inventoryOk = true;
       }
     } catch (e: any) {
@@ -367,36 +258,15 @@ export async function syncFirFinalToRegistryAndInventory(params: {
 }
 
 /**
- * Reverts every inventory/registry effect produced by a FIR (draft or final).
- * Used when a formulario is deleted: the giacenze must go back exactly to the
- * value they had before the FIR was saved.
+ * Elimina soltanto le righe di registro ancora reversibili. Le giacenze
+ * effettive richiedono sempre un nuovo storno umano e tracciato.
  */
 export async function revertFirFromRegistryAndInventory(firId: string): Promise<void> {
   if (!firId) return;
   logAgentActivity("Storno FIR da registri e giacenze", "info", `FIR ${firId}`);
 
-  // 1) Inventory movements generated by this FIR
-  const { data: movements } = await supabase
-    .from("movimenti_impianto" as any)
-    .select("id, impianto_id, cer")
-    .eq("fir_id", firId)
-    .in("origine", ["fir_final", "fir_adjust"]);
-
-  const rows = (movements || []) as unknown as Array<{ id: string; impianto_id: string; cer: string }>;
-  if (rows.length > 0) {
-    await supabase
-      .from("movimenti_impianto" as any)
-      .delete()
-      .in("id", rows.map((r) => r.id));
-
-    const touched = new Map<string, { impiantoId: string; cer: string }>();
-    for (const r of rows) touched.set(`${r.impianto_id}|${r.cer}`, { impiantoId: r.impianto_id, cer: r.cer });
-    for (const { impiantoId, cer } of touched.values()) {
-      try { await recalculateMultyStock(impiantoId, cer); } catch { /* keep going */ }
-    }
-  }
-
-  // 2) Registry rows generated by this FIR (both tenants)
+  // Le giacenze effettive non vengono mai riscritte o cancellate automaticamente.
+  // Un eventuale storno deve essere un nuovo movimento inverso, confermato da una persona.
   await supabase
     .from("registro_generale" as any)
     .delete()

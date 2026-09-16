@@ -351,8 +351,8 @@ Queste regole sono ASSOLUTE e non possono essere ignorate:
 - La cernita si esegue SOLO con la RPC atomica \`dragon_create_cernita_atomic\` e si annulla SOLO con \`dragon_cancel_cernita_atomic\`. Mai UPDATE diretti su giacenze o movimenti per correggere una cernita.
 - Disponibilità: la RPC verifica il saldo usando il maggiore tra saldo Dragon e magazzino con tolleranza 0,001 kg. Se manca capienza, riporta i kg disponibili reali, non forzare.
 - CODICI CER: sempre normalizzati senza spazi (150101, non "15 01 01"); le sigle materiale restano con trattino (200140-FE, 200140-MIX). Le vecchie forme "MET"/" MET MIX" sono equivalenti a "-MIX".
-- GIACENZE: Dragon (\`dragon_stock_movements\`) e magazzino (\`magazzino_giacenze\`) sono tenuti allineati da trigger; il ricalcolo si fa con \`recalculate_magazzino_giacenza\`, mai con UPDATE manuali.
-- FIR E GIACENZE: solo il salvataggio definitivo / "CARICA NEL SISTEMA" muove registro e giacenze. Le BOZZE non muovono nulla. Multyproget in uscita = SCARICO, in ingresso = CARICO; se Multyproget non è produttore né destinatario il formulario NON tocca le giacenze (conto terzi).
+- GIACENZE: ogni variazione passa da un evento certificato e dal punto unico autorizzato. Non proporre né eseguire ricalcoli, UPDATE diretti o riallineamenti automatici.
+- FIR E GIACENZE: un FIR digitale muove le giacenze solo dopo la firma del destinatario; un cartaceo solo dopo conferma manuale. Le bozze e il semplice "CARICA NEL SISTEMA" non muovono nulla. Multyproget in uscita = SCARICO, in ingresso = CARICO; se Multyproget non è produttore né destinatario il formulario NON tocca le giacenze.
 - REGISTRO GENERALE: mostra i movimenti \`registro_generale\` più la proiezione delle cernite confermate (codici C-nn). I batch ANNULLATA e i movimenti di test non compaiono.
 - STORICO MULTYPROGET: la cernita interna del 04/09/2026 da 30.000 kg (200140-FE → 170405) deve restare visibile nello storico Cernite; nel Registro Generale il trasferimento compare una sola volta tramite i movimenti ufficiali del 21/01/2026. La cernita allegata del 31/08/2026 da 1.840 kg resta nascosta solo nelle viste, senza alterare dati o giacenze.
 - SALDI RICONCILIATI: i saldi ufficiali derivano dal saldo 2025, dal registro 2026 e dai conferimenti privati reali, senza doppio conteggio delle cernite già presenti nel registro. Non creare rettifiche automatiche per reinterpretare questo storico.
@@ -1159,7 +1159,7 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 
 ### 2. Doppia vista del formulario
 - Ogni FIR è creabile/modificabile sia in **modulo Standard** sia in **Modulo Alternativo**: le due viste sono sincronizzate in tempo reale (subscription Postgres). Compilando una si compila l'altra.
-- Ogni bozza è eliminabile con il **cestino** (soft delete, con storno automatico di registro e giacenze via \`revertFirFromRegistryAndInventory\`).
+- Ogni bozza è eliminabile con il **cestino** (soft delete). Una bozza non modifica giacenze; i movimenti effettivi richiedono uno storno umano tracciato.
 - Stessa regola valida ovunque si facciano formulari: Impianto, Conto Proprio, Contatti, Niyol, workspace FIR e **Console RENTRI**.
 - Nella **Console RENTRI** esiste la tab **"Nuovo formulario"**: si sceglie la destinazione (**Multyproget Impianto**, **Multyproget Trasportatore**, **Niyol**) e la vista (Standard / Alternativo). I formulari creati lì sono gli stessi record \`fir_forms\` delle altre sezioni: nessuna distinzione, stessi dati, stesse giacenze, stesso invio RENTRI.
 
@@ -1169,10 +1169,10 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 ### 4. Giacenze — garanzia atomica
 - Conferimenti privati: si passa SEMPRE dalla RPC \`crea_conferimento_privato_atomico\` (advisory lock \`pg_advisory_xact_lock\`, vincolo \`privati_conferimento_id\` su \`movimenti_impianto\`, verifica finale con \`assert_magazzino_giacenza\`). Se il saldo non torna, la transazione fallisce: non esistono inserimenti "a metà".
 - FIR: le giacenze cambiano SOLO se Multyproget è **produttore** o **destinatario**. I FIR importati (\`origine='import_registro_17_08'\`) sono deduplicati in \`firFinalSync.ts\`.
-- Anche i FIR salvati in **bozza** riportano le giacenze al valore di partenza.
-- Il pulsante **Sync giacenze** funziona (GRANT EXECUTE su \`recalculate_magazzino_giacenza\` e \`assert_magazzino_giacenza\` per \`authenticated\`).
+- I FIR salvati in **bozza** non modificano mai le giacenze.
+- Il ricalcolo delle giacenze dal client è disattivato. Qualunque variazione fuori dal punto unico autorizzato è un bug; Dark Lemon prepara soltanto bozze da confermare.
 - La voce **"Saldo iniziale"** è stata ELIMINATA dalle giacenze.
-- Eliminando un conferimento la ricevuta collegata cade in cascata (\`ON DELETE CASCADE\`) e la giacenza viene stornata.
+- Un conferimento certificato non si elimina per stornare il saldo: serve un nuovo storno umano e tracciato.
 
 ### 5. Privati, ricevute, CER
 - I conferimenti e le ricevute supportano **più materiali** nello stesso documento (raggruppati per \`gruppo_id\`) e la **data è modificabile**.
@@ -2355,9 +2355,9 @@ function sqlAgenteVietata(sql: string): string | null {
   const s = sql.toLowerCase();
   const scrive = /\b(insert|update|delete|truncate|merge)\b/.test(s);
   if (!scrive) return null;
-  if (/magazzino_giacenze/.test(s))
-    return "Le giacenze non possono essere modificate dall'assistente: serve la conferma di una persona (pesata certificata).";
-  if (/applica_movimento_giacenza|recalculate_magazzino_giacenza/.test(s))
+  if (/\b(magazzino_giacenze|movimenti_impianto|giacenze_applicazioni|giacenze_audit_log|dragon_stock_movements|dragon_register_movements|dragon_transform_batches|dragon_transform_batch_outputs|cernite|cernita_output)\b/.test(s))
+    return "Movimenti, giacenze e cernite non possono essere modificati dall'assistente: serve una conferma umana nel percorso operativo previsto.";
+  if (/applica_movimento_giacenza|recalculate_magazzino_giacenza|dragon_create_cernita_atomic|dragon_cancel_cernita_atomic|esegui_cernita_atomica/.test(s))
     return "Il punto unico di aggiornamento delle giacenze è riservato alle conferme umane.";
   if (/stato_movimento\s*=\s*'effettivo'/.test(s))
     return "L'assistente può creare solo movimenti potenziali: solo una persona può renderli effettivi.";
@@ -3502,147 +3502,17 @@ async function handleTool(
     }
 
     case "dragon_cernita": {
-      const { data: atomicBatchId, error: atomicError } = await db.rpc("dragon_create_cernita_atomic", {
-        p_company_id: tenantId,
-        p_source_item_id: args.input_item_id,
-        p_input_quantity: args.input_quantity,
-        p_outputs: args.outputs || [],
-        p_model_id: null,
-        p_execution_date: new Date().toISOString().split("T")[0],
-        p_notes: args.notes || null,
-        p_deferred: false,
-      });
-      if (!atomicError) {
-        return { success: true, batch_id: atomicBatchId, atomic: true };
-      }
-
-      if (!atomicError.message.includes("Accesso non autorizzato")) {
-        return { error: atomicError.message };
-      }
-
-      // Find causes via SDK
-      const { data: causesData, error: causesErr } = await db.from("dragon_causes")
-        .select("id, code")
-        .in("code", ["SCARICO_PER_LAVORAZIONE", "CARICO_DA_LAVORAZIONE"])
-        .eq("active", true);
-      if (causesErr) return { error: causesErr.message };
-      const scaricoCause = (causesData || []).find((c: any) => c.code === "SCARICO_PER_LAVORAZIONE");
-      const caricoCause = (causesData || []).find((c: any) => c.code === "CARICO_DA_LAVORAZIONE");
-      if (!scaricoCause || !caricoCause) return { error: "Causali di lavorazione non trovate nel DB" };
-
-      // Find register
-      const { data: regArr } = await db.from("dragon_registers")
-        .select("id")
-        .eq("company_id", tenantId)
-        .eq("active", true)
-        .limit(1);
-      const registerId = regArr?.[0]?.id || null;
-
-      const today = new Date().toISOString().split("T")[0];
-
-      // Get input item info
-      const { data: sourceItem, error: siErr } = await db.from("dragon_items")
-        .select("codice_cer, descrizione, unita_misura_default, item_type")
-        .eq("id", args.input_item_id)
-        .single();
-      if (siErr || !sourceItem) return { error: "Articolo input non trovato" };
-
-      // Create batch
-      const { data: batchRow, error: batchErr } = await db.from("dragon_transform_batches")
-        .insert({
-          company_id: tenantId,
-          created_by: adminUserId || null,
-          source_item_id: args.input_item_id,
+      return {
+        success: false,
+        requires_human_confirmation: true,
+        draft: {
+          input_item_id: args.input_item_id,
           input_quantity: args.input_quantity,
-          execution_date: today,
+          outputs: args.outputs || [],
           notes: args.notes || null,
-          status: "CONFERMATA",
-        })
-        .select("id")
-        .single();
-      if (batchErr) return { error: batchErr.message };
-      const batchId = batchRow.id;
-
-      // Scarico input register movement
-      await db.from("dragon_register_movements").insert({
-        company_id: tenantId,
-        register_id: registerId,
-        movement_date: today,
-        recording_date: today,
-        item_id: args.input_item_id,
-        cer_code: sourceItem.codice_cer,
-        description_snapshot: sourceItem.descrizione || "",
-        movement_type: "SCARICO",
-        cause_id: scaricoCause.id,
-        quantity: args.input_quantity,
-        unit_of_measure: sourceItem.unita_misura_default || "kg",
-        sign: "MINUS",
-        source_context: "UL",
-        weight_status: "DEFINITIVO",
-        status: "CONSOLIDATO",
-        source_transform_batch_id: batchId,
-        created_by: adminUserId || null,
-      });
-
-      // Output movements
-      const outputResults: any[] = [];
-      for (const out of (args.outputs || [])) {
-        const { data: outItem } = await db.from("dragon_items")
-          .select("codice_cer, descrizione, unita_misura_default, item_type")
-          .eq("id", out.item_id)
-          .single();
-        if (!outItem) continue;
-
-        const isWaste = outItem.item_type === "WASTE_CER";
-        const warehouseScope = isWaste ? "WASTE" : "MPS";
-
-        if (isWaste) {
-          await db.from("dragon_register_movements").insert({
-            company_id: tenantId,
-            register_id: registerId,
-            movement_date: today,
-            recording_date: today,
-            item_id: out.item_id,
-            cer_code: outItem.codice_cer,
-            description_snapshot: outItem.descrizione || "",
-            movement_type: "CARICO",
-            cause_id: caricoCause.id,
-            quantity: out.quantity,
-            unit_of_measure: outItem.unita_misura_default || "kg",
-            sign: "PLUS",
-            source_context: "UL",
-            weight_status: "DEFINITIVO",
-            status: "CONSOLIDATO",
-            source_transform_batch_id: batchId,
-            created_by: adminUserId || null,
-          });
-        }
-
-        // Stock movement
-        await db.from("dragon_stock_movements").insert({
-          company_id: tenantId,
-          item_id: out.item_id,
-          movement_date: today,
-          cause_id: caricoCause.id,
-          quantity: out.quantity,
-          sign: "PLUS",
-          warehouse_scope: warehouseScope,
-          source_transform_batch_id: batchId,
-          created_by: adminUserId || null,
-        });
-
-        // Batch output
-        await db.from("dragon_transform_batch_outputs").insert({
-          batch_id: batchId,
-          output_item_id: out.item_id,
-          output_quantity: out.quantity,
-          warehouse_scope: warehouseScope,
-        });
-
-        outputResults.push({ cer: outItem.codice_cer, qty: out.quantity, scope: warehouseScope });
-      }
-
-      return { success: true, batch_id: batchId, input: { cer: sourceItem.codice_cer, qty: args.input_quantity }, outputs: outputResults };
+        },
+        error: "Cernita preparata ma non eseguita: deve essere verificata e confermata da una persona nella schermata Cernite.",
+      };
     }
 
     case "dragon_trace_movement": {

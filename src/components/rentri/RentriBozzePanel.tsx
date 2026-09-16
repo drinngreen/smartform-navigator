@@ -179,7 +179,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
         .update({ status: "completato", completed_at: new Date().toISOString() } as never)
         .eq("id", d.id);
       if (upErr) throw upErr;
-      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id });
+      const res = await syncFirFinalToRegistryAndInventory({ firId: d.id, effettivo: false });
       if (res.warning) throw new Error(res.warning);
       if (res.registryApplicable && !res.registry) throw new Error("Nessun movimento creato a registro: controlla i codici fiscali di produttore/destinatario");
       toast.success(
@@ -346,7 +346,7 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
                   onClick={() => caricaNelSistema(d)}
                   disabled={busyId === d.id}
                   className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
-                  title="Trasforma la bozza in FIR operativo: registro + giacenze"
+                  title="Carica il FIR come incompleto; giacenze invariate fino alla certificazione"
                 >
                   {busyId === d.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Carica nel sistema
                 </button>
