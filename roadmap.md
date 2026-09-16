@@ -30,3 +30,12 @@
 - [x] Regola giacenze da FIR produttore Multy: solo formulari digitali datati da oggi ore 08:00 (ora italiana) in poi — mai lo storico (src/lib/firProduttoreGiacenza.ts, 8 prove)
 - [ ] Anagrafica automatica: nuove aziende e nuove sedi operative salvate dal formulario senza duplicati
 - [ ] Separare i due invii RENTRI: partenza (emissione+firma) e arrivo (peso, esito, firma destinatario) con chiusura e giacenze solo dopo esito positivo
+
+## Stabilizzazione operativa urgente — 17/09/2026
+
+- [ ] Rendere univoco lo stato di ogni FIR confrontando archivio locale e stato reale RENTRI, senza etichette contraddittorie.
+- [ ] Rendere visibili e utilizzabili dall'impianto i FIR in arrivo: pesata, esito, firma destinatario e motivo completo degli errori.
+- [ ] Dimostrare che app autisti e uso d'ufficio condividono lo stesso FIR, con partenza bloccata senza conferma e QR ufficiali.
+- [ ] Inventariare e bloccare ogni percorso non autorizzato che può modificare giacenze; verificare cernite e saldi prima/dopo.
+- [ ] Rendere Dark Lemon utile solo per diagnosi e preparazione assistita, mantenendo ogni effetto operativo subordinato alla conferma umana.
+- [ ] Produrre un referto operativo con prova associata a ogni voce e limiti non ancora certificabili.
