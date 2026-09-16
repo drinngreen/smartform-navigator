@@ -142,6 +142,15 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     return rows
       .filter((r) => (filtro === "tutti" ? true : !r.accettato))
       .filter((r) =>
+        ruoloSel === "tutti"
+          ? true
+          : ruoloSel === "produttore"
+            ? r.ruolo.includes("Produttore")
+            : ruoloSel === "trasportatore"
+              ? r.ruolo.includes("Trasportatore")
+              : r.ruolo.includes("Destinatario"),
+      )
+      .filter((r) =>
         !term
           ? true
           : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.societaLabel]
@@ -149,13 +158,19 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
               .toLowerCase()
               .includes(term),
       );
-  }, [rows, filtro, q]);
+  }, [rows, filtro, ruoloSel, q]);
 
   const conteggi = useMemo(() => {
-    const out: Record<string, { tutti: number; daFirmare: number }> = {};
+    const out: Record<string, { tutti: number; daFirmare: number; produttore: number; trasportatore: number; destinatario: number }> = {};
     for (const s of SOCIETA) {
       const r = rows.filter((x) => x.societa === s.key);
-      out[s.key] = { tutti: r.length, daFirmare: r.filter((x) => !x.accettato).length };
+      out[s.key] = {
+        tutti: r.length,
+        daFirmare: r.filter((x) => !x.accettato).length,
+        produttore: r.filter((x) => x.ruolo.includes("Produttore")).length,
+        trasportatore: r.filter((x) => x.ruolo.includes("Trasportatore")).length,
+        destinatario: r.filter((x) => x.ruolo.includes("Destinatario")).length,
+      };
     }
     return out;
   }, [rows]);
