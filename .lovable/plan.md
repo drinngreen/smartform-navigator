@@ -18,6 +18,7 @@ Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certifica
 - I formulari scaricati dal RENTRI si possono vedere e firmare, ma non vengono importati in archivio; e l'accettazione scrive il movimento solo per Multy, mai per Niyol.
 - Nessun controllo automatico ripassa a verificare gli invii rimasti "in attesa", e la coda dei tentativi falliti si svuota solo a mano.
 - Il blocco temporaneo del RENTRI (errore 423) non è gestito da nessuna parte: oggi appare come errore generico.
+- Esistono ancora percorsi diversi che portano a risultati diversi fra chiusura del formulario, movimento d'impianto, registro e giacenze: vanno ridotti a un solo flusso, stessa azione stesso risultato.
 
 ## Cosa sistemo, in ordine
 
