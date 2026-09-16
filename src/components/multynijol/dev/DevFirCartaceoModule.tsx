@@ -179,7 +179,7 @@ export function DevFirCartaceoModule() {
     }
   };
 
-  const daInviare = filtered.filter((r) => !inviatiIds.has(r.id));
+  const daInviare = filtered.filter((r) => !inviatiIds.has(r.id) && isEffettivo(r));
 
   return (
     <div className="space-y-4">
