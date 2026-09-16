@@ -496,16 +496,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const u = store.updateField;
   const d = store.data;
 
-  const clearRentriError = (key: string) => {
-    setRentriFieldErrors((current) => {
-      if (!current[key]) return current;
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-  };
   const updateFirField = (key: keyof FIRDataStore, value: any) => {
-    clearRentriError(String(key));
     store.updateField(key, value);
   };
   const mapRentriFieldErrors = (source: Record<string, string[]>): Record<string, string> => {
