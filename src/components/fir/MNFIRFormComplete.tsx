@@ -1483,13 +1483,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {store.workflowStatus === 'inviato' && (
             <>
+              <div className="rounded-2xl border border-neon-green/30 bg-neon-green/5 py-2 text-center">
+                <p className="text-xs font-display uppercase tracking-widest text-neon-green">Viaggio in corso</p>
+                <p className="mt-0.5 text-[10px] font-mono text-white/60">Partenza già trasmessa al RENTRI · QR ufficiale valido</p>
+              </div>
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 <Shield className="h-5 w-5 icon-led" /> CONTROLLO POLIZIA (QR CODE)
               </button>
               <button onClick={handleArrivato} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <MapPin className="h-5 w-5 icon-led" /> ARRIVATO
+                <MapPin className="h-5 w-5 icon-led" /> 2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO
               </button>
+              <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
+                Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano.
+              </p>
             </>
+
           )}
 
           {store.workflowStatus === 'chiuso' && (
