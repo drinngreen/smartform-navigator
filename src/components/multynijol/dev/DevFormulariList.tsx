@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { keepOpenOnDarkLemon } from "@/lib/dialogGuards";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2, Receipt, BadgeEuro,
 } from "lucide-react";
@@ -441,7 +442,12 @@ export function DevFormulariList({
 
       {/* Full FIR Dialog with Standard/Alternative toggle */}
       <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
+          onPointerDownOutside={keepOpenOnDarkLemon}
+          onInteractOutside={keepOpenOnDarkLemon}
+          onFocusOutside={keepOpenOnDarkLemon}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
               <FileText className={`h-5 w-5 ${txt}`} />

@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { keepOpenOnDarkLemon } from "@/lib/dialogGuards";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { MassiveFirGeneratorDialog } from "@/components/multynijol/dev/MassiveFirGeneratorDialog";
@@ -373,7 +374,12 @@ export default function MNFormulariPage() {
 
       {/* Full FIR Alternative Form Dialog */}
       <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
+          onPointerDownOutside={keepOpenOnDarkLemon}
+          onInteractOutside={keepOpenOnDarkLemon}
+          onFocusOutside={keepOpenOnDarkLemon}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
               <FileText className="h-5 w-5 text-primary" />
