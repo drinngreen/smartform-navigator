@@ -209,6 +209,9 @@ export default function MNFormulariPage() {
 
   if (!isValid) return <Navigate to="/mn/admin" replace />;
 
+  // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, (f as any).form_data);
+
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -218,18 +221,19 @@ export default function MNFormulariPage() {
       f.user_profile?.nome?.toLowerCase().includes(q) ||
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
-    if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
-    if (tab === "completed") return matchSearch && (f.status === "completed" || f.status === "completato");
+    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
+    if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
   });
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f) => f.status === "completed" || f.status === "completato").length,
+    draft: forms.filter((f) => statoReale(f) === "bozza").length,
+    submitted: forms.filter((f) => statoReale(f) === "inviato").length,
+    completed: forms.filter((f) => statoReale(f) === "chiuso").length,
   };
+
 
   const statusBadge = (status: string) => {
     switch (status) {

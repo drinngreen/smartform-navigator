@@ -112,6 +112,9 @@ export default function RegistroFIRPage() {
     }
   };
 
+  // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, (f as any).form_data);
+
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
     const match =
@@ -124,18 +127,19 @@ export default function RegistroFIRPage() {
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
 
-    if (tab === "draft") return match && isDraft(f.status);
-    if (tab === "submitted") return match && isSubmitted(f.status);
-    if (tab === "completed") return match && isCompleted(f.status);
+    if (tab === "draft") return match && statoReale(f) === "bozza";
+    if (tab === "submitted") return match && statoReale(f) === "inviato";
+    if (tab === "completed") return match && statoReale(f) === "chiuso";
     return match;
   });
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => isDraft(f.status)).length,
-    submitted: forms.filter((f) => isSubmitted(f.status)).length,
-    completed: forms.filter((f) => isCompleted(f.status)).length,
+    draft: forms.filter((f) => statoReale(f) === "bozza").length,
+    submitted: forms.filter((f) => statoReale(f) === "inviato").length,
+    completed: forms.filter((f) => statoReale(f) === "chiuso").length,
   };
+
 
   const statusBadge = (status: string) => {
     if (isDraft(status)) return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
