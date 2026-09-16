@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
+
 
 interface Impianto { id: string; nome: string; }
 
@@ -141,21 +143,20 @@ export default function MNImpiantoDestinatarioPage() {
     setSaving(true);
     try {
       if (esito !== "respinto") {
-        const { error: movementError } = await (supabase as any).rpc("applica_movimento_giacenza", {
-        p_tenant_id: MULTY_TENANT_ID,
-        p_impianto_id: selectedImpianto,
-        p_cer: form.cer.trim(),
-        p_quantita_kg: kgPesati,
-        p_segno: "CARICO",
-        p_causale: "FIR_DIGITALE_CHIUSO_DESTINATARIO",
-        p_documento: `FIR_DESTINO:${form.numero_fir.trim()}:ACCETTAZIONE`,
-        p_attore: "human",
-        p_descrizione: form.descrizione_rifiuto || null,
-        p_fir_id: selectedFirId || null,
-        p_numero_fir: form.numero_fir.trim(),
+        const applicazione = await applicaChiusuraDestinatario({
+          tenantId: MULTY_TENANT_ID,
+          impiantoId: selectedImpianto,
+          numeroFir: form.numero_fir.trim(),
+          cer: form.cer.trim(),
+          quantitaKg: kgPesati,
+          esito,
+          descrizione: form.descrizione_rifiuto || null,
+          firId: selectedFirId || null,
+          causale: "FIR_DIGITALE_CHIUSO_DESTINATARIO",
         });
-        if (movementError) throw movementError;
+        if (applicazione.applicato !== true) toast.info(applicazione.motivo);
       }
+
 
     // Chiusura del formulario dell'autista: senza questo passaggio il FIR
     // resterebbe "in viaggio" anche dopo l'arrivo e la pesata.

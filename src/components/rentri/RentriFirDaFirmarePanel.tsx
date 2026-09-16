@@ -23,6 +23,8 @@ import {
   ALIAS_NIYOL,
   MULTY_CF,
 } from "@/lib/firProduttoreGiacenza";
+import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
+
 
 /** Impianti di destino per cliente: solo dove esiste un impianto autorizzato a ricevere. */
 const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string }> = {
