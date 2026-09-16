@@ -3777,6 +3777,7 @@ export type Database = {
           produttore_denominazione: string | null
           produttore_indirizzo: string | null
           produttore_provincia: string | null
+          qr_token: string
           quantita: number | null
           stato_fisico: string | null
           status: string
@@ -3822,6 +3823,7 @@ export type Database = {
           produttore_denominazione?: string | null
           produttore_indirizzo?: string | null
           produttore_provincia?: string | null
+          qr_token?: string
           quantita?: number | null
           stato_fisico?: string | null
           status?: string
@@ -3867,6 +3869,7 @@ export type Database = {
           produttore_denominazione?: string | null
           produttore_indirizzo?: string | null
           produttore_provincia?: string | null
+          qr_token?: string
           quantita?: number | null
           stato_fisico?: string | null
           status?: string
@@ -7230,6 +7233,24 @@ export type Database = {
       }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }
       exec_sql_write: { Args: { query: string }; Returns: Json }
+      fir_pubblico_sintesi: {
+        Args: { _token: string }
+        Returns: {
+          codice_eer: string
+          data_emissione: string
+          data_inizio_trasporto: string
+          descrizione_rifiuto: string
+          destinatario: string
+          numero_fir: string
+          produttore: string
+          quantita: number
+          stato_fisico: string
+          stato_formulario: string
+          targa: string
+          trasportatore: string
+          unita_misura: string
+        }[]
+      }
       genera_fatture_contratti: {
         Args: { p_periodo: string; p_tenant_id: string }
         Returns: Json
