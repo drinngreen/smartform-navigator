@@ -19,6 +19,8 @@ import {
   registraScaricoProduttore,
   ruoliFir,
   scaricoProduttoreAmmesso,
+  ALIAS_MULTY,
+  ALIAS_NIYOL,
   MULTY_CF,
 } from "@/lib/firProduttoreGiacenza";
 
