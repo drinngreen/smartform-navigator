@@ -26,7 +26,7 @@ Regola che resta valida sopra a tutto: **al RENTRI va solo ciò che è certifica
 Correggo il formato dei dati che il RENTRI ha respinto: numero del formulario con il blocco e le sei cifre, codici fiscali ripuliti e validati, stato fisico preso dai codici ufficiali. Prima dell'invio una verifica a video elenca in italiano cosa manca, così l'invio parte solo quando è completo. Poi provo per davvero un invio e mostro la risposta del RENTRI.
 
 **2. Niyol allo stesso livello di Multy.**
-Niyol è solo trasportatore: gli do il suo registro di trasporto, il suo codice fiscale, la sua unità locale e i suoi parametri RENTRI in ogni passaggio in cui è soggetto attivo. Ogni schermata mostra sempre con quale azienda sta operando.
+Niyol opera come trasportatore: gli do il suo registro di trasporto, il suo codice fiscale, la sua unità locale e i suoi parametri RENTRI in ogni passaggio in cui è soggetto attivo. Ogni schermata mostra sempre con quale azienda sta operando.
 
 **3. Invio del registro carico/scarico, senza doppioni.**
 I movimenti candidati diventano solo quelli effettivi, escludendo automaticamente quelli già inviati. Ogni invio viene archiviato con numero di transazione ed esito, e una verifica ricontrolla poco dopo se il RENTRI lo ha davvero acquisito. Se qualcosa viene scartato, appare il motivo in italiano e il movimento resta in coda, mai perso.
