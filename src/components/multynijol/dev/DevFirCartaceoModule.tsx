@@ -57,7 +57,7 @@ export function DevFirCartaceoModule() {
         .order("data_movimento", { ascending: false })
         .limit(300);
       if (error) throw error;
-      setRows((data ?? []) as unknown as MovimentoImpiantoRow[]);
+      setRows((data ?? []) as unknown as RigaCartacea[]);
 
       const { data: invii } = await supabase
         .from("rentri_invii_registri")
