@@ -7,6 +7,8 @@
  * comune_id obbligatorio negli indirizzi.
  */
 
+import { isValidCerCode } from "@/lib/cerValidation";
+
 export const STATO_FISICO_RENTRI = ["S", "SP", "FP", "L", "VS", "GA"] as const;
 
 /** Alias liberi → codici ufficiali RENTRI (verificati sulle risposte reali). */
