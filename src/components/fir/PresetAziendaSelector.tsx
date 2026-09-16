@@ -688,7 +688,7 @@ export function PresetAziendaSelector({
         {ruolo && ruolo !== "PRODUTTORE" && roleCompanies.length > 0 && (
           <label className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
             <input type="checkbox" checked={soloRuolo} onChange={(e) => setSoloRuolo(e.target.checked)} />
-            Solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
+            Filtro facoltativo: solo aziende con autorizzazione {ruolo.toLowerCase()} ({roleCompanies.length})
             {loadingRoleCompanies && " — caricamento…"}
           </label>
         )}
