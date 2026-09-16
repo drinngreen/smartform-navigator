@@ -30,6 +30,30 @@ export const oggiIso = () => new Date().toISOString().slice(0, 10);
 export const dataFir = (riga: { data_emissione?: unknown; data_creazione?: unknown }) =>
   String(riga.data_emissione ?? riga.data_creazione ?? "").slice(0, 10);
 
+/** Data odierna nel fuso italiano (Europe/Rome), formato YYYY-MM-DD. */
+export const oggiRomaIso = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+
+/**
+ * Istante di inizio validità: OGGI alle 08:00 ora italiana.
+ * Le giacenze si aggiornano solo dai formulari digitali datati da questo
+ * istante in poi; tutto ciò che è precedente è storico e non si tocca.
+ */
+export const cutoffGiacenzeDaFir = (oggi = oggiRomaIso()): Date => {
+  const mezzogiornoUtc = Date.parse(`${oggi}T12:00:00Z`);
+  const romaString = new Date(mezzogiornoUtc).toLocaleString("en-US", { timeZone: "Europe/Rome" });
+  const offsetMs = new Date(romaString).getTime() - mezzogiornoUtc;
+  return new Date(Date.parse(`${oggi}T08:00:00Z`) - offsetMs);
+};
+
+/** Timestamp completo del formulario (data_emissione o, in mancanza, data_creazione). */
+export const istanteFir = (riga: { data_emissione?: unknown; data_creazione?: unknown }): number | null => {
+  const raw = String(riga.data_emissione ?? riga.data_creazione ?? "").trim();
+  if (!raw) return null;
+  const ms = Date.parse(raw.includes("T") ? raw : raw.replace(" ", "T"));
+  return Number.isNaN(ms) ? null : ms;
+};
+
 /** Ruoli del formulario calcolati su TUTTI i codici fiscali aziendali, non solo su quello letto. */
 export function ruoliFir(
   riga: { produttore_cf?: unknown; trasportatore_cf?: unknown; destinatario_cf?: unknown },
