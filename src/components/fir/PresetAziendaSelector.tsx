@@ -449,6 +449,19 @@ export function PresetAziendaSelector({
       setDbAuts(a.data || []);
       setCantieri(dedup(c.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
       setUnitaLocali(dedup(ul.data, (r) => `${r.denominazione}|${r.indirizzo}|${r.comune}`));
+      setSediAnagrafica(
+        dedup(
+          (an.data || []).map((r: any) => ({
+            id: `az-${r.id}`,
+            denominazione: r.ragione_sociale || "Sede",
+            indirizzo: r.indirizzo || "",
+            comune: r.citta || "",
+            provincia: r.provincia || "",
+            cap: r.cap || "",
+          })),
+          (r) => `${r.indirizzo}|${r.comune}`.toUpperCase(),
+        ),
+      );
       setTarghe(dedup(t.data, (r) => String(r.targa || "").toUpperCase()));
       setConducenti(dedup(k.data, (r) => `${r.cognome}|${r.nome}`.toUpperCase()));
       setPartnerDefaults(dedup(p.data, (r) => `${r.ruolo}|${r.ragione_sociale}|${r.indirizzo}`.toUpperCase()));
