@@ -84,7 +84,7 @@ describe("Certificazione RENTRI — payload di emissione FIR", () => {
     const casi: Array<[string, Record<string, unknown>, string]> = [
       ["numero FIR mancante", { ...payloadFirReale(""), }, "numero_fir"],
       ["CER non a 6 cifre", (() => { const p = payloadFirReale(); p.dati_partenza.rifiuto.codice_eer = "1704"; return p; })(), "codice_eer"],
-      ["quantità nulla", (() => { const p = payloadFirReale(); p.dati_partenza.rifiuto.quantita = { valore: 0 }; return p; })(), "quantita"],
+      ["quantità nulla", (() => { const p = payloadFirReale(); p.dati_partenza.rifiuto.quantita = { valore: 0, unita_misura: "kg" }; return p; })(), "quantita"],
       ["senza trasportatore", (() => { const p = payloadFirReale(); p.dati_partenza.trasportatori = []; return p; })(), "trasportatori"],
       ["CF destinatario errato", (() => { const p = payloadFirReale(); p.dati_partenza.destinatario.codice_fiscale = "00000000000"; return p; })(), "destinatario.codice_fiscale"],
       ["senza targa", (() => { const p = payloadFirReale(); p.dati_partenza.dati_trasporto_partenza.targa_automezzo = ""; return p; })(), "targa_automezzo"],
@@ -110,7 +110,7 @@ describe("Certificazione RENTRI — payload di emissione FIR", () => {
     const p = payloadFirReale();
     p.dati_partenza.rifiuto.stato_fisico = "solido non pulverulento";
     p.dati_partenza.rifiuto.provenienza = "speciale";
-    p.dati_partenza.rifiuto.quantita = { valore: "1.200,5" as unknown as number };
+    p.dati_partenza.rifiuto.quantita = { valore: "1.200,5" as unknown as number, unita_misura: "kg" };
     const n = normalizzaPayloadFirRentri(p);
     const dp = n.dati_partenza as Record<string, unknown>;
     const rif = dp.rifiuto as Record<string, unknown>;
