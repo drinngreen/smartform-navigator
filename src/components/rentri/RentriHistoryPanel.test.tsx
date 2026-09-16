@@ -66,7 +66,7 @@ describe("RentriHistoryPanel", () => {
     ]);
     render(<RentriHistoryPanel />);
     await waitFor(() => expect(screen.getAllByTestId("history-row")).toHaveLength(3));
-    expect(screen.getByText(/Operazione completata/)).toBeInTheDocument();
+    expect(screen.getByText(/Confermato dal RENTRI/)).toBeInTheDocument();
     expect(screen.getByText(/nessun invio confermato/i)).toBeInTheDocument();
     expect(screen.getAllByText(/verifica/i).length).toBeGreaterThan(0);
   });
@@ -116,6 +116,17 @@ describe("RentriHistoryPanel", () => {
   it("spiega che la cronologia contiene solo invii reali", async () => {
     fetchRentriHistory.mockResolvedValue([]);
     render(<RentriHistoryPanel />);
-    expect(await screen.findByText(/controlli automatici, ricerche e PDF sono esclusi/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Un FIR, una storia/i)).toBeInTheDocument();
+  });
+
+  it("accorpa le risposte 202 duplicate senza chiamarle completate", async () => {
+    fetchRentriHistory.mockResolvedValue([
+      row({ tipo_operazione: "FIR_EMISSIONE", http_status: 202, payload_inviato: { dati_partenza: { numero_fir: "ZRZXR000772TM" } } }),
+      row({ tipo_operazione: "FIR_EMISSIONE", http_status: 202, payload_inviato: { dati_partenza: { numero_fir: "ZRZXR000772TM" } } }),
+    ]);
+    render(<RentriHistoryPanel />);
+    await waitFor(() => expect(screen.getAllByTestId("history-row")).toHaveLength(1));
+    expect(screen.getByText(/esito finale da verificare/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 richieste tecniche 202 accorpate/i)).toBeInTheDocument();
   });
 });

@@ -6,7 +6,8 @@ import { Loader2, History, RefreshCw, CheckCircle2, XCircle, ShieldCheck, Search
 const CLIENTI = ["all", "multyproget", "multy", "niyol", "global"];
 
 function statoLeggibile(row: { success: boolean; http_status: number | null; mode: string }): string {
-  if (row.success) return row.mode === "dry_run" ? "Verifica riuscita" : "Operazione completata";
+  if (row.success && row.http_status === 202) return "Richiesta presa in carico dal RENTRI — esito finale da verificare";
+  if (row.success) return row.mode === "dry_run" ? "Verifica riuscita" : "Confermato dal RENTRI";
   return rentriUserMessage(Number(row.http_status ?? 0));
 }
 
@@ -83,9 +84,17 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
     to: to ? new Date(`${to}T23:59:59`).toISOString() : undefined,
   });
   const firCercato = normalizzaFir(firSearch);
-  const righeVisibili = firCercato
+  const righeFiltrate = firCercato
     ? rows.filter((row) => normalizzaFir(numeroFirRiga(row)).includes(firCercato))
     : rows;
+  const pendingCounts = new Map<string, number>();
+  const righeVisibili = righeFiltrate.filter((row) => {
+    if (row.tipo_operazione !== "FIR_EMISSIONE" || row.http_status !== 202) return true;
+    const key = `${row.cliente}:${normalizzaFir(numeroFirRiga(row))}`;
+    const count = pendingCounts.get(key) ?? 0;
+    pendingCounts.set(key, count + 1);
+    return count === 0;
+  });
 
   return (
     <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4" data-testid="rentri-history">
@@ -93,7 +102,7 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
         <History size={16} className="text-primary" />
         <div>
           <h3 className="text-base font-display tracking-wider">Invii effettuati al RENTRI</h3>
-          <p className="text-xs text-muted-foreground">Solo invii reali: controlli automatici, ricerche e PDF sono esclusi.</p>
+          <p className="text-xs text-muted-foreground">Un FIR, una storia: rifiuti distinti e richieste 202 duplicate accorpate.</p>
         </div>
         <button
           onClick={() => void reload()}
@@ -166,6 +175,10 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
         <ul className="space-y-2">
           {righeVisibili.map((row) => {
             const numeroFir = numeroFirRiga(row);
+            const pendingKey = `${row.cliente}:${normalizzaFir(numeroFir)}`;
+            const pendingCount = row.tipo_operazione === "FIR_EMISSIONE" && row.http_status === 202
+              ? pendingCounts.get(pendingKey) ?? 1
+              : 1;
             return (
             <li
               key={row.id}
@@ -189,6 +202,11 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                 </span>
               </div>
                <p className="mt-1 text-muted-foreground">{statoLeggibile(row)}</p>
+               {pendingCount > 1 && (
+                 <p className="mt-1 text-xs text-amber-300">
+                   {pendingCount} richieste tecniche 202 accorpate: non sono {pendingCount} FIR diversi.
+                 </p>
+               )}
                {!row.success && (
                  <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
                    <p className="text-xs font-semibold text-destructive">Motivo del rifiuto RENTRI</p>
