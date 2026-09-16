@@ -2345,6 +2345,30 @@ async function resolveFirFormId(
   return { id: data.id, original: candidate, fir: data };
 }
 
+// ====================== CONFINE AGENTE ======================
+// L'agente può preparare e compilare, MAI rendere effettivo un movimento
+// o toccare le giacenze: quello richiede sempre una conferma umana.
+
+const TABELLE_STATO_MOVIMENTO = ["registro_generale", "movimenti_impianto"];
+
+function sqlAgenteVietata(sql: string): string | null {
+  const s = sql.toLowerCase();
+  const scrive = /\b(insert|update|delete|truncate|merge)\b/.test(s);
+  if (!scrive) return null;
+  if (/magazzino_giacenze/.test(s))
+    return "Le giacenze non possono essere modificate dall'assistente: serve la conferma di una persona (pesata certificata).";
+  if (/applica_movimento_giacenza|recalculate_magazzino_giacenza/.test(s))
+    return "Il punto unico di aggiornamento delle giacenze è riservato alle conferme umane.";
+  if (/stato_movimento\s*=\s*'effettivo'/.test(s))
+    return "L'assistente può creare solo movimenti potenziali: solo una persona può renderli effettivi.";
+  return null;
+}
+
+function bozzaAgente(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  if (!TABELLE_STATO_MOVIMENTO.includes(table) || !row || typeof row !== "object") return row;
+  return { ...row, stato_movimento: "potenziale", created_by_agent: true };
+}
+
 // ====================== TOOL HANDLERS ======================
 
 async function handleTool(
@@ -2374,6 +2398,8 @@ async function handleTool(
     case "write_database": {
       const sql = (args.sql || "").trim();
       if (sql.toUpperCase().startsWith("SELECT")) return { error: "Usa query_database per le SELECT." };
+      const vietata = sqlAgenteVietata(sql);
+      if (vietata) return { error: vietata };
       const { data: rows, error } = await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
       return error ? { error: error.message } : { success: true, data: rows };
     }
@@ -2392,24 +2418,27 @@ async function handleTool(
       if (!table) return { error: "Tabella mancante." };
       if (rows.length === 0) return { error: "Nessuna riga da inserire." };
       if (rows.length > 200) return { error: "Massimo 200 righe per blocco: suddividi l'inserimento." };
+      if (table === "magazzino_giacenze")
+        return { error: "Le giacenze non possono essere scritte dall'assistente: serve la conferma di una persona." };
 
       const addTenant = args.add_tenant !== false;
       const payload = rows.map((r: Record<string, unknown>) =>
-        addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r
+        bozzaAgente(table, addTenant && r && typeof r === "object" && !("tenant_id" in r) ? { ...r, tenant_id: tenantId } : r)
       );
 
       const { data, error } = await db.from(table).insert(payload).select();
       if (error) {
         // Se la tabella non ha tenant_id, riprova senza aggiungerlo
         if (addTenant && /tenant_id/i.test(error.message)) {
-          const retry = await db.from(table).insert(rows).select();
+          const retry = await db.from(table).insert(rows.map((r: Record<string, unknown>) => bozzaAgente(table, r))).select();
           if (retry.error) return { error: retry.error.message };
           return { success: true, inserite: retry.data?.length ?? 0, data: retry.data?.slice(0, 5) };
         }
         return { error: error.message };
       }
-      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5) };
+      return { success: true, inserite: data?.length ?? 0, data: data?.slice(0, 5), nota: TABELLE_STATO_MOVIMENTO.includes(table) ? "Righe create come bozze potenziali: servono conferma e pesata umana." : undefined };
     }
+
 
     // ---------- DIAGNOSTICA / TEST ----------
     case "run_system_test": {
@@ -3738,6 +3767,12 @@ async function handleTool(
 
     // ---------- DRAGON RETTIFICHE INVENTARIALI ----------
     case "dragon_inventory_adjustment": {
+      // Una rettifica di giacenza è un movimento effettivo: solo una persona può confermarla.
+      return {
+        error:
+          "Non posso rettificare le giacenze da solo. Posso preparare i dati della rettifica, ma la conferma deve farla una persona dalla schermata Giacenze.",
+      };
+      // deno-lint-ignore no-unreachable
       const adjCauseQ = `SELECT id FROM dragon_causes WHERE code = 'RETTIFICA_INVENTARIALE' AND active = true LIMIT 1`;
       const { data: adjCauseData } = await db.rpc("exec_sql_readonly", { query: adjCauseQ }).maybeSingle();
       const adjCause = adjCauseData?.[0] || adjCauseData;
