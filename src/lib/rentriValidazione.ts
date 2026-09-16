@@ -86,7 +86,7 @@ function cfValido16(v: string): boolean {
 /** Codice fiscale o partita IVA italiani con checksum valido. */
 export function cfValido(raw: unknown): boolean {
   const v = normalizzaCF(raw);
-  if (/^\d{11}$/.test(v)) return pivaValida(v);
+  if (/^\d{11}$/.test(v)) return pivaValida11(v);
   if (v.length === 16) return cfValido16(v);
   return false;
 }
