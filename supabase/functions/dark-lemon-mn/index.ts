@@ -3767,6 +3767,12 @@ async function handleTool(
 
     // ---------- DRAGON RETTIFICHE INVENTARIALI ----------
     case "dragon_inventory_adjustment": {
+      // Una rettifica di giacenza è un movimento effettivo: solo una persona può confermarla.
+      return {
+        error:
+          "Non posso rettificare le giacenze da solo. Posso preparare i dati della rettifica, ma la conferma deve farla una persona dalla schermata Giacenze.",
+      };
+      // deno-lint-ignore no-unreachable
       const adjCauseQ = `SELECT id FROM dragon_causes WHERE code = 'RETTIFICA_INVENTARIALE' AND active = true LIMIT 1`;
       const { data: adjCauseData } = await db.rpc("exec_sql_readonly", { query: adjCauseQ }).maybeSingle();
       const adjCause = adjCauseData?.[0] || adjCauseData;
