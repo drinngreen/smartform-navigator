@@ -813,47 +813,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     await handlePrintFormulario(false);
   };
 
-  /**
-   * Carica la bozza come FIR incompleto. Il registro resta incompleto e le
-   * giacenze non cambiano finché manca firma digitale o conferma cartacea.
-   */
-  const handleCaricaNelSistema = async () => {
-    try {
-      const dbFields = mapStoreToDatabaseFields(store.data);
-      let savedId = store.editingFirId;
-      if (!savedId) {
-        savedId = await createAndAutosaveManualDraft();
-        if (!savedId) {
-          const created: any = await createFIR.mutateAsync(dbFields);
-          savedId = created?.id || null;
-        }
-      }
-      if (!savedId) throw new Error("Inserisci prima il numero FIR");
-      await silentSaveFIR.mutateAsync({
-        id: savedId,
-        ...dbFields,
-        status: "completato",
-        completed_at: new Date().toISOString(),
-      } as any);
-      const result = await syncFirFinalToRegistryAndInventory({
-        firId: savedId,
-        impiantoId: impiantoId || null,
-        registryMovementType: registryMovementType || "Carico",
-        effettivo: false,
-      });
-      if (result.warning) throw new Error(result.warning);
-      if (result.registryApplicable && !result.registry) throw new Error("Nessun movimento creato nel registro: controlla CF produttore/destinatario e numero FIR");
-      useMNFIRStore.setState({ editingFirId: savedId, workflowStatus: "chiuso" });
-      toast.success(
-        !result.registryApplicable
-          ? "✅ FIR caricato nel sistema (cliente terzo: nessun registro Multy/Niyol interessato)"
-          : "FIR caricato come incompleto: conferma manualmente il peso se cartaceo, oppure attendi la firma del destinatario se digitale"
-      );
-      window.dispatchEvent(new CustomEvent("dev-fir-saved", { detail: { firId: savedId } }));
-    } catch (e: any) {
-      toast.error("Errore caricamento nel sistema: " + (e?.message || String(e)));
-    }
-  };
+  // Rimosso il caricamento manuale nel sistema: una bozza non deve mai creare
+  // movimenti di registro né toccare le giacenze.
 
 
 
@@ -1334,15 +1295,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </button>
           )}
 
-          {store.workflowStatus !== 'chiuso' && (
-            <button
-              onClick={() => void handleCaricaNelSistema()}
-              disabled={silentSaveFIR.isPending || createFIR.isPending}
-              className="w-full py-4 rounded-2xl bg-neon-green/20 border border-neon-green/60 text-neon-green font-display text-base tracking-wider hover:bg-neon-green/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="h-5 w-5" /> CARICA NEL SISTEMA (REGISTRO + GIACENZE)
-            </button>
-          )}
+          {/* Nessun "carica nel sistema" in compilazione: una bozza non tocca registro né giacenze.
+              Il movimento nasce solo dalla firma del destinatario (digitale) o dalla conferma manuale (cartaceo). */}
 
 
 
