@@ -33,12 +33,16 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
 import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 const GLOBAL_FIR_TENANT_ID = "167d07ad-9184-484e-85a6-da5ceafa42a3";
+/** Impianto Multyproget di via Rivarossa: unico impianto che riceve materiale. */
+const IMPIANTO_MULTY_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 const SOCIETA_ID = "multy";
 const IMPIANTO_RGB = "16, 185, 129";
+
 
 const firstFirValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
@@ -375,6 +379,29 @@ function ImpiantoFormulari() {
       throw new Error(response.error || detailMessage || "Firma impianto non riuscita");
     }
 
+    // Il carico entra in giacenza solo dopo l'esito positivo del RENTRI e solo
+    // attraverso il punto unico idempotente: prima questa firma chiudeva il
+    // formulario senza far entrare nulla a magazzino.
+    if (mode === "destination") {
+      try {
+        const esitoGiacenza = await applicaChiusuraDestinatario({
+          tenantId: MULTY_TENANT_ID,
+          impiantoId: IMPIANTO_MULTY_ID,
+          numeroFir: selectedIncoming.numero_fir,
+          cer: selectedIncoming.cer,
+          quantitaKg: payload.kg_pesata,
+          esito: payload.esito,
+          descrizione: `FIR ${selectedIncoming.numero_fir} — ${selectedIncoming.produttore || "produttore"}`,
+          causale: "FIR_DIGITALE_CHIUSO_RENTRI",
+        });
+        if (esitoGiacenza.applicato === true) toast.success("Carico registrato in impianto e giacenze aggiornate");
+        else toast.info(esitoGiacenza.motivo);
+
+      } catch (e: any) {
+        toast.error(`Firma inviata, ma il carico in impianto non è stato registrato: ${e?.message || String(e)}`);
+      }
+    }
+
     setIncomingEvents((prev) => ({
       ...prev,
       [selectedIncoming.id]: [
@@ -392,6 +419,7 @@ function ImpiantoFormulari() {
     await refetchIncoming();
     setSelectedIncoming(null);
   };
+
 
   return (
     <div className="space-y-4">

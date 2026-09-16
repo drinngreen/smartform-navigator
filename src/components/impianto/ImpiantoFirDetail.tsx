@@ -155,6 +155,19 @@ export function ImpiantoFirDetail({
             </div>
           )}
 
+          {/* Nessuna azione disponibile: lo diciamo, invece di nascondere tutto in silenzio */}
+          {!canSignReception && !canSignDestination && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+              <p className="font-semibold">Per questo formulario non c'è nessuna firma da fare qui.</p>
+              <p className="mt-1 text-amber-100/90">
+                Stato attuale: <span className="font-mono">{item.stato_interno || "sconosciuto"}</span>.
+                Se il carico è già stato accettato non serve altro; se invece l'autista è appena arrivato,
+                aggiorna l'elenco: il formulario deve risultare in viaggio verso questo impianto.
+              </p>
+            </div>
+          )}
+
+
           {/* Confirm destination modal */}
           {confirmDestinazione && (
             <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 space-y-3">

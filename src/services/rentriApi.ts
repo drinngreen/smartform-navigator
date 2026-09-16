@@ -69,7 +69,20 @@ export interface RentriChiusuraPayload {
   destinatario_numero_aut?: string;
   peso_accettato: number;
   unita_misura?: string;
+  /**
+   * Esito reale dichiarato dall'impianto. Obbligatorio: senza questo dato
+   * l'arrivo veniva trasmesso al RENTRI sempre come "accettato", anche quando
+   * il carico era stato respinto.
+   */
+  esito?: "accettato" | "parziale" | "respinto";
+  /** Quantità respinta, nel caso di accettazione parziale o respingimento. */
+  quantita_respinta?: number;
+  /** Motivazione obbligatoria quando il carico non è accettato per intero. */
+  motivazione?: string | null;
+  /** Codice dell'operazione di recupero/smaltimento a destino (es. R13). */
+  operazione?: string | null;
 }
+
 
 export interface RentriVidimateResponse {
   numeri: string[];
@@ -272,11 +285,36 @@ export async function getRentriPdf(
 }
 
 /**
- * 3. FIRMA RICEZIONE — Close FIR at destination via VPS proxy.
+ * 3. FIRMA RICEZIONE — chiusura del formulario a destino.
+ *
+ * L'esito arriva sempre dall'impianto: accettazione totale, accettazione
+ * parziale o respingimento. Il respinto non può essere trasmesso come
+ * accettato, e senza motivazione l'invio non parte.
  */
 export async function chiudiFirRentri(
   payload: RentriChiusuraPayload
 ): Promise<Record<string, unknown>> {
+  const esito = payload.esito ?? "accettato";
+  const motivazione = String(payload.motivazione ?? "").trim();
+  if (esito !== "accettato" && !motivazione) {
+    throw new Error(
+      esito === "respinto"
+        ? "Respingimento: la motivazione è obbligatoria e va indicata prima dell'invio al RENTRI."
+        : "Accettazione parziale: la motivazione della quota non accettata è obbligatoria.",
+    );
+  }
+  const pesoAccettato = esito === "respinto" ? 0 : Number(payload.peso_accettato);
+  if (esito !== "respinto" && (!Number.isFinite(pesoAccettato) || pesoAccettato <= 0)) {
+    throw new Error("Peso verificato a destino mancante: l'arrivo non può essere trasmesso al RENTRI.");
+  }
+
+  const esitoConferimento =
+    esito === "respinto"
+      ? "RESPINTO"
+      : esito === "parziale"
+        ? "ACCETTATO_PARZIALMENTE"
+        : "ACCETTATO_TOTALMENTE";
+
   const firPayload = {
     dati_arrivo: {
       numero_fir: payload.numero_fir,
@@ -289,16 +327,28 @@ export async function chiudiFirRentri(
           tipo: payload.destinatario_tipo_aut || "AIA",
           numero: payload.destinatario_numero_aut || "",
         },
+        ...(payload.operazione ? { operazione: payload.operazione } : {}),
       },
       accettazione: {
-        accettato: true,
+        accettato: esito !== "respinto",
+        esito_conferimento: esitoConferimento,
         quantita_ricevuta: {
-          valore: payload.peso_accettato,
+          valore: pesoAccettato,
           unita_misura: payload.unita_misura || "kg",
         },
+        ...(payload.quantita_respinta != null && Number(payload.quantita_respinta) > 0
+          ? {
+              quantita_respinta: {
+                valore: Number(payload.quantita_respinta),
+                unita_misura: payload.unita_misura || "kg",
+              },
+            }
+          : {}),
+        ...(motivazione ? { motivazione } : {}),
       },
     },
   };
+
 
   const cliente = ((payload.societaId || "multy").toLowerCase()) as RentriCliente;
   const res = await firmaRicezione(cliente, firPayload);

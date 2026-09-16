@@ -1,3 +1,4 @@
+import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { useState, useEffect, useCallback } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { supabase } from "@/lib/supabaseClient";
@@ -112,6 +113,9 @@ export default function RegistroFIRPage() {
     }
   };
 
+  // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, (f as any).form_data);
+
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
     const match =
@@ -124,25 +128,27 @@ export default function RegistroFIRPage() {
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
 
-    if (tab === "draft") return match && isDraft(f.status);
-    if (tab === "submitted") return match && isSubmitted(f.status);
-    if (tab === "completed") return match && isCompleted(f.status);
+    if (tab === "draft") return match && statoReale(f) === "bozza";
+    if (tab === "submitted") return match && statoReale(f) === "inviato";
+    if (tab === "completed") return match && statoReale(f) === "chiuso";
     return match;
   });
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => isDraft(f.status)).length,
-    submitted: forms.filter((f) => isSubmitted(f.status)).length,
-    completed: forms.filter((f) => isCompleted(f.status)).length,
+    draft: forms.filter((f) => statoReale(f) === "bozza").length,
+    submitted: forms.filter((f) => statoReale(f) === "inviato").length,
+    completed: forms.filter((f) => statoReale(f) === "chiuso").length,
   };
 
-  const statusBadge = (status: string) => {
-    if (isDraft(status)) return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
-    if (isSubmitted(status)) return <Badge className="gap-1 border border-border"><Send className="h-3 w-3" /> Inviato</Badge>;
-    if (isCompleted(status)) return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
-    return <Badge variant="outline">{status}</Badge>;
+
+  const statusBadge = (stato: string) => {
+    if (stato === "bozza") return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+    if (stato === "inviato") return <Badge className="gap-1 border border-border"><Send className="h-3 w-3" /> Inviato al RENTRI</Badge>;
+    if (stato === "chiuso") return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Chiuso</Badge>;
+    return <Badge variant="outline">{stato}</Badge>;
   };
+
 
   return (
     <AdminLayout title="Registro Carico / Scarico" subtitle="Elenco completo dei Formulari di Identificazione Rifiuti">
@@ -217,7 +223,7 @@ export default function RegistroFIRPage() {
               <tbody>
                 {filtered.map((form) => (
                   <tr key={form.id} className="border-b border-border/10 hover:bg-secondary/30 transition-colors">
-                    <td className="p-3">{statusBadge(form.status)}</td>
+                    <td className="p-3">{statusBadge(statoReale(form))}</td>
                     <td className="p-3 font-mono text-xs text-foreground">{form.numero_fir || "—"}</td>
                     <td className="p-3 text-foreground">
                       {form.user_profile ? `${form.user_profile.nome} ${form.user_profile.cognome}` : "—"}

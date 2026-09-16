@@ -1,3 +1,4 @@
+import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { useParams, Navigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
@@ -209,6 +210,9 @@ export default function MNFormulariPage() {
 
   if (!isValid) return <Navigate to="/mn/admin" replace />;
 
+  // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, (f as any).form_data);
+
   const filtered = forms.filter((f) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -218,27 +222,29 @@ export default function MNFormulariPage() {
       f.user_profile?.nome?.toLowerCase().includes(q) ||
       f.user_profile?.cognome?.toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && (f.status === "draft" || f.status === "bozza");
-    if (tab === "submitted") return matchSearch && (f.status === "submitted" || f.status === "inviato");
-    if (tab === "completed") return matchSearch && (f.status === "completed" || f.status === "completato");
+    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
+    if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
   });
 
   const stats = {
     total: forms.length,
-    draft: forms.filter((f) => f.status === "draft" || f.status === "bozza").length,
-    submitted: forms.filter((f) => f.status === "submitted" || f.status === "inviato").length,
-    completed: forms.filter((f) => f.status === "completed" || f.status === "completato").length,
+    draft: forms.filter((f) => statoReale(f) === "bozza").length,
+    submitted: forms.filter((f) => statoReale(f) === "inviato").length,
+    completed: forms.filter((f) => statoReale(f) === "chiuso").length,
   };
 
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case "draft": case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
-      case "submitted": case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato</Badge>;
-      case "completed": case "completato": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
+
+  const statusBadge = (stato: string) => {
+    switch (stato) {
+      case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+      case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato al RENTRI</Badge>;
+      case "chiuso": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Chiuso</Badge>;
+      default: return <Badge variant="outline">{stato}</Badge>;
     }
   };
+
 
   const contextLabel = context === "niyol" ? "Niyol" : "Multy Dev";
 
@@ -315,7 +321,7 @@ export default function MNFormulariPage() {
               <tbody>
                 {filtered.map((form) => (
                   <tr key={form.id} className="border-b border-border/10 hover:bg-secondary/30 transition-colors">
-                    <td className="p-3">{statusBadge(form.status)}</td>
+                    <td className="p-3">{statusBadge(statoReale(form))}</td>
                     <td className="p-3 font-mono text-xs text-foreground">{form.numero_fir || "—"}</td>
                     <td className="p-3 text-foreground">{form.user_profile ? `${form.user_profile.nome} ${form.user_profile.cognome}` : "—"}</td>
                     <td className="p-3 font-mono text-xs text-muted-foreground">{form.codice_eer || "—"}</td>

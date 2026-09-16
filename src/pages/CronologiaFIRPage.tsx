@@ -10,6 +10,8 @@ import { FileText, Clock, CheckCircle, Send, Edit, Download, Printer, Trash2 } f
 import logoDragon from "@/assets/logo-dragon.png";
 import { toast } from "sonner";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
+import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
+
 
 type FilterStatus = "all" | "draft" | "submitted" | "completed";
 
@@ -20,18 +22,21 @@ export default function CronologiaFIRPage() {
   const [filter, setFilter] = useState<FilterStatus>("all");
 
   const allForms = firForms || [];
+  // Stato reale: "inviato" solo con conferma ufficiale del RENTRI.
+  const statoReale = (f: any) => resolveWorkflowStatus(f.status, f.form_data);
   const counts = {
     all: allForms.length,
-    draft: allForms.filter((f: any) => f.status === "bozza").length,
-    submitted: allForms.filter((f: any) => f.status === "inviato").length,
-    completed: allForms.filter((f: any) => f.status === "completato").length,
+    draft: allForms.filter((f: any) => statoReale(f) === "bozza").length,
+    submitted: allForms.filter((f: any) => statoReale(f) === "inviato").length,
+    completed: allForms.filter((f: any) => statoReale(f) === "chiuso").length,
   };
 
-  const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", completato: "completed" };
+  const statusMap: Record<string, FilterStatus> = { bozza: "draft", inviato: "submitted", chiuso: "completed" };
   const filtered = allForms.filter((fir: any) => {
     if (filter === "all") return true;
-    return statusMap[fir.status] === filter;
+    return statusMap[statoReale(fir)] === filter;
   });
+
 
   const handleEdit = (fir: any) => {
     loadFromDatabase(fir);
@@ -95,15 +100,16 @@ export default function CronologiaFIRPage() {
       case "inviato":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
-            <CheckCircle className="h-3 w-3" /> Inviato
+            <CheckCircle className="h-3 w-3" /> Inviato al RENTRI
           </span>
         );
-      case "completato":
+      case "chiuso":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30">
             <CheckCircle className="h-3 w-3" /> Chiuso
           </span>
         );
+
       default:
         return null;
     }
@@ -168,7 +174,7 @@ export default function CronologiaFIRPage() {
                     {fir.numero_fir || "—"}
                   </span>
                 </div>
-                {getStatusBadge(fir.status)}
+                {getStatusBadge(statoReale(fir))}
               </div>
 
               {/* Date */}
@@ -177,7 +183,7 @@ export default function CronologiaFIRPage() {
               </p>
 
               {/* Details for submitted/completed */}
-              {fir.status !== "bozza" && (
+              {statoReale(fir) !== "bozza" && (
                 <div className="space-y-0.5 mb-3">
                   {fir.codice_eer && (
                     <p className="text-xs text-muted-foreground">
@@ -199,11 +205,12 @@ export default function CronologiaFIRPage() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 mt-2">
-                {(fir.status === "bozza" || fir.status === "inviato") && (
+                {(statoReale(fir) === "bozza" || statoReale(fir) === "inviato") && (
                   <button onClick={() => handleEdit(fir)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
-                    <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
+                    <Edit className="h-3.5 w-3.5" /> {statoReale(fir) === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
+
                 <button onClick={() => handleDownloadPdf(fir)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors">
                   <Download className="h-3.5 w-3.5" /> PDF
                 </button>

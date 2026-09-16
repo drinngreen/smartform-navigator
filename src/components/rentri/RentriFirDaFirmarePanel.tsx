@@ -23,6 +23,8 @@ import {
   ALIAS_NIYOL,
   MULTY_CF,
 } from "@/lib/firProduttoreGiacenza";
+import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
+
 
 /** Impianti di destino per cliente: solo dove esiste un impianto autorizzato a ricevere. */
 const IMPIANTO_DESTINO: Record<string, { impianto_id: string; tenant_id: string }> = {
@@ -340,29 +342,28 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       // La pesata certificata passa obbligatoriamente dal punto unico idempotente.
       const destino = IMPIANTO_DESTINO[firmaFir.societaFirma ?? firmaFir.societa];
       if (esito !== "respinto" && destino) {
-        const { error: movErr } = await (supabase as any).rpc("applica_movimento_giacenza", {
-          p_tenant_id: destino.tenant_id,
-          p_impianto_id: destino.impianto_id,
-          p_cer: firmaFir.codice_eer,
-          p_quantita_kg: Number(kg),
-          p_segno: "CARICO",
-          p_causale: "FIR_DIGITALE_CHIUSO_RENTRI",
-          p_documento: `RENTRI:${firmaFir.numero_fir}:ACCETTAZIONE_DESTINATARIO`,
-          p_attore: "human",
-          p_descrizione: `FIR ${firmaFir.numero_fir} — ${firmaFir.produttore_nome || "produttore"}`,
-          p_fir_id: null,
-          p_numero_fir: firmaFir.numero_fir,
-        });
-        if (movErr) {
+        try {
+          const applicazione = await applicaChiusuraDestinatario({
+            tenantId: destino.tenant_id,
+            impiantoId: destino.impianto_id,
+            numeroFir: firmaFir.numero_fir,
+            cer: firmaFir.codice_eer,
+            quantitaKg: Number(kg),
+            esito,
+            descrizione: `FIR ${firmaFir.numero_fir} — ${firmaFir.produttore_nome || "produttore"}`,
+            causale: "FIR_DIGITALE_CHIUSO_RENTRI",
+          });
+          if (applicazione.applicato === true) toast.success("Carico registrato in impianto e giacenze aggiornate");
+          else toast.info(applicazione.motivo);
+        } catch (movErr: any) {
           toast.error(
-            `Firma inviata, ma il carico in impianto non è stato registrato: ${movErr.message}`,
+            `Firma inviata, ma il carico in impianto non è stato registrato: ${movErr?.message || String(movErr)}`,
           );
-        } else {
-          toast.success("Carico registrato in impianto e giacenze aggiornate");
         }
       } else if (esito !== "respinto" && !destino) {
         toast.info("Firma inviata. Per questa società non è configurato un impianto di destino.");
       }
+
 
       setFirmaFir(null);
       carica();
