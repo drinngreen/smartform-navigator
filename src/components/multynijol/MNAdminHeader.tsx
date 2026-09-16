@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MessageSquare, PanelRight, LogOut } from "lucide-react";
+import { MessageSquare, PanelRight, LogOut, ArrowLeft } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
