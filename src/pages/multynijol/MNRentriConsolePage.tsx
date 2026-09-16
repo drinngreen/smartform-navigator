@@ -995,7 +995,7 @@ export default function MNRentriConsolePage() {
 
         {tab === "dafirmare" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-            <h3 className="text-base font-display tracking-wider">Formulari su RENTRI da firmare come destinatario</h3>
+            <h3 className="text-base font-display tracking-wider">Formulari sul RENTRI — Multy e Niyol, da firmare e non</h3>
             <RentriFirDaFirmarePanel cliente={cliente} />
           </div>
         )}
