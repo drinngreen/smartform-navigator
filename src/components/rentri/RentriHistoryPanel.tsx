@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRentriHistory } from "@/hooks/useRentriHistory";
 import { rentriUserMessage } from "@/lib/rentriErrorMessages";
 import { Loader2, History, RefreshCw, CheckCircle2, XCircle, ShieldCheck, Search } from "lucide-react";
+import { FirStatoRiepilogo } from "@/components/rentri/FirStatoRiepilogo";
 
 const CLIENTI = ["all", "multyproget", "multy", "niyol", "global"];
 
@@ -152,6 +153,8 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
           className="rounded-lg bg-secondary/50 border border-border/50 px-3 py-1.5"
         />
       </div>
+
+      {firCercato.length >= 8 && <FirStatoRiepilogo numeroFir={firSearch} />}
 
       {loading && (
         <div data-testid="history-loading" className="flex items-center gap-2 text-sm text-muted-foreground">
