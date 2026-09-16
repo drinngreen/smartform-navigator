@@ -174,7 +174,7 @@ export default function CronologiaFIRPage() {
                     {fir.numero_fir || "—"}
                   </span>
                 </div>
-                {getStatusBadge(fir.status)}
+                {getStatusBadge(statoReale(fir))}
               </div>
 
               {/* Date */}
@@ -183,7 +183,7 @@ export default function CronologiaFIRPage() {
               </p>
 
               {/* Details for submitted/completed */}
-              {fir.status !== "bozza" && (
+              {statoReale(fir) !== "bozza" && (
                 <div className="space-y-0.5 mb-3">
                   {fir.codice_eer && (
                     <p className="text-xs text-muted-foreground">
@@ -205,11 +205,12 @@ export default function CronologiaFIRPage() {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 mt-2">
-                {(fir.status === "bozza" || fir.status === "inviato") && (
+                {(statoReale(fir) === "bozza" || statoReale(fir) === "inviato") && (
                   <button onClick={() => handleEdit(fir)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
-                    <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
+                    <Edit className="h-3.5 w-3.5" /> {statoReale(fir) === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
+
                 <button onClick={() => handleDownloadPdf(fir)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors">
                   <Download className="h-3.5 w-3.5" /> PDF
                 </button>
