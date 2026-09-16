@@ -336,8 +336,9 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         {SOCIETA.map((s) => (
           <span key={s.key} className="rounded-md border border-border/50 px-2 py-1">
             <strong className="text-foreground">{s.label}</strong> · {conteggi[s.key]?.tutti ?? 0} sul RENTRI ·{" "}
-            <span className="text-amber-500">{conteggi[s.key]?.daFirmare ?? 0} da firmare</span> · CF{" "}
-            {RENTRI_CF_SOGGETTO[s.key]}
+            <span className="text-amber-500">{conteggi[s.key]?.daFirmare ?? 0} non chiusi</span> · produttore{" "}
+            {conteggi[s.key]?.produttore ?? 0} · trasportatore {conteggi[s.key]?.trasportatore ?? 0} · destinatario{" "}
+            {conteggi[s.key]?.destinatario ?? 0} · CF {RENTRI_CF_SOGGETTO[s.key]}
           </span>
         ))}
         <span>{visibili.length} righe mostrate</span>
