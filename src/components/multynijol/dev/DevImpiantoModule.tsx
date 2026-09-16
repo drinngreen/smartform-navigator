@@ -196,6 +196,7 @@ function ImpiantoFormulari() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
+  const darkLemonOpen = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
   const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});

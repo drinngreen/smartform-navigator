@@ -65,6 +65,7 @@ export function DevFormulariList({
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [viewDialog, setViewDialog] = useState<{ open: boolean; form: any | null }>({ open: false, form: null });
+  const darkLemonOpen = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [fatturaFrom, setFatturaFrom] = useState<{ righe: Riga[]; clienteFallback?: any } | null>(null);
   const [viewFatturaId, setViewFatturaId] = useState<string | null>(null);
