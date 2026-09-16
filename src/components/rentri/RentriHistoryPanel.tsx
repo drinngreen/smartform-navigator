@@ -10,6 +10,44 @@ function statoLeggibile(row: { success: boolean; http_status: number | null; mod
   return rentriUserMessage(Number(row.http_status ?? 0));
 }
 
+const CAMPI_RENTRI: Record<string, string> = {
+  "dati_partenza.rifiuto.codice_eer": "Codice EER",
+  "dati_partenza.rifiuto.stato_fisico": "Stato fisico del rifiuto",
+  "dati_partenza.produttore.autorizzazione.tipo": "Tipo autorizzazione del produttore",
+  "dati_partenza.produttore.autorizzazione.numero": "Numero autorizzazione del produttore",
+  "dati_partenza.destinatario.autorizzazione.tipo": "Tipo autorizzazione del destinatario",
+  "dati_partenza.destinatario.autorizzazione.numero": "Numero autorizzazione del destinatario",
+  "dati_partenza.destinatario.attivita": "Attività del destinatario (R/D)",
+};
+
+const CODICI_RENTRI: Record<string, string> = {
+  "sys.required": "campo obbligatorio mancante",
+  "sys.invalid": "valore non valido",
+};
+
+function motivoRifiuto(row: { error_message: string | null; risposta?: unknown }): string {
+  const risposta = row.risposta && typeof row.risposta === "object"
+    ? row.risposta as Record<string, unknown>
+    : null;
+  const modelState = risposta?.model_state && typeof risposta.model_state === "object"
+    ? risposta.model_state as Record<string, unknown>
+    : null;
+
+  if (modelState) {
+    const dettagli = Object.entries(modelState).flatMap(([campo, valore]) => {
+      const messaggi = Array.isArray(valore) ? valore : [valore];
+      return messaggi.map((messaggio) => {
+        const codice = String(messaggio ?? "");
+        return `${CAMPI_RENTRI[campo] ?? campo}: ${CODICI_RENTRI[codice] ?? codice}`;
+      });
+    });
+    if (dettagli.length > 0) return dettagli.join("; ");
+  }
+
+  const rispostaTesto = risposta && typeof risposta.error === "string" ? risposta.error : "";
+  return row.error_message || rispostaTesto || "Il RENTRI non ha comunicato un motivo dettagliato.";
+}
+
 export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?: string }) {
   const [cliente, setCliente] = useState(defaultCliente);
   const [esito, setEsito] = useState<"all" | "success" | "error">("all");
@@ -108,12 +146,19 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                   {new Date(row.created_at).toLocaleString("it-IT")}
                 </span>
               </div>
-              <p className="mt-1 text-muted-foreground">{statoLeggibile(row)}</p>
+               <p className="mt-1 text-muted-foreground">{statoLeggibile(row)}</p>
+               {!row.success && (
+                 <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">
+                   <p className="text-xs font-semibold text-destructive">Motivo del rifiuto RENTRI</p>
+                   <p className="mt-1 text-sm text-foreground">{motivoRifiuto(row)}</p>
+                 </div>
+               )}
               <details className="mt-1">
                 <summary className="cursor-pointer text-xs text-muted-foreground">Dettagli tecnici</summary>
                 <div className="mt-1 text-xs font-mono text-muted-foreground break-all">
                   HTTP {row.http_status ?? "—"} · {row.error_code ?? "OK"} · {row.rentri_method ?? "—"} {row.rentri_path ?? "—"}
-                  {row.error_message ? ` · ${row.error_message}` : ""}
+                   {row.identificativo_rentri ? ` · FIR ${row.identificativo_rentri}` : ""}
+                   {row.transazione_id ? ` · Transazione ${row.transazione_id}` : ""}
                 </div>
               </details>
             </li>

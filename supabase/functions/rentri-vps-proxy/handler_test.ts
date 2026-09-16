@@ -1,7 +1,7 @@
 import { assertEquals, assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   handleRentriProxy, buildUpstreamBody, resolveRoute, configKey,
-  errorCodeForStatus, sanitizeMessage,
+  errorCodeForStatus, sanitizeMessage, extractMsg,
 } from "./handler.ts";
 
 const BRIDGE = "https://bridge.test";
@@ -260,6 +260,16 @@ Deno.test("errori sanitizzati: segreti e header rimossi dai messaggi", async () 
   assertEquals(sanitizeMessage("boom\n  at file.ts:1:1"), "boom");
   assertEquals(errorCodeForStatus(429), "RATE_LIMITED");
   assertEquals(errorCodeForStatus(503), "BRIDGE_UNAVAILABLE");
+});
+
+Deno.test("il motivo di rifiuto include tutti i campi model_state RENTRI", () => {
+  assertEquals(
+    extractMsg({ model_state: {
+      "dati_partenza.destinatario.autorizzazione.tipo": ["sys.required"],
+      "dati_partenza.rifiuto.codice_eer": ["sys.invalid"],
+    } }),
+    "dati_partenza.destinatario.autorizzazione.tipo: sys.required; dati_partenza.rifiuto.codice_eer: sys.invalid",
+  );
 });
 
 Deno.test("errore reale del bridge: messaggio sanitizzato, nessuna chiave esposta", async () => {
