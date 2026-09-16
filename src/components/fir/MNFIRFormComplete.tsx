@@ -328,25 +328,105 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
 }
 
 
-function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) => void; onCancel: () => void }) {
+export interface ArrivoDestino {
+  peso: string;
+  data: string;
+  ora: string;
+  esito: "accettato" | "parziale" | "respinto";
+  motivazione: string;
+}
+
+/**
+ * Seconda trasmissione ufficiale al RENTRI: l'arrivo a destino.
+ * Qui si raccolgono peso reale, data/ora ed esito; nulla viene inviato né
+ * registrato finché non si conferma la firma del destinatario.
+ */
+function ArrivoDestinoPopup({
+  onConfirm,
+  onCancel,
+  inviando,
+}: {
+  onConfirm: (arrivo: ArrivoDestino) => void;
+  onCancel: () => void;
+  inviando: boolean;
+}) {
+  const adesso = new Date();
   const [peso, setPeso] = useState("");
+  const [data, setData] = useState(adesso.toISOString().slice(0, 10));
+  const [ora, setOra] = useState(adesso.toTimeString().slice(0, 5));
+  const [esito, setEsito] = useState<ArrivoDestino["esito"]>("accettato");
+  const [motivazione, setMotivazione] = useState("");
+
+  const conferma = () => {
+    if (esito !== "respinto" && (!peso.trim() || Number(peso) <= 0)) {
+      toast.error("Inserisci il peso reale rilevato a destino");
+      return;
+    }
+    if (esito !== "accettato" && !motivazione.trim()) {
+      toast.error("Indica la motivazione dell'accettazione parziale o del respingimento");
+      return;
+    }
+    onConfirm({ peso: peso.trim(), data, ora, esito, motivazione: motivazione.trim() });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+      <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center gap-2 text-primary">
           <Scale className="h-5 w-5" />
-          <h3 className="font-display text-lg tracking-wider">PESO A DESTINO</h3>
+          <h3 className="font-display text-lg tracking-wider">ARRIVO A DESTINO</h3>
         </div>
-        <p className="text-sm text-white/70">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
-        <input type="number" value={peso} onChange={(e) => setPeso(e.target.value)} onWheel={blurOnWheel} placeholder="Peso in Kg" className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary" autoFocus />
+        <p className="text-sm text-white/70">
+          Questo è il secondo invio ufficiale al RENTRI. Il formulario si chiude e le giacenze si aggiornano solo
+          dopo la risposta positiva del RENTRI.
+        </p>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Peso reale (Kg)</label>
+          <input
+            type="number"
+            value={peso}
+            onChange={(e) => setPeso(e.target.value)}
+            onWheel={blurOnWheel}
+            placeholder="Peso verificato alla pesa"
+            className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+            autoFocus
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Data arrivo</label>
+            <input type="date" value={data} onChange={(e) => setData(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Ora arrivo</label>
+            <input type="time" value={ora} onChange={(e) => setOra(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Esito</label>
+          <select value={esito} onChange={(e) => setEsito(e.target.value as ArrivoDestino["esito"])} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="accettato">Accettato totalmente</option>
+            <option value="parziale">Accettato parzialmente</option>
+            <option value="respinto">Respinto</option>
+          </select>
+        </div>
+        {esito !== "accettato" && (
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Motivazione</label>
+            <input value={motivazione} onChange={(e) => setMotivazione(e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+        )}
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm">ANNULLA</button>
-          <button onClick={() => { if (peso.trim()) onConfirm(peso); else toast.error("Inserisci il peso"); }} className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider">CHIUDI FIR</button>
+          <button onClick={onCancel} disabled={inviando} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm disabled:opacity-50">ANNULLA</button>
+          <button onClick={conferma} disabled={inviando} className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider disabled:opacity-50">
+            {inviando ? "INVIO AL RENTRI..." : "FIRMA E INVIA ARRIVO"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 // ── Main Component — NO PRESETS, all fields editable ──────────────────
 const isTestFirNumberMN = (value?: string | null) => {
