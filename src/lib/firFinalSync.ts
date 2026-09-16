@@ -169,8 +169,11 @@ export async function syncFirFinalToRegistryAndInventory(params: {
     peso_destino: qtaDestinazione || qtaValid,
     luogo_produzione: prodDen,
     destinazione: destDen,
-    annotazioni: "Salvataggio definitivo FIR (Modulo Standard)",
+    annotazioni: effettivo
+      ? "Salvataggio definitivo FIR (Modulo Standard)"
+      : "FIR in viaggio: movimento potenziale, in attesa del peso certificato dal destinatario",
     data_emissione_formulario: movementDate,
+    stato_movimento: statoMovimento,
     raw: { fir_form_id: firId, form_data: formData },
   });
 
