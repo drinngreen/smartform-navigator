@@ -1458,11 +1458,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {(creationMode || isStarted || store.editingFirId) && (
         <div className="space-y-2">
           {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
-            <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
-              {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
-              {isSigning ? "INVIO IN CORSO..." : "INVIA FIR DIGITALE A RENTRI"}
-            </button>
+            <>
+              <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
+                {isSigning ? "INVIO PARTENZA IN CORSO..." : "1 · EMETTI FIR E FIRMA LA PARTENZA"}
+              </button>
+              <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
+                Primo invio al RENTRI: numero ufficiale e QR validi per i controlli. Registro e giacenze restano fermi.
+              </p>
+            </>
           )}
+
 
           {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
             <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-4 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-base tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
