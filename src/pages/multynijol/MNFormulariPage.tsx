@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { keepOpenOnDarkLemon } from "@/lib/dialogGuards";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { MassiveFirGeneratorDialog } from "@/components/multynijol/dev/MassiveFirGeneratorDialog";
@@ -373,7 +374,7 @@ export default function MNFormulariPage() {
       )}
 
       {/* Full FIR Alternative Form Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
+      <Dialog open={viewDialog.open} modal={!darkLemonOpen} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent
           className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
           onPointerDownOutside={keepOpenOnDarkLemon}
