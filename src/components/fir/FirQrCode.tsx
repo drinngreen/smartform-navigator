@@ -9,6 +9,8 @@ export interface FirQrData {
   quantita?: number | string | null;
   unita_misura?: string | null;
   data_partenza?: string | null;
+  /** URL pubblico di verifica (pagina /fir/:token). */
+  verifyUrl?: string | null;
 }
 
 /**
@@ -29,19 +31,6 @@ export function buildFirQrPayload(data: FirQrData): string {
     data.data_partenza ? `DATA:${data.data_partenza}` : null,
   ].filter(Boolean);
   return rows.join("|");
-}
-
-export interface FirQrData {
-  numero_fir: string;
-  cer?: string | null;
-  produttore?: string | null;
-  trasportatore?: string | null;
-  destinatario?: string | null;
-  quantita?: number | string | null;
-  unita_misura?: string | null;
-  data_partenza?: string | null;
-  /** URL pubblico di verifica (pagina /fir/:token). */
-  verifyUrl?: string | null;
 }
 
 interface Props extends FirQrData {

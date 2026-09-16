@@ -479,6 +479,11 @@ export function DevFormulariList({
                     destinatario={(viewDialog.form as any).destinatario_denominazione}
                     quantita={(viewDialog.form as any).quantita || (viewDialog.form as any).quantita_kg}
                     data_partenza={(viewDialog.form as any).data_trasporto || (viewDialog.form as any).data_partenza}
+                    verifyUrl={
+                      (viewDialog.form as any).qr_token
+                        ? `${window.location.origin}/fir/${(viewDialog.form as any).qr_token}`
+                        : null
+                    }
                   />
                   <div className="text-xs text-muted-foreground">
                     <div className="font-semibold text-foreground mb-1">QR code per i controlli su strada</div>
