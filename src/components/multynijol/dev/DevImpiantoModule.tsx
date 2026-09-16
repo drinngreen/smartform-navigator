@@ -375,6 +375,28 @@ function ImpiantoFormulari() {
       throw new Error(response.error || detailMessage || "Firma impianto non riuscita");
     }
 
+    // Il carico entra in giacenza solo dopo l'esito positivo del RENTRI e solo
+    // attraverso il punto unico idempotente: prima questa firma chiudeva il
+    // formulario senza far entrare nulla a magazzino.
+    if (mode === "destination") {
+      try {
+        const esitoGiacenza = await applicaChiusuraDestinatario({
+          tenantId: MULTY_TENANT_ID,
+          impiantoId: IMPIANTO_MULTY_ID,
+          numeroFir: selectedIncoming.numero_fir,
+          cer: selectedIncoming.cer,
+          quantitaKg: payload.kg_pesata,
+          esito: payload.esito,
+          descrizione: `FIR ${selectedIncoming.numero_fir} — ${selectedIncoming.produttore || "produttore"}`,
+          causale: "FIR_DIGITALE_CHIUSO_RENTRI",
+        });
+        if (esitoGiacenza.applicato) toast.success("Carico registrato in impianto e giacenze aggiornate");
+        else toast.info(esitoGiacenza.motivo);
+      } catch (e: any) {
+        toast.error(`Firma inviata, ma il carico in impianto non è stato registrato: ${e?.message || String(e)}`);
+      }
+    }
+
     setIncomingEvents((prev) => ({
       ...prev,
       [selectedIncoming.id]: [
@@ -392,6 +414,7 @@ function ImpiantoFormulari() {
     await refetchIncoming();
     setSelectedIncoming(null);
   };
+
 
   return (
     <div className="space-y-4">
