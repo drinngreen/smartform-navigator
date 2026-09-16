@@ -75,11 +75,10 @@ async function upsertRegistro(
  *  - upsert registro_generale for EACH tenant involved (Multy producer/dest,
  *    Niyol producer/dest/transporter), independently of the tenant that
  *    owns the fir_forms row.
- *  - upsert movimenti_impianto (giacenze) for Multyproget when it is
- *    producer or destinatario.
+ *  - applica la giacenza Multy solo alla chiusura digitale certificata,
+ *    attraverso l'unica RPC autorizzata.
  *
- * Idempotent per tenant (upsert by tenant_id + numero_formulario) and per
- * inventory movement (unique on fir_id + origine='fir_final').
+ * Idempotente per tenant e documento di applicazione della giacenza.
  */
 export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
@@ -259,9 +258,8 @@ export async function syncFirFinalToRegistryAndInventory(params: {
 }
 
 /**
- * Reverts every inventory/registry effect produced by a FIR (draft or final).
- * Used when a formulario is deleted: the giacenze must go back exactly to the
- * value they had before the FIR was saved.
+ * Elimina soltanto le righe di registro ancora reversibili. Le giacenze
+ * effettive richiedono sempre un nuovo storno umano e tracciato.
  */
 export async function revertFirFromRegistryAndInventory(firId: string): Promise<void> {
   if (!firId) return;

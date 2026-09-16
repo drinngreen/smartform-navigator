@@ -133,7 +133,7 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
 
       <p className="text-[11px] text-muted-foreground">
         Formulari rimasti in bozza perché i servizi RENTRI risultavano indisponibili. Restano validi e completi: al ripristino del
-        servizio vengono reinviati in blocco.
+         servizio possono essere reinviati manualmente in blocco.
       </p>
 
       <div className="space-y-1">
