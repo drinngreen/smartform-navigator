@@ -259,7 +259,7 @@ export function DevFirCartaceoModule() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <td colSpan={10} className="text-center py-12 text-muted-foreground">
                     <FileText className="h-6 w-6 mx-auto mb-2 opacity-40" />
                     Nessun formulario cartaceo registrato
                   </td>
