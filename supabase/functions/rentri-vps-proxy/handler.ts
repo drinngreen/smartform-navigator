@@ -710,6 +710,26 @@ export async function handleRentriProxy(req: Request, options: HandlerOptions = 
         primaryData = data;
       }
 
+      // Blocco temporaneo del RENTRI (ban WAF, 423 Locked): nessun retry automatico,
+      // il chiamante attende retry_after_ms e nel frattempo lavora in locale/cartaceo.
+      if (res.status === 423) {
+        const attesa = retryAfterMs(res.headers?.get?.("retry-after") ?? null);
+        console.warn(`[rentri-vps] 423 RENTRI bloccato: attesa consigliata ${attesa}ms`);
+        return json(
+          {
+            success: false,
+            status: 423,
+            mode: "real",
+            error_code: "RENTRI_LOCKED",
+            error: "Il RENTRI ha temporaneamente bloccato le richieste da questo sistema. Attendere prima di riprovare: si può continuare a lavorare in locale o con il formulario cartaceo.",
+            data: { rentri_locked: true, retry_after_ms: attesa },
+            attempts,
+            retry_after_ms: attesa,
+          },
+          423,
+        );
+      }
+
       if (res.status !== 500 || !allowFallback || i === candidates.length - 1) break outer;
       console.warn(`[rentri-vps] fallback → prossimo candidato dopo 500: ${upstream.cliente}`);
       continue outer;
