@@ -344,6 +344,49 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const u = store.updateField;
   const d = store.data;
 
+  // ── Dark Lemon: vede e compila questo formulario (proposte, conferma umana) ──
+  // Ogni campo del formulario viene registrato sul ponte: l'assistente legge i valori
+  // attuali e può proporre la compilazione. Il numero FIR resta escluso: è ufficiale
+  // e non può essere scritto dall'AI.
+  useFormBridgeFields(
+    () =>
+      (Object.keys(mnInitialFIRData) as (keyof FIRDataStore)[])
+        .filter((key) => key !== "selectedFirNumber")
+        .map((key) => {
+          const initial = mnInitialFIRData[key];
+          const bridgeType: "text" | "checkbox" =
+            typeof initial === "boolean" ? "checkbox" : "text";
+          const label = FIR_FIELD_LABELS[key] || String(key);
+          return {
+            id: `fir_${String(key)}`,
+            label,
+            type: bridgeType,
+            aliases: [String(key), label],
+            getValue: () => {
+              const current = useMNFIRStore.getState().data[key];
+              if (typeof current === "boolean") return current ? "true" : "false";
+              if (Array.isArray(current)) return current.join(", ");
+              return current == null ? "" : String(current);
+            },
+            setValue: (next: string) => {
+              const current = useMNFIRStore.getState().data[key];
+              if (typeof current === "boolean" || typeof initial === "boolean") {
+                const truthy = ["true", "1", "si", "sì", "yes", "x"].includes(next.trim().toLowerCase());
+                useMNFIRStore.getState().updateField(key, truthy as never);
+                return;
+              }
+              if (Array.isArray(initial)) {
+                const parts = next.split(/[,;]/).map((p) => p.trim()).filter(Boolean);
+                useMNFIRStore.getState().updateField(key, parts as never);
+                return;
+              }
+              useMNFIRStore.getState().updateField(key, next as never);
+            },
+          };
+        }),
+    [],
+  );
+
   // App autisti: il formulario deve poter essere trasmesso a RENTRI.
   useEffect(() => {
     if (forceRentriDigital && d.formatoFir !== "digitale") u("formatoFir", "digitale");
