@@ -11,8 +11,8 @@ import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, getRentriPdfUrl, getRentriXfirUrl } from "@/services/rentriApi";
-import { toRentriImageSrc, toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
+import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf } from "@/services/rentriApi";
+import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
 import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
@@ -932,9 +932,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         });
       }
       useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
-      const qrFromFirma = toRentriImageSrc(
-        result.qr_code || (result as any).qrCodeBytes || (result as any).qrCode || (result as any).qrUrl
-      );
+      const qrFromFirma = officialNumeroFir
+        ? await resolveFirQrDataUrl(officialNumeroFir, societaId)
+        : null;
       if (qrFromFirma && d.selectedFirNumber) {
         setQrCodeData(qrFromFirma);
         await supabase.from("fir_number_pool").update({ qr_code_data: qrFromFirma } as any).eq("fir_number", d.selectedFirNumber);
@@ -955,13 +955,6 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           try {
             console.log("[RENTRI] Fallback: fetching via get-pdf proxy for", firIdForPdf);
             const pdfResult = await getRentriPdf(societaId, firIdForPdf);
-            if (!qrFromFirma) {
-              const qrSrc = toRentriImageSrc(pdfResult.qrCode || (pdfResult as any).qr_code);
-              if (qrSrc) {
-                setQrCodeData(qrSrc);
-                await supabase.from("fir_number_pool").update({ qr_code_data: qrSrc } as any).eq("fir_number", d.selectedFirNumber || firIdForPdf);
-              }
-            }
             if (!pdfFromEmissione) {
               const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, (pdfResult as any).pdfUrl);
               if (pdfSrc) setPdfBlobUrl(pdfSrc);
@@ -1014,7 +1007,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           const pdfResult = await getRentriPdf(societaId, firId);
           console.log("[RENTRI] Controllo Polizia response:", { hasQr: Boolean(pdfResult.qrCode), hasPdf: Boolean(pdfResult.pdfBase64), hasPdfUrl: Boolean(pdfResult.pdfUrl) });
 
-          const qrSrc = toRentriImageSrc(pdfResult.qrCode);
+          const qrSrc = await resolveFirQrDataUrl(firId, societaId);
           if (qrSrc) setQrCodeData(qrSrc);
 
           const pdfSrc = toRentriPdfPreviewSrc(pdfResult.pdfBase64, pdfResult.pdfUrl);
@@ -1027,11 +1020,6 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           console.warn("[RENTRI] get-pdf error:", pdfErr.message);
           toast.error("Errore recupero documenti: " + pdfErr.message);
         }
-      }
-      let qr = qrCodeData;
-      if (!qr && firId) {
-        const { data: poolRow } = await supabase.from("fir_number_pool").select("qr_code_data").eq("fir_number", firId).maybeSingle();
-        if (poolRow?.qr_code_data) { qr = poolRow.qr_code_data; setQrCodeData(qr); }
       }
       setShowControlloStrada(true);
     } catch (error: any) {
@@ -1314,14 +1302,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               </div>
               {d.selectedFirNumber && (
                 <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <a href={getRentriPdfUrl(d.selectedFirNumber)} target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
-                      <Download className="h-4 w-4" /> PDF RENTRI
-                    </a>
-                    <a href={getRentriXfirUrl(d.selectedFirNumber)} target="_blank" rel="noopener noreferrer" className="flex-1 py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors">
-                      <Download className="h-4 w-4" /> xFIR XML
-                    </a>
-                  </div>
+                  <button onClick={handleControlloPolizia} className="w-full py-3 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors">
+                    <Download className="h-4 w-4" /> Recupera PDF e QR ufficiali RENTRI
+                  </button>
                   <button onClick={handleDownloadSummaryPdf} className="w-full py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-display text-sm flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-colors">
                     <FileText className="h-4 w-4" /> Scarica Riepilogo Viaggio
                   </button>
@@ -1341,7 +1324,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                   <>
                     <p className="text-gray-500 text-[10px] font-mono uppercase tracking-wider">QR Code Ufficiale RENTRI</p>
                     <img src={qrCodeData} alt="QR Code RENTRI" className="w-72 h-72 object-contain" style={{ imageRendering: 'crisp-edges' }} />
-                    <p className="text-gray-400 text-[9px] font-mono text-center max-w-[280px]">Questo QR Code è cifrato e leggibile solo dall'app in dotazione alle Forze dell'Ordine</p>
+                     <p className="text-gray-500 text-[9px] font-mono text-center max-w-[280px]">Dati di vidimazione RENTRI firmati: Base45, CBOR e COSE_Sign1; verifica anche offline.</p>
                   </>
                 ) : (
                   <div className="w-72 h-72 flex flex-col items-center justify-center border-2 border-dashed border-amber-400 rounded-xl bg-amber-50 gap-3">
@@ -1351,13 +1334,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 )}
                 <p className="text-black font-mono text-lg font-bold tracking-wider">{d.selectedFirNumber || "N/A"}</p>
               </div>
-              <div className="bg-card/80 p-4 space-y-2 text-xs font-mono">
-                <div className="flex justify-between"><span className="text-muted-foreground">Targa:</span><span className="text-white font-bold">{d.targaAutomezzo || "—"}</span></div>
-                {d.targaRimorchio && <div className="flex justify-between"><span className="text-muted-foreground">Rimorchio:</span><span className="text-white font-bold">{d.targaRimorchio}</span></div>}
-                <div className="flex justify-between"><span className="text-muted-foreground">EER:</span><span className="text-white font-bold">{d.codiceEER || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Quantità:</span><span className="text-white font-bold">{d.quantita} {d.unitaMisura}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Produttore:</span><span className="text-white font-bold truncate ml-2">{d.produttoreDenominazione || "—"}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Destinatario:</span><span className="text-white font-bold truncate ml-2">{d.destinatarioDenominazione || "—"}</span></div>
+              <div className="bg-card/80 p-4 text-xs font-mono text-muted-foreground">
+                I dati essenziali ufficiali sono nel PDF RENTRI recuperato sopra. L’app non li ricostruisce né li sostituisce.
               </div>
               <div className="bg-card/60 p-3 flex gap-2">
                 <button onClick={handleDownloadSummaryPdf} className="flex-1 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors">
@@ -1367,10 +1345,6 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                   onClick={() => {
                     if (pdfBlobUrl) {
                       window.open(pdfBlobUrl, "_blank", "noopener,noreferrer");
-                      return;
-                    }
-                    if (d.selectedFirNumber) {
-                      window.open(getRentriPdfUrl(d.selectedFirNumber), "_blank", "noopener,noreferrer");
                       return;
                     }
                     toast.error("PDF ufficiale non disponibile");
