@@ -5,6 +5,11 @@ import {
   sanitizeRentriMessage,
   type RentriErrorCode,
 } from "@/lib/rentriErrorMessages";
+import {
+  normalizzaPayloadFirRentri,
+  validaPayloadFirRentri,
+  messaggioValidazione,
+} from "@/lib/rentriValidazione";
 
 
 /** "multyproget" è il tenant esposto dal bridge, alias configurativo di "multy". */
