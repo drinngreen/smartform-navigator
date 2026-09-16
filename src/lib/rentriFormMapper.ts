@@ -186,15 +186,15 @@ export async function mapFormToRentriPayload(
   const payload: Record<string, unknown> = {
     num_iscr_sito: cfg.unitId,
     dati_partenza: {
-      numero_fir: str("numero_fir"),
+      numero_fir: normalizzaNumeroFir(str("numero_fir")),
       produttore: {
         // Mai sostituire il produttore con l'emittente RENTRI: sono soggetti
         // distinti e il fallback generava dati non dichiarati nel formulario.
         denominazione: str("prod_denominazione"),
-        codice_fiscale: str("prod_cf"),
+        codice_fiscale: normalizzaCF(str("prod_cf")),
         nazione_id: "IT",
         indirizzo: {
-          citta: { comune_id: "" },
+          citta: { comune_id: prodComuneId },
           indirizzo: prodAddr.indirizzo,
           cap: prodAddr.cap,
         },
@@ -207,11 +207,11 @@ export async function mapFormToRentriPayload(
       },
       destinatario: {
         denominazione: str("dest_denominazione"),
-        codice_fiscale: str("dest_cf"),
+        codice_fiscale: normalizzaCF(str("dest_cf")),
         nazione_id: "IT",
         attivita: bool("recupero") ? "R13" : (bool("smaltimento") ? "D15" : "R13"),
         indirizzo: {
-          citta: { comune_id: "" },
+          citta: { comune_id: destComuneId },
           indirizzo: destAddr.indirizzo,
           cap: destAddr.cap,
         },
@@ -225,7 +225,7 @@ export async function mapFormToRentriPayload(
       trasportatori: [
         {
           denominazione: str("trasp_denominazione") || cfg.issuer,
-          codice_fiscale: str("trasp_cf") || cfg.issuer,
+          codice_fiscale: normalizzaCF(str("trasp_cf")) || cfg.issuer,
           nazione_id: "IT",
           tipo_trasporto: "Terrestre",
           ...(str("trasp_iscrizione_albo") ? {
