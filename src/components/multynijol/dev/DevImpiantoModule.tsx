@@ -296,7 +296,7 @@ function ImpiantoFormulari() {
     queryFn: async () => {
       const cfg = getTenantConfig(SOCIETA_ID);
       if (!cfg) throw new Error("Configurazione RENTRI Multy mancante");
-      return await listIncomingXFir("multy", cfg.issuer);
+      return await listIncomingXFir("multy", cfg.issuer, cfg.unitId);
     },
     refetchInterval: 30000,
   });
