@@ -8,6 +8,10 @@ import { printOfficialFir } from "@/lib/firOfficialPrint";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
+import { FIR_FIELD_LABELS, type FIRDataStore } from "@/stores/firStore";
+import { useFormBridgeFields } from "@/hooks/useFormBridge";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -343,6 +347,51 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+
+  // ── Dark Lemon: vede e compila questo formulario (proposte, conferma umana) ──
+  // Ogni campo del formulario viene registrato sul ponte: l'assistente legge i valori
+  // attuali e può proporre la compilazione. Il numero FIR resta escluso: è ufficiale
+  // e non può essere scritto dall'AI.
+  useFormBridgeFields(
+    () =>
+      (Object.keys(mnInitialFIRData) as (keyof FIRDataStore)[])
+        .filter((key) => key !== "selectedFirNumber")
+        .map((key) => {
+          const initial = mnInitialFIRData[key];
+          const bridgeType: "text" | "checkbox" =
+            typeof initial === "boolean" ? "checkbox" : "text";
+          const label = FIR_FIELD_LABELS[key] || String(key);
+          return {
+            id: `fir_${String(key)}`,
+            label,
+            type: bridgeType,
+            aliases: [String(key), label],
+            getValue: () => {
+              const current = useMNFIRStore.getState().data[key];
+              if (typeof current === "boolean") return current ? "true" : "false";
+              if (Array.isArray(current)) return current.join(", ");
+              return current == null ? "" : String(current);
+            },
+            setValue: (next: string) => {
+              const apply = useMNFIRStore.getState().updateField as (
+                field: keyof FIRDataStore,
+                value: unknown,
+              ) => void;
+              const current = useMNFIRStore.getState().data[key];
+              if (typeof current === "boolean" || typeof initial === "boolean") {
+                apply(key, ["true", "1", "si", "sì", "yes", "x"].includes(next.trim().toLowerCase()));
+                return;
+              }
+              if (Array.isArray(initial)) {
+                apply(key, next.split(/[,;]/).map((p) => p.trim()).filter(Boolean));
+                return;
+              }
+              apply(key, next);
+            },
+          };
+        }),
+    [],
+  );
 
   // App autisti: il formulario deve poter essere trasmesso a RENTRI.
   useEffect(() => {
@@ -1180,8 +1229,20 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     <div className="px-4 py-4 space-y-4">
       {showPesoPopup && <PesoDestinoPopup onConfirm={handleConfirmClosure} onCancel={() => setShowPesoPopup(false)} />}
 
-      <div className="text-center">
-        <h2 className="text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex-1 text-center text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
+        <button
+          type="button"
+          onClick={() => {
+            useZoliDarkLemonWidgetStore.getState().setSidePanel(true);
+            toast.info("Dark Lemon vede questo formulario: chiedigli di compilarlo, poi controlli e confermi tu.");
+          }}
+          title="Apri Dark Lemon per farti aiutare a compilare questo formulario"
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-primary transition-colors hover:bg-primary/20"
+        >
+          <img src={zoliLemonIcon} alt="" className="h-4 w-4" />
+          Compila con Dark Lemon
+        </button>
       </div>
 
       {creationMode && (
