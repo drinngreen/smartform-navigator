@@ -50,6 +50,11 @@ export function DragonNewMovementForm({ open, onOpenChange }: Props) {
     setLines(l => l.map((line, idx) => idx === i ? { ...line, [field]: value } : line));
 
   const handleSubmit = async () => {
+    const percorsoAutorizzato = false;
+    if (!percorsoAutorizzato) {
+      toast.error("Percorso disattivato: le giacenze possono variare solo da un evento certificato e confermato");
+      return;
+    }
     if (!causeId || lines.every(l => !l.item_id || !l.quantity)) {
       toast.error("Compila causale e almeno una riga");
       return;
