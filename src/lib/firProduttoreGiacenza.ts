@@ -83,17 +83,24 @@ export interface FirProduttoreCandidato {
   descrizione?: string;
 }
 
-/** true solo se: produttore Multyproget + emesso oggi + CER e quantità utilizzabili. */
+/**
+ * true solo se: produttore Multyproget + formulario datato da oggi alle 08:00
+ * (ora italiana) in poi + CER e quantità utilizzabili. Mai lo storico.
+ */
 export function scaricoProduttoreAmmesso(
   fir: FirProduttoreCandidato,
-  oggi = oggiIso(),
+  cutoff = cutoffGiacenzeDaFir(),
 ): { ok: boolean; motivo?: string } {
   if (normalizzaCf(fir.produttore_cf) !== MULTY_CF)
     return { ok: false, motivo: "Il produttore non è Multyproget: nessun effetto sulle giacenze." };
-  const data = dataFir(fir);
-  if (!data) return { ok: false, motivo: "Formulario senza data leggibile: nessun effetto sulle giacenze." };
-  if (data !== oggi)
-    return { ok: false, motivo: "Formulario non di oggi: storico, nessun effetto sulle giacenze." };
+  const istante = istanteFir(fir);
+  if (istante === null)
+    return { ok: false, motivo: "Formulario senza data/ora leggibile: nessun effetto sulle giacenze." };
+  if (istante < cutoff.getTime())
+    return {
+      ok: false,
+      motivo: "Formulario precedente a oggi ore 08:00: storico, nessun effetto sulle giacenze.",
+    };
   if (!String(fir.codice_eer ?? "").trim()) return { ok: false, motivo: "Codice CER mancante." };
   if (!(Number(fir.quantita) > 0)) return { ok: false, motivo: "Quantità non valida." };
   return { ok: true };
