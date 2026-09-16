@@ -15,6 +15,7 @@ import {
   removeAutorizzazione,
   type AutorizzazionePreset,
 } from "@/data/multyPresets";
+import { TIPI_AUTORIZZAZIONE_UFFICIALI } from "@/data/tipiAutorizzazione";
 
 export interface PresetFill {
   nome: string;
@@ -57,6 +58,31 @@ interface Props {
   onSelectPartnerDefault?: (p: PresetFill & { ruolo: string }) => void;
 }
 
+
+/** Le autorizzazioni importate riportano la natura del titolo in `ente_rilascio`
+ *  ("SEMPLIFICATA", "ORDINARIA", ...) oppure nelle note: il formulario e il
+ *  RENTRI richiedono invece una delle 9 diciture ufficiali. Senza questa
+ *  traduzione la tendina "Tipo Aut." restava vuota anche con l'autorizzazione
+ *  collegata in anagrafica. */
+const testoUfficiale = (codice: string) =>
+  TIPI_AUTORIZZAZIONE_UFFICIALI.find((t) => t.codice === codice)?.testo ?? "";
+
+const tipoUfficialeDaAutorizzazione = (row: any): string => {
+  const raw = [row?.ente_rilascio, row?.note, row?.tipo_autorizzazione]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (TIPI_AUTORIZZAZIONE_UFFICIALI.some((t) => t.testo.toLowerCase() === String(row?.ente_rilascio || "").toLowerCase()))
+    return String(row.ente_rilascio);
+  if (/mobil/.test(raw)) return testoUfficiale("RecSmalImpMobiliArt208");
+  if (/aia|integrata/.test(raw)) return testoUfficiale("AIA");
+  if (/semplificat|216|214|aua|comunicazione/.test(raw)) return testoUfficiale("RecProcSemplificata");
+  if (/ordinaria|208/.test(raw)) return testoUfficiale("RecSmalArt208");
+  if (/bonifica/.test(raw)) return testoUfficiale("OpBonifica");
+  if (/straordinar|191/.test(raw)) return testoUfficiale("Straordinario");
+  if (/ricerca|sperimenta/.test(raw)) return testoUfficiale("RicercaSperimentazione");
+  return "";
+};
 
 const fmtIndirizzo = (r: any) =>
   [r.indirizzo, [r.cap, r.citta ?? r.comune, r.provincia ? `(${r.provincia})` : ""].filter(Boolean).join(" ")]
