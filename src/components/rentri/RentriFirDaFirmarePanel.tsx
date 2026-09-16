@@ -397,9 +397,16 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                         onClick={() => apriFirma(r)}
                         className="inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-black"
                       >
-                        <PenLine size={11} /> Firma
+                        <PenLine size={11} /> Firma destinatario
                       </button>
                     )}
+                    {!r.accettato &&
+                      r.produttore_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") &&
+                      r.destinatario_cf !== (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
+                        <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
+                          Come produttore · {r.stato || "in lavorazione"}
+                        </span>
+                      )}
                   </div>
                 </td>
               </tr>
