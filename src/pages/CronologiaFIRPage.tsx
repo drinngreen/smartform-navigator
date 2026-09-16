@@ -100,15 +100,16 @@ export default function CronologiaFIRPage() {
       case "inviato":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30">
-            <CheckCircle className="h-3 w-3" /> Inviato
+            <CheckCircle className="h-3 w-3" /> Inviato al RENTRI
           </span>
         );
-      case "completato":
+      case "chiuso":
         return (
           <span className="flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-full bg-neon-green/20 text-neon-green border border-neon-green/30">
             <CheckCircle className="h-3 w-3" /> Chiuso
           </span>
         );
+
       default:
         return null;
     }
