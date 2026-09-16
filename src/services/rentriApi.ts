@@ -215,6 +215,23 @@ export async function inviaFirmaRentri(
     enrichedPayload.num_iscr_sito = cfg.unitId;
   }
 
+  // Prima di creare una nuova emissione controlla se lo stesso numero è già
+  // presente sul RENTRI. Evita duplicazioni quando una precedente risposta
+  // asincrona 202 è arrivata dopo che l'interfaccia aveva mostrato ancora bozza.
+  const numeroDaInviare = String(
+    ((enrichedPayload as any)?.dati_partenza?.numero_fir ?? enrichedPayload.numero_fir ?? ""),
+  ).trim();
+  if (numeroDaInviare) {
+    const esistente = await ricercaFir(cliente, numeroDaInviare);
+    if (esistente.success) {
+      const firEsistente = estraiFirId(esistente.data);
+      if (firEsistente || JSON.stringify(esistente.data ?? {}).toUpperCase().includes(numeroDaInviare.replace(/\s/g, "").toUpperCase())) {
+        const numeroConfermato = firEsistente || numeroDaInviare;
+        return { numero_fir: numeroConfermato, firId: numeroConfermato, gia_presente_sul_rentri: true };
+      }
+    }
+  }
+
   const res = await emissioneFir(cliente, enrichedPayload);
 
   if (res.success) {

@@ -474,6 +474,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const activeTenantId = tenantId || profile?.tenant_id;
   const activeMnContext = mnContext || profile?.mn_context;
   const [isSigning, setIsSigning] = useState(false);
+  const signingRequestRef = useRef(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
   const [inviandoArrivo, setInviandoArrivo] = useState(false);
 
@@ -1110,6 +1111,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
   const handleInviaFirma = async () => {
+    if (signingRequestRef.current) {
+      toast.info("Invio già in corso: attendi la risposta del RENTRI");
+      return;
+    }
     if (d.formatoFir === "cartaceo") {
       toast.error("Formulario impostato come CARTACEO: nessun invio a RENTRI. Usa la stampa per l'archiviazione.");
       return;
@@ -1119,6 +1124,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       toast.error(`Campi obbligatori mancanti: ${missing.join(", ")}`);
       return;
     }
+    signingRequestRef.current = true;
     setIsSigning(true);
     try {
       let activeFirId = useMNFIRStore.getState().editingFirId;
@@ -1220,6 +1226,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         toast.error(`Partenza NON inviata al RENTRI: ${error.message}. Il FIR resta in bozza e il viaggio non può iniziare.`);
       }
     } finally {
+      signingRequestRef.current = false;
       setIsSigning(false);
     }
   };
