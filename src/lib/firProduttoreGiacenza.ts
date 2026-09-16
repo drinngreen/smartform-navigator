@@ -112,6 +112,7 @@ export interface FirProduttoreCandidato {
   codice_eer: string;
   quantita: number;
   produttore_cf: string;
+  produttore_nome?: string;
   data_emissione?: string;
   data_creazione?: string;
   descrizione?: string;
