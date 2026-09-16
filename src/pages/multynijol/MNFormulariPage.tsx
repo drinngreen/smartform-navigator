@@ -236,14 +236,15 @@ export default function MNFormulariPage() {
   };
 
 
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case "draft": case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
-      case "submitted": case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato</Badge>;
-      case "completed": case "completato": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
+  const statusBadge = (stato: string) => {
+    switch (stato) {
+      case "bozza": return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+      case "inviato": return <Badge className="gap-1 border border-border"><FileText className="h-3 w-3" /> Inviato al RENTRI</Badge>;
+      case "chiuso": return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Chiuso</Badge>;
+      default: return <Badge variant="outline">{stato}</Badge>;
     }
   };
+
 
   const contextLabel = context === "niyol" ? "Niyol" : "Multy Dev";
 

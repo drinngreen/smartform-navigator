@@ -142,12 +142,13 @@ export default function RegistroFIRPage() {
   };
 
 
-  const statusBadge = (status: string) => {
-    if (isDraft(status)) return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
-    if (isSubmitted(status)) return <Badge className="gap-1 border border-border"><Send className="h-3 w-3" /> Inviato</Badge>;
-    if (isCompleted(status)) return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Completato</Badge>;
-    return <Badge variant="outline">{status}</Badge>;
+  const statusBadge = (stato: string) => {
+    if (stato === "bozza") return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Bozza</Badge>;
+    if (stato === "inviato") return <Badge className="gap-1 border border-border"><Send className="h-3 w-3" /> Inviato al RENTRI</Badge>;
+    if (stato === "chiuso") return <Badge className="gap-1 border border-border"><CheckCircle className="h-3 w-3" /> Chiuso</Badge>;
+    return <Badge variant="outline">{stato}</Badge>;
   };
+
 
   return (
     <AdminLayout title="Registro Carico / Scarico" subtitle="Elenco completo dei Formulari di Identificazione Rifiuti">
