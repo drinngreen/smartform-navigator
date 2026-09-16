@@ -121,10 +121,10 @@ export default function MNAppCronologiaPage() {
             <div key={fir.id} className="p-4 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-xl">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /><span className="text-sm font-display font-semibold text-foreground">{fir.numero_fir || "—"}</span></div>
-                {getStatusBadge(fir.status)}
+                {getStatusBadge(statoReale(fir))}
               </div>
               <p className="text-xs text-muted-foreground font-mono mb-2">{fir.created_at ? format(new Date(fir.created_at), "dd MMMM yyyy, HH:mm", { locale: it }) : "—"}</p>
-              {fir.status !== "bozza" && (
+              {statoReale(fir) !== "bozza" && (
                 <div className="space-y-0.5 mb-3">
                   {fir.codice_eer && <p className="text-xs text-muted-foreground"><span className="text-primary font-semibold">EER:</span> {fir.codice_eer}</p>}
                   {fir.destinatario_denominazione && <p className="text-xs text-muted-foreground"><span className="text-primary font-semibold">Dest.:</span> {fir.destinatario_denominazione}</p>}
@@ -132,11 +132,12 @@ export default function MNAppCronologiaPage() {
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
-                {(fir.status === "bozza" || fir.status === "inviato") && (
+                {(statoReale(fir) === "bozza" || statoReale(fir) === "inviato") && (
                   <button onClick={() => handleEdit(fir)} className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-primary/20 text-primary text-xs font-medium hover:bg-primary/30 transition-colors">
-                    <Edit className="h-3.5 w-3.5" /> {fir.status === "bozza" ? "Modifica" : "Visualizza"}
+                    <Edit className="h-3.5 w-3.5" /> {statoReale(fir) === "bozza" ? "Modifica" : "Visualizza"}
                   </button>
                 )}
+
                 <button onClick={() => handleDownloadPdf(fir)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-card border border-border/30 text-muted-foreground text-xs hover:text-foreground transition-colors"><Download className="h-3.5 w-3.5" /> PDF</button>
                 <button onClick={() => handleDelete(fir)} className="p-2 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
