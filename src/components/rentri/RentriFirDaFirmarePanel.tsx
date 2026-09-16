@@ -465,7 +465,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                     >
                       Dettaglio
                     </button>
-                    {!r.accettato && r.destinatario_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
+                    {!r.accettato && r.societaFirma && (
                       <button
                         onClick={() => apriFirma(r)}
                         className="inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-black"
@@ -473,13 +473,33 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                         <PenLine size={11} /> Firma destinatario
                       </button>
                     )}
-                    {!r.accettato &&
-                      r.produttore_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") &&
-                      r.destinatario_cf !== (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
-                        <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
-                          Come produttore · {r.stato || "in lavorazione"}
-                        </span>
-                      )}
+                    {!r.accettato && !r.societaFirma && r.ruoli.some((x) => x.endsWith("produttore")) && (
+                      <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
+                        Come produttore · {r.stato || "in lavorazione"}
+                      </span>
+                    )}
+                    {scaricoProduttoreAmmesso({
+                      numero_fir: r.numero_fir,
+                      codice_eer: r.codice_eer,
+                      quantita: r.quantita,
+                      produttore_cf: r.produttore_cf,
+                      produttore_nome: r.produttore_nome,
+                      data_emissione: r.data_emissione,
+                      data_creazione: r.data_creazione,
+                    }).ok && (
+                      <button
+                        onClick={() => scaricaMagazzino(r)}
+                        disabled={scaricando === r.numero_fir}
+                        className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                      >
+                        {scaricando === r.numero_fir ? (
+                          <Loader2 className="animate-spin" size={11} />
+                        ) : (
+                          <PackageMinus size={11} />
+                        )}
+                        Registra lo scarico dal magazzino
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
