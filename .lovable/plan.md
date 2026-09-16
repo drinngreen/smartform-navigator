@@ -44,6 +44,7 @@ Proposta minima, sotto tuo controllo:
 
 Un referto unico con: elenco prove, esito di ciascuna, risposte del RENTRI, saldi prima/dopo,
 e l'elenco esplicito di ciò che resta scoperto. Nessuna frase di garanzia senza una prova accanto.
+Ogni voce del referto deve riportare la prova a cui si riferisce.
 
 ## Ordine di lavoro di oggi
 
@@ -51,3 +52,4 @@ e l'elenco esplicito di ciò che resta scoperto. Nessuna frase di garanzia senza
 2. Controlli di collegamento in sola lettura su Multy e Niyol (io, subito).
 3. Prova reale guidata (solo con tuo via libera, passo per passo).
 4. Referto finale e aggiornamento di guide e assistente.
+5. Mi fermo subito se una prova altera i saldi fuori dai percorsi autorizzati.
