@@ -281,10 +281,11 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     if (!window.confirm(`Firmare l'accettazione del FIR ${firmaFir.numero_fir} su RENTRI?`)) return;
     setFirmando(true);
     try {
-      const cfSoggetto = RENTRI_CF_SOGGETTO[firmaFir.societa] ?? "";
-      const unitaLocale = RENTRI_UNITA_LOCALI[firmaFir.societa] ?? "";
+      const chiaveFirma = firmaFir.societaFirma ?? firmaFir.societa;
+      const cfSoggetto = RENTRI_CF_SOGGETTO[chiaveFirma] ?? "";
+      const unitaLocale = RENTRI_UNITA_LOCALI[chiaveFirma] ?? "";
       const res = await accettaFirInArrivoDestinatario(
-        firmaFir.societa as RentriCliente,
+        chiaveFirma as RentriCliente,
         firmaFir.numero_fir,
         {
           data_ora_ricezione: new Date(`${dataArrivo}T${oraArrivo}:00`).toISOString(),
