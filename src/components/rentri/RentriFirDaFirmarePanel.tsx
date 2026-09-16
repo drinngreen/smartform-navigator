@@ -90,6 +90,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<FirRow[]>([]);
   const [filtro, setFiltro] = useState<"da_firmare" | "tutti">("da_firmare");
+  const [ruoloSel, setRuoloSel] = useState<"tutti" | "produttore" | "trasportatore" | "destinatario">("tutti");
   const [q, setQ] = useState("");
   const [detail, setDetail] = useState<{ numero: string; data: unknown } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -141,6 +142,15 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     return rows
       .filter((r) => (filtro === "tutti" ? true : !r.accettato))
       .filter((r) =>
+        ruoloSel === "tutti"
+          ? true
+          : ruoloSel === "produttore"
+            ? r.ruolo.includes("Produttore")
+            : ruoloSel === "trasportatore"
+              ? r.ruolo.includes("Trasportatore")
+              : r.ruolo.includes("Destinatario"),
+      )
+      .filter((r) =>
         !term
           ? true
           : [r.numero_fir, r.codice_eer, r.produttore_nome, r.destinatario_nome, r.trasportatore_nome, r.societaLabel]
@@ -148,13 +158,19 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
               .toLowerCase()
               .includes(term),
       );
-  }, [rows, filtro, q]);
+  }, [rows, filtro, ruoloSel, q]);
 
   const conteggi = useMemo(() => {
-    const out: Record<string, { tutti: number; daFirmare: number }> = {};
+    const out: Record<string, { tutti: number; daFirmare: number; produttore: number; trasportatore: number; destinatario: number }> = {};
     for (const s of SOCIETA) {
       const r = rows.filter((x) => x.societa === s.key);
-      out[s.key] = { tutti: r.length, daFirmare: r.filter((x) => !x.accettato).length };
+      out[s.key] = {
+        tutti: r.length,
+        daFirmare: r.filter((x) => !x.accettato).length,
+        produttore: r.filter((x) => x.ruolo.includes("Produttore")).length,
+        trasportatore: r.filter((x) => x.ruolo.includes("Trasportatore")).length,
+        destinatario: r.filter((x) => x.ruolo.includes("Destinatario")).length,
+      };
     }
     return out;
   }, [rows]);
@@ -291,6 +307,20 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           ))}
         </div>
 
+        <div className="flex overflow-hidden rounded-md border border-border">
+          {(["tutti", "produttore", "trasportatore", "destinatario"] as const).map((rl) => (
+            <button
+              key={rl}
+              onClick={() => setRuoloSel(rl)}
+              className={`px-3 py-2 text-xs font-semibold ${
+                ruoloSel === rl ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+              }`}
+            >
+              {rl === "tutti" ? "Tutti i ruoli" : rl === "produttore" ? "Produttore" : rl === "trasportatore" ? "Trasportatore" : "Destinatario"}
+            </button>
+          ))}
+        </div>
+
         <div className="relative">
           <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -306,8 +336,9 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         {SOCIETA.map((s) => (
           <span key={s.key} className="rounded-md border border-border/50 px-2 py-1">
             <strong className="text-foreground">{s.label}</strong> · {conteggi[s.key]?.tutti ?? 0} sul RENTRI ·{" "}
-            <span className="text-amber-500">{conteggi[s.key]?.daFirmare ?? 0} da firmare</span> · CF{" "}
-            {RENTRI_CF_SOGGETTO[s.key]}
+            <span className="text-amber-500">{conteggi[s.key]?.daFirmare ?? 0} non chiusi</span> · produttore{" "}
+            {conteggi[s.key]?.produttore ?? 0} · trasportatore {conteggi[s.key]?.trasportatore ?? 0} · destinatario{" "}
+            {conteggi[s.key]?.destinatario ?? 0} · CF {RENTRI_CF_SOGGETTO[s.key]}
           </span>
         ))}
         <span>{visibili.length} righe mostrate</span>
@@ -366,9 +397,16 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                         onClick={() => apriFirma(r)}
                         className="inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-black"
                       >
-                        <PenLine size={11} /> Firma
+                        <PenLine size={11} /> Firma destinatario
                       </button>
                     )}
+                    {!r.accettato &&
+                      r.produttore_cf === (RENTRI_CF_SOGGETTO[r.societa] ?? "") &&
+                      r.destinatario_cf !== (RENTRI_CF_SOGGETTO[r.societa] ?? "") && (
+                        <span className="rounded border border-amber-500/40 px-2 py-1 text-[11px] text-amber-600">
+                          Come produttore · {r.stato || "in lavorazione"}
+                        </span>
+                      )}
                   </div>
                 </td>
               </tr>
