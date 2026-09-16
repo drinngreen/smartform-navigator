@@ -33,8 +33,14 @@ Blocco temporaneo, linea giù, lentezza: messaggi chiari, attesa automatica prim
 **6. App autisti Multy e Niyol operative.**
 L'autista sceglie con quale azienda opera, apre il formulario assegnato, lo compila con tutte le tendine, e firma solo se le parti obbligatorie sono complete. Il destinatario vede il formulario, inserisce il peso riscontrato e l'esito, e con la sua firma il formulario si chiude e le giacenze si aggiornano da sole, come già impostato. I formulari cartacei restano con il pulsante di conferma manuale.
 
-**7. Una sola schermata di controllo.**
-In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, invii respinti con motivo, formulari da firmare, ultimo aggiornamento. Tutto in un colpo d'occhio, così ci si accorge subito se qualcosa si è fermato.
+**7. L'ufficio comanda le app degli autisti, in tempo reale.**
+Dalla postazione dell'ufficio si vede l'elenco degli autisti in servizio e il formulario che ciascuno ha aperto. L'ufficio può compilare il formulario al posto dell'autista, correggerlo mentre lui lo sta guardando, assegnargliene un altro, bloccarlo o sbloccarlo. Le modifiche compaiono sul telefono dell'autista entro pochi secondi, senza che debba ricaricare nulla, e ogni intervento resta tracciato con nome e ora. Quando l'autista ha già firmato, l'ufficio non può più cambiare il formulario: può solo annullarlo e rifarlo, così la firma resta valida.
+
+**8. Controllo su strada: QR code reale.**
+Sul telefono dell'autista un pulsante ben visibile apre la schermata di controllo con il QR code del formulario in corso. Vigili o polizia lo inquadrano e aprono una pagina pubblica di sola lettura con i dati del formulario: numero, data, produttore, destinatario, trasportatore, targhe, codice CER, descrizione del rifiuto, peso, firme presenti e stato. Nessun dato riservato, nessuna possibilità di modifica. La schermata funziona anche con poco segnale perché mostra comunque i dati già scaricati, e il QR resta leggibile a schermo luminoso.
+
+**9. Una sola schermata di controllo.**
+In console RENTRI: stato del collegamento, numeri disponibili, invii in attesa, invii respinti con motivo, formulari da firmare, autisti in viaggio, ultimo aggiornamento. Tutto in un colpo d'occhio, così ci si accorge subito se qualcosa si è fermato.
 
 ## Cosa non tocco
 
