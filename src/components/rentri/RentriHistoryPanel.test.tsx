@@ -23,6 +23,10 @@ const row = (over: Record<string, unknown> = {}) => ({
   success: true,
   error_code: null,
   error_message: null,
+  risposta: null,
+  identificativo_rentri: null,
+  transazione_id: null,
+  esito_finale: "CONFERMATO",
   created_at: new Date().toISOString(),
   ...over,
 });
@@ -64,5 +68,25 @@ describe("RentriHistoryPanel", () => {
     expect(screen.getByText(/Operazione completata/)).toBeInTheDocument();
     expect(screen.getByText(/nessun invio confermato/i)).toBeInTheDocument();
     expect(screen.getAllByText(/verifica/i).length).toBeGreaterThan(0);
+  });
+
+  it("mostra il motivo preciso restituito dal RENTRI", async () => {
+    fetchRentriHistory.mockResolvedValue([
+      row({
+        success: false,
+        http_status: 400,
+        error_code: "BAD_REQUEST",
+        risposta: {
+          model_state: {
+            "dati_partenza.destinatario.autorizzazione.tipo": ["sys.required"],
+            "dati_partenza.rifiuto.codice_eer": ["sys.invalid"],
+          },
+        },
+      }),
+    ]);
+    render(<RentriHistoryPanel />);
+    expect(await screen.findByText("Motivo del rifiuto RENTRI")).toBeInTheDocument();
+    expect(screen.getByText(/Tipo autorizzazione del destinatario: campo obbligatorio mancante/)).toBeInTheDocument();
+    expect(screen.getByText(/Codice EER: valore non valido/)).toBeInTheDocument();
   });
 });

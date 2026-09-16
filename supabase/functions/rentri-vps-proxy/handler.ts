@@ -141,11 +141,18 @@ function parseBody(text: string): unknown {
   try { return text ? JSON.parse(text) : {}; } catch { return { raw: text }; }
 }
 
-function extractMsg(d: unknown): string {
+export function extractMsg(d: unknown): string {
   if (!d || typeof d !== "object") return "";
   const r = d as Record<string, unknown>;
   const m = r.messaggio ?? r.message ?? r.error;
-  return typeof m === "string" ? m : "";
+  if (typeof m === "string" && m.trim()) return m;
+  const modelState = r.model_state;
+  if (!modelState || typeof modelState !== "object" || Array.isArray(modelState)) return "";
+  return Object.entries(modelState as Record<string, unknown>)
+    .flatMap(([field, value]) => (Array.isArray(value) ? value : [value])
+      .map((message) => `${field}: ${String(message ?? "")}`))
+    .filter(Boolean)
+    .join("; ");
 }
 
 function getCandidates(c: string): string[] {

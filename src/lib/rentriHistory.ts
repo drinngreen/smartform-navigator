@@ -14,6 +14,10 @@ export interface RentriHistoryRow {
   success: boolean;
   error_code: string | null;
   error_message: string | null;
+  risposta?: unknown;
+  identificativo_rentri?: string | null;
+  transazione_id?: string | null;
+  esito_finale?: string | null;
   created_at: string;
 }
 
@@ -75,8 +79,8 @@ export interface RentriHistoryFilters {
 
 export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Promise<RentriHistoryRow[]> {
   let query = supabase
-    .from("rentri_operation_history")
-    .select("*")
+    .from("rentri_operazioni")
+    .select("id, cliente, tipo_operazione, rentri_method, rentri_path, http_status, success, error_code, error_message, risposta, identificativo_rentri, transazione_id, esito_finale, created_at")
     .order("created_at", { ascending: false })
     .limit(filters.limit ?? 50);
 
@@ -88,5 +92,10 @@ export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Pr
 
   const { data, error } = await query;
   if (error) throw new Error(sanitizeRentriMessage(error.message));
-  return (data ?? []) as RentriHistoryRow[];
+  return (data ?? []).map((row) => ({
+    ...row,
+    user_id: null,
+    tenant_id: null,
+    mode: "real",
+  })) as RentriHistoryRow[];
 }
