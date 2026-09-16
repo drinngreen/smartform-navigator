@@ -23,6 +23,7 @@ const row = (over: Record<string, unknown> = {}) => ({
   success: true,
   error_code: null,
   error_message: null,
+  payload_inviato: null,
   risposta: null,
   identificativo_rentri: null,
   transazione_id: null,
@@ -88,5 +89,27 @@ describe("RentriHistoryPanel", () => {
     expect(await screen.findByText("Motivo del rifiuto RENTRI")).toBeInTheDocument();
     expect(screen.getByText(/Tipo autorizzazione del destinatario: campo obbligatorio mancante/)).toBeInTheDocument();
     expect(screen.getByText(/Codice EER: valore non valido/)).toBeInTheDocument();
+  });
+
+  it("trova invio e rifiuti tramite numero FIR nel payload", async () => {
+    fetchRentriHistory.mockResolvedValue([
+      row({
+        success: false,
+        http_status: 400,
+        tipo_operazione: "FIR_EMISSIONE",
+        payload_inviato: { dati_partenza: { numero_fir: "ZRZXR000772TM" } },
+      }),
+      row({
+        tipo_operazione: "FIR_EMISSIONE",
+        payload_inviato: { dati_partenza: { numero_fir: "ABCDE000001XY" } },
+      }),
+    ]);
+    render(<RentriHistoryPanel />);
+    const search = await screen.findByLabelText("Cerca numero FIR");
+    await import("@testing-library/user-event").then(({ default: userEvent }) =>
+      userEvent.type(search, "ZRZXR 000772 TM"),
+    );
+    expect(screen.getAllByTestId("history-row")).toHaveLength(1);
+    expect(screen.getByText("ZRZXR 000772 TM")).toBeInTheDocument();
   });
 });

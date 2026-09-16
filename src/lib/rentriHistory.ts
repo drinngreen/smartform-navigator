@@ -14,6 +14,7 @@ export interface RentriHistoryRow {
   success: boolean;
   error_code: string | null;
   error_message: string | null;
+  payload_inviato?: unknown;
   risposta?: unknown;
   identificativo_rentri?: string | null;
   transazione_id?: string | null;
@@ -77,12 +78,39 @@ export interface RentriHistoryFilters {
   limit?: number;
 }
 
+export interface ConfirmedFirEmission {
+  id: string;
+  identificativo_rentri: string;
+  created_at: string;
+  esito_finale: string | null;
+}
+
+/**
+ * Cerca una conferma ufficiale già registrata dal bridge, senza interrogare o
+ * modificare RENTRI. Serve a riallineare la sola visualizzazione quando la
+ * risposta asincrona è arrivata dopo che la scheda locale aveva mostrato bozza.
+ */
+export async function findConfirmedFirEmission(numeroFir: string): Promise<ConfirmedFirEmission | null> {
+  const numero = String(numeroFir ?? "").trim().replace(/\s+/g, " ").toUpperCase();
+  if (!numero) return null;
+  const { data, error } = await supabase
+    .from("rentri_operazioni")
+    .select("id, identificativo_rentri, created_at, esito_finale")
+    .eq("success", true)
+    .eq("identificativo_rentri", numero)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.identificativo_rentri) return null;
+  return data as ConfirmedFirEmission;
+}
+
 export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Promise<RentriHistoryRow[]> {
   let query = supabase
     .from("rentri_operazioni")
-    .select("id, cliente, tipo_operazione, rentri_method, rentri_path, http_status, success, error_code, error_message, risposta, identificativo_rentri, transazione_id, esito_finale, created_at")
+    .select("id, cliente, tipo_operazione, rentri_method, rentri_path, http_status, success, error_code, error_message, payload_inviato, risposta, identificativo_rentri, transazione_id, esito_finale, created_at")
     .order("created_at", { ascending: false })
-    .limit(filters.limit ?? 50);
+    .limit(filters.limit ?? 1000);
 
   if (filters.cliente && filters.cliente !== "all") query = query.eq("cliente", filters.cliente);
   if (filters.esito === "success") query = query.eq("success", true);

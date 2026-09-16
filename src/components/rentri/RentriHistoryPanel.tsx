@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRentriHistory } from "@/hooks/useRentriHistory";
 import { rentriUserMessage } from "@/lib/rentriErrorMessages";
-import { Loader2, History, RefreshCw, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { Loader2, History, RefreshCw, CheckCircle2, XCircle, ShieldCheck, Search } from "lucide-react";
 
 const CLIENTI = ["all", "multyproget", "multy", "niyol", "global"];
 
@@ -48,11 +48,27 @@ function motivoRifiuto(row: { error_message: string | null; risposta?: unknown }
   return row.error_message || rispostaTesto || "Il RENTRI non ha comunicato un motivo dettagliato.";
 }
 
+function normalizzaFir(value: unknown): string {
+  return String(value ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function numeroFirRiga(row: { identificativo_rentri?: string | null; payload_inviato?: unknown; risposta?: unknown }): string {
+  if (row.identificativo_rentri) return row.identificativo_rentri;
+  const sorgenti = [row.payload_inviato, row.risposta];
+  for (const sorgente of sorgenti) {
+    const testo = JSON.stringify(sorgente ?? {});
+    const match = testo.match(/[A-Z]{5}\s*\d{6}\s*[A-Z]{2}/i);
+    if (match) return match[0].replace(/^([A-Z]{5})\s*(\d{6})\s*([A-Z]{2})$/i, "$1 $2 $3").toUpperCase();
+  }
+  return "";
+}
+
 export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?: string }) {
   const [cliente, setCliente] = useState(defaultCliente);
   const [esito, setEsito] = useState<"all" | "success" | "error">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [firSearch, setFirSearch] = useState("");
 
   const { rows, loading, error, reload } = useRentriHistory({
     cliente,
@@ -60,6 +76,10 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
     from: from ? new Date(from).toISOString() : undefined,
     to: to ? new Date(`${to}T23:59:59`).toISOString() : undefined,
   });
+  const firCercato = normalizzaFir(firSearch);
+  const righeVisibili = firCercato
+    ? rows.filter((row) => normalizzaFir(numeroFirRiga(row)).includes(firCercato))
+    : rows;
 
   return (
     <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4" data-testid="rentri-history">
@@ -99,6 +119,16 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
           aria-label="Data inizio" type="date" value={from} onChange={(e) => setFrom(e.target.value)}
           className="rounded-lg bg-secondary/50 border border-border/50 px-3 py-1.5"
         />
+        <label className="flex items-center gap-2 rounded-lg bg-secondary/50 border border-border/50 px-3 py-1.5">
+          <Search size={13} className="text-muted-foreground" />
+          <input
+            aria-label="Cerca numero FIR"
+            value={firSearch}
+            onChange={(e) => setFirSearch(e.target.value)}
+            placeholder="Cerca FIR"
+            className="min-w-44 bg-transparent outline-none"
+          />
+        </label>
         <input
           aria-label="Data fine" type="date" value={to} onChange={(e) => setTo(e.target.value)}
           className="rounded-lg bg-secondary/50 border border-border/50 px-3 py-1.5"
@@ -117,15 +147,17 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
         </div>
       )}
 
-      {!loading && !error && rows.length === 0 && (
+      {!loading && !error && righeVisibili.length === 0 && (
         <p data-testid="history-empty" className="text-sm text-muted-foreground">
-          Nessuna operazione registrata.
+          {firCercato ? "Nessuna operazione trovata per questo FIR." : "Nessuna operazione registrata."}
         </p>
       )}
 
-      {!loading && !error && rows.length > 0 && (
+      {!loading && !error && righeVisibili.length > 0 && (
         <ul className="space-y-2">
-          {rows.map((row) => (
+          {righeVisibili.map((row) => {
+            const numeroFir = numeroFirRiga(row);
+            return (
             <li
               key={row.id}
               data-testid="history-row"
@@ -136,6 +168,7 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                   ? <CheckCircle2 size={14} className="text-primary" />
                   : <XCircle size={14} className="text-destructive" />}
                 <span className="font-semibold">{row.tipo_operazione}</span>
+                {numeroFir && <span className="font-mono text-xs font-semibold">{numeroFir}</span>}
                 <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase">{row.cliente}</span>
                 {row.mode === "dry_run" && (
                   <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-md bg-secondary text-muted-foreground">
@@ -162,7 +195,8 @@ export function RentriHistoryPanel({ defaultCliente = "all" }: { defaultCliente?
                 </div>
               </details>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
