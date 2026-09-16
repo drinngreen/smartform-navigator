@@ -1334,15 +1334,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             </button>
           )}
 
-          {store.workflowStatus !== 'chiuso' && (
-            <button
-              onClick={() => void handleCaricaNelSistema()}
-              disabled={silentSaveFIR.isPending || createFIR.isPending}
-              className="w-full py-4 rounded-2xl bg-neon-green/20 border border-neon-green/60 text-neon-green font-display text-base tracking-wider hover:bg-neon-green/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="h-5 w-5" /> CARICA NEL SISTEMA (REGISTRO + GIACENZE)
-            </button>
-          )}
+          {/* Nessun "carica nel sistema" in compilazione: una bozza non tocca registro né giacenze.
+              Il movimento nasce solo dalla firma del destinatario (digitale) o dalla conferma manuale (cartaceo). */}
 
 
 
