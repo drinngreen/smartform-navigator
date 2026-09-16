@@ -875,11 +875,11 @@ export function PresetAziendaSelector({
               }}
             >
               <option value="">
-                {unitaLocali.length
-                  ? `-- Sede operativa / unità locale (${unitaLocali.length}) --`
+                {sediDisponibili.length
+                  ? `-- Sede operativa / unità locale (${sediDisponibili.length}) --`
                   : "-- Nessuna sede operativa in anagrafica: usa la sede legale --"}
               </option>
-              {unitaLocali.map((s) => (
+              {sediDisponibili.map((s) => (
                 <option key={s.id} value={s.id}>
                   {[s.denominazione, s.indirizzo, s.cap, s.comune, s.provincia].filter(Boolean).join(" · ")}
                 </option>
