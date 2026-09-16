@@ -363,13 +363,15 @@ export function DevFormulariList({
                     const destinatario = firstValue(form.destinatario_denominazione, fd.destinatario_denominazione, fd.destinatarioDenominazione) || "—";
                     const trasportatore = firstValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—";
                     const dataRaw = firstValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo);
-                    const missingDestino = form.status === "completato" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
+                    const stato = statoReale(form);
+                    const etichettaStato = stato === "bozza" ? "Bozza" : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
+                    const missingDestino = stato === "chiuso" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
                     <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : undefined}
                       className={`border-b border-border/10 ${missingDestino ? "bg-amber-500/15 hover:bg-amber-500/25 border-l-4 border-l-amber-400" : "hover:bg-white/5"}`}>
                       
                       <td className="p-3">
-                        <Badge variant={form.status === "completato" ? "default" : "secondary"} className="text-xs">{form.status}</Badge>
+                        <Badge variant={stato === "chiuso" ? "default" : "secondary"} className="text-xs">{etichettaStato}</Badge>
                       </td>
                       <td className={`p-3 font-mono`}>{form.numero_fir || "—"}{form._cross_tenant && <span className="ml-2 text-[10px] uppercase text-fuchsia-300 border border-fuchsia-500/40 rounded px-1 py-0.5">cross</span>}</td>
                        <td className="p-3 font-mono">{String(cer)}</td>
@@ -384,12 +386,13 @@ export function DevFormulariList({
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditor(form, "standard")}
-                          className={`gap-1 ${form.status === "bozza" || form.status === "draft" ? txt : "text-muted-foreground"}`}
+                          className={`gap-1 ${stato === "bozza" ? txt : "text-muted-foreground"}`}
                         >
                           <Edit className="h-3 w-3" />
-                          {form.status === "bozza" || form.status === "draft" ? "Standard" : "Visualizza Standard"}
+                          {stato === "bozza" ? "Standard" : "Visualizza Standard"}
                         </Button>
-                        {(form.status === "bozza" || form.status === "draft") && (
+                        {stato === "bozza" && (
+
                           <Button
                             variant="ghost"
                             size="sm"
