@@ -28,3 +28,5 @@
 - [x] Controlli di collegamento in sola lettura RENTRI per Multy e Niyol (blocchi reali ricevuti 09:09)
 - [ ] Prova reale guidata di invio (1 FIR Multy scelto dall'utente, poi Niyol) — in attesa di via libera
 - [x] Regola giacenze da FIR produttore Multy: solo formulari digitali datati da oggi ore 08:00 (ora italiana) in poi — mai lo storico (src/lib/firProduttoreGiacenza.ts, 8 prove)
+- [ ] Anagrafica automatica: nuove aziende e nuove sedi operative salvate dal formulario senza duplicati
+- [ ] Separare i due invii RENTRI: partenza (emissione+firma) e arrivo (peso, esito, firma destinatario) con chiusura e giacenze solo dopo esito positivo
