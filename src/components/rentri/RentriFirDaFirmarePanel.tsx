@@ -268,6 +268,32 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
     }
   };
 
+  /** Scarico dal magazzino Multyproget: solo conferma umana, riga per riga. */
+  const scaricaMagazzino = async (r: FirRow) => {
+    const conferma = window.confirm(
+      `Registrare lo SCARICO dal magazzino Multyproget?\n\nFormulario ${r.numero_fir}\nCER ${r.codice_eer}\nQuantità ${r.quantita.toLocaleString("it-IT")} ${r.unita_misura}`,
+    );
+    if (!conferma) return;
+    setScaricando(r.numero_fir);
+    try {
+      await registraScaricoProduttore({
+        numero_fir: r.numero_fir,
+        codice_eer: r.codice_eer,
+        quantita: r.quantita,
+        produttore_cf: r.produttore_cf,
+        produttore_nome: r.produttore_nome,
+        data_emissione: r.data_emissione,
+        data_creazione: r.data_creazione,
+        descrizione: `Uscita da magazzino Multyproget — FIR ${r.numero_fir} (${r.trasportatore_nome || "trasportatore"})`,
+      });
+      toast.success(`Scarico registrato per il formulario ${r.numero_fir}`);
+    } catch (e: any) {
+      toast.error(`Scarico non registrato: ${e.message}`);
+    } finally {
+      setScaricando(null);
+    }
+  };
+
   const apriFirma = (r: FirRow) => {
     setFirmaFir(r);
     setKg(String(r.quantita || ""));
