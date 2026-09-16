@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, RentriSubmissionError } from "@/services/rentriApi";
 import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
-import { isRentriConnectivityError } from "@/lib/rentriVpsApi";
+import { isRentriConnectivityError, ricercaFir } from "@/lib/rentriVpsApi";
 import { findConfirmedFirEmission } from "@/lib/rentriHistory";
 import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
@@ -483,6 +483,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [officialEmissionAt, setOfficialEmissionAt] = useState<string | null>(null);
+  const [isCheckingOfficialStatus, setIsCheckingOfficialStatus] = useState(false);
   const [rentriFieldErrors, setRentriFieldErrors] = useState<Record<string, string>>({});
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -580,20 +581,38 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ufficialmente emesso venga ancora mostrato come "da inviare".
   useEffect(() => {
     const numeroFir = String(d.selectedFirNumber ?? "").trim();
-    if (!numeroFir || d.formatoFir === "cartaceo" || store.workflowStatus !== "bozza") return;
+    if (!numeroFir || d.formatoFir === "cartaceo" || store.workflowStatus !== "bozza") {
+      setIsCheckingOfficialStatus(false);
+      return;
+    }
     let active = true;
-    void findConfirmedFirEmission(numeroFir).then(async (conferma) => {
-      if (!active || !conferma) return;
-      setOfficialEmissionAt(conferma.created_at);
-      useMNFIRStore.setState({ workflowStatus: "inviato" });
+    setIsCheckingOfficialStatus(true);
+    void (async () => {
       try {
         const societaId = resolveSocietaId(activeTenantId, activeMnContext);
-        const qr = await resolveFirQrDataUrl(conferma.identificativo_rentri, societaId);
-        if (active && qr) setQrCodeData(qr);
+        // Il registro tecnico può non essere leggibile dall'account autista.
+        // Prima lo consultiamo; se non restituisce la conferma, interroghiamo
+        // direttamente RENTRI in sola lettura usando il numero del formulario.
+        const conferma = await findConfirmedFirEmission(numeroFir);
+        let numeroConfermato = conferma?.identificativo_rentri ?? "";
+        if (!numeroConfermato) {
+          const ricerca = await ricercaFir(societaId as any, numeroFir);
+          const cercato = numeroFir.toUpperCase().replace(/[^A-Z0-9]/g, "");
+          const risposta = JSON.stringify(ricerca.data ?? {}).toUpperCase().replace(/[^A-Z0-9]/g, "");
+          if (ricerca.success && risposta.includes(cercato)) numeroConfermato = numeroFir;
+        }
+        if (!active || !numeroConfermato) return;
+        setOfficialEmissionAt(conferma?.created_at ?? null);
+        const qr = await resolveFirQrDataUrl(numeroConfermato, societaId);
+        if (!active) return;
+        if (qr) setQrCodeData(qr);
+        useMNFIRStore.setState({ workflowStatus: "inviato" });
       } catch {
-        // Lo stato ufficiale resta valido; l'assenza del QR mantiene il viaggio bloccato.
+        // Nessun cambio di stato in caso di errore di lettura.
+      } finally {
+        if (active) setIsCheckingOfficialStatus(false);
       }
-    });
+    })();
     return () => { active = false; };
   }, [d.selectedFirNumber, d.formatoFir, store.workflowStatus, activeTenantId, activeMnContext]);
 
@@ -1561,7 +1580,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {/* Workflow Action Buttons */}
       {(creationMode || isStarted || store.editingFirId) && (
         <div className="space-y-2">
-          {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
+          {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && isCheckingOfficialStatus && (
+            <div className="w-full rounded-2xl border border-primary/30 bg-primary/10 px-4 py-4 text-center">
+              <p className="text-sm font-display text-primary">VERIFICA STATO SUL RENTRI…</p>
+              <p className="mt-1 text-[10px] font-mono text-muted-foreground">Nessun invio viene eseguito durante questo controllo.</p>
+            </div>
+          )}
+
+          {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && !isCheckingOfficialStatus && (
             <>
               <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
                 {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}

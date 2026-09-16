@@ -20,6 +20,8 @@ import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
+import { ricercaFir } from "@/lib/rentriVpsApi";
+import { resolveSocietaId } from "@/services/rentriApi";
 
 
 
@@ -40,6 +42,9 @@ interface Props {
 
 const normalizeCf = (v: string | null | undefined) =>
   (v || "").toString().replace(/\s+/g, "").toUpperCase();
+
+const normalizeFir = (v: string | null | undefined) =>
+  (v || "").toString().replace(/[^A-Z0-9]/gi, "").toUpperCase();
 
 const firstValue = (...values: unknown[]) =>
   values.find((value) => value !== null && value !== undefined && String(value).trim() !== "");
@@ -132,6 +137,45 @@ export function DevFormulariList({
         for (const f of extras) if (!seen.has(f.id)) base.push({ ...f, _cross_tenant: true });
       }
       return base;
+    },
+  });
+
+  // Le conferme asincrone LOTTO possono arrivare dopo il salvataggio locale.
+  // L'elenco deve quindi riconoscere il numero ufficiale già confermato dal
+  // RENTRI, senza modificare il formulario o dipendere da form_data incompleti.
+  const { data: confirmedFirNumbers = new Set<string>() } = useQuery({
+    queryKey: ["dev-formulari-rentri-confirmed", tenantId, forms.map((f: any) => `${f.numero_fir}:${f.status}`).join("|")],
+    enabled: forms.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rentri_operazioni")
+        .select("identificativo_rentri")
+        .eq("success", true)
+        .eq("tipo_operazione", "LOTTO")
+        .eq("esito_finale", "CONFERMATO")
+        .not("identificativo_rentri", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(5000);
+      const confermati = new Set(
+        error ? [] : (data ?? []).map((row) => normalizeFir(row.identificativo_rentri)).filter(Boolean),
+      );
+      const daVerificare = forms.filter((form: any) => {
+        const locale = resolveWorkflowStatus(form.status, form.form_data);
+        return locale === "bozza" && String(form.status ?? "").toLowerCase() === "inviato" && form.numero_fir;
+      });
+      if (daVerificare.length === 0) return confermati;
+      const cliente = resolveSocietaId(tenantId, mnContext) as any;
+      await Promise.all(daVerificare.map(async (form: any) => {
+        try {
+          const res = await ricercaFir(cliente, form.numero_fir);
+          const numero = normalizeFir(form.numero_fir);
+          const risposta = normalizeFir(JSON.stringify(res.data ?? {}));
+          if (res.success && risposta.includes(numero)) confermati.add(numero);
+        } catch {
+          // La mancata lettura non promuove mai una bozza a inviato.
+        }
+      }));
+      return confermati;
     },
   });
 
@@ -260,7 +304,12 @@ export function DevFormulariList({
 
   // Lo stato mostrato è quello reale: "inviato" solo se il RENTRI ha davvero
   // restituito l'identificativo ufficiale del formulario.
-  const statoReale = (f: any) => resolveWorkflowStatus(f.status, f.form_data);
+  const statoReale = (f: any) => {
+    const statoLocale = resolveWorkflowStatus(f.status, f.form_data);
+    if (statoLocale !== "bozza") return statoLocale;
+    if (confirmedFirNumbers.has(normalizeFir(f.numero_fir))) return "inviato";
+    return String(f.status ?? "").toLowerCase() === "inviato" ? "verifica" : "bozza";
+  };
 
   const filtered = sourceForms.filter((f: any) => {
     const q = search.toLowerCase();
@@ -269,7 +318,7 @@ export function DevFormulariList({
       String(firstValue(f.codice_eer, f.form_data?.cer, f.form_data?.codice_eer, f.form_data?.codiceEER) || "").toLowerCase().includes(q) ||
       String(firstValue(f.produttore_denominazione, f.form_data?.produttore_denominazione, f.form_data?.produttoreDenominazione) || "").toLowerCase().includes(q) ||
       f.descrizione_rifiuto?.toLowerCase().includes(q);
-    if (tab === "draft") return matchSearch && statoReale(f) === "bozza";
+    if (tab === "draft") return matchSearch && ["bozza", "verifica"].includes(statoReale(f));
     if (tab === "submitted") return matchSearch && statoReale(f) === "inviato";
     if (tab === "completed") return matchSearch && statoReale(f) === "chiuso";
     return matchSearch;
@@ -277,7 +326,7 @@ export function DevFormulariList({
 
   const stats = {
     total: sourceForms.length,
-    draft: sourceForms.filter((f: any) => statoReale(f) === "bozza").length,
+    draft: sourceForms.filter((f: any) => ["bozza", "verifica"].includes(statoReale(f))).length,
     submitted: sourceForms.filter((f: any) => statoReale(f) === "inviato").length,
     completed: sourceForms.filter((f: any) => statoReale(f) === "chiuso").length,
   };
@@ -364,7 +413,11 @@ export function DevFormulariList({
                     const trasportatore = firstValue(form.trasportatore_denominazione, fd.trasportatore_denominazione, fd.trasportatoreDenominazione) || "—";
                     const dataRaw = firstValue(fd.data_emissione, fd.dataEmissione, form.data_partenza, fd.data_partenza, form.data_arrivo, fd.data_arrivo);
                     const stato = statoReale(form);
-                    const etichettaStato = stato === "bozza" ? "Bozza" : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
+                    const etichettaStato = stato === "bozza"
+                      ? "Bozza"
+                      : stato === "verifica"
+                        ? "Verifica RENTRI"
+                        : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
                     const missingDestino = stato === "chiuso" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
                     <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : undefined}
