@@ -95,8 +95,17 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   firId: string;
   impiantoId?: string | null;
   registryMovementType?: "Carico" | "Scarico";
+  /**
+   * Un movimento pesa sulle giacenze SOLO quando è effettivo, cioè quando il
+   * peso è stato certificato dal destinatario (firma digitale) oppure
+   * confermato a mano da un operatore (formulario cartaceo).
+   * Finché è potenziale resta visibile e tracciato, ma non conta nei saldi.
+   */
+  effettivo?: boolean;
 }): Promise<{ registry: boolean; registryApplicable: boolean; inventory: boolean; warning?: string }> {
   const { firId } = params;
+  const effettivo = params.effettivo === true;
+  const statoMovimento = effettivo ? "effettivo" : "potenziale";
   if (!firId) throw new Error("firId mancante");
   logAgentActivity("Sincronizzazione FIR su registri e giacenze", "info", `FIR ${firId}`);
 
@@ -160,8 +169,11 @@ export async function syncFirFinalToRegistryAndInventory(params: {
     peso_destino: qtaDestinazione || qtaValid,
     luogo_produzione: prodDen,
     destinazione: destDen,
-    annotazioni: "Salvataggio definitivo FIR (Modulo Standard)",
+    annotazioni: effettivo
+      ? "Salvataggio definitivo FIR (Modulo Standard)"
+      : "FIR in viaggio: movimento potenziale, in attesa del peso certificato dal destinatario",
     data_emissione_formulario: movementDate,
+    stato_movimento: statoMovimento,
     raw: { fir_form_id: firId, form_data: formData },
   });
 
@@ -277,6 +289,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             numero_fir: numeroFir,
             produttore_denominazione: prodDen,
             destinatario_denominazione: destDen,
+            stato_movimento: statoMovimento,
             note: `Storno automatico: il FIR non fa più riferimento a ${group.cer} (impianto ${group.impiantoId})`,
           } as any);
           if (revError) throw revError;
@@ -305,11 +318,30 @@ export async function syncFirFinalToRegistryAndInventory(params: {
             numero_fir: numeroFir,
             produttore_denominazione: prodDen,
             destinatario_denominazione: destDen,
+            stato_movimento: statoMovimento,
             note: rows.length === 0
-              ? "Salvataggio definitivo FIR (Modulo Standard)"
+              ? (effettivo
+                  ? "Salvataggio definitivo FIR (Modulo Standard)"
+                  : "FIR in viaggio: movimento potenziale, in attesa del peso certificato")
               : `Riconciliazione automatica FIR: effetto netto richiesto ${desiredSignedQuantity} kg, precedente ${currentSignedQuantity} kg`,
           } as any);
           if (movementError) throw movementError;
+        }
+
+        // Il peso è certificato: tutte le righe ancora potenziali di questo FIR
+        // diventano effettive e da questo momento pesano sulle giacenze.
+        if (effettivo) {
+          const { error: promoteError } = await supabase
+            .from("movimenti_impianto" as any)
+            .update({ stato_movimento: "effettivo" } as any)
+            .eq("fir_id", firId)
+            .eq("stato_movimento", "potenziale");
+          if (promoteError) throw promoteError;
+          await supabase
+            .from("registro_generale" as any)
+            .update({ stato_movimento: "effettivo" } as any)
+            .filter("raw->>fir_form_id", "eq", firId)
+            .eq("stato_movimento", "potenziale");
         }
 
         const touched = new Map<string, { impiantoId: string; cer: string }>();

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Loader2, Plus, RefreshCw, Send, Truck } from "lucide-react";
 import { ContoTerziManualDialog } from "./ContoTerziManualDialog";
@@ -25,11 +26,19 @@ const fmtDate = (v: string | null) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v);
 };
 
+type RigaCartacea = MovimentoImpiantoRow & {
+  impianto_id?: string | null;
+  stato_movimento?: string | null;
+};
+
 export function DevFirCartaceoModule() {
   const registri = registriDisponibili(CLIENTE);
   const [registroId, setRegistroId] = useState(registri[0]?.id ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [rows, setRows] = useState<MovimentoImpiantoRow[]>([]);
+  const [confermaRow, setConfermaRow] = useState<RigaCartacea | null>(null);
+  const [pesoConfermato, setPesoConfermato] = useState("");
+  const [confermando, setConfermando] = useState(false);
+  const [rows, setRows] = useState<RigaCartacea[]>([]);
   const [inviatiIds, setInviatiIds] = useState<Set<string>>(new Set());
   const [selezione, setSelezione] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -42,14 +51,14 @@ export function DevFirCartaceoModule() {
       const { data, error } = await supabase
         .from("movimenti_impianto")
         .select(
-          "id, cer, descrizione_rifiuto, quantita_kg, data_movimento, tipo_movimento, numero_fir, produttore_denominazione, destinatario_denominazione, origine",
+          "id, cer, descrizione_rifiuto, quantita_kg, data_movimento, tipo_movimento, numero_fir, produttore_denominazione, destinatario_denominazione, origine, impianto_id, stato_movimento",
         )
         .eq("tenant_id", MULTY_TENANT_ID)
         .in("origine", ORIGINI_CARTACEE)
         .order("data_movimento", { ascending: false })
         .limit(300);
       if (error) throw error;
-      setRows((data ?? []) as unknown as MovimentoImpiantoRow[]);
+      setRows((data ?? []) as unknown as RigaCartacea[]);
 
       const { data: invii } = await supabase
         .from("rentri_invii_registri")
@@ -95,8 +104,58 @@ export function DevFirCartaceoModule() {
       return n;
     });
 
-  const invia = async (target: MovimentoImpiantoRow[]) => {
+  const isEffettivo = (r: RigaCartacea) => (r.stato_movimento ?? "effettivo") === "effettivo";
+
+  const apriConferma = (r: RigaCartacea) => {
+    setConfermaRow(r);
+    setPesoConfermato(r.quantita_kg != null ? String(r.quantita_kg) : "");
+  };
+
+  /**
+   * Cartaceo: le giacenze si muovono SOLO qui, con la conferma di una persona
+   * che inserisce il peso realmente riscontrato dal destinatario.
+   */
+  const confermaPesata = async () => {
+    if (!confermaRow) return;
+    const peso = parseFloat(String(pesoConfermato).replace(",", "."));
+    if (!Number.isFinite(peso) || peso <= 0) {
+      toast.error("Inserisci il peso reale riscontrato (maggiore di zero)");
+      return;
+    }
+    setConfermando(true);
+    try {
+      const { error } = await supabase
+        .from("movimenti_impianto")
+        .update({ quantita_kg: peso, stato_movimento: "effettivo" } as any)
+        .eq("id", confermaRow.id);
+      if (error) throw error;
+
+      if (confermaRow.impianto_id && confermaRow.cer) {
+        const { error: recErr } = await (supabase as any).rpc("recalculate_magazzino_giacenza", {
+          p_tenant_id: MULTY_TENANT_ID,
+          p_impianto_id: confermaRow.impianto_id,
+          p_cer: confermaRow.cer,
+        });
+        if (recErr) throw recErr;
+      }
+      toast.success("Pesata confermata: movimento effettivo e giacenze aggiornate");
+      setConfermaRow(null);
+      await load();
+    } catch (e: any) {
+      toast.error("Conferma non riuscita: " + (e?.message ?? "sconosciuto"));
+    } finally {
+      setConfermando(false);
+    }
+  };
+
+  const invia = async (target: RigaCartacea[]) => {
     if (!registroId) return toast.error("Seleziona un registro RENTRI");
+    const nonEffettivi = target.filter((r) => !isEffettivo(r));
+    if (nonEffettivi.length > 0) {
+      return toast.error(
+        `${nonEffettivi.length} movimenti non sono ancora effettivi: conferma prima la pesata`,
+      );
+    }
     const payload = mapMovimentiToRentri(target, CLIENTE);
     if (payload.length === 0) return toast.error("Nessun movimento valido da inviare");
     setInviando(true);
@@ -121,7 +180,7 @@ export function DevFirCartaceoModule() {
     }
   };
 
-  const daInviare = filtered.filter((r) => !inviatiIds.has(r.id));
+  const daInviare = filtered.filter((r) => !inviatiIds.has(r.id) && isEffettivo(r));
 
   return (
     <div className="space-y-4">
@@ -194,13 +253,14 @@ export function DevFirCartaceoModule() {
                 <th className="text-right px-3 py-2 font-medium">Kg</th>
                 <th className="text-left px-3 py-2 font-medium">Produttore</th>
                 <th className="text-left px-3 py-2 font-medium">Destinatario</th>
+                <th className="text-center px-3 py-2 font-medium">Stato</th>
                 <th className="text-center px-3 py-2 font-medium">RENTRI</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <td colSpan={10} className="text-center py-12 text-muted-foreground">
                     <FileText className="h-6 w-6 mx-auto mb-2 opacity-40" />
                     Nessun formulario cartaceo registrato
                   </td>
@@ -215,7 +275,7 @@ export function DevFirCartaceoModule() {
                           type="checkbox"
                           checked={selezione.has(r.id)}
                           onChange={() => toggle(r.id)}
-                          disabled={inviato}
+                          disabled={inviato || !isEffettivo(r)}
                           className="accent-violet-500"
                         />
                       </td>
@@ -230,6 +290,20 @@ export function DevFirCartaceoModule() {
                       </td>
                       <td className="px-3 py-2 text-xs max-w-[200px] truncate">{r.produttore_denominazione || "—"}</td>
                       <td className="px-3 py-2 text-xs max-w-[200px] truncate">{r.destinatario_denominazione || "—"}</td>
+                      <td className="px-3 py-2 text-center">
+                        {isEffettivo(r) ? (
+                          <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">Effettivo</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
+                            onClick={() => apriConferma(r)}
+                          >
+                            Conferma pesata e aggiorna giacenze
+                          </Button>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-center">
                         {inviato ? (
                           <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">Inviato</Badge>
@@ -251,6 +325,38 @@ export function DevFirCartaceoModule() {
         onClose={() => setDialogOpen(false)}
         onSaved={() => void load()}
       />
+
+      <Dialog open={!!confermaRow} onOpenChange={(o) => !o && setConfermaRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Conferma pesata formulario cartaceo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              FIR {confermaRow?.numero_fir || "—"} · CER {confermaRow?.cer || "—"}. Le giacenze si aggiornano solo
+              adesso, con il peso realmente riscontrato.
+            </p>
+            <div>
+              <p className="text-[11px] uppercase text-muted-foreground mb-1">Peso reale (kg)</p>
+              <Input
+                value={pesoConfermato}
+                onChange={(e) => setPesoConfermato(e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setConfermaRow(null)} disabled={confermando}>
+                Annulla
+              </Button>
+              <Button size="sm" onClick={() => void confermaPesata()} disabled={confermando} className="gap-1">
+                {confermando ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                Conferma e aggiorna giacenze
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

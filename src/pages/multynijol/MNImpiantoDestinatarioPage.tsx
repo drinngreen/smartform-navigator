@@ -4,6 +4,7 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { useMovimentiImpianto } from "@/hooks/useMovimentiImpianto";
+import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,6 +151,9 @@ export default function MNImpiantoDestinatarioPage() {
       esito_accettazione: esito,
       note: form.note || null,
       data_movimento: new Date().toISOString().split("T")[0],
+      // Il peso è certificato qui, alla pesata del destinatario: il movimento
+      // diventa effettivo. Un carico respinto non diventa mai effettivo.
+      stato_movimento: esito === "respinto" ? "annullato" : "effettivo",
     };
 
     await createMovimento.mutateAsync(payload);
@@ -168,7 +172,23 @@ export default function MNImpiantoDestinatarioPage() {
       if (closeError) {
         toast.error("Arrivo registrato, ma il formulario non risulta chiuso: " + closeError.message);
       } else {
-        toast.success("Arrivo registrato e formulario chiuso");
+        // Chiusura digitale: la pesata del destinatario certifica il peso, i
+        // movimenti diventano effettivi e le giacenze si aggiornano da sole.
+        try {
+          const sync = await syncFirFinalToRegistryAndInventory({
+            firId: selectedFirId,
+            impiantoId: selectedImpianto,
+            effettivo: esito !== "respinto",
+          });
+          if (sync.warning) toast.warning(sync.warning);
+          toast.success(
+            esito === "respinto"
+              ? "Formulario chiuso come respinto: nessuna giacenza movimentata"
+              : "Formulario chiuso: giacenze aggiornate con il peso riscontrato",
+          );
+        } catch (e: any) {
+          toast.error("Formulario chiuso, ma registro e giacenze non aggiornati: " + (e?.message || String(e)));
+        }
       }
     }
 
