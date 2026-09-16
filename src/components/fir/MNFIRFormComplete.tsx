@@ -558,6 +558,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             diario.push({ autore: "ufficio", azione: "formulario modificato dall'ufficio", ora: data.updated_at });
             const merged = { ...fd, diario };
             store.loadFromDatabase({ ...data, form_data: merged } as any);
+            useMNFIRStore.setState({
+              workflowStatus: data.status === "inviato" ? "inviato" : data.status === "completato" ? "chiuso" : "bozza",
+            });
             toast.info("Formulario aggiornato dall'ufficio");
           })();
         },
@@ -912,7 +915,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (officialNumeroFir) {
         store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({ id: activeFirId, numero_fir: officialNumeroFir, form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null, rentri_retry_pending: false, rentri_retry_since: null }, status: "inviato", submitted_at: new Date().toISOString() });
+        const fdPrev = (dbFields.form_data ?? {}) as Record<string, any>;
+        const diarioPrev = Array.isArray(fdPrev.diario) ? fdPrev.diario : [];
+        await silentSaveFIR.mutateAsync({
+          id: activeFirId,
+          numero_fir: officialNumeroFir,
+          form_data: {
+            ...fdPrev,
+            diario: [...diarioPrev, { autore: diarioAutore, azione: "firmato e inviato su RENTRI", ora: new Date().toISOString() }],
+            rentri_fir_id: rentriFirId || null,
+            rentri_retry_pending: false,
+            rentri_retry_since: null,
+          },
+          status: "inviato",
+          submitted_at: new Date().toISOString(),
+        });
       }
       useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
       const qrFromFirma = toRentriImageSrc(
