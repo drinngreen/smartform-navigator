@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
+import { registraAnagraficheFormulario, descriviEsitoRegistrazione } from "@/lib/anagraficaAutoRegistrazione";
+
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer, CheckCircle2 } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
 import { TIPI_AUTORIZZAZIONE_UFFICIALI } from "@/data/tipiAutorizzazione";
@@ -328,25 +330,105 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
 }
 
 
-function PesoDestinoPopup({ onConfirm, onCancel }: { onConfirm: (peso: string) => void; onCancel: () => void }) {
+export interface ArrivoDestino {
+  peso: string;
+  data: string;
+  ora: string;
+  esito: "accettato" | "parziale" | "respinto";
+  motivazione: string;
+}
+
+/**
+ * Seconda trasmissione ufficiale al RENTRI: l'arrivo a destino.
+ * Qui si raccolgono peso reale, data/ora ed esito; nulla viene inviato né
+ * registrato finché non si conferma la firma del destinatario.
+ */
+function ArrivoDestinoPopup({
+  onConfirm,
+  onCancel,
+  inviando,
+}: {
+  onConfirm: (arrivo: ArrivoDestino) => void;
+  onCancel: () => void;
+  inviando: boolean;
+}) {
+  const adesso = new Date();
   const [peso, setPeso] = useState("");
+  const [data, setData] = useState(adesso.toISOString().slice(0, 10));
+  const [ora, setOra] = useState(adesso.toTimeString().slice(0, 5));
+  const [esito, setEsito] = useState<ArrivoDestino["esito"]>("accettato");
+  const [motivazione, setMotivazione] = useState("");
+
+  const conferma = () => {
+    if (esito !== "respinto" && (!peso.trim() || Number(peso) <= 0)) {
+      toast.error("Inserisci il peso reale rilevato a destino");
+      return;
+    }
+    if (esito !== "accettato" && !motivazione.trim()) {
+      toast.error("Indica la motivazione dell'accettazione parziale o del respingimento");
+      return;
+    }
+    onConfirm({ peso: peso.trim(), data, ora, esito, motivazione: motivazione.trim() });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+      <div className="bg-card border border-primary/30 rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center gap-2 text-primary">
           <Scale className="h-5 w-5" />
-          <h3 className="font-display text-lg tracking-wider">PESO A DESTINO</h3>
+          <h3 className="font-display text-lg tracking-wider">ARRIVO A DESTINO</h3>
         </div>
-        <p className="text-sm text-white/70">Inserisci il peso riscontrato a destino (Kg) per chiudere definitivamente il FIR.</p>
-        <input type="number" value={peso} onChange={(e) => setPeso(e.target.value)} onWheel={blurOnWheel} placeholder="Peso in Kg" className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary" autoFocus />
+        <p className="text-sm text-white/70">
+          Questo è il secondo invio ufficiale al RENTRI. Il formulario si chiude e le giacenze si aggiornano solo
+          dopo la risposta positiva del RENTRI.
+        </p>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Peso reale (Kg)</label>
+          <input
+            type="number"
+            value={peso}
+            onChange={(e) => setPeso(e.target.value)}
+            onWheel={blurOnWheel}
+            placeholder="Peso verificato alla pesa"
+            className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-3 text-foreground text-lg font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+            autoFocus
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Data arrivo</label>
+            <input type="date" value={data} onChange={(e) => setData(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Ora arrivo</label>
+            <input type="time" value={ora} onChange={(e) => setOra(e.target.value)} onWheel={blurOnWheel} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Esito</label>
+          <select value={esito} onChange={(e) => setEsito(e.target.value as ArrivoDestino["esito"])} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="accettato">Accettato totalmente</option>
+            <option value="parziale">Accettato parzialmente</option>
+            <option value="respinto">Respinto</option>
+          </select>
+        </div>
+        {esito !== "accettato" && (
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-white/70 mb-1 block">Motivazione</label>
+            <input value={motivazione} onChange={(e) => setMotivazione(e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+          </div>
+        )}
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm">ANNULLA</button>
-          <button onClick={() => { if (peso.trim()) onConfirm(peso); else toast.error("Inserisci il peso"); }} className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider">CHIUDI FIR</button>
+          <button onClick={onCancel} disabled={inviando} className="flex-1 py-3 rounded-xl bg-secondary/50 border border-border text-white/60 font-display text-sm disabled:opacity-50">ANNULLA</button>
+          <button onClick={conferma} disabled={inviando} className="flex-1 py-3 rounded-xl bg-destructive/80 text-destructive-foreground font-display text-sm tracking-wider disabled:opacity-50">
+            {inviando ? "INVIO AL RENTRI..." : "FIRMA E INVIA ARRIVO"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 // ── Main Component — NO PRESETS, all fields editable ──────────────────
 const isTestFirNumberMN = (value?: string | null) => {
@@ -380,6 +462,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const activeMnContext = mnContext || profile?.mn_context;
   const [isSigning, setIsSigning] = useState(false);
   const [showPesoPopup, setShowPesoPopup] = useState(false);
+  const [inviandoArrivo, setInviandoArrivo] = useState(false);
+
   const firNumberFocusedRef = useRef(false);
   const [showControlloStrada, setShowControlloStrada] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
@@ -849,7 +933,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         savedId = created?.id || null;
       }
       toast.success("Bozza salvata senza modificare registro o giacenze.");
+      // Le aziende e le sedi scritte a mano finiscono subito in anagrafica:
+      // non tocca registro, giacenze o dati storici.
+      try {
+        const esito = await registraAnagraficheFormulario(store.data as any);
+        const messaggio = descriviEsitoRegistrazione(esito);
+        if (messaggio) toast.success(messaggio);
+        if (esito.errori.length) toast.error(`Anagrafica: ${esito.errori.join(" · ")}`);
+      } catch (e: any) {
+        toast.error(`Anagrafica non aggiornata: ${e?.message || e}`);
+      }
       return true;
+
     } catch (error: any) {
       toast.error(error?.message || "Errore nel salvataggio");
       return false;
@@ -1154,31 +1249,50 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     setShowPesoPopup(true);
   };
 
-  const handleConfirmClosure = async (peso: string) => {
+  /**
+   * Secondo invio ufficiale al RENTRI: arrivo a destino.
+   * Se il RENTRI non accetta, il formulario resta in viaggio: niente chiusura,
+   * niente registro, niente giacenze.
+   */
+  const handleConfirmClosure = async (arrivo: ArrivoDestino) => {
     if (!store.editingFirId) return;
+    setInviandoArrivo(true);
     try {
-      store.updateField("pesoRicevuto", peso);
+      const pesoReale = arrivo.esito === "respinto" ? "0" : arrivo.peso;
+      const dataOraArrivo = new Date(`${arrivo.data}T${arrivo.ora}:00`).toISOString();
+      store.updateField("pesoRicevuto", pesoReale);
       const dbFields = mapStoreToDatabaseFields(store.data);
-      await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields, form_data: { ...dbFields.form_data, peso_ricevuto: peso } });
-      try {
-        const societaId = resolveSocietaId(activeTenantId, activeMnContext);
-        await chiudiFirRentri({
-          societaId,
-          numero_fir: d.selectedFirNumber,
-          peso_accettato: parseFloat(peso),
-          data_arrivo: new Date().toISOString(),
-          destinatario_denominazione: d.destinatarioDenominazione,
-          destinatario_codice_fiscale: d.destinatarioCF,
-          destinatario_indirizzo: d.destinatarioUnitaLocale,
-          destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
-          destinatario_numero_aut: d.destinatarioNumeroAut,
-          unita_misura: d.unitaMisura,
-        });
-      } catch (renderErr: any) { console.warn("[RENTRI] Chiusura server error:", renderErr.message); }
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        ...dbFields,
+        form_data: {
+          ...dbFields.form_data,
+          peso_ricevuto: pesoReale,
+          arrivo_data_ora: dataOraArrivo,
+          arrivo_esito: arrivo.esito,
+          arrivo_motivazione: arrivo.motivazione || null,
+        },
+      });
+
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+      await chiudiFirRentri({
+        societaId,
+        numero_fir: d.selectedFirNumber,
+        peso_accettato: parseFloat(pesoReale || "0"),
+        data_arrivo: dataOraArrivo,
+        destinatario_denominazione: d.destinatarioDenominazione,
+        destinatario_codice_fiscale: d.destinatarioCF,
+        destinatario_indirizzo: d.destinatarioUnitaLocale,
+        destinatario_tipo_aut: d.destinatarioTipoAut || "AIA",
+        destinatario_numero_aut: d.destinatarioNumeroAut,
+        unita_misura: d.unitaMisura,
+      });
+
       await closeFIR.mutateAsync(store.editingFirId);
       useMNFIRStore.setState({ workflowStatus: 'chiuso' });
       setShowPesoPopup(false);
-      toast.success("🏁 FIR chiuso definitivamente!");
+      toast.success("🏁 Arrivo inviato al RENTRI e formulario chiuso");
+
 
       // ── AUTO EMAIL to impianto ──
       const emailDest = d.destinatarioEmail;
@@ -1210,9 +1324,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
       }
     } catch (error: any) {
-      toast.error("Errore chiusura: " + error.message);
+      toast.error(
+        `Arrivo NON registrato sul RENTRI: ${error.message}. Il formulario resta in viaggio e le giacenze non sono state toccate.`,
+      );
+    } finally {
+      setInviandoArrivo(false);
     }
   };
+
 
   const handleDestinatarioSelect = (soggetto: Soggetto) => {
     u("destinatarioDenominazione", soggetto.nome);
@@ -1237,7 +1356,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   return (
     <div className="px-4 py-4 space-y-4">
-      {showPesoPopup && <PesoDestinoPopup onConfirm={handleConfirmClosure} onCancel={() => setShowPesoPopup(false)} />}
+      {showPesoPopup && (
+        <ArrivoDestinoPopup
+          onConfirm={(arrivo) => void handleConfirmClosure(arrivo)}
+          onCancel={() => setShowPesoPopup(false)}
+          inviando={inviandoArrivo}
+        />
+      )}
+
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex-1 text-center text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
@@ -1332,11 +1458,17 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {(creationMode || isStarted || store.editingFirId) && (
         <div className="space-y-2">
           {store.workflowStatus === 'bozza' && d.formatoFir !== "cartaceo" && (
-            <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
-              {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
-              {isSigning ? "INVIO IN CORSO..." : "INVIA FIR DIGITALE A RENTRI"}
-            </button>
+            <>
+              <button onClick={handleInviaFirma} disabled={isSigning} className="w-full py-4 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-yellow-500/80 text-background font-display text-base tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.3)]">
+                {isSigning ? <div className="w-5 h-5 border-2 border-background/50 border-t-background rounded-full animate-spin" /> : <Send className="h-5 w-5 icon-led" />}
+                {isSigning ? "INVIO PARTENZA IN CORSO..." : "1 · EMETTI FIR E FIRMA LA PARTENZA"}
+              </button>
+              <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
+                Primo invio al RENTRI: numero ufficiale e QR validi per i controlli. Registro e giacenze restano fermi.
+              </p>
+            </>
           )}
+
 
           {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
             <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-4 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-base tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1351,13 +1483,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {store.workflowStatus === 'inviato' && (
             <>
+              <div className="rounded-2xl border border-neon-green/30 bg-neon-green/5 py-2 text-center">
+                <p className="text-xs font-display uppercase tracking-widest text-neon-green">Viaggio in corso</p>
+                <p className="mt-0.5 text-[10px] font-mono text-white/60">Partenza già trasmessa al RENTRI · QR ufficiale valido</p>
+              </div>
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 <Shield className="h-5 w-5 icon-led" /> CONTROLLO POLIZIA (QR CODE)
               </button>
               <button onClick={handleArrivato} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <MapPin className="h-5 w-5 icon-led" /> ARRIVATO
+                <MapPin className="h-5 w-5 icon-led" /> 2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO
               </button>
+              <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
+                Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano.
+              </p>
             </>
+
           )}
 
           {store.workflowStatus === 'chiuso' && (
