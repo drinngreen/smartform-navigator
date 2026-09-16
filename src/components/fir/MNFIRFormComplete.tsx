@@ -581,7 +581,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   // ufficialmente emesso venga ancora mostrato come "da inviare".
   useEffect(() => {
     const numeroFir = String(d.selectedFirNumber ?? "").trim();
-    if (!numeroFir || d.formatoFir === "cartaceo" || store.workflowStatus !== "bozza") {
+    const giaInviato = store.workflowStatus === "inviato";
+    // Il controllo serve sia alle bozze (per scoprire un invio già confermato)
+    // sia ai formulari già inviati che non hanno ancora il QR ufficiale in mano.
+    if (!numeroFir || d.formatoFir === "cartaceo" || (!giaInviato && store.workflowStatus !== "bozza") || (giaInviato && qrCodeData)) {
       setIsCheckingOfficialStatus(false);
       return;
     }
@@ -602,11 +605,11 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           if (ricerca.success && risposta.includes(cercato)) numeroConfermato = numeroFir;
         }
         if (!active || !numeroConfermato) return;
-        setOfficialEmissionAt(conferma?.created_at ?? null);
+        if (conferma?.created_at) setOfficialEmissionAt(conferma.created_at);
         const qr = await resolveFirQrDataUrl(numeroConfermato, societaId);
         if (!active) return;
         if (qr) setQrCodeData(qr);
-        useMNFIRStore.setState({ workflowStatus: "inviato" });
+        if (!giaInviato) useMNFIRStore.setState({ workflowStatus: "inviato" });
       } catch {
         // Nessun cambio di stato in caso di errore di lettura.
       } finally {
@@ -614,7 +617,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       }
     })();
     return () => { active = false; };
-  }, [d.selectedFirNumber, d.formatoFir, store.workflowStatus, activeTenantId, activeMnContext]);
+  }, [d.selectedFirNumber, d.formatoFir, store.workflowStatus, qrCodeData, activeTenantId, activeMnContext]);
+
 
 
 
