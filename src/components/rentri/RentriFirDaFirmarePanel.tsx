@@ -168,6 +168,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
       toast.success(`FIR ${firmaFir.numero_fir} accettato su RENTRI`);
 
       // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
+      // Il peso riscontrato qui è la certificazione: il movimento nasce già EFFETTIVO.
       const destino = IMPIANTO_DESTINO[configKey];
       if (esito !== "respinto" && destino) {
         const { error: movErr } = await supabase.from("movimenti_impianto" as any).insert({
@@ -180,6 +181,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
           tipo_movimento: "CARICO",
           ruolo_impianto: "DESTINATARIO",
           origine: "RENTRI_ACCETTAZIONE",
+          stato_movimento: "effettivo",
           numero_fir: firmaFir.numero_fir,
           produttore_denominazione: firmaFir.produttore_nome || null,
           trasportatore_denominazione: firmaFir.trasportatore_nome || null,
@@ -243,6 +245,11 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         <span className="text-xs text-muted-foreground">
           Soggetto: {cfSoggetto} · U.L. {unitaLocale} · {visibili.length} risultati
         </span>
+        {configKey === "niyol" && (
+          <span className="text-xs text-amber-500">
+            Niyol opera come trasportatore: non riceve rifiuti in impianto. I suoi formulari come trasportatore si gestiscono dal registro di trasporto.
+          </span>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
