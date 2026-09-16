@@ -8,7 +8,7 @@ import {
   type RentriVpsResponse,
 } from "@/lib/rentriVpsApi";
 import { supabase } from "@/lib/supabaseClient";
-import type { FirSummary, FirDetail, FirDestinatarioPayload, FirEvent } from "@/types/impiantoFir";
+import type { FirSummary, FirDetail, FirDestinatarioPayload, FirEvent, FirStatusInterno } from "@/types/impiantoFir";
 
 function extractRentriFirItems(data: unknown): Record<string, unknown>[] {
   if (Array.isArray(data)) return data as Record<string, unknown>[];
@@ -57,22 +57,59 @@ export async function searchXFir(cliente: RentriCliente, numeroFir: string): Pro
   return ricercaFir(cliente, numeroFir);
 }
 
+function normalizzaCf(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, "").toUpperCase();
+}
+
+/** Il formulario è destinato all'impianto che sta guardando l'elenco? */
+function isDestinatario(raw: Record<string, unknown>, cfImpianto: string): boolean {
+  if (!cfImpianto) return true;
+  const lista = Array.isArray(raw.destinatari) ? (raw.destinatari as Record<string, unknown>[]) : [];
+  const singolo = (raw.destinatario ?? null) as Record<string, unknown> | null;
+  const cf = normalizzaCf(cfImpianto);
+  return (
+    lista.some((d) => normalizzaCf(d.codice_fiscale) === cf) ||
+    normalizzaCf(singolo?.codice_fiscale) === cf ||
+    normalizzaCf(raw.destinatario_codice_fiscale) === cf
+  );
+}
+
+/**
+ * Stato interno derivato dallo stato ufficiale RENTRI.
+ * "Accettato" (o accettazione presente) = chiuso dal destinatario.
+ * Qualsiasi stato di firma alla partenza = firmato dal trasportatore e in attesa di ricezione.
+ */
+function statoInternoDaRentri(raw: Record<string, unknown>): FirStatusInterno {
+  const stato = String(raw.stato ?? raw.stato_fir ?? "").toLowerCase();
+  const accettazione = raw.accettazione as Record<string, unknown> | null | undefined;
+  if (stato.includes("accett") || accettazione) return "firmato_destinatario";
+  if (stato.includes("firma") || stato.includes("trasport")) return "attesa_firma_ricezione";
+  if (stato.includes("annull") || stato.includes("error")) return "errore";
+  return "importato";
+}
+
 export async function listIncomingXFir(
   cliente: RentriCliente,
   identificativoSoggetto: string,
+  numIscrSito?: string,
 ): Promise<FirSummary[]> {
-  const res = await listaFirInArrivoDestinatario(cliente, identificativoSoggetto);
+  const res = await listaFirInArrivoDestinatario(cliente, identificativoSoggetto, numIscrSito);
   if (!res.success) {
     if (isRentriOfflineResponse(res)) return [];
     throw new Error(res.error || "Errore recupero FIR in arrivo");
   }
 
   return extractRentriFirItems(res.data)
+    .filter((raw) => isDestinatario(raw, identificativoSoggetto))
     .map((raw, index) => {
       const d = raw as Record<string, unknown>;
       const summary = parseRentriToSummary(d);
+      const accettazione = d.accettazione as Record<string, unknown> | null | undefined;
       const uuid = String(d.uuid ?? d.id ?? d.uuid_fir ?? d.firId ?? summary.numero_fir ?? `incoming-${index}`);
-      const dataRicezione = String(d.data_ora_ricezione ?? d.data_arrivo ?? d.created_at ?? new Date().toISOString());
+      const dataRicezione = String(
+        accettazione?.data_ora_arrivo ?? d.data_ora_ricezione ?? d.data_arrivo ?? d.data_emissione ?? d.created_at ?? new Date().toISOString(),
+      );
+      const dataAccettazione = accettazione?.data_ora_arrivo ? String(accettazione.data_ora_arrivo) : null;
 
       return {
         id: uuid,
@@ -83,11 +120,11 @@ export async function listIncomingXFir(
         cer: summary.cer || "",
         quantita: Number(summary.quantita || 0),
         unita_misura: summary.unita_misura || "kg",
-        stato_interno: "attesa_firma_ricezione",
+        stato_interno: statoInternoDaRentri(d),
         stato_rentri: String(d.stato ?? d.stato_fir ?? d.esito ?? "IN_ARRIVO"),
         data_ricezione: dataRicezione,
-        firma_ricezione_at: null,
-        firma_destinatario_at: null,
+        firma_ricezione_at: dataAccettazione,
+        firma_destinatario_at: dataAccettazione,
       } satisfies FirSummary;
     })
     .filter((item) => Boolean(item.id && item.numero_fir));
@@ -182,8 +219,16 @@ export function parseRentriToSummary(raw: Record<string, unknown>): Partial<FirS
   return {
     numero_fir: d.numero_fir || d.numeroFir || d.numero || "",
     produttore: d.produttore?.denominazione || d.produttore_denominazione || "",
-    trasportatore: d.trasportatore?.denominazione || d.trasportatore_denominazione || "",
-    destinatario: d.destinatario?.denominazione || d.destinatario_denominazione || "",
+    trasportatore:
+      d.trasportatore?.denominazione ||
+      d.trasportatori?.[0]?.denominazione ||
+      d.trasportatore_denominazione ||
+      "",
+    destinatario:
+      d.destinatario?.denominazione ||
+      d.destinatari?.[0]?.denominazione ||
+      d.destinatario_denominazione ||
+      "",
     cer: d.codice_eer || d.rifiuto?.codice_eer || "",
     quantita: Number(d.quantita || d.rifiuto?.quantita || 0),
     unita_misura: d.unita_misura || d.rifiuto?.unita_misura || "kg",
