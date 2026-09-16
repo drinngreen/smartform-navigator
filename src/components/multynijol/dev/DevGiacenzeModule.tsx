@@ -242,19 +242,19 @@ export function DevGiacenzeModule() {
     };
   }, [queryClient]);
 
-  // Sync manuale: forza una rilettura del libro mastro Dragon senza duplicare movimenti.
+  // Aggiorna soltanto la vista: non scrive né ricalcola alcuna giacenza.
   const recalculate = useMutation({
     mutationFn: async () => {
       await queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
       const count = new Set((movimenti ?? []).map((row) => row.cer)).size;
-      logAgentActivity("Sync giacenze Dragon", "ok", `${count} codici CER`);
+      logAgentActivity("Rilettura giacenze Dragon", "ok", `${count} codici CER`);
       return count;
     },
     onSuccess: (count) => {
       ["dev-giacenze", "dev-giacenze-baseline", "dev-movimenti-multy", "dev-mag-giacenze", "dev-mag-movimenti", "dev-registro-movimenti"].forEach((k) =>
         queryClient.invalidateQueries({ queryKey: [k] })
       );
-      toast.success(`Giacenze Dragon aggiornate (${count} codici CER)`);
+      toast.success(`Vista giacenze aggiornata (${count} codici CER, nessun dato modificato)`);
     },
     onError: (e: any) => toast.error("Errore: " + e.message),
   });
