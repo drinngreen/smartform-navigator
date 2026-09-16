@@ -290,6 +290,20 @@ export function DevFirCartaceoModule() {
                       <td className="px-3 py-2 text-xs max-w-[200px] truncate">{r.produttore_denominazione || "—"}</td>
                       <td className="px-3 py-2 text-xs max-w-[200px] truncate">{r.destinatario_denominazione || "—"}</td>
                       <td className="px-3 py-2 text-center">
+                        {isEffettivo(r) ? (
+                          <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">Effettivo</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
+                            onClick={() => apriConferma(r)}
+                          >
+                            Conferma pesata e aggiorna giacenze
+                          </Button>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
                         {inviato ? (
                           <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">Inviato</Badge>
                         ) : (
