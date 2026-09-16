@@ -31,6 +31,7 @@ import { RentriPescaFirPanel } from "@/components/rentri/RentriPescaFirPanel";
 import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
 import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { RentriInviiRentriPanel } from "@/components/rentri/RentriInviiRentriPanel";
+import { RentriHistoryPanel } from "@/components/rentri/RentriHistoryPanel";
 import { DevStampaFIREditor } from "@/components/multynijol/dev/DevStampaFIREditor";
 import { RentriResultBanner } from "@/components/rentri/RentriResultBanner";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
@@ -1022,6 +1023,10 @@ export default function MNRentriConsolePage() {
 
         {tab === "invii" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-6">
+            <div className="space-y-3">
+              <h3 className="text-base font-display tracking-wider">Invii FIR e rifiuti RENTRI</h3>
+              <RentriHistoryPanel defaultCliente={cliente} />
+            </div>
             <div className="space-y-3">
               <h3 className="text-base font-display tracking-wider">Movimenti presenti sui registri RENTRI — Multy e Niyol</h3>
               <RentriInviiRentriPanel />
