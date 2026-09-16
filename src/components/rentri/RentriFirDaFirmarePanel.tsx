@@ -332,7 +332,7 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
 
       // Solo con esito confermato (totale o parziale) il rifiuto entra davvero in impianto.
       // La pesata certificata passa obbligatoriamente dal punto unico idempotente.
-      const destino = IMPIANTO_DESTINO[firmaFir.societa];
+      const destino = IMPIANTO_DESTINO[firmaFir.societaFirma ?? firmaFir.societa];
       if (esito !== "respinto" && destino) {
         const { error: movErr } = await (supabase as any).rpc("applica_movimento_giacenza", {
           p_tenant_id: destino.tenant_id,
