@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { emissioneFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
+import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { CheckCircle2, FileText, Loader2, PenLine, RefreshCw, Search, Send, X } from "lucide-react";
 
 
@@ -206,33 +207,35 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
     if (!window.confirm(`Inviare a RENTRI il formulario ${d.numero_fir}? L'operazione è definitiva.`)) return;
     setBusyId(d.id);
     try {
-      const res = await emissioneFir(cliente, {
+      // Payload strutturato richiesto dal RENTRI, costruito come dal formulario
+      // completo; la validazione pre-invio blocca l'invio e elenca in italiano
+      // tutto ciò che manca o non è conforme.
+      const extra = (d as unknown as { form_data?: Record<string, unknown> }).form_data ?? {};
+      const formData: Record<string, string | boolean> = {};
+      for (const [k, v] of Object.entries(extra)) {
+        if (typeof v === "string" || typeof v === "boolean") formData[k] = v;
+      }
+      Object.assign(formData, {
         numero_fir: d.numero_fir,
-        produttore: {
-          denominazione: d.produttore_denominazione ?? "",
-          codice_fiscale: d.produttore_codice_fiscale ?? "",
-          indirizzo: d.produttore_indirizzo ?? "",
-        },
-        destinatario: {
-          denominazione: d.destinatario_denominazione ?? "",
-          codice_fiscale: d.destinatario_codice_fiscale ?? "",
-          indirizzo: d.destinatario_indirizzo ?? "",
-        },
-        trasportatore: {
-          denominazione: d.trasportatore_denominazione ?? "",
-          codice_fiscale: d.trasportatore_codice_fiscale ?? "",
-          albo: d.trasportatore_iscrizione_albo ?? "",
-        },
-        rifiuto: {
-          codice_eer: d.codice_eer ?? "",
-          descrizione: d.descrizione_rifiuto ?? "",
-          stato_fisico: d.stato_fisico ?? "",
-          quantita: Number(d.quantita ?? 0),
-          unita_misura: d.unita_misura ?? "kg",
-        },
+        denominazione_produttore: d.produttore_denominazione ?? "",
+        codice_fiscale_produttore: d.produttore_codice_fiscale ?? "",
+        unita_locale_produttore: d.produttore_indirizzo ?? "",
+        denominazione_destinatario: d.destinatario_denominazione ?? "",
+        codice_fiscale_destinatario: d.destinatario_codice_fiscale ?? "",
+        unita_locale_destinatario: d.destinatario_indirizzo ?? "",
+        denominazione_trasportatore: d.trasportatore_denominazione ?? "",
+        codice_fiscale_trasportatore: d.trasportatore_codice_fiscale ?? "",
+        numero_iscrizione_albo_trasportatore: d.trasportatore_iscrizione_albo ?? "",
+        codice_eer: d.codice_eer ?? "",
+        descrizione_rifiuto: d.descrizione_rifiuto ?? "",
+        stato_fisico: d.stato_fisico ?? "",
+        quantita: String(d.quantita ?? ""),
+        litri: d.unita_misura === "lt" ? "1" : "",
       });
+      const payload = await mapFormToRentriPayload(cliente, formData);
+      const res = await emissioneFir(cliente, payload);
       if (!res.success) {
-        toast.error(res.userMessage ?? "Invio a RENTRI fallito");
+        toast.error(res.userMessage ?? "Invio a RENTRI fallito", { description: res.error, duration: 12000 });
         return;
       }
       await supabase
