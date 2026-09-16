@@ -588,7 +588,12 @@ function ImpiantoFormulari() {
 
       {/* Full FIR Form Dialog */}
       <Dialog open={viewDialog.open} onOpenChange={(o) => { if (!o) closeEditor(); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+        <DialogContent
+          className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
+          onPointerDownOutside={keepOpenOnDarkLemon}
+          onInteractOutside={keepOpenOnDarkLemon}
+          onFocusOutside={keepOpenOnDarkLemon}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
               <FileText className="h-5 w-5 text-emerald-400" />
