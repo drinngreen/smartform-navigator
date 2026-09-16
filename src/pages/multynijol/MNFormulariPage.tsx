@@ -48,6 +48,7 @@ export default function MNFormulariPage() {
   const { context } = useParams<{ context: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
+  const darkLemonOpen = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
 
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) || MN_CONTEXTS[0];

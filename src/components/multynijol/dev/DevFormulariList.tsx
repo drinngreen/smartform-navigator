@@ -11,6 +11,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { keepOpenOnDarkLemon } from "@/lib/dialogGuards";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock, Trash2, Receipt, BadgeEuro,
 } from "lucide-react";
