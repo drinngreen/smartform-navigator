@@ -520,7 +520,7 @@ export function PresetAziendaSelector({
     if (db) {
       onSelectAutorizzazione({
         numero: db.numero_autorizzazione || "",
-        tipo: db.ente_rilascio || db.tipo || "",
+        tipo: tipoUfficialeDaAutorizzazione(db),
         // in formulario si riporta la data di rilascio dell'autorizzazione
         data: db.data_inizio || db.data_scadenza || "",
       });
@@ -564,11 +564,20 @@ export function PresetAziendaSelector({
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
+  // Per il produttore vale l'autorizzazione dell'impianto (righe DESTINATARIO),
+  // non quella di trasporto: è quella che il RENTRI si aspetta.
   useEffect(() => {
     if (loadingDeps) return;
-    const best = [...autsOrdinate].sort((a, b) =>
-      String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""))
-    )[0];
+    const punteggio = (a: any) => {
+      const t = String(a.tipo || "").toUpperCase();
+      if (ruolo === "PRODUTTORE") return t === "DESTINATARIO" ? 2 : 1;
+      return 1;
+    };
+    const best = [...autsOrdinate].sort((a, b) => {
+      const diff = punteggio(b) - punteggio(a);
+      if (diff !== 0) return diff;
+      return String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""));
+    })[0];
     if (!best) return;
     const key = `${clienteId || ""}|${best.id}`;
     if (autoAutRef.current === key || autId) return;
@@ -576,7 +585,7 @@ export function PresetAziendaSelector({
     setAutId(best.id);
     onSelectAutorizzazione({
       numero: best.numero_autorizzazione || "",
-      tipo: best.ente_rilascio || best.tipo || "",
+      tipo: tipoUfficialeDaAutorizzazione(best),
       data: best.data_inizio || best.data_scadenza || "",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
