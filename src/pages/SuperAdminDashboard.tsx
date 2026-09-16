@@ -33,7 +33,7 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const [activeTenant, setActiveTenant] = useState(TENANTS[0]);
   const [showTenantMenu, setShowTenantMenu] = useState(false);
-  const [ngrokUp, setNgrokUp] = useState<boolean | null>(null);
+  const [bridgeUp, setBridgeUp] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!isLoading) {
@@ -45,7 +45,7 @@ export default function SuperAdminDashboard() {
   }, [user, isAdmin, isLoading, navigate]);
 
   useEffect(() => {
-    vpsHealthCheck().then((r) => setNgrokUp(r.ok));
+    vpsHealthCheck().then((r) => setBridgeUp(r.ok));
   }, []);
 
   const handleLogout = async () => {
@@ -112,8 +112,8 @@ export default function SuperAdminDashboard() {
           {/* Backend status */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${ngrokUp === true ? "bg-green-500" : ngrokUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
-              Backend {ngrokUp === true ? "Online" : ngrokUp === false ? "Offline" : "..."}
+              <span className={`w-2 h-2 rounded-full ${bridgeUp === true ? "bg-green-500" : bridgeUp === false ? "bg-red-500" : "bg-yellow-500 animate-pulse"}`} />
+              Bridge RENTRI {bridgeUp === true ? "Online" : bridgeUp === false ? "Offline" : "..."}
             </div>
           </div>
         </div>
