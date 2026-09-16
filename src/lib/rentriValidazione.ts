@@ -237,7 +237,10 @@ export function normalizzaPayloadFirRentri(payload: Record<string, unknown>): Re
     }
     const q = rifiuto.quantita as Record<string, unknown> | undefined;
     if (q && typeof q.valore === "string") {
-      const n = Number(String(q.valore).replace(",", "."));
+      // Formato italiano: "1.200,5" → togli i separatori delle migliaia e usa il punto decimale
+      let s = String(q.valore).trim();
+      if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+      const n = Number(s);
       if (Number.isFinite(n)) q.valore = n;
     }
   }

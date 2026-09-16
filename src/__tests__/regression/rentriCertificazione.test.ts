@@ -86,7 +86,7 @@ describe("Certificazione RENTRI — payload di emissione FIR", () => {
       ["CER non a 6 cifre", (() => { const p = payloadFirReale(); p.dati_partenza.rifiuto.codice_eer = "1704"; return p; })(), "codice_eer"],
       ["quantità nulla", (() => { const p = payloadFirReale(); p.dati_partenza.rifiuto.quantita = { valore: 0, unita_misura: "kg" }; return p; })(), "quantita"],
       ["senza trasportatore", (() => { const p = payloadFirReale(); p.dati_partenza.trasportatori = []; return p; })(), "trasportatori"],
-      ["CF destinatario errato", (() => { const p = payloadFirReale(); p.dati_partenza.destinatario.codice_fiscale = "00000000000"; return p; })(), "destinatario.codice_fiscale"],
+      ["CF destinatario errato", (() => { const p = payloadFirReale(); p.dati_partenza.destinatario.codice_fiscale = "08934760960"; return p; })(), "destinatario.codice_fiscale"],
       ["senza targa", (() => { const p = payloadFirReale(); p.dati_partenza.dati_trasporto_partenza.targa_automezzo = ""; return p; })(), "targa_automezzo"],
     ];
     for (const [nome, payload, campoAtteso] of casi) {
