@@ -1341,7 +1341,14 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   return (
     <div className="px-4 py-4 space-y-4">
-      {showPesoPopup && <PesoDestinoPopup onConfirm={handleConfirmClosure} onCancel={() => setShowPesoPopup(false)} />}
+      {showPesoPopup && (
+        <ArrivoDestinoPopup
+          onConfirm={(arrivo) => void handleConfirmClosure(arrivo)}
+          onCancel={() => setShowPesoPopup(false)}
+          inviando={inviandoArrivo}
+        />
+      )}
+
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex-1 text-center text-sm font-display uppercase tracking-widest text-primary">COMPILA FIR / FORMULARIO RENTRI</h2>
