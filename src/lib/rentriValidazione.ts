@@ -161,7 +161,8 @@ export function validaPayloadFirRentri(payload: Record<string, unknown>): Errore
   if (!String(destinatario.attivita ?? "").trim())
     errori.push({ campo: "dati_partenza.destinatario.attivita", messaggio: "Operazione del destinatario (R/D) mancante" });
 
-  // Rifiuto
+  // Trasportatore
+  const trasp = trasportatori[0];
   if (!trasp) {
     errori.push({ campo: "dati_partenza.trasportatori[0]", messaggio: "Trasportatore mancante" });
   } else {
