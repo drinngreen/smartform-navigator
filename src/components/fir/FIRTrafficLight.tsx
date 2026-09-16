@@ -1,6 +1,5 @@
 import { useFIRStore } from "@/stores/firStore";
-
-type WorkflowStatus = 'bozza' | 'inviato' | 'chiuso' | null;
+import { useMNFIRStore } from "@/stores/mnFirStore";
 
 const lights = [
   { key: 'bozza' as const, label: 'BOZZA', color: 'hsl(45, 93%, 47%)', shadow: 'rgba(234, 179, 8, 0.6)' },
@@ -8,11 +7,23 @@ const lights = [
   { key: 'chiuso' as const, label: 'ARRIVO', color: 'hsl(0, 84%, 60%)', shadow: 'rgba(239, 68, 68, 0.6)' },
 ] as const;
 
+/**
+ * Semaforo di stato del formulario.
+ *
+ * Le app Multy/Niyol lavorano su `useMNFIRStore`, mentre questo componente
+ * leggeva soltanto `useFIRStore`: l'autista vedeva quindi un semaforo fermo,
+ * scollegato dal formulario realmente aperto. Ora si legge lo stato del
+ * formulario effettivamente attivo, qualunque sia lo store che lo gestisce.
+ */
 export function FIRTrafficLight() {
-  const status = useFIRStore((s) => s.workflowStatus);
-  const hasActiveFir = useFIRStore((s) => !!s.data.selectedFirNumber || !!s.editingFirId);
+  const statusStandard = useFIRStore((s) => s.workflowStatus);
+  const attivoStandard = useFIRStore((s) => !!s.data.selectedFirNumber || !!s.editingFirId);
+  const statusMn = useMNFIRStore((s) => s.workflowStatus);
+  const attivoMn = useMNFIRStore((s) => !!s.data.selectedFirNumber || !!s.editingFirId);
 
-  // If there's an active FIR but no explicit status, default to 'bozza'
+  const status = attivoMn ? statusMn : attivoStandard ? statusStandard : statusMn ?? statusStandard;
+  const hasActiveFir = attivoMn || attivoStandard;
+
   const effectiveStatus = status || (hasActiveFir ? 'bozza' : null);
 
   return (
