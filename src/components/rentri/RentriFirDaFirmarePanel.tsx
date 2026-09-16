@@ -60,6 +60,8 @@ interface FirRow {
   data_emissione?: string;
   produttore_nome: string;
   produttore_cf: string;
+  produttore_indirizzo: string;
+  num_iscr_sito: string;
   destinatario_nome: string;
   destinatario_cf: string;
   trasportatore_nome: string;
@@ -131,6 +133,8 @@ function mapRow(d: any, societa: "multy" | "niyol", societaLabel: string): FirRo
     data_emissione: d.data_emissione ? String(d.data_emissione) : undefined,
     produttore_nome: String(prod.denominazione ?? ""),
     produttore_cf: prodCf,
+    produttore_indirizzo: [prod.indirizzo, prod.civico, prod.comune].filter(Boolean).join(" "),
+    num_iscr_sito: String(d.num_iscr_sito ?? ""),
     destinatario_nome: String(dest.denominazione ?? ""),
     destinatario_cf: destCf,
     trasportatore_nome: String(tras.denominazione ?? ""),
@@ -282,6 +286,8 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
         quantita: r.quantita,
         produttore_cf: r.produttore_cf,
         produttore_nome: r.produttore_nome,
+        produttore_indirizzo: r.produttore_indirizzo,
+        num_iscr_sito: r.num_iscr_sito,
         data_emissione: r.data_emissione,
         data_creazione: r.data_creazione,
         descrizione: `Uscita da magazzino Multyproget — FIR ${r.numero_fir} (${r.trasportatore_nome || "trasportatore"})`,
@@ -513,6 +519,8 @@ export function RentriFirDaFirmarePanel({ cliente }: { cliente: RentriCliente })
                       quantita: r.quantita,
                       produttore_cf: r.produttore_cf,
                       produttore_nome: r.produttore_nome,
+                      produttore_indirizzo: r.produttore_indirizzo,
+                      num_iscr_sito: r.num_iscr_sito,
                       data_emissione: r.data_emissione,
                       data_creazione: r.data_creazione,
                     }).ok && (

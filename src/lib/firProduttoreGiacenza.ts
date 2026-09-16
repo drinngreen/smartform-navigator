@@ -107,29 +107,52 @@ export function ruoliFir(
   return out;
 }
 
+/** Sede (impianto) Multyproget: solo da qui il materiale esce dal magazzino. */
+export const MULTY_UNITA_LOCALE = "OP2501XMQ021914-TO0001";
+export const MULTY_SEDE_INDIRIZZO = "RIVAROSSA";
+
+/** true se il punto di partenza è la sede di via Rivarossa e non un cantiere. */
+export const partenzaDallaSedeMulty = (fir: {
+  produttore_indirizzo?: unknown;
+  num_iscr_sito?: unknown;
+}): boolean => {
+  // L'indirizzo del produttore deve essere la sede di via Rivarossa: da un
+  // cantiere il materiale non esce dal magazzino e le giacenze non si toccano.
+  if (!normalizzaNome(fir.produttore_indirizzo).includes(MULTY_SEDE_INDIRIZZO)) return false;
+  const sito = String(fir.num_iscr_sito ?? "").toUpperCase().trim();
+  return !sito || sito === MULTY_UNITA_LOCALE;
+};
+
 export interface FirProduttoreCandidato {
   numero_fir: string;
   codice_eer: string;
   quantita: number;
   produttore_cf: string;
   produttore_nome?: string;
+  produttore_indirizzo?: string;
+  num_iscr_sito?: string;
   data_emissione?: string;
   data_creazione?: string;
   descrizione?: string;
 }
 
 /**
- * true solo se: produttore Multyproget + formulario datato da oggi alle 08:00
- * (ora italiana) in poi + CER e quantità utilizzabili. Mai lo storico.
+ * true solo se: produttore Multyproget con il proprio codice fiscale, partenza
+ * dalla SEDE di via Rivarossa (mai da un cantiere), formulario datato da oggi
+ * alle 08:00 (ora italiana) in poi + CER e quantità utilizzabili. Mai lo storico.
  */
 export function scaricoProduttoreAmmesso(
   fir: FirProduttoreCandidato,
   cutoff = cutoffGiacenzeDaFir(),
 ): { ok: boolean; motivo?: string } {
-  const prodMulty =
-    normalizzaCf(fir.produttore_cf) === MULTY_CF || nomeCorrisponde(fir.produttore_nome, ALIAS_MULTY);
-  if (!prodMulty)
+  if (normalizzaCf(fir.produttore_cf) !== MULTY_CF)
     return { ok: false, motivo: "Il produttore non è Multyproget: nessun effetto sulle giacenze." };
+  if (!partenzaDallaSedeMulty(fir))
+    return {
+      ok: false,
+      motivo:
+        "Partenza da cantiere, non dalla sede di via Rivarossa: nessun effetto sulle giacenze.",
+    };
   const istante = istanteFir(fir);
   if (istante === null)
     return { ok: false, motivo: "Formulario senza data/ora leggibile: nessun effetto sulle giacenze." };
