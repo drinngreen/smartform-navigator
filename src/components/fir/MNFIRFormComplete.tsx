@@ -603,9 +603,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
         if (!active || !numeroConfermato) return;
         setOfficialEmissionAt(conferma?.created_at ?? new Date().toISOString());
-        useMNFIRStore.setState({ workflowStatus: "inviato" });
         const qr = await resolveFirQrDataUrl(numeroConfermato, societaId);
-        if (active && qr) setQrCodeData(qr);
+        if (!active) return;
+        if (qr) setQrCodeData(qr);
+        useMNFIRStore.setState({ workflowStatus: "inviato" });
       } catch {
         // Nessun cambio di stato in caso di errore di lettura.
       } finally {
