@@ -348,6 +348,9 @@ function ImpiantoFormulari() {
     payload: { kg_pesata: number; data_arrivo: string; ora_arrivo: string; esito: "accettato" | "parziale" | "respinto"; motivazione?: string },
   ) => {
     if (!selectedIncoming) throw new Error("Nessun FIR selezionato");
+    if (selectedIncoming.stato_interno === "firmato_destinatario") {
+      throw new Error("Formulario già accettato e chiuso sul RENTRI: nessun nuovo invio consentito");
+    }
 
     const cfg = getTenantConfig(SOCIETA_ID);
     if (!cfg?.unitId) throw new Error("num_iscr_sito Multy non configurato");
