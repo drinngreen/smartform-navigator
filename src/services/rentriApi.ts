@@ -2,7 +2,7 @@
  * RENTRI API Service – routes through VPS proxy (rentri-vps-proxy edge function).
  */
 
-import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, type RentriCliente } from "@/lib/rentriVpsApi";
+import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, estraiTransazioneId, statoTransazioneFir, ricercaFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 
 // ─── Tenant → company mapping ─────────────────────────────
