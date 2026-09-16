@@ -67,8 +67,24 @@ export function normalizzaCF(raw: unknown): string {
 }
 
 /** Checksum partita IVA (11 cifre). */
+/** Checksum partita IVA (11 cifre). */
 function pivaValida11(v: string): boolean {
   if (!/^\d{11}$/.test(v)) return false;
+  let soma = 0;
+  for (let i = 0; i < 10; i++) {
+    let n = Number(v[i]);
+    if (i % 2 === 1) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    soma += n;
+  }
+  const atteso = (10 - (soma % 10)) % 10;
+  return atteso === Number(v[10]);
+}
+
+/** Checksum codice fiscale (16 caratteri). */
+function cfValido16(v: string): boolean {
   const odd = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const even: Record<string, number> = {
     "0": 1, "1": 0, "2": 5, "3": 7, "4": 9, "5": 13, "6": 15, "7": 17, "8": 19, "9": 21,
