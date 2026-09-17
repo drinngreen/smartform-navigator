@@ -4,6 +4,7 @@
 
 import { inviaOperazioneRentri, emissioneFir, firmaRicezione, richiestaVidimazione, scaricaPdfLotto, estraiTransazioneId, statoTransazioneFir, ricercaFir, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
+import { findRentriFirRecord, isRentriDepartureConfirmed } from "@/lib/rentriFirStatus";
 
 // ─── Tenant → company mapping ─────────────────────────────
 const TENANT_MAP: Record<string, RentriCliente> = {
@@ -193,9 +194,10 @@ async function attendiConfermaEmissione(
 
     if (numeroInviato) {
       const ricerca = await ricercaFir(cliente, numeroInviato);
-      if (ricerca.success) {
-        const id = estraiFirId(ricerca.data);
-        if (id) return id;
+      if (ricerca.success && isRentriDepartureConfirmed(ricerca.data, numeroInviato)) {
+        const record = findRentriFirRecord(ricerca.data, numeroInviato);
+        const id = estraiFirId(record) || numeroInviato;
+        return id;
       }
     }
   }
@@ -223,12 +225,10 @@ export async function inviaFirmaRentri(
   ).trim();
   if (numeroDaInviare) {
     const esistente = await ricercaFir(cliente, numeroDaInviare);
-    if (esistente.success) {
-      const firEsistente = estraiFirId(esistente.data);
-      if (firEsistente || JSON.stringify(esistente.data ?? {}).toUpperCase().includes(numeroDaInviare.replace(/\s/g, "").toUpperCase())) {
-        const numeroConfermato = firEsistente || numeroDaInviare;
-        return { numero_fir: numeroConfermato, firId: numeroConfermato, gia_presente_sul_rentri: true };
-      }
+    if (esistente.success && isRentriDepartureConfirmed(esistente.data, numeroDaInviare)) {
+      const record = findRentriFirRecord(esistente.data, numeroDaInviare);
+      const numeroConfermato = estraiFirId(record) || numeroDaInviare;
+      return { numero_fir: numeroConfermato, firId: numeroConfermato, gia_presente_sul_rentri: true };
     }
   }
 
@@ -237,13 +237,10 @@ export async function inviaFirmaRentri(
   if (res.success) {
     const responseRoot = (res.data as any) || {};
     const root = (responseRoot.data || responseRoot.risposta || responseRoot.result || responseRoot) as Record<string, any>;
-    let firId = String(root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "").trim();
-    if (!firId) {
-      // Il RENTRI accetta l'emissione in modo asincrono (202 + transazione_id):
-      // la partenza è confermata solo quando la transazione si conclude o il FIR
-      // risulta davvero presente sul RENTRI. Nessun reinvio: solo letture.
-      firId = await attendiConfermaEmissione(cliente, res.data, enrichedPayload);
-    }
+    // Anche se il POST restituisce numero/UUID, la partenza è confermata solo
+    // dalla successiva rilettura RENTRI con stato emesso/trasporto/chiuso.
+    // Lo stato InserimentoTrasportoIniziale resta sempre bozza.
+    const firId = await attendiConfermaEmissione(cliente, res.data, enrichedPayload);
     if (!firId) {
       throw new Error("Il RENTRI ha accettato la richiesta ma non ha ancora confermato il FIR: riprova tra qualche istante senza rifare l'invio");
     }

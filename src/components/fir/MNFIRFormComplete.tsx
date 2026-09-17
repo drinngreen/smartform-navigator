@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { registraAnagraficheFormulario, descriviEsitoRegistrazione } from "@/lib/anagraficaAutoRegistrazione";
 import { resolveWorkflowStatus, isFalseSubmitted } from "@/lib/firWorkflowStatus";
+import { classifyRentriDeparture } from "@/lib/rentriFirStatus";
 
 import { Save, Send, Plus, ChevronDown, ChevronRight, FileText, Shield, MapPin, Scale, Search, Download, Eraser, Receipt, RotateCcw, Printer, CheckCircle2 } from "lucide-react";
 import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
@@ -617,16 +618,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         let numeroConfermato = "";
         let soloInserimento = false;
         const ricerca = await ricercaFir(societaId as any, numeroFir);
-        const cercato = numeroFir.toUpperCase().replace(/[^A-Z0-9]/g, "");
-        const rispostaRaw = JSON.stringify(ricerca.data ?? {});
-        const risposta = rispostaRaw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-        const trovatoSuRentri = ricerca.success && risposta.includes(cercato);
-        if (trovatoSuRentri) {
-          // Attenzione: un formulario presente sul RENTRI in stato
-          // "InserimentoTrasportoIniziale" NON è stato firmato alla partenza:
-          // il destinatario non lo vede e il formulario resta modificabile.
-          soloInserimento = /"stato[^"]*"\s*:\s*"Inserimento/i.test(rispostaRaw);
-          if (!soloInserimento) numeroConfermato = numeroFir;
+        const statoRentri = ricerca.success
+          ? classifyRentriDeparture(ricerca.data, numeroFir)
+          : "not_found";
+        if (statoRentri !== "not_found") {
+          soloInserimento = statoRentri === "draft";
+          if (statoRentri === "departed" || statoRentri === "closed") numeroConfermato = numeroFir;
         } else if (!ricerca.success) {
           // Lettura RENTRI non disponibile: non cambiamo nulla.
           return;

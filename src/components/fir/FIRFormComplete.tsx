@@ -516,18 +516,21 @@ export function FIRFormComplete({ demoMode = false, demoEmailOverride }: FIRForm
         payloadFir: { ...dbFields, numero_fir: d.selectedFirNumber },
       });
 
-      const officialNumeroFir = String(result.numero_fir || d.selectedFirNumber || "").trim();
+      // Il servizio restituisce un numero solo dopo una rilettura RENTRI che
+      // certifica la partenza. Mai ripiegare sul numero locale della bozza.
+      const officialNumeroFir = String(result.numero_fir || "").trim();
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
-      if (officialNumeroFir) {
-        store.updateField("selectedFirNumber", officialNumeroFir);
-        await silentSaveFIR.mutateAsync({
-          id: store.editingFirId,
-          numero_fir: officialNumeroFir,
-          form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId || null },
-          status: "inviato",
-          submitted_at: new Date().toISOString(),
-        });
+      if (!officialNumeroFir || !rentriFirId) {
+        throw new Error("Partenza non confermata dal RENTRI: il FIR resta in bozza");
       }
+      store.updateField("selectedFirNumber", officialNumeroFir);
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        numero_fir: officialNumeroFir,
+        form_data: { ...dbFields.form_data, rentri_fir_id: rentriFirId },
+        status: "inviato",
+        submitted_at: new Date().toISOString(),
+      });
 
       // Save official RENTRI QR code (extract from qr fields)
       const qrFromFirma = officialNumeroFir
