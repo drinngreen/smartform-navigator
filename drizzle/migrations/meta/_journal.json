@@ -36,6 +36,13 @@
       "when": 1789679672911,
       "tag": "0004_grant_notifications_access",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789682470175,
+      "tag": "0005_disable_dragon_stock_reconciliation",
+      "breakpoints": true
     }
   ]
 }
