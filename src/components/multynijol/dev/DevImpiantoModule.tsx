@@ -354,6 +354,29 @@ function ImpiantoFormulari() {
       }]
     : [];
 
+  /** Ricerca in sola lettura sul RENTRI di un formulario per numero (e CER). */
+  const cercaSulRentri = async () => {
+    const numero = ricercaNumero.trim();
+    if (!numero) return;
+    setRicercaLoading(true);
+    const tid = toast.loading("Ricerca formulario sul RENTRI...");
+    try {
+      const risultati = await cercaFirRentriPerNumero("multy", numero, { cer: ricercaCer.trim() || undefined });
+      setRisultatiRicerca(risultati);
+      if (risultati.length === 0) {
+        toast.error("Nessun formulario trovato sul RENTRI con questi criteri", { id: tid });
+      } else {
+        toast.success(`Trovati ${risultati.length} formulari sul RENTRI`, { id: tid });
+      }
+    } catch (e: any) {
+      setRisultatiRicerca([]);
+      toast.error(e?.message || "Ricerca RENTRI non riuscita", { id: tid });
+    } finally {
+      setRicercaLoading(false);
+    }
+  };
+
+
   const handleIncomingSign = async (
     mode: "reception" | "destination",
     payload: { kg_pesata: number; data_arrivo: string; ora_arrivo: string; esito: "accettato" | "parziale" | "respinto"; motivazione?: string },
