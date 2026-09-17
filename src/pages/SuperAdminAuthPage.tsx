@@ -72,7 +72,7 @@ export default function SuperAdminAuthPage() {
               <label className="text-sm text-muted-foreground mb-1 block">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="superadmin@zoli.live" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500" />
+                <input type="text" autoCapitalize="none" autoCorrect="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="superadmin" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500" />
               </div>
             </div>
             <div>
