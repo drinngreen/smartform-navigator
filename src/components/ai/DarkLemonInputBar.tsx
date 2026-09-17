@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2 } from "lucide-react";
+import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractAttachmentText } from "@/lib/attachmentExtract";
 
