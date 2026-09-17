@@ -351,21 +351,23 @@ export async function pollTransazioneFormulario(cliente: RentriCliente, transazi
 
 export async function salvaSessioneFirma(cliente: RentriCliente, sessione: XfirSessione) {
   try {
-    await supabase.from("rentri_firma_sessioni").insert({
-      cliente: rentriConfigKey(cliente),
-      numero_fir: sessione.numero_fir,
-      credentials_id: sessione.credentials_id ?? null,
-      device_description: sessione.device_description ?? null,
-      digest_to_sign: sessione.digest_to_sign ?? null,
-      token: sessione.token ?? null,
-      handle: sessione.handle ?? null,
-      authorize_at: sessione.authorize_at ?? null,
-      conferma_mobile_at: sessione.conferma_mobile_at ?? null,
-      esito_sign_hash: sessione.esito_sign_hash ?? null,
-      esito_acquisizione_firma: sessione.esito_acquisizione_firma ?? null,
-      stato_finale: sessione.stato_finale ?? null,
-      log_raw: sessione.log as unknown as Record<string, unknown>[],
-    });
+    await supabase.from("rentri_firma_sessioni").insert([
+      {
+        cliente: rentriConfigKey(cliente),
+        numero_fir: sessione.numero_fir,
+        credentials_id: sessione.credentials_id ?? null,
+        device_description: sessione.device_description ?? null,
+        digest_to_sign: sessione.digest_to_sign ?? null,
+        token: sessione.token ?? null,
+        handle: sessione.handle ?? null,
+        authorize_at: sessione.authorize_at ?? null,
+        conferma_mobile_at: sessione.conferma_mobile_at ?? null,
+        esito_sign_hash: sessione.esito_sign_hash ?? null,
+        esito_acquisizione_firma: sessione.esito_acquisizione_firma ?? null,
+        stato_finale: sessione.stato_finale ?? null,
+        log_raw: sessione.log as unknown,
+      } as never,
+    ]);
   } catch {
     /* la persistenza non deve mai bloccare il flusso di firma */
   }
