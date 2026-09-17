@@ -498,19 +498,38 @@ export async function inviaMovimentiRegistroVerificato(
   return { invio, transazioneId, esitoFinale: "IN_VERIFICA" };
 }
 
-export function inviaOperazioneRentriCustom(
+/**
+ * Il gateway RENTRI (IIS) restituisce a volte un 502/503/504 istantaneo e transitorio:
+ * la stessa identica GET ripetuta subito dopo risponde 200.
+ * Ripetiamo solo le letture (GET): mai POST/PUT/DELETE, per non duplicare invii.
+ */
+const RENTRI_TRANSIENT_STATUS = new Set([502, 503, 504]);
+const RENTRI_GET_RETRIES = 2;
+
+export async function inviaOperazioneRentriCustom(
   cliente: RentriCliente,
   method: RentriMethod,
   path: string,
   payload: Record<string, unknown> | null = null,
 ) {
-  return inviaOperazioneRentri({
-    cliente,
-    tipo_operazione: "CUSTOM",
-    rentri_method: method,
-    rentri_path: path,
-    payload,
-  });
+  const send = () =>
+    inviaOperazioneRentri({
+      cliente,
+      tipo_operazione: "CUSTOM",
+      rentri_method: method,
+      rentri_path: path,
+      payload,
+    });
+
+  let res = await send();
+  if (method !== "GET") return res;
+
+  for (let attempt = 1; attempt <= RENTRI_GET_RETRIES; attempt++) {
+    if (res.success || !RENTRI_TRANSIENT_STATUS.has(Number(res.status))) break;
+    await new Promise((r) => setTimeout(r, 600 * attempt));
+    res = await send();
+  }
+  return res;
 }
 
 /** Codice fiscale ufficiale usato come `identificativo_soggetto` nelle API Formulari RENTRI */
