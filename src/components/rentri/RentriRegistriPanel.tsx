@@ -64,11 +64,27 @@ const EXPORT_COLS_REGISTRO = [
   { header: "Identificativo RENTRI", key: "identificativo_rentri", width: 26 },
 ];
 
+/** Converte una riga del registro nel movimento da trasmettere al RENTRI. */
+export function rigaToMovimentoRentri(r: RigaRegistro, cliente: RentriCliente): MovimentoRentri {
+  return {
+    tipo_movimento: String(r.carico_scarico ?? "").toUpperCase() === "SCARICO" ? "SCARICO" : "CARICO",
+    data_registrazione: r.data_movimento ?? new Date().toISOString().slice(0, 10),
+    codice_eer: String(r.cer ?? "").replace(/\D/g, ""),
+    descrizione: r.descrizione ?? "",
+    quantita: Number(r.quantita ?? 0),
+    unita_misura: "kg",
+    num_iscr_sito: RENTRI_UNITA_LOCALI[rentriConfigKey(cliente)] ?? "",
+    numero_fir: r.numero_formulario,
+    riferimento_interno: r.id,
+  };
+}
+
 export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
   const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [popup, setPopup] = useState(false);
+  const [conferma, setConferma] = useState<RigaRegistro[] | null>(null);
+  const [inviando, setInviando] = useState(false);
 
   const cfg = REGISTRI_RENTRI.find((r) => r.id === registro)!;
 
