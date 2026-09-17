@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DevGiacenzeSolaLettura } from "./DevGiacenzeSolaLettura";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { DevFirCartaceoModule } from "./DevFirCartaceoModule";
 
@@ -137,6 +138,9 @@ export function DevImpiantoModule() {
           <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Plus className="h-4 w-4" /> Nuovo FIR
           </TabsTrigger>
+          <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Package className="h-4 w-4" /> Giacenze
+          </TabsTrigger>
           <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <FileText className="h-4 w-4" /> Formulari
           </TabsTrigger>
@@ -159,6 +163,9 @@ export function DevImpiantoModule() {
           <div className="p-4 rounded-2xl bg-card/60 border border-emerald-500/20">
             <MNFIRFormComplete tenantId={MULTY_TENANT_ID} mnContext="multyproget" enableFatturazione creationMode />
           </div>
+        </TabsContent>
+        <TabsContent value="giacenze">
+          <DevGiacenzeSolaLettura />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
