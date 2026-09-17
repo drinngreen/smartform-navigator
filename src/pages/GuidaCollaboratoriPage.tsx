@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, Bot, CheckCircle2, Download, RefreshCw, Smartphone, Truck } from "lucide-react";
+import { AlertTriangle, Bell, Bot, CheckCircle2, Download, RefreshCw, Smartphone, Truck } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
 import install1 from "@/assets/guides/istruzioni-autisti-1.png.asset.json";
 import install2 from "@/assets/guides/istruzioni-autisti-2.png.asset.json";
@@ -72,6 +72,16 @@ export default function GuidaCollaboratoriPage() {
             <li><strong className="text-foreground">5.</strong> La voce <strong className="text-foreground">AI</strong> in basso mostra anche le conversazioni iniziate dalla finestra laterale.</li>
           </ol>
           <p className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">Nell'app Dark Lemon può leggere e compilare il formulario aperto. Non può inviare al RENTRI, creare utenti o modificare registri e giacenze.</p>
+        </section>
+
+        <section className="mb-8 rounded-lg border border-border bg-card p-5">
+          <div className="flex items-center gap-3"><Bell className="h-7 w-7 text-primary" /><h2 className="text-2xl font-bold">I pallini colorati degli avvisi</h2></div>
+          <ul className="mt-4 space-y-3 text-muted-foreground">
+            <li><strong className="text-red-500">Pallino rosso</strong> — ci sono avvisi che non hai ancora letto.</li>
+            <li><strong className="text-orange-500">Pallino arancione</strong> — oggi sono arrivati formulari nuovi dal RENTRI.</li>
+            <li><strong className="text-green-600">Pallino verde</strong> — non c'è nulla da fare.</li>
+            <li>Tocca il pallino, leggi la lista e chiudi ogni riga con la <strong className="text-foreground">X</strong>. Quando la lista è vuota, il colore si spegne e resta il verde.</li>
+          </ul>
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2">
