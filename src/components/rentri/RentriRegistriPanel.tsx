@@ -1,23 +1,26 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer } from "lucide-react";
+import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer, AlertTriangle } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { toast } from "sonner";
 import {
   leggiMovimentiRegistroRentri,
   normalizzaNumeroFir,
 } from "@/lib/rentriRegistroIntermediazione";
+import { inviaRegistroRentri, type MovimentoRentri } from "@/lib/rentriRegistroSync";
+import { RENTRI_UNITA_LOCALI, rentriConfigKey, type RentriCliente } from "@/lib/rentriVpsApi";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 
 /** Registri cronologici ufficiali gestiti dalla console. */
 export const REGISTRI_RENTRI = [
-  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro" },
-  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro" },
-  { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati" },
-  { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario" },
-  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro" },
+  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro", cliente: "multy" },
+  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro", cliente: "multy" },
+  { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati", cliente: "multy" },
+  { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario", cliente: "multy" },
+  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro", cliente: "niyol" },
 ] as const;
 
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
@@ -61,11 +64,27 @@ const EXPORT_COLS_REGISTRO = [
   { header: "Identificativo RENTRI", key: "identificativo_rentri", width: 26 },
 ];
 
+/** Converte una riga del registro nel movimento da trasmettere al RENTRI. */
+export function rigaToMovimentoRentri(r: RigaRegistro, cliente: RentriCliente): MovimentoRentri {
+  return {
+    tipo_movimento: String(r.carico_scarico ?? "").toUpperCase() === "SCARICO" ? "SCARICO" : "CARICO",
+    data_registrazione: r.data_movimento ?? new Date().toISOString().slice(0, 10),
+    codice_eer: String(r.cer ?? "").replace(/\D/g, ""),
+    descrizione: r.descrizione ?? "",
+    quantita: Number(r.quantita ?? 0),
+    unita_misura: "kg",
+    num_iscr_sito: RENTRI_UNITA_LOCALI[rentriConfigKey(cliente)] ?? "",
+    numero_fir: r.numero_formulario,
+    riferimento_interno: r.id,
+  };
+}
+
 export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
   const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [popup, setPopup] = useState(false);
+  const [conferma, setConferma] = useState<RigaRegistro[] | null>(null);
+  const [inviando, setInviando] = useState(false);
 
   const cfg = REGISTRI_RENTRI.find((r) => r.id === registro)!;
 
@@ -227,6 +246,40 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       return n;
     });
 
+  /** Invio reale al registro RENTRI: parte solo dal popup di conferma. */
+  const eseguiInvio = async () => {
+    if (!conferma || conferma.length === 0) return;
+    const movimenti = conferma.map((r) => rigaToMovimentoRentri(r, cfg.cliente as RentriCliente));
+    const invalide = movimenti.filter((m) => !m.codice_eer || !(m.quantita > 0));
+    if (invalide.length) {
+      toast.error("Movimenti incompleti: servono codice CER e quantità maggiore di zero.");
+      return;
+    }
+    setInviando(true);
+    try {
+      const esito = await inviaRegistroRentri({
+        cliente: cfg.cliente as RentriCliente,
+        registroId: cfg.registroId,
+        tenantId: cfg.tenant,
+        movimenti,
+      });
+      if (esito.esitoFinale === "CONFERMATO") {
+        toast.success(`RENTRI ha registrato ${movimenti.length} movimenti.`);
+      } else if (esito.esitoFinale === "IN_VERIFICA") {
+        toast.info("Invio preso in carico dal RENTRI: l'esito definitivo arriva a breve.");
+      } else {
+        toast.error(esito.motivoScarto ?? "Il RENTRI ha scartato l'invio.");
+      }
+      setConferma(null);
+      setSel(new Set());
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invio al RENTRI non riuscito.");
+    } finally {
+      setInviando(false);
+    }
+  };
+
   const daInviareVisibili = visibili.filter((x) => !x.esito);
   const allSelected = daInviareVisibili.length > 0 && daInviareVisibili.every((x) => sel.has(x.riga.id));
 
@@ -341,7 +394,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               <button
                 type="button"
                 disabled={sel.size === 0}
-                onClick={() => setPopup(true)}
+                onClick={() => setConferma(visibili.filter((x) => !x.esito && sel.has(x.riga.id)).map((x) => x.riga))}
                 className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-black disabled:opacity-40"
               >
                 <Send size={13} /> Invia selezionati ({sel.size})
@@ -363,6 +416,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                   <th className="px-3 py-2 text-left">Formulario</th>
                   <th className="px-3 py-2 text-left">Progressivo RENTRI</th>
                   <th className="px-3 py-2 text-left">Identificativo</th>
+                  <th className="px-3 py-2 text-left">Invio</th>
                 </tr>
               </thead>
               <tbody>
@@ -397,11 +451,22 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                     <td className="px-3 py-2 font-mono text-[11px]">
                       {(e?.identificativi_rentri ?? []).join(" | ") || "—"}
                     </td>
+                    <td className="px-3 py-2">
+                      {!e && (
+                        <button
+                          type="button"
+                          onClick={() => setConferma([r])}
+                          className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-black"
+                        >
+                          <Send size={11} /> Invia
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {visibili.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">
                       Nessun movimento in questa vista.
                     </td>
                   </tr>
@@ -412,25 +477,59 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         </div>
       )}
 
-      {popup && (
+      {conferma && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setPopup(false)}
+          onClick={() => !inviando && setConferma(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-amber-500/40 bg-card p-6 text-center space-y-4"
+            className="w-full max-w-lg rounded-2xl border border-amber-500/40 bg-card p-6 space-y-4"
             onClick={(ev) => ev.stopPropagation()}
           >
-            <Send className="mx-auto text-amber-400" size={28} />
-            <p className="text-lg font-bold">Fare il primo invio con Riccardo</p>
-            <p className="text-sm text-muted-foreground">Pulsante invio registro da settare con Riccardo.</p>
-            <button
-              type="button"
-              onClick={() => setPopup(false)}
-              className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground"
-            >
-              Ho capito
-            </button>
+            <div className="flex items-center gap-2 text-amber-400">
+              <AlertTriangle size={22} />
+              <p className="text-lg font-bold">Conferma invio al RENTRI</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Stai per trasmettere <strong className="text-foreground">{conferma.length}</strong>{" "}
+              {conferma.length === 1 ? "movimento" : "movimenti"} al registro{" "}
+              <span className="font-mono text-foreground">{cfg.registroId}</span> ({cfg.label}). L'operazione è reale e
+              non si annulla.
+            </p>
+            <div className="max-h-56 overflow-auto rounded-lg border border-border/40 text-xs">
+              <table className="w-full">
+                <tbody>
+                  {conferma.map((r) => (
+                    <tr key={r.id} className="border-b border-border/20">
+                      <td className="px-2 py-1 whitespace-nowrap">{fmtData(r.data_movimento)}</td>
+                      <td className="px-2 py-1">{r.carico_scarico}</td>
+                      <td className="px-2 py-1 font-mono">{r.cer ?? "—"}</td>
+                      <td className="px-2 py-1 text-right font-mono">{fmtKg(r.quantita)} kg</td>
+                      <td className="px-2 py-1 font-mono">{r.numero_formulario ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={inviando}
+                onClick={() => setConferma(null)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                disabled={inviando}
+                onClick={() => void eseguiInvio()}
+                className="flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2 text-sm font-bold text-black disabled:opacity-40"
+              >
+                {inviando ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                {inviando ? "Invio in corso…" : "CONFERMO L'INVIO"}
+              </button>
+            </div>
           </div>
         </div>
       )}
