@@ -6,7 +6,16 @@ import { FirStatoRiepilogo } from "@/components/rentri/FirStatoRiepilogo";
 
 const CLIENTI = ["all", "multyproget", "multy", "niyol", "global"];
 
-function statoLeggibile(row: { success: boolean; http_status: number | null; mode: string }): string {
+function statoLeggibile(row: {
+  success: boolean;
+  http_status: number | null;
+  mode: string;
+  tipo_operazione: string;
+  esito_finale?: string | null;
+}): string {
+  if (row.tipo_operazione === "REGISTRO" && row.esito_finale === "CONFERMATO") {
+    return "Movimento presente nel registro RENTRI — invio confermato";
+  }
   if (row.success && row.http_status === 202) return "Richiesta presa in carico dal RENTRI — esito finale da verificare";
   if (row.success) return row.mode === "dry_run" ? "Verifica riuscita" : "Confermato dal RENTRI";
   return rentriUserMessage(Number(row.http_status ?? 0));

@@ -143,8 +143,33 @@ export async function fetchRentriHistory(filters: RentriHistoryFilters = {}): Pr
 
   const { data, error } = await query;
   if (error) throw new Error(sanitizeRentriMessage(error.message));
+
+  // Il log tecnico conserva correttamente l'HTTP 202 originale. Per gli invii
+  // di registro, però, l'esito finale viene certificato separatamente dopo la
+  // rilettura del registro RENTRI. Uniamo le due prove tramite transazione_id,
+  // senza modificare né riscrivere lo storico originale.
+  const transactionIds = Array.from(new Set(
+    (data ?? [])
+      .filter((row) => row.tipo_operazione === "REGISTRO" && row.transazione_id)
+      .map((row) => String(row.transazione_id)),
+  ));
+  const conferme = new Map<string, string>();
+  if (transactionIds.length > 0) {
+    const { data: invii } = await supabase
+      .from("rentri_invii_registri")
+      .select("transazione_id, stato")
+      .in("transazione_id", transactionIds);
+    for (const invio of invii ?? []) {
+      if (invio.transazione_id) conferme.set(String(invio.transazione_id), String(invio.stato));
+    }
+  }
+
   return (data ?? []).map((row) => ({
     ...row,
+    esito_finale:
+      row.tipo_operazione === "REGISTRO" && row.transazione_id && conferme.get(String(row.transazione_id)) === "CONFERMATO"
+        ? "CONFERMATO"
+        : row.esito_finale,
     user_id: null,
     tenant_id: null,
     mode: "real",

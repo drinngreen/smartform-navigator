@@ -129,4 +129,18 @@ describe("RentriHistoryPanel", () => {
     expect(screen.getByText(/esito finale da verificare/i)).toBeInTheDocument();
     expect(screen.getByText(/2 richieste tecniche 202 accorpate/i)).toBeInTheDocument();
   });
+
+  it("mostra confermato quando un invio registro 202 è stato verificato nel registro RENTRI", async () => {
+    fetchRentriHistory.mockResolvedValue([
+      row({
+        tipo_operazione: "REGISTRO",
+        http_status: 202,
+        esito_finale: "CONFERMATO",
+        payload_inviato: [{ annotazioni: "Rif. FIR ZRZXR 000787 XL" }],
+      }),
+    ]);
+    render(<RentriHistoryPanel />);
+    expect(await screen.findByText(/movimento presente nel registro RENTRI — invio confermato/i)).toBeInTheDocument();
+    expect(screen.queryByText(/esito finale da verificare/i)).not.toBeInTheDocument();
+  });
 });
