@@ -10,6 +10,16 @@ const inizioAnno = () => `${new Date().getFullYear()}-01-01`;
 const fmtData = (d: string | null) => (d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—");
 const fmtKg = (v: number | null) => (v === null || Number.isNaN(v) ? "—" : Number(v).toLocaleString("it-IT"));
 
+const EXPORT_COLS = [
+  { header: "Formulario", key: "numeroFir", width: 18 },
+  { header: "Data", key: "data", width: 12, format: (v: any) => fmtData(v) },
+  { header: "Produttore", key: "produttore", width: 28 },
+  { header: "Destinatario", key: "destinatario", width: 28 },
+  { header: "EER", key: "eer", width: 10 },
+  { header: "Kg", key: "quantitaKg", width: 12, format: (v: any) => fmtKg(v) },
+  { header: "Intermediario", key: "intermediario", width: 26, format: (v: any, row: any) => (row.siamoIntermediario ? "NOI" : v || "nessuno") },
+];
+
 /**
  * Formulari RENTRI in cui la società risulta INTERMEDIARIO.
  * Solo lettura dal RENTRI: nessun invio, nessuna modifica di registri o giacenze.
