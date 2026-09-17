@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, RentriSubmissionError } from "@/services/rentriApi";
 import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { isRentriConnectivityError, ricercaFir } from "@/lib/rentriVpsApi";
+import { leggiChiusuraDestinatario } from "@/lib/firChiusuraDestinatarioRentri";
+
 import { findConfirmedFirEmission } from "@/lib/rentriHistory";
 import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
