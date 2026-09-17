@@ -34,6 +34,7 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
+import { DevPulsantieraPreferiti } from "@/components/multynijol/dev/DevPulsantieraPreferiti";
 
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
