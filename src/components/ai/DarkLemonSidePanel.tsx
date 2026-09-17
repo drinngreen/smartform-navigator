@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2, Minimize2 } from "lucide-react";
+import { X, Bot, User, Camera, PanelLeftClose, ScanSearch, MessageSquare, Maximize2, Minimize2, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import { useDarkLemonMN } from "@/hooks/useDarkLemonMN";
@@ -29,6 +30,14 @@ export function DarkLemonSidePanel({ context = "multyproget", appMode = false }:
   const { fillFields, getRegisteredFields } = useFormBridgeContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const navigate = useNavigate();
+
+  // Nelle app la vista a tutto schermo è la pagina Dark Lemon, che riapre la cronologia completa.
+  const openFullPage = useCallback(() => {
+    setSidePanel(false);
+    navigate(`/mn/app/${context === "niyol" ? "niyol" : "multyproget"}/ai?history=1`);
+  }, [context, navigate, setSidePanel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,12 +87,30 @@ export function DarkLemonSidePanel({ context = "multyproget", appMode = false }:
     sendMessage("Analizza la pagina che sto visualizzando e dammi consigli utili.", undefined, buildContext());
   }, [sendMessage, buildContext, isLoading]);
 
+  if (appMode && isMinimized) {
+    return (
+      <button
+        data-dark-lemon="true"
+        onClick={() => setIsMinimized(false)}
+        className="fixed bottom-24 right-3 z-[60] flex items-center gap-2 rounded-full border border-cyan-500/40 bg-[hsl(222,47%,8%)] px-3 py-2 shadow-2xl"
+        title="Riapri Dark Lemon"
+      >
+        <img src={zoliLemonIcon} alt="Dark Lemon" className="h-5 w-5" />
+        <span className="text-[11px] font-display tracking-wider text-white">DARK LEMON</span>
+      </button>
+    );
+  }
+
   return (
     <div
       data-dark-lemon="true"
       className={cn(
-        "fixed top-0 right-0 flex flex-col bg-[hsl(222,47%,6%)] border-white/10 z-[60] animate-slide-in-right",
-        isFullscreen ? "inset-0 w-full h-full border-l-0" : appMode ? "inset-y-0 right-0 w-full max-w-md border-l" : "h-full w-[20vw] min-w-[280px] border-l"
+        "fixed flex flex-col bg-[hsl(222,47%,6%)] border-white/10 z-[60]",
+        isFullscreen
+          ? "inset-0 w-full h-full border-l-0"
+          : appMode
+            ? "left-2 right-2 bottom-20 h-[55vh] rounded-2xl border shadow-2xl overflow-hidden"
+            : "top-0 right-0 h-full w-[20vw] min-w-[280px] border-l animate-slide-in-right"
       )}
     >
 
@@ -100,11 +127,16 @@ export function DarkLemonSidePanel({ context = "multyproget", appMode = false }:
         <button onClick={() => setShowHistory(v => !v)} className={"p-1 rounded-md transition-colors " + (showHistory ? "bg-cyan-500/25 text-cyan-300" : "bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25")} title="Cronologia">
           <MessageSquare className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => setIsFullscreen(v => !v)} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title={isFullscreen ? "Torna a vista laterale" : "Apri a tutto schermo"}>
+        {appMode && (
+          <button onClick={() => setIsMinimized(true)} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title="Riduci a icona">
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        )}
+        <button onClick={() => (appMode ? openFullPage() : setIsFullscreen(v => !v))} className="p-1 rounded-md bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors" title={appMode ? "Apri a tutta pagina con la cronologia" : isFullscreen ? "Torna a vista laterale" : "Apri a tutto schermo"}>
           {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </button>
-        <button onClick={() => setSidePanel(false)} className="p-1 text-white/40 hover:text-white transition-colors" title="Chiudi pannello">
-          <PanelLeftClose className="h-3.5 w-3.5" />
+        <button onClick={() => setSidePanel(false)} className="p-1 text-white/60 hover:text-white transition-colors" title="Chiudi">
+          {appMode ? <X className="h-4 w-4" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
         </button>
       </div>
 
