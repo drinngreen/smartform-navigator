@@ -254,7 +254,7 @@ export async function inviaRegistroRentri(params: {
     response: esito.invio,
     transazioneId,
     invioId: inserted?.id ?? null,
-    esitoFinale: esito.esitoFinale,
+    esitoFinale,
     motivoScarto,
   };
 }
