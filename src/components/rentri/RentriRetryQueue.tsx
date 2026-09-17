@@ -73,7 +73,7 @@ export function RentriRetryQueue({ societaId }: RentriRetryQueueProps) {
       .update({
         status: "inviato",
         submitted_at: new Date().toISOString(),
-        form_data: { ...(row.form_data ?? {}), rentri_retry_pending: false, rentri_retry_since: null, rentri_fir_id: result.firId ?? null },
+        form_data: { ...(row.form_data ?? {}), rentri_retry_pending: false, rentri_retry_since: null, rentri_fir_id: result.firId ?? numero },
       } as never)
       .eq("id", row.id);
     toast.success(`FIR ${numero || row.id.slice(0, 8)} inviato a RENTRI`);
