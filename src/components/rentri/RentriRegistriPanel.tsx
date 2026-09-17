@@ -282,6 +282,29 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
             <div className="ml-auto flex flex-wrap gap-2">
               <button
                 type="button"
+                disabled={visibili.length === 0}
+                onClick={() => exportToExcel(righeExport, EXPORT_COLS_REGISTRO, `registro-${cfg.id.toLowerCase()}`, "Registro")}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <FileSpreadsheet size={13} /> Excel
+              </button>
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() =>
+                  exportToPdf(
+                    righeExport,
+                    EXPORT_COLS_REGISTRO,
+                    `registro-${cfg.id.toLowerCase()}`,
+                    `${cfg.label} — Registro RENTRI ${cfg.registroId}\n${visibili.length} movimenti`,
+                  )
+                }
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <Printer size={13} /> PDF
+              </button>
+              <button
+                type="button"
                 disabled={daInviareVisibili.length === 0}
                 onClick={() =>
                   setSel(allSelected ? new Set() : new Set(daInviareVisibili.map((x) => x.riga.id)))
