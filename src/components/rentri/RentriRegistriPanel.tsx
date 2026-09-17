@@ -246,6 +246,40 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       return n;
     });
 
+  /** Invio reale al registro RENTRI: parte solo dal popup di conferma. */
+  const eseguiInvio = async () => {
+    if (!conferma || conferma.length === 0) return;
+    const movimenti = conferma.map((r) => rigaToMovimentoRentri(r, cfg.cliente as RentriCliente));
+    const invalide = movimenti.filter((m) => !m.codice_eer || !(m.quantita > 0));
+    if (invalide.length) {
+      toast.error("Movimenti incompleti: servono codice CER e quantità maggiore di zero.");
+      return;
+    }
+    setInviando(true);
+    try {
+      const esito = await inviaRegistroRentri({
+        cliente: cfg.cliente as RentriCliente,
+        registroId: cfg.registroId,
+        tenantId: cfg.tenant,
+        movimenti,
+      });
+      if (esito.esitoFinale === "CONFERMATO") {
+        toast.success(`RENTRI ha registrato ${movimenti.length} movimenti.`);
+      } else if (esito.esitoFinale === "IN_VERIFICA") {
+        toast.info("Invio preso in carico dal RENTRI: l'esito definitivo arriva a breve.");
+      } else {
+        toast.error(esito.motivoScarto ?? "Il RENTRI ha scartato l'invio.");
+      }
+      setConferma(null);
+      setSel(new Set());
+      await refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invio al RENTRI non riuscito.");
+    } finally {
+      setInviando(false);
+    }
+  };
+
   const daInviareVisibili = visibili.filter((x) => !x.esito);
   const allSelected = daInviareVisibili.length > 0 && daInviareVisibili.every((x) => sel.has(x.riga.id));
 
