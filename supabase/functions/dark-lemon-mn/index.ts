@@ -1643,6 +1643,28 @@ const tools = [
     }
   },
 
+  {
+    type: "function",
+    function: {
+      name: "create_dipendente",
+      description: "Crea un nuovo dipendente/trasportatore con account di accesso reale (utente Auth + profilo + ruolo). Usa SEMPRE questo tool per creare dipendenti: NON usare mai write_database su profiles, perché non creerebbe l'account di accesso. Login con codice fiscale e password.",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string" },
+          cognome: { type: "string" },
+          codice_fiscale: { type: "string", description: "16 caratteri, usato come nome utente per l'accesso" },
+          password: { type: "string", description: "Password iniziale; se omessa viene usata 123stella" },
+          mn_context: { type: "string", description: "multyproget oppure niyol" },
+          telefono: { type: "string" },
+          targa_automezzo: { type: "string" },
+          targa_rimorchio: { type: "string" },
+        },
+        required: ["nome", "cognome", "codice_fiscale"]
+      }
+    }
+  },
+
   // === MESSAGGI ===
   {
     type: "function",
