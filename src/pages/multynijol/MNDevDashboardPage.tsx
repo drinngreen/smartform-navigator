@@ -34,6 +34,8 @@ import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIR
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
 import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
+import { DevPulsantieraPreferiti } from "@/components/multynijol/dev/DevPulsantieraPreferiti";
+import { DevConfrontoElenchiModule } from "@/components/multynijol/dev/DevConfrontoElenchiModule";
 
 
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
@@ -75,6 +77,7 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
+      <DevPulsantieraPreferiti context="dev-multyproget" />
 
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -213,8 +216,12 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="ddt" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
             <ClipboardList className="h-4 w-4" />DDT
           </TabsTrigger>
+          <TabsTrigger value="confronto-elenchi" className="gap-2 data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-300">
+            <FileSpreadsheet className="h-4 w-4" />Confronto elenchi
+          </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
