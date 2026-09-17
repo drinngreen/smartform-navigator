@@ -50,7 +50,10 @@ function leggiPreferiti(): string[] {
   try {
     const raw = localStorage.getItem(CHIAVE_STORAGE);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) return parsed;
+    if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
+      const senzaDragon = parsed.filter((id) => id !== "cernite");
+      return senzaDragon.includes("giacenze") ? senzaDragon : [...senzaDragon, "giacenze"];
+    }
   } catch {
     /* preferenza non leggibile: si riparte dai predefiniti */
   }
