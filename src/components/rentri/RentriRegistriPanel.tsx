@@ -43,8 +43,8 @@ const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("i
 const fmtData = (d: string | null | undefined) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
 
-export function RentriRegistriPanel() {
-  const [registro, setRegistro] = useState<RegistroId>("MULTY_IMPIANTO");
+export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
+  const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [popup, setPopup] = useState(false);
