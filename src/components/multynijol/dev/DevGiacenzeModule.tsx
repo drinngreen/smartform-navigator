@@ -80,7 +80,7 @@ export function DevGiacenzeModule() {
   const [dataDal, setDataDal] = useState<string>("");
   const [showAllCer, setShowAllCer] = useState(false);
 
-  // Dragon è l'unica fonte autorevole per le giacenze, incluse le cernite.
+  // Lettura aggregata dello storico già consolidato. Questa vista non esegue scritture.
   const { data: movimenti, isLoading } = useQuery({
     queryKey: ["dragon-stock", MULTY_TENANT_ID, "all"],
     queryFn: async () => {
@@ -230,7 +230,7 @@ export function DevGiacenzeModule() {
     [filtered]
   );
 
-  // Aggiornamento automatico: ogni movimento Dragon, comprese le cernite, ricarica la vista.
+  // Aggiornamento automatico della sola vista quando cambia lo storico consolidato.
   useEffect(() => {
     const channel = supabase
       .channel("dev-giacenze-live")
@@ -248,7 +248,7 @@ export function DevGiacenzeModule() {
     mutationFn: async () => {
       await queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
       const count = new Set((movimenti ?? []).map((row) => row.cer)).size;
-      logAgentActivity("Rilettura giacenze Dragon", "ok", `${count} codici CER`);
+      logAgentActivity("Rilettura registro CER", "ok", `${count} codici CER`);
       return count;
     },
     onSuccess: (count) => {
@@ -475,7 +475,7 @@ export function DevGiacenzeModule() {
               Mostra tutti i CER a magazzino (anche a zero)
             </label>
             <div className="text-xs text-muted-foreground">
-              Saldo Dragon = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Le cernite aggiornano automaticamente questa vista.
+              Saldo = carichi − scarichi con data ≤ {fmtDate(new Date(dataAl))}. Vista in sola lettura.
             </div>
           </div>
         </CardContent>
@@ -489,7 +489,7 @@ export function DevGiacenzeModule() {
           disabled={recalculate.isPending}
           className="gap-2 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
         >
-          <RefreshCw className="h-4 w-4" /> Aggiorna giacenze Dragon
+          <RefreshCw className="h-4 w-4" /> Aggiorna vista
         </Button>
         <Button
           variant="outline"
