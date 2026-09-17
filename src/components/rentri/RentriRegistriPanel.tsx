@@ -1,23 +1,26 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer } from "lucide-react";
+import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer, AlertTriangle } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { toast } from "sonner";
 import {
   leggiMovimentiRegistroRentri,
   normalizzaNumeroFir,
 } from "@/lib/rentriRegistroIntermediazione";
+import { inviaRegistroRentri, type MovimentoRentri } from "@/lib/rentriRegistroSync";
+import { RENTRI_UNITA_LOCALI, rentriConfigKey, type RentriCliente } from "@/lib/rentriVpsApi";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
 
 /** Registri cronologici ufficiali gestiti dalla console. */
 export const REGISTRI_RENTRI = [
-  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro" },
-  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro" },
-  { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati" },
-  { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario" },
-  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro" },
+  { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro", cliente: "multy" },
+  { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro", cliente: "multy" },
+  { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati", cliente: "multy" },
+  { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario", cliente: "multy" },
+  { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro", cliente: "niyol" },
 ] as const;
 
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
