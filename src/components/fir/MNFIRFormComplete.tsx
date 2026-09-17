@@ -486,6 +486,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [officialEmissionAt, setOfficialEmissionAt] = useState<string | null>(null);
   const [isCheckingOfficialStatus, setIsCheckingOfficialStatus] = useState(false);
+  // true quando il RENTRI conosce il formulario ma NON è firmato alla partenza
+  // (stato "Inserimento…"): il destinatario non lo vede e resta correggibile.
+  const [rentriNonFirmato, setRentriNonFirmato] = useState(false);
   const [rentriFieldErrors, setRentriFieldErrors] = useState<Record<string, string>>({});
   const [loadedFirFormId, setLoadedFirFormId] = useState<string | null>(draftData?.id ?? null);
   const autosaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
