@@ -403,6 +403,8 @@ const SECTIONS: Section[] = [
           <li>Filtro per <code className="text-primary">app_context</code> e <code className="text-primary">tenant_id</code></li>
           <li>Realtime via Supabase Channels</li>
           <li>Avviso automatico quando il pool FIR si esaurisce (30 min cooldown)</li>
+          <li><strong className="text-foreground">Semaforo</strong> — rosso: notifiche non lette; arancione: FIR in arrivo nuovi di oggi letti dal RENTRI; verde: nessun avviso</li>
+          <li>Chiudendo le voci con la <strong className="text-foreground">X</strong>, quando l'elenco si svuota il colore si spegne e resta solo il verde</li>
         </ul>
       </div>
     ),

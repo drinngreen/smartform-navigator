@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { useFirInArrivoOggi } from "@/hooks/useFirInArrivoOggi";
 
 
 interface MNAdminHeaderProps {
@@ -30,6 +31,9 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
   const currentContext = (location.pathname.includes("/mn/admin/niyol")) ? "niyol"
     : (location.pathname.includes("/mn/admin/multyproget") || location.pathname.includes("/mn/admin/dev-multyproget")) ? "multyproget"
     : null;
+
+  const rentriCliente = currentContext === "niyol" ? "niyol" : currentContext === "multyproget" ? "multy" : null;
+  const { items: firInArrivoOggi, dismiss: dismissFirInArrivo } = useFirInArrivoOggi(rentriCliente);
 
   const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
 
@@ -103,6 +107,8 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         {/* Notifications */}
         <NotificationBell
           appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"}
+          firInArrivoOggi={firInArrivoOggi}
+          onDismissFirInArrivo={dismissFirInArrivo}
           onSignBadgeClick={() => navigate(routeContext ? `/mn/admin/${routeContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
         />
 

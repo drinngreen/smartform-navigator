@@ -779,7 +779,7 @@ const CHAPTERS: Chapter[] = [
     explain: [
       "Il semaforo di stato indica se il bridge è raggiungibile: se è rosso, gli invii vanno in coda e vanno ripetuti dopo.",
       "I numeri FIR si scaricano dal RENTRI e poi si distribuiscono dal Centro App & FIR.",
-      "I formulari in attesa di firma generano un badge arancione sulla campanella delle notifiche: è l'alert da controllare ogni mattina.",
+      "Il semaforo delle notifiche: rosso quando ci sono notifiche non lette, arancione quando il RENTRI mostra FIR in arrivo nuovi con data di oggi, verde quando non c'è nulla. Chiudendo le voci con la X, a lista vuota il colore sparisce.",
       "La firma può richiedere una doppia sottoscrizione (partenza e accettazione a destino) a seconda del ruolo delle società coinvolte.",
       "Novità settembre 2026: ogni invio viene registrato automaticamente con numero di transazione, risposta ricevuta ed esito. Gli esiti possibili sono tre: IN VERIFICA (il RENTRI ha preso in carico ma non ha ancora confermato), CONFERMATO (verificato davvero) e DA ANALIZZARE (errore o ponte non raggiungibile).",
       "Regola d'oro: la risposta «accettato» non significa «registrato». Un invio è valido solo quando risulta confermato dalla verifica successiva o compare nell'elenco formulari del RENTRI.",

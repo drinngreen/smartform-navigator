@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { NotificationPanel } from "./NotificationPanel";
+import type { FirSummary } from "@/types/impiantoFir";
 
 interface NotificationBellProps {
   className?: string;
@@ -9,16 +10,26 @@ interface NotificationBellProps {
   appContext?: string;
   /** Filter notifications by tenant_id */
   tenantId?: string;
-  /** Numero di formulari da firmare (luce arancione) */
-  signCount?: number;
+  /** FIR in arrivo NUOVI di oggi letti dal RENTRI (luce arancione) */
+  firInArrivoOggi?: FirSummary[];
+  /** Chiusura con la X di una singola voce arancione */
+  onDismissFirInArrivo?: (id: string) => void;
   /** Click sulla luce arancione */
   onSignBadgeClick?: () => void;
 }
 
-export function NotificationBell({ className, appContext, tenantId, signCount = 0, onSignBadgeClick }: NotificationBellProps) {
+export function NotificationBell({
+  className,
+  appContext,
+  tenantId,
+  firInArrivoOggi = [],
+  onDismissFirInArrivo,
+  onSignBadgeClick,
+}: NotificationBellProps) {
   const { unreadCount } = useNotifications({ appContext, tenantId });
   const [open, setOpen] = useState(false);
 
+  const signCount = firInArrivoOggi.length;
   const hasRed = unreadCount > 0;
   const hasOrange = signCount > 0;
   const allClear = !hasRed && !hasOrange;
@@ -39,7 +50,7 @@ export function NotificationBell({ className, appContext, tenantId, signCount = 
         title={
           allClear
             ? "Nessun alert"
-            : `${unreadCount} notifiche · ${signCount} formulari da firmare`
+            : `${unreadCount} notifiche · ${signCount} FIR in arrivo oggi dal RENTRI`
         }
       >
         {/* Luce rossa: notifiche non lette */}
@@ -59,11 +70,11 @@ export function NotificationBell({ className, appContext, tenantId, signCount = 
           )}
         </button>
 
-        {/* Luce arancione: formulari da firmare */}
+        {/* Luce arancione: FIR in arrivo nuovi di oggi dal RENTRI */}
         <button
-          onClick={() => (hasOrange ? onSignBadgeClick?.() : setOpen(!open))}
+          onClick={() => setOpen(!open)}
           className="flex items-center gap-1"
-          title={`${signCount} formulari da firmare`}
+          title={`${signCount} FIR in arrivo oggi dal RENTRI`}
         >
           <span
             className={`w-3 h-3 rounded-full transition-all duration-300 ${hasOrange ? "animate-pulse" : ""}`}
@@ -84,7 +95,15 @@ export function NotificationBell({ className, appContext, tenantId, signCount = 
           />
         </button>
       </div>
-      <NotificationPanel open={open} onClose={() => setOpen(false)} appContext={appContext} tenantId={tenantId} />
+      <NotificationPanel
+        open={open}
+        onClose={() => setOpen(false)}
+        appContext={appContext}
+        tenantId={tenantId}
+        firInArrivoOggi={firInArrivoOggi}
+        onDismissFirInArrivo={onDismissFirInArrivo}
+        onOpenFirInArrivo={onSignBadgeClick}
+      />
     </>
   );
 }

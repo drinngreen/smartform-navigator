@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Bell, BellOff, Check, CheckCheck, Trash2, FileText, MessageCircle, PhoneMissed, Users } from "lucide-react";
+import { X, Bell, BellOff, Check, CheckCheck, FileText, MessageCircle, PhoneMissed, Users, Truck } from "lucide-react";
+import type { FirSummary } from "@/types/impiantoFir";
 import { useNotifications, type Notification } from "@/hooks/useNotifications";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
@@ -10,6 +11,12 @@ interface NotificationPanelProps {
   onClose: () => void;
   appContext?: string;
   tenantId?: string;
+  /** FIR in arrivo NUOVI di oggi letti dal RENTRI (luce arancione) */
+  firInArrivoOggi?: FirSummary[];
+  /** Chiusura con la X di una singola voce arancione */
+  onDismissFirInArrivo?: (id: string) => void;
+  /** Apertura dell'elenco FIR in arrivo */
+  onOpenFirInArrivo?: () => void;
 }
 
 const typeIcon: Record<string, React.ReactNode> = {
@@ -74,14 +81,22 @@ function NotificationItem({
           className="p-1 rounded hover:bg-destructive/20 transition-colors"
           title="Elimina"
         >
-          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+          <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
         </button>
       </div>
     </div>
   );
 }
 
-export function NotificationPanel({ open, onClose, appContext, tenantId }: NotificationPanelProps) {
+export function NotificationPanel({
+  open,
+  onClose,
+  appContext,
+  tenantId,
+  firInArrivoOggi = [],
+  onDismissFirInArrivo,
+  onOpenFirInArrivo,
+}: NotificationPanelProps) {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification } = useNotifications({ appContext, tenantId });
 
   if (!open) return null;
@@ -121,11 +136,47 @@ export function NotificationPanel({ open, onClose, appContext, tenantId }: Notif
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+          {firInArrivoOggi.length > 0 && (
+            <div className="space-y-1.5 pb-2 mb-1 border-b border-border/50">
+              <p className="px-1 text-[10px] font-bold uppercase tracking-wide text-orange-400">
+                FIR in arrivo oggi dal RENTRI
+              </p>
+              {firInArrivoOggi.map((fir) => (
+                <div
+                  key={fir.id}
+                  className="flex items-start gap-3 p-3 rounded-lg border-l-4 border-l-orange-500 bg-secondary/50"
+                >
+                  <Truck className="h-4 w-4 text-orange-400 mt-0.5 shrink-0" />
+                  <button
+                    onClick={() => {
+                      onOpenFirInArrivo?.();
+                      onClose();
+                    }}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <p className="text-sm font-medium text-foreground truncate">
+                      FIR {fir.numero_fir || "senza numero"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {fir.produttore || "Produttore non indicato"} · EER {fir.cer || "-"}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => onDismissFirInArrivo?.(fir.id)}
+                    className="p-1 rounded hover:bg-destructive/20 transition-colors shrink-0"
+                    title="Chiudi avviso"
+                  >
+                    <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
-          ) : notifications.length === 0 ? (
+          ) : notifications.length === 0 && firInArrivoOggi.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
               <BellOff className="h-10 w-10 mb-2 opacity-30" />
               <p className="text-sm">Nessuna notifica</p>
