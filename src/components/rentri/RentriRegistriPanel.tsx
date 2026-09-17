@@ -351,7 +351,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
             {" "}
             {isFetchingRentri
               ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
-              : `Stato letto direttamente dal RENTRI: ${registrati?.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
+              : `Stato letto direttamente dal RENTRI: ${registrati?.perDati.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
           </>
         )}
       </p>
