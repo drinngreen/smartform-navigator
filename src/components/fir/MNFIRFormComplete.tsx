@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { inviaFirmaRentri, resolveSocietaId, chiudiFirRentri, getRentriPdf, RentriSubmissionError } from "@/services/rentriApi";
 import { toRentriPdfPreviewSrc } from "@/lib/rentriMedia";
 import { isRentriConnectivityError, ricercaFir } from "@/lib/rentriVpsApi";
+import { leggiChiusuraDestinatario } from "@/lib/firChiusuraDestinatarioRentri";
+
 import { findConfirmedFirEmission } from "@/lib/rentriHistory";
 import { FirFormatoSelector } from "@/components/fir/FirFormatoSelector";
 import { generateFIRSummaryPdf } from "@/lib/firSummaryPdf";
@@ -497,6 +499,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+  /** true solo se il destinatario del formulario è il nostro stesso impianto. */
+  const destinatarioSiamoNoi = (() => {
+    const cf = String(d.destinatarioCF || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (!cf) return false;
+    const issuer = String(getTenantConfig(resolveSocietaId(activeTenantId, activeMnContext))?.issuer || "")
+      .replace(/[^A-Za-z0-9]/g, "")
+      .toUpperCase();
+    return Boolean(issuer) && cf === issuer;
+  })();
+
 
   const updateFirField = (key: keyof FIRDataStore, value: any) => {
     store.updateField(key, value);
@@ -1359,10 +1371,59 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
 
+  /**
+   * Il formulario lo chiude il destinatario. Se il destinatario siamo noi
+   * (impianto Multy/Niyol) apriamo la pesata e firmiamo. Se è un soggetto
+   * terzo, l'autista non può firmare al suo posto: chiediamo al RENTRI, in
+   * sola lettura, se la chiusura è già stata fatta e ne recuperiamo i dati.
+   */
   const handleArrivato = () => {
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
+    if (!destinatarioSiamoNoi) { void handleVerificaChiusuraDestinatario(); return; }
     setShowPesoPopup(true);
   };
+
+  /** Lettura RENTRI della chiusura fatta dal destinatario terzo. Nessun invio. */
+  const handleVerificaChiusuraDestinatario = async () => {
+    const numero = d.selectedFirNumber;
+    if (!numero || !store.editingFirId) { toast.error("Numero formulario mancante"); return; }
+    setInviandoArrivo(true);
+    try {
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+      const chiusura = await leggiChiusuraDestinatario(societaId as any, numero);
+      if (!chiusura.chiusa) {
+        toast.info("Il destinatario non ha ancora firmato la ricezione sul RENTRI: il formulario resta in viaggio.");
+        return;
+      }
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      const pesoReale = chiusura.esito === "respinto" ? "0" : String(chiusura.pesoKg ?? "");
+      if (pesoReale) store.updateField("pesoRicevuto", pesoReale);
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        ...dbFields,
+        form_data: {
+          ...dbFields.form_data,
+          peso_ricevuto: pesoReale,
+          arrivo_data_ora: chiusura.dataOraArrivo,
+          arrivo_esito: chiusura.esito,
+          arrivo_motivazione: chiusura.motivazione,
+          chiusura_letta_da_rentri: true,
+        },
+      });
+      await closeFIR.mutateAsync(store.editingFirId);
+      useMNFIRStore.setState({ workflowStatus: 'chiuso' });
+      toast.success(
+        chiusura.esito === "respinto"
+          ? "Il destinatario ha respinto il carico: formulario chiuso sul RENTRI."
+          : `Chiusura del destinatario letta dal RENTRI: ${pesoReale || "peso non indicato"} kg ${chiusura.esito === "parziale" ? "(accettazione parziale)" : "accettati"}.`,
+      );
+    } catch (error: any) {
+      toast.error("Non è stato possibile leggere la chiusura dal RENTRI: " + (error?.message || String(error)));
+    } finally {
+      setInviandoArrivo(false);
+    }
+  };
+
 
   /**
    * Secondo invio ufficiale al RENTRI: arrivo a destino.
@@ -1634,12 +1695,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 <Shield className="h-5 w-5 icon-led" /> {qrCodeData ? "CONTROLLO POLIZIA (QR CODE)" : "RECUPERA QR UFFICIALE RENTRI"}
               </button>
-              <button onClick={handleArrivato} disabled={!qrCodeData} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <MapPin className="h-5 w-5 icon-led" /> 2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO
+              <button onClick={handleArrivato} disabled={!qrCodeData || inviandoArrivo} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <MapPin className="h-5 w-5 icon-led" />
+                {destinatarioSiamoNoi
+                  ? "2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO"
+                  : "2 · CONTROLLA SE IL DESTINATARIO HA CHIUSO IL FIR"}
               </button>
               <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
-                Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano.
+                {destinatarioSiamoNoi
+                  ? "Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano."
+                  : "Il formulario lo chiude il destinatario dal suo gestionale. Qui l’app legge dal RENTRI, senza inviare nulla: se la firma c’è, recupera peso ed esito e chiude il viaggio."}
               </p>
+
             </>
 
           )}
