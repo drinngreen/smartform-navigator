@@ -497,6 +497,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   const u = store.updateField;
   const d = store.data;
+  /** true solo se il destinatario del formulario è il nostro stesso impianto. */
+  const destinatarioSiamoNoi = (() => {
+    const cf = String(d.destinatarioCF || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    if (!cf) return false;
+    const issuer = String(getTenantConfig(resolveSocietaId(activeTenantId, activeMnContext))?.issuer || "")
+      .replace(/[^A-Za-z0-9]/g, "")
+      .toUpperCase();
+    return Boolean(issuer) && cf === issuer;
+  })();
+
 
   const updateFirField = (key: keyof FIRDataStore, value: any) => {
     store.updateField(key, value);
