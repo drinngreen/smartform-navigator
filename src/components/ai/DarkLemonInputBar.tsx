@@ -23,6 +23,7 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -204,6 +205,26 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
           multiple
           accept="*/*"
           onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* Foto di un formulario o elenco cartaceo: lettura assistita */}
+        <button
+          onClick={() => cameraInputRef.current?.click()}
+          onMouseDown={e => e.stopPropagation()}
+          disabled={isPreparingAttachments}
+          className="p-2 rounded-xl text-white/40 hover:text-amber-400 hover:bg-white/5 transition-all shrink-0 disabled:opacity-40"
+          title="Fotografa un formulario o un elenco e fammelo leggere"
+          aria-label="Fotografa un documento"
+        >
+          <Camera className="h-4 w-4" />
+        </button>
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleCameraSelect}
           className="hidden"
         />
 
