@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer, AlertTriangle } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
@@ -22,6 +22,17 @@ export const REGISTRI_RENTRI = [
   { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario", cliente: "multy" },
   { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro", cliente: "niyol" },
 ] as const;
+
+/**
+ * Chiave di confronto per i movimenti che sul RENTRI non riportano il numero
+ * formulario nelle annotazioni: data + codice EER + quantità in kg.
+ */
+function chiaveDati(data: string | null, eer: string | null, kg: number | null): string | null {
+  const giorno = String(data ?? "").slice(0, 10);
+  const codice = String(eer ?? "").replace(/[^0-9]/g, "");
+  if (!giorno || !codice || kg === null || kg === undefined) return null;
+  return `${giorno}|${codice}|${Number(kg).toFixed(3)}`;
+}
 
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
 type Filtro = "tutti" | "da_inviare" | "inviati";
@@ -85,6 +96,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [conferma, setConferma] = useState<RigaRegistro[] | null>(null);
   const [inviando, setInviando] = useState(false);
+  const queryClient = useQueryClient();
 
   const cfg = REGISTRI_RENTRI.find((r) => r.id === registro)!;
 
@@ -173,22 +185,27 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         "2025-01-01",
         "2027-12-31",
       );
-      const m = new Map<string, EsitoRow>();
+      const perFir = new Map<string, EsitoRow>();
+      const perDati = new Map<string, EsitoRow>();
       movimenti
-        .filter((mv) => mv.chiaveFir && !mv.annullato)
+        .filter((mv) => !mv.annullato)
         .forEach((mv) => {
-          m.set(mv.chiaveFir as string, {
+          const esito: EsitoRow = {
             numero_interno: mv.progressivo ?? 0,
             progressivi: mv.progressivo ? [String(mv.progressivo)] : [],
             identificativi_rentri: mv.identificativo ? [mv.identificativo] : [],
             transazione_id: null,
             esito: "REGISTRATO",
             registro_label: cfg.id,
-          });
+          };
+          if (mv.chiaveFir) perFir.set(mv.chiaveFir, esito);
+          const k = chiaveDati(mv.dataRegistrazione, mv.eer, mv.quantitaKg);
+          if (k) perDati.set(k, esito);
         });
-      return m;
+      return { perFir, perDati };
     },
   });
+
 
   const esitiMap = useMemo(() => {
     const m = new Map<number, EsitoRow>();
@@ -209,7 +226,9 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       riga: r,
       esito:
         cfg.source === "intermediario"
-          ? registrati?.get(normalizzaNumeroFir(r.numero_formulario)) ?? null
+          ? registrati?.perFir.get(normalizzaNumeroFir(r.numero_formulario)) ??
+            registrati?.perDati.get(chiaveDati(r.data_movimento, r.cer, r.quantita) ?? "_") ??
+            null
           : esitiMap.get(Number(r.numero_interno)) ?? null,
     }));
   }, [data, esitiMap, registrati, cfg.source]);
@@ -272,6 +291,9 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       }
       setConferma(null);
       setSel(new Set());
+      // Lo stato "INVIATO" arriva dalla rilettura del registro RENTRI: va
+      // invalidata anche quella cache, altrimenti resta il dato vecchio.
+      await queryClient.invalidateQueries({ queryKey: ["rentri-registro-movimenti"] });
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invio al RENTRI non riuscito.");
@@ -333,7 +355,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
             {" "}
             {isFetchingRentri
               ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
-              : `Stato letto direttamente dal RENTRI: ${registrati?.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
+              : `Stato letto direttamente dal RENTRI: ${registrati?.perDati.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
           </>
         )}
       </p>
