@@ -431,25 +431,59 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         </div>
       )}
 
-      {popup && (
+      {conferma && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setPopup(false)}
+          onClick={() => !inviando && setConferma(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-amber-500/40 bg-card p-6 text-center space-y-4"
+            className="w-full max-w-lg rounded-2xl border border-amber-500/40 bg-card p-6 space-y-4"
             onClick={(ev) => ev.stopPropagation()}
           >
-            <Send className="mx-auto text-amber-400" size={28} />
-            <p className="text-lg font-bold">Fare il primo invio con Riccardo</p>
-            <p className="text-sm text-muted-foreground">Pulsante invio registro da settare con Riccardo.</p>
-            <button
-              type="button"
-              onClick={() => setPopup(false)}
-              className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground"
-            >
-              Ho capito
-            </button>
+            <div className="flex items-center gap-2 text-amber-400">
+              <AlertTriangle size={22} />
+              <p className="text-lg font-bold">Conferma invio al RENTRI</p>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Stai per trasmettere <strong className="text-foreground">{conferma.length}</strong>{" "}
+              {conferma.length === 1 ? "movimento" : "movimenti"} al registro{" "}
+              <span className="font-mono text-foreground">{cfg.registroId}</span> ({cfg.label}). L'operazione è reale e
+              non si annulla.
+            </p>
+            <div className="max-h-56 overflow-auto rounded-lg border border-border/40 text-xs">
+              <table className="w-full">
+                <tbody>
+                  {conferma.map((r) => (
+                    <tr key={r.id} className="border-b border-border/20">
+                      <td className="px-2 py-1 whitespace-nowrap">{fmtData(r.data_movimento)}</td>
+                      <td className="px-2 py-1">{r.carico_scarico}</td>
+                      <td className="px-2 py-1 font-mono">{r.cer ?? "—"}</td>
+                      <td className="px-2 py-1 text-right font-mono">{fmtKg(r.quantita)} kg</td>
+                      <td className="px-2 py-1 font-mono">{r.numero_formulario ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={inviando}
+                onClick={() => setConferma(null)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                disabled={inviando}
+                onClick={() => void eseguiInvio()}
+                className="flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2 text-sm font-bold text-black disabled:opacity-40"
+              >
+                {inviando ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                {inviando ? "Invio in corso…" : "CONFERMO L'INVIO"}
+              </button>
+            </div>
           </div>
         </div>
       )}
