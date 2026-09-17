@@ -19,7 +19,6 @@ import {
   HelpCircle,
   PlayCircle,
 } from "lucide-react";
-import logoDragon from "@/assets/logo-dragon.png";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
 import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermediarioModule";
@@ -33,7 +32,6 @@ import { DevCERPreferitiModule } from "@/components/multynijol/dev/DevCERPreferi
 import { DevGestioneFIRModule } from "@/components/multynijol/dev/DevGestioneFIRModule";
 import { DevFirmaDigitaleModule } from "@/components/multynijol/dev/DevFirmaDigitaleModule";
 import { DevPersonaleModule } from "@/components/multynijol/dev/DevPersonaleModule";
-import { DevMagazzinoDevModule } from "@/components/multynijol/dev/DevMagazzinoDevModule";
 import { DevPulsantieraPreferiti } from "@/components/multynijol/dev/DevPulsantieraPreferiti";
 import { DevConfrontoElenchiModule } from "@/components/multynijol/dev/DevConfrontoElenchiModule";
 
@@ -174,9 +172,6 @@ export default function MNDevDashboardPage() {
             <Truck className="h-4 w-4" />Niyol
           </TabsTrigger>
 
-          <TabsTrigger value="magazzino-dev" className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400">
-            <img src={logoDragon} alt="Dragon" className="h-5 w-5" />Magazzino Dev
-          </TabsTrigger>
           <TabsTrigger value="conto-proprio" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Truck className="h-4 w-4" />Conto Proprio
           </TabsTrigger>
@@ -254,7 +249,6 @@ export default function MNDevDashboardPage() {
         <TabsContent value="gestione-fir"><DevGestioneFIRModule /></TabsContent>
         <TabsContent value="firma-digitale"><DevFirmaDigitaleModule /></TabsContent>
         <TabsContent value="personale"><DevPersonaleModule /></TabsContent>
-        <TabsContent value="magazzino-dev"><DevMagazzinoDevModule /></TabsContent>
         <TabsContent value="fatturazione"><FatturazioneModule tenantId={profile?.tenant_id || undefined} /></TabsContent>
         <TabsContent value="mud"><DevMudExportModule /></TabsContent>
         <TabsContent value="ddt"><DevDdtModule /></TabsContent>
