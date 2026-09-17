@@ -433,3 +433,11 @@ Assistente aziendale con accesso ai dati e alle regole di questa guida.
 ---
 
 Fine guida. Per aggiornamenti: modifica questo file (`public/guida-dev-multy.md`, copia in `docs/GUIDA_DEV_MULTY.md`) **integrando le novità nelle sezioni esistenti**, senza creare capitoli separati.
+
+
+## Semaforo notifiche (aggiornato 17/09/2026)
+
+- **Rosso**: notifiche non lette.
+- **Arancione**: FIR in arrivo NUOVI con data di oggi letti dal RENTRI (sola lettura, aggiornamento ogni minuto).
+- **Verde**: nessun avviso.
+- Ogni voce si chiude con la **X**: quando l'elenco si svuota il colore si spegne e resta solo il verde.
