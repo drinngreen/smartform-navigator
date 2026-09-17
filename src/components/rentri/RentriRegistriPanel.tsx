@@ -23,6 +23,17 @@ export const REGISTRI_RENTRI = [
   { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro", cliente: "niyol" },
 ] as const;
 
+/**
+ * Chiave di confronto per i movimenti che sul RENTRI non riportano il numero
+ * formulario nelle annotazioni: data + codice EER + quantità in kg.
+ */
+function chiaveDati(data: string | null, eer: string | null, kg: number | null): string | null {
+  const giorno = String(data ?? "").slice(0, 10);
+  const codice = String(eer ?? "").replace(/[^0-9]/g, "");
+  if (!giorno || !codice || kg === null || kg === undefined) return null;
+  return `${giorno}|${codice}|${Number(kg).toFixed(3)}`;
+}
+
 type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
 type Filtro = "tutti" | "da_inviare" | "inviati";
 
