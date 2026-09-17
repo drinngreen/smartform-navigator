@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock } from "lucide-react";
+import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import {
   leggiMovimentiRegistroRentri,
   normalizzaNumeroFir,
@@ -46,6 +47,19 @@ interface EsitoRow {
 const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("it-IT");
 const fmtData = (d: string | null | undefined) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
+
+const EXPORT_COLS_REGISTRO = [
+  { header: "N. interno", key: "numero_interno", width: 12 },
+  { header: "Data", key: "data_movimento", width: 12, format: (v: any) => fmtData(v) },
+  { header: "C/S", key: "carico_scarico", width: 8 },
+  { header: "CER", key: "cer", width: 10 },
+  { header: "Descrizione", key: "descrizione", width: 32 },
+  { header: "Operazione", key: "tipo_operazione", width: 12 },
+  { header: "Formulario", key: "numero_formulario", width: 18 },
+  { header: "Kg", key: "quantita", width: 12, format: (v: any) => fmtKg(v) },
+  { header: "Stato RENTRI", key: "stato_rentri", width: 18 },
+  { header: "Identificativo RENTRI", key: "identificativo_rentri", width: 26 },
+];
 
 export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
   const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
@@ -190,6 +204,17 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
     return righe;
   }, [filtro, righe, inviati, daInviare]);
 
+  /** Righe appiattite per export Excel/PDF, con lo stato di trasmissione letto dal RENTRI. */
+  const righeExport = useMemo(
+    () =>
+      visibili.map((x) => ({
+        ...x.riga,
+        stato_rentri: x.esito ? "INVIATO" : "Da inviare",
+        identificativo_rentri: x.esito?.identificativi_rentri?.join(", ") || "",
+      })),
+    [visibili],
+  );
+
   const ultimoInvio = useMemo(() => {
     const date = inviati.map((x) => x.riga.data_movimento ?? "").filter(Boolean).sort();
     return date.length ? date[date.length - 1] : null;
@@ -280,6 +305,29 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               </button>
             ))}
             <div className="ml-auto flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() => exportToExcel(righeExport, EXPORT_COLS_REGISTRO, `registro-${cfg.id.toLowerCase()}`, "Registro")}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <FileSpreadsheet size={13} /> Excel
+              </button>
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() =>
+                  exportToPdf(
+                    righeExport,
+                    EXPORT_COLS_REGISTRO,
+                    `registro-${cfg.id.toLowerCase()}`,
+                    `${cfg.label} — Registro RENTRI ${cfg.registroId}\n${visibili.length} movimenti`,
+                  )
+                }
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <Printer size={13} /> PDF
+              </button>
               <button
                 type="button"
                 disabled={daInviareVisibili.length === 0}

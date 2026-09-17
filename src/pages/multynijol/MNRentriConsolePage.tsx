@@ -52,7 +52,9 @@ import {
   FileText,
   Printer,
   Download,
+  Handshake,
 } from "lucide-react";
+import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
 
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
@@ -79,7 +81,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "cartacei" | "pesca" | "registriufficiali" | "registri" | "invii" | "privati" | "lemon";
+type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "cartacei" | "pesca" | "registriufficiali" | "registri" | "intermediario" | "invii" | "privati" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -103,6 +105,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "pesca", label: "Pesca dal RENTRI", icon: <Download size={14} /> },
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
   { id: "registri", label: "Invio Registri", icon: <ClipboardList size={14} /> },
+  { id: "intermediario", label: "Intermediazione", icon: <Handshake size={14} /> },
   { id: "invii", label: "Invii effettuati", icon: <Send size={14} /> },
   { id: "privati", label: "Invii privati", icon: <Users size={14} /> },
   { id: "lemon", label: "Dark Lemon", icon: <Sparkles size={14} /> },
@@ -124,7 +127,7 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "registriufficiali", "registri", "invii", "lemon"];
+    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "cartacei", "pesca", "registriufficiali", "registri", "intermediario", "invii", "privati", "lemon"];
     return ids.includes(t as TabId) ? (t as TabId) : "stato";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
@@ -979,6 +982,19 @@ export default function MNRentriConsolePage() {
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Registri RENTRI — inviati e da inviare</h3>
             <RentriRegistriPanel />
+          </div>
+        )}
+
+        {tab === "intermediario" && (
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+              <h3 className="text-base font-display tracking-wider">Formulari dal RENTRI dove risultiamo intermediario</h3>
+              <RentriFirIntermediarioPanel cliente={cliente} />
+            </div>
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+              <h3 className="text-base font-display tracking-wider">Registro C/S di intermediazione</h3>
+              <RentriRegistriPanel registroIniziale="MULTY_INTERMEDIARIO" />
+            </div>
           </div>
         )}
 

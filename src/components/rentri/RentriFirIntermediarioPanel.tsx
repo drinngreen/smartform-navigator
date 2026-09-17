@@ -1,13 +1,24 @@
 import { useMemo, useState } from "react";
-import { Loader2, Search, Handshake, AlertTriangle } from "lucide-react";
+import { Loader2, Search, Handshake, AlertTriangle, FileSpreadsheet, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { elencoFirIntermediario, type FirIntermediarioRow } from "@/lib/rentriFirIntermediario";
 import { RENTRI_CF_SOGGETTO, type RentriCliente } from "@/lib/rentriVpsApi";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const oggi = () => new Date().toISOString().slice(0, 10);
 const inizioAnno = () => `${new Date().getFullYear()}-01-01`;
 const fmtData = (d: string | null) => (d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—");
 const fmtKg = (v: number | null) => (v === null || Number.isNaN(v) ? "—" : Number(v).toLocaleString("it-IT"));
+
+const EXPORT_COLS = [
+  { header: "Formulario", key: "numeroFir", width: 18 },
+  { header: "Data", key: "data", width: 12, format: (v: any) => fmtData(v) },
+  { header: "Produttore", key: "produttore", width: 28 },
+  { header: "Destinatario", key: "destinatario", width: 28 },
+  { header: "EER", key: "eer", width: 10 },
+  { header: "Kg", key: "quantitaKg", width: 12, format: (v: any) => fmtKg(v) },
+  { header: "Intermediario", key: "intermediario", width: 26, format: (v: any, row: any) => (row.siamoIntermediario ? "NOI" : v || "nessuno") },
+];
 
 /**
  * Formulari RENTRI in cui la società risulta INTERMEDIARIO.
@@ -115,10 +126,37 @@ export function RentriFirIntermediarioPanel({ cliente = "multy" as RentriCliente
 
       {righe && (
         <div className="rounded-2xl border border-border/30 bg-card/60 p-4 space-y-3">
-          <p className="text-xs text-muted-foreground">
-            {totali.righe} formulari — {fmtKg(totali.kg)} kg complessivi
-            {righe.length !== totali.righe && ` (su ${righe.length} letti dal RENTRI nel periodo)`}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              {totali.righe} formulari — {fmtKg(totali.kg)} kg complessivi
+              {righe.length !== totali.righe && ` (su ${righe.length} letti dal RENTRI nel periodo)`}
+            </p>
+            <div className="ml-auto flex gap-2">
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() => exportToExcel(visibili as any, EXPORT_COLS, `fir-intermediario-${dataDa}_${dataA}`, "FIR Intermediario")}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <FileSpreadsheet size={13} /> Excel
+              </button>
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() =>
+                  exportToPdf(
+                    visibili as any,
+                    EXPORT_COLS,
+                    `fir-intermediario-${dataDa}_${dataA}`,
+                    `Formulari RENTRI con noi intermediario\nPeriodo ${fmtData(dataDa)} — ${fmtData(dataA)} · ${totali.righe} formulari · ${fmtKg(totali.kg)} kg`,
+                  )
+                }
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <Printer size={13} /> PDF
+              </button>
+            </div>
+          </div>
           <div className="max-h-[560px] overflow-auto rounded-xl border border-border/30">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-secondary/80 text-xs uppercase text-muted-foreground">
