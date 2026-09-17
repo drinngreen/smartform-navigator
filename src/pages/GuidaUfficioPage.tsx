@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, Bot, ClipboardCheck, FileSpreadsheet, Factory, ListChecks, QrCode, ShieldCheck, Smartphone } from "lucide-react";
+import { AlertTriangle, BellRing, Bot, ClipboardCheck, FileSpreadsheet, Factory, ListChecks, QrCode, ShieldCheck, Smartphone } from "lucide-react";
 import install1 from "@/assets/guides/istruzioni-autisti-1.png.asset.json";
 import install2 from "@/assets/guides/istruzioni-autisti-2.png.asset.json";
 import install3 from "@/assets/guides/istruzioni-autisti-3.png.asset.json";
@@ -18,7 +18,8 @@ const updates = [
   { icon: QrCode, title: "FIR digitali e stato RENTRI", body: "Lo stato viene riletto dal RENTRI. HTTP 202 significa soltanto presa in carico tecnica. Il viaggio resta bloccato finché numero e QR ufficiale non sono presenti. Il PDF ufficiale usa il modello ministeriale compilato e il QR restituito dal RENTRI." },
   { icon: Factory, title: "Impianto destinatario", body: "L'impianto può cercare per numero FIR e, se disponibile, filtrare per EER/CER qualsiasi FIR RENTRI in cui risulta destinatario, anche se non è stato emesso internamente. Registra doppia pesata ed esito totale, parziale o respinto, poi firma e trasmette la chiusura." },
   { icon: ListChecks, title: "Registri C/S e vista totale", body: "La sezione Registri contiene la vista TUTTI, i singoli registri e gli export Excel/PDF. Fino al 31/07/2026 incluso le righe sono classificate INVIATO (storico); da agosto lo stato deriva dal confronto con il registro RENTRI letto al momento." },
-  { icon: ShieldCheck, title: "Intermediazione protetta", body: "Nel registro RQEL39R7NS0 compaiono soltanto FIR letti dal RENTRI nei quali Multyproget è davvero intermediario. La fonte deve essere rentri_intermediario. Le tre trasmissioni errate già presenti nel registro ufficiale restano intoccabili e non vengono nascoste né corrette automaticamente." },
+  { icon: ShieldCheck, title: "Intermediazione protetta", body: "Nel registro RQEL39R7NS0 compaiono soltanto FIR letti dal RENTRI nei quali Multyproget è davvero intermediario. La fonte deve essere rentri_intermediario." },
+  { icon: BellRing, title: "Semaforo notifiche", body: "La luce rossa segnala le notifiche non lette. La luce arancione si accende quando il RENTRI mostra FIR in arrivo nuovi con data di oggi. Chiudendo le voci con la X, quando l'elenco si svuota il colore sparisce e resta la luce verde." },
   { icon: FileSpreadsheet, title: "Confronto elenchi", body: "Nel Centro di Comando si possono confrontare gli Excel con i documenti interni, distinguere presenti, mancanti e bozze e registrare documentalmente soltanto i mancanti. Questa operazione non invia al RENTRI e non modifica giacenze o cernite." },
   { icon: ClipboardCheck, title: "Preferiti e controllo rapido", body: "La pulsantiera porta direttamente a Registri C/S, Invii RENTRI, Movimenti RENTRI, Compila FIR, Giacenze, Cernite, Intermediazione, FIR cartacei, Personale e Privati. I preferiti scelti restano memorizzati nel browser usato." },
   { icon: Bot, title: "Dark Lemon aggiornato", body: "Dalla console può guidare l'ufficio, leggere la pagina, cercare dati, compilare moduli e usare gli strumenti reali previsti. La cronologia è raggiungibile dalla barra, dalla finestra, dal pannello laterale e dalla pagina completa. Nelle app è invece limitato al formulario." },
