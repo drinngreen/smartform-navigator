@@ -14,23 +14,13 @@ import { CER_CATALOG } from "@/data/cerCatalog";
 import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
-const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
-const GIACENZE_BASELINE_DATE = "2026-09-12";
+import {
+  DRAGON_GIACENZE_BASELINE_DATE as GIACENZE_BASELINE_DATE,
+  DRAGON_GIACENZE_BASELINE_OVERRIDES as GIACENZE_BASELINE_OVERRIDES,
+  normalizeCerCodice as normalizeCer,
+} from "@/lib/dragonGiacenzeBaseline";
 
-// Valori certificati dalla stampa ufficiale del 12/09/2026. Il libro mastro
-// Dragon contiene rettifiche tecniche nascoste che non devono alterare questa
-// fotografia contabile né comparire come carichi/scarichi all'operatore.
-const GIACENZE_BASELINE_OVERRIDES: Record<string, Pick<CerRow, "carico" | "scarico" | "saldo">> = {
-  "150103": { carico: 9503, scarico: 0, saldo: 9503 },
-  "150106": { carico: 22237, scarico: 17340, saldo: 4897 },
-  "191202": { carico: 1800, scarico: 1800, saldo: 0 },
-  "191204": { carico: 173, scarico: 173, saldo: 0 },
-  "200140-FE": { carico: 157179, scarico: 102498.5, saldo: 54680.5 },
-  "200140-MIX": { carico: 37298, scarico: 23784, saldo: 13514 },
-  "200140-OT": { carico: 8544, scarico: 4848, saldo: 3696 },
-  "200140-PI": { carico: 2912, scarico: 2203, saldo: 709 },
-  "200140-RA": { carico: 21055.34, scarico: 11621.17, saldo: 9434.17 },
-};
+const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 // Intestazione fissa per export (replica StRegRag)
 const COMPANY = {
