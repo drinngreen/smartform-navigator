@@ -338,8 +338,8 @@ export function buildUpstreamBody(
 
     identificativo: safe.identificativo ?? issuer,
     // RENTRI accetta anche corpi array (es. registrazioni di registro): non vanno normalizzati a oggetto
-    payload: Array.isArray(payload) || typeof payload === "string" ? payload : safe,
-    dati_inviati: Array.isArray(payload) || typeof payload === "string" ? payload : safe,
+    payload: corpoRegistro ?? (Array.isArray(payload) || typeof payload === "string" ? payload : safe),
+    dati_inviati: corpoRegistro ?? (Array.isArray(payload) || typeof payload === "string" ? payload : safe),
 
     ...qtyFields,
   };
