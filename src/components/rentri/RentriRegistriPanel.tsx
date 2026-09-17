@@ -204,6 +204,17 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
     return righe;
   }, [filtro, righe, inviati, daInviare]);
 
+  /** Righe appiattite per export Excel/PDF, con lo stato di trasmissione letto dal RENTRI. */
+  const righeExport = useMemo(
+    () =>
+      visibili.map((x) => ({
+        ...x.riga,
+        stato_rentri: x.esito ? "INVIATO" : "Da inviare",
+        identificativo_rentri: x.esito?.identificativi_rentri?.join(", ") || "",
+      })),
+    [visibili],
+  );
+
   const ultimoInvio = useMemo(() => {
     const date = inviati.map((x) => x.riga.data_movimento ?? "").filter(Boolean).sort();
     return date.length ? date[date.length - 1] : null;
