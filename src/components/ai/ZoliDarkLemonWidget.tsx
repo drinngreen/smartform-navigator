@@ -54,8 +54,8 @@ export function ZoliDarkLemonWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  const isMN = location.pathname.startsWith("/mn/admin");
-  const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
+  const isMN = /^\/mn\/(admin|app)\//.test(location.pathname);
+  const ctxMatch = location.pathname.match(/\/mn\/(?:admin|app)\/([\w-]+)/);
   const context = isMN ? (ctxMatch?.[1] || "multyproget") : "multyproget";
 
   const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context, "floating");
