@@ -54,7 +54,8 @@ export function useDragonStock(scope?: DragonWarehouseScope) {
       const delta = m.sign === "PLUS" ? m.quantity : -m.quantity;
       if (m.warehouse_scope === "WASTE") {
         entry.waste += delta;
-        if ((m.movement_date || "").slice(0, 10) > DRAGON_GIACENZE_BASELINE_DATE) {
+        const registeredAfterBaseline = (m.created_at || "").slice(0, 10) > DRAGON_GIACENZE_BASELINE_DATE;
+        if ((m.movement_date || "").slice(0, 10) > DRAGON_GIACENZE_BASELINE_DATE || registeredAfterBaseline) {
           entry.wastePostBaseline += delta;
         }
       } else {
