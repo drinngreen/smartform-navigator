@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
-import { useFirDaFirmareCount } from "@/hooks/useFirDaFirmareCount";
 
 
 interface MNAdminHeaderProps {
@@ -34,10 +33,8 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
 
   const messagesPath = currentContext ? `/mn/admin/${currentContext}/messaggi` : "/mn/admin";
 
-  // Formulari in arrivo da firmare su RENTRI (badge arancione)
-  const firDaFirmare = useFirDaFirmareCount(
-    currentContext === "niyol" ? "niyol" : currentContext === "multyproget" ? "multy" : null
-  );
+  // Contesto reale preso dall'URL (es. "dev-multyproget"), per non uscire dalla sezione in cui si sta lavorando
+  const routeContext = location.pathname.match(/^\/mn\/admin\/([^/]+)/)?.[1] ?? null;
 
 
 
@@ -106,8 +103,7 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         {/* Notifications */}
         <NotificationBell
           appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"}
-          signCount={firDaFirmare}
-          onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
+          onSignBadgeClick={() => navigate(routeContext ? `/mn/admin/${routeContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
         />
 
         {/* Logout */}
