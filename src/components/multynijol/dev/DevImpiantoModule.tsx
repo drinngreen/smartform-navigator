@@ -203,6 +203,10 @@ function ImpiantoFormulari() {
   const darkLemonOpen = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
   const [editorMode, setEditorMode] = useState<"standard" | "alternative">("standard");
   const [selectedIncoming, setSelectedIncoming] = useState<FirSummary | null>(null);
+  const [ricercaNumero, setRicercaNumero] = useState("");
+  const [ricercaCer, setRicercaCer] = useState("");
+  const [ricercaLoading, setRicercaLoading] = useState(false);
+  const [risultatiRicerca, setRisultatiRicerca] = useState<FirSummary[]>([]);
   const [incomingEvents, setIncomingEvents] = useState<Record<string, FirEvent[]>>({});
   const editorStorageKey = "dev-fir-editor:impianto-multyproget";
 
