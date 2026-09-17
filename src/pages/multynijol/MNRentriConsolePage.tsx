@@ -55,6 +55,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
+import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
 
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
@@ -438,7 +439,12 @@ export default function MNRentriConsolePage() {
   const handleCarica = async () => {
     setCaricando(true);
     try {
-      const rows = await caricaMovimentiCandidati(mnCtx.tenantId, dataDa, dataA);
+      const registroSelezionato = registri.find((r) => r.id === registroId);
+      const rows = registroSelezionato?.tipo === "INTERMEDIARIO"
+        ? movimentiIntermediazioneDaFirRentri(
+            (await elencoFirIntermediario(cliente, { dataDa, dataA })).righe,
+          )
+        : await caricaMovimentiCandidati(mnCtx.tenantId, dataDa, dataA);
       setMovimenti(rows);
       toast.success(`${rows.length} movimenti trovati`);
     } catch (e: any) {
@@ -829,7 +835,11 @@ export default function MNRentriConsolePage() {
                 <label className="text-xs text-muted-foreground">Registro</label>
                 <select
                   value={registroId}
-                  onChange={(e) => setRegistroId(e.target.value)}
+                  onChange={(e) => {
+                    setRegistroId(e.target.value);
+                    setMovimenti([]);
+                    setSelezione(new Set());
+                  }}
                   className="block rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
                 >
                   {registri.map((r) => (

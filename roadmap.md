@@ -33,6 +33,8 @@
 
 ## Stabilizzazione operativa urgente — 17/09/2026
 
+- [x] Bloccare gli invii al registro intermediazione da fonti locali generiche; proporre esclusivamente FIR letti dal RENTRI con Multyproget intermediario.
+- [x] Identificare in sola lettura i tre movimenti inviati per errore, senza modificare storico, saldi o cernite.
 - [x] Rendere univoco lo stato di ogni FIR confrontando archivio locale e conferma RENTRI, incluso il LOTTO restituito dopo emissione asincrona.
 - [ ] Rendere visibili e utilizzabili dall'impianto i FIR in arrivo: pesata, esito, firma destinatario e motivo completo degli errori.
 - [ ] Dimostrare che app autisti e uso d'ufficio condividono lo stesso FIR, con partenza bloccata senza conferma e QR ufficiali.
