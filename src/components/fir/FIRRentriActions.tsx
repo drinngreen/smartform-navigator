@@ -1,9 +1,16 @@
 import { useState } from "react";
-import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck } from "lucide-react";
+import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck, RefreshCw } from "lucide-react";
 import { emissioneFir, dettaglioFir, ricercaFir, statoTransazioneFir, firmaRicezione, type RentriCliente, type RentriVpsResponse } from "@/lib/rentriVpsApi";
 import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { toast } from "sonner";
 import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
+import {
+  leggiStatoFirRentri,
+  sincronizzaStatoFirDaRentri,
+  statoViaggioDaRentri,
+  type StatoViaggioFir,
+} from "@/lib/rentriSyncStatoFir";
+import { resolveFirQrDataUrl } from "@/lib/firPrintDecorations";
 
 interface FIRRentriActionsProps {
   /** Il cliente RENTRI (multy, niyol, global) */
@@ -12,6 +19,8 @@ interface FIRRentriActionsProps {
   formData: Record<string, string | boolean>;
   /** Numero FIR se disponibile */
   numeroFir?: string;
+  /** Id del formulario locale: se presente, lo stato viene allineato al RENTRI */
+  formId?: string;
   /** true = firma come produttore + trasportatore, false = solo trasportatore */
   firmaComeProduttore?: boolean;
   /** Callback quando l'emissione ha successo */
@@ -20,11 +29,54 @@ interface FIRRentriActionsProps {
   templateFields?: Array<{ id: string; name: string }>;
 }
 
-export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProduttore = true, onEmissioneSuccess, templateFields }: FIRRentriActionsProps) {
+const ETICHETTA_VIAGGIO: Record<StatoViaggioFir, string> = {
+  bozza: "📝 Bozza — non ancora firmato",
+  "da-firmare": "✍️ In attesa di firma di partenza",
+  "in-viaggio": "🚚 In viaggio — firmato alla partenza",
+  chiuso: "✅ Chiuso dal destinatario",
+};
+
+export function FIRRentriActions({ cliente, formData, numeroFir, formId, firmaComeProduttore = true, onEmissioneSuccess, templateFields }: FIRRentriActionsProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [result, setResult] = useState<RentriVpsResponse | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [firUuid, setFirUuid] = useState<string | null>(null);
+  const [statoViaggio, setStatoViaggio] = useState<{ viaggio: StatoViaggioFir; rentri: string } | null>(null);
+
+  /** Rilegge il RENTRI: unica fonte dello stato reale del viaggio. */
+  const handleSyncStato = async () => {
+    if (!numeroFir) {
+      toast.error("Numero formulario non disponibile");
+      return;
+    }
+    setLoading("sync");
+    try {
+      const res = formId
+        ? await sincronizzaStatoFirDaRentri(cliente, numeroFir, formId)
+        : await (async () => {
+            const r = await leggiStatoFirRentri(cliente, numeroFir);
+            const stato = String((r.data as any)?.stato_formulario ?? "");
+            return { ok: r.success, statoRentri: stato, statoViaggio: statoViaggioDaRentri(stato), aggiornato: false, errore: r.error };
+          })();
+
+      if (!res.ok) {
+        toast.error(res.errore || "Lettura RENTRI non riuscita");
+        return;
+      }
+      const viaggio = res.statoViaggio ?? "bozza";
+      setStatoViaggio({ viaggio, rentri: res.statoRentri ?? "" });
+      toast.success(`RENTRI: ${ETICHETTA_VIAGGIO[viaggio]}`);
+
+      if (viaggio === "in-viaggio" || viaggio === "chiuso") {
+        const qr = await resolveFirQrDataUrl(numeroFir, cliente as never);
+        if (qr) setQrCodeUrl(qr);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const handleEmissione = async () => {
     setLoading("emissione");
@@ -176,7 +228,28 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
           loading={loading === "firma"}
           disabled={!firUuid}
         />
+        <ActionButton
+          icon={<RefreshCw size={14} />}
+          label="Aggiorna stato da RENTRI"
+          onClick={handleSyncStato}
+          loading={loading === "sync"}
+          disabled={!numeroFir}
+        />
       </div>
+
+      {statoViaggio && (
+        <div className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+          statoViaggio.viaggio === "in-viaggio"
+            ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+            : statoViaggio.viaggio === "chiuso"
+              ? "bg-green-500/10 border-green-500/30 text-green-300"
+              : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+        }`}>
+          {ETICHETTA_VIAGGIO[statoViaggio.viaggio]}
+          <span className="ml-2 font-mono opacity-70">({statoViaggio.rentri})</span>
+        </div>
+      )}
+
 
       {/* Partenza xFIR: firma remota ca-rentri con conferma mobile */}
       {numeroFir && (
