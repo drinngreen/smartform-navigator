@@ -48,6 +48,19 @@ const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("i
 const fmtData = (d: string | null | undefined) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
 
+const EXPORT_COLS_REGISTRO = [
+  { header: "N. interno", key: "numero_interno", width: 12 },
+  { header: "Data", key: "data_movimento", width: 12, format: (v: any) => fmtData(v) },
+  { header: "C/S", key: "carico_scarico", width: 8 },
+  { header: "CER", key: "cer", width: 10 },
+  { header: "Descrizione", key: "descrizione", width: 32 },
+  { header: "Operazione", key: "tipo_operazione", width: 12 },
+  { header: "Formulario", key: "numero_formulario", width: 18 },
+  { header: "Kg", key: "quantita", width: 12, format: (v: any) => fmtKg(v) },
+  { header: "Stato RENTRI", key: "stato_rentri", width: 18 },
+  { header: "Identificativo RENTRI", key: "identificativo_rentri", width: 26 },
+];
+
 export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
   const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
