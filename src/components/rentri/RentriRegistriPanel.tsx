@@ -11,6 +11,7 @@ export const REGISTRI_RENTRI = [
   { id: "MULTY_IMPIANTO", label: "Multyproget — Impianto", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "registro" },
   { id: "MULTY_CONTO_PROPRIO", label: "Multyproget — Conto Proprio", tenant: MULTY_TENANT_ID, registroId: "RQCTGTP7NT0", source: "registro" },
   { id: "MULTY_PRIVATI", label: "Multyproget — Privati", tenant: MULTY_TENANT_ID, registroId: "RAH20NP7O40", source: "privati" },
+  { id: "MULTY_INTERMEDIARIO", label: "Multyproget — Intermediazione", tenant: MULTY_TENANT_ID, registroId: "RQEL39R7NS0", source: "intermediario" },
   { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro" },
 ] as const;
 
@@ -42,8 +43,8 @@ const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("i
 const fmtData = (d: string | null | undefined) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
 
-export function RentriRegistriPanel() {
-  const [registro, setRegistro] = useState<RegistroId>("MULTY_IMPIANTO");
+export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
+  const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [popup, setPopup] = useState(false);
@@ -61,6 +62,15 @@ export function RentriRegistriPanel() {
               .eq("tenant_id", cfg.tenant)
               .order("data", { ascending: false })
               .order("numero_progressivo", { ascending: false })
+          : cfg.source === "intermediario"
+          ? supabase
+              .from("movimenti_intermediario" as any)
+              .select(
+                "id, data_movimento, cer, descrizione_rifiuto, quantita_kg, numero_fir, tipo_movimento, produttore_denominazione, destinatario_denominazione",
+              )
+              .eq("tenant_id", cfg.tenant)
+              .order("data_movimento", { ascending: false })
+              .limit(2000)
           : supabase
               .from("registro_generale" as any)
               .select(
@@ -89,6 +99,18 @@ export function RentriRegistriPanel() {
               tipo_operazione: null,
               numero_formulario: null,
               quantita: r.kg_pesati,
+            }))
+          : cfg.source === "intermediario"
+          ? (movRes.data ?? []).map((r: any) => ({
+              id: r.id,
+              numero_interno: null,
+              data_movimento: r.data_movimento,
+              cer: r.cer,
+              descrizione: r.descrizione_rifiuto || r.produttore_denominazione,
+              carico_scarico: String(r.tipo_movimento || "").toUpperCase() === "SCARICO" ? "SCARICO" : "CARICO",
+              tipo_operazione: null,
+              numero_formulario: r.numero_fir,
+              quantita: r.quantita_kg,
             }))
           : ((movRes.data ?? []) as unknown as RigaRegistro[]);
       return {

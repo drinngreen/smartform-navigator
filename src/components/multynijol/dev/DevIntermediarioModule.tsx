@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, FileSpreadsheet, Printer, Search, Package, ArrowLeftRight, Globe } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
+import { RentriRegistriPanel } from "@/components/rentri/RentriRegistriPanel";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const PAGE_SIZE = 100;
 
-export function DevIntermediarioModule() {
+function MovimentiIntermediarioTab() {
   const [movSearch, setMovSearch] = useState("");
   const [movPage, setMovPage] = useState(0);
   const [cerFilter, setCerFilter] = useState("all");
@@ -178,5 +181,24 @@ export function DevIntermediarioModule() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Sezione Intermediazione: movimenti interni, formulari letti dal RENTRI dove
+ * risultiamo intermediario e registro cronologico di intermediazione.
+ */
+export function DevIntermediarioModule() {
+  return (
+    <Tabs defaultValue="movimenti" className="space-y-4">
+      <TabsList className="bg-card/60 border border-border/30">
+        <TabsTrigger value="movimenti">Movimenti</TabsTrigger>
+        <TabsTrigger value="rentri">FIR dal RENTRI (noi intermediario)</TabsTrigger>
+        <TabsTrigger value="registro">Registro C/S intermediazione</TabsTrigger>
+      </TabsList>
+      <TabsContent value="movimenti"><MovimentiIntermediarioTab /></TabsContent>
+      <TabsContent value="rentri"><RentriFirIntermediarioPanel cliente="multy" /></TabsContent>
+      <TabsContent value="registro"><RentriRegistriPanel registroIniziale="MULTY_INTERMEDIARIO" /></TabsContent>
+    </Tabs>
   );
 }
