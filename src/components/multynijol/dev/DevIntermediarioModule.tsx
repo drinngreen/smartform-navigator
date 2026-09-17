@@ -180,3 +180,22 @@ function MovimentiIntermediarioTab() {
     </div>
   );
 }
+
+/**
+ * Sezione Intermediazione: movimenti interni, formulari letti dal RENTRI dove
+ * risultiamo intermediario e registro cronologico di intermediazione.
+ */
+export function DevIntermediarioModule() {
+  return (
+    <Tabs defaultValue="movimenti" className="space-y-4">
+      <TabsList className="bg-card/60 border border-border/30">
+        <TabsTrigger value="movimenti">Movimenti</TabsTrigger>
+        <TabsTrigger value="rentri">FIR dal RENTRI (noi intermediario)</TabsTrigger>
+        <TabsTrigger value="registro">Registro C/S intermediazione</TabsTrigger>
+      </TabsList>
+      <TabsContent value="movimenti"><MovimentiIntermediarioTab /></TabsContent>
+      <TabsContent value="rentri"><RentriFirIntermediarioPanel cliente="multy" /></TabsContent>
+      <TabsContent value="registro"><RentriRegistriPanel registroIniziale="MULTY_INTERMEDIARIO" /></TabsContent>
+    </Tabs>
+  );
+}
