@@ -75,6 +75,7 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
+      <DevPulsantieraPreferiti context="dev-multyproget" />
 
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
