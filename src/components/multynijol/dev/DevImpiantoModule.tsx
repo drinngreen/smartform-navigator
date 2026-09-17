@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DevGiacenzeSolaLettura } from "./DevGiacenzeSolaLettura";
+import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { DevFirCartaceoModule } from "./DevFirCartaceoModule";
 
@@ -176,7 +176,7 @@ export function DevImpiantoModule() {
           </div>
         </TabsContent>
         <TabsContent value="giacenze">
-          <DevGiacenzeSolaLettura />
+          <DevGiacenzeModule />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
