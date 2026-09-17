@@ -3220,6 +3220,64 @@ async function handleTool(
       return error ? { error: error.message } : { trasportatori: data || [] };
     }
 
+    // ---------- CREAZIONE DIPENDENTE (account reale) ----------
+    case "create_dipendente": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      const { data: isAdmin, error: roleError } = await db.rpc("has_role", { _user_id: adminUserId, _role: "admin" });
+      if (roleError) return { error: `Controllo ruolo non riuscito: ${roleError.message}` };
+      if (!isAdmin) return { error: "Solo un amministratore può creare dipendenti." };
+
+      const cf = String(args.codice_fiscale || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(cf)) {
+        return { error: "Codice fiscale non valido: servono 16 caratteri nel formato RSSMRA80A01H501U." };
+      }
+      const nome = String(args.nome || "").trim();
+      const cognome = String(args.cognome || "").trim();
+      if (!nome || !cognome) return { error: "Nome e cognome sono obbligatori." };
+
+      const { data: giaPresente } = await db.from("profiles").select("user_id").eq("codice_fiscale", cf).maybeSingle();
+      if (giaPresente) {
+        return { error: "Esiste già un dipendente con questo codice fiscale.", user_id: giaPresente.user_id };
+      }
+
+      const mnContext = normalizeContext(args.mn_context) ?? normalizeContext(undefined) ?? null;
+      const tenantDipendente = args.mn_context ? resolveTenantId(args.mn_context) : tenantId;
+      const password = String(args.password || "123stella");
+
+      const { data: authData, error: authError } = await db.auth.admin.createUser({
+        email: `${cf.toLowerCase()}@zoli.internal`,
+        password,
+        email_confirm: true,
+        user_metadata: { nome, cognome, codice_fiscale: cf },
+      });
+      if (authError || !authData?.user) {
+        return { error: `Creazione account non riuscita: ${authError?.message ?? "errore sconosciuto"}` };
+      }
+      const newUserId = authData.user.id;
+
+      const { error: profileError } = await db.from("profiles").insert({
+        user_id: newUserId,
+        nome,
+        cognome,
+        codice_fiscale: cf,
+        tenant_id: tenantDipendente,
+        mn_context: mnContext,
+        telefono: args.telefono || null,
+        targa_automezzo: args.targa_automezzo || null,
+        targa_rimorchio: args.targa_rimorchio || null,
+      });
+      if (profileError) {
+        return { error: `Account creato ma profilo non salvato: ${profileError.message}`, user_id: newUserId };
+      }
+      await db.from("user_roles").insert({ user_id: newUserId, role: "user" });
+
+      return {
+        success: true,
+        user_id: newUserId,
+        message: `Dipendente ${nome} ${cognome} creato. Accesso con codice fiscale ${cf} e password ${password}.`,
+      };
+    }
+
     // ---------- MESSAGGI ----------
     case "send_message_to_user": {
       if (!adminUserId) return { error: "Admin non autenticato" };
