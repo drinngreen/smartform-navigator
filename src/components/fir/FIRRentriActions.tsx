@@ -3,6 +3,7 @@ import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck } from 
 import { emissioneFir, dettaglioFir, ricercaFir, statoTransazioneFir, firmaRicezione, type RentriCliente, type RentriVpsResponse } from "@/lib/rentriVpsApi";
 import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { toast } from "sonner";
+import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
 
 interface FIRRentriActionsProps {
   /** Il cliente RENTRI (multy, niyol, global) */
@@ -176,6 +177,11 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
           disabled={!firUuid}
         />
       </div>
+
+      {/* Partenza xFIR: firma remota ca-rentri con conferma mobile */}
+      {numeroFir && (
+        <PartenzaXfirPanel cliente={cliente} numeroFir={numeroFir} />
+      )}
 
       {/* QR Code display */}
       {qrCodeUrl && (

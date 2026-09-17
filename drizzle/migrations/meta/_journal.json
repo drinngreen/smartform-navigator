@@ -22,6 +22,13 @@
       "when": 1789642658134,
       "tag": "0002_fix_deferred_cernita_integrity_current_row",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789675376306,
+      "tag": "0003_create_rentri_firma_sessioni",
+      "breakpoints": true
     }
   ]
 }

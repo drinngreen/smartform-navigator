@@ -5883,6 +5883,63 @@ export type Database = {
           },
         ]
       }
+      rentri_firma_sessioni: {
+        Row: {
+          authorize_at: string | null
+          cliente: string
+          conferma_mobile_at: string | null
+          created_at: string
+          created_by: string | null
+          credentials_id: string | null
+          device_description: string | null
+          digest_to_sign: string | null
+          esito_acquisizione_firma: string | null
+          esito_sign_hash: string | null
+          handle: string | null
+          id: string
+          log_raw: Json
+          numero_fir: string
+          stato_finale: string | null
+          token: string | null
+        }
+        Insert: {
+          authorize_at?: string | null
+          cliente: string
+          conferma_mobile_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          credentials_id?: string | null
+          device_description?: string | null
+          digest_to_sign?: string | null
+          esito_acquisizione_firma?: string | null
+          esito_sign_hash?: string | null
+          handle?: string | null
+          id?: string
+          log_raw?: Json
+          numero_fir: string
+          stato_finale?: string | null
+          token?: string | null
+        }
+        Update: {
+          authorize_at?: string | null
+          cliente?: string
+          conferma_mobile_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          credentials_id?: string | null
+          device_description?: string | null
+          digest_to_sign?: string | null
+          esito_acquisizione_firma?: string | null
+          esito_sign_hash?: string | null
+          handle?: string | null
+          id?: string
+          log_raw?: Json
+          numero_fir?: string
+          stato_finale?: string | null
+          token?: string | null
+        }
+        Relationships: []
+      }
       rentri_invii_privati: {
         Row: {
           cer: string
