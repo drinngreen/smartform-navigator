@@ -5,7 +5,7 @@
  * dedotto da log, HTTP 202, transazioni o PDF. Se il RENTRI non risponde, il
  * record locale resta invariato.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { inviaOperazioneRentriCustom, type RentriCliente } from "@/lib/rentriVpsApi";
 
 export type StatoViaggioFir = "bozza" | "da-firmare" | "in-viaggio" | "chiuso";
