@@ -1695,12 +1695,18 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <button onClick={handleControlloPolizia} className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600/80 to-blue-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                 <Shield className="h-5 w-5 icon-led" /> {qrCodeData ? "CONTROLLO POLIZIA (QR CODE)" : "RECUPERA QR UFFICIALE RENTRI"}
               </button>
-              <button onClick={handleArrivato} disabled={!qrCodeData} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-                <MapPin className="h-5 w-5 icon-led" /> 2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO
+              <button onClick={handleArrivato} disabled={!qrCodeData || inviandoArrivo} className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600/80 to-red-500/80 text-white font-display text-base tracking-wider hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <MapPin className="h-5 w-5 icon-led" />
+                {destinatarioSiamoNoi
+                  ? "2 · SONO ARRIVATO: PESATA E FIRMA DESTINATARIO"
+                  : "2 · CONTROLLA SE IL DESTINATARIO HA CHIUSO IL FIR"}
               </button>
               <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
-                Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano.
+                {destinatarioSiamoNoi
+                  ? "Secondo invio al RENTRI: peso reale ed esito. Solo qui il formulario si chiude e le giacenze si aggiornano."
+                  : "Il formulario lo chiude il destinatario dal suo gestionale. Qui l’app legge dal RENTRI, senza inviare nulla: se la firma c’è, recupera peso ed esito e chiude il viaggio."}
               </p>
+
             </>
 
           )}
