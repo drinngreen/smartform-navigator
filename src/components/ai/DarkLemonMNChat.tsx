@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Plus, Trash2, MessageSquare } from "lucide-react";
+import { Bot, User, MessageSquare, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDarkLemonMN, type DLSurface } from "@/hooks/useDarkLemonMN";
 import { DarkLemonHistory } from "./DarkLemonHistory";
@@ -9,6 +9,7 @@ import { DarkLemonInputBar } from "./DarkLemonInputBar";
 import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 import ReactMarkdown from "react-markdown";
 import { MessageCopyButton } from "./MessageCopyButton";
+import { FillFormAction, parseFillFormTag, stripFillFormTag } from "./FillFormAction";
 
 interface Props {
   context?: string;
@@ -39,12 +40,27 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
   const contextLabel = context === "multyproget" ? "Multyproget" : context === "niyol" ? "Niyol" : "Multy Niyol";
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-4">
+    <div className="relative flex h-[calc(100dvh-140px)] min-h-[420px] gap-4 overflow-hidden">
       {/* Sidebar */}
       {sidebarOpen && (
-        <div className="w-64 shrink-0 relative rounded-2xl p-[2px] overflow-hidden">
+        <div className={cn(
+          "z-20 shrink-0 relative rounded-2xl p-[2px] overflow-hidden",
+          appMode
+            ? "absolute inset-y-0 left-0 w-[min(86vw,320px)] shadow-2xl"
+            : "w-64"
+        )}>
           <div className="absolute inset-0 rounded-2xl animate-gradient" style={{ background: "linear-gradient(90deg, #3b82f6, #ec4899, #22c55e, #06b6d4, #a855f7, #f59e0b, #3b82f6)", backgroundSize: "300% 100%" }} />
           <div className="relative h-full rounded-2xl bg-[hsl(222,47%,6%)] overflow-hidden">
+            {appMode && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="absolute right-2 top-2 z-10 rounded-md border border-white/10 bg-white/5 p-1.5 text-white/70"
+                title="Chiudi cronologia"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <DarkLemonHistory
               conversations={conversations}
               currentConversationId={currentConversationId}
@@ -63,19 +79,19 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
 
         <div className="relative h-full rounded-2xl bg-[hsl(222,47%,6%)] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-white/10 bg-[hsl(222,47%,8%)]">
+          <div className="flex items-center gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4 border-b border-white/10 bg-[hsl(222,47%,8%)]">
             <div className="relative">
               <img src={zoliLemonIcon} alt="Dark Lemon" className="h-10 w-10" />
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[hsl(222,47%,8%)]" />
             </div>
-            <div>
-              <h2 className="text-white font-display text-lg tracking-wider">DARK LEMON AI</h2>
-               <p className="text-white/40 text-xs">{appMode ? `Assistente FIR — ${contextLabel}` : `Assistente intelligente — ${contextLabel} • Accesso operativo`}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-white font-display text-base sm:text-lg tracking-wider">DARK LEMON AI</h2>
+               <p className="truncate text-white/40 text-[10px] sm:text-xs">{appMode ? `Assistente FIR — ${contextLabel}` : `Assistente intelligente — ${contextLabel} • Accesso operativo`}</p>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={cn(
-                "ml-auto inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                "ml-auto inline-flex shrink-0 items-center gap-2 rounded-lg border p-2 sm:px-3 sm:py-2 text-xs font-medium transition-colors",
                 sidebarOpen
                   ? "border-cyan-500/30 bg-cyan-500/15 text-cyan-400"
                   : "border-white/10 bg-white/5 text-white/70 hover:border-cyan-500/20 hover:bg-cyan-500/10 hover:text-cyan-400"
@@ -83,12 +99,12 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
               title="Cronologia"
             >
               <MessageSquare className="h-4 w-4" />
-              <span>Cronologia</span>
+              <span className="hidden sm:inline">Cronologia</span>
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4">
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <img src={zoliLemonIcon} alt="Dark Lemon" className="h-20 w-20 mb-4 opacity-40" />
@@ -96,7 +112,7 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
                 <p className="text-white/30 text-sm max-w-md mb-6">
                    {appMode ? "Posso leggere foto e aiutarti a compilare il formulario. Controlla sempre i dati prima di applicarli." : "Posso cercare dati, compilare moduli e guidare l'ufficio nelle operazioni disponibili."}
                 </p>
-                <div className="grid grid-cols-2 gap-3 max-w-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
                    {(appMode ? [
                      { icon: "📷", text: "Leggi la foto di questo formulario" },
                      { icon: "📋", text: "Controlla i dati del FIR aperto" },
@@ -127,12 +143,16 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
                     <Bot className="h-4 w-4 text-cyan-400" />
                   </div>
                 )}
-                <div className={cn("relative max-w-[75%] rounded-2xl px-4 py-3 text-sm", msg.role === "user" ? "text-white" : "text-white/90")}>
+                <div className={cn("relative max-w-[88%] sm:max-w-[75%] rounded-2xl text-sm", msg.role === "user" ? "text-white" : "text-white/90")}>
                   <div className="absolute inset-0 rounded-2xl p-[1px] overflow-hidden">
                     <div className="absolute inset-0 rounded-2xl animate-gradient opacity-50" style={{ background: msg.role === "user" ? "linear-gradient(90deg, #3b82f6, #a855f7, #3b82f6)" : "linear-gradient(90deg, #06b6d4, #22c55e, #06b6d4)", backgroundSize: "200% 100%" }} />
                   </div>
                   <div className={cn("relative rounded-2xl px-4 py-3 prose prose-sm prose-invert max-w-none select-text", msg.role === "user" ? "bg-[hsl(222,47%,12%)]" : "bg-[hsl(222,47%,8%)]")}>
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown>{msg.role === "assistant" ? stripFillFormTag(msg.content) : msg.content}</ReactMarkdown>
+                    {msg.role === "assistant" && (() => {
+                      const fillData = parseFillFormTag(msg.content);
+                      return fillData ? <FillFormAction data={fillData} appMode={appMode} /> : null;
+                    })()}
                     {msg.role === "assistant" && <MessageCopyButton content={msg.content} className="absolute top-1 right-1" />}
                   </div>
                 </div>
