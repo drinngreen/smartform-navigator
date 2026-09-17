@@ -468,11 +468,7 @@ export default function MNRentriConsolePage() {
     });
 
   const inviaMovimenti = async (rows: MovimentoImpiantoRow[]) => {
-    const registroSelezionato = registri.find((r) => r.id === registroId);
-    const payload = mapMovimentiToRentri(rows, cliente).map((movimento) => ({
-      ...movimento,
-      origine: registroSelezionato?.tipo === "INTERMEDIARIO" ? "rentri_intermediario" as const : undefined,
-    }));
+    const payload = mapMovimentiToRentri(rows, cliente);
     if (payload.length === 0) {
       toast.error("Nessun movimento valido da inviare");
       return;

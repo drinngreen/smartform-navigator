@@ -57,6 +57,7 @@ export function mapMovimentiToRentri(
       num_iscr_sito: unita,
       numero_fir: r.numero_fir,
       riferimento_interno: r.id,
+      origine: r.stato_movimento === "rentri_intermediario" ? "rentri_intermediario" : undefined,
     }));
 }
 
