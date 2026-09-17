@@ -116,10 +116,37 @@ export function RentriFirIntermediarioPanel({ cliente = "multy" as RentriCliente
 
       {righe && (
         <div className="rounded-2xl border border-border/30 bg-card/60 p-4 space-y-3">
-          <p className="text-xs text-muted-foreground">
-            {totali.righe} formulari — {fmtKg(totali.kg)} kg complessivi
-            {righe.length !== totali.righe && ` (su ${righe.length} letti dal RENTRI nel periodo)`}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              {totali.righe} formulari — {fmtKg(totali.kg)} kg complessivi
+              {righe.length !== totali.righe && ` (su ${righe.length} letti dal RENTRI nel periodo)`}
+            </p>
+            <div className="ml-auto flex gap-2">
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() => exportToExcel(visibili as any, EXPORT_COLS, `fir-intermediario-${dataDa}_${dataA}`, "FIR Intermediario")}
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <FileSpreadsheet size={13} /> Excel
+              </button>
+              <button
+                type="button"
+                disabled={visibili.length === 0}
+                onClick={() =>
+                  exportToPdf(
+                    visibili as any,
+                    EXPORT_COLS,
+                    `fir-intermediario-${dataDa}_${dataA}`,
+                    `Formulari RENTRI con noi intermediario\nPeriodo ${fmtData(dataDa)} — ${fmtData(dataA)} · ${totali.righe} formulari · ${fmtKg(totali.kg)} kg`,
+                  )
+                }
+                className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              >
+                <Printer size={13} /> PDF
+              </button>
+            </div>
+          </div>
           <div className="max-h-[560px] overflow-auto rounded-xl border border-border/30">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-secondary/80 text-xs uppercase text-muted-foreground">
