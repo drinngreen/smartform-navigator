@@ -495,7 +495,7 @@ export async function inviaMovimentiRegistroVerificato(
   void opts;
 
 
-  return { invio, transazioneId, esitoFinale: "IN_VERIFICA", dettaglioTransazione: dettaglio };
+  return { invio, transazioneId, esitoFinale: "IN_VERIFICA" };
 }
 
 export function inviaOperazioneRentriCustom(
