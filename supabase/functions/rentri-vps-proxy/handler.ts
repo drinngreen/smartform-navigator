@@ -314,6 +314,11 @@ export function buildUpstreamBody(
     }
   }
 
+  // Il RENTRI vuole le registrazioni di registro come ARRAY alla radice del corpo:
+  // l'involucro { movimenti: [...] } veniva rifiutato con `movimenti: sys.invalid`.
+  const corpoRegistro =
+    tipoOp === "REGISTRO" && Array.isArray(safe.movimenti) ? safe.movimenti : null;
+
   const qRaw = safe.quantita ?? safe.quantity ?? safe.qty;
   const qty = typeof qRaw === "number" ? qRaw : Number(qRaw);
   const qtyFields = Number.isFinite(qty) && qty > 0 ? { quantita: qty, quantity: qty } : {};
