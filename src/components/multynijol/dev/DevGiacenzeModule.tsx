@@ -33,12 +33,6 @@ const fmt = (n: number) =>
 
 const fmtDate = (d: Date) => d.toLocaleDateString("it-IT");
 
-const normalizeCer = (value: string) => {
-  const compact = value.toUpperCase().trim().replace(/\s+/g, "");
-  const match = compact.match(/^(\d{6})(?:[-_/]?([A-Z0-9]{1,4}))?/);
-  if (!match) return compact;
-  return match[2] ? `${match[1]}-${match[2]}` : match[1];
-};
 
 interface Movimento {
   cer: string;
