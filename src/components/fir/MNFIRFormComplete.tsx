@@ -1359,10 +1359,59 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   };
 
 
+  /**
+   * Il formulario lo chiude il destinatario. Se il destinatario siamo noi
+   * (impianto Multy/Niyol) apriamo la pesata e firmiamo. Se è un soggetto
+   * terzo, l'autista non può firmare al suo posto: chiediamo al RENTRI, in
+   * sola lettura, se la chiusura è già stata fatta e ne recuperiamo i dati.
+   */
   const handleArrivato = () => {
     if (navigator.geolocation) navigator.geolocation.getCurrentPosition(() => {});
+    if (!destinatarioSiamoNoi) { void handleVerificaChiusuraDestinatario(); return; }
     setShowPesoPopup(true);
   };
+
+  /** Lettura RENTRI della chiusura fatta dal destinatario terzo. Nessun invio. */
+  const handleVerificaChiusuraDestinatario = async () => {
+    const numero = d.selectedFirNumber;
+    if (!numero || !store.editingFirId) { toast.error("Numero formulario mancante"); return; }
+    setInviandoArrivo(true);
+    try {
+      const societaId = resolveSocietaId(activeTenantId, activeMnContext);
+      const chiusura = await leggiChiusuraDestinatario(societaId as any, numero);
+      if (!chiusura.chiusa) {
+        toast.info("Il destinatario non ha ancora firmato la ricezione sul RENTRI: il formulario resta in viaggio.");
+        return;
+      }
+      const dbFields = mapStoreToDatabaseFields(store.data);
+      const pesoReale = chiusura.esito === "respinto" ? "0" : String(chiusura.pesoKg ?? "");
+      if (pesoReale) store.updateField("pesoRicevuto", pesoReale);
+      await silentSaveFIR.mutateAsync({
+        id: store.editingFirId,
+        ...dbFields,
+        form_data: {
+          ...dbFields.form_data,
+          peso_ricevuto: pesoReale,
+          arrivo_data_ora: chiusura.dataOraArrivo,
+          arrivo_esito: chiusura.esito,
+          arrivo_motivazione: chiusura.motivazione,
+          chiusura_letta_da_rentri: true,
+        },
+      });
+      await closeFIR.mutateAsync(store.editingFirId);
+      useMNFIRStore.setState({ workflowStatus: 'chiuso' });
+      toast.success(
+        chiusura.esito === "respinto"
+          ? "Il destinatario ha respinto il carico: formulario chiuso sul RENTRI."
+          : `Chiusura del destinatario letta dal RENTRI: ${pesoReale || "peso non indicato"} kg ${chiusura.esito === "parziale" ? "(accettazione parziale)" : "accettati"}.`,
+      );
+    } catch (error: any) {
+      toast.error("Non è stato possibile leggere la chiusura dal RENTRI: " + (error?.message || String(error)));
+    } finally {
+      setInviandoArrivo(false);
+    }
+  };
+
 
   /**
    * Secondo invio ufficiale al RENTRI: arrivo a destino.
