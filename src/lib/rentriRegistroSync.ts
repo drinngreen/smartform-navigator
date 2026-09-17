@@ -118,6 +118,56 @@ function estraiTransazioneId(data: unknown): string | null {
   return candidate ? String(candidate) : null;
 }
 
+/**
+ * Schema reale accettato dal RENTRI per le registrazioni di registro C/S:
+ * un ARRAY di oggetti annidati (riferimenti + rifiuto), non un oggetto piatto.
+ * Inviare `{ movimenti: [...] }` con campi piatti produce `movimenti: sys.invalid`.
+ */
+export function toRegistrazioneRentri(
+  m: MovimentoRentri,
+  progressivo: number,
+): Record<string, unknown> {
+  const data = String(m.data_registrazione ?? "").slice(0, 10);
+  const dataOra = data ? `${data}T12:00:00Z` : new Date().toISOString();
+  const anno = Number(dataOra.slice(0, 4));
+  return {
+    riferimenti: {
+      numero_registrazione: { anno, progressivo },
+      data_ora_registrazione: dataOra,
+      causale_operazione: "RE",
+    },
+    rifiuto: {
+      codice_eer: String(m.codice_eer ?? "").replace(/\D/g, ""),
+      stato_fisico: "S",
+      quantita: { valore: Number(m.quantita), unita_misura: m.unita_misura ?? "kg" },
+    },
+    annotazioni: m.numero_fir ? `Rif. FIR ${m.numero_fir}` : (m.descrizione ?? ""),
+  };
+}
+
+/** Prossimo progressivo libero per l'anno, letto dal RENTRI (sola lettura). */
+async function prossimoProgressivo(
+  cliente: RentriCliente,
+  registroId: string,
+  anno: number,
+): Promise<number> {
+  try {
+    const { movimenti } = await leggiMovimentiRegistroRentri(
+      cliente,
+      registroId,
+      `${anno}-01-01`,
+      `${anno}-12-31`,
+    );
+    const max = movimenti.reduce(
+      (acc, m) => (m.anno === anno && Number(m.progressivo) > acc ? Number(m.progressivo) : acc),
+      0,
+    );
+    return max + 1;
+  } catch {
+    return 1;
+  }
+}
+
 export interface InvioRegistroResult {
   response: RentriVpsResponse;
   transazioneId: string | null;
