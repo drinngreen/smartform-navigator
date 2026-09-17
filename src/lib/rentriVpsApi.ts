@@ -489,28 +489,13 @@ export async function inviaMovimentiRegistroVerificato(
     return { invio, transazioneId: null, esitoFinale: invio.status === 202 ? "IN_VERIFICA" : "CONFERMATO" };
   }
 
-  const tentativi = opts.tentativi ?? 5;
-  const attesaMs = opts.attesaMs ?? 3000;
-  let dettaglio: RentriVpsResponse | undefined;
+  // Per i registri il RENTRI NON espone l'endpoint /transazioni|/transazione:
+  // interrogarlo produce sempre 404 (rumore di errore in console e nei log).
+  // L'esito viene verificato a monte rileggendo il registro.
+  void opts;
 
-  for (let i = 0; i < tentativi; i++) {
-    await new Promise((r) => setTimeout(r, attesaMs));
-    dettaglio = await statoTransazioneRegistro(cliente, transazioneId, registroId);
-    // Per i registri il RENTRI non espone l'endpoint transazioni: 404 non è uno
-    // scarto, è semplicemente "non consultabile". Si smette di interrogarlo e
-    // l'esito verrà verificato rileggendo il registro.
-    if (dettaglio.status === 404) break;
-    if (!dettaglio.success) continue;
-    const testo = JSON.stringify(dettaglio.data ?? {}).toUpperCase();
-    if (/ERRORE|SCARTAT|RIFIUTAT|KO\b/.test(testo)) {
-      return { invio, transazioneId, esitoFinale: "DA_ANALIZZARE", dettaglioTransazione: dettaglio };
-    }
-    if (/CONCLUS|COMPLETAT|ACQUISIT|REGISTRAT|OK\b/.test(testo)) {
-      return { invio, transazioneId, esitoFinale: "CONFERMATO", dettaglioTransazione: dettaglio };
-    }
-  }
 
-  return { invio, transazioneId, esitoFinale: "IN_VERIFICA", dettaglioTransazione: dettaglio };
+  return { invio, transazioneId, esitoFinale: "IN_VERIFICA" };
 }
 
 export function inviaOperazioneRentriCustom(
