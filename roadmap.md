@@ -1,4 +1,4 @@
 - [x] Audit strutturale stati FIR app: eliminare falsi positivi 202/QR/log
 - [x] Audit strutturale cernite e numerazioni: garantire atomicità e idempotenza
 - [x] Aggiungere guardie e test di invarianti senza modificare dati storici
-- [ ] Verifica completa con snapshot prima/dopo e smoke
+- [x] Verifica completa con snapshot prima/dopo e smoke
