@@ -290,6 +290,9 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       }
       setConferma(null);
       setSel(new Set());
+      // Lo stato "INVIATO" arriva dalla rilettura del registro RENTRI: va
+      // invalidata anche quella cache, altrimenti resta il dato vecchio.
+      await queryClient.invalidateQueries({ queryKey: ["rentri-registro-movimenti"] });
       await refetch();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invio al RENTRI non riuscito.");
