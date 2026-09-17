@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2 } from "lucide-react";
+import { Send, Paperclip, Mic, MicOff, X, FileText, Loader2, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { extractAttachmentText } from "@/lib/attachmentExtract";
 
@@ -23,6 +23,7 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -84,6 +85,32 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
     } finally {
       setIsPreparingAttachments(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [readFileAsDataUrl]);
+
+  /** Foto di un formulario cartaceo o di un elenco: lettura assistita dei dati. */
+  const handleCameraSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Foto troppo grande (max 10MB). Riprova con una risoluzione più bassa.");
+      return;
+    }
+    setIsPreparingAttachments(true);
+    try {
+      const att = await readFileAsDataUrl(file);
+      setAttachments((prev) => [...prev, att]);
+      setInput((prev) =>
+        prev.trim()
+          ? prev
+          : "Leggi questa foto: se è un formulario o un elenco di formulari, estrai i dati (numero formulario, data, codice CER, produttore, destinatario, chili) e mettili in ordine in una tabella. Se nella pagina ci sono campi compilabili, proponimi la compilazione con conferma.",
+      );
+    } catch (error) {
+      console.error("Camera attachment error:", error);
+      alert("Non sono riuscito a leggere la foto. Riprova.");
+    } finally {
+      setIsPreparingAttachments(false);
     }
   }, [readFileAsDataUrl]);
 
@@ -178,6 +205,26 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
           multiple
           accept="*/*"
           onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* Foto di un formulario o elenco cartaceo: lettura assistita */}
+        <button
+          onClick={() => cameraInputRef.current?.click()}
+          onMouseDown={e => e.stopPropagation()}
+          disabled={isPreparingAttachments}
+          className="p-2 rounded-xl text-white/40 hover:text-amber-400 hover:bg-white/5 transition-all shrink-0 disabled:opacity-40"
+          title="Fotografa un formulario o un elenco e fammelo leggere"
+          aria-label="Fotografa un documento"
+        >
+          <Camera className="h-4 w-4" />
+        </button>
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleCameraSelect}
           className="hidden"
         />
 

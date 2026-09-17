@@ -1148,6 +1148,18 @@ Quando l'utente ti chiede di compilare un form, di inserire dati, o di scrivere 
 - Accompagna il tag FILL_FORM con un messaggio testuale che spiega cosa stai compilando
 - IMPORTANTE: il tag FILL_FORM deve essere incluso nella risposta testuale, NON come tool call
 
+### Foto e lettura di documenti cartacei (app autisti)
+- L'autista può fotografare un formulario cartaceo o un elenco di formulari dalla chat.
+- Leggi l'immagine ed estrai i dati: numero formulario, data, codice EER/CER, produttore, trasportatore, destinatario, targa, chilogrammi, note.
+- Riporta i dati in una tabella ordinata e segnala espressamente i campi illeggibili o incerti: NON inventarli mai.
+- Se nella pagina ci sono BRIDGE FIELDS, proponi la compilazione con \`"confirm": true\` (l'autista conferma prima del salvataggio).
+- Non salvare nulla nel database e non inviare nulla al RENTRI senza conferma esplicita dell'utente.
+
+### Creazione dipendenti
+- Per creare un dipendente o un trasportatore usa SEMPRE il tool \`create_dipendente\`: crea l'account di accesso reale, il profilo e il ruolo.
+- NON usare mai \`write_database\` sulla tabella \`profiles\` per creare persone: l'utente non riuscirebbe ad accedere.
+- Servono nome, cognome e codice fiscale valido; se manca la password viene usata \`123stella\` e va comunicata all'utente.
+
 ## 🆕 NOVITÀ E REGOLE AGGIORNATE (stato al 18 agosto 2026)
 Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 
@@ -1639,6 +1651,28 @@ const tools = [
       parameters: {
         type: "object",
         properties: { with_fir_status: { type: "boolean" } }
+      }
+    }
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "create_dipendente",
+      description: "Crea un nuovo dipendente/trasportatore con account di accesso reale (utente Auth + profilo + ruolo). Usa SEMPRE questo tool per creare dipendenti: NON usare mai write_database su profiles, perché non creerebbe l'account di accesso. Login con codice fiscale e password.",
+      parameters: {
+        type: "object",
+        properties: {
+          nome: { type: "string" },
+          cognome: { type: "string" },
+          codice_fiscale: { type: "string", description: "16 caratteri, usato come nome utente per l'accesso" },
+          password: { type: "string", description: "Password iniziale; se omessa viene usata 123stella" },
+          mn_context: { type: "string", description: "multyproget oppure niyol" },
+          telefono: { type: "string" },
+          targa_automezzo: { type: "string" },
+          targa_rimorchio: { type: "string" },
+        },
+        required: ["nome", "cognome", "codice_fiscale"]
       }
     }
   },
@@ -3196,6 +3230,64 @@ async function handleTool(
       q += ` FROM profiles p WHERE p.tenant_id = '${tenantId}' AND coalesce(p.is_social_only, false) = false ORDER BY p.cognome, p.nome`;
       const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
       return error ? { error: error.message } : { trasportatori: data || [] };
+    }
+
+    // ---------- CREAZIONE DIPENDENTE (account reale) ----------
+    case "create_dipendente": {
+      if (!adminUserId) return { error: "Admin non autenticato" };
+      const { data: isAdmin, error: roleError } = await db.rpc("has_role", { _user_id: adminUserId, _role: "admin" });
+      if (roleError) return { error: `Controllo ruolo non riuscito: ${roleError.message}` };
+      if (!isAdmin) return { error: "Solo un amministratore può creare dipendenti." };
+
+      const cf = String(args.codice_fiscale || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+      if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/.test(cf)) {
+        return { error: "Codice fiscale non valido: servono 16 caratteri nel formato RSSMRA80A01H501U." };
+      }
+      const nome = String(args.nome || "").trim();
+      const cognome = String(args.cognome || "").trim();
+      if (!nome || !cognome) return { error: "Nome e cognome sono obbligatori." };
+
+      const { data: giaPresente } = await db.from("profiles").select("user_id").eq("codice_fiscale", cf).maybeSingle();
+      if (giaPresente) {
+        return { error: "Esiste già un dipendente con questo codice fiscale.", user_id: giaPresente.user_id };
+      }
+
+      const mnContext = normalizeContext(args.mn_context) ?? normalizeContext(undefined) ?? null;
+      const tenantDipendente = args.mn_context ? resolveTenantId(args.mn_context) : tenantId;
+      const password = String(args.password || "123stella");
+
+      const { data: authData, error: authError } = await db.auth.admin.createUser({
+        email: `${cf.toLowerCase()}@zoli.internal`,
+        password,
+        email_confirm: true,
+        user_metadata: { nome, cognome, codice_fiscale: cf },
+      });
+      if (authError || !authData?.user) {
+        return { error: `Creazione account non riuscita: ${authError?.message ?? "errore sconosciuto"}` };
+      }
+      const newUserId = authData.user.id;
+
+      const { error: profileError } = await db.from("profiles").insert({
+        user_id: newUserId,
+        nome,
+        cognome,
+        codice_fiscale: cf,
+        tenant_id: tenantDipendente,
+        mn_context: mnContext,
+        telefono: args.telefono || null,
+        targa_automezzo: args.targa_automezzo || null,
+        targa_rimorchio: args.targa_rimorchio || null,
+      });
+      if (profileError) {
+        return { error: `Account creato ma profilo non salvato: ${profileError.message}`, user_id: newUserId };
+      }
+      await db.from("user_roles").insert({ user_id: newUserId, role: "user" });
+
+      return {
+        success: true,
+        user_id: newUserId,
+        message: `Dipendente ${nome} ${cognome} creato. Accesso con codice fiscale ${cf} e password ${password}.`,
+      };
     }
 
     // ---------- MESSAGGI ----------

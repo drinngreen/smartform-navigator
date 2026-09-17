@@ -154,18 +154,20 @@ function LoadingScreen() {
 function AdminOverlays() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin");
+  // Anche le app autisti Multy/Niyol hanno Dark Lemon, così può compilare i campi e leggere le foto.
+  const isAppAutistiRoute = /^\/mn\/app\/(multyproget|niyol)/.test(location.pathname);
   const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
 
-  if (!isAdminRoute) return null;
+  if (!isAdminRoute && !isAppAutistiRoute) return null;
 
-  const ctxMatch = location.pathname.match(/\/mn\/admin\/([\w-]+)/);
+  const ctxMatch = location.pathname.match(/\/mn\/(?:admin|app)\/([\w-]+)/);
   const context = ctxMatch?.[1] === "dev-multyproget" ? "multyproget" : (ctxMatch?.[1] || "multyproget");
 
   return (
     <>
       <ZoliDarkLemonWidget />
-      {sidePanel && <DarkLemonSidePanel context={context} />}
-      <DarkLemonWorkOverlay />
+      {isAdminRoute && sidePanel && <DarkLemonSidePanel context={context} />}
+      {isAdminRoute && <DarkLemonWorkOverlay />}
     </>
   );
 }
