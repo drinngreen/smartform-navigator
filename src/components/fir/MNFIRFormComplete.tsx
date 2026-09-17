@@ -1695,6 +1695,31 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
 
 
+          {rentriNonFirmato && store.workflowStatus !== 'chiuso' && (
+            <div className="rounded-2xl border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-center space-y-2">
+              <p className="text-xs font-display uppercase tracking-widest text-amber-300">Partenza non firmata sul RENTRI</p>
+              <p className="text-[10px] font-mono text-white/70">
+                Il formulario è presente sul RENTRI solo come inserimento: il destinatario non lo vede e i dati si possono ancora correggere.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  useMNFIRStore.setState({ workflowStatus: "bozza" });
+                  setRentriNonFirmato(false);
+                  if (store.editingFirId) {
+                    try {
+                      await silentSaveFIR.mutateAsync({ id: store.editingFirId, status: "bozza" } as any);
+                    } catch { /* la correzione resta comunque possibile a schermo */ }
+                  }
+                  toast.success("Formulario riaperto: correggi i dati e rifai la firma di partenza.");
+                }}
+                className="w-full py-3 rounded-xl border border-amber-500/50 bg-amber-500/20 text-amber-100 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors"
+              >
+                RIAPRI E CORREGGI IL FORMULARIO
+              </button>
+            </div>
+          )}
+
           {store.workflowStatus === 'inviato' && (
             <>
               {officialEmissionAt && (
