@@ -62,6 +62,15 @@ export function RentriRegistriPanel() {
               .eq("tenant_id", cfg.tenant)
               .order("data", { ascending: false })
               .order("numero_progressivo", { ascending: false })
+          : cfg.source === "intermediario"
+          ? supabase
+              .from("movimenti_intermediario" as any)
+              .select(
+                "id, data_movimento, cer, descrizione_rifiuto, quantita_kg, numero_fir, tipo_movimento, produttore_denominazione, destinatario_denominazione",
+              )
+              .eq("tenant_id", cfg.tenant)
+              .order("data_movimento", { ascending: false })
+              .limit(2000)
           : supabase
               .from("registro_generale" as any)
               .select(
