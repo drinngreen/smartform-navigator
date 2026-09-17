@@ -46,3 +46,12 @@
 - [x] Accorpare le risposte asincrone HTTP 202 dello stesso FIR, distinguerle dall'esito finale e bloccare doppi clic/reinvii di FIR già presenti.
 - [x] Correggere il recupero QR ufficiale mantenendo il progressivo RENTRI a 6 cifre (`000772`, non `772`).
 - [x] Collegare il comando PDF alla copia ministeriale compilata con tutti i dati della scheda e distinguere l'originale RENTRI non compilato.
+
+## Richieste 17/09/2026 (mattina)
+
+- [ ] Riordino stati registri: stato letto dal RENTRI per tutti i registri; tutto fino al 31/07/2026 risulta trasmesso; da inviare solo agosto/settembre mancanti.
+- [ ] Confronto con i quattro elenchi ufficiali (Impianto 155, Conto Proprio 124, Niyol 103, Intermediazione 7) da luglio a oggi: importare solo i movimenti mancanti nel registro corrispondente, SENZA MAI toccare le giacenze.
+- [ ] Pulsantiera preferiti nella console centrale (Registri C/S, Invii RENTRI, Movimenti RENTRI, Compila FIR, Giacenze, Cernite) con aggiunta/rimozione e collegamenti funzionanti.
+- [ ] Vista unica totale dei movimenti da inviare e inviati.
+- [ ] Dark Lemon: creazione dipendenti non funzionante; compilazione nelle app non apre i campi.
+- [ ] Dark Lemon OCR nelle app autisti: foto di formulari cartacei o elenchi, lettura, riordino dati e compilazione assistita.
