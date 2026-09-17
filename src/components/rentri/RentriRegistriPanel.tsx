@@ -10,6 +10,7 @@ import {
 } from "@/lib/rentriRegistroIntermediazione";
 import { inviaRegistroRentri, type MovimentoRentri } from "@/lib/rentriRegistroSync";
 import { RENTRI_UNITA_LOCALI, rentriConfigKey, type RentriCliente } from "@/lib/rentriVpsApi";
+import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -47,6 +48,7 @@ interface RigaRegistro {
   tipo_operazione: string | null;
   numero_formulario: string | null;
   quantita: number | null;
+  origine?: "rentri_intermediario";
 }
 
 interface EsitoRow {
@@ -87,6 +89,7 @@ export function rigaToMovimentoRentri(r: RigaRegistro, cliente: RentriCliente): 
     num_iscr_sito: RENTRI_UNITA_LOCALI[rentriConfigKey(cliente)] ?? "",
     numero_fir: r.numero_formulario,
     riferimento_interno: r.id,
+    origine: r.origine,
   };
 }
 
@@ -103,6 +106,33 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["rentri-registri-panel", registro],
     queryFn: async () => {
+      if (cfg.source === "intermediario") {
+        const [{ response, righe }, esitiRes] = await Promise.all([
+          elencoFirIntermediario(cfg.cliente as RentriCliente, {
+            dataDa: "2025-01-01",
+            dataA: new Date().toISOString().slice(0, 10),
+          }),
+          supabase
+            .from("rentri_registro_esiti" as any)
+            .select("numero_interno, progressivi, identificativi_rentri, transazione_id, esito, registro_label")
+            .eq("registro_label", registro),
+        ]);
+        if (!response.success) throw new Error(response.userMessage || response.error || "Il RENTRI non ha risposto.");
+        if (esitiRes.error) throw esitiRes.error;
+        const movimenti: RigaRegistro[] = movimentiIntermediazioneDaFirRentri(righe).map((r) => ({
+          id: r.id,
+          numero_interno: null,
+          data_movimento: r.data_movimento,
+          cer: r.cer,
+          descrizione: r.descrizione_rifiuto,
+          carico_scarico: r.tipo_movimento,
+          tipo_operazione: null,
+          numero_formulario: r.numero_fir,
+          quantita: r.quantita_kg,
+          origine: "rentri_intermediario",
+        }));
+        return { movimenti, esiti: (esitiRes.data ?? []) as unknown as EsitoRow[] };
+      }
       const [movRes, esitiRes] = await Promise.all([
         cfg.source === "privati"
           ? supabase
@@ -111,15 +141,6 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               .eq("tenant_id", cfg.tenant)
               .order("data", { ascending: false })
               .order("numero_progressivo", { ascending: false })
-          : cfg.source === "intermediario"
-          ? supabase
-              .from("movimenti_intermediario" as any)
-              .select(
-                "id, data_movimento, cer, descrizione_rifiuto, quantita_kg, numero_fir, tipo_movimento, produttore_denominazione, destinatario_denominazione",
-              )
-              .eq("tenant_id", cfg.tenant)
-              .order("data_movimento", { ascending: false })
-              .limit(2000)
           : supabase
               .from("registro_generale" as any)
               .select(
@@ -148,18 +169,6 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               tipo_operazione: null,
               numero_formulario: null,
               quantita: r.kg_pesati,
-            }))
-          : cfg.source === "intermediario"
-          ? (movRes.data ?? []).map((r: any) => ({
-              id: r.id,
-              numero_interno: null,
-              data_movimento: r.data_movimento,
-              cer: r.cer,
-              descrizione: r.descrizione_rifiuto || r.produttore_denominazione,
-              carico_scarico: String(r.tipo_movimento || "").toUpperCase() === "SCARICO" ? "SCARICO" : "CARICO",
-              tipo_operazione: null,
-              numero_formulario: r.numero_fir,
-              quantita: r.quantita_kg,
             }))
           : ((movRes.data ?? []) as unknown as RigaRegistro[]);
       return {

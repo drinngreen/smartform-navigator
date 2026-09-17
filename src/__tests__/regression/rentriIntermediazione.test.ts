@@ -3,7 +3,9 @@ import {
   estraiElencoFormulari,
   interpretaFormulario,
   filtraPerPeriodo,
+  movimentiIntermediazioneDaFirRentri,
 } from "@/lib/rentriFirIntermediario";
+import { inviaRegistroRentri } from "@/lib/rentriRegistroSync";
 import {
   estraiNumeroFir,
   interpretaMovimentoRegistro,
@@ -47,6 +49,42 @@ describe("formulari RENTRI con noi intermediario", () => {
     const r = interpretaFormulario(formularioRentri, CF_MULTY);
     expect(filtraPerPeriodo([r], "2026-01-01", "2026-09-17")).toHaveLength(1);
     expect(filtraPerPeriodo([r], "2026-01-01", "2026-08-31")).toHaveLength(0);
+  });
+
+  it("crea candidati solo dai FIR dove Multyproget risulta intermediario", () => {
+    const nostro = interpretaFormulario(formularioRentri, CF_MULTY);
+    const altro = interpretaFormulario(
+      { ...formularioRentri, numero_fir: "ZRZXR 000787 XL", intermediari: [] },
+      CF_MULTY,
+    );
+    const candidati = movimentiIntermediazioneDaFirRentri([nostro, altro]);
+    expect(candidati).toHaveLength(1);
+    expect(candidati[0]).toMatchObject({
+      id: "XNQLK066314LK",
+      numero_fir: "XNQLK 066314 LK",
+      stato_movimento: "rentri_intermediario",
+    });
+  });
+
+  it("blocca a monte fonti non verificate sul registro intermediazione", async () => {
+    await expect(
+      inviaRegistroRentri({
+        cliente: "multy",
+        registroId: "RQEL39R7NS0",
+        tenantId: "77ec9a3d-602e-438f-97bf-1c69abd8f691",
+        movimenti: [{
+          tipo_movimento: "CARICO",
+          data_registrazione: "2026-09-07",
+          codice_eer: "170405",
+          descrizione: "movimento locale",
+          quantita: 5000,
+          unita_misura: "kg",
+          num_iscr_sito: "OP2501XMQ021914-TO0001",
+          numero_fir: "ZRZXR 000787 XL",
+          riferimento_interno: "locale",
+        }],
+      }),
+    ).rejects.toThrow("Invio bloccato");
   });
 });
 

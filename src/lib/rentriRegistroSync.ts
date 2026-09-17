@@ -33,6 +33,8 @@ export interface MovimentoRentri {
   num_iscr_sito: string;
   numero_fir?: string | null;
   riferimento_interno: string;
+  /** Prova della fonte per registri che accettano solo FIR RENTRI verificati. */
+  origine?: "rentri_intermediario";
 }
 
 /** Converte i movimenti di impianto salvati a DB nel payload movimenti RENTRI. */
@@ -201,6 +203,11 @@ export async function inviaRegistroRentri(params: {
   movimenti: MovimentoRentri[];
 }): Promise<InvioRegistroResult> {
   const { cliente, registroId, tenantId, movimenti } = params;
+  if (registroId === "RQEL39R7NS0" && movimenti.some((m) => m.origine !== "rentri_intermediario")) {
+    throw new Error(
+      "Invio bloccato: il registro d'intermediazione accetta solo formulari letti dal RENTRI dove Multyproget risulta intermediario.",
+    );
+  }
   const registro = registriDisponibili(cliente).find((r) => r.id === registroId);
 
   const annoBase = Number(String(movimenti[0]?.data_registrazione ?? "").slice(0, 4))

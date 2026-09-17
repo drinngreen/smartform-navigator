@@ -32,6 +32,19 @@ export interface FirIntermediarioRow {
   raw: unknown;
 }
 
+export interface MovimentoIntermediazioneRentri {
+  id: string;
+  cer: string | null;
+  descrizione_rifiuto: string | null;
+  quantita_kg: number | null;
+  data_movimento: string | null;
+  tipo_movimento: "CARICO";
+  numero_fir: string;
+  produttore_denominazione: string | null;
+  destinatario_denominazione: string | null;
+  stato_movimento: "rentri_intermediario";
+}
+
 const soloCifreLettere = (v: unknown) =>
   String(v ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
@@ -123,6 +136,29 @@ export function filtraPerPeriodo(
     if (dataA && giorno > dataA) return false;
     return true;
   });
+}
+
+/**
+ * Candidati per il registro d'intermediazione: esclusivamente FIR digitali
+ * letti dal RENTRI dove il CF della società compare davvero tra gli intermediari.
+ */
+export function movimentiIntermediazioneDaFirRentri(
+  righe: FirIntermediarioRow[],
+): MovimentoIntermediazioneRentri[] {
+  return righe
+    .filter((r) => r.siamoIntermediario && Boolean(r.numeroFir))
+    .map((r) => ({
+      id: soloCifreLettere(r.numeroFir),
+      cer: r.eer,
+      descrizione_rifiuto: [r.produttore, r.destinatario].filter(Boolean).join(" → ") || null,
+      quantita_kg: r.quantitaKg,
+      data_movimento: r.data ? String(r.data).slice(0, 10) : null,
+      tipo_movimento: "CARICO",
+      numero_fir: r.numeroFir,
+      produttore_denominazione: r.produttore,
+      destinatario_denominazione: r.destinatario,
+      stato_movimento: "rentri_intermediario",
+    }));
 }
 
 /**

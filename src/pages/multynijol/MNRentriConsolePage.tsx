@@ -55,6 +55,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
+import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
 
 
 const CONTEXT_TO_CLIENTE: Record<string, RentriCliente> = {
@@ -438,7 +439,12 @@ export default function MNRentriConsolePage() {
   const handleCarica = async () => {
     setCaricando(true);
     try {
-      const rows = await caricaMovimentiCandidati(mnCtx.tenantId, dataDa, dataA);
+      const registroSelezionato = registri.find((r) => r.id === registroId);
+      const rows = registroSelezionato?.tipo === "INTERMEDIARIO"
+        ? movimentiIntermediazioneDaFirRentri(
+            (await elencoFirIntermediario(cliente, { dataDa, dataA })).righe,
+          )
+        : await caricaMovimentiCandidati(mnCtx.tenantId, dataDa, dataA);
       setMovimenti(rows);
       toast.success(`${rows.length} movimenti trovati`);
     } catch (e: any) {
@@ -462,7 +468,11 @@ export default function MNRentriConsolePage() {
     });
 
   const inviaMovimenti = async (rows: MovimentoImpiantoRow[]) => {
-    const payload = mapMovimentiToRentri(rows, cliente);
+    const registroSelezionato = registri.find((r) => r.id === registroId);
+    const payload = mapMovimentiToRentri(rows, cliente).map((movimento) => ({
+      ...movimento,
+      origine: registroSelezionato?.tipo === "INTERMEDIARIO" ? "rentri_intermediario" as const : undefined,
+    }));
     if (payload.length === 0) {
       toast.error("Nessun movimento valido da inviare");
       return;
