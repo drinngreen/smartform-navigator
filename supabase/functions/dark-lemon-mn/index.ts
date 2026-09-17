@@ -3249,41 +3249,72 @@ async function handleTool(
       const cognome = String(args.cognome || "").trim();
       if (!nome || !cognome) return { error: "Nome e cognome sono obbligatori." };
 
-      const { data: giaPresente } = await db.from("profiles").select("user_id").eq("codice_fiscale", cf).maybeSingle();
-      if (giaPresente) {
-        return { error: "Esiste già un dipendente con questo codice fiscale.", user_id: giaPresente.user_id };
-      }
-
       const mnContext = normalizeContext(args.mn_context) ?? normalizeContext(undefined) ?? null;
       const tenantDipendente = args.mn_context ? resolveTenantId(args.mn_context) : tenantId;
       const password = String(args.password || "123stella");
+      const email = `${cf.toLowerCase()}@zoli.internal`;
 
+      const completaProfilo = async (userId: string) => {
+        const { error: profileError } = await db.from("profiles").upsert({
+          user_id: userId,
+          nome,
+          cognome,
+          codice_fiscale: cf,
+          tenant_id: tenantDipendente,
+          mn_context: mnContext,
+          telefono: args.telefono || null,
+          targa_automezzo: args.targa_automezzo || null,
+          targa_rimorchio: args.targa_rimorchio || null,
+        }, { onConflict: "user_id" });
+        if (profileError) return { error: `Profilo non salvato: ${profileError.message}`, user_id: userId };
+        await db.from("user_roles").upsert({ user_id: userId, role: "user" }, { onConflict: "user_id,role" });
+        return null;
+      };
+
+      const { data: giaPresente } = await db.from("profiles").select("user_id").eq("codice_fiscale", cf).maybeSingle();
+      if (giaPresente?.user_id) {
+        // Account già presente: completo/aggiorno profilo e ruolo invece di fallire.
+        await db.auth.admin.updateUserById(giaPresente.user_id, { password });
+        const err = await completaProfilo(giaPresente.user_id);
+        if (err) return err;
+        return {
+          success: true,
+          user_id: giaPresente.user_id,
+          gia_esistente: true,
+          message: `Il dipendente ${nome} ${cognome} esisteva già: profilo aggiornato e password reimpostata. Accesso con codice fiscale ${cf} e password ${password}.`,
+        };
+      }
+
+      let newUserId: string | null = null;
       const { data: authData, error: authError } = await db.auth.admin.createUser({
-        email: `${cf.toLowerCase()}@zoli.internal`,
+        email,
         password,
         email_confirm: true,
         user_metadata: { nome, cognome, codice_fiscale: cf },
       });
       if (authError || !authData?.user) {
-        return { error: `Creazione account non riuscita: ${authError?.message ?? "errore sconosciuto"}` };
+        const msg = authError?.message ?? "errore sconosciuto";
+        // Email già registrata ma profilo assente: recupero l'utente esistente e completo il profilo.
+        if (/already been registered|already exists/i.test(msg)) {
+          const { data: listData } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const esistente = (listData?.users || []).find((u: any) => String(u.email || "").toLowerCase() === email);
+          if (!esistente) return { error: `Account esistente ma non trovabile per ${cf}: ${msg}` };
+          await db.auth.admin.updateUserById(esistente.id, { password });
+          const err = await completaProfilo(esistente.id);
+          if (err) return err;
+          return {
+            success: true,
+            user_id: esistente.id,
+            gia_esistente: true,
+            message: `L'account di ${nome} ${cognome} esisteva già senza profilo completo: ora è stato completato e la password reimpostata. Accesso con codice fiscale ${cf} e password ${password}.`,
+          };
+        }
+        return { error: `Creazione account non riuscita: ${msg}` };
       }
-      const newUserId = authData.user.id;
+      newUserId = authData.user.id;
 
-      const { error: profileError } = await db.from("profiles").insert({
-        user_id: newUserId,
-        nome,
-        cognome,
-        codice_fiscale: cf,
-        tenant_id: tenantDipendente,
-        mn_context: mnContext,
-        telefono: args.telefono || null,
-        targa_automezzo: args.targa_automezzo || null,
-        targa_rimorchio: args.targa_rimorchio || null,
-      });
-      if (profileError) {
-        return { error: `Account creato ma profilo non salvato: ${profileError.message}`, user_id: newUserId };
-      }
-      await db.from("user_roles").insert({ user_id: newUserId, role: "user" });
+      const errProfilo = await completaProfilo(newUserId);
+      if (errProfilo) return { error: `Account creato ma profilo non salvato: ${errProfilo.error}`, user_id: newUserId };
 
       return {
         success: true,
