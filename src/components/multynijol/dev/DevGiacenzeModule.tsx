@@ -33,6 +33,17 @@ const fmt = (n: number) =>
 
 const fmtDate = (d: Date) => d.toLocaleDateString("it-IT");
 
+const getRomeToday = () => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+};
+
 
 interface Movimento {
   cer: string;
@@ -63,7 +74,9 @@ interface CerRow {
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();
   const [searchCer, setSearchCer] = useState("");
-  const [dataAl, setDataAl] = useState<string>(GIACENZE_BASELINE_DATE);
+  // La fotografia del 12/09 è il punto di partenza contabile, non la data finale
+  // della vista: all'apertura vanno mostrati anche tutti i movimenti successivi.
+  const [dataAl, setDataAl] = useState<string>(getRomeToday);
   const [dataDal, setDataDal] = useState<string>("");
   const [showAllCer, setShowAllCer] = useState(false);
 
