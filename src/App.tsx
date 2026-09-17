@@ -35,11 +35,9 @@ const MobileAppPage = React.lazy(() => import("./pages/MobileAppPage"));
 const CronologiaFIRPage = React.lazy(() => import("./pages/CronologiaFIRPage"));
 const GPSPage = React.lazy(() => import("./pages/GPSPage"));
 const AIAssistantPage = React.lazy(() => import("./pages/AIAssistantPage"));
-const ComunicazioniPage = React.lazy(() => import("./pages/ComunicazioniPage"));
 const ZoliMessagesPage = React.lazy(() => import("./pages/ZoliMessagesPage"));
 const ProfiloPage = React.lazy(() => import("./pages/ProfiloPage"));
 const GuidaPage = React.lazy(() => import("./pages/GuidaPage"));
-const AppPhonePage = React.lazy(() => import("./pages/AppPhonePage"));
 const ProfileSetupPage = React.lazy(() => import("./pages/ProfileSetupPage"));
 
 const DashboardPage = React.lazy(() => import("./pages/admin/DashboardPage"));
@@ -127,13 +125,12 @@ const AdminAreeRiservateGlobalPage = React.lazy(() => import("./pages/admin/Admi
 const MNAppCronologiaPage = React.lazy(() => import("./pages/multynijol/MNAppCronologiaPage"));
 const MNAppGPSPage = React.lazy(() => import("./pages/multynijol/MNAppGPSPage"));
 const MNAppAIPage = React.lazy(() => import("./pages/multynijol/MNAppAIPage"));
-const MNAppComunicazioniPage = React.lazy(() => import("./pages/multynijol/MNAppComunicazioniPage"));
-const MNAppPhonePage = React.lazy(() => import("./pages/multynijol/MNAppPhonePage"));
 const MNAppProfiloPage = React.lazy(() => import("./pages/multynijol/MNAppProfiloPage"));
 const MNAppGuidaPage = React.lazy(() => import("./pages/multynijol/MNAppGuidaPage"));
-const MNAppModuloAlternativoPage = React.lazy(() => import("./pages/multynijol/MNAppModuloAlternativoPage"));
 const ModuloAlternativoPage = React.lazy(() => import("./pages/ModuloAlternativoPage"));
 const GuidaCompletaPage = React.lazy(() => import("./pages/GuidaCompletaPage"));
+const GuidaCollaboratoriPage = React.lazy(() => import("./pages/GuidaCollaboratoriPage"));
+const GuidaUfficioPage = React.lazy(() => import("./pages/GuidaUfficioPage"));
 const AppuntamentoPersonalePage = React.lazy(() => import("./pages/AppuntamentoPersonalePage"));
 
 const NotFound = React.lazy(() => import("./pages/NotFound"));
@@ -166,7 +163,7 @@ function AdminOverlays() {
   return (
     <>
       <ZoliDarkLemonWidget />
-      {isAdminRoute && sidePanel && <DarkLemonSidePanel context={context} />}
+      {(isAdminRoute || isAppAutistiRoute) && sidePanel && <DarkLemonSidePanel context={context} appMode={isAppAutistiRoute} />}
       {isAdminRoute && <DarkLemonWorkOverlay />}
     </>
   );
@@ -240,12 +237,11 @@ const App = () => (
                 <Route path="/app/cronologia" element={<ProtectedRoute><CronologiaFIRPage /></ProtectedRoute>} />
                 <Route path="/app/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
                 <Route path="/app/ai" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
-                <Route path="/app/telefono" element={<ProtectedRoute><AppPhonePage /></ProtectedRoute>} />
-                <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
                 <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
                 <Route path="/app/guida" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
-                <Route path="/app/modulo-alternativo" element={<ProtectedRoute><MNAppModuloAlternativoPage /></ProtectedRoute>} />
                 <Route path="/guida-completa" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
+                <Route path="/guidacollaboratori" element={<GuidaCollaboratoriPage />} />
+                <Route path="/guidaufficio" element={<ProtectedRoute><GuidaUfficioPage /></ProtectedRoute>} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -345,21 +341,15 @@ const App = () => (
                 <Route path="/mn/app/multyproget/cronologia" element={<MNAppCronologiaPage />} />
                 <Route path="/mn/app/multyproget/gps" element={<MNAppGPSPage />} />
                 <Route path="/mn/app/multyproget/ai" element={<MNAppAIPage />} />
-                <Route path="/mn/app/multyproget/telefono" element={<MNAppPhonePage />} />
-                <Route path="/mn/app/multyproget/comunicazioni" element={<MNAppComunicazioniPage />} />
                 <Route path="/mn/app/multyproget/profilo" element={<MNAppProfiloPage />} />
                 <Route path="/mn/app/multyproget/guida" element={<MNAppGuidaPage />} />
-                <Route path="/mn/app/multyproget/modulo-alternativo" element={<MNAppModuloAlternativoPage />} />
 
                 <Route path="/mn/app/niyol" element={<MNNiyolAppPage />} />
                 <Route path="/mn/app/niyol/cronologia" element={<MNAppCronologiaPage />} />
                 <Route path="/mn/app/niyol/gps" element={<MNAppGPSPage />} />
                 <Route path="/mn/app/niyol/ai" element={<MNAppAIPage />} />
-                <Route path="/mn/app/niyol/telefono" element={<MNAppPhonePage />} />
-                <Route path="/mn/app/niyol/comunicazioni" element={<MNAppComunicazioniPage />} />
                 <Route path="/mn/app/niyol/profilo" element={<MNAppProfiloPage />} />
                 <Route path="/mn/app/niyol/guida" element={<MNAppGuidaPage />} />
-                <Route path="/mn/app/niyol/modulo-alternativo" element={<MNAppModuloAlternativoPage />} />
 
                 <Route path="/mn/app/messages" element={<ZoliMessagesPage />} />
 

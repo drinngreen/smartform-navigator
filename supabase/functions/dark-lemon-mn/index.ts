@@ -4315,7 +4315,7 @@ Deno.serve(async (req) => {
     if (!body || typeof body !== "object") {
       return new Response(JSON.stringify({ error: "Richiesta non valida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const { messages, context, activity, autopilot } = body as any;
+    const { messages, context, activity, autopilot, appMode } = body as any;
     if (!Array.isArray(messages) || messages.length === 0 || messages.length > 80) {
       return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -4374,7 +4374,15 @@ Deno.serve(async (req) => {
     const normalizedContext = normalizeContext(context);
     const tenantId = resolveTenantId(normalizedContext);
     const contextLabel = normalizedContext === "multyproget" ? "Multyproget S.r.l." : normalizedContext === "niyol" ? "Niyol S.r.l." : "Multy Niyol";
-    const systemPrompt = buildSystemPrompt(adminName, tenantId, contextLabel, memories);
+    const appModeActive = appMode === true;
+    const systemPrompt = buildSystemPrompt(adminName, tenantId, contextLabel, memories) + (appModeActive ? `
+
+## MODALITÀ APP COLLABORATORE — VINCOLO ASSOLUTO
+- Sei dentro l'app mobile del collaboratore. Puoi soltanto spiegare il FIR aperto, leggere immagini/documenti e proporre la compilazione dei BRIDGE FIELDS con FILL_FORM e conferma umana.
+- Non puoi creare utenti, scrivere nel database, completare FIR, inviare al RENTRI, inviare registri, modificare giacenze/cernite o usare strumenti amministrativi.
+- Non chiedere mai all'autista di eseguire operazioni amministrative. Se servono, indica di contattare l'ufficio.
+- Per ogni foto, segnala chiaramente dati illeggibili o incerti e non inventarli.
+` : "");
     const attachmentAware = hasAttachmentPayload(messages);
     const autonomyMode = hasAutonomySignal(messages);
     const modelMessages = messages.filter((message: any) => {
@@ -4391,7 +4399,10 @@ Deno.serve(async (req) => {
     });
 
     const activityList = Array.isArray(activity) ? activity.slice(-30) : [];
-    const autopilotMode = autopilot === true;
+    const autopilotMode = !appModeActive && autopilot === true;
+    const activeTools = appModeActive
+      ? tools.filter((tool: any) => tool?.function?.name === "list_fir_forms")
+      : tools;
     const activityBlock = activityList.length > 0
       ? activityList.map((a: any) => `- [${a?.at || ""}] ${a?.action || "azione"} | esito: ${a?.status || "?"}${a?.detail ? ` | ${String(a.detail).slice(0, 200)}` : ""}${a?.error ? ` | ERRORE: ${String(a.error).slice(0, 200)}` : ""}`).join("\n")
       : "";
@@ -4478,7 +4489,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
         body: JSON.stringify({
           model: activeModel,
           messages: conversationMessages,
-          tools,
+          tools: activeTools,
           temperature: 0.3,
         }),
       });

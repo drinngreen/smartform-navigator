@@ -1,5 +1,7 @@
 # 🎬 Script Video Tutorial — Dev Multy (Multyproget · Centro di Comando)
 
+> Aggiornamento 17/09/2026: nelle app collaboratori la barra mostra FIR, Cronologia, GPS, Dark Lemon, Profilo e Guida. Dark Lemon apre il pannello sul FIR, legge foto/OCR, propone la compilazione con conferma e condivide la cronologia. Nell'app non può inviare al RENTRI né modificare registri, giacenze o cernite. In console sono disponibili pagina completa e cronologia. Lo stato RENTRI va sempre riletto: HTTP 202 non è esito finale.
+
 > Durata stimata: **~12 minuti** · Lingua: italiano · Tono: professionale, diretto, senza gergo inutile.
 > Base documentale: `docs/GUIDA_DEV_MULTY.md` (aggiornata al 18 agosto 2026).
 > Legenda colonne: **A schermo** = cosa registrare · **Voce** = testo da leggere · **Sovrimpressione** = titolo breve on-screen.

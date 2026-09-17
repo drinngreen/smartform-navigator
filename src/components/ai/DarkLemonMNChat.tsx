@@ -13,16 +13,18 @@ import { MessageCopyButton } from "./MessageCopyButton";
 interface Props {
   context?: string;
   surface?: DLSurface;
+  appMode?: boolean;
+  defaultHistoryOpen?: boolean;
 }
 
-export function DarkLemonMNChat({ context, surface = "page" }: Props) {
+export function DarkLemonMNChat({ context, surface = "page", appMode = false, defaultHistoryOpen = false }: Props) {
   const {
     messages, isLoading, conversations, currentConversationId,
     sendMessage, loadConversation, deleteConversation, newChat,
   } = useDarkLemonMN(context, surface);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(defaultHistoryOpen);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,7 +70,7 @@ export function DarkLemonMNChat({ context, surface = "page" }: Props) {
             </div>
             <div>
               <h2 className="text-white font-display text-lg tracking-wider">DARK LEMON AI</h2>
-              <p className="text-white/40 text-xs">Assistente intelligente — {contextLabel} • Accesso completo DB</p>
+               <p className="text-white/40 text-xs">{appMode ? `Assistente FIR — ${contextLabel}` : `Assistente intelligente — ${contextLabel} • Accesso operativo`}</p>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -92,15 +94,20 @@ export function DarkLemonMNChat({ context, surface = "page" }: Props) {
                 <img src={zoliLemonIcon} alt="Dark Lemon" className="h-20 w-20 mb-4 opacity-40" />
                 <h3 className="text-white/60 font-display text-lg mb-2">DARK LEMON AI — {contextLabel}</h3>
                 <p className="text-white/30 text-sm max-w-md mb-6">
-                  Assistente con accesso completo al database. Posso cercare dati, aggiungere contatti, compilare moduli, dare statistiche e molto altro.
+                   {appMode ? "Posso leggere foto e aiutarti a compilare il formulario. Controlla sempre i dati prima di applicarli." : "Posso cercare dati, compilare moduli e guidare l'ufficio nelle operazioni disponibili."}
                 </p>
                 <div className="grid grid-cols-2 gap-3 max-w-lg">
-                  {[
+                   {(appMode ? [
+                     { icon: "📷", text: "Leggi la foto di questo formulario" },
+                     { icon: "📋", text: "Controlla i dati del FIR aperto" },
+                     { icon: "✍️", text: "Aiutami a compilare il formulario" },
+                     { icon: "❓", text: "Spiegami cosa devo fare adesso" },
+                   ] : [
                     { icon: "🔍", text: "Quanti privati abbiamo in anagrafica?" },
                     { icon: "➕", text: "Aggiungi Mario Rossi in rubrica" },
                     { icon: "📊", text: "Mostra gli ultimi 10 conferimenti" },
                     { icon: "📋", text: "Quanti FIR abbiamo in bozza?" },
-                  ].map((suggestion, i) => (
+                   ]).map((suggestion, i) => (
                     <button
                       key={i}
                       onClick={() => { setInput(suggestion.text); }}
@@ -157,9 +164,13 @@ export function DarkLemonMNChat({ context, surface = "page" }: Props) {
           </div>
 
           {/* Input */}
-          <DarkLemonSupervisionBar />
+          {!appMode && <DarkLemonSupervisionBar />}
           <DarkLemonInputBar
-            onSend={(content, attachments) => sendMessage(content, attachments)}
+            onSend={(content, attachments) => sendMessage(
+              content,
+              attachments,
+              appMode ? { route: `/mn/app/${context || "multyproget"}/ai`, pageTitle: "Dark Lemon app" } : undefined,
+            )}
             isLoading={isLoading}
           />
         </div>

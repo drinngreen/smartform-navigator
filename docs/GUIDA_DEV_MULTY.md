@@ -1,5 +1,18 @@
 # 📘 Guida Completa — Dev Multy (Multyproget · Centro di Comando)
 
+## Aggiornamento operativo — 17 settembre 2026
+
+- Nelle app collaboratori la barra contiene soltanto **FIR, Cronologia, GPS, Dark Lemon, Profilo e Guida**.
+- **Compila con Dark Lemon** apre il pannello laterale sul FIR. Foto e OCR producono una proposta da controllare e confermare.
+- Nell'app Dark Lemon non può creare utenti, inviare al RENTRI o modificare registri, giacenze e cernite.
+- La cronologia Dark Lemon è condivisa fra le sue viste, ma resta separata tra Multyproget e Niyol.
+- Lo stato FIR viene riletto dal RENTRI: **HTTP 202 è presa in carico tecnica, non esito finale**.
+- Numero, QR e PDF validi sono esclusivamente quelli ufficiali RENTRI.
+- L'impianto può cercare per numero e CER un FIR RENTRI di cui è destinatario, anche se esterno, e chiuderlo con doppia pesata ed esito totale/parziale/respinto.
+- Nei registri, fino al 31/07/2026 incluso lo stato è **INVIATO (storico)**; da agosto lo stato deriva dal confronto con RENTRI.
+- Intermediazione accetta soltanto FIR RENTRI con Multyproget intermediario verificato e origine `rentri_intermediario`.
+- Il confronto Excel può registrare documenti mancanti ma non modifica giacenze o cernite.
+
 > Documento operativo unico. Chi lo legge deve poter usare Dev Multy dal primo click all'ultimo, senza esperienza pregressa.
 > **Ultimo aggiornamento: 11 settembre 2026.** Tutte le novità sono **integrate nelle rispettive sezioni** (non c'è più un capitolo separato "Novità"): quello che leggi qui è lo stato attuale del software.
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, History, MapPin, Phone, MessageCircle, Bot, User, HelpCircle, Users, FileText } from "lucide-react";
+import { Home, History, MapPin, Bot, User, HelpCircle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoDragon from "@/assets/logo-dragon.png";
 
@@ -7,12 +7,9 @@ const navItems = [
   { icon: Home, label: "FIR", href: "/app", color: "251, 191, 36" },
   { icon: History, label: "CRONOLOGIA", href: "/app/cronologia", color: "249, 115, 22" },
   { icon: MapPin, label: "GPS", href: "/app/gps", color: "6, 182, 212" },
-  { icon: Phone, label: "TEL", href: "/app/telefono", color: "16, 185, 129" },
-  { icon: MessageCircle, label: "MSG", href: "/app/comunicazioni", color: "34, 197, 94" },
   { icon: Bot, label: "AI", href: "/app/ai", color: "59, 130, 246" },
   { icon: Users, label: "SOCIAL", href: "/social", color: "139, 92, 246" },
   { icon: User, label: "PROFILO", href: "/app/profilo", color: "236, 72, 153" },
-  { icon: FileText, label: "MOD.ALT", href: "/app/modulo-alternativo", color: "245, 158, 11" },
   { icon: HelpCircle, label: "GUIDA", href: "/app/guida", color: "168, 85, 247" },
 ];
 

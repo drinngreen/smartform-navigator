@@ -116,7 +116,7 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
         <main className="flex-1 overflow-y-auto p-6 relative z-10">
           {/* Chat compatta Dark Lemon: visibile solo dentro un contesto operativo */}
           {showDarkLemon && (
-            <DarkLemonTopBar context={dlContext} fullPagePath={`/mn/admin/${dlContext}/zoli-dark-lemon`} />
+            <DarkLemonTopBar context={dlContext} fullPagePath={`/mn/admin/${dlContext.replace(/^dev-/, "")}/zoli-dark-lemon`} />
           )}
           {children}
         </main>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Maximize2, Minus, Bot, Camera, ScanSearch } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Maximize2, Minus, Bot, Camera, ScanSearch, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
@@ -137,6 +137,15 @@ export function DarkLemonTopBar({ context = "dev-multyproget", fullPagePath }: P
           >
             <Plus className="h-4 w-4 text-cyan-300" />
           </button>
+          {fullPagePath && (
+            <button
+              onClick={() => navigate(`${fullPagePath}?history=1`)}
+              title="Apri cronologia completa"
+              className="p-2 rounded-lg border border-border/50 hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-colors"
+            >
+              <MessageSquare className="h-4 w-4 text-cyan-300" />
+            </button>
+          )}
           {fullPagePath && (
             <button
               onClick={() => navigate(fullPagePath)}
