@@ -610,13 +610,28 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         // direttamente RENTRI in sola lettura usando il numero del formulario.
         const conferma = await findConfirmedFirEmission(numeroFir);
         let numeroConfermato = conferma?.identificativo_rentri ?? "";
+        let soloInserimento = false;
         if (!numeroConfermato) {
           const ricerca = await ricercaFir(societaId as any, numeroFir);
           const cercato = numeroFir.toUpperCase().replace(/[^A-Z0-9]/g, "");
-          const risposta = JSON.stringify(ricerca.data ?? {}).toUpperCase().replace(/[^A-Z0-9]/g, "");
-          if (ricerca.success && risposta.includes(cercato)) numeroConfermato = numeroFir;
+          const rispostaRaw = JSON.stringify(ricerca.data ?? {});
+          const risposta = rispostaRaw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+          if (ricerca.success && risposta.includes(cercato)) {
+            // Attenzione: un formulario presente sul RENTRI in stato
+            // "InserimentoTrasportoIniziale" NON è stato firmato alla partenza:
+            // il destinatario non lo vede e il formulario resta modificabile.
+            soloInserimento = /"stato"\s*:\s*"Inserimento/i.test(rispostaRaw);
+            if (!soloInserimento) numeroConfermato = numeroFir;
+          }
         }
-        if (!active || !numeroConfermato) return;
+        if (!active) return;
+        if (soloInserimento) {
+          setRentriNonFirmato(true);
+          if (giaInviato && !qrCodeData) useMNFIRStore.setState({ workflowStatus: "bozza" });
+          return;
+        }
+        setRentriNonFirmato(false);
+        if (!numeroConfermato) return;
         if (conferma?.created_at) setOfficialEmissionAt(conferma.created_at);
         const qr = await resolveFirQrDataUrl(numeroConfermato, societaId);
         if (!active) return;
