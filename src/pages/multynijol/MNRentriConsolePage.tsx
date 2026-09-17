@@ -839,7 +839,11 @@ export default function MNRentriConsolePage() {
                 <label className="text-xs text-muted-foreground">Registro</label>
                 <select
                   value={registroId}
-                  onChange={(e) => setRegistroId(e.target.value)}
+                  onChange={(e) => {
+                    setRegistroId(e.target.value);
+                    setMovimenti([]);
+                    setSelezione(new Set());
+                  }}
                   className="block rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm"
                 >
                   {registri.map((r) => (
