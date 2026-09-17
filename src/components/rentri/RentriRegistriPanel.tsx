@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock } from "lucide-react";
+import {
+  leggiMovimentiRegistroRentri,
+  normalizzaNumeroFir,
+} from "@/lib/rentriRegistroIntermediazione";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
