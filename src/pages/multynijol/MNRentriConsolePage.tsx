@@ -985,6 +985,19 @@ export default function MNRentriConsolePage() {
           </div>
         )}
 
+        {tab === "intermediario" && (
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+              <h3 className="text-base font-display tracking-wider">Formulari dal RENTRI dove risultiamo intermediario</h3>
+              <RentriFirIntermediarioPanel cliente={cliente} />
+            </div>
+            <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
+              <h3 className="text-base font-display tracking-wider">Registro C/S di intermediazione</h3>
+              <RentriRegistriPanel registroIniziale="MULTY_INTERMEDIARIO" />
+            </div>
+          </div>
+        )}
+
         {tab === "bozze" && (
           <RentriBozzePanel
             cliente={cliente}
