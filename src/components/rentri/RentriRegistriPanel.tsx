@@ -416,6 +416,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                   <th className="px-3 py-2 text-left">Formulario</th>
                   <th className="px-3 py-2 text-left">Progressivo RENTRI</th>
                   <th className="px-3 py-2 text-left">Identificativo</th>
+                  <th className="px-3 py-2 text-left">Invio</th>
                 </tr>
               </thead>
               <tbody>
