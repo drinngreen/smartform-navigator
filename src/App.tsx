@@ -127,11 +127,8 @@ const AdminAreeRiservateGlobalPage = React.lazy(() => import("./pages/admin/Admi
 const MNAppCronologiaPage = React.lazy(() => import("./pages/multynijol/MNAppCronologiaPage"));
 const MNAppGPSPage = React.lazy(() => import("./pages/multynijol/MNAppGPSPage"));
 const MNAppAIPage = React.lazy(() => import("./pages/multynijol/MNAppAIPage"));
-const MNAppComunicazioniPage = React.lazy(() => import("./pages/multynijol/MNAppComunicazioniPage"));
-const MNAppPhonePage = React.lazy(() => import("./pages/multynijol/MNAppPhonePage"));
 const MNAppProfiloPage = React.lazy(() => import("./pages/multynijol/MNAppProfiloPage"));
 const MNAppGuidaPage = React.lazy(() => import("./pages/multynijol/MNAppGuidaPage"));
-const MNAppModuloAlternativoPage = React.lazy(() => import("./pages/multynijol/MNAppModuloAlternativoPage"));
 const ModuloAlternativoPage = React.lazy(() => import("./pages/ModuloAlternativoPage"));
 const GuidaCompletaPage = React.lazy(() => import("./pages/GuidaCompletaPage"));
 const GuidaCollaboratoriPage = React.lazy(() => import("./pages/GuidaCollaboratoriPage"));

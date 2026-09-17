@@ -166,7 +166,11 @@ export function DarkLemonMNChat({ context, surface = "page", appMode = false, de
           {/* Input */}
           {!appMode && <DarkLemonSupervisionBar />}
           <DarkLemonInputBar
-            onSend={(content, attachments) => sendMessage(content, attachments)}
+            onSend={(content, attachments) => sendMessage(
+              content,
+              attachments,
+              appMode ? { route: `/mn/app/${context || "multyproget"}/ai`, pageTitle: "Dark Lemon app" } : undefined,
+            )}
             isLoading={isLoading}
           />
         </div>
