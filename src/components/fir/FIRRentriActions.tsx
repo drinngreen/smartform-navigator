@@ -228,7 +228,28 @@ export function FIRRentriActions({ cliente, formData, numeroFir, formId, firmaCo
           loading={loading === "firma"}
           disabled={!firUuid}
         />
+        <ActionButton
+          icon={<RefreshCw size={14} />}
+          label="Aggiorna stato da RENTRI"
+          onClick={handleSyncStato}
+          loading={loading === "sync"}
+          disabled={!numeroFir}
+        />
       </div>
+
+      {statoViaggio && (
+        <div className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+          statoViaggio.viaggio === "in-viaggio"
+            ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
+            : statoViaggio.viaggio === "chiuso"
+              ? "bg-green-500/10 border-green-500/30 text-green-300"
+              : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+        }`}>
+          {ETICHETTA_VIAGGIO[statoViaggio.viaggio]}
+          <span className="ml-2 font-mono opacity-70">({statoViaggio.rentri})</span>
+        </div>
+      )}
+
 
       {/* Partenza xFIR: firma remota ca-rentri con conferma mobile */}
       {numeroFir && (
