@@ -87,6 +87,32 @@ export function DarkLemonInputBar({ onSend, isLoading }: DarkLemonInputBarProps)
     }
   }, [readFileAsDataUrl]);
 
+  /** Foto di un formulario cartaceo o di un elenco: lettura assistita dei dati. */
+  const handleCameraSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Foto troppo grande (max 10MB). Riprova con una risoluzione più bassa.");
+      return;
+    }
+    setIsPreparingAttachments(true);
+    try {
+      const att = await readFileAsDataUrl(file);
+      setAttachments((prev) => [...prev, att]);
+      setInput((prev) =>
+        prev.trim()
+          ? prev
+          : "Leggi questa foto: se è un formulario o un elenco di formulari, estrai i dati (numero formulario, data, codice CER, produttore, destinatario, chili) e mettili in ordine in una tabella. Se nella pagina ci sono campi compilabili, proponimi la compilazione con conferma.",
+      );
+    } catch (error) {
+      console.error("Camera attachment error:", error);
+      alert("Non sono riuscito a leggere la foto. Riprova.");
+    } finally {
+      setIsPreparingAttachments(false);
+    }
+  }, [readFileAsDataUrl]);
+
   const removeAttachment = useCallback((index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }, []);
