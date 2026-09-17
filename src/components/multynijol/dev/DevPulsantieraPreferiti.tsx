@@ -35,6 +35,7 @@ export function scorciatoieDisponibili(context: string): ScorciatoiaPreferita[] 
     { id: "invii-rentri", label: "Invii al RENTRI", path: `${base}/rentri-console?tab=registri`, icon: <Send size={16} /> },
     { id: "movimenti-rentri", label: "Movimenti RENTRI", path: `${base}/rentri-console?tab=registriufficiali`, icon: <Database size={16} /> },
     { id: "compila-fir", label: "Compila FIR", path: `${base}/rentri-console?tab=nuovo`, icon: <FileText size={16} /> },
+    { id: "giacenze", label: "Giacenze", path: `${base}?tab=impianto&impiantoSub=giacenze`, icon: <Warehouse size={16} /> },
     { id: "conferimenti-privati", label: "Conferimenti privati", path: `${base}/magazzino`, icon: <Warehouse size={16} /> },
     { id: "intermediazione", label: "Intermediazione", path: `${base}/rentri-console?tab=intermediario`, icon: <Handshake size={16} /> },
     { id: "fir-cartacei", label: "FIR cartacei", path: `${base}/rentri-console?tab=cartacei`, icon: <Printer size={16} /> },
@@ -43,13 +44,16 @@ export function scorciatoieDisponibili(context: string): ScorciatoiaPreferita[] 
   ];
 }
 
-const PREDEFINITI = ["registri-cs", "invii-rentri", "movimenti-rentri", "compila-fir"];
+const PREDEFINITI = ["registri-cs", "invii-rentri", "movimenti-rentri", "compila-fir", "giacenze"];
 
 function leggiPreferiti(): string[] {
   try {
     const raw = localStorage.getItem(CHIAVE_STORAGE);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) return parsed;
+    if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
+      const senzaDragon = parsed.filter((id) => id !== "cernite");
+      return senzaDragon.includes("giacenze") ? senzaDragon : [...senzaDragon, "giacenze"];
+    }
   } catch {
     /* preferenza non leggibile: si riparte dai predefiniti */
   }
