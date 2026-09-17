@@ -187,7 +187,12 @@ export async function inviaRegistroRentri(params: {
   const { cliente, registroId, tenantId, movimenti } = params;
   const registro = registriDisponibili(cliente).find((r) => r.id === registroId);
 
-  const esito = await inviaMovimentiRegistroVerificato(cliente, movimenti, registroId, {
+  const annoBase = Number(String(movimenti[0]?.data_registrazione ?? "").slice(0, 4))
+    || new Date().getFullYear();
+  const primoProgressivo = await prossimoProgressivo(cliente, registroId, annoBase);
+  const registrazioni = movimenti.map((m, i) => toRegistrazioneRentri(m, primoProgressivo + i));
+
+  const esito = await inviaMovimentiRegistroVerificato(cliente, registrazioni, registroId, {
     tentativi: 5,
     attesaMs: 3000,
   });
