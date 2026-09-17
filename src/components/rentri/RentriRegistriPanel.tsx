@@ -173,22 +173,27 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         "2025-01-01",
         "2027-12-31",
       );
-      const m = new Map<string, EsitoRow>();
+      const perFir = new Map<string, EsitoRow>();
+      const perDati = new Map<string, EsitoRow>();
       movimenti
-        .filter((mv) => mv.chiaveFir && !mv.annullato)
+        .filter((mv) => !mv.annullato)
         .forEach((mv) => {
-          m.set(mv.chiaveFir as string, {
+          const esito: EsitoRow = {
             numero_interno: mv.progressivo ?? 0,
             progressivi: mv.progressivo ? [String(mv.progressivo)] : [],
             identificativi_rentri: mv.identificativo ? [mv.identificativo] : [],
             transazione_id: null,
             esito: "REGISTRATO",
             registro_label: cfg.id,
-          });
+          };
+          if (mv.chiaveFir) perFir.set(mv.chiaveFir, esito);
+          const k = chiaveDati(mv.dataRegistrazione, mv.eer, mv.quantitaKg);
+          if (k) perDati.set(k, esito);
         });
-      return m;
+      return { perFir, perDati };
     },
   });
+
 
   const esitiMap = useMemo(() => {
     const m = new Map<number, EsitoRow>();
