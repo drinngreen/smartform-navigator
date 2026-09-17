@@ -3,6 +3,7 @@ import { Send, Loader2, CheckCircle2, XCircle, QrCode, FileSearch, Truck } from 
 import { emissioneFir, dettaglioFir, ricercaFir, statoTransazioneFir, firmaRicezione, type RentriCliente, type RentriVpsResponse } from "@/lib/rentriVpsApi";
 import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
 import { toast } from "sonner";
+import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
 
 interface FIRRentriActionsProps {
   /** Il cliente RENTRI (multy, niyol, global) */
