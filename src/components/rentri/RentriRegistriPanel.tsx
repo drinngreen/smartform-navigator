@@ -100,6 +100,18 @@ export function RentriRegistriPanel() {
               numero_formulario: null,
               quantita: r.kg_pesati,
             }))
+          : cfg.source === "intermediario"
+          ? (movRes.data ?? []).map((r: any) => ({
+              id: r.id,
+              numero_interno: null,
+              data_movimento: r.data_movimento,
+              cer: r.cer,
+              descrizione: r.descrizione_rifiuto || r.produttore_denominazione,
+              carico_scarico: String(r.tipo_movimento || "").toUpperCase() === "SCARICO" ? "SCARICO" : "CARICO",
+              tipo_operazione: null,
+              numero_formulario: r.numero_fir,
+              quantita: r.quantita_kg,
+            }))
           : ((movRes.data ?? []) as unknown as RigaRegistro[]);
       return {
         movimenti,
