@@ -250,6 +250,14 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
             {" "}Ultimo movimento con ricevuta RENTRI: <strong className="text-foreground">{fmtData(ultimoInvio)}</strong>.
           </>
         )}
+        {cfg.source === "intermediario" && (
+          <>
+            {" "}
+            {isFetchingRentri
+              ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
+              : `Stato letto direttamente dal RENTRI: ${registrati?.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
+          </>
+        )}
       </p>
 
       {isLoading ? (
