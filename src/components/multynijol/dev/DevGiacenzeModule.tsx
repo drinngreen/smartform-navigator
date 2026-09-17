@@ -40,12 +40,14 @@ interface Movimento {
   tipo_movimento: string;
   quantita_kg: number;
   data_movimento: string;
+  registrato_il: string;
 }
 
 interface DragonStockRow {
   quantity: number;
   sign: "PLUS" | "MINUS";
   movement_date: string;
+  created_at: string;
   item: { codice_cer: string; descrizione: string | null } | null;
 }
 
@@ -74,7 +76,7 @@ export function DevGiacenzeModule() {
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from("dragon_stock_movements")
-          .select("quantity, sign, movement_date, item:dragon_items!inner(codice_cer, descrizione)")
+          .select("quantity, sign, movement_date, created_at, item:dragon_items!inner(codice_cer, descrizione)")
           .eq("company_id", MULTY_TENANT_ID)
           .eq("is_system_hidden", false)
           .order("movement_date", { ascending: true })
@@ -90,6 +92,7 @@ export function DevGiacenzeModule() {
             tipo_movimento: movement.sign === "PLUS" ? "CARICO" : "SCARICO",
             quantita_kg: Number(movement.quantity) || 0,
             data_movimento: movement.movement_date,
+            registrato_il: movement.created_at,
           });
         }
         if (page.length < pageSize) break;
@@ -175,7 +178,8 @@ export function DevGiacenzeModule() {
         for (const movement of movimenti) {
           if (movement.cer !== cer) continue;
           const movementDay = movement.data_movimento.slice(0, 10);
-          if (movementDay <= GIACENZE_BASELINE_DATE || movementDay > dataAl) continue;
+          const registratoDopoFotografia = movement.registrato_il.slice(0, 10) > GIACENZE_BASELINE_DATE;
+          if ((movementDay <= GIACENZE_BASELINE_DATE && !registratoDopoFotografia) || movementDay > dataAl) continue;
           if (movement.tipo_movimento === "CARICO") carico += Number(movement.quantita_kg) || 0;
           else scarico += Number(movement.quantita_kg) || 0;
         }
