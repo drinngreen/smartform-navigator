@@ -96,6 +96,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [conferma, setConferma] = useState<RigaRegistro[] | null>(null);
   const [inviando, setInviando] = useState(false);
+  const queryClient = useQueryClient();
 
   const cfg = REGISTRI_RENTRI.find((r) => r.id === registro)!;
 
