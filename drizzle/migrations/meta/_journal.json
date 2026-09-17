@@ -15,6 +15,13 @@
       "when": 1789642562147,
       "tag": "0001_enforce_dragon_cernita_atomicity_and_numbering",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789642658134,
+      "tag": "0002_fix_deferred_cernita_integrity_current_row",
+      "breakpoints": true
     }
   ]
 }
