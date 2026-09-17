@@ -612,25 +612,31 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         // Prima lo consultiamo; se non restituisce la conferma, interroghiamo
         // direttamente RENTRI in sola lettura usando il numero del formulario.
         const conferma = await findConfirmedFirEmission(numeroFir);
-        let numeroConfermato = conferma?.identificativo_rentri ?? "";
+        // La verità è sempre lo stato letto dal RENTRI: un log tecnico di invio
+        // (HTTP 202) NON significa che la partenza sia stata firmata.
+        let numeroConfermato = "";
         let soloInserimento = false;
-        if (!numeroConfermato) {
-          const ricerca = await ricercaFir(societaId as any, numeroFir);
-          const cercato = numeroFir.toUpperCase().replace(/[^A-Z0-9]/g, "");
-          const rispostaRaw = JSON.stringify(ricerca.data ?? {});
-          const risposta = rispostaRaw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-          if (ricerca.success && risposta.includes(cercato)) {
-            // Attenzione: un formulario presente sul RENTRI in stato
-            // "InserimentoTrasportoIniziale" NON è stato firmato alla partenza:
-            // il destinatario non lo vede e il formulario resta modificabile.
-            soloInserimento = /"stato"\s*:\s*"Inserimento/i.test(rispostaRaw);
-            if (!soloInserimento) numeroConfermato = numeroFir;
-          }
+        const ricerca = await ricercaFir(societaId as any, numeroFir);
+        const cercato = numeroFir.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const rispostaRaw = JSON.stringify(ricerca.data ?? {});
+        const risposta = rispostaRaw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        const trovatoSuRentri = ricerca.success && risposta.includes(cercato);
+        if (trovatoSuRentri) {
+          // Attenzione: un formulario presente sul RENTRI in stato
+          // "InserimentoTrasportoIniziale" NON è stato firmato alla partenza:
+          // il destinatario non lo vede e il formulario resta modificabile.
+          soloInserimento = /"stato[^"]*"\s*:\s*"Inserimento/i.test(rispostaRaw);
+          if (!soloInserimento) numeroConfermato = numeroFir;
+        } else if (!ricerca.success) {
+          // Lettura RENTRI non disponibile: non cambiamo nulla.
+          return;
         }
         if (!active) return;
         if (soloInserimento) {
           setRentriNonFirmato(true);
-          if (giaInviato && !qrCodeData) useMNFIRStore.setState({ workflowStatus: "bozza" });
+          setOfficialEmissionAt(null);
+          setQrCodeData(null);
+          if (giaInviato) useMNFIRStore.setState({ workflowStatus: "bozza" });
           return;
         }
         setRentriNonFirmato(false);
