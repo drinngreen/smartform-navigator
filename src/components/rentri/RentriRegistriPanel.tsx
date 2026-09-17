@@ -360,7 +360,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               <button
                 type="button"
                 disabled={sel.size === 0}
-                onClick={() => setPopup(true)}
+                onClick={() => setConferma(visibili.filter((x) => !x.esito && sel.has(x.riga.id)).map((x) => x.riga))}
                 className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-black disabled:opacity-40"
               >
                 <Send size={13} /> Invia selezionati ({sel.size})
