@@ -153,6 +153,7 @@ function AdminOverlays() {
   const isAdminRoute = location.pathname.startsWith("/admin") || location.pathname.startsWith("/mn/admin");
   // Anche le app autisti Multy/Niyol hanno Dark Lemon, così può compilare i campi e leggere le foto.
   const isAppAutistiRoute = /^\/mn\/app\/(multyproget|niyol)/.test(location.pathname);
+  const isAppDarkLemonPage = /^\/mn\/app\/(multyproget|niyol)\/ai\/?$/.test(location.pathname);
   const sidePanel = useZoliDarkLemonWidgetStore((s) => s.sidePanel);
 
   if (!isAdminRoute && !isAppAutistiRoute) return null;
@@ -164,7 +165,7 @@ function AdminOverlays() {
     <>
       {/* Il widget fluttuante desktop resta solo in console: nelle app il badge apre la vista fluttuante piccola. */}
       {isAdminRoute && <ZoliDarkLemonWidget />}
-      {(isAdminRoute || isAppAutistiRoute) && sidePanel && <DarkLemonSidePanel context={context} appMode={isAppAutistiRoute} />}
+      {(isAdminRoute || (isAppAutistiRoute && !isAppDarkLemonPage)) && sidePanel && <DarkLemonSidePanel context={context} appMode={isAppAutistiRoute} />}
       {isAdminRoute && <DarkLemonWorkOverlay />}
     </>
   );

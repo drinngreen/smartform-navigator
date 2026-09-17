@@ -6,3 +6,4 @@
 - [x] Creata /guidaufficio con novità operative e screenshot
 - [x] Aggiornate guide e tutorial esistenti
 - [x] Verificati TypeScript, 126 test, smoke e saldi invariati
+- [x] Separato Dark Lemon app: menu a pagina intera, badge in finestra fluttuante, cronologia mobile senza restringere la chat

@@ -1,16 +1,24 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FileText } from "lucide-react";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { DarkLemonMNChat } from "@/components/ai/DarkLemonMNChat";
 import { Button } from "@/components/ui/button";
 import logoDragon from "@/assets/logo-dragon.png";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 
 export default function MNAppAIPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const setSidePanel = useZoliDarkLemonWidgetStore((state) => state.setSidePanel);
   const context = location.pathname.includes("/niyol") ? "niyol" : "multyproget";
   const basePath = `/mn/app/${context}`;
+
+  useEffect(() => {
+    setSidePanel(false);
+  }, [setSidePanel]);
 
   return (
     <MobileShell>
@@ -25,7 +33,12 @@ export default function MNAppAIPage() {
         </Button>
       </div>
       <div className="min-h-0 flex-1 px-2 py-2 pb-20">
-        <DarkLemonMNChat context={context} surface="page" appMode defaultHistoryOpen />
+        <DarkLemonMNChat
+          context={context}
+          surface="page"
+          appMode
+          defaultHistoryOpen={searchParams.get("history") === "1"}
+        />
       </div>
       <MNBottomNav basePath={basePath} />
     </MobileShell>

@@ -3,6 +3,8 @@ import { Check, Pencil, X } from "lucide-react";
 import { useFormBridgeContext } from "@/contexts/FormBridgeContext";
 import { toast } from "sonner";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import { useMNFIRStore } from "@/stores/mnFirStore";
+import type { FIRDataStore } from "@/stores/firStore";
 
 interface FillField {
   id: string;
@@ -33,9 +35,10 @@ export function stripFillFormTag(content: string): string {
 
 interface FillFormActionProps {
   data: FillFormData;
+  appMode?: boolean;
 }
 
-export function FillFormAction({ data }: FillFormActionProps) {
+export function FillFormAction({ data, appMode = false }: FillFormActionProps) {
   const { fillFields } = useFormBridgeContext();
   const { setWorking } = useZoliDarkLemonWidgetStore();
   const [applied, setApplied] = useState(false);
@@ -47,7 +50,22 @@ export function FillFormAction({ data }: FillFormActionProps) {
     // Animate: fill one field at a time with delay
     let filled = 0;
     for (const field of data.fields) {
-      const count = fillFields([{ id: field.id, value: field.value }]);
+      let count = fillFields([{ id: field.id, value: field.value }]);
+      if (count === 0 && appMode) {
+        const rawKey = field.id.startsWith("fir_") ? field.id.slice(4) : field.id;
+        if (rawKey && rawKey !== "selectedFirNumber" && rawKey in useMNFIRStore.getState().data) {
+          const key = rawKey as keyof FIRDataStore;
+          const current = useMNFIRStore.getState().data[key];
+          let next: unknown = field.value;
+          if (typeof current === "boolean") {
+            next = ["true", "1", "si", "sì", "yes", "x"].includes(field.value.trim().toLowerCase());
+          } else if (Array.isArray(current)) {
+            next = field.value.split(/[,;]/).map((part) => part.trim()).filter(Boolean);
+          }
+          useMNFIRStore.getState().setFromAgent({ [key]: next } as Partial<FIRDataStore>);
+          count = 1;
+        }
+      }
       filled += count;
       // Small delay to make writing visible
       await new Promise(r => setTimeout(r, 300));
@@ -61,7 +79,7 @@ export function FillFormAction({ data }: FillFormActionProps) {
     } else {
       toast.error("⚠️ Nessun campo trovato nel form attuale. Assicurati di essere sulla pagina giusta.");
     }
-  }, [data.fields, fillFields, setWorking]);
+  }, [appMode, data.fields, fillFields, setWorking]);
 
   if (dismissed) return null;
 
