@@ -54,13 +54,15 @@ const numero = (value: unknown): number | null => {
 };
 
 export function interpretaChiusura(data: unknown): ChiusuraDestinatarioRentri {
-  const nodo = trovaNodo(data, ["accettazione", "esito_conferimento", "dati_arrivo"]);
-  if (!nodo) return { ...VUOTO, raw: data };
+  const radice = trovaNodo(data, ["accettazione", "esito_conferimento", "dati_arrivo"]);
+  if (!radice) return { ...VUOTO, raw: data };
+  const nodo = (radice.dati_arrivo as Record<string, unknown> | undefined) ?? radice;
 
   const accettazione =
     (nodo.accettazione as Record<string, unknown> | undefined) ??
-    (trovaNodo(nodo.dati_arrivo ?? nodo, ["esito_conferimento"]) as Record<string, unknown> | null) ??
+    (trovaNodo(nodo, ["esito_conferimento"]) as Record<string, unknown> | null) ??
     nodo;
+
 
   const esitoRaw = String(accettazione?.esito_conferimento ?? "").toUpperCase();
   const esito =
