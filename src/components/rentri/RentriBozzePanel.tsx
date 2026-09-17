@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { emissioneFir, type RentriCliente } from "@/lib/rentriVpsApi";
+import { type RentriCliente } from "@/lib/rentriVpsApi";
+import { inviaFirmaRentri } from "@/services/rentriApi";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { mapFormToRentriPayload } from "@/lib/rentriFormMapper";
@@ -233,16 +234,10 @@ export function RentriBozzePanel({ cliente, societaId, tenantId, mnContext, onPo
         litri: d.unita_misura === "lt" ? "1" : "",
       });
       const payload = await mapFormToRentriPayload(cliente, formData);
-      const res = await emissioneFir(cliente, payload);
-      if (!res.success) {
-        toast.error(res.userMessage ?? "Invio a RENTRI fallito", { description: res.error, duration: 12000 });
-        return;
-      }
-      const responseRoot = (res.data ?? {}) as Record<string, any>;
-      const root = (responseRoot.data || responseRoot.risposta || responseRoot.result || responseRoot) as Record<string, any>;
-      const identificativoUfficiale = String(
-        root.firId || root.numero_fir || root.numeroFir || root.fir_id || root.uuid_fir || root.uuid || "",
-      ).trim();
+      // Passa sempre dal servizio canonico: il solo HTTP 202 o la presenza del
+      // numero sul RENTRI non certificano la firma di partenza.
+      const res = await inviaFirmaRentri({ societaId: cliente, payloadFir: payload });
+      const identificativoUfficiale = String(res.firId || res.numero_fir || "").trim();
       if (!identificativoUfficiale) {
         toast.error("Partenza non confermata dal RENTRI: manca l’identificativo ufficiale. Il FIR resta in bozza.");
         return;
