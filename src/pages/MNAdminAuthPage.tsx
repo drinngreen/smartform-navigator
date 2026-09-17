@@ -29,12 +29,15 @@ export default function MNAdminAuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.toLowerCase() !== ALLOWED_EMAIL) {
-      toast.error("Accesso consentito solo a multyniyol@zoli.live");
+    // Accetta anche il solo nome utente senza "@": completa automaticamente il dominio.
+    const raw = email.trim().toLowerCase();
+    const normalized = raw.includes("@") ? raw : `${raw}@zoli.live`;
+    if (normalized !== ALLOWED_EMAIL) {
+      toast.error("Accesso consentito solo a multyniyol");
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
     if (error) {
       toast.error("Credenziali non valide");
     } else {
