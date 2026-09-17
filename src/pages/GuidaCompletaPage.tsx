@@ -37,18 +37,15 @@ const SECTIONS: Section[] = [
         <h4 className="font-semibold text-foreground mt-2">Funzionalità principali:</h4>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong className="text-foreground">Compilazione FIR</strong> — Form completo con tutti i campi RENTRI, numeri reali dal pool vidimato</li>
-          <li><strong className="text-foreground">Modulo Alternativo</strong> — Compilazione visuale su immagine del formulario ufficiale con zoom e preset</li>
           <li><strong className="text-foreground">Firma e Invio RENTRI</strong> — Emissione FIR digitale con firma via VPS, QR code reale</li>
           <li><strong className="text-foreground">Cronologia</strong> — Storico completo di tutti i FIR con PDF scaricabile</li>
           <li><strong className="text-foreground">GPS in tempo reale</strong> — Tracking continuo della posizione ogni 30 secondi</li>
-          <li><strong className="text-foreground">Comunicazioni</strong> — Email, SMS, WhatsApp verso impianti e ufficio</li>
-          <li><strong className="text-foreground">Telefono</strong> — Chiamate VoIP integrate tramite Retell AI</li>
-          <li><strong className="text-foreground">Assistente AI</strong> — Chat con Dark Lemon per supporto operativo</li>
+          <li><strong className="text-foreground">Dark Lemon</strong> — Pannello sul FIR, foto/OCR, compilazione con conferma e cronologia condivisa</li>
           <li><strong className="text-foreground">Profilo</strong> — Gestione targa, autista alternativo, avatar</li>
           <li><strong className="text-foreground">Guida</strong> — Istruzioni operative per il trasportatore</li>
         </ul>
-        <h4 className="font-semibold text-foreground mt-2">Assegnazione FIR automatica:</h4>
-        <p>Il sistema assegna automaticamente un numero FIR reale (vidimato dal Ministero) a ogni trasportatore. Quando un FIR viene inviato, il sistema ne assegna automaticamente uno nuovo dal pool.</p>
+        <h4 className="font-semibold text-foreground mt-2">Assegnazione FIR manuale:</h4>
+        <p>L'ufficio assegna il numero FIR esatto dal Centro App &amp; FIR. L'app non crea o sostituisce automaticamente numeri.</p>
       </div>
     ),
   },

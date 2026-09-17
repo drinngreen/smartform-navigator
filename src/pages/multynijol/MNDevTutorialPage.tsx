@@ -157,7 +157,7 @@ const CHAPTERS: Chapter[] = [
       "L'app si apre su un ELENCO di formulari disponibili, mai su una bozza già assegnata: l'autista sceglie il numero su cui lavorare. I numeri FIR glieli assegni tu dal Centro App & FIR.",
       "In alto ci sono i tre stati del viaggio: Bozza, In viaggio, Arrivo. Servono all'ufficio per sapere a che punto è il mezzo senza telefonare.",
       "Le tre schede Principale / Trasbordo / Intermodale corrispondono alle tipologie di trasporto previste dal formulario RENTRI.",
-      "In fondo alla barra: Cronologia (i formulari già compilati), GPS, Telefono, Messaggi, AI, Profilo, Modulo Alternativo e Guida.",
+      "In fondo alla barra ci sono solo FIR, Cronologia, GPS, Dark Lemon, Profilo e Guida. Telefonate, Messaggi e Modulo Alternativo non fanno più parte dell'app collaboratori.",
       "Nell'app NON compare la sezione fatturazione: è riservata all'ufficio. L'autista compila il documento di trasporto, l'ufficio fattura.",
     ],
     steps: [
@@ -166,17 +166,18 @@ const CHAPTERS: Chapter[] = [
       "Durante il viaggio aggiorna lo stato: In viaggio all'uscita, Arrivo alla consegna.",
       "A destino inserisce la quantità di arrivo e salva.",
       "In ufficio ritrovi il formulario nella tab corretta (Impianto, Conto Proprio o Niyol) già compilato.",
-      "Se serve la copia cartacea, l'autista apre Mod. Alt. e stampa il modulo ufficiale.",
+      "Se serve aiuto, l'autista apre Dark Lemon dal FIR o dalla voce AI, fotografa il documento e controlla i dati proposti prima di applicarli.",
     ],
     fields: [
       { label: "Bozza / In viaggio / Arrivo", desc: "Stato del viaggio, visibile all'ufficio in tempo reale." },
       { label: "Cronologia", desc: "Storico dei formulari dell'autista, diviso in Bozze e Inviati." },
       { label: "GPS", desc: "Posizione del mezzo (l'autista può disattivarla dal profilo)." },
-      { label: "Mod. Alt.", desc: "Vista modulo ufficiale per la stampa in mobilità." },
+      { label: "Dark Lemon", desc: "Legge foto e formulario aperto, propone la compilazione e conserva la cronologia condivisa." },
     ],
     warnings: [
       "Se l'autista non vede numeri disponibili, significa che non gli è stato assegnato alcun FIR: l'assegnazione è sempre manuale.",
       "Un formulario aperto dall'autista resta modificabile finché è in bozza: dopo il salvataggio definitivo va corretto dall'ufficio.",
+      "Nell'app Dark Lemon non può inviare al RENTRI, creare utenti o modificare registri e giacenze.",
     ],
     faq: [
       { q: "L'autista ha sbagliato formulario.", a: "Se è ancora bozza, eliminala e riassegna il numero. Se è effettivo, serve uno storno umano tracciato." },

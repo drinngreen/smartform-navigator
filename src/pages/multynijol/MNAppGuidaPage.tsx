@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { MNBottomNav } from "@/components/layout/MNBottomNav";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import logoDragon from "@/assets/logo-dragon.png";
 
 const guideSteps = [
@@ -11,6 +11,7 @@ const guideSteps = [
   { icon: "📍", title: "Trasporto", subtitle: "QR ufficiale", label: "VIAGGIO", sublabel: "In corso", color: "text-neon-green", desc: "In viaggio mostri il QR ufficiale RENTRI a polizia e vigili. Le giacenze non sono ancora cambiate.", tip: "Il QR vale solo dopo l'invio della partenza" },
   { icon: "🏭", title: "Arrivo a destino", subtitle: "Secondo invio al RENTRI", label: "ARRIVO", sublabel: "2° invio", color: "text-neon-magenta", desc: "Premi SONO ARRIVATO, inserisci peso reale, data, ora ed esito, poi firma: l'arrivo viene trasmesso al RENTRI.", tip: "Chiedi sempre la ricevuta di pesatura" },
   { icon: "✅", title: "Chiusura FIR", subtitle: "Completato", label: "CHIUSO", sublabel: "Completato", color: "text-neon-green", desc: "Solo dopo la risposta positiva del RENTRI il formulario si chiude e le giacenze si aggiornano. Se l'invio fallisce resti in viaggio.", tip: "Se vedi un errore, il formulario NON è chiuso" },
+  { icon: "🍋", title: "Chiedi a Dark Lemon", subtitle: "Foto e aiuto sul FIR", label: "AI", sublabel: "Assistenza", color: "text-neon-cyan", desc: "Premi Compila con Dark Lemon nel FIR oppure AI in basso. Puoi fotografare un formulario o un elenco: Dark Lemon legge i dati, segnala i dubbi e propone cosa inserire. Sei sempre tu a confermare.", tip: "Dark Lemon nell'app non può inviare al RENTRI o cambiare giacenze" },
 
 ];
 
@@ -58,6 +59,9 @@ export default function MNAppGuidaPage() {
             <button onClick={() => setCurrentStep(0)} className="px-5 py-2.5 rounded-xl bg-neon-green/20 text-neon-green text-sm font-display font-bold hover:bg-neon-green/30 transition-all">Ricomincia</button>
           )}
         </div>
+        <a href="/guidacollaboratori" target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-bold text-primary">
+          Guida completa con immagini <ExternalLink className="h-4 w-4" />
+        </a>
       </div>
       <MNBottomNav basePath={basePath} />
     </MobileShell>
