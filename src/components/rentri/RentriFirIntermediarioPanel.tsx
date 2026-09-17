@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { Loader2, Search, Handshake, AlertTriangle } from "lucide-react";
+import { Loader2, Search, Handshake, AlertTriangle, FileSpreadsheet, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { elencoFirIntermediario, type FirIntermediarioRow } from "@/lib/rentriFirIntermediario";
 import { RENTRI_CF_SOGGETTO, type RentriCliente } from "@/lib/rentriVpsApi";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 const oggi = () => new Date().toISOString().slice(0, 10);
 const inizioAnno = () => `${new Date().getFullYear()}-01-01`;
