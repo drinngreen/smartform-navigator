@@ -5,7 +5,6 @@ import {
   startDepartureXfirFlow,
   type XfirProgress,
   type XfirResult,
-  type RentriXfirNoop,
 } from "@/lib/rentriXfirPartenza";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 
@@ -140,5 +139,3 @@ export function PartenzaXfirPanel({ cliente, numeroFir, datiTrasporto, codiceFis
     </div>
   );
 }
-
-export type { RentriXfirNoop };
