@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, Bot, ClipboardCheck, FileSpreadsheet, Factory, ListChecks, QrCode, ShieldCheck, Smartphone } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const updates = [
   { icon: QrCode, title: "FIR digitali e stato RENTRI", body: "Lo stato viene riletto dal RENTRI. HTTP 202 significa soltanto presa in carico tecnica. Il viaggio resta bloccato finché numero e QR ufficiale non sono presenti. Il PDF ufficiale usa il modello ministeriale compilato e il QR restituito dal RENTRI." },
@@ -19,7 +18,7 @@ export default function GuidaUfficioPage() {
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
           <div className="min-w-0 flex-1"><h1 className="text-2xl font-bold">Guida ufficio</h1><p className="text-sm text-muted-foreground">Aggiornamenti operativi verificati · 16–17 settembre 2026</p></div>
-          <Button asChild variant="outline"><Link to="/guidacollaboratori">Guida collaboratori</Link></Button>
+          <Link to="/guidacollaboratori" className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">Guida collaboratori</Link>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8 pb-20">
@@ -38,7 +37,7 @@ export default function GuidaUfficioPage() {
 
             <article className="rounded-lg border border-destructive/30 bg-destructive/5 p-5"><div className="flex gap-3"><AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-destructive" /><div><h2 className="text-xl font-bold">Controlli obbligatori</h2><ul className="mt-3 list-disc space-y-2 pl-5 text-muted-foreground"><li>Usare sempre dati letti al momento, includendo le rettifiche nascoste nel conteggio.</li><li>Se due prove si contraddicono, fermarsi: non correggere automaticamente.</li><li>Nessun invio RENTRI reale senza conferma esplicita.</li><li>Non modificare storico, giacenze o cernite per far combaciare un elenco.</li><li>Per l'intermediazione usare soltanto FIR RENTRI con Multyproget intermediario verificato.</li></ul></div></div></article>
 
-            <article className="rounded-lg border border-border bg-card p-5"><h2 className="text-xl font-bold">App collaboratori</h2><p className="mt-2 text-muted-foreground">Per installazione, aggiornamento, uso del FIR, Dark Lemon e foto OCR, usa la guida dedicata.</p><Button asChild className="mt-4"><Link to="/guidacollaboratori">Apri la guida collaboratori</Link></Button></article>
+            <article className="rounded-lg border border-border bg-card p-5"><h2 className="text-xl font-bold">App collaboratori</h2><p className="mt-2 text-muted-foreground">Per installazione, aggiornamento, uso del FIR, Dark Lemon e foto OCR, usa la guida dedicata.</p><Link to="/guidacollaboratori" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Apri la guida collaboratori</Link></article>
           </div>
         </div>
       </main>

@@ -18,9 +18,10 @@ import { captureWorkspaceScreenshot } from "@/lib/captureWorkspace";
 
 interface DarkLemonSidePanelProps {
   context?: string;
+  appMode?: boolean;
 }
 
-export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePanelProps) {
+export function DarkLemonSidePanel({ context = "multyproget", appMode = false }: DarkLemonSidePanelProps) {
   const { setSidePanel, setWorking } = useZoliDarkLemonWidgetStore();
   const { messages, isLoading, conversations, currentConversationId, sendMessage, loadConversation, deleteConversation, newChat } = useDarkLemonMN(context, "side");
   const [showHistory, setShowHistory] = useState(false);
@@ -94,7 +95,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
       data-dark-lemon="true"
       className={cn(
         "fixed top-0 right-0 flex flex-col bg-[hsl(222,47%,6%)] border-white/10 z-[60] animate-slide-in-right",
-        isFullscreen ? "inset-0 w-full h-full border-l-0" : "h-full w-[20vw] min-w-[280px] border-l"
+        isFullscreen ? "inset-0 w-full h-full border-l-0" : appMode ? "inset-y-0 right-0 w-full max-w-md border-l" : "h-full w-[20vw] min-w-[280px] border-l"
       )}
     >
 
@@ -102,7 +103,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[hsl(222,47%,8%)] border-b border-white/10 shrink-0">
         <img src={zoliLemonIcon} alt="Dark Lemon" className="h-6 w-6" />
         <span className="text-white font-display text-xs tracking-wider flex-1">DARK LEMON</span>
-        <button onClick={handleAnalyzePage} disabled={isLoading} className="p-1 rounded-md bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors" title="Analizza pagina">
+        <button onClick={handleAnalyzePage} disabled={isLoading} className="p-1 rounded-md bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors" title={appMode ? "Leggi il formulario" : "Analizza pagina"}>
           <ScanSearch className="h-3.5 w-3.5" />
         </button>
         <button onClick={handleScreenshot} className="p-1 rounded-md bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors" title="Screenshot area di lavoro">
@@ -139,7 +140,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
               <Bot className="h-2.5 w-2.5 text-cyan-400" />
             </div>
             <div className="rounded-lg px-2.5 py-1.5 text-[11px] bg-white/5 text-white/90 border border-cyan-500/20 select-text">
-              Ciao! Sono in modalità pannello laterale 🍋
+               {appMode ? "Ciao! Posso leggere la foto e aiutarti a compilare il FIR aperto. Controllerai sempre prima di applicare." : "Ciao! Sono in modalità pannello laterale 🍋"}
             </div>
           </div>
         )}
@@ -190,7 +191,7 @@ export function DarkLemonSidePanel({ context = "multyproget" }: DarkLemonSidePan
       </div>
 
       {/* Supervisione + Autopilot */}
-      <DarkLemonSupervisionBar />
+      {!appMode && <DarkLemonSupervisionBar />}
 
       {/* Input */}
       <DarkLemonInputBar onSend={handleSend} isLoading={isLoading} />

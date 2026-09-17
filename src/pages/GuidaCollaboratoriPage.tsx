@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, Bot, CheckCircle2, Download, RefreshCw, Smartphone, Truck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import logoDragon from "@/assets/logo-dragon.png";
 import install1 from "@/assets/guides/istruzioni-autisti-1.png.asset.json";
 import install2 from "@/assets/guides/istruzioni-autisti-2.png.asset.json";
@@ -35,7 +34,7 @@ export default function GuidaCollaboratoriPage() {
             <h1 className="text-xl font-bold">Guida collaboratori</h1>
             <p className="text-sm text-muted-foreground">Istruzioni semplici per usare l'app senza errori</p>
           </div>
-          <Button asChild variant="outline" size="sm"><Link to="/mn">Apri app</Link></Button>
+          <Link to="/mn" className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">Apri app</Link>
         </div>
       </header>
 

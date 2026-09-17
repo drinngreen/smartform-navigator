@@ -1,4 +1,4 @@
-import { useParams, Navigate, useNavigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
@@ -12,6 +12,7 @@ const validContexts = ["multyproget", "niyol"];
 export default function MNZoliDarkLemonPage() {
   const { context } = useParams<{ context: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setActiveContext = useMNContextStore((s) => s.setActiveContext);
   const setSidePanel = useZoliDarkLemonWidgetStore((s) => s.setSidePanel);
   const isValid = !!context && validContexts.includes(context);
@@ -35,7 +36,7 @@ export default function MNZoliDarkLemonPage() {
           Torna a vista laterale
         </Button>
       </div>
-      <DarkLemonMNChat context={context} />
+      <DarkLemonMNChat context={context} defaultHistoryOpen={searchParams.get("history") === "1"} />
     </MNAdminLayout>
   );
 }

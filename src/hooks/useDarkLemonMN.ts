@@ -179,7 +179,7 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
       setConversations(data
         .filter(c => {
           const ctx = c.context as any;
-          return ctx?.source === "dark-lemon-mn";
+          return ctx?.source === "dark-lemon-mn" && ctx?.mn_context === normalizedContext;
         })
         .map(c => {
           const ctx = c.context as any;
@@ -187,14 +187,14 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
           return {
             id: c.id,
             title: c.title,
-            surface: (raw && ["side", "floating", "console", "page"].includes(raw) ? raw : "page") as DLSurface,
+            surface: (raw && DL_SURFACES.includes(raw as DLSurface) ? raw : "page") as DLSurface,
             createdAt: new Date(c.created_at),
             updatedAt: new Date(c.updated_at),
           };
         })
       );
     }
-  }, [user]);
+  }, [user, normalizedContext]);
 
   const createConversation = useCallback(async (title: string): Promise<string | null> => {
     if (!user) return null;
@@ -296,6 +296,7 @@ export function useDarkLemonMN(context?: string, surface: DLSurface = "page") {
           pageTitle: pageContext?.pageTitle,
           activity: getRecentActivityPayload(),
           autopilot: useAgentActivityStore.getState().autopilot,
+          appMode: pageContext?.route?.startsWith("/mn/app/") === true,
         },
       });
 
