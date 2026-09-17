@@ -214,7 +214,9 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       riga: r,
       esito:
         cfg.source === "intermediario"
-          ? registrati?.get(normalizzaNumeroFir(r.numero_formulario)) ?? null
+          ? registrati?.perFir.get(normalizzaNumeroFir(r.numero_formulario)) ??
+            registrati?.perDati.get(chiaveDati(r.data_movimento, r.cer, r.quantita) ?? "_") ??
+            null
           : esitiMap.get(Number(r.numero_interno)) ?? null,
     }));
   }, [data, esitiMap, registrati, cfg.source]);
