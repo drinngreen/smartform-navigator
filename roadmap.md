@@ -1,5 +1,5 @@
 ## Completato
-- [ ] Riparare la cernita 11.800 kg del 10/08/2026 e impedire che future cernite confermate restino fuori dalle giacenze
+- [x] Riparata la cernita 11.800 kg del 10/08/2026 e impedito che future cernite confermate restino fuori dalle giacenze
 - [x] Rimossi Messaggi, Telefonate e Modulo alternativo dalle app collaboratori
 - [x] Dark Lemon operativo nelle app con pannello laterale, lettura/compilazione FIR controllata e cronologia condivisa
 - [x] Riparate vista schermo intero e cronologia Dark Lemon in console
