@@ -703,35 +703,9 @@ export async function vidimaFIRAsync(
       // keep last known progressivo window
     }
 
-    if (transazioneId) {
-      try {
-        const txRes = await statoTransazioneVidimazione(cliente, transazioneId);
-        if (txRes.success) {
-          for (const firNum of extractFirNumbers(txRes.data)) {
-            if (!knownNumbers.has(firNum)) {
-              knownNumbers.add(firNum);
-              numeri.push(firNum);
-            }
-          }
-
-          const txData = (txRes.data as any) || {};
-          const txProgressivo = Number(
-            txData.numero_fir_vidimati ??
-            txData.progressivo ??
-            txData.ultimo_progressivo ??
-            txData.progressivo_finale ??
-            txData.max_progressivo ??
-            0,
-          );
-
-          if (Number.isFinite(txProgressivo) && txProgressivo > 0) {
-            maxProgressivoToRead = Math.max(maxProgressivoToRead, txProgressivo);
-          }
-        }
-      } catch {
-        // transaction endpoint may lag behind LOTTO exposure
-      }
-    }
+    // Il RENTRI non espone endpoint di stato transazione per la vidimazione
+    // (/transazioni|/transazione rispondono sempre 404): i numeri vidimati si
+    // leggono esclusivamente da LISTA_BLOCCHI + LOTTO qui sotto.
 
     const releasedCount = Math.max(0, maxProgressivoToRead - startProgressivo);
     const cappedMaxProgressivo = Math.min(startProgressivo + quantita, maxProgressivoToRead);
