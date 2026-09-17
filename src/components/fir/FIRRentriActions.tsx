@@ -178,6 +178,11 @@ export function FIRRentriActions({ cliente, formData, numeroFir, firmaComeProdut
         />
       </div>
 
+      {/* Partenza xFIR: firma remota ca-rentri con conferma mobile */}
+      {numeroFir && (
+        <PartenzaXfirPanel cliente={cliente} numeroFir={numeroFir} />
+      )}
+
       {/* QR Code display */}
       {qrCodeUrl && (
         <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white border border-border/30">
