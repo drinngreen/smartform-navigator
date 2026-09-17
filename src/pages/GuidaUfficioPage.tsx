@@ -1,5 +1,18 @@
 import { Link } from "react-router-dom";
 import { AlertTriangle, Bot, ClipboardCheck, FileSpreadsheet, Factory, ListChecks, QrCode, ShieldCheck, Smartphone } from "lucide-react";
+import install1 from "@/assets/guides/istruzioni-autisti-1.png.asset.json";
+import install2 from "@/assets/guides/istruzioni-autisti-2.png.asset.json";
+import install3 from "@/assets/guides/istruzioni-autisti-3.png.asset.json";
+import install4 from "@/assets/guides/istruzioni-autisti-4.png.asset.json";
+import install5 from "@/assets/guides/istruzioni-autisti-5.png.asset.json";
+
+const appScreenshots = [
+  { image: install1, title: "1. Apri il menu del browser" },
+  { image: install2, title: "2. Scegli Installa o crea scorciatoia" },
+  { image: install3, title: "3. Conferma Aggiungi" },
+  { image: install4, title: "4. Aggiungi alla schermata Home" },
+  { image: install5, title: "5. Tocca il drago per aggiornare" },
+];
 
 const updates = [
   { icon: QrCode, title: "FIR digitali e stato RENTRI", body: "Lo stato viene riletto dal RENTRI. HTTP 202 significa soltanto presa in carico tecnica. Il viaggio resta bloccato finché numero e QR ufficiale non sono presenti. Il PDF ufficiale usa il modello ministeriale compilato e il QR restituito dal RENTRI." },
@@ -38,6 +51,19 @@ export default function GuidaUfficioPage() {
             <article className="rounded-lg border border-destructive/30 bg-destructive/5 p-5"><div className="flex gap-3"><AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-destructive" /><div><h2 className="text-xl font-bold">Controlli obbligatori</h2><ul className="mt-3 list-disc space-y-2 pl-5 text-muted-foreground"><li>Usare sempre dati letti al momento, includendo le rettifiche nascoste nel conteggio.</li><li>Se due prove si contraddicono, fermarsi: non correggere automaticamente.</li><li>Nessun invio RENTRI reale senza conferma esplicita.</li><li>Non modificare storico, giacenze o cernite per far combaciare un elenco.</li><li>Per l'intermediazione usare soltanto FIR RENTRI con Multyproget intermediario verificato.</li></ul></div></div></article>
 
             <article className="rounded-lg border border-border bg-card p-5"><h2 className="text-xl font-bold">App collaboratori</h2><p className="mt-2 text-muted-foreground">Per installazione, aggiornamento, uso del FIR, Dark Lemon e foto OCR, usa la guida dedicata.</p><Link to="/guidacollaboratori" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Apri la guida collaboratori</Link></article>
+
+            <article className="rounded-lg border border-border bg-card p-5">
+              <h2 className="text-xl font-bold">Screenshot: installare e aggiornare l'app</h2>
+              <p className="mt-2 text-muted-foreground">Mostra queste immagini al collaboratore nello stesso ordine. Le prime quattro installano l'app dal browser; l'ultima aggiorna la pagina.</p>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {appScreenshots.map(({ image, title }) => (
+                  <figure key={title} className="overflow-hidden rounded-lg border border-border bg-background">
+                    <img src={image.url} alt={title} className="aspect-[9/16] w-full object-contain" loading="lazy" />
+                    <figcaption className="border-t border-border p-3 text-sm font-semibold">{title}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </article>
           </div>
         </div>
       </main>

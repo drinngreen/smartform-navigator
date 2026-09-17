@@ -35,11 +35,9 @@ const MobileAppPage = React.lazy(() => import("./pages/MobileAppPage"));
 const CronologiaFIRPage = React.lazy(() => import("./pages/CronologiaFIRPage"));
 const GPSPage = React.lazy(() => import("./pages/GPSPage"));
 const AIAssistantPage = React.lazy(() => import("./pages/AIAssistantPage"));
-const ComunicazioniPage = React.lazy(() => import("./pages/ComunicazioniPage"));
 const ZoliMessagesPage = React.lazy(() => import("./pages/ZoliMessagesPage"));
 const ProfiloPage = React.lazy(() => import("./pages/ProfiloPage"));
 const GuidaPage = React.lazy(() => import("./pages/GuidaPage"));
-const AppPhonePage = React.lazy(() => import("./pages/AppPhonePage"));
 const ProfileSetupPage = React.lazy(() => import("./pages/ProfileSetupPage"));
 
 const DashboardPage = React.lazy(() => import("./pages/admin/DashboardPage"));
@@ -239,8 +237,6 @@ const App = () => (
                 <Route path="/app/cronologia" element={<ProtectedRoute><CronologiaFIRPage /></ProtectedRoute>} />
                 <Route path="/app/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
                 <Route path="/app/ai" element={<ProtectedRoute><AIAssistantPage /></ProtectedRoute>} />
-                <Route path="/app/telefono" element={<ProtectedRoute><AppPhonePage /></ProtectedRoute>} />
-                <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
                 <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
                 <Route path="/app/guida" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
                 <Route path="/guida-completa" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
