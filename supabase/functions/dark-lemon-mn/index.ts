@@ -53,7 +53,7 @@ const AUTONOMY_BLOCKING_PATTERN = /(potresti (?:confermare|fornirm[ie]|indicarm[
 const FIR_ID_BLOCKING_PATTERN = /(uuid del formular(?:io|i)|uuid interno del formular(?:io|i)|update_fir_form richiede l['’]?uuid|numero fir .* non è sufficiente .*update_fir_form|non ho un tool specifico per fare questa conversione|devo prima recuperare .*uuid|non posso procedere senza l['’]?uuid)/i;
 const WRITE_INTENT_PATTERN = /\b(modifica|modificare|aggiorna|aggiornare|imposta|impostare|cambia|cambiare|correggi|correggere|salva|salvare|inserisci|inserire|crea|creare|elimina|eliminare)\b/i;
 const MUTATING_TOOLS = new Set([
-  "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri",
+  "write_database", "update_fir_form", "create_extra_draft", "complete_fir", "send_to_rentri", "create_dipendente",
   "update_privato", "create_privato", "explain_and_fix",
   "send_registro_rentri", "create_fattura_da_fir", "send_fattura_sibill",
   "run_demo_fir_lifecycle",
@@ -1155,10 +1155,12 @@ Quando l'utente ti chiede di compilare un form, di inserire dati, o di scrivere 
 - Se nella pagina ci sono BRIDGE FIELDS, proponi la compilazione con \`"confirm": true\` (l'autista conferma prima del salvataggio).
 - Non salvare nulla nel database e non inviare nulla al RENTRI senza conferma esplicita dell'utente.
 
-### Creazione dipendenti
-- Per creare un dipendente o un trasportatore usa SEMPRE il tool \`create_dipendente\`: crea l'account di accesso reale, il profilo e il ruolo.
+### Creazione dipendenti / autisti (OBBLIGATORIO)
+- Per creare un dipendente, un autista o un trasportatore usa SEMPRE il tool \`create_dipendente\`: crea l'account di accesso reale, il profilo e il ruolo. Esegui subito il tool, una chiamata per ogni persona richiesta.
+- È VIETATO rispondere "ho inviato una richiesta al team di sviluppo" o usare \`request_app_change\` per creare persone: la creazione è una tua operazione diretta, non una richiesta di modifica del software.
 - NON usare mai \`write_database\` sulla tabella \`profiles\` per creare persone: l'utente non riuscirebbe ad accedere.
-- Servono nome, cognome e codice fiscale valido; se manca la password viene usata \`123stella\` e va comunicata all'utente.
+- Servono nome, cognome e codice fiscale valido; se manca la password viene usata \`123stella\` e va comunicata all'utente. Se manca il codice fiscale, chiedilo: non inventarlo.
+- Al termine elenca per ogni persona creata: nome, codice fiscale (nome utente) e password.
 
 ## 🆕 NOVITÀ E REGOLE AGGIORNATE (stato al 18 agosto 2026)
 Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
@@ -2336,7 +2338,7 @@ const tools = [
     type: "function",
     function: {
       name: "request_app_change",
-      description: "Registra una richiesta strutturata di modifica del software (l'agente non puo' modificare il codice: crea la richiesta per il Super Admin).",
+      description: "SOLO per modifiche del codice/funzionalita' dell'app che l'agente non puo' eseguire. VIETATO usarlo per operazioni gestionali eseguibili con altri tool (es. creare dipendenti/autisti: usa create_dipendente).",
       parameters: {
         type: "object",
         properties: {

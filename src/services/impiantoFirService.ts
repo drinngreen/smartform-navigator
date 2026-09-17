@@ -101,33 +101,68 @@ export async function listIncomingXFir(
 
   return extractRentriFirItems(res.data)
     .filter((raw) => isDestinatario(raw, identificativoSoggetto))
-    .map((raw, index) => {
-      const d = raw as Record<string, unknown>;
-      const summary = parseRentriToSummary(d);
-      const accettazione = d.accettazione as Record<string, unknown> | null | undefined;
-      const uuid = String(d.uuid ?? d.id ?? d.uuid_fir ?? d.firId ?? summary.numero_fir ?? `incoming-${index}`);
-      const dataRicezione = String(
-        accettazione?.data_ora_arrivo ?? d.data_ora_ricezione ?? d.data_arrivo ?? d.data_emissione ?? d.created_at ?? new Date().toISOString(),
-      );
-      const dataAccettazione = accettazione?.data_ora_arrivo ? String(accettazione.data_ora_arrivo) : null;
-
-      return {
-        id: uuid,
-        numero_fir: summary.numero_fir || "",
-        produttore: summary.produttore || "",
-        trasportatore: summary.trasportatore || "",
-        destinatario: summary.destinatario || "",
-        cer: summary.cer || "",
-        quantita: Number(summary.quantita || 0),
-        unita_misura: summary.unita_misura || "kg",
-        stato_interno: statoInternoDaRentri(d),
-        stato_rentri: String(d.stato ?? d.stato_fir ?? d.esito ?? "IN_ARRIVO"),
-        data_ricezione: dataRicezione,
-        firma_ricezione_at: dataAccettazione,
-        firma_destinatario_at: dataAccettazione,
-      } satisfies FirSummary;
-    })
+    .map((raw, index) => mapRentriToFirSummary(raw, index))
     .filter((item) => Boolean(item.id && item.numero_fir));
+}
+
+/** Mappa un formulario RENTRI grezzo nel riepilogo usato dall'impianto. */
+export function mapRentriToFirSummary(raw: Record<string, unknown>, index = 0): FirSummary {
+  const d = raw as Record<string, unknown>;
+  const summary = parseRentriToSummary(d);
+  const accettazione = d.accettazione as Record<string, unknown> | null | undefined;
+  const uuid = String(d.uuid ?? d.id ?? d.uuid_fir ?? d.firId ?? summary.numero_fir ?? `incoming-${index}`);
+  const dataRicezione = String(
+    accettazione?.data_ora_arrivo ?? d.data_ora_ricezione ?? d.data_arrivo ?? d.data_emissione ?? d.created_at ?? new Date().toISOString(),
+  );
+  const dataAccettazione = accettazione?.data_ora_arrivo ? String(accettazione.data_ora_arrivo) : null;
+
+  return {
+    id: uuid,
+    numero_fir: summary.numero_fir || "",
+    produttore: summary.produttore || "",
+    trasportatore: summary.trasportatore || "",
+    destinatario: summary.destinatario || "",
+    cer: summary.cer || "",
+    quantita: Number(summary.quantita || 0),
+    unita_misura: summary.unita_misura || "kg",
+    stato_interno: statoInternoDaRentri(d),
+    stato_rentri: String(d.stato ?? d.stato_fir ?? d.esito ?? "IN_ARRIVO"),
+    data_ricezione: dataRicezione,
+    firma_ricezione_at: dataAccettazione,
+    firma_destinatario_at: dataAccettazione,
+  } satisfies FirSummary;
+}
+
+/**
+ * Ricerca in SOLA LETTURA sul RENTRI di un formulario per numero (e opzionalmente per CER).
+ * Serve a permettere all'impianto di aprire e chiudere anche i formulari che non
+ * compaiono nell'elenco "in arrivo": nessuna scrittura, nessun invio.
+ */
+export async function cercaFirRentriPerNumero(
+  cliente: RentriCliente,
+  numeroFir: string,
+  opzioni?: { cer?: string },
+): Promise<FirSummary[]> {
+  const numero = String(numeroFir || "").trim();
+  if (!numero) return [];
+
+  const res = await ricercaFir(cliente, numero);
+  if (!res.success) {
+    if (isRentriOfflineResponse(res)) return [];
+    throw new Error(res.error || "Formulario non trovato sul RENTRI");
+  }
+
+  const items = extractRentriFirItems(res.data);
+  const grezzi = items.length > 0
+    ? items
+    : (res.data && typeof res.data === "object" ? [res.data as Record<string, unknown>] : []);
+
+  const cerFiltro = String(opzioni?.cer || "").replace(/[\s.]/g, "").toLowerCase();
+
+  return grezzi
+    .map((raw, index) => mapRentriToFirSummary(raw, index))
+    .filter((item) => Boolean(item.id && item.numero_fir))
+    .filter((item) => !cerFiltro || String(item.cer || "").replace(/[\s.]/g, "").toLowerCase().includes(cerFiltro));
 }
 
 export async function signIncomingXFir(
