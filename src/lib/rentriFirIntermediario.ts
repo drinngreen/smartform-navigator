@@ -9,6 +9,11 @@ import {
 /**
  * Lettura SOLA LETTURA dei formulari RENTRI in cui la nostra società compare
  * come INTERMEDIARIO. Nessun invio, nessuna scrittura: solo GET al RENTRI.
+ *
+ * Schema reale restituito da RENTRI (/formulari/v1.0):
+ *   { numero_fir, codice_eer, quantita, unita_misura, stato,
+ *     data_emissione, data_creazione,
+ *     produttore: {...}, destinatari: [...], trasportatori: [...], intermediari: [...] }
  */
 
 export interface FirIntermediarioRow {
@@ -30,106 +35,72 @@ export interface FirIntermediarioRow {
 const soloCifreLettere = (v: unknown) =>
   String(v ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
-/** Cerca ricorsivamente il primo valore di una chiave (match case-insensitive parziale). */
-export function trovaValore(node: unknown, chiavi: string[]): unknown {
-  if (!node || typeof node !== "object") return undefined;
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const found = trovaValore(item, chiavi);
-      if (found !== undefined) return found;
-    }
-    return undefined;
-  }
-  const rec = node as Record<string, unknown>;
-  for (const [k, v] of Object.entries(rec)) {
+const testo = (v: unknown): string | null => {
+  const s = String(v ?? "").trim();
+  return s ? s : null;
+};
+
+type Rec = Record<string, unknown>;
+
+const asRec = (v: unknown): Rec | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Rec) : null;
+
+const asArray = (v: unknown): Rec[] =>
+  Array.isArray(v) ? (v.filter((x) => x && typeof x === "object") as Rec[]) : [];
+
+/** Elenco soggetti sotto una chiave che può essere oggetto singolo o array. */
+export function elencoSoggetti(row: Rec, chiavi: string[]): Rec[] {
+  const out: Rec[] = [];
+  for (const [k, v] of Object.entries(row)) {
     const key = k.toLowerCase();
-    if (chiavi.some((c) => key === c || key.includes(c))) {
-      if (v !== null && v !== undefined && typeof v !== "object") return v;
-      if (v && typeof v === "object") {
-        const nome = trovaValore(v, ["denominazione", "ragione_sociale", "descrizione", "nome"]);
-        if (nome !== undefined) return nome;
-      }
-    }
+    if (!chiavi.some((c) => key.includes(c))) continue;
+    const obj = asRec(v);
+    if (obj) out.push(obj);
+    out.push(...asArray(v));
   }
-  for (const v of Object.values(rec)) {
-    const found = trovaValore(v, chiavi);
-    if (found !== undefined) return found;
-  }
-  return undefined;
+  return out;
 }
 
-/** Nodo (oggetto) corrispondente al primo campo che contiene una delle chiavi. */
-export function trovaOggetto(node: unknown, chiavi: string[]): Record<string, unknown> | null {
-  if (!node || typeof node !== "object") return null;
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const found = trovaOggetto(item, chiavi);
-      if (found) return found;
-    }
-    return null;
-  }
-  const rec = node as Record<string, unknown>;
-  for (const [k, v] of Object.entries(rec)) {
-    const key = k.toLowerCase();
-    if (chiavi.some((c) => key.includes(c)) && v && typeof v === "object" && !Array.isArray(v)) {
-      return v as Record<string, unknown>;
-    }
-  }
-  for (const v of Object.values(rec)) {
-    const found = trovaOggetto(v, chiavi);
-    if (found) return found;
-  }
-  return null;
-}
+const denominazione = (s: Rec | undefined): string | null =>
+  s ? testo(s.denominazione ?? s.ragione_sociale ?? s.nome) : null;
 
 /** Estrae gli elementi formulario da una risposta RENTRI, comunque impacchettati. */
-export function estraiElencoFormulari(data: unknown): Record<string, unknown>[] {
-  if (Array.isArray(data)) return data.filter((x) => x && typeof x === "object") as Record<string, unknown>[];
-  if (!data || typeof data !== "object") return [];
-  const rec = data as Record<string, unknown>;
+export function estraiElencoFormulari(data: unknown): Rec[] {
+  if (Array.isArray(data)) return asArray(data);
+  const rec = asRec(data);
+  if (!rec) return [];
   for (const key of ["formulari", "items", "elenco", "content", "risultati", "data", "value"]) {
-    const v = rec[key];
-    const found = estraiElencoFormulari(v);
+    const found = estraiElencoFormulari(rec[key]);
     if (found.length) return found;
   }
   return [];
 }
 
 /** Interpreta un singolo formulario RENTRI nella riga mostrata in tabella. */
-export function interpretaFormulario(row: Record<string, unknown>, cfNostro: string): FirIntermediarioRow {
-  const inter = trovaOggetto(row, ["intermediar"]);
-  const intermediarioCf =
-    (inter ? (trovaValore(inter, ["codice_fiscale", "identificativo", "cf", "partita_iva"]) as string) : null) ??
-    (trovaValore(row, ["intermediario_codice_fiscale", "intermediario_identificativo"]) as string) ??
-    null;
-  const intermediario =
-    (inter ? (trovaValore(inter, ["denominazione", "ragione_sociale", "nome"]) as string) : null) ??
-    (typeof trovaValore(row, ["intermediar"]) === "string"
-      ? (trovaValore(row, ["intermediar"]) as string)
-      : null);
-
+export function interpretaFormulario(row: Rec, cfNostro: string): FirIntermediarioRow {
+  const intermediari = elencoSoggetti(row, ["intermediar"]);
   const cfTarget = soloCifreLettere(cfNostro);
-  const siamoIntermediario =
-    Boolean(cfTarget) &&
-    (soloCifreLettere(intermediarioCf) === cfTarget ||
-      (inter ? soloCifreLettere(JSON.stringify(inter)).includes(cfTarget) : false));
+  const nostro = intermediari.find((i) => soloCifreLettere(i.codice_fiscale) === cfTarget);
+  const primo = nostro ?? intermediari[0];
 
-  const quantita = trovaValore(row, ["quantita", "peso"]);
-  const numero =
-    (trovaValore(row, ["numero_fir", "numerofir", "numero_formulario", "identificativo"]) as string) ?? "";
+  const quantita = row.quantita ?? asRec(row.rifiuto)?.quantita ?? null;
+  const quantitaValore = asRec(quantita)?.valore ?? quantita;
 
   return {
-    numeroFir: String(numero || "").trim(),
-    data: (trovaValore(row, ["data_emissione", "data_ora_emissione", "data_movimento", "data"]) as string) ?? null,
-    produttore: (trovaValore(trovaOggetto(row, ["produttor"]) ?? row, ["denominazione", "ragione_sociale"]) as string) ?? null,
-    destinatario: (trovaValore(trovaOggetto(row, ["destinatar"]) ?? {}, ["denominazione", "ragione_sociale"]) as string) ?? null,
-    trasportatore: (trovaValore(trovaOggetto(row, ["trasportator"]) ?? {}, ["denominazione", "ragione_sociale"]) as string) ?? null,
-    intermediario: intermediario ? String(intermediario) : null,
-    intermediarioCf: intermediarioCf ? String(intermediarioCf) : null,
-    eer: (trovaValore(row, ["codice_eer", "eer", "cer"]) as string) ?? null,
-    quantitaKg: quantita === undefined || quantita === null || quantita === "" ? null : Number(quantita),
-    stato: (trovaValore(row, ["stato"]) as string) ?? null,
-    siamoIntermediario,
+    numeroFir: String(row.numero_fir ?? row.numeroFir ?? row.identificativo ?? "").trim(),
+    data: testo(row.data_emissione ?? row.data_creazione ?? row.data),
+    produttore: denominazione(asRec(row.produttore) ?? elencoSoggetti(row, ["produttor"])[0]),
+    destinatario: denominazione(elencoSoggetti(row, ["destinatar"])[0]),
+    trasportatore: denominazione(elencoSoggetti(row, ["trasportator"])[0]),
+    intermediario: denominazione(primo),
+    intermediarioCf: primo ? testo(primo.codice_fiscale) : null,
+    eer: testo(row.codice_eer ?? row.eer ?? row.cer),
+    quantitaKg:
+      quantitaValore === null || quantitaValore === undefined || quantitaValore === ""
+        ? null
+        : Number(quantitaValore),
+    stato: testo(row.stato),
+    siamoIntermediario: Boolean(cfTarget) && Boolean(nostro),
     raw: row,
   };
 }
@@ -139,8 +110,23 @@ export interface ElencoFirIntermediarioResult {
   righe: FirIntermediarioRow[];
 }
 
+/** Filtra per data (il RENTRI ignora i parametri di periodo su questo endpoint). */
+export function filtraPerPeriodo(
+  righe: FirIntermediarioRow[],
+  dataDa?: string,
+  dataA?: string,
+): FirIntermediarioRow[] {
+  return righe.filter((r) => {
+    if (!r.data) return true;
+    const giorno = String(r.data).slice(0, 10);
+    if (dataDa && giorno < dataDa) return false;
+    if (dataA && giorno > dataA) return false;
+    return true;
+  });
+}
+
 /**
- * Elenco dei formulari del soggetto sul RENTRI in un intervallo di date,
+ * Elenco dei formulari visibili al soggetto sul RENTRI,
  * con evidenza di quelli dove risultiamo INTERMEDIARIO. Sola lettura.
  */
 export async function elencoFirIntermediario(
@@ -159,6 +145,6 @@ export async function elencoFirIntermediario(
     `/formulari/v1.0?${params.toString()}`,
     null,
   );
-  const righe = estraiElencoFormulari(response.data).map((r) => interpretaFormulario(r, cf));
-  return { response, righe };
+  const tutte = estraiElencoFormulari(response.data).map((r) => interpretaFormulario(r, cf));
+  return { response, righe: filtraPerPeriodo(tutte, opts.dataDa, opts.dataA) };
 }

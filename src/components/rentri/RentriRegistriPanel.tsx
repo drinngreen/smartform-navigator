@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock } from "lucide-react";
+import {
+  leggiMovimentiRegistroRentri,
+  normalizzaNumeroFir,
+} from "@/lib/rentriRegistroIntermediazione";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -120,6 +124,39 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
     },
   });
 
+  /**
+   * Per il registro di intermediazione lo stato reale di trasmissione si legge
+   * direttamente dal RENTRI (sola lettura): i movimenti già registrati riportano
+   * nelle annotazioni il numero del formulario.
+   */
+  const { data: registrati, isFetching: isFetchingRentri } = useQuery({
+    queryKey: ["rentri-registro-movimenti", cfg.id, cfg.registroId],
+    enabled: cfg.source === "intermediario",
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { movimenti } = await leggiMovimentiRegistroRentri(
+        "multy",
+        cfg.registroId,
+        "2025-01-01",
+        "2027-12-31",
+      );
+      const m = new Map<string, EsitoRow>();
+      movimenti
+        .filter((mv) => mv.chiaveFir && !mv.annullato)
+        .forEach((mv) => {
+          m.set(mv.chiaveFir as string, {
+            numero_interno: mv.progressivo ?? 0,
+            progressivi: mv.progressivo ? [String(mv.progressivo)] : [],
+            identificativi_rentri: mv.identificativo ? [mv.identificativo] : [],
+            transazione_id: null,
+            esito: "REGISTRATO",
+            registro_label: cfg.id,
+          });
+        });
+      return m;
+    },
+  });
+
   const esitiMap = useMemo(() => {
     const m = new Map<number, EsitoRow>();
     (data?.esiti ?? []).forEach((e) => m.set(Number(e.numero_interno), e));
@@ -135,8 +172,14 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       if (da !== db) return db.localeCompare(da);
       return Number(b.numero_interno ?? 0) - Number(a.numero_interno ?? 0);
     });
-    return list.map((r) => ({ riga: r, esito: esitiMap.get(Number(r.numero_interno)) ?? null }));
-  }, [data, esitiMap]);
+    return list.map((r) => ({
+      riga: r,
+      esito:
+        cfg.source === "intermediario"
+          ? registrati?.get(normalizzaNumeroFir(r.numero_formulario)) ?? null
+          : esitiMap.get(Number(r.numero_interno)) ?? null,
+    }));
+  }, [data, esitiMap, registrati, cfg.source]);
 
   const inviati = useMemo(() => righe.filter((x) => x.esito), [righe]);
   const daInviare = useMemo(() => righe.filter((x) => !x.esito), [righe]);
@@ -205,6 +248,14 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         {ultimoInvio && (
           <>
             {" "}Ultimo movimento con ricevuta RENTRI: <strong className="text-foreground">{fmtData(ultimoInvio)}</strong>.
+          </>
+        )}
+        {cfg.source === "intermediario" && (
+          <>
+            {" "}
+            {isFetchingRentri
+              ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
+              : `Stato letto direttamente dal RENTRI: ${registrati?.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
           </>
         )}
       </p>
