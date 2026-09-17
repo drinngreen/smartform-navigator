@@ -146,6 +146,22 @@ export function toRegistrazioneRentri(
   };
 }
 
+/**
+ * Chiave di riconoscimento di un movimento sul registro RENTRI:
+ * giorno + codice EER + quantità in kg. Il progressivo NON è utilizzabile
+ * perché è il RENTRI ad assegnarlo.
+ */
+export function chiaveMovimento(
+  data: string | null | undefined,
+  eer: string | null | undefined,
+  kg: number | null | undefined,
+): string | null {
+  const giorno = String(data ?? "").slice(0, 10);
+  const codice = String(eer ?? "").replace(/\D/g, "");
+  if (!giorno || !codice || kg === null || kg === undefined || Number.isNaN(Number(kg))) return null;
+  return `${giorno}|${codice}|${Number(kg).toFixed(3)}`;
+}
+
 /** Prossimo progressivo libero per l'anno, letto dal RENTRI (sola lettura). */
 async function prossimoProgressivo(
   cliente: RentriCliente,
