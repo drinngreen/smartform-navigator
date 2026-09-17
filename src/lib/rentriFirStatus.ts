@@ -32,11 +32,19 @@ export function classifyRentriDeparture(value: unknown, numeroFir: string): Rent
   if (!record) return "not_found";
 
   const state = String(record.stato ?? record.stato_formulario ?? "").trim().toUpperCase();
-  if (!state || state.includes("INSERIMENTO")) return "draft";
+  if (!state) return "draft";
 
-  const closed = /ACCETTAT|CHIUS|CONCLUS|RESPINT|RICEVUT/.test(state)
-    || Boolean(record.accettazione);
-  if (closed) return "closed";
+  // Stati precedenti alla firma di partenza: il FIR non è mai partito.
+  if (state.startsWith("INSERIMENTOTRASPORTO") || state.startsWith("FIRMAPRODUTTORE")
+    || state.startsWith("FIRMATRASPORTATORE")) return "draft";
+
+  // Ciclo concluso lato destinatario.
+  if (/CHIUS|CONCLUS|RESPINT|COMPLETAT/.test(state) || Boolean(record.accettazione)) return "closed";
+
+  // Firma di partenza avvenuta: il FIR è in viaggio (es. InserimentoAccettazione,
+  // FirmaDestinatario…). Lo conferma lo stato RENTRI, non la data locale.
+  if (state.startsWith("INSERIMENTOACCETTAZIONE") || state.startsWith("FIRMADESTINATARIO")
+    || state.includes("ACCETTA")) return "departed";
 
   const emissionDate = String(record.data_emissione ?? record.dataEmissione ?? "").trim();
   return emissionDate ? "departed" : "draft";
