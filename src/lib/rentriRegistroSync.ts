@@ -198,16 +198,37 @@ export async function inviaRegistroRentri(params: {
   });
   const transazioneId = esito.transazioneId ?? estraiTransazioneId(esito.invio.data);
 
-  const motivoScarto = esito.esitoFinale === "DA_ANALIZZARE"
+  // Il RENTRI non espone lo stato transazione per i registri: la conferma reale
+  // è la presenza dei progressivi appena inviati nel registro stesso.
+  let esitoFinale = esito.esitoFinale;
+  if (esitoFinale === "IN_VERIFICA") {
+    const attesi = registrazioni.map((_, i) => primoProgressivo + i);
+    try {
+      const { movimenti: presenti } = await leggiMovimentiRegistroRentri(
+        cliente,
+        registroId,
+        `${annoBase}-01-01`,
+        `${annoBase}-12-31`,
+      );
+      const set = new Set(
+        presenti.filter((m) => m.anno === annoBase).map((m) => Number(m.progressivo)),
+      );
+      if (attesi.every((p) => set.has(p))) esitoFinale = "CONFERMATO";
+    } catch {
+      /* resta IN_VERIFICA */
+    }
+  }
+
+  const motivoScarto = esitoFinale === "DA_ANALIZZARE"
     ? esito.dettaglioTransazione?.error
       ?? esito.invio.error
       ?? esito.invio.userMessage
       ?? "Il RENTRI ha segnalato un errore senza dettagli: controllare la transazione."
     : null;
 
-  const stato = esito.esitoFinale === "CONFERMATO"
+  const stato = esitoFinale === "CONFERMATO"
     ? "CONFERMATO"
-    : esito.esitoFinale === "IN_VERIFICA"
+    : esitoFinale === "IN_VERIFICA"
       ? "IN_ATTESA"
       : "ERRORE";
 
@@ -233,7 +254,7 @@ export async function inviaRegistroRentri(params: {
     response: esito.invio,
     transazioneId,
     invioId: inserted?.id ?? null,
-    esitoFinale: esito.esitoFinale,
+    esitoFinale,
     motivoScarto,
   };
 }

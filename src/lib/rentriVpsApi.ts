@@ -496,6 +496,10 @@ export async function inviaMovimentiRegistroVerificato(
   for (let i = 0; i < tentativi; i++) {
     await new Promise((r) => setTimeout(r, attesaMs));
     dettaglio = await statoTransazioneRegistro(cliente, transazioneId, registroId);
+    // Per i registri il RENTRI non espone l'endpoint transazioni: 404 non è uno
+    // scarto, è semplicemente "non consultabile". Si smette di interrogarlo e
+    // l'esito verrà verificato rileggendo il registro.
+    if (dettaglio.status === 404) break;
     if (!dettaglio.success) continue;
     const testo = JSON.stringify(dettaglio.data ?? {}).toUpperCase();
     if (/ERRORE|SCARTAT|RIFIUTAT|KO\b/.test(testo)) {
