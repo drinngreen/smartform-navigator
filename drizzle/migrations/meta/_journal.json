@@ -8,6 +8,13 @@
       "when": 1789639797679,
       "tag": "0000_fix_cernita_stock_movements_without_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789642562147,
+      "tag": "0001_enforce_dragon_cernita_atomicity_and_numbering",
+      "breakpoints": true
     }
   ]
 }
