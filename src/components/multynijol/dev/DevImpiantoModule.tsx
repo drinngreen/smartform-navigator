@@ -12,7 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { listIncomingXFir, signIncomingXFir } from "@/services/impiantoFirService";
+import { listIncomingXFir, signIncomingXFir, cercaFirRentriPerNumero } from "@/services/impiantoFirService";
 import type { FirEvent, FirSummary } from "@/types/impiantoFir";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -516,6 +516,57 @@ function ImpiantoFormulari() {
           <p className="text-sm text-muted-foreground">
             Questa lista interroga RENTRI lato Multyproget con ruolo destinatario e mostra solo i FIR in arrivo ancora da accettare e firmare.
           </p>
+
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+            <p className="text-xs uppercase tracking-wider text-emerald-400 font-mono">
+              Cerca un formulario sul RENTRI (numero e CER)
+            </p>
+            <div className="flex flex-col md:flex-row gap-2">
+              <Input
+                placeholder="Numero formulario (es. ZRZXR 000772 TM)"
+                value={ricercaNumero}
+                onChange={(e) => setRicercaNumero(e.target.value)}
+                className="bg-card/60 border-border/30 md:flex-1"
+              />
+              <Input
+                placeholder="CER (facoltativo)"
+                value={ricercaCer}
+                onChange={(e) => setRicercaCer(e.target.value)}
+                className="bg-card/60 border-border/30 md:w-48"
+              />
+              <Button
+                onClick={cercaSulRentri}
+                disabled={ricercaLoading || !ricercaNumero.trim()}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+              >
+                {ricercaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                Cerca sul RENTRI
+              </Button>
+              {risultatiRicerca.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setRisultatiRicerca([])} className="text-muted-foreground">
+                  Pulisci
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Sola lettura: il formulario viene letto dal RENTRI e si apre per pesata, esito e firma di chiusura. Nessun invio automatico.
+            </p>
+          </div>
+
+          {risultatiRicerca.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-emerald-400 font-mono uppercase">
+                Risultati dal RENTRI ({risultatiRicerca.length})
+              </p>
+              <ImpiantoFirList
+                items={risultatiRicerca}
+                loading={false}
+                color={IMPIANTO_RGB}
+                onSelect={setSelectedIncoming}
+              />
+            </div>
+          )}
+
           <ImpiantoFirList
             items={incomingItems}
             loading={incomingLoading}
