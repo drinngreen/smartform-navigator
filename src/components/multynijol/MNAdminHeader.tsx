@@ -104,8 +104,7 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
         {/* Notifications */}
         <NotificationBell
           appContext={currentContext === "niyol" ? "mn_niyol" : currentContext === "multyproget" ? "mn_multyproget" : "mn_admin"}
-          signCount={firDaFirmare}
-          onSignBadgeClick={() => navigate(currentContext ? `/mn/admin/${currentContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
+          onSignBadgeClick={() => navigate(routeContext ? `/mn/admin/${routeContext}/rentri-console?tab=dafirmare` : "/mn/admin")}
         />
 
         {/* Logout */}
