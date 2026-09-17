@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeSolaLettura } from "./DevGiacenzeSolaLettura";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
@@ -130,10 +131,20 @@ function DevSerbatoioOverview() {
 }
 
 export function DevImpiantoModule() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("impiantoSub") || "formulari");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const next = new URLSearchParams(searchParams);
+    next.set("impiantoSub", value);
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <div className="space-y-4">
       <DevSerbatoioOverview />
-      <Tabs defaultValue="formulari" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
           <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Plus className="h-4 w-4" /> Nuovo FIR
