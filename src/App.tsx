@@ -243,7 +243,6 @@ const App = () => (
                 <Route path="/app/comunicazioni" element={<ProtectedRoute><ComunicazioniPage /></ProtectedRoute>} />
                 <Route path="/app/profilo" element={<ProtectedRoute><ProfiloPage /></ProtectedRoute>} />
                 <Route path="/app/guida" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
-                <Route path="/app/modulo-alternativo" element={<ProtectedRoute><MNAppModuloAlternativoPage /></ProtectedRoute>} />
                 <Route path="/guida-completa" element={<ProtectedRoute><GuidaCompletaPage /></ProtectedRoute>} />
                 <Route path="/guidacollaboratori" element={<GuidaCollaboratoriPage />} />
                 <Route path="/guidaufficio" element={<ProtectedRoute><GuidaUfficioPage /></ProtectedRoute>} />
