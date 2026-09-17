@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock } from "lucide-react";
+import { Loader2, Send, CheckCircle2, RefreshCw, ClipboardList, Clock, FileSpreadsheet, Printer } from "lucide-react";
+import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import {
   leggiMovimentiRegistroRentri,
   normalizzaNumeroFir,
