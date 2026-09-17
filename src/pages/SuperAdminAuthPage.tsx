@@ -27,13 +27,14 @@ export default function SuperAdminAuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const lc = email.toLowerCase();
+    const raw = email.trim().toLowerCase();
+    const lc = raw.includes("@") ? raw : `${raw}@zoli.live`;
     if (!ALLOWED_EMAILS.includes(lc)) {
       toast.error("Accesso consentito solo a Super Admin");
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: lc, password });
     if (error) {
       toast.error("Credenziali non valide");
     } else {
