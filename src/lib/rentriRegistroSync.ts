@@ -226,9 +226,9 @@ export async function inviaRegistroRentri(params: {
       ?? "Il RENTRI ha segnalato un errore senza dettagli: controllare la transazione."
     : null;
 
-  const stato = esito.esitoFinale === "CONFERMATO"
+  const stato = esitoFinale === "CONFERMATO"
     ? "CONFERMATO"
-    : esito.esitoFinale === "IN_VERIFICA"
+    : esitoFinale === "IN_VERIFICA"
       ? "IN_ATTESA"
       : "ERRORE";
 
