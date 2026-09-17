@@ -451,11 +451,22 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                     <td className="px-3 py-2 font-mono text-[11px]">
                       {(e?.identificativi_rentri ?? []).join(" | ") || "—"}
                     </td>
+                    <td className="px-3 py-2">
+                      {!e && (
+                        <button
+                          type="button"
+                          onClick={() => setConferma([r])}
+                          className="flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-black"
+                        >
+                          <Send size={11} /> Invia
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {visibili.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">
                       Nessun movimento in questa vista.
                     </td>
                   </tr>
