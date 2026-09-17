@@ -215,8 +215,12 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="ddt" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
             <ClipboardList className="h-4 w-4" />DDT
           </TabsTrigger>
+          <TabsTrigger value="confronto-elenchi" className="gap-2 data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-300">
+            <FileSpreadsheet className="h-4 w-4" />Confronto elenchi
+          </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
