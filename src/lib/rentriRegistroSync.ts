@@ -8,6 +8,7 @@ import {
   type RentriCliente,
   type RentriVpsResponse,
 } from "@/lib/rentriVpsApi";
+import { leggiMovimentiRegistroRentri } from "@/lib/rentriRegistroIntermediazione";
 
 export interface MovimentoImpiantoRow {
   id: string;
