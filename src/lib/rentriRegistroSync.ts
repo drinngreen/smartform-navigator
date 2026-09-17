@@ -198,11 +198,14 @@ export async function inviaRegistroRentri(params: {
   });
   const transazioneId = esito.transazioneId ?? estraiTransazioneId(esito.invio.data);
 
-  // Il RENTRI non espone lo stato transazione per i registri: la conferma reale
-  // è la presenza dei progressivi appena inviati nel registro stesso.
+  // Il RENTRI non espone lo stato transazione per i registri e assegna DA SÉ il
+  // progressivo: la conferma reale è la comparsa nel registro dei movimenti
+  // appena inviati, riconosciuti per data + codice EER + quantità.
   let esitoFinale = esito.esitoFinale;
   if (esitoFinale === "IN_VERIFICA") {
-    const attesi = registrazioni.map((_, i) => primoProgressivo + i);
+    const attesi = movimenti.map((m) =>
+      chiaveMovimento(m.data_registrazione, m.codice_eer, m.quantita),
+    );
     try {
       const { movimenti: presenti } = await leggiMovimentiRegistroRentri(
         cliente,
@@ -211,13 +214,16 @@ export async function inviaRegistroRentri(params: {
         `${annoBase}-12-31`,
       );
       const set = new Set(
-        presenti.filter((m) => m.anno === annoBase).map((m) => Number(m.progressivo)),
+        presenti
+          .filter((m) => !m.annullato)
+          .map((m) => chiaveMovimento(m.dataRegistrazione, m.eer, m.quantitaKg)),
       );
-      if (attesi.every((p) => set.has(p))) esitoFinale = "CONFERMATO";
+      if (attesi.every((k) => k && set.has(k))) esitoFinale = "CONFERMATO";
     } catch {
       /* resta IN_VERIFICA */
     }
   }
+
 
   const motivoScarto = esitoFinale === "DA_ANALIZZARE"
     ? esito.dettaglioTransazione?.error
