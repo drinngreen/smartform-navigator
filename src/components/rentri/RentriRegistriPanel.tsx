@@ -11,6 +11,12 @@ import {
 import { inviaRegistroRentri, type MovimentoRentri } from "@/lib/rentriRegistroSync";
 import { RENTRI_UNITA_LOCALI, rentriConfigKey, type RentriCliente } from "@/lib/rentriVpsApi";
 import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
+import {
+  CONFINE_STORICO_INVIATI,
+  chiaveDatiMovimento,
+  statoRigaRegistro,
+  type EsitoTrasmissione,
+} from "@/lib/rentriStatoRegistri";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -24,18 +30,10 @@ export const REGISTRI_RENTRI = [
   { id: "NIYOL", label: "Niyol", tenant: NIYOL_TENANT_ID, registroId: "RTR31497PX0", source: "registro", cliente: "niyol" },
 ] as const;
 
-/**
- * Chiave di confronto per i movimenti che sul RENTRI non riportano il numero
- * formulario nelle annotazioni: data + codice EER + quantità in kg.
- */
-function chiaveDati(data: string | null, eer: string | null, kg: number | null): string | null {
-  const giorno = String(data ?? "").slice(0, 10);
-  const codice = String(eer ?? "").replace(/[^0-9]/g, "");
-  if (!giorno || !codice || kg === null || kg === undefined) return null;
-  return `${giorno}|${codice}|${Number(kg).toFixed(3)}`;
-}
-
-type RegistroId = (typeof REGISTRI_RENTRI)[number]["id"];
+type RegistroCfg = (typeof REGISTRI_RENTRI)[number];
+type RegistroId = RegistroCfg["id"];
+/** "TUTTI" = vista totale su tutti i registri. */
+type VistaId = RegistroId | "TUTTI";
 type Filtro = "tutti" | "da_inviare" | "inviati";
 
 interface RigaRegistro {
@@ -49,15 +47,9 @@ interface RigaRegistro {
   numero_formulario: string | null;
   quantita: number | null;
   origine?: "rentri_intermediario";
-}
-
-interface EsitoRow {
-  numero_interno: number;
-  progressivi: string[];
-  identificativi_rentri: string[];
-  transazione_id: string | null;
-  esito: string;
-  registro_label: string;
+  /** Registro di appartenenza: serve nella vista totale. */
+  registroId: RegistroId;
+  registroLabel: string;
 }
 
 const fmtKg = (v: number | null | undefined) => Number(v ?? 0).toLocaleString("it-IT");
@@ -65,6 +57,7 @@ const fmtData = (d: string | null | undefined) =>
   d ? new Date(`${d}T00:00:00`).toLocaleDateString("it-IT") : "—";
 
 const EXPORT_COLS_REGISTRO = [
+  { header: "Registro", key: "registroLabel", width: 28 },
   { header: "N. interno", key: "numero_interno", width: 12 },
   { header: "Data", key: "data_movimento", width: 12, format: (v: any) => fmtData(v) },
   { header: "C/S", key: "carico_scarico", width: 8 },
@@ -73,7 +66,7 @@ const EXPORT_COLS_REGISTRO = [
   { header: "Operazione", key: "tipo_operazione", width: 12 },
   { header: "Formulario", key: "numero_formulario", width: 18 },
   { header: "Kg", key: "quantita", width: 12, format: (v: any) => fmtKg(v) },
-  { header: "Stato RENTRI", key: "stato_rentri", width: 18 },
+  { header: "Stato RENTRI", key: "stato_rentri", width: 20 },
   { header: "Identificativo RENTRI", key: "identificativo_rentri", width: 26 },
 ];
 
@@ -93,154 +86,159 @@ export function rigaToMovimentoRentri(r: RigaRegistro, cliente: RentriCliente): 
   };
 }
 
-export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: RegistroId } = {}) {
-  const [registro, setRegistro] = useState<RegistroId>(registroIniziale ?? "MULTY_IMPIANTO");
+/** Movimenti candidati di un singolo registro (sola lettura). */
+async function caricaMovimentiRegistro(cfg: RegistroCfg): Promise<RigaRegistro[]> {
+  const base = { registroId: cfg.id, registroLabel: cfg.label };
+
+  if (cfg.source === "intermediario") {
+    const { response, righe } = await elencoFirIntermediario(cfg.cliente as RentriCliente, {
+      dataDa: "2025-01-01",
+      dataA: new Date().toISOString().slice(0, 10),
+    });
+    if (!response.success) throw new Error(response.userMessage || response.error || "Il RENTRI non ha risposto.");
+    return movimentiIntermediazioneDaFirRentri(righe).map((r) => ({
+      ...base,
+      id: r.id,
+      numero_interno: null,
+      data_movimento: r.data_movimento,
+      cer: r.cer,
+      descrizione: r.descrizione_rifiuto,
+      carico_scarico: r.tipo_movimento,
+      tipo_operazione: null,
+      numero_formulario: r.numero_fir,
+      quantita: r.quantita_kg,
+      origine: "rentri_intermediario" as const,
+    }));
+  }
+
+  if (cfg.source === "privati") {
+    const { data, error } = await supabase
+      .from("privati_conferimenti" as any)
+      .select("id, numero_progressivo, data, cer, kg_pesati, nome_privato")
+      .eq("tenant_id", cfg.tenant)
+      .order("data", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      ...base,
+      id: r.id,
+      numero_interno: r.numero_progressivo,
+      data_movimento: r.data,
+      cer: r.cer,
+      descrizione: r.nome_privato,
+      carico_scarico: "CARICO",
+      tipo_operazione: null,
+      numero_formulario: null,
+      quantita: r.kg_pesati,
+    }));
+  }
+
+  const { data, error } = await supabase
+    .from("registro_generale" as any)
+    .select(
+      "id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, quantita",
+    )
+    .eq("tenant_id", cfg.tenant)
+    .eq("registro", cfg.id)
+    .order("data_movimento", { ascending: false })
+    .order("numero_interno", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => ({ ...base, ...r })) as RigaRegistro[];
+}
+
+/** Movimenti già presenti sul registro RENTRI, indicizzati per FIR e per dati. */
+async function leggiRegistratiRentri(cfg: RegistroCfg) {
+  const perFir = new Map<string, EsitoTrasmissione>();
+  const perDati = new Map<string, EsitoTrasmissione>();
+  const { movimenti } = await leggiMovimentiRegistroRentri(
+    cfg.cliente as RentriCliente,
+    cfg.registroId,
+    "2025-01-01",
+    "2027-12-31",
+  );
+  movimenti
+    .filter((mv) => !mv.annullato)
+    .forEach((mv) => {
+      const esito: EsitoTrasmissione = {
+        stato: "REGISTRATO",
+        progressivi: mv.progressivo ? [String(mv.progressivo)] : [],
+        identificativi: mv.identificativo ? [mv.identificativo] : [],
+        etichetta: "INVIATO",
+      };
+      if (mv.chiaveFir) perFir.set(mv.chiaveFir, esito);
+      const k = chiaveDatiMovimento(mv.dataRegistrazione, mv.eer, mv.quantitaKg);
+      if (k) perDati.set(k, esito);
+    });
+  return { perFir, perDati };
+}
+
+export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: VistaId } = {}) {
+  const [vista, setVista] = useState<VistaId>(registroIniziale ?? "MULTY_IMPIANTO");
   const [filtro, setFiltro] = useState<Filtro>("tutti");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [conferma, setConferma] = useState<RigaRegistro[] | null>(null);
   const [inviando, setInviando] = useState(false);
   const queryClient = useQueryClient();
 
-  const cfg = REGISTRI_RENTRI.find((r) => r.id === registro)!;
+  /** Registri coinvolti: uno solo, oppure tutti nella vista totale. */
+  const cfgs = useMemo<RegistroCfg[]>(
+    () => (vista === "TUTTI" ? [...REGISTRI_RENTRI] : REGISTRI_RENTRI.filter((r) => r.id === vista)),
+    [vista],
+  );
+  const cfgSingolo = vista === "TUTTI" ? null : cfgs[0];
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["rentri-registri-panel", registro],
+  const { data: movimenti, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["rentri-registri-panel", vista],
     queryFn: async () => {
-      if (cfg.source === "intermediario") {
-        const [{ response, righe }, esitiRes] = await Promise.all([
-          elencoFirIntermediario(cfg.cliente as RentriCliente, {
-            dataDa: "2025-01-01",
-            dataA: new Date().toISOString().slice(0, 10),
-          }),
-          supabase
-            .from("rentri_registro_esiti" as any)
-            .select("numero_interno, progressivi, identificativi_rentri, transazione_id, esito, registro_label")
-            .eq("registro_label", registro),
-        ]);
-        if (!response.success) throw new Error(response.userMessage || response.error || "Il RENTRI non ha risposto.");
-        if (esitiRes.error) throw esitiRes.error;
-        const movimenti: RigaRegistro[] = movimentiIntermediazioneDaFirRentri(righe).map((r) => ({
-          id: r.id,
-          numero_interno: null,
-          data_movimento: r.data_movimento,
-          cer: r.cer,
-          descrizione: r.descrizione_rifiuto,
-          carico_scarico: r.tipo_movimento,
-          tipo_operazione: null,
-          numero_formulario: r.numero_fir,
-          quantita: r.quantita_kg,
-          origine: "rentri_intermediario",
-        }));
-        return { movimenti, esiti: (esitiRes.data ?? []) as unknown as EsitoRow[] };
-      }
-      const [movRes, esitiRes] = await Promise.all([
-        cfg.source === "privati"
-          ? supabase
-              .from("privati_conferimenti" as any)
-              .select("id, numero_progressivo, data, cer, kg_pesati, nome_privato")
-              .eq("tenant_id", cfg.tenant)
-              .order("data", { ascending: false })
-              .order("numero_progressivo", { ascending: false })
-          : supabase
-              .from("registro_generale" as any)
-              .select(
-                "id, numero_interno, data_movimento, cer, descrizione, carico_scarico, tipo_operazione, numero_formulario, quantita",
-              )
-              .eq("tenant_id", cfg.tenant)
-              .eq("registro", registro)
-              .order("data_movimento", { ascending: false })
-              .order("numero_interno", { ascending: false }),
-        supabase
-          .from("rentri_registro_esiti" as any)
-          .select("numero_interno, progressivi, identificativi_rentri, transazione_id, esito, registro_label")
-          .eq("registro_label", registro),
-      ]);
-      if (movRes.error) throw movRes.error;
-      if (esitiRes.error) throw esitiRes.error;
-      const movimenti: RigaRegistro[] =
-        cfg.source === "privati"
-          ? (movRes.data ?? []).map((r: any) => ({
-              id: r.id,
-              numero_interno: r.numero_progressivo,
-              data_movimento: r.data,
-              cer: r.cer,
-              descrizione: r.nome_privato,
-              carico_scarico: "CARICO",
-              tipo_operazione: null,
-              numero_formulario: null,
-              quantita: r.kg_pesati,
-            }))
-          : ((movRes.data ?? []) as unknown as RigaRegistro[]);
-      return {
-        movimenti,
-        esiti: (esitiRes.data ?? []) as unknown as EsitoRow[],
-      };
+      const blocchi = await Promise.all(cfgs.map((c) => caricaMovimentiRegistro(c)));
+      return blocchi.flat();
     },
   });
 
   /**
-   * Per il registro di intermediazione lo stato reale di trasmissione si legge
-   * direttamente dal RENTRI (sola lettura): i movimenti già registrati riportano
-   * nelle annotazioni il numero del formulario.
+   * Stato reale di trasmissione: si legge SEMPRE dal RENTRI, per ogni registro.
+   * Il periodo fino al 31/07/2026 è già stato trasmesso da terminale.
    */
   const { data: registrati, isFetching: isFetchingRentri } = useQuery({
-    queryKey: ["rentri-registro-movimenti", cfg.id, cfg.registroId],
-    enabled: cfg.source === "intermediario",
+    queryKey: ["rentri-registro-movimenti", vista],
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { movimenti } = await leggiMovimentiRegistroRentri(
-        "multy",
-        cfg.registroId,
-        "2025-01-01",
-        "2027-12-31",
-      );
-      const perFir = new Map<string, EsitoRow>();
-      const perDati = new Map<string, EsitoRow>();
-      movimenti
-        .filter((mv) => !mv.annullato)
-        .forEach((mv) => {
-          const esito: EsitoRow = {
-            numero_interno: mv.progressivo ?? 0,
-            progressivi: mv.progressivo ? [String(mv.progressivo)] : [],
-            identificativi_rentri: mv.identificativo ? [mv.identificativo] : [],
-            transazione_id: null,
-            esito: "REGISTRATO",
-            registro_label: cfg.id,
-          };
-          if (mv.chiaveFir) perFir.set(mv.chiaveFir, esito);
-          const k = chiaveDati(mv.dataRegistrazione, mv.eer, mv.quantitaKg);
-          if (k) perDati.set(k, esito);
-        });
-      return { perFir, perDati };
+      const mappa = new Map<RegistroId, { perFir: Map<string, EsitoTrasmissione>; perDati: Map<string, EsitoTrasmissione> }>();
+      for (const c of cfgs) {
+        try {
+          mappa.set(c.id, await leggiRegistratiRentri(c));
+        } catch {
+          mappa.set(c.id, { perFir: new Map(), perDati: new Map() });
+        }
+      }
+      return mappa;
     },
   });
 
-
-  const esitiMap = useMemo(() => {
-    const m = new Map<number, EsitoRow>();
-    (data?.esiti ?? []).forEach((e) => m.set(Number(e.numero_interno), e));
-    return m;
-  }, [data]);
-
-  /** Tutti i movimenti in ordine cronologico inverso (più recente in alto). */
+  /** Tutti i movimenti in ordine cronologico inverso con il rispettivo stato. */
   const righe = useMemo(() => {
-    const list = [...(data?.movimenti ?? [])];
+    const list = [...(movimenti ?? [])];
     list.sort((a, b) => {
       const da = a.data_movimento ?? "";
       const db = b.data_movimento ?? "";
       if (da !== db) return db.localeCompare(da);
       return Number(b.numero_interno ?? 0) - Number(a.numero_interno ?? 0);
     });
-    return list.map((r) => ({
-      riga: r,
-      esito:
-        cfg.source === "intermediario"
-          ? registrati?.perFir.get(normalizzaNumeroFir(r.numero_formulario)) ??
-            registrati?.perDati.get(chiaveDati(r.data_movimento, r.cer, r.quantita) ?? "_") ??
-            null
-          : esitiMap.get(Number(r.numero_interno)) ?? null,
-    }));
-  }, [data, esitiMap, registrati, cfg.source]);
+    const vuoto = { perFir: new Map<string, EsitoTrasmissione>(), perDati: new Map<string, EsitoTrasmissione>() };
+    return list.map((r) => {
+      const idx = registrati?.get(r.registroId) ?? vuoto;
+      return {
+        riga: r,
+        esito: statoRigaRegistro({
+          data: r.data_movimento,
+          eer: r.cer,
+          kg: r.quantita,
+          chiaveFir: r.numero_formulario ? normalizzaNumeroFir(r.numero_formulario) : null,
+          perFir: idx.perFir,
+          perDati: idx.perDati,
+        }),
+      };
+    });
+  }, [movimenti, registrati]);
 
   const inviati = useMemo(() => righe.filter((x) => x.esito), [righe]);
   const daInviare = useMemo(() => righe.filter((x) => !x.esito), [righe]);
@@ -251,21 +249,15 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
     return righe;
   }, [filtro, righe, inviati, daInviare]);
 
-  /** Righe appiattite per export Excel/PDF, con lo stato di trasmissione letto dal RENTRI. */
   const righeExport = useMemo(
     () =>
       visibili.map((x) => ({
         ...x.riga,
-        stato_rentri: x.esito ? "INVIATO" : "Da inviare",
-        identificativo_rentri: x.esito?.identificativi_rentri?.join(", ") || "",
+        stato_rentri: x.esito?.etichetta ?? "Da inviare",
+        identificativo_rentri: x.esito?.identificativi?.join(", ") || "",
       })),
     [visibili],
   );
-
-  const ultimoInvio = useMemo(() => {
-    const date = inviati.map((x) => x.riga.data_movimento ?? "").filter(Boolean).sort();
-    return date.length ? date[date.length - 1] : null;
-  }, [inviati]);
 
   const toggle = (id: string) =>
     setSel((prev) => {
@@ -277,8 +269,14 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
   /** Invio reale al registro RENTRI: parte solo dal popup di conferma. */
   const eseguiInvio = async () => {
     if (!conferma || conferma.length === 0) return;
-    const movimenti = conferma.map((r) => rigaToMovimentoRentri(r, cfg.cliente as RentriCliente));
-    const invalide = movimenti.filter((m) => !m.codice_eer || !(m.quantita > 0));
+    const registriCoinvolti = new Set(conferma.map((r) => r.registroId));
+    if (registriCoinvolti.size > 1) {
+      toast.error("Seleziona movimenti di un solo registro per volta: ogni registro RENTRI è distinto.");
+      return;
+    }
+    const cfg = REGISTRI_RENTRI.find((r) => r.id === conferma[0].registroId)!;
+    const movs = conferma.map((r) => rigaToMovimentoRentri(r, cfg.cliente as RentriCliente));
+    const invalide = movs.filter((m) => !m.codice_eer || !(m.quantita > 0));
     if (invalide.length) {
       toast.error("Movimenti incompleti: servono codice CER e quantità maggiore di zero.");
       return;
@@ -289,10 +287,10 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
         cliente: cfg.cliente as RentriCliente,
         registroId: cfg.registroId,
         tenantId: cfg.tenant,
-        movimenti,
+        movimenti: movs,
       });
       if (esito.esitoFinale === "CONFERMATO") {
-        toast.success(`RENTRI ha registrato ${movimenti.length} movimenti.`);
+        toast.success(`RENTRI ha registrato ${movs.length} movimenti.`);
       } else if (esito.esitoFinale === "IN_VERIFICA") {
         toast.info("Invio preso in carico dal RENTRI: l'esito definitivo arriva a breve.");
       } else {
@@ -300,8 +298,6 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       }
       setConferma(null);
       setSel(new Set());
-      // Lo stato "INVIATO" arriva dalla rilettura del registro RENTRI: va
-      // invalidata anche quella cache, altrimenti resta il dato vecchio.
       await queryClient.invalidateQueries({ queryKey: ["rentri-registro-movimenti"] });
       await refetch();
     } catch (err) {
@@ -320,20 +316,25 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
     { key: "inviati", label: "Inviati", count: inviati.length },
   ];
 
+  const opzioni: { id: VistaId; label: string }[] = [
+    { id: "TUTTI", label: "Vista totale — tutti i registri" },
+    ...REGISTRI_RENTRI.map((r) => ({ id: r.id as VistaId, label: r.label })),
+  ];
+
   return (
     <div className="space-y-4">
       {/* Selettore registro */}
       <div className="flex flex-wrap items-center gap-2">
-        {REGISTRI_RENTRI.map((r) => (
+        {opzioni.map((r) => (
           <button
             key={r.id}
             type="button"
             onClick={() => {
-              setRegistro(r.id);
+              setVista(r.id);
               setSel(new Set());
             }}
             className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-all ${
-              registro === r.id
+              vista === r.id
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
             }`}
@@ -352,21 +353,19 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Registro RENTRI <span className="font-mono text-foreground">{cfg.registroId}</span> — elenco cronologico dal
-        movimento più recente al più vecchio, con lo stato di trasmissione di ogni riga.
-        {ultimoInvio && (
+        {cfgSingolo ? (
           <>
-            {" "}Ultimo movimento con ricevuta RENTRI: <strong className="text-foreground">{fmtData(ultimoInvio)}</strong>.
+            Registro RENTRI <span className="font-mono text-foreground">{cfgSingolo.registroId}</span> —{" "}
           </>
+        ) : (
+          <>Vista totale su tutti i registri — </>
         )}
-        {cfg.source === "intermediario" && (
-          <>
-            {" "}
-            {isFetchingRentri
-              ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
-              : `Stato letto direttamente dal RENTRI: ${registrati?.perDati.size ?? 0} movimenti già registrati sul registro di intermediazione.`}
-          </>
-        )}
+        elenco cronologico dal movimento più recente al più vecchio.{" "}
+        {isFetchingRentri
+          ? "Sto leggendo dal RENTRI quali movimenti risultano già registrati…"
+          : "Lo stato è letto direttamente dal RENTRI."}{" "}
+        Tutti i movimenti fino al <strong className="text-foreground">{fmtData(CONFINE_STORICO_INVIATI)}</strong>{" "}
+        risultano già trasmessi da terminale e non sono più inviabili.
       </p>
 
       {isLoading ? (
@@ -392,7 +391,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               <button
                 type="button"
                 disabled={visibili.length === 0}
-                onClick={() => exportToExcel(righeExport, EXPORT_COLS_REGISTRO, `registro-${cfg.id.toLowerCase()}`, "Registro")}
+                onClick={() => exportToExcel(righeExport, EXPORT_COLS_REGISTRO, `registro-${String(vista).toLowerCase()}`, "Registro")}
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
               >
                 <FileSpreadsheet size={13} /> Excel
@@ -404,8 +403,8 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                   exportToPdf(
                     righeExport,
                     EXPORT_COLS_REGISTRO,
-                    `registro-${cfg.id.toLowerCase()}`,
-                    `${cfg.label} — Registro RENTRI ${cfg.registroId}\n${visibili.length} movimenti`,
+                    `registro-${String(vista).toLowerCase()}`,
+                    `${cfgSingolo ? cfgSingolo.label : "Tutti i registri"} — Registri RENTRI\n${visibili.length} movimenti`,
                   )
                 }
                 className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
@@ -439,6 +438,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                 <tr>
                   <th className="px-3 py-2" />
                   <th className="px-3 py-2 text-left">Stato</th>
+                  {vista === "TUTTI" && <th className="px-3 py-2 text-left">Registro</th>}
                   <th className="px-3 py-2 text-left">N. Int.</th>
                   <th className="px-3 py-2 text-left">Data</th>
                   <th className="px-3 py-2 text-left">C./S.</th>
@@ -453,7 +453,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
               <tbody>
                 {visibili.map(({ riga: r, esito: e }) => (
                   <tr
-                    key={r.id}
+                    key={`${r.registroId}-${r.id}`}
                     className={`border-t border-border/20 ${e ? "bg-emerald-500/5" : "bg-amber-500/5"}`}
                   >
                     <td className="px-3 py-2">
@@ -464,7 +464,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                     <td className="px-3 py-2">
                       {e ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
-                          <CheckCircle2 size={11} /> INVIATO
+                          <CheckCircle2 size={11} /> {e.etichetta}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
@@ -472,6 +472,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                         </span>
                       )}
                     </td>
+                    {vista === "TUTTI" && <td className="px-3 py-2 text-xs">{r.registroLabel}</td>}
                     <td className="px-3 py-2 font-mono">{r.numero_interno ?? "—"}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{fmtData(r.data_movimento)}</td>
                     <td className="px-3 py-2">{r.carico_scarico ?? "—"}</td>
@@ -480,7 +481,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                     <td className="px-3 py-2 font-mono text-xs">{r.numero_formulario ?? "—"}</td>
                     <td className="px-3 py-2 font-mono text-xs">{(e?.progressivi ?? []).join(", ") || "—"}</td>
                     <td className="px-3 py-2 font-mono text-[11px]">
-                      {(e?.identificativi_rentri ?? []).join(" | ") || "—"}
+                      {(e?.identificativi ?? []).join(" | ") || "—"}
                     </td>
                     <td className="px-3 py-2">
                       {!e && (
@@ -497,7 +498,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
                 ))}
                 {visibili.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={12} className="px-3 py-6 text-center text-muted-foreground">
                       Nessun movimento in questa vista.
                     </td>
                   </tr>
@@ -524,7 +525,7 @@ export function RentriRegistriPanel({ registroIniziale }: { registroIniziale?: R
             <p className="text-sm text-muted-foreground">
               Stai per trasmettere <strong className="text-foreground">{conferma.length}</strong>{" "}
               {conferma.length === 1 ? "movimento" : "movimenti"} al registro{" "}
-              <span className="font-mono text-foreground">{cfg.registroId}</span> ({cfg.label}). L'operazione è reale e
+              <span className="font-mono text-foreground">{conferma[0].registroLabel}</span>. L'operazione è reale e
               non si annulla.
             </p>
             <div className="max-h-56 overflow-auto rounded-lg border border-border/40 text-xs">
