@@ -2,3 +2,4 @@
 - [x] Audit strutturale cernite e numerazioni: garantire atomicità e idempotenza
 - [x] Aggiungere guardie e test di invarianti senza modificare dati storici
 - [x] Verifica completa con snapshot prima/dopo e smoke
+- [ ] Correggere il flusso di partenza FIR digitale: trasporto, stato/azioni, hash, firma valida, acquisizione e verifica finale (nessun invio reale senza autorizzazione)
