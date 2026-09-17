@@ -95,7 +95,9 @@ export async function listIncomingXFir(
 ): Promise<FirSummary[]> {
   const res = await listaFirInArrivoDestinatario(cliente, identificativoSoggetto, numIscrSito);
   if (!res.success) {
-    if (isRentriOfflineResponse(res)) return [];
+    // Errori temporanei del RENTRI (offline o 5xx "sys.genericError") non devono
+    // far esplodere la pagina: l'elenco resta vuoto e si riprova al refresh.
+    if (isRentriOfflineResponse(res) || res.status >= 500) return [];
     throw new Error(res.error || "Errore recupero FIR in arrivo");
   }
 
@@ -149,6 +151,7 @@ export async function cercaFirRentriPerNumero(
   const res = await ricercaFir(cliente, numero);
   if (!res.success) {
     if (isRentriOfflineResponse(res)) return [];
+    if (res.status >= 500) throw new Error("RENTRI momentaneamente non disponibile: riprova tra poco");
     throw new Error(res.error || "Formulario non trovato sul RENTRI");
   }
 
