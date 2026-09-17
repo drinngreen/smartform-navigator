@@ -27,13 +27,14 @@ export default function SuperAdminAuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const lc = email.toLowerCase();
+    const raw = email.trim().toLowerCase();
+    const lc = raw.includes("@") ? raw : `${raw}@zoli.live`;
     if (!ALLOWED_EMAILS.includes(lc)) {
       toast.error("Accesso consentito solo a Super Admin");
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: lc, password });
     if (error) {
       toast.error("Credenziali non valide");
     } else {
@@ -71,7 +72,7 @@ export default function SuperAdminAuthPage() {
               <label className="text-sm text-muted-foreground mb-1 block">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="superadmin@zoli.live" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500" />
+                <input type="text" autoCapitalize="none" autoCorrect="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="superadmin" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500" />
               </div>
             </div>
             <div>

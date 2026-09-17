@@ -29,12 +29,15 @@ export default function MNAdminAuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.toLowerCase() !== ALLOWED_EMAIL) {
-      toast.error("Accesso consentito solo a multyniyol@zoli.live");
+    // Accetta anche il solo nome utente senza "@": completa automaticamente il dominio.
+    const raw = email.trim().toLowerCase();
+    const normalized = raw.includes("@") ? raw : `${raw}@zoli.live`;
+    if (normalized !== ALLOWED_EMAIL) {
+      toast.error("Accesso consentito solo a multyniyol");
       return;
     }
     setIsSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
     if (error) {
       toast.error("Credenziali non valide");
     } else {
@@ -69,7 +72,7 @@ export default function MNAdminAuthPage() {
               <label className="text-sm text-muted-foreground mb-1 block">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="multyniyol@zoli.live" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input type="text" autoCapitalize="none" autoCorrect="off" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="multyniyol" className="w-full pl-10 pr-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
             </div>
             <div>
