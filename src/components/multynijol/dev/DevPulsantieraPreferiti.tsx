@@ -12,6 +12,7 @@ import {
   Plus,
   X,
   Printer,
+  Scissors,
 } from "lucide-react";
 
 /**
@@ -36,6 +37,7 @@ export function scorciatoieDisponibili(context: string): ScorciatoiaPreferita[] 
     { id: "movimenti-rentri", label: "Movimenti RENTRI", path: `${base}/rentri-console?tab=registriufficiali`, icon: <Database size={16} /> },
     { id: "compila-fir", label: "Compila FIR", path: `${base}/rentri-console?tab=nuovo`, icon: <FileText size={16} /> },
     { id: "giacenze", label: "Giacenze", path: `${base}?tab=impianto&impiantoSub=giacenze`, icon: <Warehouse size={16} /> },
+    { id: "cernite", label: "Cernite", path: `${base}?tab=impianto&impiantoSub=cernite`, icon: <Scissors size={16} /> },
     { id: "conferimenti-privati", label: "Conferimenti privati", path: `${base}/magazzino`, icon: <Warehouse size={16} /> },
     { id: "intermediazione", label: "Intermediazione", path: `${base}/rentri-console?tab=intermediario`, icon: <Handshake size={16} /> },
     { id: "fir-cartacei", label: "FIR cartacei", path: `${base}/rentri-console?tab=cartacei`, icon: <Printer size={16} /> },
@@ -44,15 +46,16 @@ export function scorciatoieDisponibili(context: string): ScorciatoiaPreferita[] 
   ];
 }
 
-const PREDEFINITI = ["registri-cs", "invii-rentri", "movimenti-rentri", "compila-fir", "giacenze"];
+const PREDEFINITI = ["registri-cs", "invii-rentri", "movimenti-rentri", "compila-fir", "giacenze", "cernite"];
 
 function leggiPreferiti(): string[] {
   try {
     const raw = localStorage.getItem(CHIAVE_STORAGE);
     const parsed = raw ? JSON.parse(raw) : null;
     if (Array.isArray(parsed) && parsed.every((x) => typeof x === "string")) {
-      const senzaDragon = parsed.filter((id) => id !== "cernite");
-      return senzaDragon.includes("giacenze") ? senzaDragon : [...senzaDragon, "giacenze"];
+      const conBase = [...parsed];
+      for (const id of ["giacenze", "cernite"]) if (!conBase.includes(id)) conBase.push(id);
+      return conBase;
     }
   } catch {
     /* preferenza non leggibile: si riparte dai predefiniti */
