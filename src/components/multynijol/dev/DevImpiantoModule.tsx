@@ -28,13 +28,14 @@ import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
   Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
-  ClipboardList, Truck, Trash2,
+  ClipboardList, Truck, Trash2, Scissors,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
 import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
+import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -152,6 +153,9 @@ export function DevImpiantoModule() {
           <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Package className="h-4 w-4" /> Giacenze
           </TabsTrigger>
+          <TabsTrigger value="cernite" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Scissors className="h-4 w-4" /> Cernite
+          </TabsTrigger>
           <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <FileText className="h-4 w-4" /> Formulari
           </TabsTrigger>
@@ -177,6 +181,9 @@ export function DevImpiantoModule() {
         </TabsContent>
         <TabsContent value="giacenze">
           <DevGiacenzeModule />
+        </TabsContent>
+        <TabsContent value="cernite">
+          <DevMagazzinoModule />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
