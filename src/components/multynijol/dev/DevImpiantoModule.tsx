@@ -135,6 +135,14 @@ export function DevImpiantoModule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("impiantoSub") || "formulari");
 
+  // Se l'URL cambia (es. preferito "Giacenze" cliccato mentre Impianto è già aperto),
+  // segui il sotto-tab indicato dall'URL invece di restare fermo.
+  const impiantoSubUrl = searchParams.get("impiantoSub");
+  useEffect(() => {
+    if (impiantoSubUrl && impiantoSubUrl !== activeTab) setActiveTab(impiantoSubUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [impiantoSubUrl]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     const next = new URLSearchParams(searchParams);
