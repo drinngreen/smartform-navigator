@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,28 +48,24 @@ export default function MNDevDashboardPage() {
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Persisted tab + sub-tab via URL params (so reload keeps the user where they were)
-  const [tab, setTab] = useState<string>(searchParams.get("tab") || "impianto");
-  const [registriSub, setRegistriSub] = useState<string>(searchParams.get("sub") || "intermediario");
+  // L'URL è l'unica fonte della scheda attiva: evita che uno stato precedente
+  // annulli il click sui preferiti (in particolare Impianto → Giacenze).
+  const tab = searchParams.get("tab") || "impianto";
+  const registriSub = searchParams.get("sub") || "intermediario";
 
-  // Sync state -> URL (replace, no history pollution)
-  useEffect(() => {
+  const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
-    next.set("tab", tab);
-    if (tab === "registri") next.set("sub", registriSub);
-    else next.delete("sub");
+    next.set("tab", value);
+    if (value !== "registri") next.delete("sub");
     setSearchParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, registriSub]);
+  };
 
-  // React to back/forward URL changes
-  useEffect(() => {
-    const t = searchParams.get("tab");
-    const s = searchParams.get("sub");
-    if (t && t !== tab) setTab(t);
-    if (s && s !== registriSub) setRegistriSub(s);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  const handleRegistriSubChange = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", "registri");
+    next.set("sub", value);
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
@@ -163,7 +158,7 @@ export default function MNDevDashboardPage() {
 
 
 
-      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
@@ -223,7 +218,7 @@ export default function MNDevDashboardPage() {
 
 
         <TabsContent value="registri">
-          <Tabs value={registriSub} onValueChange={setRegistriSub} className="space-y-4">
+          <Tabs value={registriSub} onValueChange={handleRegistriSubChange} className="space-y-4">
             <TabsList className="bg-card/40 border border-border/30 p-1">
               <TabsTrigger value="intermediario" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
                 <Globe className="h-4 w-4" />Intermediario
