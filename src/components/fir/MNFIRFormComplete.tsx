@@ -38,6 +38,7 @@ import { syncFirFinalToRegistryAndInventory, COMPANY_PRESETS, MULTY_TENANT_ID_CO
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
+import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
