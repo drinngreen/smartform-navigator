@@ -152,6 +152,9 @@ export function DevImpiantoModule() {
           <TabsTrigger value="giacenze" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Package className="h-4 w-4" /> Giacenze
           </TabsTrigger>
+          <TabsTrigger value="cernite" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Scissors className="h-4 w-4" /> Cernite
+          </TabsTrigger>
           <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <FileText className="h-4 w-4" /> Formulari
           </TabsTrigger>
