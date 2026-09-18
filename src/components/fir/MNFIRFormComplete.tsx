@@ -1683,6 +1683,27 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <p className="text-center text-[10px] font-mono uppercase tracking-wider text-white/50">
                 Primo invio al RENTRI: numero ufficiale e QR validi per i controlli. Registro e giacenze restano fermi.
               </p>
+              {Boolean(String(d.selectedFirNumber ?? "").trim()) && (
+                <PartenzaXfirPanel
+                  cliente={resolveSocietaId(activeTenantId, activeMnContext) as any}
+                  numeroFir={String(d.selectedFirNumber).trim()}
+                  datiTrasporto={{
+                    trasportatore_id: 1,
+                    tipo_trasporto: "Terrestre",
+                    targa_automezzo: String(d.targaAutomezzo ?? "").replace(/\s+/g, "").toUpperCase(),
+                    ...(String(d.targaRimorchio ?? "").trim()
+                      ? { targa_rimorchio: String(d.targaRimorchio).replace(/\s+/g, "").toUpperCase() }
+                      : {}),
+                    conducente: {
+                      nome: String(d.conducenteNomeCognome ?? "").trim().split(/\s+/)[0] ?? "",
+                      cognome: String(d.conducenteNomeCognome ?? "").trim().split(/\s+/).slice(1).join(" "),
+                    },
+                    data_ora_inizio_trasporto:
+                      String(d.oraDataInizioTrasporto ?? "").trim() || new Date().toISOString(),
+                  }}
+                  onPartito={() => useMNFIRStore.setState({ workflowStatus: "inviato" })}
+                />
+              )}
             </>
           )}
 
