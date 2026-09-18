@@ -850,6 +850,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   const diarioAutore = `${profile?.nome ?? ""} ${profile?.cognome ?? ""}`.trim() || user?.email || "app";
   useEffect(() => {
     if (!store.editingFirId || store.workflowStatus !== "bozza") return;
+    // In ufficio è l'ufficio stesso a scrivere: ricaricare la riga dal database
+    // cancellerebbe quello che l'operatore sta compilando (date autorizzazioni ecc.).
+    // Il ricarico automatico serve solo nell'app dell'autista.
+    if (location.pathname.startsWith("/mn/admin") || location.pathname.startsWith("/admin")) return;
     const id = store.editingFirId;
     const ch = supabase
       .channel(`fir-form-office-${id}`)
