@@ -70,6 +70,12 @@ interface CerRow {
   saldo: number;
 }
 
+interface GiacenzaRow {
+  cer: string;
+  descrizione_cer: string | null;
+  quantita_kg: number;
+}
+
 
 export function DevGiacenzeModule() {
   const queryClient = useQueryClient();
@@ -120,10 +126,10 @@ export function DevGiacenzeModule() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("magazzino_giacenze")
-        .select("cer, descrizione_cer")
+        .select("cer, descrizione_cer, quantita_kg")
         .eq("tenant_id", MULTY_TENANT_ID);
       if (error) throw error;
-      return (data ?? []) as { cer: string; descrizione_cer: string | null }[];
+      return (data ?? []) as GiacenzaRow[];
     },
   });
 
@@ -202,6 +208,21 @@ export function DevGiacenzeModule() {
       }
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
+
+    // La vista corrente deve coincidere con la giacenza consolidata. Il vecchio
+    // archivio Dragon resta soltanto la base per il dettaglio carico/scarico:
+    // l'eventuale differenza viene esposta sul lato corretto, senza scritture.
+    if (!dataDal && dataAl === getRomeToday()) {
+      for (const giacenza of cerElenco ?? []) {
+        const key = normalizeCer(giacenza.cer);
+        addEmpty(key, giacenza.descrizione_cer);
+        const saldoConsolidato = Number(giacenza.quantita_kg) || 0;
+        const differenza = saldoConsolidato - map[key].saldo;
+        if (differenza > 0) map[key].carico += differenza;
+        if (differenza < 0) map[key].scarico += Math.abs(differenza);
+        map[key].saldo = saldoConsolidato;
+      }
+    }
     const elencoKeys = new Set((cerElenco ?? []).map((c) => normalizeCer(c.cer)));
     return Object.values(map)
       .filter((r) => showAllCer || elencoKeys.has(r.cer) || r.carico !== 0 || r.scarico !== 0)
@@ -237,6 +258,9 @@ export function DevGiacenzeModule() {
       .on("postgres_changes", { event: "*", schema: "public", table: "dragon_stock_movements" }, () => {
         queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "magazzino_giacenze" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["magazzino-cer-elenco", MULTY_TENANT_ID] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -247,6 +271,7 @@ export function DevGiacenzeModule() {
   const recalculate = useMutation({
     mutationFn: async () => {
       await queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
+      await queryClient.invalidateQueries({ queryKey: ["magazzino-cer-elenco", MULTY_TENANT_ID] });
       const count = new Set((movimenti ?? []).map((row) => row.cer)).size;
       logAgentActivity("Rilettura registro CER", "ok", `${count} codici CER`);
       return count;
