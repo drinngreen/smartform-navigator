@@ -826,6 +826,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     const updatedAt = useMNFIRStore.getState().lastUpdatedAt;
     try {
       const dbFields = mapStoreToDatabaseFields(store.data);
+      // Segnato PRIMA della scrittura: l'evento realtime può arrivare prima
+      // della risposta HTTP e non deve mai essere scambiato per una modifica altrui.
+      lastLocalSaveAtRef.current = Date.now();
       await silentSaveFIR.mutateAsync({ id: store.editingFirId, ...dbFields });
       lastAutosavedAtRef.current = updatedAt;
       lastLocalSaveAtRef.current = Date.now();
