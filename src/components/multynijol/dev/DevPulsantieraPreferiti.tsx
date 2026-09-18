@@ -12,6 +12,7 @@ import {
   Plus,
   X,
   Printer,
+  Scissors,
 } from "lucide-react";
 
 /**
