@@ -193,11 +193,13 @@ async function attendiConfermaEmissione(
     }
 
     if (numeroInviato) {
+      // L'emissione è confermata quando il RENTRI restituisce il formulario,
+      // anche in stato iniziale: la partenza (firma) è un passaggio successivo
+      // e non va confusa con l'avvenuta registrazione del FIR.
       const ricerca = await ricercaFir(cliente, numeroInviato);
-      if (ricerca.success && isRentriDepartureConfirmed(ricerca.data, numeroInviato)) {
+      if (ricerca.success) {
         const record = findRentriFirRecord(ricerca.data, numeroInviato);
-        const id = estraiFirId(record) || numeroInviato;
-        return id;
+        if (record) return estraiFirId(record) || numeroInviato;
       }
     }
   }
