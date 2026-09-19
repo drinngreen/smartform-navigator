@@ -193,11 +193,13 @@ async function attendiConfermaEmissione(
     }
 
     if (numeroInviato) {
+      // L'emissione è confermata quando il RENTRI restituisce il formulario,
+      // anche in stato iniziale: la partenza (firma) è un passaggio successivo
+      // e non va confusa con l'avvenuta registrazione del FIR.
       const ricerca = await ricercaFir(cliente, numeroInviato);
-      if (ricerca.success && isRentriDepartureConfirmed(ricerca.data, numeroInviato)) {
+      if (ricerca.success) {
         const record = findRentriFirRecord(ricerca.data, numeroInviato);
-        const id = estraiFirId(record) || numeroInviato;
-        return id;
+        if (record) return estraiFirId(record) || numeroInviato;
       }
     }
   }
@@ -225,10 +227,20 @@ export async function inviaFirmaRentri(
   ).trim();
   if (numeroDaInviare) {
     const esistente = await ricercaFir(cliente, numeroDaInviare);
-    if (esistente.success && isRentriDepartureConfirmed(esistente.data, numeroDaInviare)) {
+    if (esistente.success) {
+      // Qualsiasi presenza sul RENTRI (anche in stato iniziale) vale come
+      // già emesso: reinviarlo creerebbe un doppione.
       const record = findRentriFirRecord(esistente.data, numeroDaInviare);
-      const numeroConfermato = estraiFirId(record) || numeroDaInviare;
-      return { numero_fir: numeroConfermato, firId: numeroConfermato, gia_presente_sul_rentri: true };
+      if (record) {
+        const numeroConfermato = estraiFirId(record) || numeroDaInviare;
+        const gia_partito = isRentriDepartureConfirmed(esistente.data, numeroDaInviare);
+        return {
+          numero_fir: numeroConfermato,
+          firId: numeroConfermato,
+          gia_presente_sul_rentri: true,
+          gia_partito,
+        };
+      }
     }
   }
 
