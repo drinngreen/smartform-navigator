@@ -227,10 +227,20 @@ export async function inviaFirmaRentri(
   ).trim();
   if (numeroDaInviare) {
     const esistente = await ricercaFir(cliente, numeroDaInviare);
-    if (esistente.success && isRentriDepartureConfirmed(esistente.data, numeroDaInviare)) {
+    if (esistente.success) {
+      // Qualsiasi presenza sul RENTRI (anche in stato iniziale) vale come
+      // già emesso: reinviarlo creerebbe un doppione.
       const record = findRentriFirRecord(esistente.data, numeroDaInviare);
-      const numeroConfermato = estraiFirId(record) || numeroDaInviare;
-      return { numero_fir: numeroConfermato, firId: numeroConfermato, gia_presente_sul_rentri: true };
+      if (record) {
+        const numeroConfermato = estraiFirId(record) || numeroDaInviare;
+        const gia_partito = isRentriDepartureConfirmed(esistente.data, numeroDaInviare);
+        return {
+          numero_fir: numeroConfermato,
+          firId: numeroConfermato,
+          gia_presente_sul_rentri: true,
+          gia_partito,
+        };
+      }
     }
   }
 
