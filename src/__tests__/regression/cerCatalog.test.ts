@@ -57,4 +57,9 @@ it("la stampa giacenze usa la descrizione CER estesa ufficiale senza il capitolo
     expect(descrizione).not.toMatch(/Rifiuti urbani \(/i);
     expect(descrizione).not.toMatch(/rettifica/i);
   });
+
+  it("mantiene le descrizioni esatte degli articoli recuperati da cernita", () => {
+    expect(getCerDescrizionePerStampa("MAT-INER01")).toBe("Inerti recuperati da cernita");
+    expect(getCerDescrizionePerStampa("MPS-FE01")).toBe("Ferro recuperato da cernita");
+  });
 });
