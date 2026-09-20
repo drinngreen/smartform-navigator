@@ -413,7 +413,15 @@ exportToPdf(
 
   const buildShortRows = () => {
     let progressiva = 0;
-    return buildExportRows().map((r: any) => {
+    // Il registro cronologico va sempre stampato in ordine crescente di data/progressivo,
+    // così la colonna "Giacenza (kg)" è la somma progressiva reale (come nel modulo ufficiale).
+    return [...buildExportRows()]
+      .sort(
+        (a: any, b: any) =>
+          String(a.data).localeCompare(String(b.data)) ||
+          (a.numero_progressivo ?? 0) - (b.numero_progressivo ?? 0),
+      )
+      .map((r: any) => {
       const v = resolveVeicolo(r);
       progressiva += Number(r.kg || 0);
       return {
