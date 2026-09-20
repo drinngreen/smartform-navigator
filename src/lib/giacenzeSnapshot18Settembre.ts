@@ -118,5 +118,11 @@ export const applicaMovimentiRealiPostSnapshot = (
     result[cer] = row;
   }
 
+  // Il saldo non è mai un valore indipendente: deve sempre derivare dai due
+  // totali esposti, così tabella, PDF ed Excel tornano riga per riga.
+  for (const row of Object.values(result)) {
+    row.saldo = row.carico - row.scarico;
+  }
+
   return result;
 };
