@@ -97,7 +97,7 @@ export function DevGiacenzeModule() {
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from("dragon_stock_movements")
-          .select("quantity, sign, movement_date, created_at, item:dragon_items!inner(codice_cer, descrizione)")
+          .select("quantity, sign, movement_date, created_at, source_register_movement_id, source_transform_batch_id, item:dragon_items!inner(codice_cer, descrizione)")
           .eq("company_id", MULTY_TENANT_ID)
           .eq("is_system_hidden", false)
           .order("movement_date", { ascending: true })
