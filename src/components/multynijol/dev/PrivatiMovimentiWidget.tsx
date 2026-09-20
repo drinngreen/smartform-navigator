@@ -11,6 +11,7 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
 import PrivatiIndirizziDialog from "./PrivatiIndirizziDialog";
+import { getArchivioPrivati } from "@/data/registroPrivatiArchivio2026";
 
 type Props = { tenantId: string };
 
@@ -51,7 +52,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [addrDialogOpen, setAddrDialogOpen] = useState(false);
 
-  const { data: movimenti, isLoading, refetch, isFetching } = useQuery({
+  const { data: movimentiDb, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["privati-movimenti-widget", tenantId, anno],
     queryFn: async () => {
       let q = supabase
@@ -69,6 +70,21 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       return (data ?? []) as any[];
     },
   });
+
+  /**
+   * Elenco completo = movimenti a database + righe d'archivio del registro ufficiale
+   * inviato al RENTRI (sola lettura, nessuna scrittura, giacenze invariate).
+   */
+  const movimenti = useMemo(() => {
+    const base = movimentiDb ?? [];
+    const archivio = getArchivioPrivati(tenantId, anno) as any[];
+    if (!archivio.length) return base;
+    return [...base, ...archivio].sort(
+      (a, b) =>
+        String(b.data).localeCompare(String(a.data)) ||
+        (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0),
+    );
+  }, [movimentiDb, tenantId, anno]);
 
   /** Anagrafica privati: usata come fallback per mezzo/targa mancanti sul movimento. */
   const { data: anagrafiche } = useQuery({
@@ -224,7 +240,9 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   const toggleAll = () => {
     setSelected((prev) =>
-      prev.size === filtered.length && filtered.length > 0 ? new Set() : new Set(filtered.map((m) => m.id)),
+      prev.size > 0
+        ? new Set()
+        : new Set(filtered.filter((m) => !m.is_archivio).map((m) => m.id)),
     );
   };
 
@@ -567,13 +585,22 @@ exportToPdf(
                 filtered.map((m) => (
                   <tr key={m.id} className="border-t border-border/20 hover:bg-muted/20">
                     <td className="p-2">
-                      <Checkbox
-                        checked={selected.has(m.id)}
-                        onCheckedChange={() => toggleRow(m.id)}
-                        aria-label="Seleziona movimento"
-                      />
+                      {!m.is_archivio && (
+                        <Checkbox
+                          checked={selected.has(m.id)}
+                          onCheckedChange={() => toggleRow(m.id)}
+                          aria-label="Seleziona movimento"
+                        />
+                      )}
                     </td>
-                    <td className="p-2 whitespace-nowrap">{fmtDate(m.data)}</td>
+                    <td className="p-2 whitespace-nowrap">
+                      {fmtDate(m.data)}
+                      {m.is_archivio && (
+                        <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-400">
+                          archivio RENTRI
+                        </span>
+                      )}
+                    </td>
                     <td className="p-2 font-mono text-xs text-muted-foreground">
                       {m.numero_progressivo != null ? `#${m.numero_progressivo}/${m.anno_dbt ?? String(m.data).slice(0, 4)}` : "—"}
                     </td>
@@ -584,15 +611,17 @@ exportToPdf(
                     <td className="p-2 text-right font-mono">{Number(m.importo_pagato || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
                     <td className="p-2 font-mono text-xs">{resolveVeicolo(m).targa || "—"}</td>
                     <td className="p-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={deletingId === m.id}
-                        onClick={() => handleDelete(m)}
-                        title="Elimina movimento e ricalcola giacenze"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </Button>
+                      {!m.is_archivio && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={deletingId === m.id}
+                          onClick={() => handleDelete(m)}
+                          title="Elimina movimento e ricalcola giacenze"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-400" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))
