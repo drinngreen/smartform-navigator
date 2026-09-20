@@ -209,18 +209,15 @@ export function DevGiacenzeModule() {
     }
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
 
-    // La vista corrente deve coincidere con la giacenza consolidata. Il vecchio
-    // archivio Dragon resta soltanto la base per il dettaglio carico/scarico:
-    // l'eventuale differenza viene esposta sul lato corretto, senza scritture.
+    // La vista corrente deve coincidere con la giacenza consolidata.
+    // IMPORTANTE: carico e scarico restano quelli dei movimenti reali.
+    // Non si inventano mai chili per far quadrare il saldo: si mostra
+    // soltanto il saldo consolidato, senza alcuna scrittura.
     if (!dataDal && dataAl === getRomeToday()) {
       for (const giacenza of cerElenco ?? []) {
         const key = normalizeCer(giacenza.cer);
         addEmpty(key, giacenza.descrizione_cer);
-        const saldoConsolidato = Number(giacenza.quantita_kg) || 0;
-        const differenza = saldoConsolidato - map[key].saldo;
-        if (differenza > 0) map[key].carico += differenza;
-        if (differenza < 0) map[key].scarico += Math.abs(differenza);
-        map[key].saldo = saldoConsolidato;
+        map[key].saldo = Number(giacenza.quantita_kg) || 0;
       }
     }
     const elencoKeys = new Set((cerElenco ?? []).map((c) => normalizeCer(c.cer)));

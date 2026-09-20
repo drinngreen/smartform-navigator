@@ -33,20 +33,39 @@ Deno.serve(async (req) => {
 
     const tableNames: string[] = (tables as any[]).map((t: any) => t.table_name);
 
-    // Export each table
+    // Export each table in pages. A read error must fail the whole backup:
+    // an empty table in the archive would silently lose data on restore.
+    const PAGE_SIZE = 1000;
+    const MAX_ROWS = 200000;
     const data: Record<string, any[]> = {};
     for (const tableName of tableNames) {
-      const { data: rows, error } = await supabase
-        .from(tableName)
-        .select("*")
-        .limit(50000);
+      const rowsAll: any[] = [];
+      let from = 0;
+      while (from < MAX_ROWS) {
+        const { data: page, error } = await supabase
+          .from(tableName)
+          .select("*")
+          .range(from, from + PAGE_SIZE - 1);
 
-      if (error) {
-        console.warn(`Skipping ${tableName}: ${error.message}`);
-        data[tableName] = [];
-      } else {
-        data[tableName] = rows || [];
+        if (error) {
+          throw new Error(
+            `Backup aborted: failed to read table "${tableName}" (rows ${from}-${from + PAGE_SIZE - 1}): ${error.message}`
+          );
+        }
+
+        const batch = page || [];
+        rowsAll.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
       }
+
+      if (rowsAll.length >= MAX_ROWS) {
+        throw new Error(
+          `Backup aborted: table "${tableName}" exceeds the ${MAX_ROWS} row export limit`
+        );
+      }
+
+      data[tableName] = rowsAll;
     }
 
     // Build filename
