@@ -4,3 +4,4 @@
 - [x] Verifica completa con snapshot prima/dopo e smoke
 - [x] Correggere il flusso di partenza FIR digitale: trasporto, stato/azioni, hash, firma valida, acquisizione e verifica finale (nessun invio reale senza autorizzazione)
 - [x] Disattivare l'automatismo Dragon che riscrive le giacenze e nascondere temporaneamente tutte le viste Dragon
+- [x] Ripristinare la vista Giacenze dalla fotografia certificata del 18/09 mattina più sole operazioni reali successive
