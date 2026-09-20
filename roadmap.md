@@ -13,6 +13,7 @@
 - [x] Verificare vista, regressioni e assenza di scritture automatiche
 
 ## Verifica registro privati allegato
-- [ ] Ricostruire perché 10 righe stampate dal programma non risultano oggi nel tenant Multyproget, controllando storico e tenant senza scritture
+- [ ] Identificare la causa tecnica della perdita delle 10 righe: cancellazioni UI, funzioni, trigger, automazioni, permessi e cronologia, senza scritture
+- [ ] Stabilire se il rischio è ancora attivo e quali altri dati potrebbero essere coinvolti, con prove verificabili
 - [ ] Verificare che visualizzazione, PDF ed Excel leggano l'intero registro corretto senza filtri o limiti nascosti
 - [ ] Correggere solo la lettura/esportazione e validare contro le 359 righe dell'allegato; nessuna modifica ai dati senza autorizzazione
