@@ -161,7 +161,7 @@ export function DevGiacenzeModule() {
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("stato_movimento", "effettivo")
         .eq("created_by_agent", false)
-        .gte("created_at", "2026-09-18T15:01:38.000Z")
+        .gte("created_at", "2026-09-18T15:01:39.000Z")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as MovimentoImpiantoReale[];
@@ -223,9 +223,9 @@ export function DevGiacenzeModule() {
 
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
 
-    // Dal 18/09 in avanti la fonte è la stampa certificata del mattino,
-    // aggiornata esclusivamente con movimenti impianto effettivi e umani.
-    // Dragon e le rettifiche tecniche nascoste non entrano in questo calcolo.
+    // Dal 18/09 in avanti la fonte è la stampa allegata certificata, che include
+    // già le due cernite delle 17:01. Si aggiungono solo movimenti successivi,
+    // evitando di conteggiare le cernite una seconda volta.
     if (!dataDal && dataAl >= GIACENZE_SNAPSHOT_18_DATE) {
       const snapshotAggiornato = applicaMovimentiRealiPostSnapshot(
         GIACENZE_SNAPSHOT_18_MATTINA,

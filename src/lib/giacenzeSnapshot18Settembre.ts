@@ -1,8 +1,8 @@
 export const GIACENZE_SNAPSHOT_18_DATE = "2026-09-18";
 
-// La prima operazione successiva alla stampa del mattino è la cernita delle
-// 17:01 italiane (15:01 UTC). Il confronto usa l'istante reale di registrazione.
-export const GIACENZE_SNAPSHOT_18_CUTOFF = "2026-09-18T15:01:38.000Z";
+// La fotografia allegata del 18/09 include già entrambe le cernite registrate
+// alle 17:01 italiane. Si applicano soltanto movimenti registrati dopo di esse.
+export const GIACENZE_SNAPSHOT_18_CUTOFF = "2026-09-18T15:01:39.000Z";
 
 export interface GiacenzaSnapshotRow {
   carico: number;
@@ -10,7 +10,9 @@ export interface GiacenzaSnapshotRow {
   saldo: number;
 }
 
-// Fotografia certificata dalla stampa "Registro_CER_al_18-09-2026_2.pdf".
+// Fotografia certificata dalla stampa allegata
+// "Registro_CER_al_18-09-2026_3-2.pdf", confermata identica dalla stampa
+// "Registro_CER_al_19-09-2026.pdf". Include le due cernite del 18/09.
 // È una base di sola lettura: non viene mai scritta in magazzino_giacenze.
 export const GIACENZE_SNAPSHOT_18_MATTINA: Record<string, GiacenzaSnapshotRow> = {
   "010408": { carico: 0, scarico: 0, saldo: 0 },
@@ -23,7 +25,7 @@ export const GIACENZE_SNAPSHOT_18_MATTINA: Record<string, GiacenzaSnapshotRow> =
   "090105": { carico: 0, scarico: 0, saldo: 0 },
   "100210": { carico: 0, scarico: 0, saldo: 0 },
   "120101": { carico: 16400, scarico: 0, saldo: 16400 },
-  "120102": { carico: 47438, scarico: 21400, saldo: 26038 },
+  "120102": { carico: 52438, scarico: 21400, saldo: 31038 },
   "120103": { carico: 190, scarico: 0, saldo: 190 },
   "120104": { carico: 0, scarico: 0, saldo: 0 },
   "120105": { carico: 0, scarico: 0, saldo: 0 },
@@ -36,9 +38,9 @@ export const GIACENZE_SNAPSHOT_18_MATTINA: Record<string, GiacenzaSnapshotRow> =
   "130205": { carico: 3980, scarico: 0, saldo: 3980 },
   "150101": { carico: 28860, scarico: 26600, saldo: 2260 },
   "150102": { carico: 21980, scarico: 0, saldo: 21980 },
-  "150103": { carico: 9503, scarico: 4940, saldo: 4563 },
+  "150103": { carico: 14443, scarico: 4940, saldo: 9503 },
   "150104": { carico: 0, scarico: 0, saldo: 0 },
-  "150106": { carico: 36157, scarico: 17440, saldo: 18717 },
+  "150106": { carico: 36157, scarico: 22380, saldo: 13777 },
   "150107": { carico: 300, scarico: 0, saldo: 300 },
   "150110": { carico: 3640, scarico: 3000, saldo: 640 },
   "150202": { carico: 4860, scarico: 0, saldo: 4860 },
@@ -49,8 +51,8 @@ export const GIACENZE_SNAPSHOT_18_MATTINA: Record<string, GiacenzaSnapshotRow> =
   "160120": { carico: 1024, scarico: 0, saldo: 1024 },
   "160122": { carico: 14, scarico: 0, saldo: 14 },
   "160213": { carico: 0, scarico: 0, saldo: 0 },
-  "160214": { carico: 30955, scarico: 29240, saldo: 1715 },
-  "160216": { carico: 5, scarico: 0, saldo: 5 },
+  "160214": { carico: 34955, scarico: 29240, saldo: 5715 },
+  "160216": { carico: 3005, scarico: 0, saldo: 3005 },
   "160504": { carico: 3, scarico: 0, saldo: 3 },
   "160505": { carico: 160, scarico: 0, saldo: 160 },
   "160601": { carico: 17184, scarico: 16000, saldo: 1184 },
@@ -65,8 +67,8 @@ export const GIACENZE_SNAPSHOT_18_MATTINA: Record<string, GiacenzaSnapshotRow> =
   "170401": { carico: 8215, scarico: 0, saldo: 8215 },
   "170402": { carico: 1906, scarico: 0, saldo: 1906 },
   "170403": { carico: 0, scarico: 0, saldo: 0 },
-  "170405": { carico: 105015, scarico: 60340, saldo: 44675 },
-  "170407": { carico: 16185.5, scarico: 2300, saldo: 13885.5 },
+  "170405": { carico: 105015, scarico: 65340, saldo: 39675 },
+  "170407": { carico: 16185.5, scarico: 9300, saldo: 6885.5 },
   "170411": { carico: 3833, scarico: 0, saldo: 3833 },
   "170603": { carico: 0, scarico: 0, saldo: 0 },
   "170604": { carico: 0, scarico: 0, saldo: 0 },
