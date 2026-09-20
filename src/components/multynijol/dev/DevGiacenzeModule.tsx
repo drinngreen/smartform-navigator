@@ -17,6 +17,11 @@ import { logAgentActivity } from "@/stores/agentActivityStore";
 import {
   normalizeCerCodice as normalizeCer,
 } from "@/lib/dragonGiacenzeBaseline";
+import {
+  applicaMovimentiRealiPostSnapshot,
+  GIACENZE_SNAPSHOT_18_DATE,
+  GIACENZE_SNAPSHOT_18_MATTINA,
+} from "@/lib/giacenzeSnapshot18Settembre";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -74,6 +79,14 @@ interface GiacenzaRow {
   cer: string;
   descrizione_cer: string | null;
   quantita_kg: number;
+}
+
+interface MovimentoImpiantoReale {
+  id: string;
+  cer: string;
+  tipo_movimento: string;
+  quantita_kg: number;
+  created_at: string;
 }
 
 
@@ -137,6 +150,24 @@ export function DevGiacenzeModule() {
     },
   });
 
+  // Dopo la fotografia certificata si applicano soltanto movimenti effettivi
+  // con origine operativa. La chiave primaria impedisce doppi conteggi.
+  const { data: movimentiRealiPostSnapshot = [] } = useQuery({
+    queryKey: ["giacenze-movimenti-reali-post-snapshot", MULTY_TENANT_ID],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("movimenti_impianto")
+        .select("id, cer, tipo_movimento, quantita_kg, created_at")
+        .eq("tenant_id", MULTY_TENANT_ID)
+        .eq("stato_movimento", "effettivo")
+        .eq("created_by_agent", false)
+        .gte("created_at", "2026-09-18T15:01:38.000Z")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as MovimentoImpiantoReale[];
+    },
+  });
+
   // Aggregazione contabile per CER: Saldo = Carico − Scarico sui movimenti del periodo,
   // esattamente come la stampa ufficiale "Registrazioni per C.E.R.".
   const rows: CerRow[] = useMemo(() => {
@@ -190,26 +221,34 @@ export function DevGiacenzeModule() {
       
     }
 
-    // Nessuna fotografia scritta a mano nel codice: i valori vengono solo dai
-    // movimenti reali e dalla giacenza consolidata.
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
 
-    // La vista corrente deve coincidere con la giacenza consolidata.
-    // IMPORTANTE: carico e scarico restano quelli dei movimenti reali.
-    // Non si inventano mai chili per far quadrare il saldo: si mostra
-    // soltanto il saldo consolidato, senza alcuna scrittura.
-    if (!dataDal && dataAl === getRomeToday()) {
-      for (const giacenza of cerElenco ?? []) {
-        const key = normalizeCer(giacenza.cer);
-        addEmpty(key, giacenza.descrizione_cer);
-        map[key].saldo = Number(giacenza.quantita_kg) || 0;
+    // Dal 18/09 in avanti la fonte è la stampa certificata del mattino,
+    // aggiornata esclusivamente con movimenti impianto effettivi e umani.
+    // Dragon e le rettifiche tecniche nascoste non entrano in questo calcolo.
+    if (!dataDal && dataAl >= GIACENZE_SNAPSHOT_18_DATE) {
+      const snapshotAggiornato = applicaMovimentiRealiPostSnapshot(
+        GIACENZE_SNAPSHOT_18_MATTINA,
+        movimentiRealiPostSnapshot.map((m) => ({
+          cer: normalizeCer(m.cer),
+          tipo_movimento: m.tipo_movimento,
+          quantita_kg: Number(m.quantita_kg) || 0,
+          created_at: m.created_at,
+        })),
+        dataAl,
+      );
+      for (const [cer, snapshot] of Object.entries(snapshotAggiornato)) {
+        addEmpty(cer);
+        map[cer].carico = snapshot.carico;
+        map[cer].scarico = snapshot.scarico;
+        map[cer].saldo = snapshot.saldo;
       }
     }
     const elencoKeys = new Set((cerElenco ?? []).map((c) => normalizeCer(c.cer)));
     return Object.values(map)
       .filter((r) => showAllCer || elencoKeys.has(r.cer) || r.carico !== 0 || r.scarico !== 0)
       .sort((a, b) => a.cer.localeCompare(b.cer));
-  }, [movimenti, dataAl, dataDal, showAllCer, cerElenco]);
+  }, [movimenti, dataAl, dataDal, showAllCer, cerElenco, movimentiRealiPostSnapshot]);
 
 
 
@@ -243,6 +282,9 @@ export function DevGiacenzeModule() {
       .on("postgres_changes", { event: "*", schema: "public", table: "magazzino_giacenze" }, () => {
         queryClient.invalidateQueries({ queryKey: ["magazzino-cer-elenco", MULTY_TENANT_ID] });
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "movimenti_impianto" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["giacenze-movimenti-reali-post-snapshot", MULTY_TENANT_ID] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -254,6 +296,7 @@ export function DevGiacenzeModule() {
     mutationFn: async () => {
       await queryClient.invalidateQueries({ queryKey: ["dragon-stock", MULTY_TENANT_ID] });
       await queryClient.invalidateQueries({ queryKey: ["magazzino-cer-elenco", MULTY_TENANT_ID] });
+      await queryClient.invalidateQueries({ queryKey: ["giacenze-movimenti-reali-post-snapshot", MULTY_TENANT_ID] });
       const count = new Set((movimenti ?? []).map((row) => row.cer)).size;
       logAgentActivity("Rilettura registro CER", "ok", `${count} codici CER`);
       return count;
