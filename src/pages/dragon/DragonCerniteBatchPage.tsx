@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal, ShieldCheck } from "lucide-react";
+import { Plus, Play, XCircle, Scissors, AlertTriangle, Trash2, ArrowDown, ArrowUp, Equal, ShieldCheck, Printer, FileSpreadsheet, FileText } from "lucide-react";
+import { exportToPdf, exportToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
@@ -178,13 +179,63 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
     }
   };
 
+  // ===== Export elenco cernite (solo lettura, nessuna scrittura dati) =====
+  const exportRows = useMemo(() =>
+    batches.map((b) => {
+      const outputsArr = (b.outputs as any[]) || [];
+      const totalOut = outputsArr.reduce((s, o) => s + (Number(o.output_quantity) || 0), 0);
+      const componenti = outputsArr
+        .map((o) => `${(o.output_item as any)?.codice_cer || "?"} (${Number(o.output_quantity).toLocaleString("it-IT")} kg)`)
+        .join(", ");
+      return {
+        data: new Date(b.execution_date).toLocaleDateString("it-IT"),
+        cer_input: (b.source_item as any)?.codice_cer || "—",
+        kg_input: Number(b.input_quantity) || 0,
+        kg_output: totalOut,
+        componenti,
+        stato: b.status,
+        note: b.notes || "",
+      };
+    }),
+    [batches]
+  );
+
+  const exportColumns = [
+    { header: "Data", key: "data", width: 12 },
+    { header: "CER Ingresso", key: "cer_input", width: 14 },
+    { header: "Kg Ingresso", key: "kg_input", width: 14, format: (v: any) => Number(v).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+    { header: "Kg Uscita", key: "kg_output", width: 14, format: (v: any) => Number(v).toLocaleString("it-IT", { minimumFractionDigits: 2 }) },
+    { header: "Componenti", key: "componenti", width: 45 },
+    { header: "Stato", key: "stato", width: 14 },
+    { header: "Note", key: "note", width: 30 },
+  ];
+
+  const exportTitle = `Multyproget — Elenco Cernite\nGenerato il ${new Date().toLocaleString("it-IT")} — ${exportRows.length} cernite`;
+  const exportFilename = `cernite_${new Date().toISOString().split("T")[0]}`;
+
+  // "Stampa" genera il PDF dell'elenco e apre la finestra di stampa del browser
+  const handlePrint = () => {
+    exportToPdf(exportRows, exportColumns, exportFilename, exportTitle);
+  };
+
   const content = (
     <>
       <div className="space-y-4" data-cernite-operative-view>
         {!embedded && <DragonBackButton />}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-2">
           <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} cernite totali</p>
-          <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuova Cernita</Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handlePrint} title="Stampa elenco cernite">
+              <Printer className="h-4 w-4 mr-1" /> Stampa
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportToPdf(exportRows, exportColumns, exportFilename, exportTitle)} title="Esporta PDF">
+              <FileText className="h-4 w-4 mr-1" /> PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportToExcel(exportRows, exportColumns, exportFilename, "Cernite", ["Multyproget — Elenco Cernite", `Generato il ${new Date().toLocaleString("it-IT")}`])} title="Esporta Excel">
+              <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+            </Button>
+            <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuova Cernita</Button>
+          </div>
         </div>
 
         {/* Existing batches table */}
