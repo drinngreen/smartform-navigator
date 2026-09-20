@@ -240,7 +240,9 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   const toggleAll = () => {
     setSelected((prev) =>
-      prev.size === filtered.length && filtered.length > 0 ? new Set() : new Set(filtered.map((m) => m.id)),
+      prev.size > 0
+        ? new Set()
+        : new Set(filtered.filter((m) => !m.is_archivio).map((m) => m.id)),
     );
   };
 
@@ -583,13 +585,22 @@ exportToPdf(
                 filtered.map((m) => (
                   <tr key={m.id} className="border-t border-border/20 hover:bg-muted/20">
                     <td className="p-2">
-                      <Checkbox
-                        checked={selected.has(m.id)}
-                        onCheckedChange={() => toggleRow(m.id)}
-                        aria-label="Seleziona movimento"
-                      />
+                      {!m.is_archivio && (
+                        <Checkbox
+                          checked={selected.has(m.id)}
+                          onCheckedChange={() => toggleRow(m.id)}
+                          aria-label="Seleziona movimento"
+                        />
+                      )}
                     </td>
-                    <td className="p-2 whitespace-nowrap">{fmtDate(m.data)}</td>
+                    <td className="p-2 whitespace-nowrap">
+                      {fmtDate(m.data)}
+                      {m.is_archivio && (
+                        <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-400">
+                          archivio RENTRI
+                        </span>
+                      )}
+                    </td>
                     <td className="p-2 font-mono text-xs text-muted-foreground">
                       {m.numero_progressivo != null ? `#${m.numero_progressivo}/${m.anno_dbt ?? String(m.data).slice(0, 4)}` : "—"}
                     </td>
@@ -600,15 +611,17 @@ exportToPdf(
                     <td className="p-2 text-right font-mono">{Number(m.importo_pagato || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</td>
                     <td className="p-2 font-mono text-xs">{resolveVeicolo(m).targa || "—"}</td>
                     <td className="p-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={deletingId === m.id}
-                        onClick={() => handleDelete(m)}
-                        title="Elimina movimento e ricalcola giacenze"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </Button>
+                      {!m.is_archivio && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={deletingId === m.id}
+                          onClick={() => handleDelete(m)}
+                          title="Elimina movimento e ricalcola giacenze"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-400" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))
