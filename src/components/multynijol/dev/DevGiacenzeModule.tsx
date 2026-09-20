@@ -192,27 +192,8 @@ export function DevGiacenzeModule() {
       
     }
 
-    // Per una stampa cumulativa che comprende il 12/09/2026, usa la fotografia
-    // ufficiale per i soli CER storicamente discordanti e aggiunge esclusivamente
-    // gli eventuali movimenti operativi successivi. Nessun dato viene scritto.
-    if (!dataDal && dataAl >= GIACENZE_BASELINE_DATE) {
-      for (const [cer, baseline] of Object.entries(GIACENZE_BASELINE_OVERRIDES)) {
-        addEmpty(cer);
-        let carico = baseline.carico;
-        let scarico = baseline.scarico;
-        for (const movement of movimenti) {
-          if (movement.cer !== cer) continue;
-          const movementDay = movement.data_movimento.slice(0, 10);
-          const registratoDopoFotografia = movement.registrato_il.slice(0, 10) > GIACENZE_BASELINE_DATE;
-          if ((movementDay <= GIACENZE_BASELINE_DATE && !registratoDopoFotografia) || movementDay > dataAl) continue;
-          if (movement.tipo_movimento === "CARICO") carico += Number(movement.quantita_kg) || 0;
-          else scarico += Number(movement.quantita_kg) || 0;
-        }
-        map[cer].carico = carico;
-        map[cer].scarico = scarico;
-        map[cer].saldo = carico - scarico;
-      }
-    }
+    // Nessuna fotografia scritta a mano nel codice: i valori vengono solo dai
+    // movimenti reali e dalla giacenza consolidata.
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
 
     // La vista corrente deve coincidere con la giacenza consolidata.
