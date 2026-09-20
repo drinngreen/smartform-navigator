@@ -11,3 +11,8 @@
 - [x] Inventariare e disattivare ogni scrittura automatica collegata a Magazzino Dev/cernite
 - [x] Consentire modifiche soltanto dopo un’azione umana esplicita
 - [x] Verificare vista, regressioni e assenza di scritture automatiche
+
+## Verifica registro privati allegato
+- [ ] Ricostruire perché 10 righe stampate dal programma non risultano oggi nel tenant Multyproget, controllando storico e tenant senza scritture
+- [ ] Verificare che visualizzazione, PDF ed Excel leggano l'intero registro corretto senza filtri o limiti nascosti
+- [ ] Correggere solo la lettura/esportazione e validare contro le 359 righe dell'allegato; nessuna modifica ai dati senza autorizzazione
