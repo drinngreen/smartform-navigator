@@ -1212,6 +1212,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       const rentriFirId = String(result.firId || (result as any).uuid_fir || "").trim();
       if (!officialNumeroFir) throw new Error("Partenza non confermata dal RENTRI: manca il numero ufficiale del FIR");
 
+      // La sola registrazione sul RENTRI NON è la partenza: la firma di
+      // partenza avviene nel flusso xFIR. Solo il RENTRI può confermarla.
+      const partenzaConfermata = (result as any).gia_partito === true;
+
       store.updateField("selectedFirNumber", officialNumeroFir);
       const qrFromFirma = await resolveFirQrDataUrl(officialNumeroFir, societaId);
       const fdPrev = (dbFields.form_data ?? {}) as Record<string, any>;
