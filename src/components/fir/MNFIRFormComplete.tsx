@@ -1225,16 +1225,29 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         numero_fir: officialNumeroFir,
         form_data: {
           ...fdPrev,
-          diario: [...diarioPrev, { autore: diarioAutore, azione: "partenza confermata dal RENTRI", ora: new Date().toISOString() }],
+          diario: [...diarioPrev, {
+            autore: diarioAutore,
+            azione: partenzaConfermata
+              ? "partenza confermata dal RENTRI"
+              : "formulario registrato sul RENTRI: partenza ancora da firmare",
+            ora: new Date().toISOString(),
+          }],
           rentri_fir_id: rentriFirId || officialNumeroFir,
           rentri_retry_pending: false,
           rentri_retry_since: null,
           rentri_qr_pending: !qrFromFirma,
         },
-        status: "inviato",
-        submitted_at: new Date().toISOString(),
+        ...(partenzaConfermata
+          ? { status: "inviato", submitted_at: new Date().toISOString() }
+          : {}),
       });
-      useMNFIRStore.setState({ editingFirId: activeFirId, workflowStatus: "inviato" });
+      useMNFIRStore.setState({
+        editingFirId: activeFirId,
+        ...(partenzaConfermata ? { workflowStatus: "inviato" as const } : {}),
+      });
+      if (!partenzaConfermata) {
+        toast.warning("Formulario registrato sul RENTRI. La partenza NON è ancora firmata: completa la firma di partenza.");
+      }
       if (qrFromFirma && d.selectedFirNumber) {
         setQrCodeData(qrFromFirma);
         await supabase.from("fir_number_pool").update({ qr_code_data: qrFromFirma } as any).eq("fir_number", d.selectedFirNumber);
