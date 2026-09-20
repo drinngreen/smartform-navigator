@@ -11,9 +11,10 @@ interface DragonCerSelectorProps {
   onChange: (itemId: string) => void;
   excludeItemId?: string;
   placeholder?: string;
+  allowCreate?: boolean;
 }
 
-export function DragonCerSelector({ value, onChange, excludeItemId, placeholder = "Cerca CER o materiale..." }: DragonCerSelectorProps) {
+export function DragonCerSelector({ value, onChange, excludeItemId, placeholder = "Cerca CER o materiale...", allowCreate = true }: DragonCerSelectorProps) {
   const { items, create } = useDragonItems();
   const { preferiti, tutti } = useConferimentoCerOptions();
   const [open, setOpen] = useState(false);
@@ -82,6 +83,7 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
       setOpen(false);
       return;
     }
+    if (!allowCreate) return;
     const catalogEntry = tutti.find((entry) => cerKey(entry.codice) === cerKey(code));
     if (!catalogEntry) return;
     try {
@@ -165,14 +167,14 @@ export function DragonCerSelector({ value, onChange, excludeItemId, placeholder 
                   key={entry.codice}
                   type="button"
                   onClick={() => choose(entry.codice)}
-                  disabled={create.isPending}
+                  disabled={create.isPending || (!allowCreate && !existing)}
                   className={`flex w-full items-start gap-3 rounded-lg border px-3 py-3 text-left transition-colors ${isSelected ? "border-primary bg-primary/10" : "border-border/40 hover:bg-accent"}`}
                 >
                   <span className="w-16 shrink-0 font-mono text-sm">{entry.codice}</span>
                   <span className="min-w-0 flex-1 text-sm leading-snug">{describe(entry.codice, entry.descrizione)}</span>
                   {preferredCodes.has(entry.codice) && <Star className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />}
                   <span className="mt-0.5 shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold">
-                    {existing ? "Dragon" : "Globale"}
+                    {existing ? "Disponibile" : allowCreate ? "Da creare" : "Non disponibile"}
                   </span>
                 </button>
               );

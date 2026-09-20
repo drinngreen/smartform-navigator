@@ -36,7 +36,11 @@ const createOutputRow = (): OutputRow => ({
   lot_code: "",
 });
 
-export default function DragonCerniteBatchPage() {
+interface CerniteOperativeViewProps {
+  embedded?: boolean;
+}
+
+export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewProps) {
   const { batches, isLoading, executeCernita, completeCernita, cancelCernita } = useDragonTransformBatches();
   const { models } = useDragonTransformModels();
   const { items } = useDragonItems();
@@ -174,10 +178,10 @@ export default function DragonCerniteBatchPage() {
     }
   };
 
-  return (
-    <MNAdminLayout title="Cernite" subtitle="Dragon — Smontaggio materiali in componenti">
-      <div className="space-y-4">
-        <DragonBackButton />
+  const content = (
+    <>
+      <div className="space-y-4" data-cernite-operative-view>
+        {!embedded && <DragonBackButton />}
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} cernite totali</p>
           <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuova Cernita</Button>
@@ -290,7 +294,7 @@ export default function DragonCerniteBatchPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Articolo / CER *</Label>
-                  <DragonCerSelector value={inputItemId} onChange={setInputItemId} />
+                  <DragonCerSelector value={inputItemId} onChange={setInputItemId} allowCreate={false} />
                 </div>
                 <div>
                   <Label>Quantità (kg) *</Label>
@@ -354,7 +358,7 @@ export default function DragonCerniteBatchPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">#{idx + 1}</span>
                         <div className="min-w-0 flex-1">
-                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(row.id, "item_id", v)} placeholder="Seleziona output..." />
+                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(row.id, "item_id", v)} placeholder="Seleziona output..." allowCreate={false} />
                         </div>
                         <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0 p-0" onClick={() => removeOutputRow(row.id)} aria-label={`Elimina riga ${idx + 1}`} title="Elimina riga">
                           <Trash2 className="h-4 w-4" />
@@ -459,6 +463,18 @@ export default function DragonCerniteBatchPage() {
           </div>
         </SheetContent>
       </Sheet>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <MNAdminLayout title="Cernite" subtitle="Smontaggio materiali in componenti">
+      {content}
     </MNAdminLayout>
   );
+}
+
+export default function DragonCerniteBatchPage() {
+  return <CerniteOperativeView />;
 }

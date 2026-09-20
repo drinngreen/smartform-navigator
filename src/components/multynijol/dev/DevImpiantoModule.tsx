@@ -35,7 +35,7 @@ import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule
 import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente } from "@/lib/rentriVpsApi";
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
-import { DevMagazzinoModule } from "@/components/multynijol/dev/DevMagazzinoModule";
+import { CerniteOperativeView } from "@/pages/dragon/DragonCerniteBatchPage";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -191,7 +191,7 @@ export function DevImpiantoModule() {
           <DevGiacenzeModule />
         </TabsContent>
         <TabsContent value="cernite">
-          <DevMagazzinoModule />
+          <CerniteOperativeView embedded />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
