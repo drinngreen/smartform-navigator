@@ -106,6 +106,10 @@ export function DevGiacenzeModule() {
         const page = (data ?? []) as unknown as DragonStockRow[];
         for (const movement of page) {
           if (!movement.item?.codice_cer) continue;
+          // Solo movimenti con origine reale (formulario/registro o cernita).
+          // Le rettifiche senza origine non sono movimenti e non vanno
+          // mostrate come carico o scarico in una stampa ufficiale.
+          if (!movement.source_register_movement_id && !movement.source_transform_batch_id) continue;
           const normalizedCer = normalizeCer(movement.item.codice_cer);
           rows.push({
             cer: normalizedCer,
