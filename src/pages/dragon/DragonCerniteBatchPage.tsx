@@ -179,6 +179,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
   };
 
   const content = (
+    <>
       <div className="space-y-4" data-cernite-operative-view>
         {!embedded && <DragonBackButton />}
         <div className="flex justify-between items-center">
@@ -462,7 +463,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
           </div>
         </SheetContent>
       </Sheet>
-      </div>
+    </>
   );
 
   if (embedded) return content;
