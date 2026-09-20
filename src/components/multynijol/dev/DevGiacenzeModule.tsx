@@ -15,8 +15,6 @@ import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
 import {
-  DRAGON_GIACENZE_BASELINE_DATE as GIACENZE_BASELINE_DATE,
-  DRAGON_GIACENZE_BASELINE_OVERRIDES as GIACENZE_BASELINE_OVERRIDES,
   normalizeCerCodice as normalizeCer,
 } from "@/lib/dragonGiacenzeBaseline";
 
@@ -59,6 +57,8 @@ interface DragonStockRow {
   sign: "PLUS" | "MINUS";
   movement_date: string;
   created_at: string;
+  source_register_movement_id: string | null;
+  source_transform_batch_id: string | null;
   item: { codice_cer: string; descrizione: string | null } | null;
 }
 
@@ -95,7 +95,7 @@ export function DevGiacenzeModule() {
       for (let from = 0; ; from += pageSize) {
         const { data, error } = await supabase
           .from("dragon_stock_movements")
-          .select("quantity, sign, movement_date, created_at, item:dragon_items!inner(codice_cer, descrizione)")
+          .select("quantity, sign, movement_date, created_at, source_register_movement_id, source_transform_batch_id, item:dragon_items!inner(codice_cer, descrizione)")
           .eq("company_id", MULTY_TENANT_ID)
           .eq("is_system_hidden", false)
           .order("movement_date", { ascending: true })
@@ -104,6 +104,10 @@ export function DevGiacenzeModule() {
         const page = (data ?? []) as unknown as DragonStockRow[];
         for (const movement of page) {
           if (!movement.item?.codice_cer) continue;
+          // Solo movimenti con origine reale (formulario/registro o cernita).
+          // Le rettifiche senza origine non sono movimenti e non vanno
+          // mostrate come carico o scarico in una stampa ufficiale.
+          if (!movement.source_register_movement_id && !movement.source_transform_batch_id) continue;
           const normalizedCer = normalizeCer(movement.item.codice_cer);
           rows.push({
             cer: normalizedCer,
@@ -186,27 +190,8 @@ export function DevGiacenzeModule() {
       
     }
 
-    // Per una stampa cumulativa che comprende il 12/09/2026, usa la fotografia
-    // ufficiale per i soli CER storicamente discordanti e aggiunge esclusivamente
-    // gli eventuali movimenti operativi successivi. Nessun dato viene scritto.
-    if (!dataDal && dataAl >= GIACENZE_BASELINE_DATE) {
-      for (const [cer, baseline] of Object.entries(GIACENZE_BASELINE_OVERRIDES)) {
-        addEmpty(cer);
-        let carico = baseline.carico;
-        let scarico = baseline.scarico;
-        for (const movement of movimenti) {
-          if (movement.cer !== cer) continue;
-          const movementDay = movement.data_movimento.slice(0, 10);
-          const registratoDopoFotografia = movement.registrato_il.slice(0, 10) > GIACENZE_BASELINE_DATE;
-          if ((movementDay <= GIACENZE_BASELINE_DATE && !registratoDopoFotografia) || movementDay > dataAl) continue;
-          if (movement.tipo_movimento === "CARICO") carico += Number(movement.quantita_kg) || 0;
-          else scarico += Number(movement.quantita_kg) || 0;
-        }
-        map[cer].carico = carico;
-        map[cer].scarico = scarico;
-        map[cer].saldo = carico - scarico;
-      }
-    }
+    // Nessuna fotografia scritta a mano nel codice: i valori vengono solo dai
+    // movimenti reali e dalla giacenza consolidata.
     Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
 
     // La vista corrente deve coincidere con la giacenza consolidata.
