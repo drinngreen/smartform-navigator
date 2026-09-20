@@ -241,9 +241,11 @@ export function DevGiacenzeModule() {
         addEmpty(cer);
         map[cer].carico = snapshot.carico;
         map[cer].scarico = snapshot.scarico;
-        map[cer].saldo = snapshot.saldo;
       }
     }
+    // Il saldo esposto non viene mai letto o riutilizzato da una fonte separata:
+    // è sempre la sottrazione dei due numeri mostrati nella stessa riga.
+    Object.values(map).forEach((r) => (r.saldo = r.carico - r.scarico));
     const elencoKeys = new Set((cerElenco ?? []).map((c) => normalizeCer(c.cer)));
     return Object.values(map)
       .filter((r) => showAllCer || elencoKeys.has(r.cer) || r.carico !== 0 || r.scarico !== 0)
@@ -260,15 +262,13 @@ export function DevGiacenzeModule() {
   );
 
   const totals = useMemo(
-    () =>
-      filtered.reduce(
-        (acc, r) => ({
-          carico: acc.carico + r.carico,
-          scarico: acc.scarico + r.scarico,
-          saldo: acc.saldo + r.saldo,
-        }),
-        { carico: 0, scarico: 0, saldo: 0 }
-      ),
+    () => {
+      const sums = filtered.reduce(
+        (acc, r) => ({ carico: acc.carico + r.carico, scarico: acc.scarico + r.scarico }),
+        { carico: 0, scarico: 0 },
+      );
+      return { ...sums, saldo: sums.carico - sums.scarico };
+    },
     [filtered]
   );
 
@@ -615,6 +615,9 @@ export function DevGiacenzeModule() {
               </table>
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Salvo diversa indicazione l'unità di misura di riferimento è il kg.
+              </p>
+              <p className="text-sm font-semibold text-emerald-300 mt-2 text-right">
+                Quadratura: {fmt(totals.carico)} − {fmt(totals.scarico)} = {fmt(totals.saldo)} kg
               </p>
             </div>
           )}
