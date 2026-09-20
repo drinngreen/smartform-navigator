@@ -616,9 +616,6 @@ export function DevGiacenzeModule() {
               <p className="text-xs text-muted-foreground mt-3 italic">
                 Salvo diversa indicazione l'unità di misura di riferimento è il kg.
               </p>
-              <p className="text-sm font-semibold text-emerald-300 mt-2 text-right">
-                Quadratura: {fmt(totals.carico)} − {fmt(totals.scarico)} = {fmt(totals.saldo)} kg
-              </p>
             </div>
           )}
         </CardContent>
