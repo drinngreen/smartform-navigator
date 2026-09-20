@@ -59,6 +59,8 @@ interface DragonStockRow {
   sign: "PLUS" | "MINUS";
   movement_date: string;
   created_at: string;
+  source_register_movement_id: string | null;
+  source_transform_batch_id: string | null;
   item: { codice_cer: string; descrizione: string | null } | null;
 }
 
