@@ -15,8 +15,6 @@ import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { logAgentActivity } from "@/stores/agentActivityStore";
 
 import {
-  DRAGON_GIACENZE_BASELINE_DATE as GIACENZE_BASELINE_DATE,
-  DRAGON_GIACENZE_BASELINE_OVERRIDES as GIACENZE_BASELINE_OVERRIDES,
   normalizeCerCodice as normalizeCer,
 } from "@/lib/dragonGiacenzeBaseline";
 
