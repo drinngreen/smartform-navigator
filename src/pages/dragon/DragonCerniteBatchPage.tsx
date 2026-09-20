@@ -463,7 +463,6 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
           </div>
         </SheetContent>
       </Sheet>
-      </div>
     </>
   );
 
