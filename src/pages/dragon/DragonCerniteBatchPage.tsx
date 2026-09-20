@@ -213,7 +213,10 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
   const exportTitle = `Multyproget — Elenco Cernite\nGenerato il ${new Date().toLocaleString("it-IT")} — ${exportRows.length} cernite`;
   const exportFilename = `cernite_${new Date().toISOString().split("T")[0]}`;
 
-  const handlePrint = () => window.print();
+  // "Stampa" genera il PDF dell'elenco e apre la finestra di stampa del browser
+  const handlePrint = () => {
+    exportToPdf(exportRows, exportColumns, exportFilename, exportTitle);
+  };
 
   const content = (
     <>
