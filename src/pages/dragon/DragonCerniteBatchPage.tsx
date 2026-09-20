@@ -294,7 +294,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Articolo / CER *</Label>
-                  <DragonCerSelector value={inputItemId} onChange={setInputItemId} />
+                  <DragonCerSelector value={inputItemId} onChange={setInputItemId} allowCreate={false} />
                 </div>
                 <div>
                   <Label>Quantità (kg) *</Label>
@@ -358,7 +358,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">#{idx + 1}</span>
                         <div className="min-w-0 flex-1">
-                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(row.id, "item_id", v)} placeholder="Seleziona output..." />
+                          <DragonCerSelector value={row.item_id} onChange={v => updateOutputRow(row.id, "item_id", v)} placeholder="Seleziona output..." allowCreate={false} />
                         </div>
                         <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0 p-0" onClick={() => removeOutputRow(row.id)} aria-label={`Elimina riga ${idx + 1}`} title="Elimina riga">
                           <Trash2 className="h-4 w-4" />
@@ -463,6 +463,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
           </div>
         </SheetContent>
       </Sheet>
+      </div>
     </>
   );
 
