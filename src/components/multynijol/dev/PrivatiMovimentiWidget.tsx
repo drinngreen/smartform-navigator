@@ -11,6 +11,7 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
 import PrivatiIndirizziDialog from "./PrivatiIndirizziDialog";
+import { getArchivioPrivati } from "@/data/registroPrivatiArchivio2026";
 
 type Props = { tenantId: string };
 
@@ -51,7 +52,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [addrDialogOpen, setAddrDialogOpen] = useState(false);
 
-  const { data: movimenti, isLoading, refetch, isFetching } = useQuery({
+  const { data: movimentiDb, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["privati-movimenti-widget", tenantId, anno],
     queryFn: async () => {
       let q = supabase
@@ -69,6 +70,21 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
       return (data ?? []) as any[];
     },
   });
+
+  /**
+   * Elenco completo = movimenti a database + righe d'archivio del registro ufficiale
+   * inviato al RENTRI (sola lettura, nessuna scrittura, giacenze invariate).
+   */
+  const movimenti = useMemo(() => {
+    const base = movimentiDb ?? [];
+    const archivio = getArchivioPrivati(tenantId, anno) as any[];
+    if (!archivio.length) return base;
+    return [...base, ...archivio].sort(
+      (a, b) =>
+        String(b.data).localeCompare(String(a.data)) ||
+        (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0),
+    );
+  }, [movimentiDb, tenantId, anno]);
 
   /** Anagrafica privati: usata come fallback per mezzo/targa mancanti sul movimento. */
   const { data: anagrafiche } = useQuery({
