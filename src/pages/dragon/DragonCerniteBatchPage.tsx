@@ -36,7 +36,11 @@ const createOutputRow = (): OutputRow => ({
   lot_code: "",
 });
 
-export default function DragonCerniteBatchPage() {
+interface CerniteOperativeViewProps {
+  embedded?: boolean;
+}
+
+export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewProps) {
   const { batches, isLoading, executeCernita, completeCernita, cancelCernita } = useDragonTransformBatches();
   const { models } = useDragonTransformModels();
   const { items } = useDragonItems();
@@ -174,10 +178,9 @@ export default function DragonCerniteBatchPage() {
     }
   };
 
-  return (
-    <MNAdminLayout title="Cernite" subtitle="Dragon — Smontaggio materiali in componenti">
-      <div className="space-y-4">
-        <DragonBackButton />
+  const content = (
+      <div className="space-y-4" data-cernite-operative-view>
+        {!embedded && <DragonBackButton />}
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground"><Scissors className="h-4 w-4 inline mr-1" />{batches.length} cernite totali</p>
           <Button size="sm" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nuova Cernita</Button>
@@ -459,6 +462,18 @@ export default function DragonCerniteBatchPage() {
           </div>
         </SheetContent>
       </Sheet>
+      </div>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <MNAdminLayout title="Cernite" subtitle="Smontaggio materiali in componenti">
+      {content}
     </MNAdminLayout>
   );
+}
+
+export default function DragonCerniteBatchPage() {
+  return <CerniteOperativeView />;
 }
