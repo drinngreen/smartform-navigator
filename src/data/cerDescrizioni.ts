@@ -51,6 +51,11 @@ export const CER_SOTTOCAPITOLI: Record<string, string> = {
 
 const clean = (cer: unknown) => String(cer ?? "").replace(/\D/g, "");
 
+const DESCRIZIONI_ARTICOLI_CERNITA: Record<string, string> = {
+  "MAT-INER01": "Inerti recuperati da cernita",
+  "MPS-FE01": "Ferro recuperato da cernita",
+};
+
 /**
  * Ritorna la descrizione estesa del CER: voce + sottocapitolo.
  * Il capitolo ("Rifiuti urbani...") è volutamente escluso: rende le stampe
@@ -73,6 +78,10 @@ export function getCerDescrizioneCompleta(cer: unknown): string {
  * possono essere vuoti, abbreviati o contenere note tecniche di rettifica.
  */
 export function getCerDescrizionePerStampa(cer: unknown, descrizioneSalvata?: string | null): string {
+  const codiceOriginale = String(cer ?? "").trim().toUpperCase();
+  const descrizioneCernita = DESCRIZIONI_ARTICOLI_CERNITA[codiceOriginale];
+  if (descrizioneCernita) return descrizioneCernita;
+
   const code = clean(cer);
   // Articoli senza codice numerico (MPS/materiali tipo "FERRO"): resta la descrizione dell'articolo.
   if (!code) return descrizioneSalvata?.trim() ?? "";
