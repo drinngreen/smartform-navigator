@@ -17,3 +17,9 @@
 - [ ] Stabilire se il rischio è ancora attivo e quali altri dati potrebbero essere coinvolti, con prove verificabili
 - [ ] Verificare che visualizzazione, PDF ed Excel leggano l'intero registro corretto senza filtri o limiti nascosti
 - [ ] Correggere solo la lettura/esportazione e validare contro le 359 righe dell'allegato; nessuna modifica ai dati senza autorizzazione
+
+## Giacenze documentali definitive
+- [ ] Rendere consultabili, stampabili ed esportabili le giacenze giorno per giorno dal 18/07/2026
+- [ ] Usare il 18/09/2026 come fotografia di riferimento definitiva, non il 19/09 o il 21/09
+- [ ] Garantire che il 21/09/2026 sia la situazione finale, identica in ogni voce alla situazione attuale
+- [ ] Escludere scritture e automatismi; verificare PDF, Excel, stampa e controllo completo
