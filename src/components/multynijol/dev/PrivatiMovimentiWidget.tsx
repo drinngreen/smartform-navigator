@@ -71,20 +71,8 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     },
   });
 
-  /**
-   * Elenco completo = movimenti a database + righe d'archivio del registro ufficiale
-   * inviato al RENTRI (sola lettura, nessuna scrittura, giacenze invariate).
-   */
-  const movimenti = useMemo(() => {
-    const base = movimentiDb ?? [];
-    const archivio = getArchivioPrivati(tenantId, anno) as any[];
-    if (!archivio.length) return base;
-    return [...base, ...archivio].sort(
-      (a, b) =>
-        String(b.data).localeCompare(String(a.data)) ||
-        (b.numero_progressivo ?? 0) - (a.numero_progressivo ?? 0),
-    );
-  }, [movimentiDb, tenantId, anno]);
+  /** Elenco = solo movimenti presenti a database (nessuna riga d'archivio). */
+  const movimenti = useMemo(() => movimentiDb ?? [], [movimentiDb]);
 
   /** Anagrafica privati: usata come fallback per mezzo/targa mancanti sul movimento. */
   const { data: anagrafiche } = useQuery({
