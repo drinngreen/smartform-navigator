@@ -64,7 +64,12 @@ export function GiacenzeDocumentaliModule() {
     const date = normalizeDate(value);
     if (!date) return;
     setPickerDate(date);
-    setSelectedDates((current) => (current.includes(date) ? current : [...current, date].sort()));
+    if (selectedDates.includes(date)) {
+      toast.info(`La giornata del ${toItalian(date)} è già presente`);
+      return;
+    }
+    setSelectedDates((current) => [...current, date].sort());
+    toast.success(`Giornata del ${toItalian(date)} aggiunta`);
   };
 
   const removeDate = (date: string) => {
@@ -169,7 +174,13 @@ export function GiacenzeDocumentaliModule() {
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
               <Label htmlFor="giacenze-giorno" className="text-xs text-muted-foreground">Giorno</Label>
-              <div className="flex gap-2">
+              <form
+                className="flex gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  addDate(pickerDate);
+                }}
+              >
                 <Input
                   id="giacenze-giorno"
                   type="date"
@@ -181,10 +192,10 @@ export function GiacenzeDocumentaliModule() {
                     if (date) setPickerDate(date);
                   }}
                 />
-                <Button variant="outline" className="gap-1 whitespace-nowrap" onClick={() => addDate(pickerDate)}>
+                <Button type="submit" variant="outline" className="gap-1 whitespace-nowrap">
                   <Plus className="h-4 w-4" /> Aggiungi
                 </Button>
-              </div>
+              </form>
             </div>
             <div>
               <Label htmlFor="giacenze-cer" className="text-xs text-muted-foreground">Cerca C.E.R.</Label>
@@ -196,15 +207,20 @@ export function GiacenzeDocumentaliModule() {
           </div>
 
           {selectedDates.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedDates.slice().sort().map((date) => (
-                <span key={date} className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs">
-                  {toItalian(date)}
-                  <button type="button" onClick={() => removeDate(date)} aria-label={`Rimuovi ${toItalian(date)}`} className="print:hidden">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Giornate selezionate: {selectedDates.length}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {selectedDates.slice().sort().map((date) => (
+                  <span key={date} className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs">
+                    {toItalian(date)}
+                    <button type="button" onClick={() => removeDate(date)} aria-label={`Rimuovi ${toItalian(date)}`} className="print:hidden">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </CardContent>
