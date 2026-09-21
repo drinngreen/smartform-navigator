@@ -1,3 +1,9 @@
+/*
+ * Vista documentale definitiva: nessuna query, sottoscrizione o scrittura.
+ * I dati sono fissati dal 18/07/2026 al 21/09/2026 nel documento verificato.
+ */
+export { GiacenzeDocumentaliModule as DevGiacenzeModule } from "./GiacenzeDocumentaliModule";
+/*
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
@@ -56,6 +62,7 @@ interface Movimento {
   data_movimento: string;
   registrato_il: string;
 }
+*/
 
 interface DragonStockRow {
   quantity: number;
