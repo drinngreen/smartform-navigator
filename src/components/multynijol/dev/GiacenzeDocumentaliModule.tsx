@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FileSpreadsheet, FileText, Printer, Search } from "lucide-react";
+import { FileSpreadsheet, FileText, Plus, Printer, Search, X } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -43,79 +43,101 @@ const sumRows = (rows: DailyRow[]) => rows.reduce(
 );
 
 export function GiacenzeDocumentaliModule() {
-  const [selectedDate, setSelectedDate] = useState(FINAL_DATE);
+  const [pickerDate, setPickerDate] = useState(FINAL_DATE);
+  const [selectedDates, setSelectedDates] = useState<string[]>([FINAL_DATE]);
   const [searchCer, setSearchCer] = useState("");
 
-  const setSafeDate = (value: string) => {
-    if (!value) return;
+  const normalizeDate = (value: string) => {
+    if (!value) return null;
     if (value < FIRST_DATE) {
-      setSelectedDate(FIRST_DATE);
       toast.error("Le giacenze sono disponibili a partire dal 18/07/2026");
-      return;
+      return FIRST_DATE;
     }
     if (value > FINAL_DATE) {
-      setSelectedDate(FINAL_DATE);
       toast.error("Il 21/09/2026 è la situazione finale disponibile");
-      return;
+      return FINAL_DATE;
     }
-    setSelectedDate(value);
+    return value;
   };
 
-  const selectedDayRows = useMemo(
-    () => allRows.filter((row) => toIso(row.data) === selectedDate),
-    [selectedDate],
+  const addDate = (value: string) => {
+    const date = normalizeDate(value);
+    if (!date) return;
+    setPickerDate(date);
+    setSelectedDates((current) => (current.includes(date) ? current : [...current, date].sort()));
+  };
+
+  const removeDate = (date: string) => {
+    setSelectedDates((current) => current.filter((item) => item !== date));
+  };
+
+  const giorni = useMemo(
+    () => selectedDates
+      .slice()
+      .sort()
+      .map((date) => {
+        const rows = allRows.filter((row) => toIso(row.data) === date);
+        return { date, rows, totals: sumRows(rows) };
+      })
+      .filter((giorno) => giorno.rows.length > 0),
+    [selectedDates],
   );
 
-  const visibleRows = useMemo(() => {
-    const query = searchCer.trim().toLowerCase();
-    if (!query) return selectedDayRows;
-    return selectedDayRows.filter((row) => row.cer.toLowerCase().includes(query));
-  }, [searchCer, selectedDayRows]);
+  const query = searchCer.trim().toLowerCase();
+  const visibleRows = (rows: DailyRow[]) => (query ? rows.filter((row) => row.cer.toLowerCase().includes(query)) : rows);
 
   const finalRows = useMemo(() => allRows.filter((row) => row.data === "21/09/2026"), []);
   const finalTotals = useMemo(() => sumRows(finalRows), [finalRows]);
-  const selectedTotals = useMemo(() => sumRows(selectedDayRows), [selectedDayRows]);
 
-  const filename = `Giacenze_del_${toFilename(selectedDate)}`;
+  const filename = giorni.length === 1
+    ? `Giacenze_del_${toFilename(giorni[0].date)}`
+    : `Giacenze_${giorni.length}_giornate`;
 
   const exportPdf = () => {
-    if (!selectedDayRows.length) return toast.error("Nessuna giacenza da esportare");
+    if (!giorni.length) return toast.error("Nessuna giacenza da esportare");
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text(`Giacenze al ${toItalian(selectedDate)}`, 10, 12);
-    autoTable(doc, {
-      startY: 16,
-      head: [["C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"]],
-      body: selectedDayRows.map((row) => [row.cer, row.descrizione, fmt(row.carico), fmt(row.scarico), fmt(row.saldo)]),
-      foot: [["TOTALE", "", fmt(selectedTotals.carico), fmt(selectedTotals.scarico), fmt(selectedTotals.saldo)]],
-      styles: { font: "helvetica", fontSize: 7, cellPadding: 1, lineWidth: 0.1 },
-      headStyles: { fillColor: [55, 65, 81], textColor: 255 },
-      footStyles: { fillColor: [229, 231, 235], textColor: 0, fontStyle: "bold" },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 25, halign: "right" },
-        3: { cellWidth: 25, halign: "right" },
-        4: { cellWidth: 25, halign: "right" },
-      },
-      margin: { left: 10, right: 10, bottom: 10 },
-      showHead: "everyPage",
-      showFoot: "lastPage",
+    giorni.forEach((giorno, index) => {
+      if (index > 0) doc.addPage();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`Giacenze al ${toItalian(giorno.date)}`, 10, 12);
+      autoTable(doc, {
+        startY: 16,
+        head: [["C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"]],
+        body: giorno.rows.map((row) => [row.cer, row.descrizione, fmt(row.carico), fmt(row.scarico), fmt(row.saldo)]),
+        foot: [["TOTALE", "", fmt(giorno.totals.carico), fmt(giorno.totals.scarico), fmt(giorno.totals.saldo)]],
+        styles: { font: "helvetica", fontSize: 7, cellPadding: 1, lineWidth: 0.1 },
+        headStyles: { fillColor: [55, 65, 81], textColor: 255 },
+        footStyles: { fillColor: [229, 231, 235], textColor: 0, fontStyle: "bold" },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 80 },
+          2: { cellWidth: 25, halign: "right" },
+          3: { cellWidth: 25, halign: "right" },
+          4: { cellWidth: 25, halign: "right" },
+        },
+        margin: { left: 10, right: 10, bottom: 10 },
+        showHead: "everyPage",
+        showFoot: "lastPage",
+      });
     });
     doc.save(`${filename}.pdf`);
   };
 
   const exportExcel = () => {
-    if (!selectedDayRows.length) return toast.error("Nessuna giacenza da esportare");
+    if (!giorni.length) return toast.error("Nessuna giacenza da esportare");
     const workbook = XLSX.utils.book_new();
-    const detail = XLSX.utils.aoa_to_sheet([
-      ["Data", "C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"],
-      ...selectedDayRows.map((row) => [row.data, row.cer, row.descrizione, row.carico, row.scarico, row.saldo]),
-      ["TOTALE", "", "", selectedTotals.carico, selectedTotals.scarico, selectedTotals.saldo],
-    ]);
+    const aoa: (string | number)[][] = [];
+    giorni.forEach((giorno, index) => {
+      if (index > 0) aoa.push([]);
+      aoa.push([`Giacenze al ${toItalian(giorno.date)}`]);
+      aoa.push(["Data", "C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"]);
+      giorno.rows.forEach((row) => aoa.push([row.data, row.cer, row.descrizione, row.carico, row.scarico, row.saldo]));
+      aoa.push(["TOTALE", "", "", giorno.totals.carico, giorno.totals.scarico, giorno.totals.saldo]);
+    });
+    const detail = XLSX.utils.aoa_to_sheet(aoa);
     detail["!cols"] = [{ wch: 13 }, { wch: 16 }, { wch: 70 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(workbook, detail, "Giacenze del giorno");
+    XLSX.utils.book_append_sheet(workbook, detail, "Giacenze per giornata");
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
@@ -143,18 +165,48 @@ export function GiacenzeDocumentaliModule() {
       </div>
 
       <Card className="border-border/40 bg-card/40">
-        <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
-          <div>
-            <Label htmlFor="giacenze-giorno" className="text-xs text-muted-foreground">Giorno</Label>
-            <Input id="giacenze-giorno" type="date" min={FIRST_DATE} max={FINAL_DATE} value={selectedDate} onChange={(event) => setSafeDate(event.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="giacenze-cer" className="text-xs text-muted-foreground">Cerca C.E.R.</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input id="giacenze-cer" value={searchCer} onChange={(event) => setSearchCer(event.target.value)} className="pl-9" placeholder="es. 170405" />
+        <CardContent className="space-y-3 p-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label htmlFor="giacenze-giorno" className="text-xs text-muted-foreground">Giorno</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="giacenze-giorno"
+                  type="date"
+                  min={FIRST_DATE}
+                  max={FINAL_DATE}
+                  value={pickerDate}
+                  onChange={(event) => {
+                    const date = normalizeDate(event.target.value);
+                    if (date) setPickerDate(date);
+                  }}
+                />
+                <Button variant="outline" className="gap-1 whitespace-nowrap" onClick={() => addDate(pickerDate)}>
+                  <Plus className="h-4 w-4" /> Aggiungi
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="giacenze-cer" className="text-xs text-muted-foreground">Cerca C.E.R.</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input id="giacenze-cer" value={searchCer} onChange={(event) => setSearchCer(event.target.value)} className="pl-9" placeholder="es. 170405" />
+              </div>
             </div>
           </div>
+
+          {selectedDates.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedDates.slice().sort().map((date) => (
+                <span key={date} className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs">
+                  {toItalian(date)}
+                  <button type="button" onClick={() => removeDate(date)} aria-label={`Rimuovi ${toItalian(date)}`} className="print:hidden">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -164,43 +216,43 @@ export function GiacenzeDocumentaliModule() {
         <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Stampa</Button>
       </div>
 
-      {selectedDayRows.length > 0 && (
-          <Card className="break-after-page border-border/40 bg-card/60">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Giacenze al {toItalian(selectedDate)}</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-muted-foreground">
-                    <th className="px-3 py-2 text-left">C.E.R.</th>
-                    <th className="px-3 py-2 text-left">Descrizione</th>
-                    <th className="px-3 py-2 text-right">Carico</th>
-                    <th className="px-3 py-2 text-right">Scarico</th>
-                    <th className="px-3 py-2 text-right">Saldo</th>
+      {giorni.map((giorno) => (
+        <Card key={giorno.date} className="break-after-page border-border/40 bg-card/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Giacenze al {toItalian(giorno.date)}</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="px-3 py-2 text-left">C.E.R.</th>
+                  <th className="px-3 py-2 text-left">Descrizione</th>
+                  <th className="px-3 py-2 text-right">Carico</th>
+                  <th className="px-3 py-2 text-right">Scarico</th>
+                  <th className="px-3 py-2 text-right">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRows(giorno.rows).map((row) => (
+                  <tr key={`${giorno.date}-${row.cer}`} className="border-b border-border/20">
+                    <td className="px-3 py-1.5 font-mono font-semibold">{row.cer}</td>
+                    <td className="px-3 py-1.5 text-xs">{row.descrizione}</td>
+                    <td className="px-3 py-1.5 text-right">{fmt(row.carico)}</td>
+                    <td className="px-3 py-1.5 text-right">{fmt(row.scarico)}</td>
+                    <td className="px-3 py-1.5 text-right font-semibold">{fmt(row.saldo)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {visibleRows.map((row) => (
-                    <tr key={`${selectedDate}-${row.cer}`} className="border-b border-border/20">
-                      <td className="px-3 py-1.5 font-mono font-semibold">{row.cer}</td>
-                      <td className="px-3 py-1.5 text-xs">{row.descrizione}</td>
-                      <td className="px-3 py-1.5 text-right">{fmt(row.carico)}</td>
-                      <td className="px-3 py-1.5 text-right">{fmt(row.scarico)}</td>
-                      <td className="px-3 py-1.5 text-right font-semibold">{fmt(row.saldo)}</td>
-                    </tr>
-                  ))}
-                  <tr className="border-t-2 font-bold">
-                    <td colSpan={2} className="px-3 py-2">TOTALE</td>
-                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.carico)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.scarico)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.saldo)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-      )}
+                ))}
+                <tr className="border-t-2 font-bold">
+                  <td colSpan={2} className="px-3 py-2">TOTALE</td>
+                  <td className="px-3 py-2 text-right">{fmt(giorno.totals.carico)}</td>
+                  <td className="px-3 py-2 text-right">{fmt(giorno.totals.scarico)}</td>
+                  <td className="px-3 py-2 text-right">{fmt(giorno.totals.saldo)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
