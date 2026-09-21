@@ -181,7 +181,7 @@ export function GiacenzeDocumentaliModule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {visibleRows.map((row) => (
                     <tr key={`${selectedDate}-${row.cer}`} className="border-b border-border/20">
                       <td className="px-3 py-1.5 font-mono font-semibold">{row.cer}</td>
                       <td className="px-3 py-1.5 text-xs">{row.descrizione}</td>
