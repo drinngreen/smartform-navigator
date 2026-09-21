@@ -9,6 +9,7 @@ Rendere la schermata Giacenze identica al PDF giorno per giorno già consegnato,
 - Consentire la consultazione dal 18/07/2026 in avanti; bloccare e segnalare qualsiasi data precedente.
 - Mostrare, stampare ed esportare PDF ed Excel con gli stessi CER, descrizioni, carichi, scarichi e saldi del documento.
 - Per un intervallo, produrre tutte le giornate comprese, non soltanto un riepilogo finale.
+- Fissare il 21/09/2026 come situazione finale: ogni CER, carico, scarico e saldo deve essere identico alla situazione attuale.
 
 ## Sicurezza e verifica
 - Nessuna scrittura su giacenze, movimenti, cernite o registri.
