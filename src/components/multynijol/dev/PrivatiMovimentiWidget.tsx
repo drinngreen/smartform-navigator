@@ -11,7 +11,6 @@ import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { getCerDescrizioneCompleta } from "@/data/cerDescrizioni";
 import PrivatiIndirizziDialog from "./PrivatiIndirizziDialog";
-import { getArchivioPrivati } from "@/data/registroPrivatiArchivio2026";
 
 type Props = { tenantId: string };
 
