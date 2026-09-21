@@ -33,16 +33,6 @@ const toItalian = (date: string) => date.split("-").reverse().join("/");
 const toFilename = (date: string) => date.split("-").reverse().join("-");
 const fmt = (value: number) => value.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 3 });
 
-const groupByDay = (rows: DailyRow[]) => {
-  const grouped = new Map<string, DailyRow[]>();
-  rows.forEach((row) => {
-    const current = grouped.get(row.data) ?? [];
-    current.push(row);
-    grouped.set(row.data, current);
-  });
-  return [...grouped.entries()];
-};
-
 const sumRows = (rows: DailyRow[]) => rows.reduce(
   (total, row) => ({
     carico: total.carico + row.carico,
@@ -53,100 +43,79 @@ const sumRows = (rows: DailyRow[]) => rows.reduce(
 );
 
 export function GiacenzeDocumentaliModule() {
-  const [dataDal, setDataDal] = useState(FIRST_DATE);
-  const [dataAl, setDataAl] = useState(FINAL_DATE);
+  const [selectedDate, setSelectedDate] = useState(FINAL_DATE);
   const [searchCer, setSearchCer] = useState("");
 
-  const setSafeStart = (value: string) => {
+  const setSafeDate = (value: string) => {
+    if (!value) return;
     if (value < FIRST_DATE) {
-      setDataDal(FIRST_DATE);
-      toast.error("Le giacenze sono disponibili a partire dal 18/07/2026");
-      return;
-    }
-    setDataDal(value > dataAl ? dataAl : value);
-  };
-
-  const setSafeEnd = (value: string) => {
-    if (value < FIRST_DATE) {
-      setDataAl(FIRST_DATE);
+      setSelectedDate(FIRST_DATE);
       toast.error("Le giacenze sono disponibili a partire dal 18/07/2026");
       return;
     }
     if (value > FINAL_DATE) {
-      setDataAl(FINAL_DATE);
+      setSelectedDate(FINAL_DATE);
       toast.error("Il 21/09/2026 è la situazione finale disponibile");
       return;
     }
-    setDataAl(value < dataDal ? dataDal : value);
+    setSelectedDate(value);
   };
 
-  const periodRows = useMemo(() => allRows.filter((row) => {
-    const date = toIso(row.data);
-    return date >= dataDal && date <= dataAl;
-  }), [dataAl, dataDal]);
+  const selectedDayRows = useMemo(
+    () => allRows.filter((row) => toIso(row.data) === selectedDate),
+    [selectedDate],
+  );
 
   const visibleRows = useMemo(() => {
     const query = searchCer.trim().toLowerCase();
-    if (!query) return periodRows;
-    return periodRows.filter((row) => row.cer.toLowerCase().includes(query));
-  }, [periodRows, searchCer]);
+    if (!query) return selectedDayRows;
+    return selectedDayRows.filter((row) => row.cer.toLowerCase().includes(query));
+  }, [searchCer, selectedDayRows]);
 
-  const days = useMemo(() => groupByDay(visibleRows), [visibleRows]);
   const finalRows = useMemo(() => allRows.filter((row) => row.data === "21/09/2026"), []);
   const finalTotals = useMemo(() => sumRows(finalRows), [finalRows]);
+  const selectedTotals = useMemo(() => sumRows(selectedDayRows), [selectedDayRows]);
 
-  const filename = `Giacenze_dal_${toFilename(dataDal)}_al_${toFilename(dataAl)}`;
+  const filename = `Giacenze_del_${toFilename(selectedDate)}`;
 
   const exportPdf = () => {
-    if (!days.length) return toast.error("Nessuna giacenza da esportare");
+    if (!selectedDayRows.length) return toast.error("Nessuna giacenza da esportare");
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-    days.forEach(([date, rows], index) => {
-      if (index > 0) doc.addPage();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(`Giacenze al ${date}`, 10, 12);
-      const totals = sumRows(rows);
-      autoTable(doc, {
-        startY: 16,
-        head: [["C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"]],
-        body: rows.map((row) => [row.cer, row.descrizione, fmt(row.carico), fmt(row.scarico), fmt(row.saldo)]),
-        foot: [["TOTALE", "", fmt(totals.carico), fmt(totals.scarico), fmt(totals.saldo)]],
-        styles: { font: "helvetica", fontSize: 7, cellPadding: 1, lineWidth: 0.1 },
-        headStyles: { fillColor: [55, 65, 81], textColor: 255 },
-        footStyles: { fillColor: [229, 231, 235], textColor: 0, fontStyle: "bold" },
-        columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 80 },
-          2: { cellWidth: 25, halign: "right" },
-          3: { cellWidth: 25, halign: "right" },
-          4: { cellWidth: 25, halign: "right" },
-        },
-        margin: { left: 10, right: 10, bottom: 10 },
-        showHead: "everyPage",
-        showFoot: "lastPage",
-      });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(`Giacenze al ${toItalian(selectedDate)}`, 10, 12);
+    autoTable(doc, {
+      startY: 16,
+      head: [["C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"]],
+      body: selectedDayRows.map((row) => [row.cer, row.descrizione, fmt(row.carico), fmt(row.scarico), fmt(row.saldo)]),
+      foot: [["TOTALE", "", fmt(selectedTotals.carico), fmt(selectedTotals.scarico), fmt(selectedTotals.saldo)]],
+      styles: { font: "helvetica", fontSize: 7, cellPadding: 1, lineWidth: 0.1 },
+      headStyles: { fillColor: [55, 65, 81], textColor: 255 },
+      footStyles: { fillColor: [229, 231, 235], textColor: 0, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 25, halign: "right" },
+        3: { cellWidth: 25, halign: "right" },
+        4: { cellWidth: 25, halign: "right" },
+      },
+      margin: { left: 10, right: 10, bottom: 10 },
+      showHead: "everyPage",
+      showFoot: "lastPage",
     });
     doc.save(`${filename}.pdf`);
   };
 
   const exportExcel = () => {
-    if (!days.length) return toast.error("Nessuna giacenza da esportare");
+    if (!selectedDayRows.length) return toast.error("Nessuna giacenza da esportare");
     const workbook = XLSX.utils.book_new();
     const detail = XLSX.utils.aoa_to_sheet([
       ["Data", "C.E.R.", "Descrizione", "Carico", "Scarico", "Saldo"],
-      ...visibleRows.map((row) => [row.data, row.cer, row.descrizione, row.carico, row.scarico, row.saldo]),
+      ...selectedDayRows.map((row) => [row.data, row.cer, row.descrizione, row.carico, row.scarico, row.saldo]),
+      ["TOTALE", "", "", selectedTotals.carico, selectedTotals.scarico, selectedTotals.saldo],
     ]);
     detail["!cols"] = [{ wch: 13 }, { wch: 16 }, { wch: 70 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
-    const totals = XLSX.utils.aoa_to_sheet([
-      ["Data", "Carico", "Scarico", "Saldo"],
-      ...days.map(([date, rows]) => {
-        const total = sumRows(rows);
-        return [date, total.carico, total.scarico, total.saldo];
-      }),
-    ]);
-    totals["!cols"] = [{ wch: 13 }, { wch: 18 }, { wch: 18 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(workbook, detail, "Giorno per giorno");
-    XLSX.utils.book_append_sheet(workbook, totals, "Totali per giorno");
+    XLSX.utils.book_append_sheet(workbook, detail, "Giacenze del giorno");
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   };
 
@@ -174,14 +143,10 @@ export function GiacenzeDocumentaliModule() {
       </div>
 
       <Card className="border-border/40 bg-card/40">
-        <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-3">
+        <CardContent className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
           <div>
-            <Label htmlFor="giacenze-dal" className="text-xs text-muted-foreground">Dal</Label>
-            <Input id="giacenze-dal" type="date" min={FIRST_DATE} max={FINAL_DATE} value={dataDal} onChange={(event) => setSafeStart(event.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="giacenze-al" className="text-xs text-muted-foreground">Al</Label>
-            <Input id="giacenze-al" type="date" min={FIRST_DATE} max={FINAL_DATE} value={dataAl} onChange={(event) => setSafeEnd(event.target.value)} />
+            <Label htmlFor="giacenze-giorno" className="text-xs text-muted-foreground">Giorno</Label>
+            <Input id="giacenze-giorno" type="date" min={FIRST_DATE} max={FINAL_DATE} value={selectedDate} onChange={(event) => setSafeDate(event.target.value)} />
           </div>
           <div>
             <Label htmlFor="giacenze-cer" className="text-xs text-muted-foreground">Cerca C.E.R.</Label>
@@ -199,12 +164,10 @@ export function GiacenzeDocumentaliModule() {
         <Button variant="outline" onClick={() => window.print()} className="gap-2"><Printer className="h-4 w-4" /> Stampa</Button>
       </div>
 
-      {days.map(([date, rows]) => {
-        const totals = sumRows(rows);
-        return (
-          <Card key={date} className="break-after-page border-border/40 bg-card/60">
+      {selectedDayRows.length > 0 && (
+          <Card className="break-after-page border-border/40 bg-card/60">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Giacenze al {date}</CardTitle>
+              <CardTitle className="text-base">Giacenze al {toItalian(selectedDate)}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -218,8 +181,8 @@ export function GiacenzeDocumentaliModule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={`${date}-${row.cer}`} className="border-b border-border/20">
+                  {visibleRows.map((row) => (
+                    <tr key={`${selectedDate}-${row.cer}`} className="border-b border-border/20">
                       <td className="px-3 py-1.5 font-mono font-semibold">{row.cer}</td>
                       <td className="px-3 py-1.5 text-xs">{row.descrizione}</td>
                       <td className="px-3 py-1.5 text-right">{fmt(row.carico)}</td>
@@ -229,16 +192,15 @@ export function GiacenzeDocumentaliModule() {
                   ))}
                   <tr className="border-t-2 font-bold">
                     <td colSpan={2} className="px-3 py-2">TOTALE</td>
-                    <td className="px-3 py-2 text-right">{fmt(totals.carico)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(totals.scarico)}</td>
-                    <td className="px-3 py-2 text-right">{fmt(totals.saldo)}</td>
+                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.carico)}</td>
+                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.scarico)}</td>
+                    <td className="px-3 py-2 text-right">{fmt(selectedTotals.saldo)}</td>
                   </tr>
                 </tbody>
               </table>
             </CardContent>
           </Card>
-        );
-      })}
+      )}
     </div>
   );
 }
