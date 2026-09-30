@@ -93,10 +93,10 @@ export function DevInviiRentriModule() {
         <div>
           <h3 className="text-lg font-semibold text-violet-300 flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Invii al RENTRI — Multyproget
+            Invii al RENTRI — Multyproget e Niyol
           </h3>
           <p className="text-xs text-muted-foreground">
-            Report dettagliato delle registrazioni inviate al portale RENTRI · Febbraio – Marzo 2026
+            Report dettagliato delle registrazioni inviate al portale RENTRI · Febbraio – Marzo e Agosto 2026
           </p>
         </div>
         <div className="flex gap-2">
@@ -113,7 +113,7 @@ export function DevInviiRentriModule() {
             variant="outline"
             size="sm"
             disabled={!filtered.length}
-            onClick={() => exportToPdf(filtered, exportCols, "invii-rentri-multy", "Invii RENTRI Multyproget — Feb/Mar 2026")}
+            onClick={() => exportToPdf(filtered, exportCols, "invii-rentri-multy", "Invii RENTRI Multyproget e Niyol")}
             className="gap-1 border-violet-500/30 text-violet-400 hover:bg-violet-500/10"
           >
             <FileText className="h-3 w-3" /> PDF
