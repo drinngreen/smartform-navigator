@@ -55,6 +55,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
+import { DevInviiRentriModule } from "@/components/multynijol/dev/DevInviiRentriModule";
 import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
 
 
@@ -828,6 +829,12 @@ export default function MNRentriConsolePage() {
         )}
 
         {tab === "registri" && (
+          <div className="rounded-2xl bg-card/60 border border-border/30 p-6">
+            <DevInviiRentriModule />
+          </div>
+        )}
+
+        {tab === "registri" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Invio movimenti al registro</h3>
             <div className="flex flex-wrap items-end gap-3">
@@ -1049,6 +1056,7 @@ export default function MNRentriConsolePage() {
 
         {tab === "invii" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-6">
+            <DevInviiRentriModule />
             <div className="space-y-3">
               <h3 className="text-base font-display tracking-wider">Invii FIR e rifiuti RENTRI</h3>
               <RentriHistoryPanel defaultCliente={cliente} />
