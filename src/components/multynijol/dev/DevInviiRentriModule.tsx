@@ -23,8 +23,7 @@ interface InvioRentri {
   note: string | null;
 }
 
-// Il listato finale sostituisce agosto; febbraio e marzo restano invariati.
-// Il CSV non contiene ID RENTRI né progressivi: non riutilizzare quelli del vecchio elenco HTTP 202.
+// Il listato verificato (con ID RENTRI e progressivi) sostituisce agosto; febbraio e marzo restano invariati.
 const dataset: InvioRentri[] = [
   ...(inviiData as InvioRentri[]).filter((r) => !r.data?.startsWith("2026-08")),
   ...(agostoVerificato as InvioRentri[]),

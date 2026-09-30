@@ -1,3 +1,3 @@
 # Regole strutturali
 
-- I riscontri degli invii RENTRI di agosto 2026 stanno in un dataset separato dal precedente elenco di febbraio/marzo: il CSV finale non fornisce ID RENTRI o progressivi, quindi non bisogna riutilizzare quelli delle richieste HTTP 202 né dedurre conferme dalla sola risposta tecnica.
+- Gli invii RENTRI di agosto 2026 stanno in un dataset separato (inviiRentriAgostoVerificati.json) generato dal CSV "Verifica_Agosto_2026_Accettati_Con_ID_RENTRI" con ID e progressivi letti dal RENTRI; mai riutilizzare ID delle richieste HTTP 202. Il dataset è mostrato sia nel pannello Dev sia nella Console RENTRI (tab registri e invii), perché il preferito "Invii al RENTRI" apre la console.
