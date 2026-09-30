@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, FileText, Send, Filter } from "lucide-react";
 import inviiData from "@/data/inviiRentriMulty.json";
+import agostoVerificato from "@/data/inviiRentriAgostoVerificati.json";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 
 interface InvioRentri {
@@ -22,7 +23,12 @@ interface InvioRentri {
   note: string | null;
 }
 
-const dataset = inviiData as InvioRentri[];
+// Il listato finale sostituisce agosto; febbraio e marzo restano invariati.
+// Il CSV non contiene ID RENTRI né progressivi: non riutilizzare quelli del vecchio elenco HTTP 202.
+const dataset: InvioRentri[] = [
+  ...(inviiData as InvioRentri[]).filter((r) => !r.data?.startsWith("2026-08")),
+  ...(agostoVerificato as InvioRentri[]),
+];
 
 const formatDate = (s: string | null) => {
   if (!s) return "—";
@@ -96,7 +102,7 @@ export function DevInviiRentriModule() {
             Invii al RENTRI — Multyproget e Niyol
           </h3>
           <p className="text-xs text-muted-foreground">
-            Report dettagliato delle registrazioni inviate al portale RENTRI · Febbraio – Marzo e Agosto 2026
+            Febbraio – Marzo e Agosto 2026 · Agosto: riscontro «Presente su RENTRI» dal listato allegato
           </p>
         </div>
         <div className="flex gap-2">

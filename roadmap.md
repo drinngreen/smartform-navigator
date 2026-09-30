@@ -23,3 +23,8 @@
 - [x] Usare il 18/09/2026 come fotografia di riferimento definitiva, non il 19/09 o il 21/09
 - [x] Garantire che il 21/09/2026 sia la situazione finale, identica in ogni voce alla situazione attuale
 - [x] Escludere scritture e automatismi; verificare PDF, Excel, stampa e controllo completo
+
+## Invii RENTRI agosto 2026
+- [x] Sostituire le sole righe di agosto con il listato finale verificato; lasciare invariati febbraio e marzo
+- [x] Verificare conteggi, corrispondenza riga per riga e controlli del programma senza scritture operative
+- [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
