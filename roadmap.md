@@ -25,5 +25,6 @@
 - [x] Escludere scritture e automatismi; verificare PDF, Excel, stampa e controllo completo
 
 ## Invii RENTRI agosto 2026
-- [ ] Sostituire le sole righe di agosto con il listato finale verificato; lasciare invariati febbraio e marzo
-- [ ] Verificare conteggi, corrispondenza riga per riga, esportazioni e controlli del programma senza scritture operative
+- [x] Sostituire le sole righe di agosto con il listato finale verificato; lasciare invariati febbraio e marzo
+- [x] Verificare conteggi, corrispondenza riga per riga e controlli del programma senza scritture operative
+- [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
