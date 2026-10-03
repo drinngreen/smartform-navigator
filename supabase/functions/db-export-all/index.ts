@@ -17,8 +17,10 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Accesso richiesto" }, 401);
     const admin = createClient(url, service);
     const { data: u, error: ue } = await admin.auth.getUser(token);
+    if (ue && (ue as any).status >= 500) return json({ error: "TEMPORANEO: servizio non raggiungibile" }, 503);
     if (ue || !u?.user) return json({ error: "Sessione non valida" }, 401);
-    const { data: role } = await admin.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+    const { data: role, error: re } = await admin.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
+    if (re) return json({ error: "TEMPORANEO: verifica permessi non riuscita" }, 503);
     if (!role) return json({ error: "Solo gli amministratori possono esportare tutti i dati" }, 403);
 
     const body = await req.json().catch(() => ({}));
@@ -35,7 +37,12 @@ Deno.serve(async (req) => {
       const from = Math.max(0, Number(body.from) || 0);
       const size = Math.min(1000, Math.max(1, Number(body.size) || 200));
       const { data, error } = await admin.from(name).select("*").range(from, from + size - 1);
-      if (error) throw new Error(`${name}: ${error.message}`);
+      if (error) {
+        const msg = String(error.message || "");
+        const html = msg.includes("<!DOCTYPE") || msg.includes("<html");
+        if (html) return json({ error: `TEMPORANEO: database momentaneamente non raggiungibile (${name})` }, 503);
+        throw new Error(`${name}: ${msg.slice(0, 300)}`);
+      }
       return json({ rows: data || [], done: (data || []).length < size });
     }
     return json({ error: "Azione non valida" }, 400);
