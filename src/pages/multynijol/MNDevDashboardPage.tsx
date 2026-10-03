@@ -38,6 +38,7 @@ import { DevConfrontoElenchiModule } from "@/components/multynijol/dev/DevConfro
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
 import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
+import { DevBackupExportModule } from "@/components/multynijol/dev/DevBackupExportModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
 import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck } from "lucide-react";
@@ -209,8 +210,12 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="confronto-elenchi" className="gap-2 data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-300">
             <FileSpreadsheet className="h-4 w-4" />Confronto elenchi
           </TabsTrigger>
+          <TabsTrigger value="backup-export" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            <Database className="h-4 w-4" />Backup completo
+          </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="backup-export"><DevBackupExportModule /></TabsContent>
         <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
