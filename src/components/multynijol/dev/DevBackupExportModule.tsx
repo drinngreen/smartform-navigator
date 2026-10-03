@@ -6,6 +6,25 @@ import { toast } from "sonner";
 
 type Esito = { tabella: string; righe: number; errore?: string };
 
+// Cartelle leggibili per area dell'applicazione; dentro, i nomi tecnici delle tabelle.
+const AREE: [string, (t: string) => boolean][] = [
+  ["01_Giacenze_Magazzino", (t) => /^(magazzino_|giacenze_)/.test(t) || ["dragon_stock_movements", "dragon_warehouses", "dragon_inventory_adjustments", "dragon_lots", "dragon_lot_movements", "dragon_movement_allocations"].includes(t)],
+  ["02_Cernite", (t) => /^(cernit|dragon_transform)/.test(t)],
+  ["03_Registri_Carico_Scarico", (t) => /^(registro_|register_movements|dragon_register|movimenti_)/.test(t)],
+  ["04_Formulari_FIR", (t) => /^(fir|ddt_|impianto_fir)/.test(t)],
+  ["05_Privati_e_Ricevute", (t) => /(privat|ricevut)/.test(t)],
+  ["06_RENTRI", (t) => /^rentri_/.test(t)],
+  ["07_Anagrafiche_Clienti", (t) => /^(anagrafica_|cliente_|rubrica_|intermediar|impianti|autorizzazioni|erp_anagrafiche)/.test(t)],
+  ["08_Intermediazione", (t) => /^(intermediazion|listini_intermediazione)/.test(t)],
+  ["09_Fatture_Contabilita", (t) => /^(fattur|erp_|contratti_|sibill_|pagamenti)/.test(t)],
+  ["10_Configurazione_Dragon", (t) => /^dragon_/.test(t)],
+  ["11_Utenti_e_Aziende", (t) => /^(profiles|user_roles|memberships|organizations|tenants|online_status|driver_locations|appuntamenti)/.test(t)],
+  ["12_Comunicazioni_Telefono", (t) => /^(messages|message_|emails_|comunicazioni|notifications|calls|call_|office_calls|signals)/.test(t)],
+  ["13_Social", (t) => /^social_/.test(t)],
+  ["14_Assistente_AI", (t) => /^(ai_|system_prompt)/.test(t)],
+];
+const areaDi = (t: string) => AREE.find(([, m]) => m(t))?.[0] ?? "99_Altro_Tecnico";
+
 const toCsv = (rows: Record<string, unknown>[]) => {
   const cols = Array.from(rows.reduce((s, r) => { Object.keys(r).forEach((k) => s.add(k)); return s; }, new Set<string>()));
   const esc = (v: unknown) => {
@@ -53,8 +72,8 @@ export function DevBackupExportModule() {
             from += r.rows.length;
           }
           dati[t] = rows;
-          files[`tabelle/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
-          files[`tabelle/${t}/${t}.csv`] = strToU8(toCsv(rows));
+          files[`${areaDi(t)}/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
+          files[`${areaDi(t)}/${t}/${t}.csv`] = strToU8(toCsv(rows));
           out.push({ tabella: t, righe: rows.length });
         } catch (e) {
           out.push({ tabella: t, righe: 0, errore: (e as Error).message });
@@ -75,17 +94,24 @@ export function DevBackupExportModule() {
           note: b.notes || "", id: b.id,
         };
       }).sort((a: any, b: any) => String(a.data).localeCompare(String(b.data)));
-      files["CERNITE_COMPLETE.csv"] = strToU8(toCsv(cern));
+      files["02_Cernite/CERNITE_COMPLETE.csv"] = strToU8(toCsv(cern));
       const now = new Date();
+      const ordinati = [...out].sort((a, b) => (areaDi(a.tabella) + a.tabella).localeCompare(areaDi(b.tabella) + b.tabella));
       const indice = [
         `Esportazione integrale Multydev — ${now.toLocaleString("it-IT")}`,
         `Tabelle: ${out.length} · Righe totali: ${out.reduce((s, e) => s + e.righe, 0)}`,
         "",
-        "Cartella;Righe;File;Esito",
-        ...out.map((e) => `tabelle/${e.tabella};${e.righe};${e.tabella}.json, ${e.tabella}.csv;${e.errore ? "ERRORE: " + e.errore : "OK"}`),
+        "Area;Cartella tabella;Righe;File;Esito",
+        ...ordinati.map((e) => `${areaDi(e.tabella)};${areaDi(e.tabella)}/${e.tabella};${e.righe};${e.tabella}.json, ${e.tabella}.csv;${e.errore ? "ERRORE: " + e.errore : "OK"}`),
       ].join("\r\n");
-      files["INDICE.csv"] = strToU8("\uFEFF" + indice);
-      files["indice.json"] = strToU8(JSON.stringify({ generato: now.toISOString(), tabelle: out }, null, 2));
+      files["00_INDICE.csv"] = strToU8("\uFEFF" + indice);
+      // Un piccolo indice dentro ogni area
+      const perArea = new Map<string, Esito[]>();
+      ordinati.forEach((e) => { const a = areaDi(e.tabella); perArea.set(a, [...(perArea.get(a) || []), e]); });
+      perArea.forEach((lista, a) => {
+        files[`${a}/_CONTENUTO.csv`] = strToU8("\uFEFF" + ["Cartella;Righe;Esito", ...lista.map((e) => `${e.tabella};${e.righe};${e.errore ? "ERRORE: " + e.errore : "OK"}`)].join("\r\n"));
+      });
+      files["00_indice.json"] = strToU8(JSON.stringify({ generato: now.toISOString(), tabelle: ordinati.map((e) => ({ area: areaDi(e.tabella), ...e })) }, null, 2));
       const zip = zipSync(files, { level: 6 });
       const blob = new Blob([zip], { type: "application/zip" });
       const a = document.createElement("a");
