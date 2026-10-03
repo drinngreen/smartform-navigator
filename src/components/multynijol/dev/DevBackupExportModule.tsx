@@ -35,11 +35,34 @@ const toCsv = (rows: Record<string, unknown>[]) => {
   return "\uFEFF" + [cols.join(";"), ...rows.map((r) => cols.map((c) => esc(r[c])).join(";"))].join("\r\n");
 };
 
-async function call(body: Record<string, unknown>) {
+const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const isTemporaneo = (m: string) => /TEMPORANEO|521|502|503|504|546|WORKER_RESOURCE|<html|Failed to fetch|Sessione non valida|amministratori/i.test(m);
+
+async function callOnce(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke("db-export-all", { body });
-  if (error) throw new Error((data as any)?.error || error.message);
-  if ((data as any)?.error) throw new Error((data as any).error);
+  let msg = (data as any)?.error;
+  if (error && !msg) {
+    try { msg = (await (error as any).context?.json?.())?.error; } catch { /* ignore */ }
+  }
+  if (error || msg) throw new Error(String(msg || error?.message).slice(0, 300));
   return data as any;
+}
+
+// Con il database sotto sforzo aspetta e riprova, invece di insistere.
+async function call(body: Record<string, unknown>, onWait?: (s: string) => void) {
+  for (let tentativo = 0; ; tentativo++) {
+    try {
+      const r = await callOnce(body);
+      await pausa(150);
+      return r;
+    } catch (e) {
+      const m = (e as Error).message;
+      if (!isTemporaneo(m) || tentativo >= 6) throw e;
+      const attesa = Math.min(60000, 5000 * 2 ** tentativo);
+      onWait?.(`Database occupato, riprovo tra ${Math.round(attesa / 1000)} secondi…`);
+      await pausa(attesa);
+    }
+  }
 }
 
 export function DevBackupExportModule() {
@@ -58,13 +81,13 @@ export function DevBackupExportModule() {
         const t = tables[i] as string;
         setStato(`Tabella ${i + 1} di ${tables.length}: ${t}`);
         try {
-          const rows: any[] = []; let from = 0; let size = 200;
+          const rows: any[] = []; let from = 0; let size = 100;
           for (;;) {
             let r: any;
             try {
-              r = await call({ action: "table", table: t, from, size });
+              r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`));
             } catch (e) {
-              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); continue; }
+              if (size > 1 && !isTemporaneo((e as Error).message)) { size = Math.max(1, Math.floor(size / 4)); continue; }
               throw e;
             }
             rows.push(...r.rows);
