@@ -83,15 +83,15 @@ async function callOnce(body: Record<string, unknown>) {
 }
 
 // Con il database sotto sforzo aspetta e riprova, invece di insistere.
-async function call(body: Record<string, unknown>, onWait?: (s: string) => void) {
+async function call(body: Record<string, unknown>, onWait?: (s: string) => void, maxRetry = 6) {
   for (let tentativo = 0; ; tentativo++) {
     try {
       const r = await callOnce(body);
-      await pausa(150);
+      await pausa(50);
       return r;
     } catch (e) {
       const m = (e as Error).message;
-      if (!isTemporaneo(m) || tentativo >= 6) throw e;
+      if (!isTemporaneo(m) || tentativo >= maxRetry) throw e;
       const attesa = Math.min(60000, 5000 * 2 ** tentativo);
       onWait?.(`Database occupato, riprovo tra ${Math.round(attesa / 1000)} secondi…`);
       await pausa(attesa);
