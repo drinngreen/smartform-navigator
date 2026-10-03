@@ -38,14 +38,48 @@ const toCsv = (rows: Record<string, unknown>[]) => {
 const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const isTemporaneo = (m: string) => /TEMPORANEO|521|502|503|504|546|WORKER_RESOURCE|<html|Failed to fetch|Sessione non valida|amministratori/i.test(m);
 
+const SB_URL = import.meta.env.VITE_SUPABASE_URL || "https://zungtspcixpxjpjlcwzy.supabase.co";
+const SB_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+
+// Il token si legge senza restare appesi al rinnovo della sessione (che con il database lento può bloccarsi).
+async function leggiToken(): Promise<string> {
+  try {
+    const r = await Promise.race([
+      supabase.auth.getSession().then((s) => s.data.session?.access_token || ""),
+      pausa(4000).then(() => ""),
+    ]);
+    if (r) return r;
+  } catch { /* fallback sotto */ }
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i) || "";
+      if (k.startsWith("sb-") && k.endsWith("-auth-token")) {
+        const t = JSON.parse(localStorage.getItem(k) || "{}")?.access_token;
+        if (t) return t;
+      }
+    }
+  } catch { /* ignore */ }
+  throw new Error("Sessione non trovata: esci e rientra nell'app, poi riprova");
+}
+
 async function callOnce(body: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke("db-export-all", { body });
-  let msg = (data as any)?.error;
-  if (error && !msg) {
-    try { msg = (await (error as any).context?.json?.())?.error; } catch { /* ignore */ }
+  const token = await leggiToken();
+  let res: Response;
+  try {
+    res = await fetch(`${SB_URL}/functions/v1/db-export-all`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: SB_KEY },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90000),
+    });
+  } catch (e) {
+    throw new Error(`TEMPORANEO: Failed to fetch (${(e as Error).message})`);
   }
-  if (error || msg) throw new Error(String(msg || error?.message).slice(0, 300));
-  return data as any;
+  const txt = await res.text();
+  let data: any = null;
+  try { data = JSON.parse(txt); } catch { /* risposta non JSON */ }
+  if (!res.ok || data?.error) throw new Error(String(data?.error || `${res.status} ${txt}`).slice(0, 300));
+  return data;
 }
 
 // Con il database sotto sforzo aspetta e riprova, invece di insistere.
@@ -71,9 +105,9 @@ export function DevBackupExportModule() {
   const [esiti, setEsiti] = useState<Esito[]>([]);
 
   const esporta = async () => {
-    setBusy(true); setEsiti([]);
+    setBusy(true); setEsiti([]); setStato("Avvio: lettura elenco tabelle…");
     try {
-      const { tables } = await call({ action: "list" });
+      const { tables } = await call({ action: "list" }, (s) => setStato(`Elenco tabelle: ${s}`));
       const files: Record<string, Uint8Array> = {};
       const dati: Record<string, any[]> = {};
       const out: Esito[] = [];
