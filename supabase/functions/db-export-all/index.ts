@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       const name = String(body.table || "");
       if (!/^[a-z0-9_]+$/i.test(name)) return json({ error: "Nome tabella non valido" }, 400);
       const from = Math.max(0, Number(body.from) || 0);
-      const size = 1000;
+      const size = Math.min(1000, Math.max(1, Number(body.size) || 200));
       const { data, error } = await admin.from(name).select("*").range(from, from + size - 1);
       if (error) throw new Error(`${name}: ${error.message}`);
       return json({ rows: data || [], done: (data || []).length < size });
