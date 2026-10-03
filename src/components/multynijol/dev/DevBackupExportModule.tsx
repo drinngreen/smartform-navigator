@@ -33,6 +33,7 @@ export function DevBackupExportModule() {
     try {
       const { tables } = await call({ action: "list" });
       const files: Record<string, Uint8Array> = {};
+      const dati: Record<string, any[]> = {};
       const out: Esito[] = [];
       for (let i = 0; i < tables.length; i++) {
         const t = tables[i] as string;
@@ -51,6 +52,7 @@ export function DevBackupExportModule() {
             if (r.rows.length < size) break;
             from += r.rows.length;
           }
+          dati[t] = rows;
           files[`tabelle/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
           files[`tabelle/${t}/${t}.csv`] = strToU8(toCsv(rows));
           out.push({ tabella: t, righe: rows.length });
@@ -59,6 +61,21 @@ export function DevBackupExportModule() {
         }
         setEsiti([...out]);
       }
+      const items = new Map((dati.dragon_items || []).map((i: any) => [i.id, i]));
+      const outs = dati.dragon_transform_batch_outputs || [];
+      const cern = (dati.dragon_transform_batches || []).map((b: any) => {
+        const src: any = items.get(b.source_item_id) || {};
+        const comp = outs.filter((o: any) => o.batch_id === b.id);
+        return {
+          data: b.execution_date, stato: b.status,
+          cer_ingresso: src.codice_cer || "", descrizione_ingresso: src.descrizione || "",
+          kg_ingresso: b.input_quantity,
+          kg_uscita: comp.reduce((t: number, o: any) => t + Number(o.output_quantity || 0), 0),
+          componenti: comp.map((o: any) => { const it: any = items.get(o.output_item_id) || {}; return `${it.codice_cer || "?"} ${it.descrizione || ""}: ${o.output_quantity} kg`; }).join(" | "),
+          note: b.notes || "", id: b.id,
+        };
+      }).sort((a: any, b: any) => String(a.data).localeCompare(String(b.data)));
+      files["CERNITE_COMPLETE.csv"] = strToU8(toCsv(cern));
       const now = new Date();
       const indice = [
         `Esportazione integrale Multydev — ${now.toLocaleString("it-IT")}`,
