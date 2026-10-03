@@ -38,12 +38,18 @@ export function DevBackupExportModule() {
         const t = tables[i] as string;
         setStato(`Tabella ${i + 1} di ${tables.length}: ${t}`);
         try {
-          const rows: any[] = []; let from = 0;
+          const rows: any[] = []; let from = 0; let size = 200;
           for (;;) {
-            const r = await call({ action: "table", table: t, from });
+            let r: any;
+            try {
+              r = await call({ action: "table", table: t, from, size });
+            } catch (e) {
+              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); continue; }
+              throw e;
+            }
             rows.push(...r.rows);
-            if (r.done) break;
-            from += 1000;
+            if (r.rows.length < size) break;
+            from += r.rows.length;
           }
           files[`tabelle/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
           files[`tabelle/${t}/${t}.csv`] = strToU8(toCsv(rows));
