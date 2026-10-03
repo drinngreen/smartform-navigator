@@ -106,25 +106,30 @@ export function DevBackupExportModule() {
 
   const esporta = async () => {
     setBusy(true); setEsiti([]); setStato("Avvio: lettura elenco tabelle…");
+    toast.info("Backup avviato: lascia aperta questa pagina fino a «Completato»");
     try {
       const { tables } = await call({ action: "list" }, (s) => setStato(`Elenco tabelle: ${s}`));
       const files: Record<string, Uint8Array> = {};
       const dati: Record<string, any[]> = {};
       const out: Esito[] = [];
+      let righeTot = 0;
       for (let i = 0; i < tables.length; i++) {
         const t = tables[i] as string;
-        setStato(`Tabella ${i + 1} di ${tables.length}: ${t}`);
+        setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · righe lette finora ${righeTot.toLocaleString("it-IT")}`);
         try {
-          const rows: any[] = []; let from = 0; let size = 100;
+          // Blocchi grandi per velocità; se il server non regge, il blocco si riduce da solo.
+          const rows: any[] = []; let from = 0; let size = 1000;
           for (;;) {
             let r: any;
             try {
               r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`));
             } catch (e) {
-              if (size > 1 && !isTemporaneo((e as Error).message)) { size = Math.max(1, Math.floor(size / 4)); continue; }
+              if (size > 25) { size = Math.max(25, Math.floor(size / 4)); continue; }
               throw e;
             }
             rows.push(...r.rows);
+            righeTot += r.rows.length;
+            setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · ${rows.length.toLocaleString("it-IT")} righe · totale ${righeTot.toLocaleString("it-IT")}`);
             if (r.rows.length < size) break;
             from += r.rows.length;
           }
@@ -137,6 +142,7 @@ export function DevBackupExportModule() {
         }
         setEsiti([...out]);
       }
+
       const items = new Map((dati.dragon_items || []).map((i: any) => [i.id, i]));
       const outs = dati.dragon_transform_batch_outputs || [];
       const cern = (dati.dragon_transform_batches || []).map((b: any) => {
