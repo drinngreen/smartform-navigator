@@ -118,13 +118,13 @@ export function DevBackupExportModule() {
         setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · righe lette finora ${righeTot.toLocaleString("it-IT")}`);
         try {
           // Blocchi grandi per velocità; se il server non regge, il blocco si riduce da solo.
-          const rows: any[] = []; let from = 0; let size = 1000;
+          const rows: any[] = []; let from = 0; let size = 1000; let tetto = 1000;
           for (;;) {
             let r: any;
             try {
               r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`), size > 1 ? 0 : 6);
             } catch (e) {
-              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); continue; }
+              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); tetto = size; await pausa(1500); continue; }
               throw e;
             }
             rows.push(...r.rows);
@@ -132,7 +132,7 @@ export function DevBackupExportModule() {
             setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · ${rows.length.toLocaleString("it-IT")} righe · totale ${righeTot.toLocaleString("it-IT")}`);
             if (r.rows.length < size) break;
             from += r.rows.length;
-            size = Math.min(1000, size * 2);
+            size = Math.min(tetto, size * 2);
           }
           dati[t] = rows;
           files[`${areaDi(t)}/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
