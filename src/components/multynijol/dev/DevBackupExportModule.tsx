@@ -122,7 +122,7 @@ export function DevBackupExportModule() {
           for (;;) {
             let r: any;
             try {
-              r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`));
+              r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`), size > 1 ? 0 : 6);
             } catch (e) {
               if (size > 1) { size = Math.max(1, Math.floor(size / 4)); continue; }
               throw e;
