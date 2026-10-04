@@ -36,7 +36,11 @@ Deno.serve(async (req) => {
       if (!/^[a-z0-9_]+$/i.test(name)) return json({ error: "Nome tabella non valido" }, 400);
       const from = Math.max(0, Number(body.from) || 0);
       const size = Math.min(1000, Math.max(1, Number(body.size) || 200));
-      const { data, error } = await admin.from(name).select("*").range(from, from + size - 1);
+      // Ordine stabile per chiave: senza, le pagine successive possono saltare o ripetere righe.
+      let { data, error } = await admin.from(name).select("*").order("id", { ascending: true }).range(from, from + size - 1);
+      if (error && /column .*id.* does not exist|42703/i.test(`${error.message} ${(error as any).code}`)) {
+        ({ data, error } = await admin.from(name).select("*").range(from, from + size - 1));
+      }
       if (error) {
         const msg = String(error.message || "");
         const html = msg.includes("<!DOCTYPE") || msg.includes("<html");

@@ -83,15 +83,15 @@ async function callOnce(body: Record<string, unknown>) {
 }
 
 // Con il database sotto sforzo aspetta e riprova, invece di insistere.
-async function call(body: Record<string, unknown>, onWait?: (s: string) => void) {
+async function call(body: Record<string, unknown>, onWait?: (s: string) => void, maxRetry = 6) {
   for (let tentativo = 0; ; tentativo++) {
     try {
       const r = await callOnce(body);
-      await pausa(150);
+      await pausa(50);
       return r;
     } catch (e) {
       const m = (e as Error).message;
-      if (!isTemporaneo(m) || tentativo >= 6) throw e;
+      if (!isTemporaneo(m) || tentativo >= maxRetry) throw e;
       const attesa = Math.min(60000, 5000 * 2 ** tentativo);
       onWait?.(`Database occupato, riprovo tra ${Math.round(attesa / 1000)} secondi…`);
       await pausa(attesa);
@@ -106,27 +106,33 @@ export function DevBackupExportModule() {
 
   const esporta = async () => {
     setBusy(true); setEsiti([]); setStato("Avvio: lettura elenco tabelle…");
+    toast.info("Backup avviato: lascia aperta questa pagina fino a «Completato»");
     try {
       const { tables } = await call({ action: "list" }, (s) => setStato(`Elenco tabelle: ${s}`));
       const files: Record<string, Uint8Array> = {};
       const dati: Record<string, any[]> = {};
       const out: Esito[] = [];
+      let righeTot = 0;
       for (let i = 0; i < tables.length; i++) {
         const t = tables[i] as string;
-        setStato(`Tabella ${i + 1} di ${tables.length}: ${t}`);
+        setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · righe lette finora ${righeTot.toLocaleString("it-IT")}`);
         try {
-          const rows: any[] = []; let from = 0; let size = 100;
+          // Blocchi grandi per velocità; se il server non regge, il blocco si riduce da solo.
+          const rows: any[] = []; let from = 0; let size = 1000; let tetto = 1000;
           for (;;) {
             let r: any;
             try {
-              r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`));
+              r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`), size > 1 ? 0 : 6);
             } catch (e) {
-              if (size > 1 && !isTemporaneo((e as Error).message)) { size = Math.max(1, Math.floor(size / 4)); continue; }
+              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); tetto = size; await pausa(1500); continue; }
               throw e;
             }
             rows.push(...r.rows);
+            righeTot += r.rows.length;
+            setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · ${rows.length.toLocaleString("it-IT")} righe · totale ${righeTot.toLocaleString("it-IT")}`);
             if (r.rows.length < size) break;
             from += r.rows.length;
+            size = Math.min(tetto, size * 2);
           }
           dati[t] = rows;
           files[`${areaDi(t)}/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
@@ -137,6 +143,7 @@ export function DevBackupExportModule() {
         }
         setEsiti([...out]);
       }
+
       const items = new Map((dati.dragon_items || []).map((i: any) => [i.id, i]));
       const outs = dati.dragon_transform_batch_outputs || [];
       const cern = (dati.dragon_transform_batches || []).map((b: any) => {
