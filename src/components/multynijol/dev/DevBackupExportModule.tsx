@@ -124,7 +124,7 @@ export function DevBackupExportModule() {
             try {
               r = await call({ action: "table", table: t, from, size }, (s) => setStato(`${t}: ${s}`));
             } catch (e) {
-              if (size > 25) { size = Math.max(25, Math.floor(size / 4)); continue; }
+              if (size > 1) { size = Math.max(1, Math.floor(size / 4)); continue; }
               throw e;
             }
             rows.push(...r.rows);
