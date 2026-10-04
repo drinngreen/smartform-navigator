@@ -130,7 +130,7 @@ export function DevBackupExportModule() {
             rows.push(...r.rows);
             righeTot += r.rows.length;
             setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · ${rows.length.toLocaleString("it-IT")} righe · totale ${righeTot.toLocaleString("it-IT")}`);
-            if (r.rows.length < size) break;
+            if (r.done === true || r.rows.length === 0) break;
             from += r.rows.length;
             size = Math.min(tetto, size * 2);
           }
