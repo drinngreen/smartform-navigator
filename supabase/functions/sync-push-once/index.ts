@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         id: from + i + 1,
         table: name,
         op: "INSERT",
-        pk: Object.fromEntries(pkCols.map((c) => [c, row[c]])),
+        pk: pkCols, // la destinazione vuole l'elenco dei nomi delle colonne chiave
         row,
       }));
       const r = await fetch(dest, {
@@ -111,21 +111,6 @@ Deno.serve(async (req) => {
         done: rows.length < size,
         total: count ?? null,
       });
-    }
-    if (body.action === "probe") {
-      const { data } = await admin.from("tenants").select("*").limit(1);
-      const row = (data || [])[0] || { id: "x" };
-      const variants: Record<string, unknown> = {
-        pkObject: { id: 1, table: "tenants", op: "INSERT", pk: { id: row.id }, row },
-        pkArrayNames: { id: 1, table: "tenants", op: "INSERT", pk: ["id"], row },
-        pkArrayValues: { id: 1, table: "tenants", op: "INSERT", pk: [row.id], row },
-      };
-      const out: Record<string, string> = {};
-      for (const [k, c] of Object.entries(variants)) {
-        const r = await fetch(dest, { method: "POST", headers: { "Content-Type": "application/json", "X-Sync-Key": key }, body: JSON.stringify({ changes: [c] }) });
-        out[k] = `${r.status} ${(await r.text()).slice(0, 1500)}`;
-      }
-      return json(out);
     }
     return json({ error: "Azione non valida" }, 400);
   } catch (e) {
