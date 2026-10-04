@@ -36,18 +36,36 @@ Deno.serve(async (req) => {
       if (!/^[a-z0-9_]+$/i.test(name)) return json({ error: "Nome tabella non valido" }, 400);
       const from = Math.max(0, Number(body.from) || 0);
       const size = Math.min(1000, Math.max(1, Number(body.size) || 200));
-      // Ordine stabile per chiave: senza, le pagine successive possono saltare o ripetere righe.
-      let { data, error } = await admin.from(name).select("*").order("id", { ascending: true }).range(from, from + size - 1);
-      if (error && /column .*id.* does not exist|42703/i.test(`${error.message} ${(error as any).code}`)) {
-        ({ data, error } = await admin.from(name).select("*").range(from, from + size - 1));
+      // Legge a piccoli pezzi e si ferma sotto ~2 MB per non esaurire la memoria del server.
+      const CHUNK = Math.min(size, 50);
+      const MAX_BYTES = 2_000_000;
+      const rows: unknown[] = [];
+      let bytes = 0;
+      let done = false;
+      let useOrder = true;
+      while (rows.length < size) {
+        const start = from + rows.length;
+        const n = Math.min(CHUNK, size - rows.length);
+        let q = admin.from(name).select("*");
+        if (useOrder) q = q.order("id", { ascending: true });
+        let { data, error } = await q.range(start, start + n - 1);
+        if (error && useOrder && /column .*id.* does not exist|42703/i.test(`${error.message} ${(error as any).code}`)) {
+          useOrder = false;
+          continue;
+        }
+        if (error) {
+          const msg = String(error.message || "");
+          const html = msg.includes("<!DOCTYPE") || msg.includes("<html");
+          if (html) return json({ error: `TEMPORANEO: database momentaneamente non raggiungibile (${name})` }, 503);
+          throw new Error(`${name}: ${msg.slice(0, 300)}`);
+        }
+        const chunk = data || [];
+        rows.push(...chunk);
+        bytes += JSON.stringify(chunk).length;
+        if (chunk.length < n) { done = true; break; }
+        if (bytes > MAX_BYTES) break;
       }
-      if (error) {
-        const msg = String(error.message || "");
-        const html = msg.includes("<!DOCTYPE") || msg.includes("<html");
-        if (html) return json({ error: `TEMPORANEO: database momentaneamente non raggiungibile (${name})` }, 503);
-        throw new Error(`${name}: ${msg.slice(0, 300)}`);
-      }
-      return json({ rows: data || [], done: (data || []).length < size });
+      return json({ rows, done });
     }
     return json({ error: "Azione non valida" }, 400);
   } catch (e) {
