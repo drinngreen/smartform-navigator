@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
       const txt = await r.text();
       let res: any = null;
       try { res = JSON.parse(txt); } catch { /* */ }
+      if (r.status >= 400 && r.status < 500) return json({ error: `${name}: destinazione ha rifiutato (${r.status}) ${txt.slice(0, 300)}` }, 400);
       if (!r.ok || !res) return json({ error: `TEMPORANEO: destinazione ha risposto ${r.status} ${txt.slice(0, 200)}` }, 503);
       return json({
         sent: rows.length,
