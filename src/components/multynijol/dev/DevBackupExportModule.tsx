@@ -132,6 +132,7 @@ export function DevBackupExportModule() {
             setStato(`Tabella ${i + 1} di ${tables.length}: ${t} · ${rows.length.toLocaleString("it-IT")} righe · totale ${righeTot.toLocaleString("it-IT")}`);
             if (r.rows.length < size) break;
             from += r.rows.length;
+            size = Math.min(1000, size * 2);
           }
           dati[t] = rows;
           files[`${areaDi(t)}/${t}/${t}.json`] = strToU8(JSON.stringify(rows, null, 2));
