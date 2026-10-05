@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import giacenzeData from "@/data/giacenzeGiornaliere18Luglio.json";
+import { GIACENZE_MOVIMENTI_SUCCESSIVI } from "@/data/giacenzeMovimentiSuccessivi";
 
 const FIRST_DATE = "2026-07-18";
 const FINAL_DATE = "2026-09-21";
@@ -95,6 +96,18 @@ export function GiacenzeDocumentaliModule() {
         if (rows.length === 0) {
           const previous = availableDates.filter((d) => d <= date).pop();
           if (previous) rows = allRows.filter((row) => toIso(row.data) === previous);
+        }
+        if (date > FINAL_DATE) {
+          const movs = GIACENZE_MOVIMENTI_SUCCESSIVI.filter((m) => m.data > FINAL_DATE && m.data <= date);
+          if (movs.length) {
+            rows = rows.map((row) => {
+              const mine = movs.filter((m) => m.cer === row.cer);
+              if (!mine.length) return row;
+              const c = mine.reduce((s, m) => s + m.carico, 0);
+              const sc = mine.reduce((s, m) => s + m.scarico, 0);
+              return { ...row, carico: row.carico + c, scarico: row.scarico + sc, saldo: row.saldo + c - sc };
+            });
+          }
         }
         return { date, rows, totals: sumRows(rows) };
       })
