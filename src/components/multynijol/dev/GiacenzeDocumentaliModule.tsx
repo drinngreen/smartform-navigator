@@ -81,16 +81,25 @@ export function GiacenzeDocumentaliModule() {
     setSelectedDates((current) => current.filter((item) => item !== date));
   };
 
+  const availableDates = useMemo(
+    () => Array.from(new Set(allRows.map((row) => toIso(row.data)))).sort(),
+    [],
+  );
+
   const giorni = useMemo(
     () => selectedDates
       .slice()
       .sort()
       .map((date) => {
-        const rows = allRows.filter((row) => toIso(row.data) === date);
+        let rows = allRows.filter((row) => toIso(row.data) === date);
+        if (rows.length === 0) {
+          const previous = availableDates.filter((d) => d <= date).pop();
+          if (previous) rows = allRows.filter((row) => toIso(row.data) === previous);
+        }
         return { date, rows, totals: sumRows(rows) };
       })
       .filter((giorno) => giorno.rows.length > 0),
-    [selectedDates],
+    [selectedDates, availableDates],
   );
 
   const query = searchCer.trim().toLowerCase();
@@ -190,7 +199,7 @@ export function GiacenzeDocumentaliModule() {
                   id="giacenze-giorno"
                   type="date"
                   min={FIRST_DATE}
-                  max={FINAL_DATE}
+                  max={todayIso()}
                   value={pickerDate}
                   onChange={(event) => {
                     const date = normalizeDate(event.target.value);
