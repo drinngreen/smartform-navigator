@@ -2425,9 +2425,9 @@ async function handleTool(
 
     // ---------- DATABASE GENERICO ----------
     case "query_database": {
-      const sql = (args.sql || "").trim();
-      if (!sql.toUpperCase().startsWith("SELECT")) return { error: "Solo SELECT permesse qui. Usa write_database." };
-      const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+      const sql = (args.sql || "").trim().replace(/;+\s*$/, "").trim();
+      if (!/^(SELECT|WITH)\b/i.test(sql)) return { error: "Solo SELECT permesse qui. Usa write_database." };
+      const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: sql });
       return error ? { error: error.message } : rows;
     }
 
@@ -2444,7 +2444,7 @@ async function handleTool(
       const table = (args.table || "").replace(/[^a-zA-Z0-9_]/g, "");
       let q = `SELECT COUNT(*) as total FROM ${table} WHERE tenant_id = '${tenantId}'`;
       if (args.filter) q += ` AND (${args.filter})`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : data;
     }
 
@@ -2500,7 +2500,7 @@ async function handleTool(
     case "run_system_test": {
       const area = String(args.area || "all").toLowerCase();
       const runSql = async (sql: string) => {
-        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql });
         return error ? { error: error.message } : data;
       };
 
@@ -2642,7 +2642,7 @@ async function handleTool(
       if (args.user_id) q += ` AND ff.user_id = '${args.user_id.replace(/'/g, "")}'`;
       if (args.numero_fir) q += ` AND ff.numero_fir ILIKE '%${args.numero_fir.replace(/'/g, "")}%'`;
       q += ` ORDER BY ff.updated_at DESC LIMIT ${args.limit || 20}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { fir_forms: data || [] };
     }
 
@@ -2866,7 +2866,7 @@ async function handleTool(
         COUNT(*) as totale,
         COUNT(*) FILTER (WHERE status = 'available' AND user_id = '00000000-0000-0000-0000-000000000000' AND NOT suspended) as nel_serbatoio
       FROM fir_number_pool WHERE societa_id = '${societa}'`;
-      const { data: stats, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data: stats, error } = await db.rpc("exec_sql_readonly", { query: q });
       if (error) return { error: error.message };
 
       if (args.detail) {
@@ -2879,7 +2879,7 @@ async function handleTool(
         LEFT JOIN fir_forms ff ON ff.numero_fir = fnp.fir_number AND coalesce(ff.deleted_by_user, false) = false
         WHERE fnp.societa_id = '${societa}' AND fnp.status = 'available' AND NOT fnp.suspended
         ORDER BY p.cognome, p.nome`;
-        const { data: detail } = await db.rpc("exec_sql_readonly", { query: detailQ }).maybeSingle();
+        const { data: detail } = await db.rpc("exec_sql_readonly", { query: detailQ });
         return { stats: stats?.[0] || stats, detail: detail || [] };
       }
       return { pool_status: stats?.[0] || stats };
@@ -3110,7 +3110,7 @@ async function handleTool(
           AND (nome ILIKE '%${term}%' OR cognome ILIKE '%${term}%' OR codice_fiscale ILIKE '%${term}%' 
                OR numero_tessera ILIKE '%${term}%' OR denominazione ILIKE '%${term}%')
         ORDER BY cognome, nome LIMIT ${args.limit || 10}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { privati: data || [] };
     }
 
@@ -3175,7 +3175,7 @@ async function handleTool(
       if (args.date_to) q += ` AND pc.data <= '${args.date_to}'`;
       if (args.cer) q += ` AND pc.cer ILIKE '%${args.cer.replace(/'/g, "")}%'`;
       q += ` ORDER BY pc.data DESC LIMIT ${args.limit || 20}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { conferimenti: data || [] };
     }
 
@@ -3230,7 +3230,7 @@ async function handleTool(
                (SELECT COUNT(*) FROM fir_number_pool fnp WHERE fnp.user_id = p.user_id AND fnp.status = 'available' AND NOT fnp.suspended AND fnp.societa_id = 'multy') as numeri_disponibili`;
       }
       q += ` FROM profiles p WHERE p.tenant_id = '${tenantId}' AND coalesce(p.is_social_only, false) = false ORDER BY p.cognome, p.nome`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { trasportatori: data || [] };
     }
 
@@ -3395,7 +3395,7 @@ async function handleTool(
       if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
       if (args.environment) q += ` AND environment = '${args.environment.replace(/'/g, "")}'`;
       q += ` ORDER BY updated_at DESC LIMIT ${args.limit || 10}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { memories: data || [] };
     }
 
@@ -3405,7 +3405,7 @@ async function handleTool(
       if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
       if (args.environment) q += ` AND environment = '${args.environment.replace(/'/g, "")}'`;
       q += ` ORDER BY category, updated_at DESC`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { memories: data || [] };
     }
 
@@ -3423,7 +3423,7 @@ async function handleTool(
       q += ` AND (title ILIKE '%${kw}%' OR content ILIKE '%${kw}%' OR '${kw}' = ANY(keywords))`;
       if (args.category) q += ` AND category = '${args.category.replace(/'/g, "")}'`;
       q += ` ORDER BY updated_at DESC LIMIT 5`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { knowledge: data || [] };
     }
 
@@ -3458,7 +3458,7 @@ async function handleTool(
       }
       q += ` ORDER BY code`;
 
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       const causes = Array.isArray(data) ? data : data ? [data] : [];
 
       return error
@@ -3676,7 +3676,7 @@ async function handleTool(
         LEFT JOIN dragon_transform_batches dtb ON dtb.id = dsm.source_transform_batch_id
         LEFT JOIN dragon_items dsi ON dsi.id = dtb.source_item_id
         WHERE dsm.id = '${args.movement_id}' AND dsm.company_id = '${tenantId}'`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       if (error) return { error: error.message };
       const mov = data?.[0] || data;
       if (!mov) return { error: "Movimento non trovato" };
@@ -3688,7 +3688,7 @@ async function handleTool(
           FROM dragon_transform_batch_outputs dtbo
           JOIN dragon_items di ON di.id = dtbo.output_item_id
           WHERE dtbo.batch_id = '${mov.source_transform_batch_id}'`;
-        const { data: outData } = await db.rpc("exec_sql_readonly", { query: outQ }).maybeSingle();
+        const { data: outData } = await db.rpc("exec_sql_readonly", { query: outQ });
         batchOutputs = outData || [];
       }
 
@@ -3702,7 +3702,7 @@ async function handleTool(
           LEFT JOIN dragon_register_movements drm_in ON drm_in.id = dma.in_movement_id
           LEFT JOIN dragon_register_movements drm_out ON drm_out.id = dma.out_movement_id
           WHERE dma.in_movement_id = '${mov.source_register_movement_id}' OR dma.out_movement_id = '${mov.source_register_movement_id}'`;
-        const { data: allocData } = await db.rpc("exec_sql_readonly", { query: allocQ }).maybeSingle();
+        const { data: allocData } = await db.rpc("exec_sql_readonly", { query: allocQ });
         allocations = allocData || [];
       }
 
@@ -3715,7 +3715,7 @@ async function handleTool(
         COALESCE((SELECT SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) FROM dragon_stock_movements dsm WHERE dsm.warehouse_id = dw.id AND dsm.warehouse_scope = 'WASTE'), 0) as giacenza_cer,
         COALESCE((SELECT SUM(CASE WHEN dsm.sign = 'PLUS' THEN dsm.quantity ELSE -dsm.quantity END) FROM dragon_stock_movements dsm WHERE dsm.warehouse_id = dw.id AND dsm.warehouse_scope = 'MPS'), 0) as giacenza_mps
         FROM dragon_warehouses dw WHERE dw.company_id = '${tenantId}'${args.active_only !== false ? " AND dw.active = true" : ""} ORDER BY dw.code`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { warehouses: data || [] };
     }
 
@@ -3726,7 +3726,7 @@ async function handleTool(
       if (args.active_only !== false) q += ` AND active = true`;
       if (args.search) q += ` AND (name ILIKE '%${args.search.replace(/'/g, "")}%' OR site_code ILIKE '%${args.search.replace(/'/g, "")}%')`;
       q += ` ORDER BY site_code`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { sites: data || [] };
     }
 
@@ -3751,7 +3751,7 @@ async function handleTool(
       if (args.date_from) q += ` AND document_date >= '${args.date_from}'`;
       if (args.date_to) q += ` AND document_date <= '${args.date_to}'`;
       q += ` ORDER BY document_date DESC NULLS LAST LIMIT ${args.limit || 20}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { documents: data || [] };
     }
 
@@ -3765,7 +3765,7 @@ async function handleTool(
         JOIN dragon_items di ON di.id = dtm.input_item_id
         WHERE dtm.company_id = '${tenantId}'${args.active_only !== false ? " AND dtm.active = true" : ""}
         ORDER BY dtm.code`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { models: data || [] };
     }
 
@@ -3789,11 +3789,11 @@ async function handleTool(
       };
       // deno-lint-ignore no-unreachable
       const adjCauseQ = `SELECT id FROM dragon_causes WHERE code = 'RETTIFICA_INVENTARIALE' AND active = true LIMIT 1`;
-      const { data: adjCauseData } = await db.rpc("exec_sql_readonly", { query: adjCauseQ }).maybeSingle();
+      const { data: adjCauseData } = await db.rpc("exec_sql_readonly", { query: adjCauseQ });
       const adjCause = adjCauseData?.[0] || adjCauseData;
 
       const itemQ = `SELECT codice_cer, item_type, unita_misura_default FROM dragon_items WHERE id = '${args.item_id}' AND company_id = '${tenantId}'`;
-      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
+      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ });
       const item = itemData?.[0] || itemData;
       if (!item) return { error: "Articolo non trovato" };
 
@@ -3827,7 +3827,7 @@ async function handleTool(
       if (args.entity_id) q += ` AND entity_id = '${args.entity_id}'`;
       if (args.action_type) q += ` AND action_type = '${args.action_type}'`;
       q += ` ORDER BY performed_at DESC LIMIT ${args.limit || 20}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { audit_logs: data || [] };
     }
 
@@ -3835,18 +3835,18 @@ async function handleTool(
     case "dragon_scarico_fifo": {
       const causeCode = args.cause_code || "SCARICO_USCITA";
       const causeQ = `SELECT id FROM dragon_causes WHERE code = '${causeCode.replace(/'/g, "")}' AND active = true LIMIT 1`;
-      const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ }).maybeSingle();
+      const { data: causeData } = await db.rpc("exec_sql_readonly", { query: causeQ });
       const cause = causeData?.[0] || causeData;
       if (!cause) return { error: `Causale '${causeCode}' non trovata` };
 
       const itemQ = `SELECT codice_cer, descrizione, unita_misura_default FROM dragon_items WHERE id = '${args.item_id}' AND company_id = '${tenantId}'`;
-      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ }).maybeSingle();
+      const { data: itemData } = await db.rpc("exec_sql_readonly", { query: itemQ });
       const item = itemData?.[0] || itemData;
       if (!item) return { error: "Articolo non trovato" };
 
       const balQ = `SELECT COALESCE(SUM(CASE WHEN sign = 'PLUS' THEN quantity ELSE -quantity END), 0) as balance
         FROM dragon_stock_movements WHERE company_id = '${tenantId}' AND item_id = '${args.item_id}' AND warehouse_scope = 'WASTE'`;
-      const { data: balData } = await db.rpc("exec_sql_readonly", { query: balQ }).maybeSingle();
+      const { data: balData } = await db.rpc("exec_sql_readonly", { query: balQ });
       const balance = balData?.[0]?.balance || balData?.balance || 0;
       if (balance < args.quantity) return { error: `Giacenza insufficiente: disponibili ${balance} kg, richiesti ${args.quantity} kg` };
 
@@ -3856,11 +3856,11 @@ async function handleTool(
         WHERE drm.company_id = '${tenantId}' AND drm.item_id = '${args.item_id}' AND drm.movement_type = 'CARICO' AND drm.status = 'CONSOLIDATO' AND drm.deleted_at IS NULL
         HAVING drm.quantity - COALESCE((SELECT SUM(allocated_quantity) FROM dragon_movement_allocations WHERE in_movement_id = drm.id), 0) > 0
         ORDER BY drm.movement_date ASC, drm.movement_number ASC`;
-      const { data: fifoData } = await db.rpc("exec_sql_readonly", { query: fifoQ }).maybeSingle();
+      const { data: fifoData } = await db.rpc("exec_sql_readonly", { query: fifoQ });
       const carichi = Array.isArray(fifoData) ? fifoData : fifoData ? [fifoData] : [];
 
       const regQ = `SELECT id FROM dragon_registers WHERE company_id = '${tenantId}' AND active = true LIMIT 1`;
-      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ }).maybeSingle();
+      const { data: regData } = await db.rpc("exec_sql_readonly", { query: regQ });
       const registerId = regData?.[0]?.id || regData?.id || null;
 
       const today = args.movement_date || new Date().toISOString().split("T")[0];
@@ -3897,7 +3897,7 @@ async function handleTool(
         AND (ragione_sociale ILIKE '%${term}%' OR partita_iva ILIKE '%${term}%' OR codice_fiscale ILIKE '%${term}%' OR codice ILIKE '%${term}%' OR alias ILIKE '%${term}%')`;
       if (args.ruolo) q += ` AND ${args.ruolo} = true`;
       q += ` ORDER BY ragione_sociale LIMIT ${args.limit || 15}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { aziende: data || [] };
     }
 
@@ -3912,7 +3912,7 @@ async function handleTool(
       if (args.user_id) q += ` AND dl.user_id = '${args.user_id}'`;
       else q += ` AND p.tenant_id = '${tenantId}'`;
       q += ` ORDER BY dl.user_id, dl.created_at DESC`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { positions: data || [] };
     }
 
@@ -3924,7 +3924,7 @@ async function handleTool(
       if (args.unread_only) q += ` AND is_read = false`;
       if (args.type) q += ` AND type = '${args.type.replace(/'/g, "")}'`;
       q += ` ORDER BY created_at DESC LIMIT ${args.limit || 20}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { notifications: data || [] };
     }
 
@@ -3935,7 +3935,7 @@ async function handleTool(
         FROM rubrica_contatti WHERE tenant_id = '${tenantId}'
         AND (nome ILIKE '%${term}%' OR cognome ILIKE '%${term}%' OR ragione_sociale ILIKE '%${term}%' OR telefono ILIKE '%${term}%' OR email ILIKE '%${term}%')
         ORDER BY cognome, nome LIMIT ${args.limit || 15}`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       return error ? { error: error.message } : { contatti: data || [] };
     }
 
@@ -4092,12 +4092,12 @@ async function handleTool(
           FROM emails_global_inbox WHERE 1=1`;
         if (args.unread_only) q += ` AND is_read = false`;
         q += ` ORDER BY received_at DESC LIMIT ${args.limit || 15}`;
-        const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
         return error ? { error: error.message } : { emails: data || [] };
       } else {
         const q = `SELECT id, from_address, to_address, subject, sent_at, status, category, fir_id
           FROM emails_global_outbox ORDER BY sent_at DESC LIMIT ${args.limit || 15}`;
-        const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
         return error ? { error: error.message } : { emails: data || [] };
       }
     }
@@ -4117,23 +4117,23 @@ async function handleTool(
           WHERE tc.table_schema='public' AND tc.table_name='${tableFilter}' AND tc.constraint_type='FOREIGN KEY'`;
         const polQ = `SELECT policyname, cmd, roles::text FROM pg_policies WHERE schemaname='public' AND tablename='${tableFilter}'`;
         const [cols, fks, pols] = await Promise.all([
-          db.rpc("exec_sql_readonly", { query: colsQ }).maybeSingle(),
-          db.rpc("exec_sql_readonly", { query: fkQ }).maybeSingle(),
-          db.rpc("exec_sql_readonly", { query: polQ }).maybeSingle(),
+          db.rpc("exec_sql_readonly", { query: colsQ }),
+          db.rpc("exec_sql_readonly", { query: fkQ }),
+          db.rpc("exec_sql_readonly", { query: polQ }),
         ]);
         if (cols.error) return { error: cols.error.message };
         return { table: tableFilter, columns: cols.data || [], foreign_keys: fks.data || [], policies: pols.data || [] };
       }
       const listQ = `SELECT table_name, (SELECT count(*) FROM information_schema.columns c WHERE c.table_schema='public' AND c.table_name=t.table_name) AS columns
         FROM information_schema.tables t WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: listQ }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: listQ });
       if (error) return { error: error.message };
       let functions: any = undefined;
       if (args.include_functions) {
         const fnQ = `SELECT p.proname AS function_name, pg_get_function_identity_arguments(p.oid) AS arguments
           FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
           WHERE n.nspname='public' ORDER BY p.proname`;
-        const fr = await db.rpc("exec_sql_readonly", { query: fnQ }).maybeSingle();
+        const fr = await db.rpc("exec_sql_readonly", { query: fnQ });
         functions = fr.data || [];
       }
       return { tables: data || [], functions };
@@ -4143,7 +4143,7 @@ async function handleTool(
       const area = String(args.area || "all");
       const checks: any[] = [];
       const run = async (name: string, description: string, sql: string, failWhenRows = true) => {
-        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle();
+        const { data, error } = await db.rpc("exec_sql_readonly", { query: sql });
         if (error) { checks.push({ check: name, status: "ERRORE", description, error: error.message }); return; }
         const rows = (data as any[]) || [];
         const failed = failWhenRows ? rows.length > 0 : false;
@@ -4245,7 +4245,7 @@ async function handleTool(
       }
       const isRead = /^\s*(select|with)\b/i.test(sql);
       const { data, error } = isRead
-        ? await db.rpc("exec_sql_readonly", { query: sql }).maybeSingle()
+        ? await db.rpc("exec_sql_readonly", { query: sql })
         : await db.rpc("exec_sql_write", { query: sql }).maybeSingle();
       if (error) return { error: error.message, sql_eseguito: sql };
       await db.from("dragon_audit_logs").insert({
@@ -4270,7 +4270,7 @@ async function handleTool(
                  SELECT 'fir', id::text, COALESCE(numero_fir,'(senza numero)'), COALESCE(status,''), created_at
                  FROM fir_forms WHERE tenant_id='${tenantId}' AND created_at > now() - interval '${minutes} minutes'
                  ORDER BY created_at DESC LIMIT 60`;
-      const { data, error } = await db.rpc("exec_sql_readonly", { query: q }).maybeSingle();
+      const { data, error } = await db.rpc("exec_sql_readonly", { query: q });
       if (error) return { error: error.message };
       const health = await handleTool(
         { name: "db_health_check", arguments: JSON.stringify({ area: "all" }) },
