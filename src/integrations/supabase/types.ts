@@ -5696,6 +5696,7 @@ export type Database = {
           flagnomud: boolean | null
           form_urbano: boolean | null
           id: string
+          incide_giacenze: boolean
           indirizzo_cantiere: string | null
           indirizzo_intermed: string | null
           intermediario: string | null
@@ -5747,6 +5748,7 @@ export type Database = {
           flagnomud?: boolean | null
           form_urbano?: boolean | null
           id?: string
+          incide_giacenze?: boolean
           indirizzo_cantiere?: string | null
           indirizzo_intermed?: string | null
           intermediario?: string | null
@@ -5798,6 +5800,7 @@ export type Database = {
           flagnomud?: boolean | null
           form_urbano?: boolean | null
           id?: string
+          incide_giacenze?: boolean
           indirizzo_cantiere?: string | null
           indirizzo_intermed?: string | null
           intermediario?: string | null
