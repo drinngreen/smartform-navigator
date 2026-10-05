@@ -4528,6 +4528,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
       conversationMessages.push(assistantMsg);
 
       const assistantText = typeof assistantMsg.content === "string" ? assistantMsg.content : "";
+      console.log(`[dark-lemon] it=${iteration} finish=${choice.finish_reason} text=${assistantText.length} tools=${(assistantMsg.tool_calls || []).map((t: any) => t.function?.name).join(",")}`);
       const isFirIdBlockingText = FIR_ID_BLOCKING_PATTERN.test(assistantText);
       const isAutonomyBlockingText = autonomyMode && AUTONOMY_BLOCKING_PATTERN.test(assistantText);
 
@@ -4615,6 +4616,7 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
         if (summaryRes.ok) {
           const summaryData = await summaryRes.json();
           const text = summaryData.choices?.[0]?.message?.content;
+          console.log(`[dark-lemon] summary text=${typeof text === "string" ? text.length : typeof text}`);
           if (typeof text === "string" && text.trim()) finalContent = text;
         } else {
           console.error("[dark-lemon] summary error", summaryRes.status, await summaryRes.text());
