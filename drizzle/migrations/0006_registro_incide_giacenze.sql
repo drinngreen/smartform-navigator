@@ -1,0 +1,3 @@
+ALTER TABLE public.registro_generale ADD COLUMN IF NOT EXISTS incide_giacenze boolean NOT NULL DEFAULT true;
+UPDATE public.registro_generale SET incide_giacenze = false WHERE id NOT IN ('e3818b6c-52a2-4b41-9e91-30e2f7d1ac5b','5196949b-2218-42a8-b39c-4d277883378d','f6e413d7-32ce-43b2-a18f-e0af00beba38');
+COMMENT ON COLUMN public.registro_generale.incide_giacenze IS 'Se true la riga conta nel calcolo giornaliero delle giacenze (solo lettura, nessun trigger).';

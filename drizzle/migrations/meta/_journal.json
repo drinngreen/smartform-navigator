@@ -43,6 +43,13 @@
       "when": 1789682470175,
       "tag": "0005_disable_dragon_stock_reconciliation",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791208957885,
+      "tag": "0006_registro_incide_giacenze",
+      "breakpoints": true
     }
   ]
 }
