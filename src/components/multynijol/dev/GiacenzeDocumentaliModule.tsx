@@ -12,6 +12,11 @@ import giacenzeData from "@/data/giacenzeGiornaliere18Luglio.json";
 
 const FIRST_DATE = "2026-07-18";
 const FINAL_DATE = "2026-09-21";
+const todayIso = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
 
 type DailyRow = {
   data: string;
@@ -53,9 +58,9 @@ export function GiacenzeDocumentaliModule() {
       toast.error("Le giacenze sono disponibili a partire dal 18/07/2026");
       return FIRST_DATE;
     }
-    if (value > FINAL_DATE) {
-      toast.error("Il 21/09/2026 è la situazione finale disponibile");
-      return FINAL_DATE;
+    if (value > todayIso()) {
+      toast.error("Non puoi selezionare una data futura");
+      return todayIso();
     }
     return value;
   };
@@ -76,16 +81,25 @@ export function GiacenzeDocumentaliModule() {
     setSelectedDates((current) => current.filter((item) => item !== date));
   };
 
+  const availableDates = useMemo(
+    () => Array.from(new Set(allRows.map((row) => toIso(row.data)))).sort(),
+    [],
+  );
+
   const giorni = useMemo(
     () => selectedDates
       .slice()
       .sort()
       .map((date) => {
-        const rows = allRows.filter((row) => toIso(row.data) === date);
+        let rows = allRows.filter((row) => toIso(row.data) === date);
+        if (rows.length === 0) {
+          const previous = availableDates.filter((d) => d <= date).pop();
+          if (previous) rows = allRows.filter((row) => toIso(row.data) === previous);
+        }
         return { date, rows, totals: sumRows(rows) };
       })
       .filter((giorno) => giorno.rows.length > 0),
-    [selectedDates],
+    [selectedDates, availableDates],
   );
 
   const query = searchCer.trim().toLowerCase();
@@ -185,7 +199,7 @@ export function GiacenzeDocumentaliModule() {
                   id="giacenze-giorno"
                   type="date"
                   min={FIRST_DATE}
-                  max={FINAL_DATE}
+                  max={todayIso()}
                   value={pickerDate}
                   onChange={(event) => {
                     const date = normalizeDate(event.target.value);
