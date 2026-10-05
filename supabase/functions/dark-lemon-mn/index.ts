@@ -4442,7 +4442,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
     ];
 
     // Il modello testuale non supporta immagini: con allegati/screenshot usiamo un modello con visione
-    const activeModel = attachmentAware ? "google/gemini-3.5-flash" : "openai/gpt-oss-120b";
+    const activeModel = attachmentAware ? "google/gemini-2.5-flash" : "google/gemini-2.0-flash-001";
     console.log(`[dark-lemon] model=${activeModel} attachments=${attachmentAware}`);
 
     let finalContent = "";
@@ -4589,6 +4589,38 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
           error: result?.error ?? null,
         });
         conversationMessages.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(result) });
+      }
+    }
+
+    // Se il ciclo è finito senza risposta testuale, chiediamo una sintesi finale SENZA tool
+    if (!finalContent && !lastNonEmptyContent) {
+      try {
+        const summaryRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://zolidragon.app",
+            "X-Title": "Dark Lemon AI",
+          },
+          body: JSON.stringify({
+            model: activeModel,
+            messages: [
+              ...conversationMessages,
+              { role: "system", content: "STOP con i tool. Rispondi ORA all'utente in italiano, in modo chiaro e sintetico, usando SOLO i risultati dei tool già ottenuti. Se un dato non è stato trovato, dillo esplicitamente." },
+            ],
+            temperature: 0.2,
+          }),
+        });
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          const text = summaryData.choices?.[0]?.message?.content;
+          if (typeof text === "string" && text.trim()) finalContent = text;
+        } else {
+          console.error("[dark-lemon] summary error", summaryRes.status, await summaryRes.text());
+        }
+      } catch (e) {
+        console.error("[dark-lemon] summary exception", e);
       }
     }
 
