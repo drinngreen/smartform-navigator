@@ -4628,9 +4628,16 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
           },
           body: JSON.stringify({
             model: activeModel,
+            // Messaggi solo testuali (senza tool) così il modello deve per forza scrivere la risposta
             messages: [
-              ...conversationMessages,
-              { role: "system", content: "STOP con i tool. Rispondi ORA all'utente in italiano, in modo chiaro e sintetico, usando SOLO i risultati dei tool già ottenuti. Se un dato non è stato trovato, dillo esplicitamente." },
+              { role: "system", content: "Sei Dark Lemon, assistente di Multyproget. Rispondi in italiano, in modo chiaro e sintetico, usando SOLO i risultati delle letture dati qui sotto. Non inventare nulla: se un dato non è stato trovato, dillo esplicitamente. Ignora le letture fallite." },
+              { role: "user", content: `DOMANDA DELL'UTENTE:\n${latestUserPlainText}\n\nRISULTATI DELLE LETTURE GIÀ ESEGUITE:\n${conversationMessages
+                .filter((m: any) => m?.role === "tool" || (m?.role === "assistant" && m?.tool_calls?.length))
+                .map((m: any) => m.role === "tool"
+                  ? `RISULTATO: ${String(m.content).slice(0, 4000)}`
+                  : `LETTURA: ${(m.tool_calls || []).map((t: any) => `${t.function?.name} ${String(t.function?.arguments || "").slice(0, 600)}`).join(" | ")}`)
+                .join("\n")
+                .slice(-60000)}` },
             ],
             temperature: 0.2,
           }),
