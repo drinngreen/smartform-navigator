@@ -42,7 +42,7 @@ async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
     .select("id,execution_date,input_quantity,source:dragon_items!dragon_transform_batches_source_item_id_fkey(codice_cer),outputs:dragon_transform_batch_outputs(output_quantity,item:dragon_items(codice_cer))")
     .eq("company_id", TENANT_MULTY)
     .eq("status", "CONFERMATA")
-    .gt("execution_date", `${FINAL_DATE}T23:59:59`);
+    .gt("execution_date", FINAL_DATE);
   if (e2) throw e2;
   for (const b of batches ?? []) {
     const data = String(b.execution_date).slice(0, 10);
