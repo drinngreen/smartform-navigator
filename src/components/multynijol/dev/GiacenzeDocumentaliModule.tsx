@@ -9,10 +9,51 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import giacenzeData from "@/data/giacenzeGiornaliere18Luglio.json";
-import { GIACENZE_MOVIMENTI_SUCCESSIVI } from "@/data/giacenzeMovimentiSuccessivi";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabaseClient";
 
 const FIRST_DATE = "2026-07-18";
 const FINAL_DATE = "2026-09-21";
+const TENANT_MULTY = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
+
+type MovimentoLive = { data: string; cer: string; carico: number; scarico: number };
+
+// Sola lettura: nessuna scrittura, nessun trigger. Contano solo le righe con incide_giacenze=true
+// e le cernite CONFERMATA eseguite dopo il 21/09.
+async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
+  const out: MovimentoLive[] = [];
+  const { data: reg, error } = await (supabase as any)
+    .from("registro_generale")
+    .select("data_movimento,cer,quantita,peso_destino,segno,carico_scarico")
+    .eq("tenant_id", TENANT_MULTY)
+    .eq("registro", "MULTY_IMPIANTO")
+    .eq("stato_movimento", "effettivo")
+    .eq("incide_giacenze", true)
+    .gt("data_movimento", FINAL_DATE);
+  if (error) throw error;
+  for (const r of reg ?? []) {
+    const kg = Number(r.quantita ?? 0);
+    const cer = String(r.cer ?? "").replace(/\D/g, "") || String(r.cer ?? "");
+    const isCarico = r.segno === "+" || String(r.carico_scarico ?? "").toLowerCase() === "carico";
+    out.push({ data: String(r.data_movimento).slice(0, 10), cer, carico: isCarico ? kg : 0, scarico: isCarico ? 0 : kg });
+  }
+  const { data: batches, error: e2 } = await (supabase as any)
+    .from("dragon_transform_batches")
+    .select("id,execution_date,input_quantity,source:dragon_items!dragon_transform_batches_source_item_id_fkey(codice_cer),outputs:dragon_transform_batch_outputs(output_quantity,item:dragon_items(codice_cer))")
+    .eq("company_id", TENANT_MULTY)
+    .eq("status", "CONFERMATA")
+    .gt("execution_date", `${FINAL_DATE}T23:59:59`);
+  if (e2) throw e2;
+  for (const b of batches ?? []) {
+    const data = String(b.execution_date).slice(0, 10);
+    if (data <= FINAL_DATE) continue;
+    out.push({ data, cer: String(b.source?.codice_cer ?? ""), carico: 0, scarico: Number(b.input_quantity ?? 0) });
+    for (const o of b.outputs ?? []) {
+      out.push({ data, cer: String(o.item?.codice_cer ?? ""), carico: Number(o.output_quantity ?? 0), scarico: 0 });
+    }
+  }
+  return out;
+}
 const todayIso = () => {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -87,6 +128,12 @@ export function GiacenzeDocumentaliModule() {
     [],
   );
 
+  // Operazioni umane dopo il 21/09, lette in sola lettura (registro + cernite confermate)
+  const { data: movimentiLive = [], isLoading: loadingLive } = useQuery({
+    queryKey: ["giacenze-movimenti-live"],
+    queryFn: fetchMovimentiSuccessivi,
+  });
+
   const giorni = useMemo(
     () => selectedDates
       .slice()
@@ -98,21 +145,29 @@ export function GiacenzeDocumentaliModule() {
           if (previous) rows = allRows.filter((row) => toIso(row.data) === previous);
         }
         if (date > FINAL_DATE) {
-          const movs = GIACENZE_MOVIMENTI_SUCCESSIVI.filter((m) => m.data > FINAL_DATE && m.data <= date);
+          const movs = movimentiLive.filter((m) => m.data > FINAL_DATE && m.data <= date);
           if (movs.length) {
+            const byCer = new Map<string, { c: number; s: number }>();
+            for (const m of movs) {
+              const cur = byCer.get(m.cer) ?? { c: 0, s: 0 };
+              cur.c += m.carico; cur.s += m.scarico;
+              byCer.set(m.cer, cur);
+            }
             rows = rows.map((row) => {
-              const mine = movs.filter((m) => m.cer === row.cer);
-              if (!mine.length) return row;
-              const c = mine.reduce((s, m) => s + m.carico, 0);
-              const sc = mine.reduce((s, m) => s + m.scarico, 0);
-              return { ...row, carico: row.carico + c, scarico: row.scarico + sc, saldo: row.saldo + c - sc };
+              const d = byCer.get(row.cer);
+              if (!d) return row;
+              byCer.delete(row.cer);
+              return { ...row, carico: row.carico + d.c, scarico: row.scarico + d.s, saldo: row.saldo + d.c - d.s };
             });
+            for (const [cer, d] of byCer) {
+              rows = [...rows, { data: toItalian(date), cer, descrizione: "", carico: d.c, scarico: d.s, saldo: d.c - d.s }];
+            }
           }
         }
         return { date, rows, totals: sumRows(rows) };
       })
       .filter((giorno) => giorno.rows.length > 0),
-    [selectedDates, availableDates],
+    [selectedDates, availableDates, movimentiLive],
   );
 
   const query = searchCer.trim().toLowerCase();
