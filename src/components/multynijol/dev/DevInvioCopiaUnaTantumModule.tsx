@@ -49,12 +49,17 @@ export function DevInvioCopiaUnaTantumModule() {
   const [stato, setStato] = useState("");
   const [esiti, setEsiti] = useState<Esito[]>([]);
 
-  const avvia = async () => {
-    if (!window.confirm("Inviare UNA VOLTA SOLA una copia di tutti i dati al progetto di destinazione?\nQui nessun dato viene modificato e non resta attivo nessun invio automatico.")) return;
+  const avvia = async (soloDipendenti = false) => {
+    const msg = soloDipendenti
+      ? "Inviare UNA VOLTA SOLA gli account dei dipendenti (senza password) e le loro schede?\nQui nessun dato viene modificato e non resta attivo nessun invio automatico."
+      : "Inviare UNA VOLTA SOLA una copia di tutti i dati al progetto di destinazione?\nQui nessun dato viene modificato e non resta attivo nessun invio automatico.";
+    if (!window.confirm(msg)) return;
     setBusy(true); setEsiti([]); setStato("Lettura elenco tabelle…");
     const out: Esito[] = [];
     try {
-      const { tables } = await call({ action: "list" }, setStato);
+      const { tables: tutte } = await call({ action: "list" }, setStato);
+      const DIP = ["auth_users", "tenants", "organizations", "profiles", "memberships", "user_roles", "online_status"];
+      const tables = soloDipendenti ? (tutte as string[]).filter((t) => DIP.includes(t)) : tutte;
       for (let i = 0; i < tables.length; i++) {
         const t = tables[i] as string;
         const e: Esito = { tabella: t, totale: null, inviate: 0, copiate: 0, errori: 0 };
@@ -87,7 +92,10 @@ export function DevInvioCopiaUnaTantumModule() {
           <h2 className="text-lg font-semibold">Invio copia una tantum al progetto di destinazione</h2>
           <p className="text-xs text-muted-foreground">Parte solo quando premi il pulsante. Nessun automatismo, nessun invio programmato. Qui i dati vengono solo letti.</p>
         </div>
-        <button onClick={avvia} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-40">
+        <button onClick={() => avvia(true)} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/40 text-sm disabled:opacity-40">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Invia solo dipendenti
+        </button>
+        <button onClick={() => avvia(false)} disabled={busy} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-40">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Invia copia adesso
         </button>
       </div>
