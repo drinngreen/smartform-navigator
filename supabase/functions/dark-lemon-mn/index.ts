@@ -2427,7 +2427,8 @@ async function handleTool(
     case "query_database": {
       const sql = (args.sql || "").trim().replace(/;+\s*$/, "").trim();
       if (!/^(SELECT|WITH)\b/i.test(sql)) return { error: "Solo SELECT permesse qui. Usa write_database." };
-      const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: sql });
+      const finalSql = /^WITH\b/i.test(sql) ? `SELECT * FROM (${sql}) AS q_with` : sql;
+      const { data: rows, error } = await db.rpc("exec_sql_readonly", { query: finalSql });
       return error ? { error: error.message } : rows;
     }
 
