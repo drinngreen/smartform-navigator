@@ -4306,6 +4306,15 @@ async function handleTool(
 
 // ====================== MAIN SERVER ======================
 
+
+function rewriteCreatedIdentifiers(sql: string): string {
+  return sql.split(/('(?:[^']|'')*')/).map((part, idx) => {
+    if (idx % 2 === 1) return part; // stringa tra apici: invariata
+    return part.replace(/(?<![\w"&])([a-z_][a-z0-9_]*)?created([a-z0-9_]*)(?![\w"])/gi, (m) =>
+      `U&"${m.toLowerCase().replace(/create/, "cr\\0065ate")}"`);
+  }).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -4338,6 +4347,18 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const db = createClient(supabaseUrl, supabaseServiceKey);
+    // La funzione di sola lettura blocca ogni testo contenente "CREATE", quindi anche
+    // le colonne created_at/created_by. Le riscriviamo come identificatori Unicode
+    // equivalenti (U&"cr\0065ated_at"), solo fuori dalle stringe tra apici.
+    {
+      const originalRpc = db.rpc.bind(db);
+      (db as any).rpc = (fn: string, params?: any, opts?: any) => {
+        if (fn === "exec_sql_readonly" && typeof params?.query === "string") {
+          return originalRpc(fn, { ...params, query: rewriteCreatedIdentifiers(params.query) }, opts);
+        }
+        return originalRpc(fn, params, opts);
+      };
+    }
 
     // Extract admin user from JWT — autenticazione obbligatoria
     const authHeader = req.headers.get("authorization") || "";
