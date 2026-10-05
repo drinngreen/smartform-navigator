@@ -185,6 +185,54 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const action = body?.action || "send_invoice";
 
+    // Aggiorna un'anagrafica (counterpart) GIÀ esistente su Sibill. Non crea mai.
+    if (action === "update_counterpart") {
+      const cp = body?.counterpart || {};
+      const vat = String(cp.vat_number || "").replace(/\s/g, "");
+      const tax = String(cp.tax_number || "").replace(/\s/g, "");
+      if (!vat && !tax) return json({ error: { title: "Dati mancanti", detail: "Serve P.IVA o codice fiscale" } }, 400);
+      let cpId: string | null = null;
+      const { data: cached } = await admin.from("sibill_counterparts").select("sibill_counterpart_id")
+        .or([vat ? `vat_number.eq.${vat}` : null, tax ? `tax_number.eq.${tax}` : null].filter(Boolean).join(","))
+        .limit(1).maybeSingle();
+      cpId = cached?.sibill_counterpart_id || null;
+      if (!cpId) {
+        let page = 1;
+        while (!cpId && page <= 20) {
+          const r = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/counterparts?limit=100&page=${page}`, { headers: sibillHeaders() });
+          if (!r.ok) return json({ error: await parseError(r) }, 502);
+          const items = (await r.json())?.data || [];
+          const f = items.find((c: any) =>
+            (vat && String(c.vat_number || "").replace(/\s/g, "") === vat) ||
+            (tax && String(c.tax_number || "").replace(/\s/g, "") === tax));
+          if (f?.id) cpId = f.id;
+          if (items.length < 100) break;
+          page++;
+        }
+      }
+      if (!cpId) return json({ error: { title: "Non trovata su Sibill", detail: "Questa anagrafica non esiste ancora su Sibill: verrà creata al primo invio di fattura." } }, 404);
+      const payload: Record<string, unknown> = {
+        company_name: cp.company_name || null,
+        vat_number: vat || null,
+        tax_number: tax || null,
+        address: cp.address || null,
+        city: cp.city || null,
+        postal_code: cp.postal_code || null,
+        province_code: cp.province_code || null,
+        country: cp.country || "IT",
+        destination_code: cp.destination_code || null,
+      };
+      if (cp.pec) payload.pec = cp.pec;
+      const url = `${BASE_URL}/api/v1/companies/${COMPANY_ID}/counterparts/${cpId}`;
+      let res = await fetch(url, { method: "PATCH", headers: sibillHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload) });
+      if (res.status === 405) {
+        res = await fetch(url, { method: "PUT", headers: sibillHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(payload) });
+      }
+      if (!res.ok) return json({ error: await parseError(res) }, 502);
+      const out = await res.json().catch(() => ({}));
+      return json({ ok: true, counterpart_id: cpId, data: out?.data || out });
+    }
+
     // Debug: GET grezzo verso Sibill (solo lettura, nessuna scrittura su DB)
     if (action === "raw_get") {
       const p = String(body?.path || "");
