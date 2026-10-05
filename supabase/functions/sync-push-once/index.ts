@@ -52,7 +52,9 @@ Deno.serve(async (req) => {
       });
       if (error) throw new Error(error.message);
       const esistenti = new Set((data as any[]).map((t) => t.table_name as string));
-      const out: string[] = [];
+      // "auth_users" = account di accesso (non è una tabella dati): va inviato per primo,
+      // altrimenti di là profili, ruoli e iscrizioni vengono scartati.
+      const out: string[] = ["auth_users"];
       for (const voce of ORDINE) {
         const match = voce.endsWith("*")
           ? [...esistenti].filter((t) => t.startsWith(voce.slice(0, -1))).sort()
@@ -60,6 +62,51 @@ Deno.serve(async (req) => {
         for (const t of match) if (!out.includes(t)) out.push(t);
       }
       return json({ tables: out });
+    }
+
+    if (body.action === "push" && body.table === "auth_users") {
+      const size = Math.min(200, Math.max(1, Number(body.size) || 100));
+      const from = Math.max(0, Number(body.from) || 0);
+      const page = Math.floor(from / size) + 1;
+      const { data: lu, error: le } = await admin.auth.admin.listUsers({ page, perPage: size });
+      if (le) return json({ error: `TEMPORANEO: lettura account non riuscita (${le.message})` }, 503);
+      const users = lu?.users || [];
+      if (!users.length) return json({ sent: 0, applied: 0, failed: [], done: true, total: (lu as any)?.total ?? null });
+      // Nessuna password viene inviata: di là l'account viene creato con una password provvisoria.
+      const changes = users.map((u, i) => ({
+        id: from + i + 1,
+        table: "auth_users",
+        op: "INSERT",
+        pk: ["id"],
+        row: {
+          id: u.id,
+          email: u.email ?? null,
+          phone: u.phone || null,
+          email_confirmed_at: u.email_confirmed_at ?? null,
+          user_metadata: u.user_metadata ?? {},
+          app_metadata: u.app_metadata ?? {},
+          created_at: u.created_at,
+          banned_until: (u as any).banned_until ?? null,
+        },
+      }));
+      const r = await fetch(dest, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Sync-Key": key },
+        body: JSON.stringify({ changes }),
+      });
+      const txt = await r.text();
+      let res: any = null;
+      try { res = JSON.parse(txt); } catch { /* */ }
+      if (r.status >= 400 && r.status < 500) return json({ error: `auth_users: destinazione ha rifiutato (${r.status}) ${txt.slice(0, 300)}` }, 400);
+      if (!r.ok || !res) return json({ error: `TEMPORANEO: destinazione ha risposto ${r.status} ${txt.slice(0, 200)}` }, 503);
+      return json({
+        sent: users.length,
+        applied: (res.applied || []).length,
+        failed: (res.failed || []).slice(0, 5),
+        failedCount: (res.failed || []).length,
+        done: users.length < size,
+        total: (lu as any)?.total ?? null,
+      });
     }
 
     if (body.action === "push") {
