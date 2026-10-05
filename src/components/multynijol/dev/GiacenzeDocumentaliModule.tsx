@@ -12,6 +12,11 @@ import giacenzeData from "@/data/giacenzeGiornaliere18Luglio.json";
 
 const FIRST_DATE = "2026-07-18";
 const FINAL_DATE = "2026-09-21";
+const todayIso = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+};
 
 type DailyRow = {
   data: string;
@@ -53,9 +58,9 @@ export function GiacenzeDocumentaliModule() {
       toast.error("Le giacenze sono disponibili a partire dal 18/07/2026");
       return FIRST_DATE;
     }
-    if (value > FINAL_DATE) {
-      toast.error("Il 21/09/2026 è la situazione finale disponibile");
-      return FINAL_DATE;
+    if (value > todayIso()) {
+      toast.error("Non puoi selezionare una data futura");
+      return todayIso();
     }
     return value;
   };
