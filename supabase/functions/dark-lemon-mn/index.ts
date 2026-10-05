@@ -4448,6 +4448,7 @@ NON FERMARTI MAI A CHIEDERE. USA I TOOL.`,
     let finalContent = "";
     let lastNonEmptyContent = "";
     const executedSteps: any[] = [];
+    let emptyReplyRetries = 0;
     const latestUserText = [...modelMessages].reverse().find((message: any) => message?.role === "user")?.content;
     const latestUserPlainText = typeof latestUserText === "string"
       ? latestUserText
@@ -4560,6 +4561,14 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
           conversationMessages.push({
             role: "system",
             content: "BLOCCO ANTI-FALSO-SUCCESSO: l'utente ha chiesto una modifica ma non hai ancora eseguito nessun tool di scrittura con successo. Non puoi dichiarare che la modifica è stata applicata. Chiama ora il tool specifico, verifica il risultato e solo dopo rispondi.",
+          });
+          continue;
+        }
+        if (!assistantText.trim() && !lastNonEmptyContent && emptyReplyRetries < 2) {
+          emptyReplyRetries++;
+          conversationMessages.push({
+            role: "system",
+            content: "La tua ultima risposta era vuota. Rispondi ORA all'utente in italiano con un testo chiaro basato sui risultati dei tool già ottenuti (o chiama un tool se necessario).",
           });
           continue;
         }
