@@ -153,6 +153,35 @@ export function AnagraficaCompletaMP() {
     setShowForm(false); setEditId(null); refetch();
   };
 
+  const [sibillBusy, setSibillBusy] = useState(false);
+  const handleSibillUpdate = async () => {
+    if (!window.confirm("Inviare a Sibill i dati di questa scheda (come sono ora nel modulo)?")) return;
+    setSibillBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sibill-integration", {
+        body: {
+          action: "update_counterpart",
+          counterpart: {
+            company_name: form.ragione_sociale,
+            vat_number: form.partita_iva,
+            tax_number: form.codice_fiscale,
+            address: form.indirizzo,
+            city: form.citta,
+            postal_code: form.cap,
+            province_code: (form.provincia || "").toString().slice(0, 2).toUpperCase() || null,
+            country: form.nazione || "IT",
+            destination_code: form.codice_destinatario,
+            pec: form.pec,
+          },
+        },
+      });
+      const e = (data as any)?.error;
+      if (e) { toast.error(`${e.title}: ${e.detail}`); return; }
+      if (error) { toast.error(error.message); return; }
+      toast.success("Anagrafica aggiornata su Sibill");
+    } finally { setSibillBusy(false); }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm("Disattivare questa azienda?")) return;
     const { error } = await supabase.from("anagrafica_aziende_mp" as any).update({ attivo: false } as any).eq("id", id);
@@ -489,6 +518,11 @@ export function AnagraficaCompletaMP() {
             <div className="col-span-3"><Label>Note</Label><Textarea value={form.note || ""} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} rows={2} /></div>
           </div>
           <DialogFooter>
+            {editId && (
+              <Button variant="outline" onClick={handleSibillUpdate} disabled={sibillBusy} className="mr-auto">
+                {sibillBusy ? "Aggiorno su Sibill…" : "Aggiorna su Sibill"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => { setShowForm(false); setEditId(null); }}>Annulla</Button>
             <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700">
               {editId ? "Aggiorna" : "Registra"}
