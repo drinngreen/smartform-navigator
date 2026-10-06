@@ -20,7 +20,12 @@ type MovimentoLive = { data: string; cer: string; carico: number; scarico: numbe
 
 // Sola lettura: nessuna scrittura, nessun trigger. Contano solo le righe con incide_giacenze=true
 // e le cernite CONFERMATA eseguite dopo il 21/09.
-async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
+export const saldiBase21Settembre = () =>
+  (giacenzeData.rows as { data: string; cer: string; saldo: number }[])
+    .filter((r) => r.data === "21/09/2026")
+    .map((r) => ({ cer: r.cer, saldo: r.saldo }));
+
+export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
   const out: MovimentoLive[] = [];
   const { data: reg, error } = await (supabase as any)
     .from("registro_generale")
