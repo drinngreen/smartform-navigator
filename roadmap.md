@@ -40,3 +40,10 @@
 - [x] Pulsanti giacenze da FIR RENTRI (singolo + tutti), blocco database su date fino al 21/09
 - [ ] Vista RENTRI più chiara con tutti i FIR, inclusa intermediazione
 - [ ] Invio registri RENTRI con un click — bloccato: serve la configurazione degli invii dall'utente
+
+## DARK LEMON operativo e prove totali (06/10)
+- [x] Guida ufficio aggiornata con le novità
+- [x] Privati dopo il 21/09 nelle giacenze (calcolo in sola lettura)
+- [x] DARK LEMON: fattura da formulario, operazioni/annulli magazzino, saldi, conferimenti privati, anagrafica (anteprima + CONFERMO)
+- [ ] Sibill: elenco completo di tutte le fatture e prova bozza creata/eliminata
+- [ ] Stress test app dipendenti, privati, export con schermate prima/dopo (serve accesso con un account dell'app)

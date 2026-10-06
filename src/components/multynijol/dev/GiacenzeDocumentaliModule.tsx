@@ -57,6 +57,19 @@ export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
       out.push({ data, cer: String(o.item?.codice_cer ?? ""), carico: Number(o.output_quantity ?? 0), scarico: 0 });
     }
   }
+  // Conferimenti dei privati: incidono sulle giacenze solo se datati dopo il 21/09 (carico sul CER).
+  const { data: conf, error: e3 } = await (supabase as any)
+    .from("privati_conferimenti")
+    .select("data,cer,kg_pesati")
+    .eq("tenant_id", TENANT_MULTY)
+    .gt("data", `${FINAL_DATE}T23:59:59.999`);
+  if (e3) throw e3;
+  for (const c of conf ?? []) {
+    const data = String(c.data).slice(0, 10);
+    if (data <= FINAL_DATE) continue;
+    const cer = String(c.cer ?? "").trim().toUpperCase().replace(/^(\d{2})[ .]?(\d{2})[ .]?(\d{2})/, "$1$2$3");
+    out.push({ data, cer, carico: Number(c.kg_pesati ?? 0), scarico: 0 });
+  }
   return out;
 }
 const todayIso = () => {

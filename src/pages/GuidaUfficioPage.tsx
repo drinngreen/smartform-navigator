@@ -15,6 +15,14 @@ const appScreenshots = [
 ];
 
 const updates = [
+  { icon: ShieldCheck, title: "Giacenze: regola del 21 settembre", body: "Fino al 21/09/2026 le giacenze sono fisse e immutabili: il programma rifiuta qualsiasi operazione con quella data o precedente. Dal 22/09 cambiano solo per operazioni fatte da una persona (operazioni di magazzino, formulari accettati registrati da «FIR → Giacenze», cernite confermate, conferimenti dei privati) e ogni variazione vale dal suo giorno in poi, a catena. Nessun CER può andare sotto zero." },
+  { icon: Factory, title: "Operazioni di magazzino (come Prometeo)", body: "Impianto → Operazioni di magazzino: Carico di lavorazione, Scarico di lavorazione, Rettifica + e Rettifica − (motivo obbligatorio). Prima di salvare vedi il saldo del CER prima e dopo, alla data scelta e a oggi, poi confermi. «Annulla» crea un movimento contrario: nulla viene cancellato." },
+  { icon: QrCode, title: "FIR → Giacenze (Console RENTRI)", body: "Premi «Leggi dal RENTRI»: per ogni formulario dopo il 21/09 accettato dal destinatario vedi se è da registrare, già registrato o escluso e perché. «Registra» per riga o «Registra tutti i non registrati» usano i kg accettati e la data di arrivo; lo stesso formulario non si registra mai due volte." },
+  { icon: ListChecks, title: "Cernite protette", body: "Una nuova cernita viene rifiutata se porterebbe il CER di origine sotto zero (alla data scelta o dopo) o se è datata fino al 21/09. L'elenco delle cernite si stampa ed esporta in PDF ed Excel." },
+  { icon: Smartphone, title: "Privati", body: "I conferimenti dei privati datati dopo il 21/09 aumentano le giacenze del CER da quel giorno in poi; la ricevuta si genera da sola. Quelli fino al 21/09 non toccano le giacenze." },
+  { icon: AlertTriangle, title: "Formulari inviati: firma dall'app RENTRI", body: "Un formulario registrato sul RENTRI resta «inviato» con l'avviso «firma la partenza dall'app RENTRI, non reinviarlo». Il QR compare quando il RENTRI conferma la firma. Per ora firme e modifiche si fanno dall'app RENTRI." },
+  { icon: FileSpreadsheet, title: "Fatture e Sibill", body: "In Anagrafica il pulsante «Aggiorna su Sibill» aggiorna i dati del cliente su Sibill. Le fatture si preparano in bozza e si inviano a Sibill solo dopo conferma." },
+  { icon: Bot, title: "DARK LEMON operativo", body: "Puoi chiedere tutto, ad esempio «fai fattura del formulario ZRZXR 000828 DK»: prepara la bozza (cliente, kg accettati, prezzo a contratto), te la mostra e la salva solo quando scrivi CONFERMO; poi chiede se inviarla a Sibill. Allo stesso modo fa operazioni di magazzino, annullamenti, conferimenti privati, anagrafiche e saldi giacenze. Senza la parola CONFERMO non scrive nulla."},
   { icon: QrCode, title: "FIR digitali e stato RENTRI", body: "Lo stato viene riletto dal RENTRI. HTTP 202 significa soltanto presa in carico tecnica. Il viaggio resta bloccato finché numero e QR ufficiale non sono presenti. Il PDF ufficiale usa il modello ministeriale compilato e il QR restituito dal RENTRI." },
   { icon: Factory, title: "Impianto destinatario", body: "L'impianto può cercare per numero FIR e, se disponibile, filtrare per EER/CER qualsiasi FIR RENTRI in cui risulta destinatario, anche se non è stato emesso internamente. Registra doppia pesata ed esito totale, parziale o respinto, poi firma e trasmette la chiusura." },
   { icon: ListChecks, title: "Registri C/S e vista totale", body: "La sezione Registri contiene la vista TUTTI, i singoli registri e gli export Excel/PDF. Fino al 31/07/2026 incluso le righe sono classificate INVIATO (storico); da agosto lo stato deriva dal confronto con il registro RENTRI letto al momento." },
@@ -31,7 +39,7 @@ export default function GuidaUfficioPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4">
-          <div className="min-w-0 flex-1"><h1 className="text-2xl font-bold">Guida ufficio</h1><p className="text-sm text-muted-foreground">Aggiornamenti operativi verificati · 16–17 settembre 2026</p></div>
+          <div className="min-w-0 flex-1"><h1 className="text-2xl font-bold">Guida ufficio</h1><p className="text-sm text-muted-foreground">Aggiornamenti operativi · aggiornata al 6 ottobre 2026</p></div>
           <Link to="/guidacollaboratori" className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">Guida collaboratori</Link>
         </div>
       </header>

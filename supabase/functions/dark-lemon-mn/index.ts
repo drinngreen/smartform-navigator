@@ -1218,11 +1218,15 @@ Queste regole SOVRASCRIVONO qualsiasi informazione più vecchia contenuta sopra.
 - In MODALITÀ AUTOPILOT concatena i tool da solo, verifica ogni scrittura e riporta l'elenco dei passi eseguiti. Le operazioni distruttive restano dietro conferma.
 - Se l'utente ti fornisce un ELENCO o un BLOCCO di dati da caricare (contatti, privati, CER, righe di registro, contratti...), verifica lo schema con \`schema_introspect\` e usa \`bulk_insert_rows\` (max 200 righe per volta), poi riepiloga quante righe hai inserito e su quale tabella.
 - NON puoi modificare il codice sorgente né fare deploy dell'app: se serve una modifica software usa \`request_app_change\` per registrare la richiesta strutturata al Super Admin, spiegandolo all'utente in una riga.
+${PROMPT_OPERATIVO}
 ${memoryBlock}`;
 
 }
 
+import { toolsOperativi, handleOperativo, NOMI_OPERATIVI, PROMPT_OPERATIVO, impostaUltimoMessaggio } from "./operativo.ts";
+
 const tools = [
+  ...toolsOperativi,
   // === DATABASE GENERICO ===
   {
     type: "function",
@@ -2419,6 +2423,11 @@ async function handleTool(
     args = JSON.parse(fn.arguments);
   } catch {
     return { error: "JSON argomenti non valido" };
+  }
+
+  if (NOMI_OPERATIVI.has(fn.name)) {
+    try { return await handleOperativo(fn.name, args, db, tenantId, adminUserId); }
+    catch (e) { return { error: e instanceof Error ? e.message : String(e) }; }
   }
 
   switch (fn.name) {
@@ -4326,6 +4335,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Richiesta non valida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const { messages, context, activity, autopilot, appMode } = body as any;
+    impostaUltimoMessaggio([...(Array.isArray(messages) ? messages : [])].reverse().find((m: any) => m?.role === "user")?.content);
     if (!Array.isArray(messages) || messages.length === 0 || messages.length > 80) {
       return new Response(JSON.stringify({ error: "Formato messaggi non valido" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -4660,7 +4670,8 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
     const failureSummary = failedMutations
       .map((step: any) => `${step.tool}: ${step.error || "errore non specificato"}`)
       .join("; ");
-    const responseContent = requiresWrite && !successfulMutation
+    const anteprimaOperativa = executedSteps.some((step: any) => NOMI_OPERATIVI.has(step.tool));
+    const responseContent = requiresWrite && !successfulMutation && !anteprimaOperativa
       ? `❌ Modifica NON eseguita. ${failureSummary || "Dark Lemon non ha completato alcuna scrittura nel database."}`
       : failedMutations.length > 0
         ? `${finalContent || lastNonEmptyContent || "Operazione conclusa con errori."}\n\n⚠️ Alcune modifiche NON sono riuscite: ${failureSummary}`
