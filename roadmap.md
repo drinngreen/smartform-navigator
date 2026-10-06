@@ -30,6 +30,7 @@
 - [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
 
 ## Richiesta 06/10/2026
+- [ ] Richiesta attuale: vista unificata FIR RENTRI, controlli GET fase per fase e indagine documentata delle 10 righe; nessun invio o modifica dati
 - [x] FIR registrati sul RENTRI non tornano più bozza (stato "inviato, firma partenza da app RENTRI")
 - [x] Magazzino dev NON ripristinato (vietato dall’utente: deve restare non operativo)
 - [ ] Verifica collegamento RENTRI fase per fase (sola lettura)
