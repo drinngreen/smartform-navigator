@@ -30,15 +30,19 @@
 - [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
 
 ## Richiesta 06/10/2026
+- [x] Vista unificata FIR e indagine documentata in docs/VERIFICA_RENTRI_PRIVATI_2026-10-06.md; nessun invio o modifica dati
+- [ ] Completezza elenco oltre 100 FIR: serve verifica della paginazione ufficiale RENTRI
+- [ ] Verifica live senza traccia: proxy GET attuale registra audit; serve approvazione del canale diagnostico o delle sole tracce tecniche
+- [ ] Identificazione autore/causa dieci righe: richiede backup/audit originale, ricostruzioni precedenti contraddittorie
 - [x] FIR registrati sul RENTRI non tornano più bozza (stato "inviato, firma partenza da app RENTRI")
 - [x] Magazzino dev NON ripristinato (vietato dall’utente: deve restare non operativo)
-- [ ] Verifica collegamento RENTRI fase per fase (sola lettura)
+- [x] Verifica collegamento fase per fase su evidenze conservate (sola lettura); verifica live separatamente bloccata
 - [x] Confronto 46 FIR del PDF con RENTRI: tutti presenti sul RENTRI
 - [ ] Registrare i 41 FIR idonei nelle giacenze — attende il click dell'utente nella scheda FIR → Giacenze
 - [ ] Flusso app/ufficio: invio fino "alla porta", firma da app RENTRI, rilettura stato
 - [ ] Test precisi fatture Sibill — serve autorizzazione per test su dati reali
 - [x] Pulsanti giacenze da FIR RENTRI (singolo + tutti), blocco database su date fino al 21/09
-- [ ] Vista RENTRI più chiara con tutti i FIR, inclusa intermediazione
+- [x] Vista RENTRI più chiara con ruoli inclusa intermediazione, dettaglio ed export; completezza oltre 100 non certificata
 - [ ] Invio registri RENTRI con un click — bloccato: serve la configurazione degli invii dall'utente
 
 ## DARK LEMON operativo e prove totali (06/10)

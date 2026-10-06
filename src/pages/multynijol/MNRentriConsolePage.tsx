@@ -56,6 +56,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { RentriFirIntermediarioPanel } from "@/components/rentri/RentriFirIntermediarioPanel";
+import { RentriFormulariPanel } from "@/components/rentri/RentriFormulariPanel";
 import { DevInviiRentriModule } from "@/components/multynijol/dev/DevInviiRentriModule";
 import { elencoFirIntermediario, movimentiIntermediazioneDaFirRentri } from "@/lib/rentriFirIntermediario";
 
@@ -84,7 +85,7 @@ const BLOCCHI_PESCA: Record<string, { code: string; label: string; sito: string 
 };
 const validContexts = ["multyproget", "niyol", "dev-multyproget", "multyproget-impianto", "multyproget-intermediario"];
 
-type TabId = "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "giacenze" | "cartacei" | "pesca" | "registriufficiali" | "registri" | "intermediario" | "invii" | "privati" | "lemon";
+type TabId = "formulari" | "stato" | "numeri" | "nuovo" | "bozze" | "dafirmare" | "giacenze" | "cartacei" | "pesca" | "registriufficiali" | "registri" | "intermediario" | "invii" | "privati" | "lemon";
 
 const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -99,6 +100,7 @@ const DESTINAZIONI_FORMULARIO = [
 type DestinazioneId = (typeof DESTINAZIONI_FORMULARIO)[number]["id"];
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: "formulari", label: "Tutti i formulari", icon: <FileText size={14} /> },
   { id: "stato", label: "Stato RENTRI", icon: <Activity size={14} /> },
   { id: "numeri", label: "Numeri FIR", icon: <Ticket size={14} /> },
   { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
@@ -131,8 +133,7 @@ export default function MNRentriConsolePage() {
 
   const initialTab = ((): TabId => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    const ids: TabId[] = ["stato", "numeri", "nuovo", "bozze", "dafirmare", "cartacei", "pesca", "registriufficiali", "registri", "intermediario", "invii", "privati", "lemon"];
-    return ids.includes(t as TabId) ? (t as TabId) : "stato";
+    return TABS.some((item) => item.id === t) ? (t as TabId) : "formulari";
   })();
   const [tab, setTab] = useState<TabId>(initialTab);
 
@@ -589,7 +590,7 @@ export default function MNRentriConsolePage() {
           {TABS.map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => { setTab(t.id); const params = new URLSearchParams(window.location.search); params.set("tab", t.id); navigate({ search: params.toString() }, { replace: true }); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
                 tab === t.id
                   ? "bg-primary text-primary-foreground border-primary"
@@ -601,6 +602,8 @@ export default function MNRentriConsolePage() {
             </button>
           ))}
         </div>
+
+        {tab === "formulari" && <RentriFormulariPanel key={cliente} cliente={cliente} />}
 
         {tab === "stato" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
