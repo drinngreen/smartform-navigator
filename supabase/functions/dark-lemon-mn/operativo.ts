@@ -31,7 +31,7 @@ export const toolsOperativi = [
     "Prepara (senza salvare) la fattura di uno o più formulari partendo dal numero FIR: trova il formulario, il cliente, i kg accettati e il prezzo dal contratto. Mostra l'anteprima e chiedi CONFERMO.",
     {
       numeri_fir: { type: "array", items: { type: "string" } },
-      cliente: { type: "string", description: "Ragione sociale o P.IVA se il cliente non si deduce dal formulario" },
+      cliente: { type: "string", description: "ID anagrafica, ragione sociale o P.IVA se il cliente non si deduce dal formulario" },
       prezzo_unitario: { type: "number", description: "€/kg se non c'è un contratto" },
       aliquota_iva: { type: "number" },
       reverse_charge: { type: "boolean" },
@@ -164,6 +164,10 @@ async function cercaCliente(db: any, tenantId: string, testo?: string | null, pi
     const p = String(piva).replace(/\D/g, "");
     const { data } = await db.from("anagrafica_aziende_mp").select(sel).or(`partita_iva.eq.${p},codice_fiscale.eq.${p}`).limit(1);
     if (data?.[0]) return data[0];
+  }
+  if (testo && /^[0-9a-f-]{36}$/i.test(String(testo).trim())) {
+    const { data } = await db.from("anagrafica_aziende_mp").select(sel).eq("id", String(testo).trim()).maybeSingle();
+    if (data) return data;
   }
   if (testo) {
     const t = String(testo).trim();
