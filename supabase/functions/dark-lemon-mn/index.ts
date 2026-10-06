@@ -4670,7 +4670,8 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
     const failureSummary = failedMutations
       .map((step: any) => `${step.tool}: ${step.error || "errore non specificato"}`)
       .join("; ");
-    const responseContent = requiresWrite && !successfulMutation
+    const anteprimaOperativa = executedSteps.some((step: any) => NOMI_OPERATIVI.has(step.tool));
+    const responseContent = requiresWrite && !successfulMutation && !anteprimaOperativa
       ? `❌ Modifica NON eseguita. ${failureSummary || "Dark Lemon non ha completato alcuna scrittura nel database."}`
       : failedMutations.length > 0
         ? `${finalContent || lastNonEmptyContent || "Operazione conclusa con errori."}\n\n⚠️ Alcune modifiche NON sono riuscite: ${failureSummary}`
