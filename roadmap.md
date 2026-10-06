@@ -30,7 +30,7 @@
 - [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
 
 ## Richiesta 06/10/2026
-- [ ] Richiesta 06:34: SOLO report simulato xFIR allegati, formulario per formulario e saldi per CER/giorno; nessuna registrazione né modifica dati, anche in presenza di negativi
+- [x] Richiesta 06:34: report e CSV solo simulati, 46 FIR unici dell’allegato (42 simulati, 4 esclusi), 1.200 saldi CER/giorno verificati al grammo; nessuna scrittura. Totale teorico 255.501,17 kg, negativi 160216 e 170411 esplicitati
 - [x] Vista unificata FIR e indagine documentata in docs/VERIFICA_RENTRI_PRIVATI_2026-10-06.md; nessun invio o modifica dati
 - [ ] Completezza elenco oltre 100 FIR: serve verifica della paginazione ufficiale RENTRI
 - [ ] Verifica live senza traccia: proxy GET attuale registra audit; serve approvazione del canale diagnostico o delle sole tracce tecniche
