@@ -631,10 +631,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
         if (!active) return;
         if (soloInserimento) {
+          // Registrato sul RENTRI ma con firma di partenza da apporre dall'app
+          // RENTRI: NON è più una bozza (non va reinviato), resta "inviato"
+          // con l'avviso di firma mancante.
           setRentriNonFirmato(true);
           setOfficialEmissionAt(null);
           setQrCodeData(null);
-          if (giaInviato) useMNFIRStore.setState({ workflowStatus: "bozza" });
+          if (!giaInviato) useMNFIRStore.setState({ workflowStatus: "inviato" });
           return;
         }
         setRentriNonFirmato(false);
@@ -1746,9 +1749,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
           {rentriNonFirmato && store.workflowStatus !== 'chiuso' && (
             <div className="rounded-2xl border border-amber-500/50 bg-amber-500/10 px-3 py-3 text-center space-y-2">
-              <p className="text-xs font-display uppercase tracking-widest text-amber-300">Partenza non firmata sul RENTRI</p>
+              <p className="text-xs font-display uppercase tracking-widest text-amber-300">Inviato al RENTRI · firma partenza da fare sull'app RENTRI</p>
               <p className="text-[10px] font-mono text-white/70">
-                Il formulario è presente sul RENTRI solo come inserimento: il destinatario non lo vede e i dati si possono ancora correggere.
+                Il formulario è registrato sul RENTRI: NON reinviarlo. Firma la partenza dall'app RENTRI; il QR comparirà qui appena il RENTRI conferma la firma.
               </p>
               <button
                 type="button"
