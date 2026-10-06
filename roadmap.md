@@ -30,7 +30,7 @@
 - [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
 
 ## Richiesta 06/10/2026
-- [ ] Autorizzazione 06:28: screenshot prima/dopo al 21/09 e oggi; confronto xFIR allegati, registrazioni idonee con controllo saldi, resoconto senza le dieci righe privati
+- [ ] Richiesta 06:34: SOLO report simulato xFIR allegati, formulario per formulario e saldi per CER/giorno; nessuna registrazione né modifica dati, anche in presenza di negativi
 - [x] Vista unificata FIR e indagine documentata in docs/VERIFICA_RENTRI_PRIVATI_2026-10-06.md; nessun invio o modifica dati
 - [ ] Completezza elenco oltre 100 FIR: serve verifica della paginazione ufficiale RENTRI
 - [ ] Verifica live senza traccia: proxy GET attuale registra audit; serve approvazione del canale diagnostico o delle sole tracce tecniche
@@ -39,7 +39,7 @@
 - [x] Magazzino dev NON ripristinato (vietato dall’utente: deve restare non operativo)
 - [x] Verifica collegamento fase per fase su evidenze conservate (sola lettura); verifica live separatamente bloccata
 - [x] Confronto 46 FIR del PDF con RENTRI: tutti presenti sul RENTRI
-- [ ] Registrare i 41 FIR idonei nelle giacenze — attende il click dell'utente nella scheda FIR → Giacenze
+- [ ] Registrazioni xFIR sospese su ordine 06:34: solo simulazione documentale, nessuna scrittura
 - [ ] Flusso app/ufficio: invio fino "alla porta", firma da app RENTRI, rilettura stato
 - [ ] Test precisi fatture Sibill — serve autorizzazione per test su dati reali
 - [x] Pulsanti giacenze da FIR RENTRI (singolo + tutti), blocco database su date fino al 21/09
