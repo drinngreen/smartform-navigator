@@ -152,7 +152,7 @@ async function cercaFormulario(db: any, tenantId: string, numero: string) {
     fir_form_id: f?.id ?? null,
     cer: normCer(f?.codice_eer ?? fd.cer ?? r?.cer),
     descrizione: r?.descrizione ?? fd.descrizione_rifiuto ?? "",
-    kg: Number(r?.peso_destino ?? fd.quantita_destino ?? fd.peso_ricevuto ?? r?.quantita ?? f?.quantita ?? 0),
+    kg: [r?.peso_destino, fd.quantita_destino, fd.peso_ricevuto, r?.quantita, f?.quantita].map(Number).find((v) => v > 0) ?? 0,
     produttore: fd.produttore_denominazione ?? fd.produttore_ragione_sociale ?? raw.produttore ?? raw.Produttore ?? null,
     produttore_piva: fd.produttore_piva ?? fd.produttore_cf ?? raw.produttore_cf ?? null,
   };
@@ -191,7 +191,7 @@ async function componiFattura(db: any, tenantId: string, args: any) {
   const forms = [];
   for (const n of nums) {
     const f = await cercaFormulario(db, tenantId, n);
-    if (!f) return { error: `Formulario ${n} non trovato nel programma (registri e formulari).` };
+    if (!f) return { error: `Formulario ${n} non trovato nei registri del programma. Se è un FIR digitale presente solo sul RENTRI, va prima registrato dalla scheda «FIR → Giacenze» della Console RENTRI, oppure indicami kg accettati e cliente.` };
     if (!(f.kg > 0)) return { error: `Formulario ${n}: kg accettati non presenti, impossibile fatturare.` };
     forms.push(f);
   }
