@@ -50,6 +50,13 @@
       "when": 1791208957885,
       "tag": "0006_registro_incide_giacenze",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791262506143,
+      "tag": "0007_guardia_giacenze_21_settembre",
+      "breakpoints": true
     }
   ]
 }

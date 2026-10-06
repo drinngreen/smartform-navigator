@@ -31,11 +31,12 @@
 
 ## Richiesta 06/10/2026
 - [x] FIR registrati sul RENTRI non tornano più bozza (stato "inviato, firma partenza da app RENTRI")
-- [x] Ripristinata scheda Magazzino (carico/scarico manuale, export) nell'area Impianto
+- [x] Magazzino dev NON ripristinato (vietato dall’utente: deve restare non operativo)
 - [ ] Verifica collegamento RENTRI fase per fase (sola lettura)
-- [ ] Confronto 46 FIR del PDF 06/10 con RENTRI (programma: 45 assenti dal registro) — inserimento in attesa di conferma
+- [x] Confronto 46 FIR del PDF con RENTRI: tutti presenti sul RENTRI
+- [ ] Registrare i 41 FIR idonei nelle giacenze — attende il click dell'utente nella scheda FIR → Giacenze
 - [ ] Flusso app/ufficio: invio fino "alla porta", firma da app RENTRI, rilettura stato
 - [ ] Test precisi fatture Sibill — serve autorizzazione per test su dati reali
-- [ ] Giacenze con un click da FIR RENTRI Multy Impianto — serve conferma regole
+- [x] Pulsanti giacenze da FIR RENTRI (singolo + tutti), blocco database su date fino al 21/09
 - [ ] Vista RENTRI più chiara con tutti i FIR, inclusa intermediazione
-- [ ] Invio registri RENTRI (intermediazione e altri) con un click — serve autorizzazione invii reali
+- [ ] Invio registri RENTRI con un click — bloccato: serve la configurazione degli invii dall'utente
