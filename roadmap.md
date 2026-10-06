@@ -30,6 +30,7 @@
 - [ ] Verificare visivamente gli export dall'anteprima — bloccato finché l'utente non accede nell'anteprima
 
 ## Richiesta 06/10/2026
+- [ ] Autorizzazione 06:28: screenshot prima/dopo al 21/09 e oggi; confronto xFIR allegati, registrazioni idonee con controllo saldi, resoconto senza le dieci righe privati
 - [x] Vista unificata FIR e indagine documentata in docs/VERIFICA_RENTRI_PRIVATI_2026-10-06.md; nessun invio o modifica dati
 - [ ] Completezza elenco oltre 100 FIR: serve verifica della paginazione ufficiale RENTRI
 - [ ] Verifica live senza traccia: proxy GET attuale registra audit; serve approvazione del canale diagnostico o delle sole tracce tecniche
