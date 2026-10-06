@@ -1,3 +1,4 @@
+import { GIACENZE_21_09 } from "./giacenze21.ts";
 // Strumenti operativi di DARK LEMON: ogni scrittura avviene in due passi
 // (anteprima senza scrivere -> conferma esplicita "CONFERMO" dell'operatrice).
 // Regola assoluta: nulla con data fino al 21/09/2026 incide sulle giacenze.
@@ -104,20 +105,10 @@ async function movimentiSuccessivi(db: any) {
   return out;
 }
 
-async function base21(db: any, appUrl?: string): Promise<Map<string, number>> {
-  // La fotografia fissa del 21/09 è nella tabella magazzino_giacenze letta in sola lettura
-  // meno le operazioni successive; per evitare derive usiamo il file pubblicato dall'app.
+async function base21(_db: any): Promise<Map<string, number>> {
   const m = new Map<string, number>();
-  const url = appUrl || "https://waste-whisper-app.lovable.app";
-  try {
-    const r = await fetch(`${url}/giacenze-21-settembre.json`);
-    if (r.ok) {
-      const rows = await r.json();
-      for (const x of rows) m.set(String(x.cer), Number(x.saldo));
-      return m;
-    }
-  } catch { /* fallback sotto */ }
-  throw new Error("Fotografia giacenze 21/09 non disponibile: impossibile calcolare il saldo in sicurezza.");
+  for (const x of GIACENZE_21_09) m.set(String(x.cer), (m.get(String(x.cer)) ?? 0) + Number(x.saldo));
+  return m;
 }
 
 async function saldiAl(db: any, data: string, extra: { data: string; cer: string; carico: number; scarico: number }[] = []) {
