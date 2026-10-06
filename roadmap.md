@@ -33,7 +33,7 @@
 - [x] FIR registrati sul RENTRI non tornano più bozza (stato "inviato, firma partenza da app RENTRI")
 - [x] Ripristinata scheda Magazzino (carico/scarico manuale, export) nell'area Impianto
 - [ ] Verifica collegamento RENTRI fase per fase (sola lettura)
-- [ ] Confronto formulari dopo il 21/09 con RENTRI — bloccato: allegati non arrivati
+- [ ] Confronto 46 FIR del PDF 06/10 con RENTRI (programma: 45 assenti dal registro) — inserimento in attesa di conferma
 - [ ] Flusso app/ufficio: invio fino "alla porta", firma da app RENTRI, rilettura stato
 - [ ] Test precisi fatture Sibill — serve autorizzazione per test su dati reali
 - [ ] Giacenze con un click da FIR RENTRI Multy Impianto — serve conferma regole
