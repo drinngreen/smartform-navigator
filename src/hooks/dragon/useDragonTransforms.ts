@@ -138,5 +138,5 @@ async function verificaCernitaNonNegativa(companyId: string | undefined, sourceI
   if (!cer) throw new Error("CER di origine non trovato: cernita non eseguita");
   const { saldiBase21Settembre, fetchMovimentiSuccessivi } = await import("@/components/multynijol/dev/GiacenzeDocumentaliModule");
   const esito = verificaNuoviMovimenti(saldiBase21Settembre(), await fetchMovimentiSuccessivi(), [{ data: day, cer, carico: 0, scarico: Number(kg) }]);
-  if (!esito.ok) throw new Error(esito.errore);
+  if (esito.ok === false) throw new Error(esito.errore);
 }
