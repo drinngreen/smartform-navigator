@@ -142,7 +142,7 @@ async function cercaFormulario(db: any, tenantId: string, numero: string) {
     .eq("tenant_id", tenantId).limit(2000);
   const f = (ff ?? []).find((x: any) => normFir(x.numero_fir) === n);
   const { data: rg } = await db.from("registro_generale").select("id,numero_formulario,cer,descrizione,quantita,peso_destino,data_movimento,raw,registro")
-    .eq("tenant_id", tenantId).ilike("numero_formulario", `%${n.slice(-4)}%`).limit(200);
+    .eq("tenant_id", tenantId).ilike("numero_formulario", `%${(n.match(/\d{6}/) ?? [n.slice(-4)])[0]}%`).limit(200);
   const r = (rg ?? []).find((x: any) => normFir(x.numero_formulario) === n);
   if (!f && !r) return null;
   const fd = f?.form_data ?? {};
