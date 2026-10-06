@@ -36,6 +36,7 @@ import { vidimaFIRAsync, emissioneFir, inviaOperazioneRentri, type RentriCliente
 import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { applicaChiusuraDestinatario } from "@/lib/chiusuraDestinatarioGiacenza";
 import { CerniteOperativeView } from "@/pages/dragon/DragonCerniteBatchPage";
+import { OperazioniMagazzinoModule } from "./OperazioniMagazzinoModule";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -164,6 +165,9 @@ export function DevImpiantoModule() {
           <TabsTrigger value="cernite" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Scissors className="h-4 w-4" /> Cernite
           </TabsTrigger>
+          <TabsTrigger value="operazioni-magazzino" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <Warehouse className="h-4 w-4" /> Operazioni di magazzino
+          </TabsTrigger>
           <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <FileText className="h-4 w-4" /> Formulari
           </TabsTrigger>
@@ -192,6 +196,9 @@ export function DevImpiantoModule() {
         </TabsContent>
         <TabsContent value="cernite">
           <CerniteOperativeView embedded />
+        </TabsContent>
+        <TabsContent value="operazioni-magazzino">
+          <OperazioniMagazzinoModule />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
