@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DevGiacenzeModule } from "./DevGiacenzeModule";
 import { DevRegistroCaricoScaricoModule } from "./DevRegistroCaricoScaricoModule";
 import { DevFirCartaceoModule } from "./DevFirCartaceoModule";
-import { DevMagazzinoModule } from "./DevMagazzinoModule";
 
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
@@ -165,9 +164,6 @@ export function DevImpiantoModule() {
           <TabsTrigger value="cernite" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Scissors className="h-4 w-4" /> Cernite
           </TabsTrigger>
-          <TabsTrigger value="magazzino" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <Package className="h-4 w-4" /> Magazzino
-          </TabsTrigger>
           <TabsTrigger value="formulari" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <FileText className="h-4 w-4" /> Formulari
           </TabsTrigger>
@@ -196,9 +192,6 @@ export function DevImpiantoModule() {
         </TabsContent>
         <TabsContent value="cernite">
           <CerniteOperativeView embedded />
-        </TabsContent>
-        <TabsContent value="magazzino">
-          <DevMagazzinoModule />
         </TabsContent>
         <TabsContent value="formulari">
           <ImpiantoFormulari />
