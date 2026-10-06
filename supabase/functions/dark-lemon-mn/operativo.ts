@@ -180,8 +180,10 @@ async function cercaCliente(db: any, tenantId: string, testo?: string | null, pi
   return null;
 }
 
-async function prezzoContratto(db: any, clienteId: string, cer: string) {
-  const { data: contr } = await db.from("contratti_clienti").select("id,stato").eq("cliente_id", clienteId);
+async function prezzoContratto(db: any, clienteId: string, cer: string, ragione?: string) {
+  const { data: perId } = await db.from("contratti_clienti").select("id,stato").eq("cliente_id", clienteId);
+  const { data: perNome } = ragione ? await db.from("contratti_clienti").select("id,stato").ilike("cliente_ragione_sociale", ragione.replace(/[%_]/g, "")) : { data: [] };
+  const contr = [...(perId ?? []), ...(perNome ?? [])];
   const ids = (contr ?? []).filter((c: any) => c.stato !== "recesso").map((c: any) => c.id);
   if (!ids.length) return null;
   const { data: righe } = await db.from("contratti_clienti_righe").select("articolo_cer,prezzo_unitario,aliquota_iva,unita_misura,attiva").in("contratto_id", ids).eq("attiva", true);
@@ -205,7 +207,7 @@ async function componiFattura(db: any, tenantId: string, args: any) {
   if (!cli.partita_iva && !cli.codice_fiscale) return { error: `Il cliente ${cli.ragione_sociale} non ha P.IVA né codice fiscale.` };
   const righe = [];
   for (const f of forms) {
-    const c = await prezzoContratto(db, cli.id, f.cer);
+    const c = await prezzoContratto(db, cli.id, f.cer, cli.ragione_sociale);
     const prezzo = Number(args.prezzo_unitario ?? c?.prezzo ?? NaN);
     if (!Number.isFinite(prezzo)) return { error: `Nessun prezzo a contratto per CER ${f.cer} di ${cli.ragione_sociale}: indicami il prezzo €/kg.`, formulari: forms };
     const rc = Boolean(args.reverse_charge);
