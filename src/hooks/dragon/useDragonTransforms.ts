@@ -80,6 +80,7 @@ export function useDragonTransformBatches() {
 
   const executeCernita = useMutation({
     mutationFn: async (batch: { source_item_id: string; input_quantity: number; outputs: Array<{ item_id: string; quantity: number; lot_code?: string }>; model_id?: string | null; execution_date?: string; notes?: string; deferred?: boolean }) => {
+      await verificaCernitaNonNegativa(companyId, batch.source_item_id, batch.input_quantity, batch.execution_date ?? new Date().toISOString().split("T")[0]);
       const { data, error } = await (supabase.rpc as any)("dragon_create_cernita_atomic", {
         p_company_id: companyId,
         p_source_item_id: batch.source_item_id,
@@ -118,4 +119,24 @@ export function useDragonTransformBatches() {
   });
 
   return { batches, isLoading, executeCernita, completeCernita, cancelCernita };
+}
+
+
+/**
+ * Blocco anti-saldi-negativi per le cernite (sola lettura, nessuna scrittura).
+ * Rifiuta date fino al 21/09 e qualsiasi cernita che porterebbe il CER di origine
+ * sotto zero alla data scelta o in un giorno successivo.
+ */
+async function verificaCernitaNonNegativa(companyId: string | undefined, sourceItemId: string, kg: number, data: string) {
+  const { GIACENZE_FINAL_DATE, verificaNuoviMovimenti } = await import("@/lib/giacenzeCascata");
+  const day = String(data).slice(0, 10);
+  if (day <= GIACENZE_FINAL_DATE) throw new Error("Vietato: le giacenze fino al 21/09/2026 sono immutabili");
+  if (companyId !== "77ec9a3d-602e-438f-97bf-1c69abd8f691") return;
+  const { data: item, error } = await (supabase as any).from("dragon_items").select("codice_cer").eq("id", sourceItemId).maybeSingle();
+  if (error) throw error;
+  const cer = String(item?.codice_cer ?? "");
+  if (!cer) throw new Error("CER di origine non trovato: cernita non eseguita");
+  const { saldiBase21Settembre, fetchMovimentiSuccessivi } = await import("@/components/multynijol/dev/GiacenzeDocumentaliModule");
+  const esito = verificaNuoviMovimenti(saldiBase21Settembre(), await fetchMovimentiSuccessivi(), [{ data: day, cer, carico: 0, scarico: Number(kg) }]);
+  if (esito.ok === false) throw new Error(esito.errore);
 }
