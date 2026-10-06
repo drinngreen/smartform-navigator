@@ -631,10 +631,13 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }
         if (!active) return;
         if (soloInserimento) {
+          // Registrato sul RENTRI ma con firma di partenza da apporre dall'app
+          // RENTRI: NON è più una bozza (non va reinviato), resta "inviato"
+          // con l'avviso di firma mancante.
           setRentriNonFirmato(true);
           setOfficialEmissionAt(null);
           setQrCodeData(null);
-          if (giaInviato) useMNFIRStore.setState({ workflowStatus: "bozza" });
+          if (!giaInviato) useMNFIRStore.setState({ workflowStatus: "inviato" });
           return;
         }
         setRentriNonFirmato(false);
