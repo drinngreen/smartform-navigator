@@ -50,7 +50,7 @@ export function ImpiantoFirDetail({
       };
       if (type === "reception") await onSignReception(payload);
       else await onSignDestination(payload);
-      toast.success(type === "reception" ? "Firma ricezione eseguita!" : "Firma destinatario eseguita — FIR chiuso!");
+      toast.success("Accettazione inviata al RENTRI: firmala nell'app RENTRI. Il formulario è chiuso solo dopo quella firma.");
       setConfirmDestinazione(false);
       setConfermaText("");
     } catch (err: any) {

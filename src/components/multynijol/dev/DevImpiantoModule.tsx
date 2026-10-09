@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { listIncomingXFir, signIncomingXFir, cercaFirRentriPerNumero } from "@/services/impiantoFirService";
+import { FIRMA_API_ATTIVA } from "@/lib/rentriFirma";
 import type { FirEvent, FirSummary } from "@/types/impiantoFir";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -418,6 +419,16 @@ function ImpiantoFormulari() {
     if (selectedIncoming.stato_interno === "firmato_destinatario") {
       throw new Error("Formulario già accettato e chiuso sul RENTRI: nessun nuovo invio consentito");
     }
+    if (!(payload.kg_pesata > 0) && payload.esito !== "respinto") {
+      throw new Error("Inserisci i kg accettati dall'impianto");
+    }
+    if (payload.esito !== "accettato" && !String(payload.motivazione || "").trim()) {
+      throw new Error("Per accettazione parziale o respinta il motivo è obbligatorio");
+    }
+    const dataArrivo = String(payload.data_arrivo || "");
+    if (dataArrivo && dataArrivo <= "2026-09-21") {
+      throw new Error("Operazione bloccata: data di arrivo fino al 21/09/2026");
+    }
 
     const cfg = getTenantConfig(SOCIETA_ID);
     if (!cfg?.unitId) throw new Error("num_iscr_sito Multy non configurato");
@@ -439,10 +450,12 @@ function ImpiantoFormulari() {
       throw new Error(response.error || detailMessage || "Firma impianto non riuscita");
     }
 
-    // Il carico entra in giacenza solo dopo l'esito positivo del RENTRI e solo
-    // attraverso il punto unico idempotente: prima questa firma chiudeva il
-    // formulario senza far entrare nulla a magazzino.
-    if (mode === "destination") {
+    // Senza firma elettronica via API l'accettazione va firmata nell'app RENTRI.
+    // Registro e giacenze NON si toccano qui: si registrano con il click di
+    // «FIR → Giacenze» solo quando il RENTRI conferma il formulario chiuso.
+    if (!FIRMA_API_ATTIVA) {
+      toast.success(`Accettazione di ${selectedIncoming.numero_fir} inviata al RENTRI: ora firmala nell'app RENTRI.`);
+    } else if (mode === "destination") {
       try {
         const esitoGiacenza = await applicaChiusuraDestinatario({
           tenantId: MULTY_TENANT_ID,
@@ -456,7 +469,6 @@ function ImpiantoFormulari() {
         });
         if (esitoGiacenza.applicato === true) toast.success("Carico registrato in impianto e giacenze aggiornate");
         else toast.info(esitoGiacenza.motivo);
-
       } catch (e: any) {
         toast.error(`Firma inviata, ma il carico in impianto non è stato registrato: ${e?.message || String(e)}`);
       }
@@ -469,7 +481,9 @@ function ImpiantoFormulari() {
         {
           id: `${mode}-${Date.now()}`,
           tipo: mode === "destination" ? "firma_destinatario" : "firma_ricezione",
-          descrizione: mode === "destination" ? "Accettazione e scarico firmati su RENTRI" : "Ricezione registrata su RENTRI",
+          descrizione: FIRMA_API_ATTIVA
+            ? (mode === "destination" ? "Accettazione e scarico firmati su RENTRI" : "Ricezione registrata su RENTRI")
+            : "Accettazione inviata al RENTRI — da firmare nell'app RENTRI",
           timestamp: new Date().toISOString(),
           payload: (response.data as Record<string, unknown>) ?? undefined,
         },

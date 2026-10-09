@@ -17,6 +17,7 @@ import {
   statoFisicoRentri,
   provenienzaRentri,
 } from "@/lib/rentriValidazione";
+import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 
 /** Known field name → normalized lookup key */
 const FIELD_MAP: Record<string, string> = {
@@ -171,13 +172,11 @@ export async function mapFormToRentriPayload(
   // Build date/time
   const dataInizio = str("data_inizio_trasporto") || str("data_emissione") || new Date().toISOString().slice(0, 10);
   const oraInizio = str("ora_inizio_trasporto") || new Date().toISOString().slice(11, 16);
-  const dataOraInizio = `${dataInizio}T${oraInizio}:00+01:00`;
+  const dataOraInizio = dataOraRoma(dataInizio, oraInizio);
 
   // Build conducente
   const conducenteRaw = str("conducente");
-  const conducenteParts = conducenteRaw.split(/\s+/);
-  const conducenteNome = conducenteParts[0] || "";
-  const conducenteCognome = conducenteParts.slice(1).join(" ") || "";
+  const { nome: conducenteNome, cognome: conducenteCognome } = splitConducente("", "", conducenteRaw);
 
   // Stato fisico: solo i codici ufficiali RENTRI (S, SP, FP, L, VS, GA)
   const statoFisico = statoFisicoRentri(str("stato_fisico")) || "S";
@@ -195,7 +194,7 @@ export async function mapFormToRentriPayload(
         nazione_id: "IT",
         indirizzo: {
           citta: { comune_id: prodComuneId },
-          indirizzo: prodAddr.indirizzo,
+          indirizzo: splitIndirizzoRentri(prodAddr.indirizzo).indirizzo,
           cap: prodAddr.cap,
         },
         ...(str("prod_autorizzazione") ? {
@@ -212,7 +211,7 @@ export async function mapFormToRentriPayload(
         attivita: bool("recupero") ? "R13" : (bool("smaltimento") ? "D15" : "R13"),
         indirizzo: {
           citta: { comune_id: destComuneId },
-          indirizzo: destAddr.indirizzo,
+          indirizzo: splitIndirizzoRentri(destAddr.indirizzo).indirizzo,
           cap: destAddr.cap,
         },
         ...(str("dest_autorizzazione") ? {
@@ -259,11 +258,11 @@ export async function mapFormToRentriPayload(
         ...(str("targa_rimorchio") ? { targa_rimorchio: str("targa_rimorchio") } : {}),
         data_ora_inizio_trasporto: dataOraInizio,
       },
-      ...(str("annotazioni") ? { annotazioni: str("annotazioni") } : {}),
+      ...(pulisciAnnotazioni(str("annotazioni")) ? { annotazioni: pulisciAnnotazioni(str("annotazioni")) } : {}),
     },
     // Firma flags
-    firma_produttore: options?.firmaComeProduttore ?? true,
-    firma_trasportatore: true,
+    firma_produttore: FIRMA_API_ATTIVA && (options?.firmaComeProduttore ?? true),
+    firma_trasportatore: FIRMA_API_ATTIVA,
   };
 
   return payload;

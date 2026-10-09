@@ -11,6 +11,7 @@ import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
+import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 
 type Bag = Record<string, unknown>;
 
@@ -34,17 +35,7 @@ function s(v: unknown): string {
   return v == null ? "" : String(v).trim();
 }
 
-function splitIndirizzo(raw: string): { indirizzo: string; cap: string } {
-  const cap = raw.match(/\b(\d{5})\b/)?.[1] ?? "";
-  return { indirizzo: raw, cap };
-}
-
-function splitNome(raw: string): { nome: string; cognome: string } {
-  const parts = raw.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { nome: "", cognome: "" };
-  if (parts.length === 1) return { nome: parts[0], cognome: parts[0] };
-  return { nome: parts[0], cognome: parts.slice(1).join(" ") };
-}
+const splitIndirizzo = splitIndirizzoRentri;
 
 function statoFisico(raw: string): string {
   return STATO_FISICO_MAP[raw.trim().toLowerCase()] || "S";
@@ -170,10 +161,9 @@ function attivitaDestinatario(raw: string, fallbackSmaltimento: boolean): string
 }
 
 function dataOraTrasporto(d: Bag): string {
-  const data = s(d.dataEmissione) || new Date().toISOString().slice(0, 10);
-  const ora = s(d.oraInizioTrasporto) || s(d.oraDataInizioTrasporto).slice(11, 16) || "08:00";
-  const iso = new Date(`${data}T${/^\d{2}:\d{2}$/.test(ora) ? ora : "08:00"}:00`);
-  return Number.isNaN(iso.getTime()) ? new Date().toISOString() : iso.toISOString();
+  const data = s(d.dataInizioTrasporto) || s(d.dataEmissione);
+  const ora = s(d.oraInizioTrasporto) || s(d.oraDataInizioTrasporto).slice(11, 16);
+  return dataOraRoma(data, ora);
 }
 
 export interface MapStoreOptions {
@@ -199,7 +189,11 @@ export async function mapStoreToRentriFirPayload(
     s(data.cantiereProvincia) || undefined,
   );
   const destComuneId = await resolveComuneId(destTesto, destAddr.cap);
-  const conducente = splitNome(s(data.conducenteNomeCognome) || s(data.trasportatoreNomeAutista));
+  const conducente = splitConducente(
+    s(data.conducenteNome),
+    s(data.conducenteCognome),
+    s(data.conducenteNomeCognome) || s(data.trasportatoreNomeAutista),
+  );
 
   const eerRaw = s(data.codiceEER);
   const hp = normalizeHpList(
@@ -292,9 +286,10 @@ export async function mapStoreToRentriFirPayload(
         ...(s(data.targaRimorchio) ? { targa_rimorchio: s(data.targaRimorchio) } : {}),
         data_ora_inizio_trasporto: dataOraTrasporto(data),
       },
-      ...(s(data.annotazioni) ? { annotazioni: s(data.annotazioni) } : {}),
+      ...(pulisciAnnotazioni(s(data.annotazioni)) ? { annotazioni: pulisciAnnotazioni(s(data.annotazioni)) } : {}),
     },
-    firma_produttore: options.firmaComeProduttore ?? true,
-    firma_trasportatore: true,
+    // Senza firma elettronica via API la firma si fa nell'app RENTRI.
+    firma_produttore: FIRMA_API_ATTIVA && (options.firmaComeProduttore ?? true),
+    firma_trasportatore: FIRMA_API_ATTIVA,
   };
 }
