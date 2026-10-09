@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { listIncomingXFir, signIncomingXFir, cercaFirRentriPerNumero } from "@/services/impiantoFirService";
+import { FIRMA_API_ATTIVA } from "@/lib/rentriFirma";
 import type { FirEvent, FirSummary } from "@/types/impiantoFir";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
