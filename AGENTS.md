@@ -4,3 +4,4 @@
 
 - DARK LEMON write tools live in supabase/functions/dark-lemon-mn/operativo.ts and require the last user message to contain "CONFERMO" server-side; why: no agent write may happen without explicit human confirmation.
 - The unified RENTRI FIR view uses subject-wide GET reads and derives company roles from fiscal codes; why: include intermediary FIRs without mixing tenants or inferring signatures from submission receipts.
+- RENTRI formulari list reads use data_emissione_da/data_emissione_a windows (leggiTutteLePagineFormulari); why: RENTRI ignores page/page_size (verified 09/10/2026), so one unfiltered call misses older FIRs.
