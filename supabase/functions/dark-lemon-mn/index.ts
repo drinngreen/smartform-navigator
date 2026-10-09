@@ -4589,7 +4589,11 @@ USA I TOOL ADESSO. NON RISPONDERE CON TESTO.`,
           });
           continue;
         }
-        const successfulMutation = executedSteps.some((step: any) => MUTATING_TOOLS.has(step.tool) && step.ok);
+        // Gli strumenti operativi contano come risposta valida all'intento di scrittura:
+        // una scrittura confermata è un salvataggio reale, un'anteprima (senza CONFERMO)
+        // è la risposta corretta e non deve far ripetere il tool (rischio doppio salvataggio).
+        const successfulMutation = executedSteps.some((step: any) =>
+          (MUTATING_TOOLS.has(step.tool) || NOMI_OPERATIVI.has(step.tool)) && step.ok);
         if (requiresWrite && !successfulMutation) {
           conversationMessages.push({
             role: "system",
