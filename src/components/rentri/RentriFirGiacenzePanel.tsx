@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { Loader2, RefreshCw, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { inviaOperazioneRentriCustom } from "@/lib/rentriVpsApi";
+import { dettaglioFormularioRentri } from "@/lib/rentriVpsApi";
+import { leggiTutteLePagineFormulari } from "@/lib/rentriFirIntermediario";
 import {
   GIACENZE_DATA_LIMITE, MULTY_CF, MULTY_IMPIANTO_UL, normFir,
   valutaFirPerGiacenze, leggiStatoRegistro, registraFirInGiacenze,
@@ -22,13 +23,24 @@ export function RentriFirGiacenzePanel() {
   const carica = async () => {
     setLoading(true);
     try {
-      const res = await inviaOperazioneRentriCustom(
-        "multy", "GET",
+      const { response: res, items } = await leggiTutteLePagineFormulari(
+        "multy",
         `/formulari/v1.0?identificativo_soggetto=${MULTY_CF}&num_iscr_sito=${MULTY_IMPIANTO_UL}&data_emissione_da=2026-09-22`,
       );
-      if (!res.success) throw new Error(res.userMessage || res.error || "RENTRI non raggiungibile");
-      const items = Array.isArray(res.data) ? res.data : [];
-      const valutati = items.map(valutaFirPerGiacenze).filter(Boolean) as FirGiacenzaCandidato[];
+      if (!res?.success) throw new Error(res?.userMessage || res?.error || "RENTRI non raggiungibile");
+      // L'elenco può non contenere l'accettazione: per i formulari dopo il 21/09
+      // senza accettazione si rilegge il dettaglio (solo lettura).
+      const completi: any[] = [];
+      for (const it of items as any[]) {
+        const em = String(it.data_emissione ?? "").slice(0, 10);
+        if (!it.accettazione && em > GIACENZE_DATA_LIMITE && it.numero_fir) {
+          const d = await dettaglioFormularioRentri("multy", String(it.numero_fir), MULTY_CF, MULTY_IMPIANTO_UL);
+          const det = d.success && d.data && typeof d.data === "object" ? (d.data as any) : null;
+          completi.push(det ? { ...it, ...det } : it);
+        } else completi.push(it);
+      }
+      const valutati = completi.map(valutaFirPerGiacenze).filter(Boolean) as FirGiacenzaCandidato[];
+      toast.success(`Letti ${items.length} formulari dal RENTRI, ${valutati.length} riguardano Multy Impianto`);
       valutati.sort((a, b) => a.data_emissione.localeCompare(b.data_emissione) || a.numero_fir.localeCompare(b.numero_fir));
       setRighe(valutati);
       setStato(await leggiStatoRegistro(valutati.map((v) => v.numero_fir)));

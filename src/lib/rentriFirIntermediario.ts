@@ -175,12 +175,42 @@ export async function elencoFirIntermediario(
   if (opts.dataDa) params.set("data_da", opts.dataDa);
   if (opts.dataA) params.set("data_a", opts.dataA);
 
-  const response = await inviaOperazioneRentriCustom(
-    cliente,
-    "GET",
-    `/formulari/v1.0?${params.toString()}`,
-    null,
-  );
-  const tutte = estraiElencoFormulari(response.data).map((r) => interpretaFormulario(r, cf));
+  const { response, items } = await leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?${params.toString()}`);
+  const tutte = items.map((r) => interpretaFormulario(r, cf));
   return { response, righe: filtraPerPeriodo(tutte, opts.dataDa, opts.dataA) };
+}
+
+/**
+ * Legge TUTTE le pagine di un elenco formulari RENTRI (sola lettura).
+ * Il RENTRI restituisce al massimo una pagina per richiesta: si chiedono
+ * pagine successive finché arrivano formulari nuovi.
+ */
+export async function leggiTutteLePagineFormulari(
+  cliente: RentriCliente,
+  basePath: string,
+  maxPagine = 30,
+): Promise<{ response: RentriVpsResponse; items: Rec[]; pagine: number }> {
+  const visti = new Set<string>();
+  const items: Rec[] = [];
+  let response: RentriVpsResponse | null = null;
+  let pagine = 0;
+  const sep = basePath.includes("?") ? "&" : "?";
+  for (let page = 1; page <= maxPagine; page++) {
+    const res = await inviaOperazioneRentriCustom(cliente, "GET", `${basePath}${sep}page=${page}&page_size=100`, null);
+    if (!res.success) {
+      if (page === 1) return { response: res, items, pagine };
+      break;
+    }
+    response = res;
+    pagine = page;
+    const lista = estraiElencoFormulari(res.data);
+    let nuovi = 0;
+    for (const r of lista) {
+      const k = soloCifreLettere(r.numero_fir ?? r.numeroFir ?? JSON.stringify(r));
+      if (visti.has(k)) continue;
+      visti.add(k); items.push(r); nuovi++;
+    }
+    if (lista.length < 100 || nuovi === 0) break;
+  }
+  return { response: response!, items, pagine };
 }
