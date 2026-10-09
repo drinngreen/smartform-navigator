@@ -172,45 +172,52 @@ export async function elencoFirIntermediario(
   const key = rentriConfigKey(cliente);
   const cf = opts.codiceFiscale || RENTRI_CF_SOGGETTO[key] || "";
   const params = new URLSearchParams({ identificativo_soggetto: cf });
-  if (opts.dataDa) params.set("data_da", opts.dataDa);
-  if (opts.dataA) params.set("data_a", opts.dataA);
-
-  const { response, items } = await leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?${params.toString()}`);
+  const { response, items } = await leggiTutteLePagineFormulari(
+    cliente, `/formulari/v1.0?${params.toString()}`, opts.dataDa || "2026-09-01", opts.dataA || undefined,
+  );
   const tutte = items.map((r) => interpretaFormulario(r, cf));
   return { response, righe: filtraPerPeriodo(tutte, opts.dataDa, opts.dataA) };
 }
 
 /**
- * Legge TUTTE le pagine di un elenco formulari RENTRI (sola lettura).
- * Il RENTRI restituisce al massimo una pagina per richiesta: si chiedono
- * pagine successive finché arrivano formulari nuovi.
+ * Legge l'elenco formulari RENTRI per finestre di date (sola lettura).
+ * Verificato il 09/10/2026: il RENTRI ignora page/page_size ma rispetta
+ * data_emissione_da / data_emissione_a. Si legge quindi a finestre di 7 giorni;
+ * se una finestra è molto piena si rilegge giorno per giorno.
  */
 export async function leggiTutteLePagineFormulari(
   cliente: RentriCliente,
   basePath: string,
-  maxPagine = 30,
+  dal = "2026-09-22",
+  al = new Date().toISOString().slice(0, 10),
 ): Promise<{ response: RentriVpsResponse; items: Rec[]; pagine: number }> {
   const visti = new Set<string>();
   const items: Rec[] = [];
   let response: RentriVpsResponse | null = null;
   let pagine = 0;
-  const sep = basePath.includes("?") ? "&" : "?";
-  for (let page = 1; page <= maxPagine; page++) {
-    const res = await inviaOperazioneRentriCustom(cliente, "GET", `${basePath}${sep}page=${page}&page_size=100`, null);
-    if (!res.success) {
-      if (page === 1) return { response: res, items, pagine };
-      break;
+  const base = basePath.replace(/[?&]data_emissione_(da|a)=[^&]*/g, "");
+  const sep = base.includes("?") ? "&" : "?";
+  const add = (d: string, n: number) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+  const leggi = async (da: string, a: string): Promise<Rec[] | null> => {
+    const res = await inviaOperazioneRentriCustom(cliente, "GET", `${base}${sep}data_emissione_da=${da}&data_emissione_a=${a}`, null);
+    pagine++;
+    if (!res.success) { if (!response) response = res; return null; }
+    if (!response || !response.success) response = res;
+    return estraiElencoFormulari(res.data);
+  };
+  for (let da = dal; da <= al; da = add(da, 7)) {
+    const a = add(da, 6) > al ? al : add(da, 6);
+    let lista = await leggi(da, a);
+    if (lista === null) { if (!items.length && pagine === 1) return { response: response!, items, pagine }; throw new Error(response?.userMessage || response?.error || `Lettura RENTRI non riuscita (${da} → ${a})`); }
+    if (lista.length >= 50 && da !== a) {
+      lista = [];
+      for (let g = da; g <= a; g = add(g, 1)) lista.push(...((await leggi(g, g)) ?? []));
     }
-    response = res;
-    pagine = page;
-    const lista = estraiElencoFormulari(res.data);
-    let nuovi = 0;
     for (const r of lista) {
       const k = soloCifreLettere(r.numero_fir ?? r.numeroFir ?? JSON.stringify(r));
       if (visti.has(k)) continue;
-      visti.add(k); items.push(r); nuovi++;
+      visti.add(k); items.push(r);
     }
-    if (lista.length < 100 || nuovi === 0) break;
   }
   return { response: response!, items, pagine };
 }
