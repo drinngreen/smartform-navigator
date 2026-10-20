@@ -130,14 +130,19 @@ export async function verificaCantierePrimaDiRegistrare(
 }
 
 
-export type StatoRegistro = { registrato: boolean; rigaSenzaGiacenzaId: string | null };
+export type StatoRegistro = {
+  registrato: boolean;
+  rigaSenzaGiacenzaId: string | null;
+  /** Riga già nel registro e marcata "cantiere diverso": non deve MAI passare alle giacenze. */
+  cantiereDiverso?: boolean;
+};
 
 /** Legge (sola lettura) quali FIR sono già registrati con effetto giacenze. */
 export async function leggiStatoRegistro(numeri: string[]): Promise<Map<string, StatoRegistro>> {
   const out = new Map<string, StatoRegistro>();
   const { data, error } = await supabase
     .from("registro_generale")
-    .select("id, numero_formulario, incide_giacenze")
+    .select("id, numero_formulario, incide_giacenze, annotazioni")
     .eq("registro", REGISTRO_IMPIANTO)
     .not("numero_formulario", "is", null);
   if (error) throw error;
@@ -146,7 +151,9 @@ export async function leggiStatoRegistro(numeri: string[]): Promise<Map<string, 
     const n = normFir(r.numero_formulario);
     if (!wanted.has(n)) continue;
     const cur = out.get(n) ?? { registrato: false, rigaSenzaGiacenzaId: null };
+    const cantiere = String(r.annotazioni ?? "").toLowerCase().includes(NOTA_CANTIERE);
     if (r.incide_giacenze) cur.registrato = true;
+    else if (cantiere) { cur.registrato = true; cur.cantiereDiverso = true; }
     else if (!cur.rigaSenzaGiacenzaId) cur.rigaSenzaGiacenzaId = r.id;
     out.set(n, cur);
   }
@@ -159,16 +166,25 @@ export async function registraFirInGiacenze(c: FirGiacenzaCandidato, stato?: Sta
   if (c.data_emissione <= GIACENZE_DATA_LIMITE || c.data_arrivo <= GIACENZE_DATA_LIMITE) {
     throw new Error("Vietato: giacenze fino al 21/09/2026 immutabili");
   }
-  if (stato?.registrato) return "gia_registrato" as const;
+  if (c.segno === "SCARICO" && !c.cantiere_verificato) {
+    throw new Error("Cantiere non verificato sul dettaglio RENTRI: non registro");
+  }
+  if (stato?.registrato || stato?.cantiereDiverso) return "gia_registrato" as const;
 
+  // Cantiere diverso dall'impianto: SOLO registro, le giacenze NON si cambiano.
+  const incide = !c.cantiere_diverso;
   const campi = {
     quantita: c.kg_accettati,
     peso_destino: c.kg_accettati,
     cer: c.cer,
     data_movimento: c.data_arrivo,
-    incide_giacenze: true,
+    incide_giacenze: incide,
   };
+  const nota = c.cantiere_diverso
+    ? ` | ${NOTA_CANTIERE} (${c.luogo_produzione || "luogo di produzione dal RENTRI"}) - NON incide sulle giacenze`
+    : "";
   if (stato?.rigaSenzaGiacenzaId) {
+    if (!incide) return "gia_registrato" as const; // la riga c'è già e resta senza effetto giacenze
     const { error } = await supabase.from("registro_generale").update(campi as any).eq("id", stato.rigaSenzaGiacenzaId);
     if (error) throw error;
     return "aggiornato" as const;
@@ -183,10 +199,10 @@ export async function registraFirInGiacenze(c: FirGiacenzaCandidato, stato?: Sta
     segno: c.segno === "CARICO" ? "+" : "-",
     tipo_operazione: c.segno === "CARICO" ? "Carico da formulario FIR" : "Scarico da formulario FIR",
     destinazione: c.segno === "SCARICO" ? c.destinatario : null,
-    luogo_produzione: c.produttore,
+    luogo_produzione: c.cantiere_diverso && c.luogo_produzione ? c.luogo_produzione : c.produttore,
     stato_movimento: "effettivo",
     created_by_agent: false,
-    annotazioni: `Da RENTRI (kg accettati dal destinatario) - registrato con pulsante il ${new Date().toLocaleDateString("it-IT")}`,
+    annotazioni: `Da RENTRI (kg accettati dal destinatario) - registrato con pulsante il ${new Date().toLocaleDateString("it-IT")}${nota}`,
   } as any);
   if (error) throw error;
   return "inserito" as const;
