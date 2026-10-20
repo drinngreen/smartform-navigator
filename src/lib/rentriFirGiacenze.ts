@@ -16,6 +16,11 @@ export const REGISTRO_IMPIANTO = "MULTY_IMPIANTO";
 export const normFir = (v: unknown) => String(v ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 const cf = (v: unknown) => String(v ?? "").replace(/\s+/g, "").toUpperCase();
 
+/** Impianto Multy: Via Rivarossa 18/20, Piscina (comune ISTAT 001195). */
+export const MULTY_IMPIANTO_COMUNE_ID = "001195";
+export const MOTIVO_CANTIERE = "Cantiere diverso dall'impianto: va solo nel registro, le giacenze NON cambiano";
+export const NOTA_CANTIERE = "cantiere diverso dall'impianto";
+
 export type FirGiacenzaCandidato = {
   numero_fir: string;
   data_emissione: string;
@@ -28,22 +33,55 @@ export type FirGiacenzaCandidato = {
   destinatario: string;
   idoneo: boolean;
   motivo: string;
+  /** true = Multy produttore con luogo di produzione (cantiere) diverso dall'impianto: MAI giacenze. */
+  cantiere_diverso: boolean;
+  /** false = per uno scarico non è ancora stato letto il dettaglio RENTRI con il luogo di produzione. */
+  cantiere_verificato: boolean;
+  luogo_produzione: string;
 };
 
 type Raw = Record<string, any>;
 
+/**
+ * REGOLA: se Multy è produttore e il luogo di produzione (cantiere) letto dal RENTRI
+ * è diverso dall'impianto di Piscina, il formulario NON cambia le giacenze.
+ * Il luogo di produzione c'è solo nel dettaglio RENTRI (dati_partenza), non nell'elenco:
+ * senza dettaglio il cantiere è "non verificato" e la registrazione è rifiutata.
+ */
+export function valutaCantiere(raw: Raw): { verificato: boolean; diverso: boolean; descrizione: string } {
+  const prodDet = raw?.dati_partenza?.produttore;
+  const luogo = prodDet?.luogo_produzione ?? raw?.produttore?.luogo_produzione ?? raw?.luogo_produzione ?? null;
+  const verificato = !!prodDet || !!luogo;
+  if (!luogo) return { verificato, diverso: false, descrizione: "" };
+  const comune = String(luogo?.citta?.comune_id ?? luogo?.comune_id ?? "");
+  const via = String(luogo?.indirizzo ?? "");
+  const descrizione = [via, luogo?.civico, luogo?.citta?.nome_comune].filter(Boolean).join(" ").trim();
+  const ugualeImpianto = comune === MULTY_IMPIANTO_COMUNE_ID && /rivarossa/i.test(via);
+  return { verificato: true, diverso: !ugualeImpianto, descrizione };
+}
+
 export function valutaFirPerGiacenze(raw: Raw): FirGiacenzaCandidato | null {
-  const prod = raw.produttore ?? {};
-  const dest = (Array.isArray(raw.destinatari) ? raw.destinatari[0] : raw.destinatario) ?? {};
+  const det = raw?.dati_partenza ?? null;
+  const prod = det?.produttore ?? raw.produttore ?? {};
+  const dest = det?.destinatario ?? (Array.isArray(raw.destinatari) ? raw.destinatari[0] : raw.destinatario) ?? {};
   const isProd = cf(prod.codice_fiscale) === MULTY_CF && (!raw.num_iscr_sito || raw.num_iscr_sito === MULTY_IMPIANTO_UL);
   const isDest = cf(dest.codice_fiscale) === MULTY_CF;
   if (!isProd && !isDest) return null;
 
-  const acc = raw.accettazione ?? null;
-  const emissione = String(raw.data_emissione ?? "").slice(0, 10);
+  const accDet = raw.dati_accettazione ?? null;
+  const acc = raw.accettazione ?? (accDet ? {
+    data_ora_arrivo: accDet.data_ora_arrivo,
+    quantita_accettata: accDet.quantita_accettata?.valore ?? accDet.quantita_accettata,
+  } : null);
+  const emissione = String(raw.data_emissione ?? det?.data_emissione ?? "").slice(0, 10);
   const arrivo = String(acc?.data_ora_arrivo ?? "").slice(0, 10);
-  let kg = Number(acc?.quantita_accettata ?? 0);
-  if (String(raw.unita_misura ?? "kg").toLowerCase().startsWith("t")) kg = kg * 1000;
+  let kg = Number(typeof acc?.quantita_accettata === "object" ? acc?.quantita_accettata?.valore : acc?.quantita_accettata ?? 0);
+  const um = String(raw.unita_misura ?? accDet?.quantita_accettata?.unita_misura ?? "kg");
+  if (um.toLowerCase().startsWith("t")) kg = kg * 1000;
+
+  // Il cantiere conta solo per gli scarichi (Multy produttore). Nei carichi il rifiuto arriva in impianto.
+  const segno: "CARICO" | "SCARICO" = isDest ? "CARICO" : "SCARICO";
+  const cant = segno === "SCARICO" ? valutaCantiere(raw) : { verificato: true, diverso: false, descrizione: "" };
 
   let idoneo = true;
   let motivo = "Pronto da registrare";
@@ -51,21 +89,46 @@ export function valutaFirPerGiacenze(raw: Raw): FirGiacenzaCandidato | null {
   else if (!acc) { idoneo = false; motivo = "Non ancora accettato dal destinatario"; }
   else if (!arrivo || arrivo <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Arrivo entro il 21/09: giacenze immutabili"; }
   else if (!(kg > 0)) { idoneo = false; motivo = "Quantità accettata assente (respinto?)"; }
+  else if (cant.diverso) motivo = MOTIVO_CANTIERE;
+  else if (!cant.verificato) motivo = "Cantiere da verificare sul dettaglio RENTRI prima di registrare";
 
+  const codiceEer = raw.codice_eer ?? det?.rifiuto?.codice_eer ?? "";
   return {
-    numero_fir: String(raw.numero_fir ?? ""),
+    numero_fir: String(raw.numero_fir ?? det?.numero_fir ?? ""),
     data_emissione: emissione,
     data_arrivo: arrivo,
-    cer: String(raw.codice_eer ?? "").replace(/\D/g, ""),
+    cer: String(codiceEer).replace(/\D/g, ""),
     kg_accettati: kg,
-    segno: isDest ? "CARICO" : "SCARICO",
+    segno,
     controparte: isDest ? String(prod.denominazione ?? "") : String(dest.denominazione ?? ""),
     produttore: String(prod.denominazione ?? ""),
     destinatario: String(dest.denominazione ?? ""),
     idoneo,
     motivo,
+    cantiere_diverso: cant.diverso,
+    cantiere_verificato: cant.verificato,
+    luogo_produzione: cant.descrizione,
   };
 }
+
+/**
+ * Rilegge il dettaglio RENTRI (sola lettura) per gli scarichi con cantiere non ancora verificato
+ * e rivaluta il formulario. Da chiamare SEMPRE prima di registrare.
+ */
+export async function verificaCantierePrimaDiRegistrare(
+  c: FirGiacenzaCandidato,
+  leggiDettaglio: (numeroFir: string) => Promise<{ success: boolean; data?: unknown; error?: string | null; userMessage?: string | null }>,
+): Promise<FirGiacenzaCandidato> {
+  if (c.segno !== "SCARICO" || c.cantiere_verificato) return c;
+  const res = await leggiDettaglio(c.numero_fir);
+  if (!res.success || !res.data || typeof res.data !== "object") {
+    throw new Error(`dettaglio RENTRI non leggibile, cantiere non verificato: non registro (${res.userMessage || res.error || "errore"})`);
+  }
+  const nuovo = valutaFirPerGiacenze({ numero_fir: c.numero_fir, ...(res.data as Raw) });
+  if (!nuovo || !nuovo.cantiere_verificato) throw new Error("cantiere non verificabile dal dettaglio RENTRI: non registro");
+  return nuovo;
+}
+
 
 export type StatoRegistro = { registrato: boolean; rigaSenzaGiacenzaId: string | null };
 
