@@ -7,7 +7,7 @@ import { dettaglioFormularioRentri } from "@/lib/rentriVpsApi";
 import { leggiTutteLePagineFormulari } from "@/lib/rentriFirIntermediario";
 import {
   GIACENZE_DATA_LIMITE, MULTY_CF, MULTY_IMPIANTO_UL, normFir,
-  valutaFirPerGiacenze, leggiStatoRegistro, registraFirInGiacenze,
+  valutaFirPerGiacenze, leggiStatoRegistro, registraFirInGiacenze, verificaCantierePrimaDiRegistrare,
   type FirGiacenzaCandidato, type StatoRegistro,
 } from "@/lib/rentriFirGiacenze";
 
@@ -33,7 +33,9 @@ export function RentriFirGiacenzePanel() {
       const completi: any[] = [];
       for (const it of items as any[]) {
         const em = String(it.data_emissione ?? "").slice(0, 10);
-        if (!it.accettazione && em > GIACENZE_DATA_LIMITE && it.numero_fir) {
+        // Il dettaglio serve anche per il luogo di produzione: scarichi da cantiere diverso NON cambiano le giacenze.
+        const multyProd = String(it?.produttore?.codice_fiscale ?? "").replace(/\s+/g, "") === MULTY_CF;
+        if ((!it.accettazione || multyProd) && em > GIACENZE_DATA_LIMITE && it.numero_fir) {
           const d = await dettaglioFormularioRentri("multy", String(it.numero_fir), MULTY_CF, MULTY_IMPIANTO_UL);
           const det = d.success && d.data && typeof d.data === "object" ? (d.data as any) : null;
           completi.push(det ? { ...it, ...det } : it);
@@ -54,15 +56,18 @@ export function RentriFirGiacenzePanel() {
   const daRegistrare = righe.filter((r) => r.idoneo && !stato.get(normFir(r.numero_fir))?.registrato);
 
   const registra = async (lista: FirGiacenzaCandidato[]) => {
-    const tot = lista.reduce((s, r) => s + (r.segno === "CARICO" ? r.kg_accettati : -r.kg_accettati), 0);
+    const tot = lista.reduce((s, r) => s + (r.cantiere_diverso ? 0 : r.segno === "CARICO" ? r.kg_accettati : -r.kg_accettati), 0);
     if (!window.confirm(
       `Registro ${lista.length} formulari nelle giacenze Multy Impianto (variazione totale ${fmtKg(tot)} kg).\n` +
-      `Solo formulari dopo il 21/09 già accettati. Le giacenze fino al 21/09 non vengono toccate. Confermi?`,
+      `Solo formulari dopo il 21/09 già accettati. Cantiere diverso dall'impianto = solo registro, giacenze NON cambiate. Le giacenze fino al 21/09 non vengono toccate. Confermi?`,
     )) return;
     setBusy(lista.length === 1 ? lista[0].numero_fir : "tutti");
     let ok = 0; const errori: string[] = [];
     for (const r of lista) {
-      try { await registraFirInGiacenze(r, stato.get(normFir(r.numero_fir))); ok++; }
+      try {
+        const c = await verificaCantierePrimaDiRegistrare(r, (n) => dettaglioFormularioRentri("multy", n, MULTY_CF, MULTY_IMPIANTO_UL));
+        await registraFirInGiacenze(c, stato.get(normFir(r.numero_fir))); ok++;
+      }
       catch (e: any) { errori.push(`${r.numero_fir}: ${e.message}`); }
     }
     setStato(await leggiStatoRegistro(righe.map((v) => v.numero_fir)));
@@ -106,7 +111,9 @@ export function RentriFirGiacenzePanel() {
                     <td className="px-2 py-1 text-right">{fmtKg(r.kg_accettati)}</td>
                     <td className="px-2 py-1">{r.controparte}</td>
                     <td className="px-2 py-1">
-                      {s?.registrato ? <Badge variant="secondary">Già nelle giacenze</Badge>
+                      {s?.cantiereDiverso ? <Badge variant="secondary">Nel registro — cantiere diverso, giacenze NON cambiate</Badge>
+                        : s?.registrato ? <Badge variant="secondary">Già nelle giacenze</Badge>
+                        : r.idoneo && r.cantiere_diverso ? <Badge variant="outline">Solo registro: cantiere diverso ({r.luogo_produzione})</Badge>
                         : r.idoneo ? <Badge>Da registrare</Badge>
                         : <span className="text-muted-foreground">{r.motivo}</span>}
                     </td>

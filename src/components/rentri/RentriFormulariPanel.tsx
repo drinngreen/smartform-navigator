@@ -7,7 +7,7 @@ import { dettaglioFormularioRentri, RENTRI_CF_SOGGETTO, rentriConfigKey, type Re
 import { ruoliFormulario, statoFormulario } from "@/lib/rentriFirView";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { toast } from "sonner";
-import { valutaFirPerGiacenze, leggiStatoRegistro, registraFirInGiacenze, normFir, valutaFirPerRegistroNiyol, leggiStatoRegistroNiyol, registraFirInRegistroNiyol, type FirGiacenzaCandidato, type StatoRegistro } from "@/lib/rentriFirGiacenze";
+import { valutaFirPerGiacenze, leggiStatoRegistro, registraFirInGiacenze, normFir, valutaFirPerRegistroNiyol, leggiStatoRegistroNiyol, registraFirInRegistroNiyol, verificaCantierePrimaDiRegistrare, type FirGiacenzaCandidato, type StatoRegistro } from "@/lib/rentriFirGiacenze";
 
 const fmtKg = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
 
@@ -41,19 +41,23 @@ export function RentriFormulariPanel({ cliente }: { cliente: RentriCliente }) {
   const daRegistrare = useMemo(() => [...candidati.values()].filter((c) => c.idoneo && !statoReg.get(normFir(c.numero_fir))?.registrato), [candidati, statoReg]);
   const registra = async (lista: FirGiacenzaCandidato[]) => {
     if (!lista.length) return;
-    const tot = lista.reduce((s, c) => s + (c.segno === "CARICO" ? c.kg_accettati : -c.kg_accettati), 0);
+    const tot = lista.reduce((s, c) => s + (c.cantiere_diverso ? 0 : c.segno === "CARICO" ? c.kg_accettati : -c.kg_accettati), 0);
     if (!window.confirm(isNiyol
       ? `Registro ${lista.length} formulari SOLO nel registro Niyol. Le giacenze NON vengono toccate (le muove solo Multy, mai due volte).\nSolo formulari dopo il 21/09 già accettati, con i kg accettati. Confermi?`
-      : `Registro ${lista.length} formulari nel registro Multy Impianto e nelle giacenze (variazione ${fmtKg(tot)} kg).\nSolo formulari dopo il 21/09 già accettati, con i kg accettati dal destinatario. Le giacenze fino al 21/09 non vengono toccate. Confermi?`)) return;
+      : `Registro ${lista.length} formulari nel registro Multy Impianto (variazione giacenze stimata ${fmtKg(tot)} kg).\nPer ogni scarico rileggo prima il dettaglio RENTRI: se il cantiere è diverso dall'impianto va SOLO nel registro e le giacenze NON cambiano.\nSolo formulari dopo il 21/09 già accettati, con i kg accettati. Confermi?`)) return;
     setRegBusy(lista.length === 1 ? lista[0].numero_fir : "tutti");
-    let ok = 0; const errori: string[] = [];
-    for (const c of lista) {
-      try { await registraUno(c, statoReg.get(normFir(c.numero_fir))); ok++; }
-      catch (e) { errori.push(`${c.numero_fir}: ${e instanceof Error ? e.message : String(e)}`); }
+    let ok = 0; let cantieri = 0; const errori: string[] = [];
+    for (const c0 of lista) {
+      try {
+        const c = isNiyol ? c0 : await verificaCantierePrimaDiRegistrare(c0, (n) => dettaglioFormularioRentri(cliente, n));
+        await registraUno(c, statoReg.get(normFir(c.numero_fir))); ok++;
+        if (c.cantiere_diverso) cantieri++;
+      }
+      catch (e) { errori.push(`${c0.numero_fir}: ${e instanceof Error ? e.message : String(e)}`); }
     }
     try { setStatoReg(await leggiStato([...candidati.values()].map((c) => c.numero_fir))); } catch { /* lettura stato */ }
     setRegBusy(null);
-    if (ok) toast.success(isNiyol ? `${ok} formulari registrati nel registro Niyol (giacenze non toccate)` : `${ok} formulari registrati nel registro e nelle giacenze`);
+    if (ok) toast.success(isNiyol ? `${ok} formulari registrati nel registro Niyol (giacenze non toccate)` : `${ok} formulari registrati${cantieri ? `, di cui ${cantieri} con cantiere diverso (solo registro, giacenze NON cambiate)` : ""}`);
     if (errori.length) toast.error(errori.join("\n"));
   };
   const visible = useMemo(() => (rows ?? []).filter((r) => {
