@@ -254,6 +254,9 @@ export function valutaFirPerRegistroNiyol(raw: Raw): FirGiacenzaCandidato | null
     destinatario: String(dest.denominazione ?? ""),
     idoneo,
     motivo,
+    cantiere_diverso: false,
+    cantiere_verificato: true,
+    luogo_produzione: "",
   };
 }
 
