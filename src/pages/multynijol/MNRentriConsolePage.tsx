@@ -106,7 +106,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
-  { id: "giacenze", label: "FIR → Giacenze", icon: <Download size={14} /> },
+  { id: "giacenze", label: "Registra formulari", icon: <Download size={14} /> },
   { id: "cartacei", label: "FIR cartacei", icon: <FileText size={14} /> },
   { id: "pesca", label: "Pesca dal RENTRI", icon: <Download size={14} /> },
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
@@ -1043,7 +1043,7 @@ export default function MNRentriConsolePage() {
 
         {tab === "giacenze" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-            <h3 className="text-base font-display tracking-wider">Formulari RENTRI Multy Impianto → giacenze (solo dopo il 21/09)</h3>
+            <h3 className="text-base font-display tracking-wider">Formulari RENTRI da registrare — Multy Impianto</h3>
             <RentriFirGiacenzePanel />
           </div>
         )}
