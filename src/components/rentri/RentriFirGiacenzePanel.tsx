@@ -58,8 +58,7 @@ export function RentriFirGiacenzePanel() {
   const registra = async (lista: FirGiacenzaCandidato[]) => {
     const tot = lista.reduce((s, r) => s + (r.cantiere_diverso ? 0 : r.segno === "CARICO" ? r.kg_accettati : -r.kg_accettati), 0);
     if (!window.confirm(
-      `Registro ${lista.length} formulari nelle giacenze Multy Impianto (variazione totale ${fmtKg(tot)} kg).\n` +
-      `Solo formulari dopo il 21/09 già accettati. Cantiere diverso dall'impianto = solo registro, giacenze NON cambiate. Le giacenze fino al 21/09 non vengono toccate. Confermi?`,
+      `Registro ${lista.length} formulari (${fmtKg(lista.reduce((a, r) => a + r.kg_accettati, 0))} kg accettati). Confermi?`,
     )) return;
     setBusy(lista.length === 1 ? lista[0].numero_fir : "tutti");
     let ok = 0; const errori: string[] = [];
@@ -72,16 +71,14 @@ export function RentriFirGiacenzePanel() {
     }
     setStato(await leggiStatoRegistro(righe.map((v) => v.numero_fir)));
     setBusy(null);
-    if (ok) toast.success(`${ok} formulari registrati nelle giacenze`);
+    if (ok) toast.success(`${ok} formulari registrati`);
     if (errori.length) toast.error(errori.join("\n"));
   };
 
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Formulari letti ora dal RENTRI in cui Multy Impianto è produttore (scarico) o destinatario (carico).
-        Si registrano solo quelli emessi e arrivati dopo il {fmtD(GIACENZE_DATA_LIMITE)} e già accettati, con i kg accettati dal destinatario.
-        Nulla si registra senza il tuo click.
+        Formulari letti dal RENTRI in cui Multy Impianto è produttore o destinatario, già accettati, con i kg accettati.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={carica} disabled={loading} variant="secondary">
@@ -111,9 +108,7 @@ export function RentriFirGiacenzePanel() {
                     <td className="px-2 py-1 text-right">{fmtKg(r.kg_accettati)}</td>
                     <td className="px-2 py-1">{r.controparte}</td>
                     <td className="px-2 py-1">
-                      {s?.cantiereDiverso ? <Badge variant="secondary">Nel registro — cantiere diverso, giacenze NON cambiate</Badge>
-                        : s?.registrato ? <Badge variant="secondary">Già nelle giacenze</Badge>
-                        : r.idoneo && r.cantiere_diverso ? <Badge variant="outline">Solo registro: cantiere diverso ({r.luogo_produzione})</Badge>
+                      {s?.registrato ? <Badge variant="secondary">Registrato</Badge>
                         : r.idoneo ? <Badge>Da registrare</Badge>
                         : <span className="text-muted-foreground">{r.motivo}</span>}
                     </td>
