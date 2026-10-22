@@ -30,6 +30,7 @@ import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmareP
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { RentriPescaFirPanel } from "@/components/rentri/RentriPescaFirPanel";
 import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
+import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
 import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { RentriInviiRentriPanel } from "@/components/rentri/RentriInviiRentriPanel";
 import { RentriHistoryPanel } from "@/components/rentri/RentriHistoryPanel";
@@ -1051,7 +1052,11 @@ export default function MNRentriConsolePage() {
         {tab === "cartacei" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Formulari cartacei — {label}</h3>
-            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} />
+            <NuovoFirCartaceoBox
+              tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"}
+              mnContext={configKey === "niyol" ? "niyol" : "multyproget"}
+            />
+            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} showConferma={configKey !== "niyol"} />
           </div>
         )}
 

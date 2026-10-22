@@ -1,5 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Plus, Truck } from "lucide-react";
+import { FileText, Plus, Printer, Truck } from "lucide-react";
+import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
+import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { DevFormulariList } from "./DevFormulariList";
 
@@ -28,6 +30,9 @@ export function DevNiyolModule() {
           <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
             <Plus className="h-4 w-4" /> Nuovo FIR Niyol
           </TabsTrigger>
+          <TabsTrigger value="fir-cartaceo" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-400">
+            <Printer className="h-4 w-4" /> FIR Cartaceo Niyol
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="formulari">
@@ -44,6 +49,13 @@ export function DevNiyolModule() {
         <TabsContent value="nuovo-fir">
           <div className="p-4 rounded-2xl bg-card/60 border border-cyan-500/20">
             <MNFIRFormComplete tenantId={NIYOL_TENANT_ID} mnContext="niyol" enableFatturazione creationMode />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="fir-cartaceo">
+          <div className="space-y-4 p-4 rounded-2xl bg-card/60 border border-amber-500/20">
+            <NuovoFirCartaceoBox tenantId={NIYOL_TENANT_ID} mnContext="niyol" />
+            <RentriFirCartaceiPanel tenantId={NIYOL_TENANT_ID} showConferma={false} />
           </div>
         </TabsContent>
       </Tabs>
