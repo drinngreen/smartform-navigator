@@ -52,7 +52,7 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
       const { data, error } = await supabase.from("anagrafica_aziende_mp" as any).select("*").eq("id", aziendaId).maybeSingle();
       setLoading(false);
       if (error || !data) { toast.error("Scheda anagrafica non trovata"); onOpenChange(false); return; }
-      const r = data as Record<string, unknown>;
+      const r = data as unknown as Record<string, unknown>;
       setForm(Object.fromEntries(CAMPI.map((c) => [c.key, r[c.key] == null ? "" : String(r[c.key])])));
     })();
   }, [open, aziendaId]);
