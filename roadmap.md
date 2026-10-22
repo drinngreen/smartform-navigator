@@ -52,3 +52,10 @@
 - [x] DARK LEMON: fattura da formulario, operazioni/annulli magazzino, saldi, conferimenti privati, anagrafica (anteprima + CONFERMO)
 - [ ] Sibill: elenco completo di tutte le fatture e prova bozza creata/eliminata
 - [ ] Stress test app dipendenti, privati, export con schermate prima/dopo (serve accesso con un account dell'app)
+
+## Richiesta 22/10/2026
+- [x] Tolte le diciture interne (giacenze / cantiere diverso) dagli elenchi formulari
+- [x] «Modifica anagrafica» dentro i formulari (la sezione anagrafiche aveva già la modifica)
+- [x] FIR cartacei: nuovo cartaceo compilabile da Impianto, Niyol e Console RENTRI, senza scadenza
+- [x] Cernite dal 22/09: disponibilità letta dalle giacenze ufficiali (prima le bloccavano le vecchie tabelle); carichi su CER negativi ammessi
+- [ ] Prova a schermo con accesso reale — serve accedere all'anteprima
