@@ -16,6 +16,7 @@ import {
 } from "@/lib/rentriRegistroSync";
 import { registriDisponibili } from "@/lib/rentriVpsApi";
 import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
+import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const CLIENTE = "multy" as const;
@@ -180,6 +181,7 @@ export function DevFirCartaceoModule() {
 
   return (
     <div className="space-y-4">
+      <NuovoFirCartaceoBox tenantId={MULTY_TENANT_ID} mnContext="multyproget" />
       <Card className="bg-card/60 border-amber-500/20">
         <CardHeader className="pb-2">
           <CardTitle className="text-amber-300 text-base">Formulari cartacei compilati nel programma</CardTitle>
@@ -205,7 +207,7 @@ export function DevFirCartaceoModule() {
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-2">
           <Button onClick={() => setDialogOpen(true)} className="gap-2 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 border border-amber-500/40">
-            <Plus className="h-4 w-4" /> Nuovo FIR cartaceo
+            <Plus className="h-4 w-4" /> Registra FIR cartaceo ricevuto
           </Button>
           <div className="min-w-[240px]">
             <p className="text-[11px] uppercase text-muted-foreground mb-1">Registro RENTRI</p>

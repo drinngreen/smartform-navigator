@@ -15,6 +15,12 @@ import { exportToPdf, exportToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { DragonBackButton } from "@/components/dragon/DragonBackButton";
 import { DragonCerSelector } from "@/components/dragon/DragonCerSelector";
+import { useQuery } from "@tanstack/react-query";
+import { useMNContextStore } from "@/stores/mnContextStore";
+import { fetchMovimentiSuccessivi, saldiBase21Settembre } from "@/components/multynijol/dev/GiacenzeDocumentaliModule";
+import { GIACENZE_FINAL_DATE, saldiAlGiorno } from "@/lib/giacenzeCascata";
+
+const MULTY_TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
 const statusColors: Record<string, string> = {
   BOZZA: "bg-yellow-500/20 text-yellow-300",
@@ -64,7 +70,23 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
 
   const inputItem = items.find(i => i.id === inputItemId);
   const inputQty = parseFloat(inputQuantity) || 0;
-  const availableQty = wasteBalances.find((balance) => balance.item_id === inputItemId)?.balance ?? 0;
+  // Multy Impianto: la disponibilità viene dalle giacenze ufficiali (fotografia 21/09 + operazioni umane),
+  // presa come minimo dal giorno della cernita in poi, così nessun giorno successivo va sotto zero.
+  const companyId = useMNContextStore((s) => s.activeContext.tenantId);
+  const isMulty = companyId === MULTY_TENANT;
+  const { data: movimentiLive = [] } = useQuery({ queryKey: ["giacenze-movimenti-live"], queryFn: fetchMovimentiSuccessivi, enabled: isMulty });
+  const disponibileUfficiale = useMemo(() => {
+    if (!isMulty || !inputItem?.codice_cer || !executionDate || executionDate <= GIACENZE_FINAL_DATE) return null;
+    const cer = String(inputItem.codice_cer);
+    const base = saldiBase21Settembre();
+    const oggi = new Date().toISOString().split("T")[0];
+    const giorni = Array.from(new Set([executionDate, oggi, ...movimentiLive.map((m) => m.data).filter((d) => d > executionDate)])).sort();
+    return Math.max(0, Math.min(...giorni.map((d) => saldiAlGiorno(base, movimentiLive, d).get(cer) ?? 0)));
+  }, [isMulty, inputItem?.codice_cer, executionDate, movimentiLive]);
+  const dataBloccata = isMulty && !!executionDate && executionDate <= GIACENZE_FINAL_DATE;
+  const availableQty = isMulty
+    ? disponibileUfficiale ?? 0
+    : wasteBalances.find((balance) => balance.item_id === inputItemId)?.balance ?? 0;
 
   // Find matching models for the selected input item
   const matchingModels = useMemo(() =>
@@ -113,7 +135,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
     setOutputRows(rows => rows.map(row => row.id === rowId ? { ...row, [field]: value } : row));
 
   const hasEnoughStock = inputQty <= availableQty;
-  const isFormValid = inputItemId && !!executionDate && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
+  const isFormValid = inputItemId && !!executionDate && !dataBloccata && inputQty > 0 && hasEnoughStock && totalOutput <= inputQty && outputRows.every(r => r.item_id && parseFloat(r.quantity) > 0) && outputRows.length > 0;
 
   const resetForm = () => {
     setInputItemId("");
@@ -365,6 +387,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
                   <Input
                     type="date"
                     value={executionDate}
+                    min={isMulty ? "2026-09-22" : undefined}
                     max={new Date().toISOString().split("T")[0]}
                     onChange={e => setExecutionDate(e.target.value)}
                     disabled={!!editingBatchId}
@@ -373,6 +396,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Puoi retrodatare: indica il giorno in cui la cernita è stata fatta davvero.
                   </p>
+                  {dataBloccata && <p className="mt-1 text-[11px] font-medium text-rose-400">Le giacenze fino al 21/09/2026 non si possono modificare: scegli una data dal 22/09.</p>}
                 </div>
               </div>
               {inputItem && (
@@ -386,7 +410,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
               )}
               {inputItem && inputQty > availableQty && (
                 <p className="text-xs font-medium text-rose-400">
-                  Quantità non disponibile: richiesti {inputQty.toLocaleString("it-IT")} kg, disponibili {availableQty.toLocaleString("it-IT")} kg nel magazzino Dragon.
+                  Quantità non disponibile: richiesti {inputQty.toLocaleString("it-IT")} kg, disponibili {availableQty.toLocaleString("it-IT")} kg.
                 </p>
               )}
             </div>
@@ -505,7 +529,7 @@ export function CerniteOperativeView({ embedded = false }: CerniteOperativeViewP
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
-                {!editingBatchId && <Button variant="outline" onClick={() => requestConfirmation(true)} disabled={creating || !inputItemId || inputQty <= 0}>Salva come Pendente</Button>}
+                {!editingBatchId && <Button variant="outline" onClick={() => requestConfirmation(true)} disabled={creating || !inputItemId || inputQty <= 0 || dataBloccata || inputQty > availableQty}>Salva come Pendente</Button>}
                 <Button onClick={() => requestConfirmation(false)} disabled={creating || !isFormValid} className={editingBatchId ? "col-span-2" : ""}>
                   {editingBatchId ? "Completa Cernita" : "Conferma e Genera Movimenti"}
                 </Button>

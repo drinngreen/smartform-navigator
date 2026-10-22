@@ -466,9 +466,11 @@ interface MNFIRFormCompleteProps {
   creationMode?: boolean;
   /** App autisti: FIR digitale RENTRI obbligatorio; fatturazione gestita separatamente da enableFatturazione. */
   forceRentriDigital?: boolean;
+  /** Apre un nuovo formulario già impostato come cartaceo (sezioni FIR cartacei). */
+  initialFormato?: "cartaceo";
 }
 
-export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false, forceRentriDigital = false }: MNFIRFormCompleteProps) {
+export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, impiantoId, registryMovementType, enableFatturazione = false, creationMode = false, forceRentriDigital = false, initialFormato }: MNFIRFormCompleteProps) {
   const { myForms, isLoadingMyForms, createFIR, submitFIR, silentSaveFIR, closeFIR } = useMNFIRForms(tenantId);
   const store = useMNFIRStore();
   const { user, profile } = useAuth();
@@ -587,6 +589,12 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         }),
     [],
   );
+
+  // Sezioni FIR cartacei: il nuovo formulario parte già come cartaceo.
+  useEffect(() => {
+    if (initialFormato === "cartaceo" && !forceRentriDigital && !useMNFIRStore.getState().editingFirId) u("formatoFir", "cartaceo");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialFormato]);
 
   // App autisti: il formulario deve poter essere trasmesso a RENTRI.
   useEffect(() => {

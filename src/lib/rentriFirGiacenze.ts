@@ -85,9 +85,9 @@ export function valutaFirPerGiacenze(raw: Raw): FirGiacenzaCandidato | null {
 
   let idoneo = true;
   let motivo = "Pronto da registrare";
-  if (!emissione || emissione <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Emesso entro il 21/09: giacenze immutabili"; }
+  if (!emissione || emissione <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Emesso entro il 21/09"; }
   else if (!acc) { idoneo = false; motivo = "Non ancora accettato dal destinatario"; }
-  else if (!arrivo || arrivo <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Arrivo entro il 21/09: giacenze immutabili"; }
+  else if (!arrivo || arrivo <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Arrivo entro il 21/09"; }
   else if (!(kg > 0)) { idoneo = false; motivo = "Quantità accettata assente (respinto?)"; }
   else if (cant.diverso) motivo = MOTIVO_CANTIERE;
   else if (!cant.verificato) motivo = "Cantiere da verificare sul dettaglio RENTRI prima di registrare";
@@ -236,9 +236,9 @@ export function valutaFirPerRegistroNiyol(raw: Raw): FirGiacenzaCandidato | null
 
   let idoneo = true;
   let motivo = "Pronto da registrare (solo registro Niyol)";
-  if (!emissione || emissione <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Emesso entro il 21/09: bloccato"; }
+  if (!emissione || emissione <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Emesso entro il 21/09"; }
   else if (!acc) { idoneo = false; motivo = "Non ancora accettato dal destinatario"; }
-  else if (!arrivo || arrivo <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Arrivo entro il 21/09: bloccato"; }
+  else if (!arrivo || arrivo <= GIACENZE_DATA_LIMITE) { idoneo = false; motivo = "Arrivo entro il 21/09"; }
   else if (!(kg > 0)) { idoneo = false; motivo = "Quantità accettata assente (respinto?)"; }
 
   const segno: "CARICO" | "SCARICO" = isProd && !isDest ? "SCARICO" : "CARICO";

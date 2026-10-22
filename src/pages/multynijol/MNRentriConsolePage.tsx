@@ -30,6 +30,7 @@ import { RentriFirDaFirmarePanel } from "@/components/rentri/RentriFirDaFirmareP
 import { RentriBozzePanel } from "@/components/rentri/RentriBozzePanel";
 import { RentriPescaFirPanel } from "@/components/rentri/RentriPescaFirPanel";
 import { RentriFirCartaceiPanel } from "@/components/rentri/RentriFirCartaceiPanel";
+import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
 import { RentriInviiPrivatiPanel } from "@/components/rentri/RentriInviiPrivatiPanel";
 import { RentriInviiRentriPanel } from "@/components/rentri/RentriInviiRentriPanel";
 import { RentriHistoryPanel } from "@/components/rentri/RentriHistoryPanel";
@@ -106,7 +107,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "nuovo", label: "Nuovo formulario", icon: <FileText size={14} /> },
   { id: "bozze", label: "Bozze formulari", icon: <FileText size={14} /> },
   { id: "dafirmare", label: "FIR da firmare", icon: <PenLine size={14} /> },
-  { id: "giacenze", label: "FIR → Giacenze", icon: <Download size={14} /> },
+  { id: "giacenze", label: "Registra formulari", icon: <Download size={14} /> },
   { id: "cartacei", label: "FIR cartacei", icon: <FileText size={14} /> },
   { id: "pesca", label: "Pesca dal RENTRI", icon: <Download size={14} /> },
   { id: "registriufficiali", label: "Registri RENTRI", icon: <ClipboardList size={14} /> },
@@ -1043,7 +1044,7 @@ export default function MNRentriConsolePage() {
 
         {tab === "giacenze" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
-            <h3 className="text-base font-display tracking-wider">Formulari RENTRI Multy Impianto → giacenze (solo dopo il 21/09)</h3>
+            <h3 className="text-base font-display tracking-wider">Formulari RENTRI da registrare — Multy Impianto</h3>
             <RentriFirGiacenzePanel />
           </div>
         )}
@@ -1051,7 +1052,11 @@ export default function MNRentriConsolePage() {
         {tab === "cartacei" && (
           <div className="rounded-2xl bg-card/60 border border-border/30 p-6 space-y-4">
             <h3 className="text-base font-display tracking-wider">Formulari cartacei — {label}</h3>
-            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} />
+            <NuovoFirCartaceoBox
+              tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"}
+              mnContext={configKey === "niyol" ? "niyol" : "multyproget"}
+            />
+            <RentriFirCartaceiPanel tenantId={configKey === "niyol" ? "819c783e-78dd-4080-8265-802e75b0d813" : "77ec9a3d-602e-438f-97bf-1c69abd8f691"} showConferma={configKey !== "niyol"} />
           </div>
         )}
 
