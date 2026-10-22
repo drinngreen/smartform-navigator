@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, Search, Loader2, X, UserPlus } from "lucide-react";
+import { Plus, Trash2, Search, Loader2, X, UserPlus, Pencil } from "lucide-react";
+import { ModificaAnagraficaDialog } from "@/components/fir/ModificaAnagraficaDialog";
 
 import { NuovoSoggettoDialog } from "@/components/fir/NuovoSoggettoDialog";
 import { ANAGRAFICA_TENANT_ID } from "@/lib/anagraficaSync";
@@ -133,6 +134,7 @@ export function PresetAziendaSelector({
   const [soloRuolo, setSoloRuolo] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [nuovoSoggettoOpen, setNuovoSoggettoOpen] = useState(false);
+  const [modificaOpen, setModificaOpen] = useState(false);
   const prevCfRef = useRef<string | null>(null);
   const autoAutRef = useRef<string>("");
 
@@ -687,6 +689,16 @@ export function PresetAziendaSelector({
           >
             <X className="h-3 w-3" /> Cambia
           </button>
+          {clienteId && (
+            <button
+              type="button"
+              onClick={() => setModificaOpen(true)}
+              title="Modifica la scheda in anagrafica"
+              className="shrink-0 flex items-center gap-1 rounded-md border border-sky-400/40 bg-sky-400/10 px-2 py-1 text-[10px] text-sky-200 hover:bg-sky-400/20"
+            >
+              <Pencil className="h-3 w-3" /> Modifica anagrafica
+            </button>
+          )}
         </div>
       ) : (
         <select value={aziendaKey} onChange={(e) => selectAzienda(e.target.value)} className={selectCls}>
@@ -734,6 +746,21 @@ export function PresetAziendaSelector({
         >
           <UserPlus className="h-3 w-3" /> NUOVO SOGGETTO (salva in anagrafica e rubrica)
         </button>
+
+        <ModificaAnagraficaDialog
+          aziendaId={clienteId}
+          open={modificaOpen}
+          onOpenChange={setModificaOpen}
+          onSaved={(r) => {
+            const piva = r.partita_iva || r.codice_fiscale;
+            setClienteNome(r.ragione_sociale);
+            setAllCompanies((prev) => prev.map((x) => (x.id === r.id ? { ...x, ...r } : x)));
+            setRoleCompanies((prev) => prev.map((x) => (x.id === r.id ? { ...x, ...r } : x)));
+            setLoadedCf(piva);
+            prevCfRef.current = piva;
+            onSelectAzienda({ nome: r.ragione_sociale, indirizzo: fmtIndirizzo(r), cf: r.codice_fiscale, piva });
+          }}
+        />
 
         <NuovoSoggettoDialog
           open={nuovoSoggettoOpen}
