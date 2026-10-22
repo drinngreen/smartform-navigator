@@ -43,12 +43,11 @@ export function RentriFormulariPanel({ cliente }: { cliente: RentriCliente }) {
     if (!lista.length) return;
         if (!window.confirm(`Registro ${lista.length} formulari (${fmtKg(lista.reduce((t, c) => t + c.kg_accettati, 0))} kg accettati). Confermi?`)) return;
     setRegBusy(lista.length === 1 ? lista[0].numero_fir : "tutti");
-    let ok = 0; let cantieri = 0; const errori: string[] = [];
+    let ok = 0; const errori: string[] = [];
     for (const c0 of lista) {
       try {
         const c = isNiyol ? c0 : await verificaCantierePrimaDiRegistrare(c0, (n) => dettaglioFormularioRentri(cliente, n));
         await registraUno(c, statoReg.get(normFir(c.numero_fir))); ok++;
-        if (c.cantiere_diverso) cantieri++;
       }
       catch (e) { errori.push(`${c0.numero_fir}: ${e instanceof Error ? e.message : String(e)}`); }
     }

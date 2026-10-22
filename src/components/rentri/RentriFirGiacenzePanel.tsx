@@ -56,7 +56,6 @@ export function RentriFirGiacenzePanel() {
   const daRegistrare = righe.filter((r) => r.idoneo && !stato.get(normFir(r.numero_fir))?.registrato);
 
   const registra = async (lista: FirGiacenzaCandidato[]) => {
-    const tot = lista.reduce((s, r) => s + (r.cantiere_diverso ? 0 : r.segno === "CARICO" ? r.kg_accettati : -r.kg_accettati), 0);
     if (!window.confirm(
       `Registro ${lista.length} formulari (${fmtKg(lista.reduce((a, r) => a + r.kg_accettati, 0))} kg accettati). Confermi?`,
     )) return;
