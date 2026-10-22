@@ -39,4 +39,12 @@ describe("Giacenze a cascata dal 22/09", () => {
   it("accetta un carico valido", () => {
     expect(verificaNuoviMovimenti(base, [], [{ data: "2026-09-22", cer: "170405", carico: 10, scarico: 0 }]).ok).toBe(true);
   });
+  it("ammette un carico su un CER già negativo (lo migliora)", () => {
+    const esistenti: MovimentoGiacenza[] = [{ data: "2026-09-25", cer: "160214", carico: 0, scarico: 154 }];
+    expect(verificaNuoviMovimenti(base, esistenti, [{ data: "2026-10-22", cer: "160214", carico: 100, scarico: 0 }]).ok).toBe(true);
+  });
+  it("rifiuta uno scarico su un CER già negativo (lo peggiora)", () => {
+    const esistenti: MovimentoGiacenza[] = [{ data: "2026-09-25", cer: "160214", carico: 0, scarico: 154 }];
+    expect(verificaNuoviMovimenti(base, esistenti, [{ data: "2026-10-22", cer: "160214", carico: 0, scarico: 10 }]).ok).toBe(false);
+  });
 });

@@ -27,7 +27,8 @@ export type EsitoVerifica = { ok: true } | { ok: false; errore: string };
 
 /**
  * Verifica che aggiungere i nuovi movimenti non porti mai nessun CER sotto zero
- * in nessun giorno dalla data del primo nuovo movimento in poi, e che nessuno sia ≤ 21/09.
+ * (né peggiori un saldo già negativo) in nessun giorno dalla data del primo nuovo
+ * movimento in poi, e che nessuno sia ≤ 21/09.
  */
 export function verificaNuoviMovimenti(base: SaldoBase[], esistenti: MovimentoGiacenza[], nuovi: MovimentoGiacenza[]): EsitoVerifica {
   for (const n of nuovi) {
@@ -40,9 +41,12 @@ export function verificaNuoviMovimenti(base: SaldoBase[], esistenti: MovimentoGi
   const date = Array.from(new Set(tutti.map((m) => m.data).filter((d) => d >= primo))).sort();
   for (const d of date) {
     const s = saldiAlGiorno(base, tutti, d);
+    const prima = saldiAlGiorno(base, esistenti, d);
     for (const cer of cers) {
       const v = s.get(cer) ?? 0;
-      if (v < -0.0005) {
+      // Rifiuta solo se l'operazione porta (o spinge più in basso) il CER sotto zero:
+      // un carico su un CER già negativo è sempre ammesso, perché lo migliora.
+      if (v < -0.0005 && v < (prima.get(cer) ?? 0) - 0.0005) {
         return { ok: false, errore: `CER ${cer} andrebbe a ${v.toLocaleString("it-IT")} kg il ${d.split("-").reverse().join("/")}: operazione rifiutata` };
       }
     }
