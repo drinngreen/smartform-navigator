@@ -1,5 +1,8 @@
 # Regole strutturali
 
+- Office FIR editors share ConfermaFormularioRegistro for explicit registration from fresh RENTRI detail and a separate confirmation; why: saving a draft must never substitute for inventory confirmation, and site/date guards must stay centralized.
+- TypeScript uses bundler module resolution for Vite; why: node10 resolution is unsupported by the preview compiler.
+
 - Gli invii RENTRI di agosto 2026 stanno in un dataset separato (inviiRentriAgostoVerificati.json) generato dal CSV "Verifica_Agosto_2026_Accettati_Con_ID_RENTRI" con ID e progressivi letti dal RENTRI; mai riutilizzare ID delle richieste HTTP 202. Il dataset è mostrato sia nel pannello Dev sia nella Console RENTRI (tab registri e invii), perché il preferito "Invii al RENTRI" apre la console.- Giacenze dopo il 21/09: GiacenzeDocumentaliModule somma in sola lettura le righe registro_generale con incide_giacenze=true e le cernite CONFERMATA; nessun trigger né scrittura (le giacenze cambiano solo per operazioni umane).
 
 - DARK LEMON write tools live in supabase/functions/dark-lemon-mn/operativo.ts and require the last user message to contain "CONFERMO" server-side; why: no agent write may happen without explicit human confirmation.

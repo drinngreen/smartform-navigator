@@ -22,6 +22,7 @@ import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDial
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { ricercaFir } from "@/lib/rentriVpsApi";
 import { resolveSocietaId } from "@/services/rentriApi";
+import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 
 
 
@@ -564,6 +565,11 @@ export function DevFormulariList({
           )}
           {viewDialog.form && (
             <div className="sticky bottom-0 mt-4 space-y-3 border-t border-border/30 bg-card/95 pt-3">
+              <ConfermaFormularioRegistro
+                numeroFir={viewDialog.form.numero_fir}
+                tenantId={tenantId}
+                cartaceo={viewDialog.form.form_data?.formato_fir === "cartaceo"}
+              />
               {editorMode === "alternative" && filterByTrasportatoreCf && (
                 <div className="text-xs px-3 py-2 rounded-md border border-border/30 bg-background/40">
                   <span className="text-muted-foreground uppercase tracking-wider mr-2">Impatto giacenze impianto Multyproget:</span>

@@ -54,6 +54,10 @@
 - [ ] Stress test app dipendenti, privati, export con schermate prima/dopo (serve accesso con un account dell'app)
 
 ## Richiesta 22/10/2026
+## Conferma dal formulario 23/10/2026
+- [ ] Mostrare la conferma registro/giacenze nei formulari aperti, con controllo RENTRI e anteprima senza scritture
+- [ ] Verificare pulsante e blocchi senza registrare dati di prova
+
 - [x] Tolte le diciture interne (giacenze / cantiere diverso) dagli elenchi formulari
 - [x] «Modifica anagrafica» dentro i formulari (la sezione anagrafiche aveva già la modifica)
 - [x] FIR cartacei: nuovo cartaceo compilabile da Impianto, Niyol e Console RENTRI, senza scadenza
