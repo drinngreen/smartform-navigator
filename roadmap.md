@@ -55,7 +55,7 @@
 
 ## Richiesta 22/10/2026
 ## Conferma dal formulario 23/10/2026
-- [ ] Aggiungere il pulsante Carico di lavorazione nell’area Impianto usando il modulo esistente senza formulario; nessun movimento reale di prova
+- [x] Aggiungere il pulsante Carico di lavorazione nell’area Impianto usando il modulo esistente senza formulario; 161 test e 5/5 rotte superati, nessun movimento reale di prova
 - [x] Mostrare la conferma registro/giacenze nei formulari aperti, con controllo RENTRI e anteprima senza scritture
 - [x] Verificare pulsante e blocchi senza registrare dati di prova: 5 nuovi test, 161 test totali superati
 - [ ] Verifica visiva nel formulario autenticato: accesso non disponibile, mint --self senza account corrispondente
