@@ -721,7 +721,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
     const cer = d.codiceEER || "";
     const numeroFir = d.selectedFirNumber || "";
-    const qta = Number(String(d.pesoRicevuto || d.quantita || "").replace(",", ".")) || 1;
+    // Solo kg confermati a destino (peso ricevuto): mai il peso di partenza
+    const qta = Number(String(d.pesoRicevuto || "").replace(",", ".")) || 0;
 
     const riga: Riga = {
       descrizione: `Smaltimento CER ${cer} - FIR ${numeroFir}`.trim(),

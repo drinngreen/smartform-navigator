@@ -18,6 +18,7 @@ import {
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
+import { kgDestinoFir } from "@/lib/fatturaKgDestino";
 import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { ricercaFir } from "@/lib/rentriVpsApi";
@@ -202,15 +203,14 @@ export function DevFormulariList({
   const buildRigaFromFir = (form: any): Riga => {
     const fd = form.form_data || {};
     const cer = String(firstValue(form.codice_eer, fd.cer, fd.codice_eer, fd.codiceEER) || "");
-    const qta = Number(
-      firstValue(fd.quantita_destino, fd.peso_ricevuto, form.quantita, fd.quantita_origine, fd.quantita_partenza, fd.quantita) || 0
-    );
+    // Solo kg confermati a destino: mai il peso di partenza
+    const qta = kgDestinoFir(form) ?? 0;
     return {
       descrizione: `Smaltimento CER ${cer} - FIR ${form.numero_fir || ""}`.trim(),
       cer,
       fir_form_id: form.id,
       numero_fir: form.numero_fir || "",
-      quantita: qta || 1,
+      quantita: qta,
       unita_misura: String(firstValue(form.unita_misura, fd.unita_misura, fd.unitaMisura) || "kg"),
       prezzo_unitario: 0,
       aliquota_iva: 22,

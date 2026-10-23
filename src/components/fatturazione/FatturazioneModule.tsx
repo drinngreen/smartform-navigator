@@ -224,7 +224,7 @@ export function FatturazioneModule({ tenantId }: Props) {
       </div>
 
       {tab === "sibill" || tab === "sibill_in" ? (
-        <SibillDocumentiPanel key={tab} mock={sibillMock} tenantId={tenantId} initialMode={tab === "sibill_in" ? "IN" : "P"} />
+        <SibillDocumentiPanel key={tab} mock={false} tenantId={tenantId} initialMode={tab === "sibill_in" ? "IN" : "P"} />
       ) : tab === "noleggi" ? (
         <NoleggiTab tenantId={tenantId} onCreated={() => qc.invalidateQueries({ queryKey: ["fatture"] })} />
       ) : (
