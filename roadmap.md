@@ -70,6 +70,7 @@
 - [x] Prova a schermo con accesso reale — fatta sul nuovo pulsante; l'accesso autenticato ora è disponibile anche per le altre prove
 
 ## Carico di lavorazione accanto a Impianto
+- [x] Riattivato il centro di comando Niyol e il collegamento iniziale; verificati accesso autenticato, formulari, registro e personale senza scritture; 175 test e 5/5 rotte OK
 - [x] Riprodotto il modulo aperto Prometeo del 23/10: campi, note separate, quantità supplementari, conferma annullata con accesso reale; 174 test e 5/5 rotte OK, zero scritture di prova
 - [x] «Carico di lavorazione» portato a scheda autonoma subito dopo Impianto nella barra principale
 - [x] Rimossa la doppia entrata dentro Impianto (il modulo_operations resta nella sua scheda)

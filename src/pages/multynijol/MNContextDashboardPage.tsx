@@ -63,9 +63,7 @@ function buildIcons(prefix: string): DesktopIconDef[] {
   ];
 }
 
-// I contesti separati sono disattivati: esiste solo Multy Dev
-// (/mn/admin/dev-multyproget) che include Niyol e Multy al suo interno.
-const validContexts: string[] = [];
+const validContexts = MN_CONTEXTS.map(c => c.id);
 
 export default function MNContextDashboardPage() {
   const { context } = useParams<{ context: string }>();
