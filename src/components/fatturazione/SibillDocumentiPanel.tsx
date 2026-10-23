@@ -4,6 +4,7 @@ import { Loader2, RefreshCw, Search, Copy, Mail, Inbox, FileSearch, CheckCircle2
 import { toast } from "sonner";
 import { elencaDocumentiSibillFull, scansionaDocumentiSibill, sincronizzaRecentiSibill, type SibillDocumento } from "@/lib/sibill";
 import { FattureEmesseEsitoPanel } from "./FattureEmesseEsitoPanel";
+import { SibillDocumentoDettaglio } from "./SibillDocumentoDettaglio";
 
 interface Props { mock?: boolean; tenantId?: string; initialMode?: "P" | "IN" }
 
@@ -25,6 +26,7 @@ export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Prop
   const [scanning, setScanning] = useState(false);
   const [scanInfo, setScanInfo] = useState<string | null>(null);
   const [modo, setModo] = useState<"P" | "IN">(initialMode);
+  const [dettaglio, setDettaglio] = useState<string | null>(null);
   const queryKey = ["sibill-documenti-v3", !!mock, modo] as const;
   const { data: res, isFetching, error } = useQuery({
     queryKey,
@@ -191,7 +193,7 @@ export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Prop
                       <input type="checkbox" checked={!!selected[d.id || ""]}
                         onChange={e => setSelected(s => ({ ...s, [d.id || ""]: e.target.checked }))} />
                     </td>
-                    <td className="p-3 text-muted-foreground"><FileSearch className="h-4 w-4" /></td>
+                    <td className="p-3"><button onClick={() => d.id && setDettaglio(d.id)} title="Vedi tutti i dati Sibill" className="text-primary hover:text-primary/70"><FileSearch className="h-4 w-4" /></button></td>
                     <td className="p-3">
                       <div className="font-medium">
                         {base}
@@ -240,6 +242,7 @@ export function SibillDocumentiPanel({ mock, tenantId, initialMode = "P" }: Prop
       </div>
 
       <FattureEmesseEsitoPanel tenantId={tenantId} />
+      {dettaglio && <SibillDocumentoDettaglio docId={dettaglio} onClose={() => setDettaglio(null)} />}
     </div>
   );
 }
