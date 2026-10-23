@@ -1,4 +1,5 @@
 # Regole strutturali
+- Both FIR payload mappers serialize declared sites as producer.luogo_produzione using rentriLuogoProduzione; persist all site address fields separately from the producer address and reject unresolved site municipalities; why: notes and address fallback hide the actual waste origin.
 - The plant's direct processing-load action opens OperazioniMagazzinoModule in load-only mode; why: reuse the existing preview, date guards and manual confirmation without a second inventory write path.
 
 - Office FIR editors share ConfermaFormularioRegistro for explicit registration from fresh RENTRI detail and a separate confirmation; why: saving a draft must never substitute for inventory confirmation, and site/date guards must stay centralized.

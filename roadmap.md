@@ -55,6 +55,8 @@
 
 ## Richiesta 22/10/2026
 ## Conferma dal formulario 23/10/2026
+- [x] Preparare il cantiere nel luogo di produzione strutturato RENTRI dai due moduli e conservarne indirizzo/comune/provincia/CAP; 165 test superati senza invii reali
+- [ ] Verificare accettazione del campo sul servizio RENTRI: nessun invio reale autorizzato; schema ufficiale non scaricabile nel controllo attuale
 - [x] Aggiungere il pulsante Carico di lavorazione nell’area Impianto usando il modulo esistente senza formulario; 161 test e 5/5 rotte superati, nessun movimento reale di prova
 - [x] Mostrare la conferma registro/giacenze nei formulari aperti, con controllo RENTRI e anteprima senza scritture
 - [x] Verificare pulsante e blocchi senza registrare dati di prova: 5 nuovi test, 161 test totali superati

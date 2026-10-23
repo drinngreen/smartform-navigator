@@ -18,6 +18,7 @@ import {
   provenienzaRentri,
 } from "@/lib/rentriValidazione";
 import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 /** Known field name → normalized lookup key */
 const FIELD_MAP: Record<string, string> = {
@@ -31,6 +32,7 @@ const FIELD_MAP: Record<string, string> = {
   "codice_fiscale_produttore": "prod_cf",
   "unita_locale_produttore": "prod_indirizzo",
   "luogo_di_produzione_se_diverso_produttore": "prod_luogo_produzione",
+  "produttore_luogo_produzione": "prod_luogo_produzione",
   "numero_iscrizione_albo_produttore": "prod_iscrizione_albo",
   "numero_aut_comunicazione_produttore": "prod_autorizzazione",
   "tipologia_autorizzazione_ambientale_produttore": "prod_tipo_aut",
@@ -149,6 +151,7 @@ export async function mapFormToRentriPayload(
   // Parse addresses
   const prodAddr = parseAddress(str("prod_indirizzo"));
   const destAddr = parseAddress(str("dest_indirizzo"));
+  const luogoProduzione = await luogoProduzioneRentri(str("prod_luogo_produzione"));
 
   // Comune ISTAT obbligatorio per il RENTRI: mai inventato, "" se non determinabile
   const prodComuneId = await resolveComuneId(
@@ -192,6 +195,7 @@ export async function mapFormToRentriPayload(
         denominazione: str("prod_denominazione"),
         codice_fiscale: normalizzaCF(str("prod_cf")),
         nazione_id: "IT",
+        ...(luogoProduzione ? { luogo_produzione: luogoProduzione } : {}),
         indirizzo: {
           citta: { comune_id: prodComuneId },
           indirizzo: splitIndirizzoRentri(prodAddr.indirizzo).indirizzo,

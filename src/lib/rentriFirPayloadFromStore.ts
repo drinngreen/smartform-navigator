@@ -12,6 +12,7 @@ import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
 import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 type Bag = Record<string, unknown>;
 
@@ -179,16 +180,19 @@ export async function mapStoreToRentriFirPayload(
   const key = String(cliente).toLowerCase();
   const cfg = (TENANT_RENTRI as Record<string, { unitId?: string; issuer?: string }>)[key] ?? {};
 
-  const prodTesto = s(data.produttoreUnitaLocale) || s(data.cantiereIndirizzo);
+  const prodTesto = s(data.produttoreUnitaLocale);
   const destTesto = s(data.destinatarioUnitaLocale);
   const prodAddr = splitIndirizzo(prodTesto);
   const destAddr = splitIndirizzo(destTesto);
   const prodComuneId = await resolveComuneId(
-    prodTesto || s(data.cantiereComune),
-    prodAddr.cap || s(data.cantiereCAP),
-    s(data.cantiereProvincia) || undefined,
+    prodTesto,
+    prodAddr.cap,
   );
   const destComuneId = await resolveComuneId(destTesto, destAddr.cap);
+  const luogoProduzione = await luogoProduzioneRentri(
+    s(data.cantiereIndirizzo) || s(data.produttoreLuogoProduzioneDiverso),
+    s(data.cantiereComune), s(data.cantiereProvincia), s(data.cantiereCAP),
+  );
   const conducente = splitConducente(
     s(data.conducenteNome),
     s(data.conducenteCognome),
@@ -231,6 +235,7 @@ export async function mapStoreToRentriFirPayload(
           cap: prodAddr.cap,
         },
         ...(autProduttore ? { autorizzazione: autProduttore } : {}),
+        ...(luogoProduzione ? { luogo_produzione: luogoProduzione } : {}),
       },
       destinatario: {
         denominazione: s(data.destinatarioDenominazione),
