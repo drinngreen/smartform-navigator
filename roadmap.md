@@ -67,4 +67,9 @@
 - [x] «Modifica anagrafica» dentro i formulari (la sezione anagrafiche aveva già la modifica)
 - [x] FIR cartacei: nuovo cartaceo compilabile da Impianto, Niyol e Console RENTRI, senza scadenza
 - [x] Cernite dal 22/09: disponibilità letta dalle giacenze ufficiali (prima le bloccavano le vecchie tabelle); carichi su CER negativi ammessi
-- [ ] Prova a schermo con accesso reale — serve accedere all'anteprima
+- [x] Prova a schermo con accesso reale — fatta sul nuovo pulsante; l'accesso autenticato ora è disponibile anche per le altre prove
+
+## Carico di lavorazione accanto a Impianto
+- [x] «Carico di lavorazione» portato a scheda autonoma subito dopo Impianto nella barra principale
+- [x] Rimossa la doppia entrata dentro Impianto (il modulo_operations resta nella sua scheda)
+- [x] Test di posizione e prova a schermo con accesso reale

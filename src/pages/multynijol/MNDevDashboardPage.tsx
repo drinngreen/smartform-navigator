@@ -17,8 +17,10 @@ import {
   Send,
   HelpCircle,
   PlayCircle,
+  PackagePlus,
 } from "lucide-react";
 import { DevImpiantoModule } from "@/components/multynijol/dev/DevImpiantoModule";
+import { OperazioniMagazzinoModule } from "@/components/multynijol/dev/OperazioniMagazzinoModule";
 import { DevContoProprioModule } from "@/components/multynijol/dev/DevContoProprioModule";
 import { DevIntermediarioModule } from "@/components/multynijol/dev/DevIntermediarioModule";
 import { DevRegistroGeneraleModule } from "@/components/multynijol/dev/DevRegistroGeneraleModule";
@@ -165,6 +167,9 @@ export default function MNDevDashboardPage() {
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
           </TabsTrigger>
+          <TabsTrigger value="carico-lavorazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+            <PackagePlus className="h-4 w-4" />Carico di lavorazione
+          </TabsTrigger>
           <TabsTrigger value="niyol" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
             <Truck className="h-4 w-4" />Niyol
           </TabsTrigger>
@@ -219,6 +224,7 @@ export default function MNDevDashboardPage() {
         <TabsContent value="backup-export"><div className="space-y-6"><DevBackupExportModule /><DevInvioCopiaUnaTantumModule /></div></TabsContent>
         <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
+        <TabsContent value="carico-lavorazione"><OperazioniMagazzinoModule soloCarico /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
         <TabsContent value="conto-proprio"><DevContoProprioModule /></TabsContent>
 
