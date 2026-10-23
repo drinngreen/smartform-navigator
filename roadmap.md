@@ -68,3 +68,8 @@
 - [x] FIR cartacei: nuovo cartaceo compilabile da Impianto, Niyol e Console RENTRI, senza scadenza
 - [x] Cernite dal 22/09: disponibilità letta dalle giacenze ufficiali (prima le bloccavano le vecchie tabelle); carichi su CER negativi ammessi
 - [ ] Prova a schermo con accesso reale — serve accedere all'anteprima
+
+## Carico di lavorazione accanto a Impianto
+- [x] «Carico di lavorazione» portato a scheda autonoma subito dopo Impianto nella barra principale
+- [x] Rimossa la doppia entrata dentro Impianto (il modulo_operations resta nella sua scheda)
+- [x] Test di posizione e prova a schermo con accesso reale
