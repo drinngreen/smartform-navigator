@@ -24,7 +24,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const fmt = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 3 });
 const itD = (d: string) => d.split("-").reverse().join("/");
 
-export function OperazioniMagazzinoModule() {
+export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?: boolean }) {
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<Tipo>("carico");
   const [data, setData] = useState(today());
@@ -95,16 +95,16 @@ export function OperazioniMagazzinoModule() {
   return (
     <div className="space-y-4">
       <Card className="border-border/40 bg-card/60">
-        <CardHeader><CardTitle className="text-base">Operazioni straordinarie di magazzino (senza formulario)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{soloCarico ? "Carico di lavorazione senza formulario" : "Operazioni straordinarie di magazzino (senza formulario)"}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">Valgono dal giorno scelto in poi. Date fino al 21/09/2026 rifiutate. Nessuna operazione può portare un CER sotto zero, nemmeno nei giorni successivi.</p>
-          <div className="flex flex-wrap gap-2">
+          {!soloCarico && <div className="flex flex-wrap gap-2">
             {(Object.keys(TIPI) as Tipo[]).map((k) => (
               <Button key={k} size="sm" variant={tipo === k ? "default" : "outline"} onClick={() => setTipo(k)} className="gap-1">
                 {k === "carico" ? <PackagePlus className="h-4 w-4" /> : k === "scarico" ? <PackageMinus className="h-4 w-4" /> : <Scale className="h-4 w-4" />}{TIPI[k].label}
               </Button>
             ))}
-          </div>
+          </div>}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div><Label className="text-xs">Data</Label><Input type="date" min="2026-09-22" max={today()} value={data} onChange={(e) => setData(e.target.value)} /></div>
             <div><Label className="text-xs">CER</Label><Input value={cer} onChange={(e) => setCer(e.target.value)} placeholder="170405" /></div>
@@ -116,7 +116,7 @@ export function OperazioniMagazzinoModule() {
               Saldo CER {cerN} al {itD(data)}: <b>{fmt(prima)}</b> → <b>{fmt(prima + delta)}</b> kg · oggi: <b>{fmt(primaOggi)}</b> → <b>{fmt(primaOggi + delta)}</b> kg
             </div>
           )}
-          <Button onClick={conferma} disabled={busy || isLoading}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} Registra operazione</Button>
+          <Button onClick={conferma} disabled={busy || isLoading}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} {soloCarico ? "Conferma carico di lavorazione" : "Registra operazione"}</Button>
         </CardContent>
       </Card>
 

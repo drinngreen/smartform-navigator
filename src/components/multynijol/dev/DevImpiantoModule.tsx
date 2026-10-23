@@ -29,7 +29,7 @@ import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
 import {
   FileText, Search, RefreshCw, Loader2, Edit, CheckCircle, Clock,
   Warehouse, Plus, Package, Upload, Database, Zap, AlertTriangle, CreditCard, FileSpreadsheet, Printer,
-  ClipboardList, Truck, Trash2, Scissors,
+  ClipboardList, Truck, Trash2, Scissors, PackagePlus,
 } from "lucide-react";
 import { exportToExcel, exportToPdf } from "@/lib/exportUtils";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
@@ -136,6 +136,7 @@ function DevSerbatoioOverview() {
 export function DevImpiantoModule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get("impiantoSub") || "formulari");
+  const [caricoLavorazioneOpen, setCaricoLavorazioneOpen] = useState(false);
 
   // Se l'URL cambia (es. preferito "Giacenze" cliccato mentre Impianto è già aperto),
   // segui il sotto-tab indicato dall'URL invece di restare fermo.
@@ -155,6 +156,17 @@ export function DevImpiantoModule() {
   return (
     <div className="space-y-4">
       <DevSerbatoioOverview />
+      <div className="flex justify-end">
+        <Button className="gap-2" onClick={() => setCaricoLavorazioneOpen(true)}>
+          <PackagePlus className="h-4 w-4" /> Carico di lavorazione
+        </Button>
+      </div>
+      <Dialog open={caricoLavorazioneOpen} onOpenChange={setCaricoLavorazioneOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>Carico di lavorazione</DialogTitle></DialogHeader>
+          <OperazioniMagazzinoModule soloCarico />
+        </DialogContent>
+      </Dialog>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 p-1 h-auto flex-wrap gap-1">
           <TabsTrigger value="nuovo-fir" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
