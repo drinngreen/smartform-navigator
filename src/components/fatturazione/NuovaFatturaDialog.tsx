@@ -5,6 +5,7 @@ import { X, Plus, Trash2, Save, AlertTriangle, Search, Loader2, UploadCloud } fr
 import { isValidCerCode } from "@/lib/cerValidation";
 import { toast } from "sonner";
 import { inviaFatturaASibill } from "@/lib/sibill";
+import { kgDestinoFir } from "@/lib/fatturaKgDestino";
 
 interface Props {
   tenantId?: string;
