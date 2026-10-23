@@ -437,6 +437,29 @@ Deno.serve(async (req) => {
       return json({ ok: true, done, scanned, rate_limited: rateLimited, cached: count ?? 0 });
     }
 
+    // Dettaglio completo di un documento: rilettura da Sibill, con riserva sulla copia locale
+    if (action === "get_document") {
+      const docId = String(body?.doc_id || "");
+      if (!docId) return json({ error: { title: "Documento mancante", detail: "doc_id obbligatorio" } }, 200);
+      let raw: any = null;
+      let fonte = "sibill";
+      try {
+        const res = await fetch(`${BASE_URL}/api/v1/companies/${COMPANY_ID}/documents/${encodeURIComponent(docId)}`, { headers: sibillHeaders() });
+        if (res.ok) {
+          const b = await res.json().catch(() => null);
+          raw = b?.data ?? b;
+          if (raw?.id) await admin.from("sibill_documents_cache").upsert([mapDoc(raw)], { onConflict: "doc_id" });
+        } else await res.text().catch(() => "");
+      } catch (_e) { /* uso la copia locale */ }
+      if (!raw) {
+        const { data: c } = await admin.from("sibill_documents_cache").select("raw").eq("doc_id", docId).maybeSingle();
+        raw = c?.raw ?? null;
+        fonte = "archivio";
+      }
+      if (!raw) return json({ error: { title: "Non trovato", detail: "Documento non presente su Sibill" } }, 200);
+      return json({ ok: true, fonte, document: raw });
+    }
+
     // Elenco documenti dalla cache locale (popolata da `scan_documents`)
     if (action === "list_documents") {
       const filter = String(body?.filter || "P").toUpperCase();
