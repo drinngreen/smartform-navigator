@@ -3,6 +3,7 @@ import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useAuth } from "@/hooks/useAuth";
 import multyprogetIcon from "@/assets/multyproget-icon.png";
 import niyolIcon from "@/assets/niyol-icon.png";
+import { Button } from "@/components/ui/button";
 
 const tenants = [
   {
@@ -11,6 +12,10 @@ const tenants = [
     icon: multyprogetIcon,
     href: "/mn/admin/dev-multyproget",
     color: "34, 197, 94",
+  },
+  {
+    id: "niyol", label: "Niyol", icon: niyolIcon,
+    href: "/mn/admin/niyol", color: "6, 182, 212",
   },
 ];
 
@@ -24,12 +29,12 @@ export default function MNDashboardPage() {
     <MNAdminLayout title={`Multy Niyol — ${firstName}`} subtitle="Seleziona Contesto Operativo">
       {/* Hub accent is green as institutional reference */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex gap-16 md:gap-24">
+        <div className="flex flex-wrap justify-center gap-12 md:gap-24">
           {tenants.map((t) => (
-            <button
+            <Button variant="ghost"
               key={t.id}
               onClick={() => navigate(t.href)}
-              className="group flex flex-col items-center gap-6 transition-transform duration-300 hover:scale-105"
+              className="group flex h-auto flex-col items-center gap-6 whitespace-normal transition-transform duration-300 hover:scale-105"
             >
               <div
                 className="relative w-40 h-40 md:w-56 md:h-56 rounded-3xl flex items-center justify-center overflow-hidden"
@@ -58,7 +63,7 @@ export default function MNDashboardPage() {
               >
                 {t.label}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
