@@ -54,6 +54,7 @@
 - [ ] Stress test app dipendenti, privati, export con schermate prima/dopo (serve accesso con un account dell'app)
 
 ## Richiesta 22/10/2026
+- [x] Correggere apertura nuovo cartaceo: formato e stato bozza inizializzati insieme, senza ereditare un formulario precedente; prove senza scritture reali.
 ## Conferma dal formulario 23/10/2026
 - [x] Preparare il cantiere nel luogo di produzione strutturato RENTRI dai due moduli e conservarne indirizzo/comune/provincia/CAP; 165 test superati senza invii reali
 - [ ] Verificare accettazione del campo sul servizio RENTRI: nessun invio reale autorizzato; schema ufficiale non scaricabile nel controllo attuale

@@ -13,6 +13,7 @@ import { printOfficialFir } from "@/lib/firOfficialPrint";
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
 import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
+import { initializeMNFIRCreation } from "@/lib/initializeMNFIRCreation";
 import { FIR_FIELD_LABELS, type FIRDataStore } from "@/stores/firStore";
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
@@ -592,7 +593,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
 
   // Sezioni FIR cartacei: il nuovo formulario parte già come cartaceo.
   useEffect(() => {
-    if (initialFormato === "cartaceo" && !forceRentriDigital && !useMNFIRStore.getState().editingFirId) u("formatoFir", "cartaceo");
+    if (!creationMode && initialFormato === "cartaceo" && !forceRentriDigital && !useMNFIRStore.getState().editingFirId) u("formatoFir", "cartaceo");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFormato]);
 
@@ -671,8 +672,8 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
   useEffect(() => {
     if (!creationMode || firFormId || draftData?.id || hasInitializedCreationMode.current) return;
     hasInitializedCreationMode.current = true;
-    store.resetForm();
-  }, [creationMode, firFormId, draftData?.id]);
+    initializeMNFIRCreation(initialFormato, forceRentriDigital);
+  }, [creationMode, firFormId, draftData?.id, initialFormato, forceRentriDigital]);
 
   // ── Crea fattura direttamente dal formulario ──────────────────────
   const cfKey = (v?: string) => (v || "").replace(/[^0-9A-Za-z]/g, "").toUpperCase();

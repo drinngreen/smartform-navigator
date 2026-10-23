@@ -1,4 +1,5 @@
 # Regole strutturali
+- New office FIR drafts initialize format and editable status atomically through initializeMNFIRCreation; why: a later reset previously erased the paper format and hid saving controls.
 - Both FIR payload mappers serialize declared sites as producer.luogo_produzione using rentriLuogoProduzione; persist all site address fields separately from the producer address and reject unresolved site municipalities; why: notes and address fallback hide the actual waste origin.
 - The plant's direct processing-load action opens OperazioniMagazzinoModule in load-only mode; why: reuse the existing preview, date guards and manual confirmation without a second inventory write path.
 
