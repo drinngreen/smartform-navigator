@@ -82,7 +82,7 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     enabled: !!clienteId,
   });
 
-  const { data: firsDisponibili = [] } = useQuery({
+  const { data: firsDisponibili = [], isLoading: firsLoading } = useQuery({
     queryKey: ["fatture-firs", tenantId],
     queryFn: async () => {
       let q = supabase.from("fir_forms" as any)
