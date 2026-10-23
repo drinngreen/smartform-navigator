@@ -18,6 +18,7 @@ import {
 import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
+import { kgDestinoFir } from "@/lib/fatturaKgDestino";
 import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDialog";
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { ricercaFir } from "@/lib/rentriVpsApi";
