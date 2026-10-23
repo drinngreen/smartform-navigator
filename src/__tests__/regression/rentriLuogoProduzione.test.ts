@@ -14,14 +14,14 @@ describe("Cantiere nel campo RENTRI luogo_produzione", () => {
     const payload = await mapStoreToRentriFirPayload("multy", {
       ...base, cantiereIndirizzo: "Via Capri 1", cantiereComune: "Rondissone", cantiereProvincia: "TO", cantiereCAP: "10030",
     }) as any;
-    expect(payload.dati_partenza.produttore.luogo_produzione).toEqual({ indirizzo: "Via Capri 1", cap: "10030", citta: { comune_id: "001221" } });
+    expect(payload.dati_partenza.produttore.luogo_produzione).toEqual({ indirizzo: "Via Capri 1", cap: "10030", citta: { comune_id: "001225" } });
     expect(payload.dati_partenza.produttore.indirizzo.citta.comune_id).toBe("001195");
   });
   it("alternativo trasmette il campo ministeriale luogo di produzione", async () => {
     const payload = await mapFormToRentriPayload("multy", {
       conducente: "MARIO ROSSI", "luogo di produzione se diverso produttore": "Via Capri 1 - 10030 Rondissone (TO)",
     }) as any;
-    expect(payload.dati_partenza.produttore.luogo_produzione).toEqual({ indirizzo: "Via Capri 1", cap: "10030", citta: { comune_id: "001221" } });
+    expect(payload.dati_partenza.produttore.luogo_produzione).toEqual({ indirizzo: "Via Capri 1", cap: "10030", citta: { comune_id: "001225" } });
   });
   it("non inventa un cantiere quando non è compilato", async () => {
     expect(await luogoProduzioneRentri("")).toBeUndefined();
