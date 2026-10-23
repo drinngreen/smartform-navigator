@@ -26,7 +26,7 @@ describe("Carico di lavorazione come azione accanto a Impianto", () => {
     expect(iCarico).toBeLessThan(iNiyol);
   });
 
-  it("apre il moduloOperazioniMagazzinoModule in sola carica", () => {
+  it("apre il modulo operazioni di magazzino in sola carica", () => {
     const content = dashboard.match(/<TabsContent\s+value="carico-lavorazione">([\s\S]*?)<\/TabsContent>/);
     expect(content, "contenuto scheda carico-lavorazione mancante").toBeTruthy();
     expect(content![1]).toMatch(/<OperazioniMagazzinoModule\s+soloCarico\s*\/>/);
