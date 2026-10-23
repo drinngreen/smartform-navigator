@@ -12,6 +12,7 @@ import { FIRAlternativeForm } from "@/components/fir/FIRAlternativeForm";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { getCodiceOperazione } from "@/lib/codiciRecuperoSmaltimento";
 import { useMNFIRStore } from "@/stores/mnFirStore";
+import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
@@ -523,6 +524,13 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
 
         {activeDraftId ? (
           <div className="rounded-lg border border-border/40 bg-background/40 p-3">
+            <div className="mb-3">
+              <ConfermaFormularioRegistro
+                numeroFir={activeDraft?.numero_fir}
+                tenantId={MULTY_TENANT_ID}
+                cartaceo={activeDraft?.form_data?.formato_fir === "cartaceo"}
+              />
+            </div>
             {moduleType === "alternative" ? (
               <FIRAlternativeForm
                 key={`alternative-${activeDraftId}`}
