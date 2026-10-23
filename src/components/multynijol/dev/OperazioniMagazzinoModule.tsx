@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { fetchMovimentiSuccessivi, saldiBase21Settembre } from "./GiacenzeDocumentaliModule";
 import { GIACENZE_FINAL_DATE, saldiAlGiorno, verificaNuoviMovimenti } from "@/lib/giacenzeCascata";
+import { CaricoLavorazioneForm } from "./CaricoLavorazioneForm";
+import { caricoMetadataPayload, emptyCaricoMetadata } from "@/lib/caricoLavorazioneMetadata";
 
 const TENANT = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const REGISTRO = "MULTY_IMPIANTO";
@@ -32,6 +34,7 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
   const [kg, setKg] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [metadata, setMetadata] = useState(emptyCaricoMetadata);
 
   const base = useMemo(saldiBase21Settembre, []);
   const { data: movimenti = [], isLoading } = useQuery({ queryKey: ["giacenze-movimenti-live"], queryFn: fetchMovimentiSuccessivi });
@@ -56,7 +59,7 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
   const delta = t.segno === "+" ? q || 0 : -(q || 0);
   const motivoObbl = tipo.startsWith("rettifica");
 
-  const salva = async (righe: { data: string; cer: string; kg: number; segno: "+" | "-"; op: string; note: string }[], msg: string) => {
+  const salva = async (righe: { data: string; cer: string; kg: number; segno: "+" | "-"; op: string; note: string }[], msg: string, dettagli = {}) => {
     const nuovi = righe.map((r) => ({ data: r.data, cer: r.cer, carico: r.segno === "+" ? r.kg : 0, scarico: r.segno === "-" ? r.kg : 0 }));
     const fresh = await fetchMovimentiSuccessivi();
     const v = verificaNuoviMovimenti(base, fresh, nuovi);
@@ -67,22 +70,25 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
       tenant_id: TENANT, registro: REGISTRO, data_movimento: r.data, cer: r.cer, quantita: r.kg,
       segno: r.segno, carico_scarico: r.segno === "+" ? "Carico" : "Scarico", tipo_operazione: r.op,
       stato_movimento: "effettivo", incide_giacenze: true, created_by_agent: false, annotazioni: r.note,
+      ...dettagli,
     })));
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Operazione registrata");
     setKg(""); setNote("");
+    setMetadata(emptyCaricoMetadata());
     qc.invalidateQueries({ queryKey: ["giacenze-movimenti-live"] });
     refetch();
   };
 
   const conferma = () => {
-    if (data <= GIACENZE_FINAL_DATE) return toast.error("Le giacenze fino al 21/09/2026 sono immutabili");
+    if (!data || data <= GIACENZE_FINAL_DATE) return toast.error("Scegli una data dal 22/09/2026");
     if (!/^\d{6}$/.test(cerN)) return toast.error("CER non valido (6 cifre)");
     if (!(q > 0)) return toast.error("Kg non validi");
+    if (soloCarico && [metadata.litri, metadata.metriCubi, metadata.numero].some(value => value.trim() && (!Number.isFinite(Number(value.replace(",", "."))) || Number(value.replace(",", ".")) < 0))) return toast.error("Le quantità devono essere numeri positivi o zero");
     if (motivoObbl && !note.trim()) return toast.error("Per la rettifica il motivo è obbligatorio");
     salva([{ data, cer: cerN, kg: q, segno: t.segno, op: t.op, note: note.trim() || t.label }],
-      `${t.label} del ${itD(data)}\nCER ${cerN}: ${fmt(q)} kg\nSaldo al ${itD(data)}: ${fmt(prima)} → ${fmt(prima + delta)} kg\nConfermi?`);
+      `${t.label} del ${itD(data)}\nCER ${cerN}: ${fmt(q)} kg\nSaldo al ${itD(data)}: ${fmt(prima)} → ${fmt(prima + delta)} kg\nConfermi?`, soloCarico ? caricoMetadataPayload(metadata) : {});
   };
 
   const annulla = (r: any) => {
@@ -94,7 +100,12 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
 
   return (
     <div className="space-y-4">
-      <Card className="border-border/40 bg-card/60">
+      {soloCarico ? <CaricoLavorazioneForm
+        data={data} cer={cer} kg={kg} note={note} metadata={metadata} busy={busy} loading={isLoading}
+        onData={setData} onCer={setCer} onKg={setKg} onNote={setNote} onMetadata={setMetadata} onConfirm={conferma}
+        onReset={() => { if (!window.confirm("Svuotare i campi della registrazione?")) return; setData(today()); setCer(""); setKg(""); setNote(""); setMetadata(emptyCaricoMetadata()); }}
+        preview={cerN.length === 6 ? <div className="rounded-md border border-border p-3 text-sm">Saldo CER {cerN} al {itD(data)}: <b>{fmt(prima)}</b> → <b>{fmt(prima + delta)}</b> kg · oggi: <b>{fmt(primaOggi)}</b> → <b>{fmt(primaOggi + delta)}</b> kg</div> : null}
+      /> : <Card className="border-border/40 bg-card/60">
         <CardHeader><CardTitle className="text-base">{soloCarico ? "Carico di lavorazione senza formulario" : "Operazioni straordinarie di magazzino (senza formulario)"}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">Valgono dal giorno scelto in poi. Date fino al 21/09/2026 rifiutate. Nessuna operazione può portare un CER sotto zero, nemmeno nei giorni successivi.</p>
@@ -118,9 +129,9 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
           )}
           <Button onClick={conferma} disabled={busy || isLoading}>{busy && <Loader2 className="h-4 w-4 animate-spin" />} {soloCarico ? "Conferma carico di lavorazione" : "Registra operazione"}</Button>
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card className="border-border/40 bg-card/60">
+      {!soloCarico && <Card className="border-border/40 bg-card/60">
         <CardHeader><CardTitle className="text-base">Operazioni registrate ({elenco.length})</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -144,7 +155,7 @@ export function OperazioniMagazzinoModule({ soloCarico = false }: { soloCarico?:
             </tbody>
           </table>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }

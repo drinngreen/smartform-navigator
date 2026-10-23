@@ -2,6 +2,7 @@
 - New office FIR drafts initialize format and editable status atomically through initializeMNFIRCreation; why: a later reset previously erased the paper format and hid saving controls.
 - Both FIR payload mappers serialize declared sites as producer.luogo_produzione using rentriLuogoProduzione; persist all site address fields separately from the producer address and reject unresolved site municipalities; why: notes and address fallback hide the actual waste origin.
 - The processing-load action is a first-level tab beside Impianto and opens OperazioniMagazzinoModule in load-only mode; why: reuse the existing preview, date guards and manual confirmation without a second inventory write path or a duplicated entry point.
+- Processing-load fields are rendered by CaricoLavorazioneForm and serialized by caricoLavorazioneMetadata into existing register columns, with supplementary quantities in raw; why: preserve separate private notes and quantity units without new stock write paths or schema changes.
 
 - Office FIR editors share ConfermaFormularioRegistro for explicit registration from fresh RENTRI detail and a separate confirmation; why: saving a draft must never substitute for inventory confirmation, and site/date guards must stay centralized.
 - TypeScript uses bundler module resolution for Vite; why: node10 resolution is unsupported by the preview compiler.
