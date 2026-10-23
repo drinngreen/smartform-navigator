@@ -39,7 +39,7 @@ export function CaricoLavorazioneForm(p: Props) {
     if (entry) change("descrizione", entry.descrizione);
   };
   const results = CER_CATALOG.filter(c => `${c.codice} ${c.descrizione}`.toLowerCase().includes(search.toLowerCase())).slice(0, 40);
-  return <section aria-label="Carico di lavorazione" className="border border-border bg-background text-foreground">
+  return <section aria-label="Carico di lavorazione" className="border border-border bg-background text-foreground [&_input]:w-full [&_input]:min-w-0 [&_input]:!bg-input [&_input]:!border-border [&_label]:block">
     <header className="flex items-center justify-between gap-3 border-b border-border bg-muted px-4 py-3">
       <h2 className="text-base font-semibold">Gestione registrazioni carico — Carico di lavorazione</h2>
       <div className="flex shrink-0 gap-1">
