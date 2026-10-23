@@ -55,8 +55,9 @@
 
 ## Richiesta 22/10/2026
 ## Conferma dal formulario 23/10/2026
-- [ ] Mostrare la conferma registro/giacenze nei formulari aperti, con controllo RENTRI e anteprima senza scritture
-- [ ] Verificare pulsante e blocchi senza registrare dati di prova
+- [x] Mostrare la conferma registro/giacenze nei formulari aperti, con controllo RENTRI e anteprima senza scritture
+- [x] Verificare pulsante e blocchi senza registrare dati di prova: 5 nuovi test, 161 test totali superati
+- [ ] Verifica visiva nel formulario autenticato: accesso non disponibile, mint --self senza account corrispondente
 
 - [x] Tolte le diciture interne (giacenze / cantiere diverso) dagli elenchi formulari
 - [x] «Modifica anagrafica» dentro i formulari (la sezione anagrafiche aveva già la modifica)
