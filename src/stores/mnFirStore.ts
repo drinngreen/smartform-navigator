@@ -308,6 +308,10 @@ export const useMNFIRStore = create<MNFIRStore>()(
             // ── Sezioni recuperate dal form_data: senza queste, riaprendo una bozza
             //    i dati inseriti sparivano dal modulo e dalla stampa ufficiale ──
             produttoreLuogoProduzioneDiverso: str(formData.produttore_luogo_produzione),
+            cantiereIndirizzo: str(formData.cantiere_indirizzo),
+            cantiereComune: str(formData.cantiere_comune),
+            cantiereProvincia: str(formData.cantiere_provincia),
+            cantiereCAP: str(formData.cantiere_cap),
             produttoreNumeroAut: str(formData.produttore_numero_aut ?? formData.produttore_iscrizione_albo),
             produttoreTipoAut: str(formData.produttore_tipo_aut ?? formData.produttore_tipo),
             produttoreDataAut: str(formData.produttore_data_aut),

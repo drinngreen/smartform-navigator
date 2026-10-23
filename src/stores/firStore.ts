@@ -653,6 +653,10 @@ export const useFIRStore = create<FIRStore>()(
             ...(dbData.form_data ? {
               registroSi: dbData.form_data.registro_no !== "NO",
               produttoreLuogoProduzioneDiverso: dbData.form_data.produttore_luogo_produzione || "",
+              cantiereIndirizzo: dbData.form_data.cantiere_indirizzo || "",
+              cantiereComune: dbData.form_data.cantiere_comune || "",
+              cantiereProvincia: dbData.form_data.cantiere_provincia || "",
+              cantiereCAP: dbData.form_data.cantiere_cap || "",
               produttoreNumeroAut: dbData.form_data.produttore_iscrizione_albo || "",
               isDetentore: dbData.form_data.detentore_checkbox || false,
               destinatarioTipoAut: dbData.form_data.destinatario_tipo || "",
