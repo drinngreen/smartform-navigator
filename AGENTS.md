@@ -1,4 +1,5 @@
 # Regole strutturali
+- The plant's direct processing-load action opens OperazioniMagazzinoModule in load-only mode; why: reuse the existing preview, date guards and manual confirmation without a second inventory write path.
 
 - Office FIR editors share ConfermaFormularioRegistro for explicit registration from fresh RENTRI detail and a separate confirmation; why: saving a draft must never substitute for inventory confirmation, and site/date guards must stay centralized.
 - TypeScript uses bundler module resolution for Vite; why: node10 resolution is unsupported by the preview compiler.
