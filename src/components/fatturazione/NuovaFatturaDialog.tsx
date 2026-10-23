@@ -86,14 +86,23 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
     queryKey: ["fatture-firs", tenantId],
     queryFn: async () => {
       let q = supabase.from("fir_forms" as any)
-        .select("id,numero_fir,form_data,cer,quantita_partenza,quantita_arrivo,destinatario_denominazione,produttore_denominazione,updated_at")
-        .eq("status", "completato")
+        .select("id,numero_fir,form_data,codice_eer,quantita,destinatario_denominazione,produttore_denominazione,updated_at")
+        .in("status", ["completato", "inviato"])
         .order("updated_at", { ascending: false })
-        .limit(200);
+        .limit(300);
       if (tenantId) q = q.eq("tenant_id", tenantId);
       const { data, error } = await q;
       if (error) throw error;
-      return (data || []) as any[];
+      const firs = (data || []) as any[];
+      // Peso a destino registrato (kg accettati) come riserva se il formulario non lo riporta
+      const numeri = firs.map((f) => f.numero_fir).filter(Boolean);
+      const pesi = new Map<string, number>();
+      if (numeri.length) {
+        const { data: rg } = await supabase.from("registro_generale" as any)
+          .select("numero_formulario,peso_destino").in("numero_formulario", numeri);
+        ((rg || []) as any[]).forEach((r) => { if (Number(r.peso_destino) > 0) pesi.set(r.numero_formulario, Number(r.peso_destino)); });
+      }
+      return firs.map((f) => ({ ...f, cer: f.codice_eer || f.form_data?.cer || f.form_data?.codice_eer || "", kg_destino: kgDestinoFir(f, pesi.get(f.numero_fir)) }));
     },
     enabled: showFirPicker,
   });
@@ -132,14 +141,15 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
   const updRiga = (i: number, patch: Partial<Riga>) => setRighe(r => r.map((x, idx) => idx === i ? { ...x, ...patch } : x));
 
   const addFirAsRiga = (fir: any) => {
-    const cer = fir.cer || fir.form_data?.cer || "";
-    const q = Number(fir.quantita_partenza || fir.quantita_arrivo || fir.form_data?.quantita || 0);
+    const cer = fir.cer || "";
+    const q = fir.kg_destino;
+    if (!q) { toast.error(`FIR ${fir.numero_fir}: kg a destino non ancora confermati, non posso fatturarlo`); return; }
     setRighe(r => [...r, {
       descrizione: `Smaltimento CER ${cer} - FIR ${fir.numero_fir || ""}`.trim(),
       cer,
       fir_form_id: fir.id,
       numero_fir: fir.numero_fir || "",
-      quantita: q || 1,
+      quantita: q,
       unita_misura: "kg",
       prezzo_unitario: 0,
       aliquota_iva: 22,
@@ -340,12 +350,15 @@ export function NuovaFatturaDialog({ tenantId, onClose, onCreated, preselectedFi
 
             {showFirPicker && (
               <div className="mb-3 p-3 rounded-xl bg-background/40 border border-border/30 max-h-56 overflow-y-auto">
-                {firsDisponibili.length === 0 ? (
+                {firsLoading ? (
                   <div className="text-xs text-muted-foreground flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" />Carico formulari...</div>
+                ) : firsDisponibili.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">Nessun formulario da fatturare.</div>
                 ) : firsDisponibili.map((f: any) => (
                   <button key={f.id} onClick={() => addFirAsRiga(f)}
-                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted/20 text-xs border-b border-border/10">
-                    <span className="font-mono font-semibold">{f.numero_fir || "—"}</span> · CER {f.cer || f.form_data?.cer || "—"} · {f.produttore_denominazione} → {f.destinatario_denominazione}
+                    className={`w-full text-left px-2 py-1.5 rounded-lg hover:bg-muted/20 text-xs border-b border-border/10 ${f.kg_destino ? "" : "opacity-50"}`}>
+                    <span className="font-mono font-semibold">{f.numero_fir || "—"}</span> · CER {f.cer || "—"} · {f.produttore_denominazione} → {f.destinatario_denominazione}
+                    {" · "}<span className="font-semibold">{f.kg_destino ? `${f.kg_destino.toLocaleString("it-IT")} kg a destino` : "kg a destino non confermati"}</span>
                   </button>
                 ))}
               </div>
