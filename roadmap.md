@@ -69,6 +69,9 @@
 - [x] Cernite dal 22/09: disponibilità letta dalle giacenze ufficiali (prima le bloccavano le vecchie tabelle); carichi su CER negativi ammessi
 - [x] Prova a schermo con accesso reale — fatta sul nuovo pulsante; l'accesso autenticato ora è disponibile anche per le altre prove
 
+## Blocco conferimenti privati 26/10/2026
+- [x] Corretto il controllo sulle vecchie giacenze senza riallineamenti; 4 prove PostgreSQL isolate con rollback (carico/ricevuta, cascata, data, limite 1500 kg), 182 regressioni superate; nessun conferimento reale inserito. Accesso privati autenticato verificato; salvataggio reale non eseguito per non lasciare dati.
+
 ## Carico di lavorazione accanto a Impianto
 - [x] Riattivato il centro di comando Niyol e il collegamento iniziale; verificati accesso autenticato, formulari, registro e personale senza scritture; 175 test e 5/5 rotte OK
 - [x] Riprodotto il modulo aperto Prometeo del 23/10: campi, note separate, quantità supplementari, conferma annullata con accesso reale; 174 test e 5/5 rotte OK, zero scritture di prova

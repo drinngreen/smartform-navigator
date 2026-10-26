@@ -64,6 +64,13 @@
       "when": 1792667490930,
       "tag": "0008_cernite_multy_giacenze_ufficiali",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793006471734,
+      "tag": "0009_fix_multy_private_load_frozen_stock",
+      "breakpoints": true
     }
   ]
 }
