@@ -1,6 +1,6 @@
 # Regole strutturali
 - Multy private loads keep atomic movement/receipt creation but never recalculate or assert legacy physical stock; official stock reads dated private rows once, with pre-22/09 saves blocked. Why: legacy reconciliation compared incompatible ledgers and blocked valid private loads.
-- Niyol has an enabled standalone admin context plus its Dev tab, both mapped to its own tenant; why: dashboard navigation must not redirect Niyol to the hub or fall back to Multy data.
+- Niyol lives inside MultyDev: its home is the Niyol tab of /mn/admin/dev-multyproget (hub card and /mn/admin/niyol redirect there); Niyol sub-pages stay on its own tenant; why: the user requires Niyol inside MultyDev, never as a separate desktop, and never on Multy data.
 - New office FIR drafts initialize format and editable status atomically through initializeMNFIRCreation; why: a later reset previously erased the paper format and hid saving controls.
 - Both FIR payload mappers serialize declared sites as producer.luogo_produzione using rentriLuogoProduzione; persist all site address fields separately from the producer address and reject unresolved site municipalities; why: notes and address fallback hide the actual waste origin.
 - The processing-load action is a first-level tab beside Impianto and opens OperazioniMagazzinoModule in load-only mode; why: reuse the existing preview, date guards and manual confirmation without a second inventory write path or a duplicated entry point.
