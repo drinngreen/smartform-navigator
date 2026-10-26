@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { dettaglioFormularioRentri, type RentriCliente } from "@/lib/rentriVpsApi";
@@ -27,7 +27,7 @@ function Sezione({ titolo, righe }: { titolo: string; righe: [string, string][] 
     <div className="rounded-lg border border-border/40 bg-background/40 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-2">{titolo}</p>
       <dl className="grid grid-cols-[minmax(130px,auto)_1fr] gap-x-3 gap-y-1 text-sm">
-        {righe.map(([k, val]) => (<><dt key={`k-${k}`} className="text-muted-foreground">{k}</dt><dd key={`v-${k}`} className="break-words">{val}</dd></>))}
+        {righe.map(([k, val]) => (<Fragment key={k}><dt className="text-muted-foreground">{k}</dt><dd className="break-words">{val}</dd></Fragment>))}
       </dl>
     </div>
   );

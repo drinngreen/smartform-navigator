@@ -23,6 +23,7 @@ import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDial
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { ricercaFir } from "@/lib/rentriVpsApi";
 import { resolveSocietaId } from "@/services/rentriApi";
+import { FirDettaglioLettura } from "@/components/fir/FirDettaglioLettura";
 import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 
 
@@ -523,6 +524,11 @@ export function DevFormulariList({
           </DialogHeader>
           {viewDialog.form && (
             <>
+              <FirDettaglioLettura
+                numeroFir={viewDialog.form.numero_fir}
+                cliente={(viewDialog.form as any).tenant_id === "77ec9a3d-602e-438f-97bf-1c69abd8f691" ? "multy" : mnContext === "niyol" ? "niyol" : "multy"}
+                form={viewDialog.form}
+              />
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
