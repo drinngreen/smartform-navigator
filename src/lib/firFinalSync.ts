@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { logAgentActivity } from "@/stores/agentActivityStore";
+import { cantiereDaFormulario } from "@/lib/cantiereFormulario";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -195,7 +196,7 @@ export async function syncFirFinalToRegistryAndInventory(params: {
         : isNiyolProducer
         ? "Scarico"
         : "Carico";
-      const row: Record<string, any> = { ...baseRow(regType), registro: "NIYOL" };
+      const row: Record<string, any> = { ...baseRow(regType), registro: "NIYOL", incide_giacenze: false };
       if (!isNiyolProducer && !isNiyolDestinatario) {
         row.annotazioni = `Transito come trasportatore (${trspDen || "Niyol"}) — FIR Standard`;
       }
@@ -216,7 +217,9 @@ export async function syncFirFinalToRegistryAndInventory(params: {
   } else if (isMultyInvolved && inventoryQuantity <= 0) {
     warning = (warning ? warning + " · " : "") + "Quantità valida mancante: giacenze non aggiornate";
   }
-  if (effettivo && isMultyInvolved && inventoryQuantity > 0 && cer) {
+  if (cantiereDiverso) {
+    warning = (warning ? warning + " · " : "") + "Cantiere diverso dall'impianto di Piscina: solo registro, giacenze non cambiate";
+  } else if (multyIncide && isMultyInvolved && inventoryQuantity > 0 && cer) {
     try {
       const directImpiantoId =
         params.impiantoId?.trim() ||
