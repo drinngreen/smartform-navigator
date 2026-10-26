@@ -89,6 +89,7 @@ export async function luogoProduzioneRentri(
       const id = byCap[capTrovato];
       const nomi = Object.entries(byName).filter(([k, v]) => v === id && !k.includes("|")).map(([k]) => k);
       for (let n = 3; n >= 1 && !comuneId; n--) for (let i = 0; i + n <= tok.length && !comuneId; i++) {
+        if (tok.slice(i, i + n).some((t) => /\d/.test(t))) continue;
         const k = norm(tok.slice(i, i + n).join(""));
         if (k.length >= 4 && nomi.some((nome) => levenshtein(k, nome) <= 2)) {
           comuneId = id;
