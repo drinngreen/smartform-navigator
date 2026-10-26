@@ -166,11 +166,21 @@ export async function syncFirFinalToRegistryAndInventory(params: {
     raw: { fir_form_id: firId, form_data: formData },
   });
 
+  // Cantiere diverso dall'impianto di Piscina (anche sui cartacei): solo registro, MAI giacenze.
+  const cantiere = cantiereDaFormulario(formData);
+  const cantiereDiverso = isMultyProducer && !isMultyDestinatario && cantiere.diverso;
+  const multyIncide = effettivo && !cantiereDiverso && movementDate > "2026-09-21";
+
   // === REGISTRO — Multyproget (producer o destinatario) ===
   if (numeroFir && isMultyInvolved) {
     try {
       const regType: "Carico" | "Scarico" = isMultyDestinatario ? "Carico" : "Scarico";
-      await upsertRegistro(MULTY_TENANT_ID, numeroFir, { ...baseRow(regType), registro: "MULTY_IMPIANTO" });
+      const row: Record<string, any> = { ...baseRow(regType), registro: "MULTY_IMPIANTO", incide_giacenze: multyIncide };
+      if (cantiereDiverso) {
+        row.luogo_produzione = cantiere.descrizione;
+        row.annotazioni = `${row.annotazioni} | cantiere diverso dall'impianto (${cantiere.descrizione}) - NON incide sulle giacenze`;
+      }
+      await upsertRegistro(MULTY_TENANT_ID, numeroFir, row);
       registryOk = true;
     } catch (e: any) {
       warning = "Registro Multy non aggiornato: " + (e?.message || String(e));
