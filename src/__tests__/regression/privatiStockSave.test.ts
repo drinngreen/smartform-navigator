@@ -7,7 +7,7 @@ const multy = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const plant = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
 const person = "00000000-0000-0000-0000-000000000001";
 const db = new PGlite();
-const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+const fixture = (name: string) => readFileSync(`${process.cwd()}/src/__tests__/regression/fixtures/${name}`, "utf8");
 
 describe("Salvataggio privati con giacenze ufficiali a cascata", () => {
   beforeAll(async () => {
