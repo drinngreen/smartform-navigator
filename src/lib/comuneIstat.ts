@@ -58,3 +58,10 @@ export async function resolveComuneId(testo: string, cap?: string, sigla?: strin
   if (capPulito && byCap[capPulito]) return byCap[capPulito];
   return "";
 }
+
+/** Accesso diretto agli elenchi (nomi normalizzati → ISTAT, CAP → ISTAT). */
+export async function elenchiComuni() {
+  return load();
+}
+
+export { norm as normalizzaNomeComune };
