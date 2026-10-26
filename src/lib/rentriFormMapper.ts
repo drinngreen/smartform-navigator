@@ -151,7 +151,12 @@ export async function mapFormToRentriPayload(
   // Parse addresses
   const prodAddr = parseAddress(str("prod_indirizzo"));
   const destAddr = parseAddress(str("dest_indirizzo"));
-  const luogoProduzione = await luogoProduzioneRentri(str("prod_luogo_produzione"));
+  const luogoProduzione = await luogoProduzioneRentri(
+    String(data["cantiere_indirizzo"] ?? data["cantiereIndirizzo"] ?? "").trim() || str("prod_luogo_produzione"),
+    String(data["cantiere_comune"] ?? data["cantiereComune"] ?? "").trim(),
+    String(data["cantiere_provincia"] ?? data["cantiereProvincia"] ?? "").trim(),
+    String(data["cantiere_cap"] ?? data["cantiereCAP"] ?? "").trim(),
+  );
 
   // Comune ISTAT obbligatorio per il RENTRI: mai inventato, "" se non determinabile
   const prodComuneId = await resolveComuneId(
