@@ -23,6 +23,7 @@ import { FatturaViewerDialog } from "@/components/fatturazione/FatturaViewerDial
 import { resolveWorkflowStatus } from "@/lib/firWorkflowStatus";
 import { ricercaFir } from "@/lib/rentriVpsApi";
 import { resolveSocietaId } from "@/services/rentriApi";
+import { FirDettaglioLettura } from "@/components/fir/FirDettaglioLettura";
 import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 
 
@@ -421,8 +422,9 @@ export function DevFormulariList({
                         : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
                     const missingDestino = stato === "chiuso" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
-                    <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : undefined}
-                      className={`border-b border-border/10 ${missingDestino ? "bg-amber-500/15 hover:bg-amber-500/25 border-l-4 border-l-amber-400" : "hover:bg-white/5"}`}>
+                    <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : "Clicca per leggere il formulario nel dettaglio"}
+                      onClick={() => openEditor(form, "standard")}
+                      className={`cursor-pointer border-b border-border/10 ${missingDestino ? "bg-amber-500/15 hover:bg-amber-500/25 border-l-4 border-l-amber-400" : "hover:bg-white/5"}`}>
                       
                       <td className="p-3">
                         <Badge variant={stato === "chiuso" ? "default" : "secondary"} className="text-xs">{etichettaStato}</Badge>
@@ -435,7 +437,7 @@ export function DevFormulariList({
                       <td className="p-3 font-mono">{qPartenza != null && qPartenza !== "" ? `${qPartenza} ${um}` : "—"}</td>
                       <td className="p-3 font-mono">{qDestino != null && qDestino !== "" ? `${qDestino} ${um}` : "—"}</td>
                        <td className="p-3 text-muted-foreground text-xs">{formatFirDate(dataRaw)}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -443,7 +445,7 @@ export function DevFormulariList({
                           className={`gap-1 ${stato === "bozza" ? txt : "text-muted-foreground"}`}
                         >
                           <Edit className="h-3 w-3" />
-                          {stato === "bozza" ? "Standard" : "Visualizza Standard"}
+                          {stato === "bozza" ? "Standard" : "Apri dettaglio"}
                         </Button>
                         {stato === "bozza" && (
 
@@ -522,6 +524,11 @@ export function DevFormulariList({
           </DialogHeader>
           {viewDialog.form && (
             <>
+              <FirDettaglioLettura
+                numeroFir={viewDialog.form.numero_fir}
+                cliente={(viewDialog.form as any).tenant_id === "77ec9a3d-602e-438f-97bf-1c69abd8f691" ? "multy" : mnContext === "niyol" ? "niyol" : "multy"}
+                form={viewDialog.form}
+              />
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
