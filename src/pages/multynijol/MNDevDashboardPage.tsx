@@ -37,6 +37,7 @@ import { DevPulsantieraPreferiti } from "@/components/multynijol/dev/DevPulsanti
 import { DevConfrontoElenchiModule } from "@/components/multynijol/dev/DevConfrontoElenchiModule";
 
 
+import { DevVistaVeloceModule } from "@/components/multynijol/dev/DevVistaVeloceModule";
 import { DevNiyolModule } from "@/components/multynijol/dev/DevNiyolModule";
 import { FatturazioneModule } from "@/components/fatturazione/FatturazioneModule";
 import { DevMudExportModule } from "@/components/multynijol/dev/DevMudExportModule";
@@ -164,6 +165,9 @@ export default function MNDevDashboardPage() {
 
       <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
+          <TabsTrigger value="vista-veloce" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+            <FileText className="h-4 w-4" />Vista veloce
+          </TabsTrigger>
           <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
             <Warehouse className="h-4 w-4" />Impianto
           </TabsTrigger>
@@ -223,6 +227,7 @@ export default function MNDevDashboardPage() {
 
         <TabsContent value="backup-export"><div className="space-y-6"><DevBackupExportModule /><DevInvioCopiaUnaTantumModule /></div></TabsContent>
         <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
+        <TabsContent value="vista-veloce"><DevVistaVeloceModule /></TabsContent>
         <TabsContent value="impianto"><DevImpiantoModule /></TabsContent>
         <TabsContent value="carico-lavorazione"><OperazioniMagazzinoModule soloCarico /></TabsContent>
         <TabsContent value="niyol"><DevNiyolModule /></TabsContent>
