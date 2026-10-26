@@ -210,7 +210,7 @@ export function DevVistaVeloceModule() {
             </DialogTitle>
           </DialogHeader>
           {nuovo && (nuovo.formato === "cartaceo"
-            ? <NuovoFirCartaceoBox tenantId={tenantDi(nuovo.tipo)} mnContext={contestoDi(nuovo.tipo)} />
+            ? <NuovoFirCartaceoBox tenantId={tenantDi(nuovo.tipo)} mnContext={contestoDi(nuovo.tipo) as "multyproget" | "niyol"} />
             : <MNFIRFormComplete key={`${nuovo.tipo}-new`} tenantId={tenantDi(nuovo.tipo)} mnContext={contestoDi(nuovo.tipo) as any} enableFatturazione creationMode />)}
         </DialogContent>
       </Dialog>
