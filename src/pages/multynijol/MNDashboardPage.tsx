@@ -15,7 +15,7 @@ const tenants = [
   },
   {
     id: "niyol", label: "Niyol", icon: niyolIcon,
-    href: "/mn/admin/niyol", color: "6, 182, 212",
+    href: "/mn/admin/dev-multyproget?tab=niyol", color: "6, 182, 212",
   },
 ];
 

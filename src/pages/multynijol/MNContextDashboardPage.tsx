@@ -83,6 +83,11 @@ export default function MNContextDashboardPage() {
     return <Navigate to="/mn/admin" replace />;
   }
 
+  // Niyol vive dentro MultyDev: la sua home è la scheda Niyol del Centro di Comando.
+  if (context === "niyol") {
+    return <Navigate to="/mn/admin/dev-multyproget?tab=niyol" replace />;
+  }
+
   const firstName = profile?.nome?.split(" ")[0] || "Operatore";
   const prefix = `/mn/admin/${context}`;
   const desktopIcons = buildIcons(prefix);
