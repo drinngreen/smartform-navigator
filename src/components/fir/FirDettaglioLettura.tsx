@@ -83,7 +83,7 @@ export function FirDettaglioLettura({ numeroFir, cliente, form }: { numeroFir?: 
         )}
       </div>
       {loading && <p className="text-xs text-muted-foreground">Lettura dal RENTRI in corso…</p>}
-      {errore && <p className="text-xs text-destructive">RENTRI: {errore}. Sotto i dati salvati nel programma.</p>}
+      {errore && <p className="text-xs text-muted-foreground">{/non trovat/i.test(errore) ? "Questo formulario non risulta sul RENTRI (cartaceo o non ancora emesso)." : `RENTRI non leggibile ora: ${errore}`} Qui sotto i dati salvati nel programma.</p>}
       {det ? (
         <div className="grid gap-3 md:grid-cols-2">
           <Sezione titolo="Dati generali (RENTRI)" righe={[
