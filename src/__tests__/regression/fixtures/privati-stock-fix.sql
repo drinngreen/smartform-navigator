@@ -56,7 +56,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.recalculate_stock_after_plant_movement()
  RETURNS trigger
@@ -114,5 +114,5 @@ BEGIN
   END IF;
   RETURN COALESCE(NEW, OLD);
 END;
-$function$
+$function$;
 

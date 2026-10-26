@@ -39,7 +39,7 @@ BEGIN
     RAISE EXCEPTION 'Garanzia giacenza fallita per CER %: saldo %, atteso %', p_cer, v_actual, v_expected;
   END IF;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.crea_conferimento_privato_atomico(p_tenant_id uuid, p_impianto_id uuid, p_privato_id uuid, p_nome_privato text, p_cf_pi text, p_tipo_utenza text, p_materiali jsonb, p_data date, p_importo numeric, p_metodo_pag text, p_note text, p_targa text, p_modello text)
  RETURNS jsonb
@@ -154,4 +154,4 @@ BEGIN
     'totale_importo', CASE WHEN v_somma_righe > 0 THEN v_somma_righe ELSE COALESCE(p_importo, 0) END
   );
 END;
-$function$
+$function$;
