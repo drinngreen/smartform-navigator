@@ -189,7 +189,7 @@ export function DevPrivatiModule() {
     queryKey: ["dev-conferimenti-anno", MULTY_TENANT_ID],
     queryFn: async () => {
       const annoCorrente = new Date().getFullYear();
-      const { data, error } = await supabase.from("privati_conferimenti").select("privato_id, cer, kg_pesati, data").eq("tenant_id", MULTY_TENANT_ID).gte("data", `${annoCorrente}-01-01`);
+      const { data, error } = await supabase.from("privati_conferimenti_attivi" as any).select("privato_id, cer, kg_pesati, data").eq("tenant_id", MULTY_TENANT_ID).gte("data", `${annoCorrente}-01-01`);
       if (error) throw error;
       return data;
     },
@@ -200,7 +200,7 @@ export function DevPrivatiModule() {
     queryFn: async () => {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
-        .from("ricevute_privati" as any)
+        .from("ricevute_privati_attive" as any)
         .select("id, numero_ricevuta, anno, importo, note, data_emissione, created_at")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
@@ -216,7 +216,7 @@ export function DevPrivatiModule() {
     queryFn: async () => {
       if (!selectedPrivatoId) return [];
       const { data, error } = await supabase
-        .from("privati_conferimenti")
+        .from("privati_conferimenti_attivi" as any)
         .select("id, data, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, note, numero_progressivo, anno_dbt")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("privato_id", selectedPrivatoId)
@@ -268,10 +268,10 @@ export function DevPrivatiModule() {
   };
 
   const handleDeleteConferimento = async (confId: string) => {
-    if (!window.confirm("Eliminare questo conferimento? Le giacenze verranno stornate automaticamente.")) return;
-    const { error } = await supabase.from("privati_conferimenti").delete().eq("id", confId);
+    if (!window.confirm("Annullare conferimento e ricevuta? Il carico verrà stornato dalla sua data; gli originali e i numeri saranno conservati.")) return;
+    const { error } = await (supabase as any).rpc("annulla_conferimenti_privati", { p_ids: [confId], p_motivo: "Annullamento richiesto dall’operatore" });
     if (error) { toast.error(error.message); return; }
-    toast.success("✅ Conferimento eliminato e giacenza aggiornata");
+    toast.success("Conferimento e ricevuta annullati");
     queryClient.invalidateQueries({ queryKey: ["dev-conferimenti-privato"] });
     queryClient.invalidateQueries({ queryKey: ["privati-targhe-widget"] });
     queryClient.invalidateQueries({ queryKey: ["privati-limiti-widget"] });
@@ -283,7 +283,7 @@ export function DevPrivatiModule() {
   const renumberProgressivi = async (anni: number[]) => {
     for (const anno of Array.from(new Set(anni))) {
       const { data, error } = await supabase
-        .from("privati_conferimenti")
+        .from("privati_conferimenti_attivi" as any)
         .select("id, data, created_at, numero_progressivo")
         .eq("tenant_id", MULTY_TENANT_ID)
         .eq("anno_dbt", anno)
@@ -307,7 +307,7 @@ export function DevPrivatiModule() {
   const handleDeletePrivato = async (p: any) => {
     const nome = `${p.cognome || ""} ${p.nome || ""}`.trim();
     const { data: confs, error: loadErr } = await supabase
-      .from("privati_conferimenti")
+      .from("privati_conferimenti_attivi" as any)
       .select("id, cer, kg_pesati, impianto_id, anno_dbt")
       .eq("tenant_id", MULTY_TENANT_ID)
       .eq("privato_id", p.id);
@@ -536,8 +536,11 @@ export function DevPrivatiModule() {
     setRicevutaForm({ importo: "", note: "" });
   };
 
-  const handleDeleteRicevuta = async (_ricevutaId: string) => {
-    toast.error("La ricevuta non è eliminabile da sola: elimina il movimento collegato");
+  const handleDeleteRicevuta = async (ricevutaId: string) => {
+    const { data, error } = await supabase.from("ricevute_privati" as any).select("conferimento_id").eq("id", ricevutaId).single();
+    if (error || !data?.conferimento_id) { toast.error("Conferimento collegato non trovato"); return; }
+    await handleDeleteConferimento(data.conferimento_id);
+    queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
   };
 
   const handlePrintRicevute = () => {

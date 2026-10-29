@@ -113,7 +113,7 @@ async function caricaMovimentiRegistro(cfg: RegistroCfg): Promise<RigaRegistro[]
 
   if (cfg.source === "privati") {
     const { data, error } = await supabase
-      .from("privati_conferimenti" as any)
+      .from("privati_conferimenti_attivi" as any)
       .select("id, numero_progressivo, data, cer, kg_pesati, nome_privato")
       .eq("tenant_id", cfg.tenant)
       .order("data", { ascending: false });

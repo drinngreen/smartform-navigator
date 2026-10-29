@@ -59,7 +59,7 @@ export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
   }
   // Conferimenti dei privati: incidono sulle giacenze solo se datati dopo il 21/09 (carico sul CER).
   const { data: conf, error: e3 } = await (supabase as any)
-    .from("privati_conferimenti")
+    .from("privati_conferimenti_attivi" as any)
     .select("data,cer,kg_pesati")
     .eq("tenant_id", TENANT_MULTY)
     .gt("data", `${FINAL_DATE}T23:59:59.999`);

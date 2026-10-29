@@ -78,3 +78,6 @@
 - [x] «Carico di lavorazione» portato a scheda autonoma subito dopo Impianto nella barra principale
 - [x] Rimossa la doppia entrata dentro Impianto (il modulo_operations resta nella sua scheda)
 - [x] Test di posizione e prova a schermo con accesso reale
+
+## Annullamento ricevute 29/10/2026
+- [ ] Annullare 00363/2026 e 00364/2026 con conferimenti collegati, conservando originali e numeri; verificare saldi prima/dopo.

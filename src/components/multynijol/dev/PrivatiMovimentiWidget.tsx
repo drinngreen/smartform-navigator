@@ -55,7 +55,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     queryKey: ["privati-movimenti-widget", tenantId, anno],
     queryFn: async () => {
       let q = supabase
-        .from("privati_conferimenti")
+        .from("privati_conferimenti_attivi" as any)
         .select("id, data, nome_privato, cf_pi, cer, kg_pesati, importo_pagato, metodo_pag, targa_automezzo, modello_automezzo, numero_progressivo, anno_dbt, impianto_id, privato_id, note, tipo_utenza, stato_rifiuto, numero_fir, codice_ce, prezzo_kg, created_at")
         .eq("tenant_id", tenantId)
         .order("data", { ascending: false })
@@ -237,7 +237,7 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const renumberProgressivi = async (anniToucher: number[]) => {
     for (const y of Array.from(new Set(anniToucher)).filter(Boolean)) {
       const { data, error } = await supabase
-        .from("privati_conferimenti")
+        .from("privati_conferimenti_attivi" as any)
         .select("id, data, created_at, numero_progressivo")
         .eq("tenant_id", tenantId)
         .eq("anno_dbt", y)
@@ -259,16 +259,11 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   /** Elimina un elenco di movimenti + ricalcolo giacenze + rinumerazione progressivi. */
   const deleteMovimenti = async (rows: any[]) => {
-    if (rows.length > 0) {
-      throw new Error("Eliminazione bloccata: usare uno storno umano tracciato per i conferimenti certificati");
-    }
-    const ids = rows.map((r) => r.id);
-    const { error } = await supabase.from("privati_conferimenti").delete().in("id", ids);
+    if (!rows.length) return;
+    const { error } = await (supabase as any).rpc("annulla_conferimenti_privati", {
+      p_ids: rows.map((r) => r.id), p_motivo: "Annullamento richiesto dall’operatore",
+    });
     if (error) throw error;
-
-    await renumberProgressivi(
-      rows.map((r) => Number(r.anno_dbt) || Number(String(r.data).slice(0, 4))).filter(Boolean),
-    );
 
     setSelected(new Set());
     INVALIDATE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }));
@@ -276,11 +271,11 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
 
   const handleDelete = async (m: any) => {
     const label = `${m.nome_privato || "privato"} · ${m.cer} · ${Number(m.kg_pesati).toLocaleString("it-IT")} kg · ${fmtDate(m.data)}`;
-    if (!window.confirm(`Eliminare definitivamente questo movimento?\n\n${label}\n\nGiacenze e progressivi verranno aggiornati.`)) return;
+    if (!window.confirm(`Annullare questo movimento e la ricevuta?\n\n${label}\n\nIl carico verrà stornato; originali e numeri saranno conservati.`)) return;
     setDeletingId(m.id);
     try {
       await deleteMovimenti([m]);
-      toast.success("Movimento eliminato: giacenze e progressivi aggiornati");
+      toast.success("Movimento e ricevuta annullati");
     } catch (e: any) {
       toast.error("Errore eliminazione: " + (e?.message || e));
     } finally {
@@ -293,12 +288,12 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
     const kg = selectedRows.reduce((s, m) => s + Number(m.kg_pesati || 0), 0);
     if (!window.confirm(
       `Eliminare ${selectedRows.length} movimenti selezionati (${kg.toLocaleString("it-IT")} kg)?\n\n` +
-      `Ricevute e pagamenti collegati saranno rimossi in cascata.\nGiacenze e progressivi verranno ricalcolati.\n\nOperazione irreversibile.`,
+      `Il carico verrà stornato. Originali e numeri saranno conservati.`,
     )) return;
     setBulkBusy(true);
     try {
       await deleteMovimenti(selectedRows);
-      toast.success(`✅ ${selectedRows.length} movimenti eliminati: giacenze e progressivi aggiornati`);
+      toast.success(`✅ ${selectedRows.length} movimenti e ricevute annullati`);
     } catch (e: any) {
       toast.error("Errore eliminazione: " + (e?.message || e));
     } finally {
