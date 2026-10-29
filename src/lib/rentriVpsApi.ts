@@ -503,7 +503,7 @@ export async function inviaMovimentiRegistroVerificato(
  * la stessa identica GET ripetuta subito dopo risponde 200.
  * Ripetiamo solo le letture (GET): mai POST/PUT/DELETE, per non duplicare invii.
  */
-const RENTRI_TRANSIENT_STATUS = new Set([502, 503, 504]);
+const RENTRI_TRANSIENT_STATUS = new Set([500, 502, 503, 504]); // solo GET (letture): 500 del bridge è spesso momentaneo
 const RENTRI_GET_RETRIES = 2;
 
 export async function inviaOperazioneRentriCustom(
@@ -556,9 +556,16 @@ export function elencoFormulariRentri(
   return inviaOperazioneRentriCustom(
     cliente,
     "GET",
-    `/formulari/v1.0?${soggettoQuery(cliente, codiceFiscale, numIscrSito).toString()}`,
+    `/formulari/v1.0?${soggettoQuery(cliente, codiceFiscale, numIscrSito).toString()}&${finestraRecente()}`,
     null,
   );
+}
+
+/** Finestra emissione ultimi 30 giorni: senza date il RENTRI risponde lento/instabile (500 dal bridge). */
+function finestraRecente(giorni = 30) {
+  const a = new Date();
+  const da = new Date(a.getTime() - giorni * 86400000);
+  return `data_emissione_da=${da.toISOString().slice(0, 10)}&data_emissione_a=${a.toISOString().slice(0, 10)}`;
 }
 
 /** Dettaglio completo di un formulario RENTRI (numero senza spazi) */
