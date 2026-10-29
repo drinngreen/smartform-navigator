@@ -603,7 +603,7 @@ export function DevRicevuteModule() {
                               size="sm"
                               className="h-9 px-2 text-xs border-destructive/70 text-destructive bg-destructive/10 hover:bg-destructive/20"
                               onClick={() => {
-                                if (!window.confirm("Eliminare questa ricevuta?")) return;
+                                if (!window.confirm("Annullare ricevuta e conferimento? Il carico verrà stornato dalla sua data. Originali e numeri saranno conservati.")) return;
                                 deleteMutation.mutate(r.id);
                               }}
                               title="Elimina"

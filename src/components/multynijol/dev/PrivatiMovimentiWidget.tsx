@@ -21,6 +21,7 @@ const fmtDate = (v: string | null) => {
 };
 
 const INVALIDATE_KEYS = [
+  "giacenze-movimenti-live",
   "privati-movimenti-widget",
   "dev-conferimenti-privato",
   "dev-conferimenti-anno",

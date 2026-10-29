@@ -432,6 +432,8 @@ export function DevPrivatiModule() {
 
   const invalidateInventoryQueries = () => {
     [
+      "giacenze-movimenti-live",
+      "privati-movimenti-widget",
       "dev-conferimenti-anno",
       "dev-ricevute",
       "dev-ricevute-registro",
@@ -651,7 +653,7 @@ export function DevPrivatiModule() {
         let q = supabase
           .from("privati_conferimenti")
           .update({ targa_automezzo: nuovaTarga, modello_automezzo: payload.modello_automezzo } as any)
-          .eq("privato_id", editPrivatoId);
+          .eq("privato_id", editPrivatoId).is("annullato_at", null);
         q = vecchiaTarga
           ? q.or(`targa_automezzo.is.null,targa_automezzo.eq.${vecchiaTarga}`)
           : q.is("targa_automezzo", null);
