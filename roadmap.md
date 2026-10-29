@@ -80,4 +80,4 @@
 - [x] Test di posizione e prova a schermo con accesso reale
 
 ## Annullamento ricevute 29/10/2026
-- [ ] Annullare 00363/2026 e 00364/2026 con conferimenti collegati, conservando originali e numeri; verificare saldi prima/dopo.
+- [x] Annullate 00363/2026 e 00364/2026 con conferimenti collegati; originali e numeri conservati. Verifica UI: solo −80 kg RA e −154 kg MIX oggi, 21/09 identico; 201 test e 5/5 rotte OK.

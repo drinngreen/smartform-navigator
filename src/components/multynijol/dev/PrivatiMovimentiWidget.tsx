@@ -600,7 +600,7 @@ exportToPdf(
                           size="sm"
                           disabled={deletingId === m.id}
                           onClick={() => handleDelete(m)}
-                          title="Elimina movimento e ricalcola giacenze"
+                          title="Annulla movimento e ricevuta"
                         >
                           <Trash2 className="h-4 w-4 text-red-400" />
                         </Button>
