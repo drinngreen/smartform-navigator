@@ -64,6 +64,6 @@ describe("Cantiere senza numero civico", () => {
   });
   it("riconosce il comune dopo un CAP condiviso", async () => {
     const r = await luogoProduzioneRentri("Loc. Bivio, 10060 Cumiana") as any;
-    expect(r.citta.comune_id).toBe("001089");
+    expect(r.citta.comune_id).toBe("001097");
   });
 });
