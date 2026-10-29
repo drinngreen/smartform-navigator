@@ -65,6 +65,7 @@ export function DevMagazzinoModule() {
         .from("movimenti_impianto" as any)
         .select("*")
         .eq("tenant_id", MULTY_TENANT_ID)
+        .or("stato_movimento.is.null,stato_movimento.neq.annullato")
         .order("data_movimento", { ascending: false })
         .limit(100);
       if (error) throw error;

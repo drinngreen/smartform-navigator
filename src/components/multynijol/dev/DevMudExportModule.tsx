@@ -50,7 +50,8 @@ export function DevMudExportModule({ tenantId = MULTY_TENANT_ID, tenantLabel = "
         .select("cer, descrizione_rifiuto, tipo_movimento, quantita_kg, produttore_denominazione, produttore_cf_piva, destinatario_denominazione, destinatario_cf_piva, trasportatore_denominazione, trasportatore_cf_piva, data_movimento")
         .eq("tenant_id", tenantId)
         .gte("data_movimento", start)
-        .lte("data_movimento", end);
+        .lte("data_movimento", end)
+        .or("stato_movimento.is.null,stato_movimento.neq.annullato");
       if (error) throw error;
       return (data || []) as any[];
     },

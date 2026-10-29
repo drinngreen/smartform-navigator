@@ -57,6 +57,7 @@ export function DevFirCartaceoModule() {
         )
         .eq("tenant_id", MULTY_TENANT_ID)
         .in("origine", ORIGINI_CARTACEE)
+        .or("stato_movimento.is.null,stato_movimento.neq.annullato")
         .order("data_movimento", { ascending: false })
         .limit(300);
       if (error) throw error;
