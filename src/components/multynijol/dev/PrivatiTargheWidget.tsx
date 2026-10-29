@@ -49,7 +49,7 @@ export function PrivatiTargheWidget({ tenantId }: { tenantId?: string }) {
     queryKey: ["privati-targhe-widget", tenantId, anno],
     queryFn: async () => {
       const { data: conf, error } = await supabase
-        .from("privati_conferimenti" as any)
+        .from("privati_conferimenti_attivi" as any)
         .select(
           "id, nome_privato, cf_pi, privato_id, targa_automezzo, modello_automezzo, cer, kg_pesati, data, anno_dbt, tenant_id, numero_progressivo, tipo_utenza, note",
         )

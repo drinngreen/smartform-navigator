@@ -4936,6 +4936,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "movimenti_impianto_privati_conferimento_id_fkey"
+            columns: ["privati_conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti_attivi"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "movimenti_impianto_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -5403,6 +5410,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pagamenti_privati_conferimento_id_fkey"
+            columns: ["conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti_attivi"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pagamenti_privati_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -5414,6 +5428,8 @@ export type Database = {
       privati_conferimenti: {
         Row: {
           anno_dbt: number | null
+          annullato_at: string | null
+          annullato_da: string | null
           cer: string
           cf_pi: string | null
           codice_ce: string | null
@@ -5427,6 +5443,7 @@ export type Database = {
           kg_pesati: number
           metodo_pag: string | null
           modello_automezzo: string | null
+          motivo_annullamento: string | null
           nome_privato: string
           note: string | null
           numero_fir: string | null
@@ -5442,6 +5459,8 @@ export type Database = {
         }
         Insert: {
           anno_dbt?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
           cer: string
           cf_pi?: string | null
           codice_ce?: string | null
@@ -5455,6 +5474,7 @@ export type Database = {
           kg_pesati: number
           metodo_pag?: string | null
           modello_automezzo?: string | null
+          motivo_annullamento?: string | null
           nome_privato: string
           note?: string | null
           numero_fir?: string | null
@@ -5470,6 +5490,8 @@ export type Database = {
         }
         Update: {
           anno_dbt?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
           cer?: string
           cf_pi?: string | null
           codice_ce?: string | null
@@ -5483,6 +5505,7 @@ export type Database = {
           kg_pesati?: number
           metodo_pag?: string | null
           modello_automezzo?: string | null
+          motivo_annullamento?: string | null
           nome_privato?: string
           note?: string | null
           numero_fir?: string | null
@@ -6324,6 +6347,8 @@ export type Database = {
       ricevute_privati: {
         Row: {
           anno: number
+          annullato_at: string | null
+          annullato_da: string | null
           conferimento_id: string | null
           created_at: string
           data_emissione: string
@@ -6331,6 +6356,7 @@ export type Database = {
           id: string
           impianto_id: string | null
           importo: number | null
+          motivo_annullamento: string | null
           note: string | null
           numero_ricevuta: string
           pdf_path: string | null
@@ -6341,6 +6367,8 @@ export type Database = {
         }
         Insert: {
           anno?: number
+          annullato_at?: string | null
+          annullato_da?: string | null
           conferimento_id?: string | null
           created_at?: string
           data_emissione?: string
@@ -6348,6 +6376,7 @@ export type Database = {
           id?: string
           impianto_id?: string | null
           importo?: number | null
+          motivo_annullamento?: string | null
           note?: string | null
           numero_ricevuta: string
           pdf_path?: string | null
@@ -6358,6 +6387,8 @@ export type Database = {
         }
         Update: {
           anno?: number
+          annullato_at?: string | null
+          annullato_da?: string | null
           conferimento_id?: string | null
           created_at?: string
           data_emissione?: string
@@ -6365,6 +6396,7 @@ export type Database = {
           id?: string
           impianto_id?: string | null
           importo?: number | null
+          motivo_annullamento?: string | null
           note?: string | null
           numero_ricevuta?: string
           pdf_path?: string | null
@@ -6379,6 +6411,13 @@ export type Database = {
             columns: ["conferimento_id"]
             isOneToOne: false
             referencedRelation: "privati_conferimenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_conferimento_id_fkey"
+            columns: ["conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti_attivi"
             referencedColumns: ["id"]
           },
           {
@@ -7114,7 +7153,223 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      privati_conferimenti_attivi: {
+        Row: {
+          anno_dbt: number | null
+          annullato_at: string | null
+          annullato_da: string | null
+          cer: string | null
+          cf_pi: string | null
+          codice_ce: string | null
+          created_at: string | null
+          data: string | null
+          esito_pesata: string | null
+          gruppo_id: string | null
+          id: string | null
+          impianto_id: string | null
+          importo_pagato: number | null
+          kg_pesati: number | null
+          metodo_pag: string | null
+          modello_automezzo: string | null
+          motivo_annullamento: string | null
+          nome_privato: string | null
+          note: string | null
+          numero_fir: string | null
+          numero_progressivo: number | null
+          prezzo_kg: number | null
+          privato_id: string | null
+          quantita_presunta: number | null
+          stato_rifiuto: string | null
+          targa_automezzo: string | null
+          tenant_id: string | null
+          tipo_utenza: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anno_dbt?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
+          cer?: string | null
+          cf_pi?: string | null
+          codice_ce?: string | null
+          created_at?: string | null
+          data?: string | null
+          esito_pesata?: string | null
+          gruppo_id?: string | null
+          id?: string | null
+          impianto_id?: string | null
+          importo_pagato?: number | null
+          kg_pesati?: number | null
+          metodo_pag?: string | null
+          modello_automezzo?: string | null
+          motivo_annullamento?: string | null
+          nome_privato?: string | null
+          note?: string | null
+          numero_fir?: string | null
+          numero_progressivo?: number | null
+          prezzo_kg?: number | null
+          privato_id?: string | null
+          quantita_presunta?: number | null
+          stato_rifiuto?: string | null
+          targa_automezzo?: string | null
+          tenant_id?: string | null
+          tipo_utenza?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anno_dbt?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
+          cer?: string | null
+          cf_pi?: string | null
+          codice_ce?: string | null
+          created_at?: string | null
+          data?: string | null
+          esito_pesata?: string | null
+          gruppo_id?: string | null
+          id?: string | null
+          impianto_id?: string | null
+          importo_pagato?: number | null
+          kg_pesati?: number | null
+          metodo_pag?: string | null
+          modello_automezzo?: string | null
+          motivo_annullamento?: string | null
+          nome_privato?: string | null
+          note?: string | null
+          numero_fir?: string | null
+          numero_progressivo?: number | null
+          prezzo_kg?: number | null
+          privato_id?: string | null
+          quantita_presunta?: number | null
+          stato_rifiuto?: string | null
+          targa_automezzo?: string | null
+          tenant_id?: string | null
+          tipo_utenza?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privati_conferimenti_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "privati_conferimenti_privato_id_fkey"
+            columns: ["privato_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_privati"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "privati_conferimenti_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ricevute_privati_attive: {
+        Row: {
+          anno: number | null
+          annullato_at: string | null
+          annullato_da: string | null
+          conferimento_id: string | null
+          created_at: string | null
+          data_emissione: string | null
+          gruppo_id: string | null
+          id: string | null
+          impianto_id: string | null
+          importo: number | null
+          motivo_annullamento: string | null
+          note: string | null
+          numero_ricevuta: string | null
+          pdf_path: string | null
+          privato_id: string | null
+          qr_code_data: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anno?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
+          conferimento_id?: string | null
+          created_at?: string | null
+          data_emissione?: string | null
+          gruppo_id?: string | null
+          id?: string | null
+          impianto_id?: string | null
+          importo?: number | null
+          motivo_annullamento?: string | null
+          note?: string | null
+          numero_ricevuta?: string | null
+          pdf_path?: string | null
+          privato_id?: string | null
+          qr_code_data?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anno?: number | null
+          annullato_at?: string | null
+          annullato_da?: string | null
+          conferimento_id?: string | null
+          created_at?: string | null
+          data_emissione?: string | null
+          gruppo_id?: string | null
+          id?: string | null
+          impianto_id?: string | null
+          importo?: number | null
+          motivo_annullamento?: string | null
+          note?: string | null
+          numero_ricevuta?: string | null
+          pdf_path?: string | null
+          privato_id?: string | null
+          qr_code_data?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ricevute_privati_conferimento_id_fkey"
+            columns: ["conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_conferimento_id_fkey"
+            columns: ["conferimento_id"]
+            isOneToOne: false
+            referencedRelation: "privati_conferimenti_attivi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_impianto_id_fkey"
+            columns: ["impianto_id"]
+            isOneToOne: false
+            referencedRelation: "impianti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_privato_id_fkey"
+            columns: ["privato_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_privati"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ricevute_privati_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_assign_fir_numbers: {
@@ -7128,6 +7383,10 @@ export type Database = {
       admin_set_fir_number: {
         Args: { p_form_id: string; p_numero_fir: string }
         Returns: string
+      }
+      annulla_conferimenti_privati: {
+        Args: { p_ids: string[]; p_motivo: string }
+        Returns: Json
       }
       applica_movimento_giacenza: {
         Args: {

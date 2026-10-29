@@ -367,7 +367,7 @@ export function useIconStats(iconId: string | null) {
           const totPagato = pagati.reduce((s, p) => s + (p.importo || 0), 0);
           const totInAttesa = nonPagati.reduce((s, p) => s + (p.importo || 0), 0);
 
-          const { data: conferimenti } = await supabase.from("privati_conferimenti").select("kg_pesati, metodo_pag");
+          const { data: conferimenti } = await (supabase as any).from("privati_conferimenti_attivi").select("kg_pesati, metodo_pag") as { data: { kg_pesati: number | null; metodo_pag: string | null }[] | null };
           const totalKg = conferimenti?.reduce((s, c) => s + (c.kg_pesati || 0), 0) || 0;
           const metodiPag: Record<string, number> = {};
           conferimenti?.forEach((c) => {

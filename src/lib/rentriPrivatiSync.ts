@@ -67,7 +67,7 @@ export async function caricaPrivatiDaInviare(
   invii: InvioPrivatoRow[],
 ): Promise<ConferimentoPrivatoRow[]> {
   const { data, error } = await supabase
-    .from("privati_conferimenti")
+    .from("privati_conferimenti_attivi" as any)
     .select("id, data, cer, kg_pesati, nome_privato, targa_automezzo, modello_automezzo, numero_progressivo")
     .eq("tenant_id", tenantId)
     .order("data", { ascending: false })

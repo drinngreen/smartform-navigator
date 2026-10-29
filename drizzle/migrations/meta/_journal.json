@@ -71,6 +71,20 @@
       "when": 1793006471734,
       "tag": "0009_fix_multy_private_load_frozen_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793265192236,
+      "tag": "0010_private_receipt_traced_cancellation",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793265242315,
+      "tag": "0011_exclude_cancelled_private_annual_limit",
+      "breakpoints": true
     }
   ]
 }

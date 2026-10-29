@@ -78,3 +78,6 @@
 - [x] «Carico di lavorazione» portato a scheda autonoma subito dopo Impianto nella barra principale
 - [x] Rimossa la doppia entrata dentro Impianto (il modulo_operations resta nella sua scheda)
 - [x] Test di posizione e prova a schermo con accesso reale
+
+## Annullamento ricevute 29/10/2026
+- [x] Annullate 00363/2026 e 00364/2026 con conferimenti collegati; originali e numeri conservati. Verifica UI: solo −80 kg RA e −154 kg MIX oggi, 21/09 identico; 201 test e 5/5 rotte OK.

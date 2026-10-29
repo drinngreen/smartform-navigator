@@ -144,7 +144,7 @@ export function DevRegistroGeneraleModule() {
       let privatiRows: any[] = [];
       try {
         const { data, error: privatiError } = await supabase
-          .from("privati_conferimenti" as any)
+          .from("privati_conferimenti_attivi" as any)
           .select("id, tenant_id, data, cer, kg_pesati, nome_privato, numero_progressivo, anno_dbt, targa_automezzo, numero_fir")
           .in("tenant_id", [MULTY_TENANT_ID, NIYOL_TENANT_ID])
           .order("data", { ascending: false })

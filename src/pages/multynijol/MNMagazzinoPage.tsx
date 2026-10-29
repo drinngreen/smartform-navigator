@@ -155,11 +155,11 @@ export default function MNMagazzinoPage() {
       ? supabase.from("limiti_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("cer")
       : supabase.from("limiti_privati" as any).select("*").eq("tenant_id", TENANT_ID).order("cer");
     const confQuery = selectedImpianto
-      ? supabase.from("privati_conferimenti").select("*").eq("impianto_id", selectedImpianto).order("data", { ascending: false }).limit(200)
-      : supabase.from("privati_conferimenti").select("*").eq("tenant_id", TENANT_ID).order("data", { ascending: false }).limit(200);
+      ? supabase.from("privati_conferimenti_attivi" as any).select("*").eq("impianto_id", selectedImpianto).order("data", { ascending: false }).limit(200)
+      : supabase.from("privati_conferimenti_attivi" as any).select("*").eq("tenant_id", TENANT_ID).order("data", { ascending: false }).limit(200);
     const ricQuery = selectedImpianto
-      ? supabase.from("ricevute_privati" as any).select("*").eq("impianto_id", selectedImpianto).order("data_emissione", { ascending: false }).limit(200)
-      : supabase.from("ricevute_privati" as any).select("*").eq("tenant_id", TENANT_ID).order("data_emissione", { ascending: false }).limit(200);
+      ? supabase.from("ricevute_privati_attive" as any).select("*").eq("impianto_id", selectedImpianto).order("data_emissione", { ascending: false }).limit(200)
+      : supabase.from("ricevute_privati_attive" as any).select("*").eq("tenant_id", TENANT_ID).order("data_emissione", { ascending: false }).limit(200);
     const [privRes, limRes, confRes, ricRes] = await Promise.all([privQuery, limQuery, confQuery, ricQuery]);
     setPrivati((privRes.data as any) || []);
     setLimiti((limRes.data as any) || []);
@@ -178,7 +178,7 @@ export default function MNMagazzinoPage() {
 
     const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
     const { data: existing } = await (supabase
-      .from("privati_conferimenti").select("kg_pesati, data")
+      .from("privati_conferimenti_attivi" as any).select("kg_pesati, data")
       .eq("impianto_id", selectedImpianto) as any).eq("privato_id", privatoId).eq("cer", cer).gte("data", yearStart);
 
     const totalAnnuo = (existing || []).reduce((s: number, c: any) => s + Number(c.kg_pesati), 0);

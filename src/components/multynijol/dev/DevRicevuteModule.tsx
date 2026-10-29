@@ -119,7 +119,7 @@ export function DevRicevuteModule() {
     queryKey: ["dev-ricevute-registro", MULTY_TENANT_ID],
     queryFn: async () => {
       const { data, error } = (await (supabase as any)
-        .from("ricevute_privati")
+        .from("ricevute_privati_attive" as any)
         .select("id, numero_ricevuta, anno, importo, note, data_emissione, privato_id, conferimento_id, gruppo_id, conferimento:privati_conferimenti(cer, kg_pesati, prezzo_kg, importo_pagato, data, targa_automezzo, modello_automezzo, metodo_pag, note, numero_progressivo, anno_dbt)")
         .eq("tenant_id", MULTY_TENANT_ID)
         .order("data_emissione", { ascending: false })
@@ -131,7 +131,7 @@ export function DevRicevuteModule() {
       const gruppi = Array.from(new Set(rows.map((r) => r.gruppo_id).filter(Boolean))) as string[];
       if (gruppi.length) {
         const { data: confs } = (await (supabase as any)
-          .from("privati_conferimenti")
+          .from("privati_conferimenti_attivi" as any)
           .select("gruppo_id, cer, kg_pesati, prezzo_kg, importo_pagato")
           .in("gruppo_id", gruppi)) as { data: { gruppo_id: string; cer: string | null; kg_pesati: number | null; prezzo_kg: number | null; importo_pagato: number | null }[] | null };
         const byGruppo = new Map<string, { cer: string | null; kg_pesati: number | null; prezzo_kg: number | null; importo_pagato: number | null }[]>();
@@ -165,12 +165,16 @@ export function DevRicevuteModule() {
 
   // Numero e data della ricevuta seguono sempre il movimento: non sono modificabili qui.
   const deleteMutation = useMutation({
-    mutationFn: async (_id: string) => {
-      throw new Error("La ricevuta non è eliminabile da sola: elimina il movimento collegato");
+    mutationFn: async (id: string) => {
+      const row = ricevute.find((r) => r.id === id);
+      if (!row?.conferimento_id) throw new Error("Conferimento collegato non trovato");
+      const { error } = await (supabase as any).rpc("annulla_conferimenti_privati", { p_ids: [row.conferimento_id], p_motivo: "Annullamento ricevuta richiesto dall’operatore" });
+      if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
-      qc.invalidateQueries({ queryKey: ["dev-ricevute"] });
+      qc.invalidateQueries();
+      toast.success("Ricevuta e conferimento annullati");
     },
     onError: (e: any) => toast.error(e?.message ?? String(e)),
   });
@@ -187,7 +191,8 @@ export function DevRicevuteModule() {
       toast.success("Ricevuta aggiornata");
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
-      qc.invalidateQueries({ queryKey: ["dev-ricevute"] });
+      qc.invalidateQueries();
+      toast.success("Ricevuta e conferimento annullati");
     },
     onError: (e: any) => toast.error(e?.message ?? String(e)),
   });
@@ -598,7 +603,7 @@ export function DevRicevuteModule() {
                               size="sm"
                               className="h-9 px-2 text-xs border-destructive/70 text-destructive bg-destructive/10 hover:bg-destructive/20"
                               onClick={() => {
-                                if (!window.confirm("Eliminare questa ricevuta?")) return;
+                                if (!window.confirm("Annullare ricevuta e conferimento? Il carico verrà stornato dalla sua data. Originali e numeri saranno conservati.")) return;
                                 deleteMutation.mutate(r.id);
                               }}
                               title="Elimina"

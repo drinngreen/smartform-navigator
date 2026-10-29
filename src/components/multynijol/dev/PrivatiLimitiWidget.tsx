@@ -22,7 +22,7 @@ export function PrivatiLimitiWidget({ tenantId }: { tenantId?: string }) {
       // NB: senza .range() PostgREST tronca a 1000 righe → record mancanti nell'elenco/stampa
       // Nessun filtro tenant nella query: serve a contare anche i record di altri tenant
       // (verifica completezza richiesta da Cristina), poi si filtra lato client.
-      const { data, error } = await supabase.from("privati_conferimenti" as any)
+      const { data, error } = await supabase.from("privati_conferimenti_attivi" as any)
         .select("nome_privato, cf_pi, kg_pesati, anno_dbt, data, tenant_id, privato_id")
         .range(0, 9999);
       if (error) throw error;
