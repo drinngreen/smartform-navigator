@@ -189,7 +189,7 @@ export function DevPrivatiModule() {
     queryKey: ["dev-conferimenti-anno", MULTY_TENANT_ID],
     queryFn: async () => {
       const annoCorrente = new Date().getFullYear();
-      const { data, error } = await supabase.from("privati_conferimenti_attivi" as any).select("privato_id, cer, kg_pesati, data").eq("tenant_id", MULTY_TENANT_ID).gte("data", `${annoCorrente}-01-01`);
+      const { data, error } = await (supabase as any).from("privati_conferimenti_attivi").select("privato_id, cer, kg_pesati, data").eq("tenant_id", MULTY_TENANT_ID).gte("data", `${annoCorrente}-01-01`);
       if (error) throw error;
       return data;
     },
@@ -539,7 +539,7 @@ export function DevPrivatiModule() {
   };
 
   const handleDeleteRicevuta = async (ricevutaId: string) => {
-    const { data, error } = await supabase.from("ricevute_privati" as any).select("conferimento_id").eq("id", ricevutaId).single();
+    const { data, error } = await (supabase as any).from("ricevute_privati").select("conferimento_id").eq("id", ricevutaId).single();
     if (error || !data?.conferimento_id) { toast.error("Conferimento collegato non trovato"); return; }
     await handleDeleteConferimento(data.conferimento_id);
     queryClient.invalidateQueries({ queryKey: ["dev-ricevute"] });
