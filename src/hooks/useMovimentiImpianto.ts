@@ -37,6 +37,7 @@ export function useMovimentiImpianto(impiantoId?: string, ruolo?: string) {
       let query = supabase
         .from("movimenti_impianto" as any)
         .select("*")
+        .or("stato_movimento.is.null,stato_movimento.neq.annullato")
         .order("data_movimento", { ascending: false });
 
       if (impiantoId) query = query.eq("impianto_id", impiantoId);
