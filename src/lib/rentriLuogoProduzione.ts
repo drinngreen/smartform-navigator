@@ -74,7 +74,7 @@ export async function luogoProduzioneRentri(
       const idx = Array.from({ length: n }, (_, k) => i + k);
       if (idx.some((j) => usati.has(j) || /\d/.test(tok[j]))) continue;
       if (kwIdx >= 0 && civIdx > kwIdx && i >= kwIdx && i < civIdx) continue;
-      if (kwIdx >= 0 && civIdx < 0 && i >= kwIdx && i <= kwIdx + 3) continue;
+      if (kwIdx >= 0 && civIdx < 0 && i >= kwIdx && i <= kwIdx + 1) continue; // senza civico: esclusi solo tipo via + primo nome
       const id = cerca(norm(tok.slice(i, i + n).join("")));
       if (id) cand.push({ i, n, id });
     }

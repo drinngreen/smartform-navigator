@@ -55,3 +55,15 @@ describe("Cantiere nel campo RENTRI luogo_produzione", () => {
     expect(await luogoProduzioneRentri("Via Trecate 13/B", "Romentino", "NO", "28068")).toEqual({ indirizzo: "Via Trecate", civico: "13/B", cap: "28068", citta: { comune_id: await id("ROMENTINO", "NO") } });
   });
 });
+
+describe("Cantiere senza numero civico", () => {
+  it("riconosce il comune subito dopo la via", async () => {
+    const r = await luogoProduzioneRentri("Via Roma, Piscina (TO)") as any;
+    expect(r.citta.comune_id).toBe("001195");
+    expect(r.indirizzo).toMatch(/Via Roma/);
+  });
+  it("riconosce il comune dopo un CAP condiviso", async () => {
+    const r = await luogoProduzioneRentri("Loc. Bivio, 10060 Cumiana") as any;
+    expect(r.citta.comune_id).toBe("001097");
+  });
+});
