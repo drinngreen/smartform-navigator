@@ -85,6 +85,13 @@
       "when": 1793265242315,
       "tag": "0011_exclude_cancelled_private_annual_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793356381050,
+      "tag": "0012_autorizzazioni_durata_operazioni",
+      "breakpoints": true
     }
   ]
 }
