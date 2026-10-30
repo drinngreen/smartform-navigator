@@ -17,7 +17,7 @@ import {
   statoFisicoRentri,
   provenienzaRentri,
 } from "@/lib/rentriValidazione";
-import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { FIRMA_API_ATTIVA, aspettoEsterioreRentri, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 /** Known field name → normalized lookup key */
@@ -252,9 +252,10 @@ export async function mapFormToRentriPayload(
           pericoloso: hp.length > 0 || eerRaw.includes("*"),
           quantita: {
             valore: Number.isFinite(qty) ? qty : 1,
-            unita_misura: str("litri") ? "lt" : "kg",
+            unita_misura: str("litri") ? "l" : "kg",
           },
           caratteristiche_pericolo: hp,
+          ...aspettoEsterioreRentri(bool("alla_rinfusa") ? "rinfusa" : str("aspetto_esteriore"), str("numero_colli")),
         };
       })(),
 

@@ -12,7 +12,7 @@ import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisici";
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
-import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { FIRMA_API_ATTIVA, aspettoEsterioreRentri, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 type Bag = Record<string, unknown>;
@@ -250,14 +250,14 @@ export async function mapStoreToRentriFirPayload(
       ],
       ...(s(data.intermediarioDenominazione)
         ? {
-            intermediario: {
+            intermediari: [{
               denominazione: s(data.intermediarioDenominazione),
               codice_fiscale: s(data.intermediarioCF),
               nazione_id: "IT",
               ...(s(data.intermediarioNumeroAlbo)
                 ? { numero_iscrizione_albo: s(data.intermediarioNumeroAlbo) }
                 : {}),
-            },
+            }],
           }
         : {}),
       rifiuto: {
@@ -269,9 +269,11 @@ export async function mapStoreToRentriFirPayload(
         pericoloso: hp.length > 0 || eerRaw.includes("*"),
         quantita: {
           valore: Number.isFinite(quantita) && quantita > 0 ? quantita : 1,
-          unita_misura: s(data.unitaMisura) === "lt" ? "lt" : "kg",
+          unita_misura: ["lt", "l"].includes(s(data.unitaMisura)) ? "l" : "kg",
         },
         caratteristiche_pericolo: hp,
+        // Aspetto esteriore: "rinfusa" → rinfusa=true; altrimenti numero di colli
+        ...aspettoEsterioreRentri(s(data.aspettoEsteriore), s(data.numeroColli)),
       },
       dati_trasporto_partenza: {
         conducente: { nome: conducente.nome, cognome: conducente.cognome },

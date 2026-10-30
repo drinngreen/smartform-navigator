@@ -290,7 +290,12 @@ export function emissioneFir(cliente: RentriCliente, firPayload: Record<string, 
     };
     return Promise.resolve(risposta);
   }
-  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload });
+  // Il RENTRI non accetta i dati del trasporto dentro l'emissione (il modello
+  // DatiPartenzaModel non li prevede e li scarta): vengono inviati subito dopo
+  // con POST /formulari/v1.0/{numero_fir}/trasporto (vedi inviaFirmaRentri).
+  const dp = { ...((payload.dati_partenza ?? {}) as Record<string, unknown>) };
+  delete dp.dati_trasporto_partenza;
+  return inviaOperazioneRentri({ cliente, tipo_operazione: "FIR_EMISSIONE", payload: { ...payload, dati_partenza: dp } });
 }
 
 export function dettaglioFir(cliente: RentriCliente, uuidFir: string) {

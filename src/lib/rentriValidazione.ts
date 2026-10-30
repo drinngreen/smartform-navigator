@@ -232,6 +232,7 @@ export function normalizzaPayloadFirRentri(payload: Record<string, unknown>): Re
   if (destinatario) fixCf(destinatario);
   if (Array.isArray(dp.trasportatori)) (dp.trasportatori as Record<string, unknown>[]).forEach(fixCf);
   if (dp.intermediario) fixCf(dp.intermediario as Record<string, unknown>);
+  if (Array.isArray(dp.intermediari)) (dp.intermediari as Record<string, unknown>[]).forEach(fixCf);
 
   const rifiuto = dp.rifiuto as Record<string, unknown> | undefined;
   if (rifiuto) {
