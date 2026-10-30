@@ -207,6 +207,24 @@ async function attendiConfermaEmissione(
   return "";
 }
 
+/** Corpo DatiTrasportoTerrestreModel per POST /formulari/v1.0/{fir}/trasporto. */
+export function datiTrasportoDaPayload(payload: Record<string, unknown>): Record<string, unknown> | null {
+  const t = ((payload as any)?.dati_partenza?.dati_trasporto_partenza ?? null) as Record<string, any> | null;
+  if (!t) return null;
+  const nome = String(t.conducente?.nome ?? "").trim();
+  const cognome = String(t.conducente?.cognome ?? "").trim();
+  const targa = String(t.targa_automezzo ?? "").trim();
+  const rimorchio = String(t.targa_rimorchio ?? "").trim();
+  const dataOra = String(t.data_ora_inizio_trasporto ?? "").trim();
+  if (!nome || !cognome || !dataOra || (!targa && !rimorchio)) return null;
+  return {
+    conducente: { nome, cognome },
+    ...(targa ? { targa_automezzo: targa } : {}),
+    ...(rimorchio ? { targa_rimorchio: rimorchio } : {}),
+    data_ora_inizio_trasporto: dataOra,
+  };
+}
+
 export async function inviaFirmaRentri(
   payload: RentriFirmaPayload
 ): Promise<RentriFirmaResponse> {
@@ -256,10 +274,23 @@ export async function inviaFirmaRentri(
     if (!firId) {
       throw new Error("Il RENTRI ha accettato la richiesta ma non ha ancora confermato il FIR: riprova tra qualche istante senza rifare l'invio");
     }
+    // Dati del primo trasporto (data/ora partenza, targa, conducente): il RENTRI
+    // li vuole con una chiamata separata, altrimenti l'app RENTRI li richiede.
+    const trasporto = datiTrasportoDaPayload(enrichedPayload);
+    let trasporto_inviato = false;
+    let trasporto_errore: string | undefined;
+    if (trasporto) {
+      const { startTrasportoFir } = await import("@/lib/rentriXfirPartenza");
+      const tr = await startTrasportoFir(cliente, firId, trasporto);
+      trasporto_inviato = tr.res.success;
+      if (!tr.res.success) trasporto_errore = tr.res.userMessage || tr.res.error || "Invio dati di trasporto non riuscito";
+    }
     return {
       ...(root as Record<string, unknown>),
       numero_fir: firId,
       firId,
+      trasporto_inviato,
+      ...(trasporto_errore ? { trasporto_errore } : {}),
       pdf_content: root.pdf_content || root.pdfContent || root.pdf_base64 || root.pdfBase64 || undefined,
       qr_code: root.qr_code || root.qrCodeBytes || root.qrCode || root.qr_base64 || root.qrBase64 || undefined,
     } as RentriFirmaResponse;
