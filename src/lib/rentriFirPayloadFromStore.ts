@@ -250,7 +250,7 @@ export async function mapStoreToRentriFirPayload(
       ],
       ...(s(data.intermediarioDenominazione)
         ? {
-            intermediario: {
+            intermediari: [{
               denominazione: s(data.intermediarioDenominazione),
               codice_fiscale: s(data.intermediarioCF),
               nazione_id: "IT",
@@ -269,9 +269,11 @@ export async function mapStoreToRentriFirPayload(
         pericoloso: hp.length > 0 || eerRaw.includes("*"),
         quantita: {
           valore: Number.isFinite(quantita) && quantita > 0 ? quantita : 1,
-          unita_misura: s(data.unitaMisura) === "lt" ? "lt" : "kg",
+          unita_misura: ["lt", "l"].includes(s(data.unitaMisura)) ? "l" : "kg",
         },
         caratteristiche_pericolo: hp,
+        // Aspetto esteriore: "rinfusa" → rinfusa=true; altrimenti numero di colli
+        ...aspettoEsterioreRentri(s(data.aspettoEsteriore), s(data.numeroColli)),
       },
       dati_trasporto_partenza: {
         conducente: { nome: conducente.nome, cognome: conducente.cognome },

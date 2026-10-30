@@ -252,9 +252,10 @@ export async function mapFormToRentriPayload(
           pericoloso: hp.length > 0 || eerRaw.includes("*"),
           quantita: {
             valore: Number.isFinite(qty) ? qty : 1,
-            unita_misura: str("litri") ? "lt" : "kg",
+            unita_misura: str("litri") ? "l" : "kg",
           },
           caratteristiche_pericolo: hp,
+          ...aspettoEsterioreRentri(bool("alla_rinfusa") ? "rinfusa" : str("aspetto_esteriore"), str("numero_colli")),
         };
       })(),
 
