@@ -10,27 +10,15 @@ import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
+import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisici";
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
 import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 type Bag = Record<string, unknown>;
 
-// Codifica ufficiale RENTRI verificata in produzione:
-// S = solido, SP = solido pulverulento, FP = fangoso palabile,
-// L = liquido, VS = vischioso sciropposo, GA = gassoso compresso o liquefatto.
-const STATO_FISICO_MAP: Record<string, string> = {
-  solido: "S",
-  "solido non pulverulento": "S",
-  "solido pulverulento": "SP",
-  polverulento: "SP",
-  fangoso: "FP",
-  "fangoso palabile": "FP",
-  liquido: "L",
-  vischioso: "VS",
-  "vischioso sciropposo": "VS",
-  gassoso: "GA",
-};
+// Codifica ufficiale RENTRI: etichette, codici interni e codici RENTRI degli
+// stati fisici stanno in @/data/statiFisici.
 
 function s(v: unknown): string {
   return v == null ? "" : String(v).trim();
@@ -39,7 +27,7 @@ function s(v: unknown): string {
 const splitIndirizzo = splitIndirizzoRentri;
 
 function statoFisico(raw: string): string {
-  return STATO_FISICO_MAP[raw.trim().toLowerCase()] || "S";
+  return statoFisicoRentriFromList(raw) || "S";
 }
 
 /**

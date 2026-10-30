@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { safeLocalStorage } from '@/lib/safeStorage';
+import { statoFisicoCode as statoFisicoCodeFromList } from '@/data/statiFisici';
 
 // Tipi per lo store FIR - basato su FIRFormComplete.tsx FIRData interface
 export interface FIRDataStore {
@@ -486,14 +487,6 @@ export interface DatabaseFIRData {
   status?: string | null;
 }
 
-const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
-  "solido pulverulento": "1",
-  "solido non pulverulento": "2",
-  "fangoso palabile": "3",
-  "liquido": "4",
-  "aeriforme": "5",
-  "altro": "6",
-};
 
 const toLocalDateTimeInput = (value: unknown): string => {
   if (typeof value !== "string" || !value.trim()) return "";
@@ -584,9 +577,7 @@ export const useFIRStore = create<FIRStore>()(
       },
 
       loadFromDatabase: (dbData: DatabaseFIRData) => {
-        const statoFisicoCode = dbData.stato_fisico
-          ? STATO_FISICO_REVERSE_MAP[dbData.stato_fisico] || ""
-          : "";
+        const statoFisicoCode = statoFisicoCodeFromList(dbData.stato_fisico);
 
         const dbStatus = dbData.status as string | undefined;
         let mappedWorkflow: 'bozza' | 'inviato' | 'chiuso' | null = 'bozza';

@@ -8,6 +8,7 @@
  */
 
 import { isValidCerCode } from "@/lib/cerValidation";
+import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisici";
 
 export const STATO_FISICO_RENTRI = ["S", "SP", "FP", "L", "VS", "GA"] as const;
 
@@ -31,6 +32,8 @@ const STATO_FISICO_ALIAS: Record<string, string> = {
   vs: "VS",
   vischioso: "VS",
   "vischioso sciropposo": "VS",
+  "in polvere o pulverulento": "SP",
+  "in polvere o polverulento": "SP",
   ga: "GA",
   gassoso: "GA",
   gs: "GA",
@@ -40,7 +43,7 @@ const STATO_FISICO_ALIAS: Record<string, string> = {
 export function statoFisicoRentri(raw: unknown): string {
   const v = String(raw ?? "").trim().toLowerCase();
   if (!v) return "";
-  return STATO_FISICO_ALIAS[v] ?? "";
+  return STATO_FISICO_ALIAS[v] || statoFisicoRentriFromList(v);
 }
 
 /** Provenienza: solo "U" (urbano) o "S" (speciale). */

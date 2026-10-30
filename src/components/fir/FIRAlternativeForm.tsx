@@ -10,6 +10,7 @@ import { GLOBAL_RECO, MULTYPROGET, NIYOL, type Soggetto } from "@/data/anagrafic
 import { FIRRentriActions } from "./FIRRentriActions";
 import { resolveFirQrDataUrl, buildPageDecorationsHtml } from "@/lib/firPrintDecorations";
 import { officialPrintFieldGeometry, formatPrintValue } from "@/lib/firPrintLayout";
+import { statoFisicoCode as statoFisicoCodeFromList, statoFisicoDbValue } from "@/data/statiFisici";
 
 import { useFormBridgeFields } from "@/hooks/useFormBridge";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
@@ -163,38 +164,9 @@ function buildSoggettoUpdates(fields: TemplateField[], soggetto: Soggetto, targe
   return updates;
 }
 
-const STATO_FISICO_CODE_MAP: Record<string, string> = {
-  "1": "1",
-  solido_pulverulento: "1",
-  "2": "2",
-  solido_non_pulverulento: "2",
-  "3": "3",
-  fangoso_palabile: "3",
-  "4": "4",
-  liquido: "4",
-  "5": "5",
-  aeriforme: "5",
-  "6": "6",
-  altro: "6",
-};
-
-const STATO_FISICO_LABEL_MAP: Record<string, string> = {
-  "1": "solido pulverulento",
-  "2": "solido non pulverulento",
-  "3": "fangoso palabile",
-  "4": "liquido",
-  "5": "aeriforme",
-  "6": "altro",
-};
-const ALLOWED_STATO_FISICO_LABELS = new Set(Object.values(STATO_FISICO_LABEL_MAP));
 function toStatoFisicoLabel(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const v = value.trim();
-  if (!v) return null;
-  if (STATO_FISICO_LABEL_MAP[v]) return STATO_FISICO_LABEL_MAP[v];
-  const lower = v.toLowerCase();
-  if (ALLOWED_STATO_FISICO_LABELS.has(lower)) return lower;
-  return null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  return statoFisicoDbValue(statoFisicoCodeFromList(value));
 }
 
 export interface FIRAlternativeDraftData {
@@ -301,7 +273,7 @@ function extractTimeValue(value: unknown): string {
 function toStatoFisicoCode(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) return "";
   const normalized = normalizeFieldName(value);
-  return STATO_FISICO_CODE_MAP[normalized] || value.trim();
+  return statoFisicoCodeFromList(normalized) || value.trim();
 }
 
 function getDraftValueForField(

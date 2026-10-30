@@ -12,6 +12,7 @@ import { printOfficialFir } from "@/lib/firOfficialPrint";
 
 import { useMNFIRForms } from "@/hooks/useMNFIRForms";
 import { mapStoreToDatabaseFields } from "@/hooks/useFIRForms";
+import { STATI_FISICI_OPTIONS } from "@/data/statiFisici";
 import { useMNFIRStore, mnInitialFIRData } from "@/stores/mnFirStore";
 import { initializeMNFIRCreation } from "@/lib/initializeMNFIRCreation";
 import { FIR_FIELD_LABELS, type FIRDataStore } from "@/stores/firStore";
@@ -2160,12 +2161,9 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Stato Fisico</label>
                 <select value={d.statoFisico} onChange={(e) => u("statoFisico", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="">--</option>
-                  <option value="1">1 - Solido pulverulento</option>
-                  <option value="2">2 - Solido non pulverulento</option>
-                  <option value="3">3 - Fangoso palabile</option>
-                  <option value="4">4 - Liquido</option>
-                  <option value="5">5 - Aeriforme</option>
-                  <option value="6">6 - Altro</option>
+                  {STATI_FISICI_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
