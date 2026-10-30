@@ -17,7 +17,7 @@ import {
   statoFisicoRentri,
   provenienzaRentri,
 } from "@/lib/rentriValidazione";
-import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { FIRMA_API_ATTIVA, aspettoEsterioreRentri, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 /** Known field name → normalized lookup key */

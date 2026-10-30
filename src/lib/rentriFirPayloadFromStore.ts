@@ -12,7 +12,7 @@ import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisici";
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
-import { FIRMA_API_ATTIVA, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
+import { FIRMA_API_ATTIVA, aspettoEsterioreRentri, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
 
 type Bag = Record<string, unknown>;

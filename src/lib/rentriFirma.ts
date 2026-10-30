@@ -27,7 +27,7 @@ export function aspettoEsterioreRentri(aspetto: string, numeroColli: string): { 
   const a = String(aspetto ?? "").trim().toLowerCase();
   const colli = String(numeroColli ?? "").trim();
   if (a.includes("rinfusa")) return { rinfusa: true };
-  if (a.includes("coll") || colli) return { rinfusa: false, ...(colli ? { numero_colli: colli.slice(0, 50) } : {}) };
+  if (colli) return { rinfusa: false, numero_colli: colli.slice(0, 50) };
   return {};
 }
 
