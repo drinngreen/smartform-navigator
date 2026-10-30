@@ -20,3 +20,4 @@
 - verificaNuoviMovimenti rejects a movement only if it brings a CER below zero or lowers an already-negative balance; why: carichi that improve a negative CER must always be allowed.
 
 - Private receipt cancellation uses annulla_conferimenti_privati atomically and active security-invoker views for operational reads; original weights, dates and numbering remain intact. Why: isolated receipt deletion was blocked and physical deletion loses audit history.
+- FIR emission sends departure transport data (driver, plate, start time) with a separate POST /formulari/v1.0/{fir}/trasporto right after RENTRI confirms the FIR, and rinfusa/numero_colli inside rifiuto; why: DatiPartenzaModel silently drops dati_trasporto_partenza, so the RENTRI app asked for them again.
