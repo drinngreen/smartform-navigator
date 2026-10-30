@@ -50,7 +50,7 @@ const LEGACY_LABEL_BY_CODE: Record<string, string> = {
 };
 
 const norm = (value: unknown): string =>
-  String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  String(value ?? "").trim().toLowerCase().replace(/[_\s]+/g, " ");
 
 const BY_CODE = new Map(STATI_FISICI.map((s) => [s.code, s]));
 const BY_DB = new Map(STATI_FISICI.map((s) => [s.dbValue, s]));

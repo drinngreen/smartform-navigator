@@ -6,15 +6,8 @@ import { toast } from "sonner";
 import { FIRDataStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
+import { statoFisicoDbValue } from "@/data/statiFisici";
 
-const STATO_FISICO_MAP: Record<string, string> = {
-  "1": "solido pulverulento",
-  "2": "solido non pulverulento",
-  "3": "fangoso palabile",
-  "4": "liquido",
-  "5": "aeriforme",
-  "6": "altro",
-};
 
 export interface FIRFormData {
   id: string;
@@ -211,7 +204,7 @@ export function useFIRForms() {
 }
 
 export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFormData> {
-  const statoFisicoValue = storeData.statoFisico ? STATO_FISICO_MAP[storeData.statoFisico] || null : null;
+  const statoFisicoValue = statoFisicoDbValue(storeData.statoFisico);
 
   return {
     produttore_denominazione: storeData.produttoreDenominazione || null,

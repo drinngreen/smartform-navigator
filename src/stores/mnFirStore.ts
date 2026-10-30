@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { FIRDataStore, FIR_FIELD_LABELS, DatabaseFIRData } from './firStore';
 import { safeLocalStorage } from '@/lib/safeStorage';
+import { statoFisicoCode as statoFisicoCodeFromList } from '@/data/statiFisici';
 
 // ALL fields start empty — NO Global Reco / Multyproget presets
 export const mnInitialFIRData: FIRDataStore = {
@@ -144,14 +145,6 @@ export const mnInitialFIRData: FIRDataStore = {
   interMareDataArrivo: "",
 };
 
-const STATO_FISICO_REVERSE_MAP: Record<string, string> = {
-  "solido pulverulento": "1",
-  "solido non pulverulento": "2",
-  "fangoso palabile": "3",
-  "liquido": "4",
-  "aeriforme": "5",
-  "altro": "6",
-};
 
 const toLocalDateTimeInput = (value: unknown): string => {
   if (typeof value !== "string" || !value.trim()) return "";
@@ -238,9 +231,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
           v === null || v === undefined || v === false ? "" : String(v);
         const bool = (v: unknown): boolean =>
           v === true || v === "true" || v === "SI" || v === "si" || v === 1 || v === "1";
-        const statoFisicoCode = dbData.stato_fisico
-          ? STATO_FISICO_REVERSE_MAP[dbData.stato_fisico] || ""
-          : "";
+        const statoFisicoCode = statoFisicoCodeFromList(dbData.stato_fisico);
 
         const dbStatus = dbData.status as string | undefined;
         let mappedWorkflow: 'bozza' | 'inviato' | 'chiuso' | null = 'bozza';
