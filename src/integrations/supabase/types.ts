@@ -742,10 +742,12 @@ export type Database = {
           data_inizio: string | null
           data_scadenza: string | null
           documento_url: string | null
+          durata_anni: number | null
           ente_rilascio: string | null
           id: string
           note: string | null
           numero_autorizzazione: string
+          operazioni: string | null
           tenant_id: string | null
           tipo: string | null
           updated_at: string
@@ -756,10 +758,12 @@ export type Database = {
           data_inizio?: string | null
           data_scadenza?: string | null
           documento_url?: string | null
+          durata_anni?: number | null
           ente_rilascio?: string | null
           id?: string
           note?: string | null
           numero_autorizzazione: string
+          operazioni?: string | null
           tenant_id?: string | null
           tipo?: string | null
           updated_at?: string
@@ -770,10 +774,12 @@ export type Database = {
           data_inizio?: string | null
           data_scadenza?: string | null
           documento_url?: string | null
+          durata_anni?: number | null
           ente_rilascio?: string | null
           id?: string
           note?: string | null
           numero_autorizzazione?: string
+          operazioni?: string | null
           tenant_id?: string | null
           tipo?: string | null
           updated_at?: string

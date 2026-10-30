@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AutorizzazioniAnagraficaEditor, type AutorizzazioniEditorHandle } from "@/components/fir/AutorizzazioniAnagraficaEditor";
+import { useRef } from "react";
 
 export interface AnagraficaModificata {
   id: string;
@@ -44,6 +46,8 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
   const [form, setForm] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const autRef = useRef<AutorizzazioniEditorHandle>(null);
 
   useEffect(() => {
     if (!open || !aziendaId) return;
@@ -53,6 +57,7 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
       setLoading(false);
       if (error || !data) { toast.error("Scheda anagrafica non trovata"); onOpenChange(false); return; }
       const r = data as unknown as Record<string, unknown>;
+      setTenantId((r.tenant_id as string) ?? null);
       setForm(Object.fromEntries(CAMPI.map((c) => [c.key, r[c.key] == null ? "" : String(r[c.key])])));
     })();
   }, [open, aziendaId]);
@@ -63,8 +68,10 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
     setSaving(true);
     const payload = Object.fromEntries(CAMPI.map((c) => [c.key, (form[c.key] ?? "").trim() || null]));
     const { error } = await supabase.from("anagrafica_aziende_mp" as any).update(payload as any).eq("id", aziendaId);
+    if (error) { setSaving(false); toast.error("Anagrafica non aggiornata: " + error.message); return; }
+    const okAut = await autRef.current?.salva();
     setSaving(false);
-    if (error) { toast.error("Anagrafica non aggiornata: " + error.message); return; }
+    if (okAut === false) return;
     toast.success("Anagrafica aggiornata");
     onSaved?.({
       id: aziendaId,
@@ -81,7 +88,7 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Modifica anagrafica</DialogTitle></DialogHeader>
         {loading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
@@ -95,6 +102,7 @@ export function ModificaAnagraficaDialog({ aziendaId, open, onOpenChange, onSave
             ))}
           </div>
         )}
+        {!loading && aziendaId && <AutorizzazioniAnagraficaEditor ref={autRef} clienteId={aziendaId} tenantId={tenantId} />}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Annulla</Button>
           <Button onClick={() => void salva()} disabled={saving || loading}>{saving && <Loader2 className="h-4 w-4 animate-spin" />} Salva e aggiorna il formulario</Button>

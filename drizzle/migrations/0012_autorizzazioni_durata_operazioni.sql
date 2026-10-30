@@ -1,0 +1,2 @@
+ALTER TABLE public.cliente_autorizzazioni ADD COLUMN IF NOT EXISTS durata_anni numeric, ADD COLUMN IF NOT EXISTS operazioni text;
+COMMENT ON COLUMN public.cliente_autorizzazioni.operazioni IS 'Operazioni/destinazioni autorizzate (es. R13, R4, D15)';
