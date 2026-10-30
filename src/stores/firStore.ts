@@ -578,7 +578,6 @@ export const useFIRStore = create<FIRStore>()(
 
       loadFromDatabase: (dbData: DatabaseFIRData) => {
         const statoFisicoCode = statoFisicoCodeFromList(dbData.stato_fisico);
-          : "";
 
         const dbStatus = dbData.status as string | undefined;
         let mappedWorkflow: 'bozza' | 'inviato' | 'chiuso' | null = 'bozza';

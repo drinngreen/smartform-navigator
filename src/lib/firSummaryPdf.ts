@@ -5,15 +5,8 @@
 import { jsPDF } from "jspdf";
 import type { FIRDataStore } from "@/stores/firStore";
 import { buildVidimazioneLabel, type PrintCliente } from "@/lib/firPrintDecorations";
+import { statoFisicoLabel } from "@/data/statiFisici";
 
-const STATO_MAP: Record<string, string> = {
-  "1": "Solido pulverulento",
-  "2": "Solido non pulverulento",
-  "3": "Fangoso palabile",
-  "4": "Liquido",
-  "5": "Aeriforme",
-  "6": "Altro",
-};
 
 interface SummaryOptions {
   qrCodeBase64?: string;
@@ -127,7 +120,7 @@ export async function generateFIRSummaryPdf(
   sectionTitle("6. CARATTERISTICHE DEL RIFIUTO");
   row("Codice EER:", data.codiceEER);
   row("Descrizione:", data.descrizione);
-  row("Stato Fisico:", STATO_MAP[data.statoFisico] || data.statoFisico);
+  row("Stato Fisico:", statoFisicoLabel(data.statoFisico) || data.statoFisico);
   row("Quantità:", `${data.quantita} ${data.unitaMisura}`);
   if (data.pesoRicevuto) row("Peso a Destino:", `${data.pesoRicevuto} kg`);
   row("Provenienza:", data.provenienza === "urbano" ? "Urbano" : "Speciale");

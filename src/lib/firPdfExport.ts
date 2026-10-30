@@ -6,6 +6,7 @@
  */
 import { jsPDF } from "jspdf";
 import type { FIRDataStore } from "@/stores/firStore";
+import { statoFisicoLabel } from "@/data/statiFisici";
 
 // ── A4 dimensions in mm ────────────────────────────────
 const W = 210;
@@ -41,14 +42,6 @@ function mark(doc: jsPDF, xNorm: number, yNorm: number) {
 }
 
 // ── Stato fisico label ──────────────────────────────────
-const STATO_MAP: Record<string, string> = {
-  "1": "Solido pulverulento",
-  "2": "Solido non pulverulento",
-  "3": "Fangoso palabile",
-  "4": "Liquido",
-  "5": "Aeriforme",
-  "6": "Altro",
-};
 
 // ── MAIN EXPORT ─────────────────────────────────────────
 export async function generateFIRPdf(formData: FIRDataStore): Promise<Blob> {
@@ -124,7 +117,7 @@ export async function generateFIRPdf(formData: FIRDataStore): Promise<Blob> {
   // ── SEZIONE 6: CARATTERISTICHE RIFIUTO ──
   txt(doc, d.codiceEER, 0.05, 0.455, 7); // EER in 7pt
   txt(doc, d.descrizione, 0.20, 0.455);
-  txt(doc, STATO_MAP[d.statoFisico] || d.statoFisico, 0.05, 0.475, 5); // Stato in 5pt
+  txt(doc, statoFisicoLabel(d.statoFisico) || d.statoFisico, 0.05, 0.475, 5); // Stato in 5pt
   txt(doc, d.provenienza === "urbano" ? "Urbano" : "Speciale", 0.35, 0.475);
   txt(doc, d.quantita ? `${d.quantita} Kg` : "", 0.55, 0.455);
   txt(doc, d.quantitaLitri ? `${d.quantitaLitri} L` : "", 0.75, 0.455);
