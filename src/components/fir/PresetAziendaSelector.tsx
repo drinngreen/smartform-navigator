@@ -8,6 +8,7 @@ import { ANAGRAFICA_TENANT_ID } from "@/lib/anagraficaSync";
 
 import { supabase } from "@/lib/supabaseClient";
 import { collectMatchingRegistryIds, normalizeRegistryValue } from "@/lib/registryMatching";
+import { filtraTarghe, ordinaTarghePerCognome } from "@/lib/targaOrdinamento";
 import {
   AZIENDE_PRESETS,
   TIPI_AUTORIZZAZIONE,
@@ -112,6 +113,7 @@ export function PresetAziendaSelector({
   const [unitaLocali, setUnitaLocali] = useState<any[]>([]);
   const [sediAnagrafica, setSediAnagrafica] = useState<any[]>([]);
   const [targhe, setTarghe] = useState<any[]>([]);
+  const [targaQuery, setTargaQuery] = useState("");
   const [conducenti, setConducenti] = useState<any[]>([]);
   const [allConducenti, setAllConducenti] = useState<any[]>([]);
   const [partnerDefaults, setPartnerDefaults] = useState<any[]>([]);
@@ -204,6 +206,7 @@ export function PresetAziendaSelector({
     autoAutRef.current = "";
     setQuery("");
     setResults([]);
+    setTargaQuery("");
     setLoadedCf("");
     if (emit) {
       onSelectAzienda({ nome: "", indirizzo: "", cf: "", piva: "" });
@@ -381,12 +384,14 @@ export function PresetAziendaSelector({
       setCantieri([]);
       setUnitaLocali([]);
       setTarghe([]);
+      setTargaQuery("");
       setConducenti([]);
       setPartnerDefaults([]);
       return;
     }
     let cancelled = false;
     setLoadingDeps(true);
+    setTargaQuery("");
     (async () => {
       const [a, c, t, k, p, ul, an] = await Promise.all([
         supabase
@@ -671,6 +676,13 @@ export function PresetAziendaSelector({
     for (const r of results) add(r);
     return Array.from(byCompany.values());
   }, [usaSoloRuolo, roleCompanies, allCompanies, results, q]);
+
+  /** Tendina targhe: prima il cognome dell'autista in ordine alfabetico, poi la
+   *  targa; la casella sopra filtra su entrambi così non serve scorrere l'elenco. */
+  const targheMostrate = useMemo(
+    () => filtraTarghe(ordinaTarghePerCognome(targhe), targaQuery),
+    [targhe, targaQuery],
+  );
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 space-y-2">
