@@ -257,7 +257,7 @@ export async function mapStoreToRentriFirPayload(
               ...(s(data.intermediarioNumeroAlbo)
                 ? { numero_iscrizione_albo: s(data.intermediarioNumeroAlbo) }
                 : {}),
-            },
+            }],
           }
         : {}),
       rifiuto: {

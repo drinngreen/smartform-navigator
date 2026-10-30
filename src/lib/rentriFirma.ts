@@ -19,6 +19,18 @@ export function splitIndirizzoRentri(raw: string): { indirizzo: string; cap: str
   return { indirizzo: via || testo, cap };
 }
 
+/**
+ * Aspetto esteriore per il RENTRI (DatiRifiutoModel): "rinfusa" → { rinfusa: true },
+ * altrimenti { rinfusa: false, numero_colli } se indicato. Senza scelta non invia nulla.
+ */
+export function aspettoEsterioreRentri(aspetto: string, numeroColli: string): { rinfusa?: boolean; numero_colli?: string } {
+  const a = String(aspetto ?? "").trim().toLowerCase();
+  const colli = String(numeroColli ?? "").trim();
+  if (a.includes("rinfusa")) return { rinfusa: true };
+  if (a.includes("coll") || colli) return { rinfusa: false, ...(colli ? { numero_colli: colli.slice(0, 50) } : {}) };
+  return {};
+}
+
 /** Nome e cognome del conducente: mai inventare il cognome copiando il nome. */
 export function splitConducente(nome: string, cognome: string, completo: string): { nome: string; cognome: string } {
   const n = String(nome ?? "").trim();
