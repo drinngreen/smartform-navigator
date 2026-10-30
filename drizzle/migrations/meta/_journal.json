@@ -92,6 +92,13 @@
       "when": 1793356381050,
       "tag": "0012_autorizzazioni_durata_operazioni",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793364962489,
+      "tag": "0013_fir_forms_stato_fisico_nuove_voci",
+      "breakpoints": true
     }
   ]
 }
