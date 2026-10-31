@@ -191,8 +191,6 @@ export function DevRicevuteModule() {
       toast.success("Ricevuta aggiornata");
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["dev-ricevute-registro"] });
-      qc.invalidateQueries();
-      toast.success("Ricevuta e conferimento annullati");
     },
     onError: (e: any) => toast.error(e?.message ?? String(e)),
   });

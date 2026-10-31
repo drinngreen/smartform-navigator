@@ -35,28 +35,37 @@ Deno.serve(async (req) => {
 
     // Export each table in pages. A read error must fail the whole backup:
     // an empty table in the archive would silently lose data on restore.
-    const PAGE_SIZE = 1000;
+    // Adaptive page size: wide JSONB tables (e.g. rentri_operazioni) time out
+    // at 1000 rows, so on timeout the page shrinks and is retried.
+    const MAX_PAGE = 1000;
+    const MIN_PAGE = 10;
     const MAX_ROWS = 200000;
     const data: Record<string, any[]> = {};
     for (const tableName of tableNames) {
       const rowsAll: any[] = [];
       let from = 0;
+      let pageSize = MAX_PAGE;
       while (from < MAX_ROWS) {
         const { data: page, error } = await supabase
           .from(tableName)
           .select("*")
-          .range(from, from + PAGE_SIZE - 1);
+          .range(from, from + pageSize - 1);
 
         if (error) {
+          const isTimeout = error.code === "57014" || /timeout/i.test(error.message);
+          if (isTimeout && pageSize > MIN_PAGE) {
+            pageSize = Math.max(MIN_PAGE, Math.floor(pageSize / 4));
+            continue;
+          }
           throw new Error(
-            `Backup aborted: failed to read table "${tableName}" (rows ${from}-${from + PAGE_SIZE - 1}): ${error.message}`
+            `Backup aborted: failed to read table "${tableName}" (rows ${from}-${from + pageSize - 1}): ${error.message}`
           );
         }
 
         const batch = page || [];
         rowsAll.push(...batch);
-        if (batch.length < PAGE_SIZE) break;
-        from += PAGE_SIZE;
+        if (batch.length < pageSize) break;
+        from += pageSize;
       }
 
       if (rowsAll.length >= MAX_ROWS) {
