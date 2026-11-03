@@ -61,7 +61,21 @@ export async function luogoProduzioneRentri(
 
   if (comune.trim()) {
     comuneId = cerca(norm(comune)) || byName[norm(comune)] || "";
-    if (!comuneId) throw new Error(`Comune del cantiere «${comune}» non riconosciuto: controlla nome e provincia`);
+    if (!comuneId) {
+      // Nome abbreviato (es. «San Lazzaro» → «San Lazzaro di Savena»): accettato solo se unico
+      // per provincia, oppure confermato dal CAP indicato.
+      const nc = norm(comune);
+      const ids = new Set<string>();
+      for (const [k, v] of Object.entries(byName)) {
+        const [nome, sg] = k.split("|");
+        if (!nome.startsWith(nc) || nome === nc) continue;
+        if (sigla ? sg === sigla : !k.includes("|")) ids.add(v);
+      }
+      let lista = [...ids];
+      if (lista.length > 1 && capTrovato && byCap[capTrovato]) lista = lista.filter((id) => id === byCap[capTrovato]);
+      if (lista.length === 1) comuneId = lista[0];
+      else throw new Error(`Comune del cantiere «${comune}» non riconosciuto: scrivi il nome completo del comune (es. «San Lazzaro di Savena») e la provincia`);
+    }
     // Togli dal testo il nome del comune se è stato ripetuto nell'indirizzo
     const nc = norm(comune);
     for (let n = 4; n >= 1; n--) for (let i = 0; i + n <= tok.length; i++)
