@@ -68,3 +68,8 @@ export function formatHpLabel(codice: string): string {
 export function isCerPericoloso(codice: string): boolean {
   return String(codice || "").includes("*");
 }
+
+/** Codifica ufficiale RENTRI (rentri-enum-1.0.xsd): sempre due cifre, es. "HP04". */
+export function hpListRentri(input: string | string[] | null | undefined): string[] {
+  return normalizeHpList(input).map((c) => `HP${c.slice(2).padStart(2, "0")}`);
+}

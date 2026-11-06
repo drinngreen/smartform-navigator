@@ -7,7 +7,7 @@
  */
 
 import { TENANT_RENTRI } from "@/lib/rentriBlockCodes";
-import { normalizeHpList } from "@/data/hpCaratteristiche";
+import { normalizeHpList, hpListRentri } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisici";
@@ -271,7 +271,7 @@ export async function mapStoreToRentriFirPayload(
           valore: Number.isFinite(quantita) && quantita > 0 ? quantita : 1,
           unita_misura: ["lt", "l"].includes(s(data.unitaMisura)) ? "l" : "kg",
         },
-        caratteristiche_pericolo: hp,
+        caratteristiche_pericolo: hpListRentri(hp),
         // Aspetto esteriore: "rinfusa" → rinfusa=true; altrimenti numero di colli
         ...aspettoEsterioreRentri(s(data.aspettoEsteriore), s(data.numeroColli)),
       },

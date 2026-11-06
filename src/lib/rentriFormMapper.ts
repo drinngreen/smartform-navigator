@@ -8,7 +8,7 @@
  */
 
 import { TENANT_RENTRI, type TenantRentriConfig } from "@/lib/rentriBlockCodes";
-import { normalizeHpList } from "@/data/hpCaratteristiche";
+import { normalizeHpList, hpListRentri } from "@/data/hpCaratteristiche";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import {
