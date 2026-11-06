@@ -254,7 +254,7 @@ export async function mapFormToRentriPayload(
             valore: Number.isFinite(qty) ? qty : 1,
             unita_misura: str("litri") ? "l" : "kg",
           },
-          caratteristiche_pericolo: hp,
+          caratteristiche_pericolo: hpListRentri(hp),
           ...aspettoEsterioreRentri(bool("alla_rinfusa") ? "rinfusa" : str("aspetto_esteriore"), str("numero_colli")),
         };
       })(),
