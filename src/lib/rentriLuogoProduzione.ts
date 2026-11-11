@@ -34,15 +34,29 @@ export async function luogoProduzioneRentri(
   const { byName, byCap } = await elenchiComuni();
   const sigle = new Set(Object.keys(byName).filter((k) => k.includes("|")).map((k) => k.split("|")[1]));
 
-  const tok = raw.replace(/[,;]/g, " ").replace(/\s+-\s+/g, " ").split(/\s+/).filter(Boolean);
+  // Ogni parola conserva la forma scritta (con virgole e trattini) per ricomporre
+  // l'indirizzo fedelmente; la forma pulita serve solo a riconoscere CAP, comune e civico.
+  const orig: string[] = [];
+  const tok: string[] = [];
+  for (const parola of raw.replace(/([,;])(?=\S)/g, "$1 ").split(/\s+/).filter(Boolean)) {
+    const pulita = parola.replace(/^[,;]+|[,;]+$/g, "");
+    if (!pulita || pulita === "-") {
+      if (orig.length) orig[orig.length - 1] += pulita === "-" ? " -" : parola;
+      continue;
+    }
+    orig.push(parola);
+    tok.push(pulita);
+  }
   const usati = new Set<number>();
 
   // CAP
   let capTrovato = cap.trim();
   tok.forEach((t, i) => { if (/^\d{5}$/.test(t)) { if (!capTrovato) capTrovato = t; usati.add(i); } });
 
-  // Sigla provincia: "(TO)" oppure ultima parola di 2 lettere
+  // Sigla provincia: "(TO)" oppure ultima parola di 2 lettere.
+  // Una provincia scritta per esteso («Torino») non è una sigla: non va usata come filtro.
   let sigla = provincia.trim().toUpperCase();
+  if (sigla && !sigle.has(sigla)) sigla = "";
   tok.forEach((t, i) => {
     const m = t.match(/^\(([A-Za-z]{2})\)$/);
     if (m) { if (!sigla) sigla = m[1].toUpperCase(); usati.add(i); }
@@ -60,7 +74,12 @@ export async function luogoProduzioneRentri(
   const cerca = (k: string) => (sigla ? byName[`${k}|${sigla}`] : byName[k]) || "";
 
   if (comune.trim()) {
-    comuneId = cerca(norm(comune)) || byName[norm(comune)] || "";
+    comuneId = cerca(norm(comune)) || "";
+    if (!comuneId && sigla && byName[norm(comune)]) {
+      // Il comune esiste ma in un'altra provincia: non si cambia la provincia scritta.
+      throw new Error(`Il comune del cantiere «${comune}» non risulta in provincia di ${sigla}: controlla comune e provincia`);
+    }
+    if (!comuneId) comuneId = byName[norm(comune)] || "";
     if (!comuneId) {
       // Nome abbreviato (es. «San Lazzaro» → «San Lazzaro di Savena»): accettato solo se unico
       // per provincia, oppure confermato dal CAP indicato.
@@ -114,12 +133,28 @@ export async function luogoProduzioneRentri(
     if (!comuneId) throw new Error("Comune del cantiere non riconosciuto: completa il luogo di produzione con comune, provincia e CAP");
   }
 
-  // Via e civico
-  const inizio = kwIdx >= 0 ? kwIdx : 0;
-  const resto = tok.map((t, i) => ({ t, i })).filter(({ i }) => i >= inizio && !usati.has(i));
-  const ci = resto.findIndex(({ t }) => CIVICO.test(t));
-  const via = (ci >= 0 ? resto.slice(0, ci) : resto).map(({ t }) => t).join(" ").trim();
-  const civico = ci >= 0 ? resto[ci].t.replace(/^(N\.?|NR\.?)/i, "") : "";
+  // Civico: il primo numero dopo il tipo di via (senza tipo di via, il primo numero libero)
+  let civPos = kwIdx >= 0
+    ? civIdx
+    : tok.findIndex((t, i) => !usati.has(i) && CIVICO.test(t) && !/^\d{5}$/.test(t));
+  // Se dopo il civico è scritto altro (es. «capannone B»), il civico resta al suo posto
+  // nel testo: separarlo cambierebbe l'ordine di ciò che è stato scritto.
+  if (civPos >= 0 && tok.some((_, i) => i > civPos && !usati.has(i))) civPos = -1;
+  const civico = civPos >= 0 ? tok[civPos].replace(/^(N\.?|NR\.?)/i, "") : "";
+  if (civPos >= 0) {
+    usati.add(civPos);
+    // «n. 5» / «N° 5»: la sigla del numero civico non resta nell'indirizzo
+    if (civPos > 0 && /^(N|NR|NUM|N°)\.?$/i.test(tok[civPos - 1]) && !usati.has(civPos - 1)) usati.add(civPos - 1);
+  }
+
+  // Indirizzo fedele a quanto scritto: ragione sociale o nome del cantiere, via e note
+  // restano come sono; si tolgono solo CAP, comune, sigla provincia e civico, che il
+  // RENTRI riceve nei propri campi.
+  const via = orig
+    .filter((_, i) => !usati.has(i))
+    .join(" ")
+    .replace(/^[\s,;-]+|[\s,;-]+$/g, "")
+    .replace(/\s+/g, " ");
   if (!via) throw new Error("Via del cantiere mancante: scrivi l'indirizzo del luogo di produzione");
 
   return {

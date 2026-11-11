@@ -37,7 +37,7 @@ describe("Cantiere nel campo RENTRI luogo_produzione", () => {
     ["VIALE DELLO SPORT 34, 21026 GAVIRATE VA", "VIALE DELLO SPORT", "34", "21026", "GAVIRATE|VA"],
     ["VIA VIRGILIO MONTINI 67 LUMENZZANE 25065 BS", "VIA VIRGILIO MONTINI", "67", "25065", "LUMEZZANE|BS"],
     ["Piossasco via regione tetti scaglia 9/4 10045", "via regione tetti scaglia", "9/4", "10045", "PIOSSASCO|TO"],
-    ["PARCO DI CALISTHENICS  Viale delle Piagge 25  56124  PISA  PI", "Viale delle Piagge", "25", "56124", "PISA|PI"],
+    ["PARCO DI CALISTHENICS  Viale delle Piagge 25  56124  PISA  PI", "PARCO DI CALISTHENICS Viale delle Piagge", "25", "56124", "PISA|PI"],
     ["VIA ROMA DESTRA 108  30016  JESOLO  VE", "VIA ROMA DESTRA", "108", "30016", "JESOLO|VE"],
     ["VIA ALBA 11 MONCALIERI 10024 TO", "VIA ALBA", "11", "10024", "MONCALIERI|TO"],
     ["VIA BUNIVA 7a 10060 None (TO)", "VIA BUNIVA", "7a", "10060", "NONE|TO"],
@@ -65,5 +65,25 @@ describe("Cantiere senza numero civico", () => {
   it("riconosce il comune dopo un CAP condiviso", async () => {
     const r = await luogoProduzioneRentri("Loc. Bivio, 10060 Cumiana") as any;
     expect(r.citta.comune_id).toBe("001097");
+  });
+});
+
+describe("Cantiere trasmesso come è stato scritto", () => {
+  const id = async (nome: string, sigla: string) => (await elenchiComuni()).byName[`${nome}|${sigla}`];
+  it("conserva la ragione sociale prima della via", async () => {
+    expect(await luogoProduzioneRentri("Cantiere Rossi S.r.l. - Via Roma n. 5, 10060 Piscina (TO)")).toEqual({
+      indirizzo: "Cantiere Rossi S.r.l. - Via Roma", civico: "5", cap: "10060", citta: { comune_id: "001195" },
+    });
+  });
+  it("non sposta il civico quando dopo c'è altro testo", async () => {
+    expect(await luogoProduzioneRentri("EDIL BIANCHI SRL, Via Torino 12, capannone B", "Orbassano", "TO", "10043")).toEqual({
+      indirizzo: "EDIL BIANCHI SRL, Via Torino 12, capannone B", cap: "10043", citta: { comune_id: await id("ORBASSANO", "TO") },
+    });
+  });
+  it("non cambia la provincia scritta", async () => {
+    await expect(luogoProduzioneRentri("Via Trecate 13/B", "Romentino", "TO", "28068")).rejects.toThrow(/provincia di TO/);
+  });
+  it("accetta la provincia scritta per esteso", async () => {
+    expect((await luogoProduzioneRentri("Via Trecate 13/B", "Romentino", "Novara", "28068"))?.citta.comune_id).toBe(await id("ROMENTINO", "NO"));
   });
 });
