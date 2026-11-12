@@ -86,6 +86,8 @@ export function DevVistaVeloceModule() {
           cer: String(first(f.codice_eer, fd.cer, fd.codice_eer) ?? "—"),
           produttore: String(first(f.produttore_denominazione, fd.produttore_denominazione) ?? "—"),
           destinatario: String(first(f.destinatario_denominazione, fd.destinatario_denominazione) ?? "—"),
+          quantitaDichiarata: first(f.quantita, fd.quantita),
+          unitaDichiarata: String(first(f.unita_misura, fd.unita_misura, fd.unitaMisura) ?? "kg"),
           kgDestino: first(fd.quantita_destino, fd.peso_ricevuto, fd.quantita_accettata),
           data: first(fd.data_emissione, f.data_partenza, fd.data_partenza, f.created_at),
         };
@@ -147,11 +149,11 @@ export function DevVistaVeloceModule() {
       <div className="overflow-x-auto rounded-xl border border-border/30">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs uppercase text-muted-foreground">
-            <tr>{["Tipo", "N. FIR", "Stato", "Data", "CER", "Produttore", "Destinatario", "Kg a destino", ""].map((h) => <th key={h} className="p-2 text-left">{h}</th>)}</tr>
+            <tr>{["Tipo", "N. FIR", "Stato", "Data", "CER", "Produttore", "Destinatario", "Quantità dichiarata", "Kg a destino", ""].map((h) => <th key={h} className="p-2 text-left">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={9} className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>}
-            {!isLoading && righe.length === 0 && <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Nessun formulario</td></tr>}
+            {isLoading && <tr><td colSpan={10} className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>}
+            {!isLoading && righe.length === 0 && <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Nessun formulario</td></tr>}
             {righe.map((r) => (
               <tr key={r.form.id} className="cursor-pointer border-t border-border/10 hover:bg-muted/20" onClick={() => setAperto({ form: r.form, modo: "vedi" })}>
                 <td className="p-2"><Badge variant="outline" className={TIPI[r.tipo].cls}>{TIPI[r.tipo].label}</Badge>{r.cartaceo && <Badge variant="outline" className="ml-1">Cartaceo</Badge>}</td>
@@ -161,7 +163,8 @@ export function DevVistaVeloceModule() {
                 <td className="p-2 font-mono">{r.cer}</td>
                 <td className="p-2">{r.produttore}</td>
                 <td className="p-2">{r.destinatario}</td>
-                <td className="p-2 font-mono">{r.kgDestino != null ? `${r.kgDestino} kg` : "—"}</td>
+                <td className="p-2 font-mono whitespace-nowrap">{r.quantitaDichiarata != null ? `${r.quantitaDichiarata} ${r.unitaDichiarata}` : "—"}</td>
+                <td className="p-2 font-mono whitespace-nowrap">{r.kgDestino != null ? `${r.kgDestino} kg` : "—"}</td>
                 <td className="p-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" title="Vedi" onClick={() => setAperto({ form: r.form, modo: "vedi" })}><Eye className="h-4 w-4" /></Button>
