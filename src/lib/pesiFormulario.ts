@@ -59,7 +59,8 @@ export type StatoPesoDestino =
   | "in_arrivo"
   | "peso_non_comunicato"
   | "non_verificato"
-  | "registro_senza_peso";
+  | "registro_senza_peso"
+  | "annullato";
 
 export interface InfoPesoDestino {
   stato: StatoPesoDestino;
@@ -69,7 +70,7 @@ export interface InfoPesoDestino {
   nota: string;
 }
 
-const VIAGGIO_CONCLUSO = /CHIUS|CONCLUS|RESPINT|COMPLETAT|ANNULL/i;
+const VIAGGIO_CONCLUSO = /CHIUS|CONCLUS|RESPINT|COMPLETAT/i;
 
 export function infoPesoDestino(o: {
   pesoDestino: number | null;
@@ -96,6 +97,13 @@ export function infoPesoDestino(o: {
       stato: "registro_senza_peso",
       testo: "nel registro, senza peso",
       nota: "Il formulario è già scritto nel registro, ma i kg accettati a destino non sono stati registrati.",
+    };
+  }
+  if (/ANNULL/i.test(String(o.statoRentri ?? "").toUpperCase())) {
+    return {
+      stato: "annullato",
+      testo: "annullato",
+      nota: `Il RENTRI riporta il formulario annullato (${o.statoRentri}): nessun peso a destino.`,
     };
   }
   if (!o.inRentri) {
