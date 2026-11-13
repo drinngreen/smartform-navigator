@@ -76,11 +76,12 @@ export function DevVistaVeloceModule() {
     },
   });
 
-  // Kg a destino già scritti nel registro (sola lettura).
-  const { data: pesiRegistro = new Map<string, number>() } = useQuery({
+  // Kg a destino già scritti nel registro (sola lettura) + formulari già presenti.
+  const { data: pesiRegistro = { pesi: new Map<string, number>(), chiavi: new Set<string>() } } = useQuery({
     queryKey: ["vista-veloce-pesi-registro"],
     queryFn: async () => {
       const m = new Map<string, number>();
+      const chiavi = new Set<string>();
       for (const tid of [MULTY_TENANT_ID, NIYOL_TENANT_ID]) {
         for (let from = 0; ; from += 1000) {
           const { data, error } = await supabase.from("registro_generale")
@@ -89,13 +90,15 @@ export function DevVistaVeloceModule() {
           if (error) throw error;
           for (const r of data || []) {
             const k = normFirPesi(r.numero_formulario);
+            if (!k) continue;
+            chiavi.add(k);
             const n = Number(r.peso_destino ?? r.quantita);
-            if (k && n > 0 && !m.has(k)) m.set(k, n);
+            if (n > 0 && !m.has(k)) m.set(k, n);
           }
           if (!data || data.length < 1000) break;
         }
       }
-      return m;
+      return { pesi: m, chiavi };
     },
   });
 
@@ -140,7 +143,7 @@ export function DevVistaVeloceModule() {
             const k = normFirPesi(f.numero_fir);
             const rr = pesiRentri.get(k);
             const pLoc = pesoPartenzaLocale(f);
-            const dLoc = pesoDestinoLocale(f, pesiRegistro.get(k));
+            const dLoc = pesoDestinoLocale(f, pesiRegistro.pesi.get(k));
             return {
               kgPartenza: rr?.partenza ?? pLoc,
               partenzaRentri: rr?.partenza != null,
@@ -151,6 +154,7 @@ export function DevVistaVeloceModule() {
                 inRentri: rr != null,
                 statoRentri: rr?.stato,
                 cartaceo: fd.formato_fir === "cartaceo",
+                inRegistro: pesiRegistro.chiavi.has(k),
                 rentriLetto: rentriFetched && !rentriErr,
               }),
             };
@@ -218,7 +222,7 @@ export function DevVistaVeloceModule() {
       {rentriFetching && <p className="text-xs text-muted-foreground">Sto leggendo i pesi dal RENTRI…</p>}
       {rentriErr && <p className="text-xs text-destructive">Pesi RENTRI non letti: {(rentriErr as Error).message}. Sono mostrati i pesi salvati nel programma.</p>}
       <p className="text-xs text-muted-foreground">
-        Se i kg a destino mancano: <strong>non inviato</strong> = bozza mai partita, <strong>non registrato</strong> = FIR cartaceo da scrivere nel registro, <strong>in arrivo</strong> = partito, il destinatario non ha ancora accettato, <strong>senza kg accettati</strong> = viaggio chiuso sul RENTRI senza peso comunicato, <strong>non verificato</strong> = il RENTRI non è ancora stato letto. Passa il mouse sulla scritta per il dettaglio.
+        Se i kg a destino mancano: <strong>non inviato</strong> = bozza mai partita, <strong>non registrato</strong> = FIR cartaceo da scrivere nel registro, <strong>in arrivo</strong> = partito, il destinatario non ha ancora accettato, <strong>senza kg accettati</strong> = viaggio chiuso sul RENTRI senza peso comunicato, <strong>nel registro, senza peso</strong> = già registrato ma i kg a destino non sono stati scritti, <strong>non verificato</strong> = il RENTRI non è ancora stato letto. Passa il mouse sulla scritta per il dettaglio.
       </p>
       <div className="overflow-x-auto rounded-xl border border-border/30">
         <table className="w-full text-sm">
