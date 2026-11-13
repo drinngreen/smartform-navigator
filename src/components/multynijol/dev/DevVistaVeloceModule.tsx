@@ -100,7 +100,7 @@ export function DevVistaVeloceModule() {
   });
 
   // Pesi letti dal RENTRI (partenza e kg accettati), solo lettura, nessuna scrittura.
-  const { data: pesiRentri = new Map<string, { partenza: number | null; destino: number | null; stato: string | null }>(), isFetching: rentriFetching, refetch: rileggiRentri, error: rentriErr } = useQuery({
+  const { data: pesiRentri = new Map<string, { partenza: number | null; destino: number | null; stato: string | null }>(), isFetching: rentriFetching, refetch: rileggiRentri, error: rentriErr, isFetched: rentriFetched } = useQuery({
     queryKey: ["vista-veloce-pesi-rentri"],
     staleTime: 15 * 60 * 1000,
     retry: false,
@@ -151,6 +151,7 @@ export function DevVistaVeloceModule() {
                 inRentri: rr != null,
                 statoRentri: rr?.stato,
                 cartaceo: fd.formato_fir === "cartaceo",
+                rentriLetto: rentriFetched && !rentriErr,
               }),
             };
           })(),
@@ -217,7 +218,7 @@ export function DevVistaVeloceModule() {
       {rentriFetching && <p className="text-xs text-muted-foreground">Sto leggendo i pesi dal RENTRI…</p>}
       {rentriErr && <p className="text-xs text-destructive">Pesi RENTRI non letti: {(rentriErr as Error).message}. Sono mostrati i pesi salvati nel programma.</p>}
       <p className="text-xs text-muted-foreground">
-        Se i kg a destino mancano: <strong>non inviato</strong> = bozza mai partita, <strong>non registrato</strong> = FIR cartaceo da scrivere nel registro, <strong>in arrivo</strong> = partito, il destinatario non ha ancora accettato, <strong>senza kg accettati</strong> = viaggio chiuso sul RENTRI senza peso comunicato. Passa il mouse sulla scritta per il dettaglio.
+        Se i kg a destino mancano: <strong>non inviato</strong> = bozza mai partita, <strong>non registrato</strong> = FIR cartaceo da scrivere nel registro, <strong>in arrivo</strong> = partito, il destinatario non ha ancora accettato, <strong>senza kg accettati</strong> = viaggio chiuso sul RENTRI senza peso comunicato, <strong>non verificato</strong> = il RENTRI non è ancora stato letto. Passa il mouse sulla scritta per il dettaglio.
       </p>
       <div className="overflow-x-auto rounded-xl border border-border/30">
         <table className="w-full text-sm">
