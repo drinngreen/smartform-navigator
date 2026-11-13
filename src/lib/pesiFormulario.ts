@@ -57,7 +57,8 @@ export type StatoPesoDestino =
   | "non_inviato"
   | "cartaceo_non_registrato"
   | "in_arrivo"
-  | "peso_non_comunicato";
+  | "peso_non_comunicato"
+  | "non_verificato";
 
 export interface InfoPesoDestino {
   stato: StatoPesoDestino;
@@ -74,9 +75,18 @@ export function infoPesoDestino(o: {
   inRentri: boolean;
   statoRentri?: string | null;
   cartaceo: boolean;
+  /** false finché il RENTRI non ha risposto: senza questa lettura non si può affermare nulla. */
+  rentriLetto: boolean;
 }): InfoPesoDestino {
   if (o.pesoDestino != null) {
     return { stato: "accettato", testo: "", nota: "Kg accettati dal destinatario." };
+  }
+  if (!o.rentriLetto) {
+    return {
+      stato: "non_verificato",
+      testo: "non verificato",
+      nota: "Il RENTRI non è ancora stato letto (o non ha risposto): non posso dire se il formulario è partito.",
+    };
   }
   if (!o.inRentri) {
     return o.cartaceo
