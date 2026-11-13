@@ -13,6 +13,8 @@ import { FirDettaglioLettura } from "@/components/fir/FirDettaglioLettura";
 import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
+import { pesoPartenzaLocale, pesoDestinoLocale, pesiDaRentri, normFirPesi } from "@/lib/pesiFormulario";
+import { leggiTutteLePagineFormulari } from "@/lib/rentriFirIntermediario";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 const NIYOL_TENANT_ID = "819c783e-78dd-4080-8265-802e75b0d813";
@@ -48,6 +50,7 @@ const fmtData = (v: unknown) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : "—";
 };
 
+const fmtKg = (n: number | null) => (n == null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 2 })} kg`);
 const ETICHETTE: Record<string, string> = { bozza: "Bozza", verifica: "Verifica RENTRI", inviato: "Inviato al RENTRI", chiuso: "Chiuso" };
 
 export function DevVistaVeloceModule() {
@@ -73,6 +76,49 @@ export function DevVistaVeloceModule() {
     },
   });
 
+  // Kg a destino già scritti nel registro (sola lettura).
+  const { data: pesiRegistro = new Map<string, number>() } = useQuery({
+    queryKey: ["vista-veloce-pesi-registro"],
+    queryFn: async () => {
+      const m = new Map<string, number>();
+      for (const tid of [MULTY_TENANT_ID, NIYOL_TENANT_ID]) {
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await supabase.from("registro_generale")
+            .select("numero_formulario, peso_destino, quantita")
+            .eq("tenant_id", tid).not("numero_formulario", "is", null).range(from, from + 999);
+          if (error) throw error;
+          for (const r of data || []) {
+            const k = normFirPesi(r.numero_formulario);
+            const n = Number(r.peso_destino ?? r.quantita);
+            if (k && n > 0 && !m.has(k)) m.set(k, n);
+          }
+          if (!data || data.length < 1000) break;
+        }
+      }
+      return m;
+    },
+  });
+
+  // Pesi letti dal RENTRI (partenza e kg accettati), solo lettura, nessuna scrittura.
+  const { data: pesiRentri = new Map<string, { partenza: number | null; destino: number | null }>(), isFetching: rentriFetching, refetch: rileggiRentri, error: rentriErr } = useQuery({
+    queryKey: ["vista-veloce-pesi-rentri"],
+    staleTime: 15 * 60 * 1000,
+    retry: false,
+    queryFn: async () => {
+      const m = new Map<string, { partenza: number | null; destino: number | null }>();
+      for (const [cliente, cfSogg] of [["multy", MULTY_CF], ["niyol", NIYOL_CF]] as const) {
+        const { items } = await leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?identificativo_soggetto=${cfSogg}`, "2026-09-01");
+        for (const it of items) {
+          const p = pesiDaRentri(it);
+          if (!p.numero) continue;
+          const old = m.get(p.numero);
+          m.set(p.numero, { partenza: old?.partenza ?? p.partenza, destino: old?.destino ?? p.destino });
+        }
+      }
+      return m;
+    },
+  });
+
   const righe = useMemo(() => {
     const q = search.trim().toLowerCase();
     return forms
@@ -86,16 +132,25 @@ export function DevVistaVeloceModule() {
           cer: String(first(f.codice_eer, fd.cer, fd.codice_eer) ?? "—"),
           produttore: String(first(f.produttore_denominazione, fd.produttore_denominazione) ?? "—"),
           destinatario: String(first(f.destinatario_denominazione, fd.destinatario_denominazione) ?? "—"),
-          quantitaDichiarata: first(f.quantita, fd.quantita),
-          unitaDichiarata: String(first(f.unita_misura, fd.unita_misura, fd.unitaMisura) ?? "kg"),
-          kgDestino: first(fd.quantita_destino, fd.peso_ricevuto, fd.quantita_accettata),
+          ...(() => {
+            const k = normFirPesi(f.numero_fir);
+            const rr = pesiRentri.get(k);
+            const pLoc = pesoPartenzaLocale(f);
+            const dLoc = pesoDestinoLocale(f, pesiRegistro.get(k));
+            return {
+              kgPartenza: rr?.partenza ?? pLoc,
+              partenzaRentri: rr?.partenza != null,
+              kgDestino: rr?.destino ?? dLoc,
+              destinoRentri: rr?.destino != null,
+            };
+          })(),
           data: first(fd.data_emissione, f.data_partenza, fd.data_partenza, f.created_at),
         };
       })
       .filter((r) => filtro === "tutti" || r.tipo === filtro)
       .filter((r) => !q || [r.form.numero_fir, r.cer, r.produttore, r.destinatario, TIPI[r.tipo].label].join(" ").toLowerCase().includes(q))
       .sort((a, b) => String(b.data ?? "").localeCompare(String(a.data ?? "")));
-  }, [forms, filtro, search]);
+  }, [forms, filtro, search, pesiRegistro, pesiRentri]);
 
   const conteggi = useMemo(() => {
     const c: Record<string, number> = {};
@@ -143,13 +198,18 @@ export function DevVistaVeloceModule() {
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input className="pl-8 w-64" placeholder="Cerca FIR, CER, soggetto..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
+        <Button size="sm" variant="outline" className="gap-2" onClick={() => rileggiRentri()} disabled={rentriFetching}>
+          {rentriFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Rileggi pesi dal RENTRI
+        </Button>
         <Button size="icon" variant="outline" onClick={() => refetch()} aria-label="Aggiorna">{isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}</Button>
       </div>
 
+      {rentriFetching && <p className="text-xs text-muted-foreground">Sto leggendo i pesi dal RENTRI…</p>}
+      {rentriErr && <p className="text-xs text-destructive">Pesi RENTRI non letti: {(rentriErr as Error).message}. Sono mostrati i pesi salvati nel programma.</p>}
       <div className="overflow-x-auto rounded-xl border border-border/30">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs uppercase text-muted-foreground">
-            <tr>{["Tipo", "N. FIR", "Stato", "Data", "CER", "Produttore", "Destinatario", "Quantità dichiarata", "Kg a destino", ""].map((h) => <th key={h} className="p-2 text-left">{h}</th>)}</tr>
+            <tr>{["Tipo", "N. FIR", "Stato", "Data", "CER", "Produttore", "Destinatario", "Kg partenza", "Kg a destino", ""].map((h) => <th key={h} className="p-2 text-left">{h}</th>)}</tr>
           </thead>
           <tbody>
             {isLoading && <tr><td colSpan={10} className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>}
@@ -163,8 +223,8 @@ export function DevVistaVeloceModule() {
                 <td className="p-2 font-mono">{r.cer}</td>
                 <td className="p-2">{r.produttore}</td>
                 <td className="p-2">{r.destinatario}</td>
-                <td className="p-2 font-mono whitespace-nowrap">{r.quantitaDichiarata != null ? `${r.quantitaDichiarata} ${r.unitaDichiarata}` : "—"}</td>
-                <td className="p-2 font-mono whitespace-nowrap">{r.kgDestino != null ? `${r.kgDestino} kg` : "—"}</td>
+                <td className="p-2 font-mono whitespace-nowrap" title={r.partenzaRentri ? "Letto dal RENTRI" : "Salvato nel programma"}>{fmtKg(r.kgPartenza)}</td>
+                <td className="p-2 font-mono whitespace-nowrap" title={r.destinoRentri ? "Accettati, letti dal RENTRI" : "Salvati nel programma o nel registro"}>{r.kgDestino != null ? fmtKg(r.kgDestino) : <span className="text-muted-foreground">non ancora accettato</span>}</td>
                 <td className="p-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" title="Vedi" onClick={() => setAperto({ form: r.form, modo: "vedi" })}><Eye className="h-4 w-4" /></Button>
