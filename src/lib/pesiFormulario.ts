@@ -60,7 +60,8 @@ export type StatoPesoDestino =
   | "peso_non_comunicato"
   | "non_verificato"
   | "registro_senza_peso"
-  | "annullato";
+  | "annullato"
+  | "accettazione_parziale";
 
 export interface InfoPesoDestino {
   stato: StatoPesoDestino;
@@ -104,6 +105,13 @@ export function infoPesoDestino(o: {
       stato: "annullato",
       testo: "annullato",
       nota: `Il RENTRI riporta il formulario annullato (${o.statoRentri}): nessun peso a destino.`,
+    };
+  }
+  if (/PARZIAL/i.test(String(o.statoRentri ?? "").toUpperCase())) {
+    return {
+      stato: "accettazione_parziale",
+      testo: "accettato in parte",
+      nota: `Il RENTRI riporta «${o.statoRentri}»: il destinatario ha accettato solo in parte. Apri il dettaglio del formulario per vedere i kg.`,
     };
   }
   if (!o.inRentri) {

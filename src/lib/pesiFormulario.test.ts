@@ -54,6 +54,11 @@ describe("motivo del peso a destino mancante", () => {
     expect(i.stato).toBe("annullato");
     expect(i.testo).toBe("annullato");
   });
+  it("accettazione parziale sul RENTRI: lo dice", () => {
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "RespintoAccettatoParzialmente", cartaceo: false, ...base });
+    expect(i.stato).toBe("accettazione_parziale");
+    expect(i.testo).toBe("accettato in parte");
+  });
   it("viaggio concluso senza kg accettati: lo dice", () => {
     const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "FIR Concluso", cartaceo: false, ...base });
     expect(i.stato).toBe("peso_non_comunicato");
