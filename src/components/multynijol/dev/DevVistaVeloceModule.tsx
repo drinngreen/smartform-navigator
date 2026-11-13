@@ -13,7 +13,7 @@ import { FirDettaglioLettura } from "@/components/fir/FirDettaglioLettura";
 import { ConfermaFormularioRegistro } from "@/components/rentri/ConfermaFormularioRegistro";
 import { MNFIRFormComplete } from "@/components/fir/MNFIRFormComplete";
 import { NuovoFirCartaceoBox } from "@/components/fir/NuovoFirCartaceoBox";
-import { pesoPartenzaLocale, pesoDestinoLocale, pesiDaRentri, normFirPesi } from "@/lib/pesiFormulario";
+import { pesoPartenzaLocale, pesoDestinoLocale, pesiDaRentri, normFirPesi, infoPesoDestino } from "@/lib/pesiFormulario";
 import { leggiTutteLePagineFormulari } from "@/lib/rentriFirIntermediario";
 
 const MULTY_TENANT_ID = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
@@ -100,19 +100,23 @@ export function DevVistaVeloceModule() {
   });
 
   // Pesi letti dal RENTRI (partenza e kg accettati), solo lettura, nessuna scrittura.
-  const { data: pesiRentri = new Map<string, { partenza: number | null; destino: number | null }>(), isFetching: rentriFetching, refetch: rileggiRentri, error: rentriErr } = useQuery({
+  const { data: pesiRentri = new Map<string, { partenza: number | null; destino: number | null; stato: string | null }>(), isFetching: rentriFetching, refetch: rileggiRentri, error: rentriErr } = useQuery({
     queryKey: ["vista-veloce-pesi-rentri"],
     staleTime: 15 * 60 * 1000,
     retry: false,
     queryFn: async () => {
-      const m = new Map<string, { partenza: number | null; destino: number | null }>();
+      const m = new Map<string, { partenza: number | null; destino: number | null; stato: string | null }>();
       for (const [cliente, cfSogg] of [["multy", MULTY_CF], ["niyol", NIYOL_CF]] as const) {
         const { items } = await leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?identificativo_soggetto=${cfSogg}`, "2026-09-01");
         for (const it of items) {
           const p = pesiDaRentri(it);
           if (!p.numero) continue;
           const old = m.get(p.numero);
-          m.set(p.numero, { partenza: old?.partenza ?? p.partenza, destino: old?.destino ?? p.destino });
+          m.set(p.numero, {
+            partenza: old?.partenza ?? p.partenza,
+            destino: old?.destino ?? p.destino,
+            stato: old?.stato ?? p.stato,
+          });
         }
       }
       return m;
@@ -142,6 +146,12 @@ export function DevVistaVeloceModule() {
               partenzaRentri: rr?.partenza != null,
               kgDestino: rr?.destino ?? dLoc,
               destinoRentri: rr?.destino != null,
+              infoDestino: infoPesoDestino({
+                pesoDestino: rr?.destino ?? dLoc,
+                inRentri: rr != null,
+                statoRentri: rr?.stato,
+                cartaceo: fd.formato_fir === "cartaceo",
+              }),
             };
           })(),
           data: first(fd.data_emissione, f.data_partenza, fd.data_partenza, f.created_at),
@@ -224,7 +234,7 @@ export function DevVistaVeloceModule() {
                 <td className="p-2">{r.produttore}</td>
                 <td className="p-2">{r.destinatario}</td>
                 <td className="p-2 font-mono whitespace-nowrap" title={r.partenzaRentri ? "Letto dal RENTRI" : "Salvato nel programma"}>{fmtKg(r.kgPartenza)}</td>
-                <td className="p-2 font-mono whitespace-nowrap" title={r.destinoRentri ? "Accettati, letti dal RENTRI" : "Salvati nel programma o nel registro"}>{r.kgDestino != null ? fmtKg(r.kgDestino) : <span className="text-muted-foreground">non ancora accettato</span>}</td>
+                <td className="p-2 font-mono whitespace-nowrap" title={r.destinoRentri ? "Accettati, letti dal RENTRI" : "Salvati nel programma o nel registro"}>{r.kgDestino != null ? fmtKg(r.kgDestino) : <span className="text-muted-foreground">{r.infoDestino.testo}</span>}</td>
                 <td className="p-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" title="Vedi" onClick={() => setAperto({ form: r.form, modo: "vedi" })}><Eye className="h-4 w-4" /></Button>
