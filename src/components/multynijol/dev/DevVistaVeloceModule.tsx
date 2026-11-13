@@ -216,6 +216,9 @@ export function DevVistaVeloceModule() {
 
       {rentriFetching && <p className="text-xs text-muted-foreground">Sto leggendo i pesi dal RENTRI…</p>}
       {rentriErr && <p className="text-xs text-destructive">Pesi RENTRI non letti: {(rentriErr as Error).message}. Sono mostrati i pesi salvati nel programma.</p>}
+      <p className="text-xs text-muted-foreground">
+        Se i kg a destino mancano: <strong>non inviato</strong> = bozza mai partita, <strong>non registrato</strong> = FIR cartaceo da scrivere nel registro, <strong>in arrivo</strong> = partito, il destinatario non ha ancora accettato, <strong>senza kg accettati</strong> = viaggio chiuso sul RENTRI senza peso comunicato. Passa il mouse sulla scritta per il dettaglio.
+      </p>
       <div className="overflow-x-auto rounded-xl border border-border/30">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs uppercase text-muted-foreground">
@@ -234,7 +237,7 @@ export function DevVistaVeloceModule() {
                 <td className="p-2">{r.produttore}</td>
                 <td className="p-2">{r.destinatario}</td>
                 <td className="p-2 font-mono whitespace-nowrap" title={r.partenzaRentri ? "Letto dal RENTRI" : "Salvato nel programma"}>{fmtKg(r.kgPartenza)}</td>
-                <td className="p-2 font-mono whitespace-nowrap" title={r.destinoRentri ? "Accettati, letti dal RENTRI" : "Salvati nel programma o nel registro"}>{r.kgDestino != null ? fmtKg(r.kgDestino) : <span className="text-muted-foreground">{r.infoDestino.testo}</span>}</td>
+                <td className="p-2 font-mono whitespace-nowrap" title={r.kgDestino != null ? (r.destinoRentri ? "Accettati, letti dal RENTRI" : "Salvati nel programma o nel registro") : r.infoDestino.nota}>{r.kgDestino != null ? fmtKg(r.kgDestino) : <span className="text-muted-foreground">{r.infoDestino.testo}</span>}</td>
                 <td className="p-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" title="Vedi" onClick={() => setAperto({ form: r.form, modo: "vedi" })}><Eye className="h-4 w-4" /></Button>
