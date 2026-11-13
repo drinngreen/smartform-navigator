@@ -25,7 +25,12 @@ export function pesoDestinoLocale(form: any, pesoRegistro?: number | null): numb
 }
 
 /** Pesi letti da un elemento dell'elenco o del dettaglio RENTRI, convertiti in kg. */
-export function pesiDaRentri(raw: any): { numero: string; partenza: number | null; destino: number | null } {
+export function pesiDaRentri(raw: any): {
+  numero: string;
+  partenza: number | null;
+  destino: number | null;
+  stato: string | null;
+} {
   const det = raw?.dati_partenza ?? {};
   const rif = raw?.rifiuto ?? det?.rifiuto ?? {};
   const qP = raw?.quantita ?? rif?.quantita ?? null;
@@ -39,5 +44,99 @@ export function pesiDaRentri(raw: any): { numero: string; partenza: number | nul
     numero: normFirPesi(raw?.numero_fir ?? det?.numero_fir),
     partenza: p != null && p > 0 ? kg(p, umP) : null,
     destino: d != null && d > 0 ? kg(d, umD) : null,
+    stato: String(raw?.stato ?? raw?.stato_formulario ?? "").trim() || null,
+  };
+}
+
+/**
+ * Perché i kg a destino mancano. Distingue il caso reale: una bozza mai inviata
+ * non può essere "non accettata", e un FIR cartaceo non passa dal RENTRI.
+ */
+export type StatoPesoDestino =
+  | "accettato"
+  | "non_inviato"
+  | "cartaceo_non_registrato"
+  | "in_arrivo"
+  | "peso_non_comunicato"
+  | "non_verificato"
+  | "registro_senza_peso"
+  | "annullato"
+  | "accettazione_parziale";
+
+export interface InfoPesoDestino {
+  stato: StatoPesoDestino;
+  /** Etichetta breve mostrata in tabella. */
+  testo: string;
+  /** Spiegazione completa mostrata al passaggio del mouse. */
+  nota: string;
+}
+
+const VIAGGIO_CONCLUSO = /CHIUS|CONCLUS|RESPINT|COMPLETAT/i;
+
+export function infoPesoDestino(o: {
+  pesoDestino: number | null;
+  inRentri: boolean;
+  statoRentri?: string | null;
+  cartaceo: boolean;
+  /** true se il formulario risulta già scritto nel registro. */
+  inRegistro: boolean;
+  /** false finché il RENTRI non ha risposto: senza questa lettura non si può affermare nulla. */
+  rentriLetto: boolean;
+}): InfoPesoDestino {
+  if (o.pesoDestino != null) {
+    return { stato: "accettato", testo: "", nota: "Kg accettati dal destinatario." };
+  }
+  if (!o.rentriLetto) {
+    return {
+      stato: "non_verificato",
+      testo: "non verificato",
+      nota: "Il RENTRI non è ancora stato letto (o non ha risposto): non posso dire se il formulario è partito.",
+    };
+  }
+  if (o.inRegistro) {
+    return {
+      stato: "registro_senza_peso",
+      testo: "nel registro, senza peso",
+      nota: "Il formulario è già scritto nel registro, ma i kg accettati a destino non sono stati registrati.",
+    };
+  }
+  if (/ANNULL/i.test(String(o.statoRentri ?? "").toUpperCase())) {
+    return {
+      stato: "annullato",
+      testo: "annullato",
+      nota: `Il RENTRI riporta il formulario annullato (${o.statoRentri}): nessun peso a destino.`,
+    };
+  }
+  if (/PARZIAL/i.test(String(o.statoRentri ?? "").toUpperCase())) {
+    return {
+      stato: "accettazione_parziale",
+      testo: "accettato in parte",
+      nota: `Il RENTRI riporta «${o.statoRentri}»: il destinatario ha accettato solo in parte. Apri il dettaglio del formulario per vedere i kg.`,
+    };
+  }
+  if (!o.inRentri) {
+    return o.cartaceo
+      ? {
+          stato: "cartaceo_non_registrato",
+          testo: "non registrato",
+          nota: "FIR cartaceo: il peso a destino va scritto a mano nel registro, non arriva dal RENTRI.",
+        }
+      : {
+          stato: "non_inviato",
+          testo: "non inviato",
+          nota: "Bozza mai inviata al RENTRI: il viaggio non è ancora partito, quindi il destinatario non può aver accettato nulla.",
+        };
+  }
+  if (VIAGGIO_CONCLUSO.test(String(o.statoRentri ?? "").toUpperCase())) {
+    return {
+      stato: "peso_non_comunicato",
+      testo: "senza kg accettati",
+      nota: `Viaggio concluso sul RENTRI (${o.statoRentri}), ma i kg accettati non risultano comunicati.`,
+    };
+  }
+  return {
+    stato: "in_arrivo",
+    testo: "in arrivo",
+    nota: "Formulario partito: il destinatario non ha ancora registrato l'accettazione.",
   };
 }
