@@ -23,33 +23,39 @@ describe("pesi formulario", () => {
 });
 
 describe("motivo del peso a destino mancante", () => {
+  const base = { inRegistro: false, rentriLetto: true };
   it("RENTRI non ancora letto: non si afferma niente", () => {
-    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: false, rentriLetto: false });
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: false, inRegistro: false, rentriLetto: false });
     expect(i.stato).toBe("non_verificato");
     expect(i.testo).toBe("non verificato");
   });
+  it("già nel registro ma senza kg accettati: lo dice", () => {
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: false, inRegistro: true, rentriLetto: true });
+    expect(i.stato).toBe("registro_senza_peso");
+    expect(i.testo).toBe("nel registro, senza peso");
+  });
   it("bozza mai inviata: non è 'non accettato', è 'non inviato'", () => {
-    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: false, rentriLetto: true });
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: false, ...base });
     expect(i.stato).toBe("non_inviato");
     expect(i.testo).toBe("non inviato");
   });
   it("FIR cartaceo fuori dal RENTRI: peso da registrare a mano", () => {
-    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: true, rentriLetto: true });
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: false, cartaceo: true, ...base });
     expect(i.stato).toBe("cartaceo_non_registrato");
     expect(i.testo).toBe("non registrato");
   });
   it("partito e non ancora accettato: in arrivo", () => {
-    const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "InserimentoAccettazione", cartaceo: false, rentriLetto: true });
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "InserimentoAccettazione", cartaceo: false, ...base });
     expect(i.stato).toBe("in_arrivo");
     expect(i.testo).toBe("in arrivo");
   });
   it("viaggio concluso senza kg accettati: lo dice", () => {
-    const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "FIR Concluso", cartaceo: false, rentriLetto: true });
+    const i = infoPesoDestino({ pesoDestino: null, inRentri: true, statoRentri: "FIR Concluso", cartaceo: false, ...base });
     expect(i.stato).toBe("peso_non_comunicato");
     expect(i.testo).toBe("senza kg accettati");
   });
   it("con i kg a destino non serve nessuna etichetta", () => {
-    const i = infoPesoDestino({ pesoDestino: 530, inRentri: true, cartaceo: false, rentriLetto: true });
+    const i = infoPesoDestino({ pesoDestino: 530, inRentri: true, cartaceo: false, ...base });
     expect(i.stato).toBe("accettato");
     expect(i.testo).toBe("");
   });

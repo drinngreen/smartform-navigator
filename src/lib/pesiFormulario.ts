@@ -58,7 +58,8 @@ export type StatoPesoDestino =
   | "cartaceo_non_registrato"
   | "in_arrivo"
   | "peso_non_comunicato"
-  | "non_verificato";
+  | "non_verificato"
+  | "registro_senza_peso";
 
 export interface InfoPesoDestino {
   stato: StatoPesoDestino;
@@ -75,6 +76,8 @@ export function infoPesoDestino(o: {
   inRentri: boolean;
   statoRentri?: string | null;
   cartaceo: boolean;
+  /** true se il formulario risulta già scritto nel registro. */
+  inRegistro: boolean;
   /** false finché il RENTRI non ha risposto: senza questa lettura non si può affermare nulla. */
   rentriLetto: boolean;
 }): InfoPesoDestino {
@@ -86,6 +89,13 @@ export function infoPesoDestino(o: {
       stato: "non_verificato",
       testo: "non verificato",
       nota: "Il RENTRI non è ancora stato letto (o non ha risposto): non posso dire se il formulario è partito.",
+    };
+  }
+  if (o.inRegistro) {
+    return {
+      stato: "registro_senza_peso",
+      testo: "nel registro, senza peso",
+      nota: "Il formulario è già scritto nel registro, ma i kg accettati a destino non sono stati registrati.",
     };
   }
   if (!o.inRentri) {
