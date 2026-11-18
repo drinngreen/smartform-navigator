@@ -41,6 +41,7 @@ import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
+import { OPERAZIONI_DESTINAZIONE, normalizzaCodiceOperazione } from "@/data/operazioniDestinazione";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -64,13 +65,15 @@ function getSectionNeon(title: string) {
   return { border: "border-primary/20", text: "text-primary", glow: "shadow-[0_0_8px_hsl(47_38%_58%/0.2)]", bg: "bg-primary/5" };
 }
 
-function Section({ title, defaultOpen = false, onClear, children }: { title: string; defaultOpen?: boolean; onClear?: () => void; children: React.ReactNode }) {
-  const [open, setOpen] = useState(defaultOpen);
+function Section({ title, defaultOpen = false, alwaysOpen = false, onClear, children }: { title: string; defaultOpen?: boolean; alwaysOpen?: boolean; onClear?: () => void; children: React.ReactNode }) {
+  const [aperta, setOpen] = useState(defaultOpen);
+  // Le sezioni essenziali restano sempre aperte: niente clic per vederle.
+  const open = alwaysOpen || aperta;
   const neon = getSectionNeon(title);
   return (
     <div className={`rounded-2xl glass-card ${neon.border} border ${neon.bg} overflow-hidden transition-shadow ${open ? neon.glow : ""}`}>
       <div className="w-full flex items-center justify-between p-4 text-left">
-        <button onClick={() => setOpen(!open)} className="flex-1 flex items-center gap-2 text-left">
+        <button onClick={() => { if (!alwaysOpen) setOpen(!open); }} className={`flex-1 flex items-center gap-2 text-left ${alwaysOpen ? "cursor-default" : ""}`}>
           <span className={`text-xs font-mono uppercase tracking-wider ${neon.text} flex items-center gap-2`}>
             <span className={`w-2 h-2 rounded-full ${open ? "animate-pulse" : "opacity-50"}`} style={{ backgroundColor: "currentColor" }} />
             {title}
@@ -90,9 +93,9 @@ function Section({ title, defaultOpen = false, onClear, children }: { title: str
               <Eraser className="h-3.5 w-3.5" />
             </button>
           )}
-          <button onClick={() => setOpen(!open)} type="button" className="p-1">
+          {!alwaysOpen && <button onClick={() => setOpen(!open)} type="button" className="p-1">
             {open ? <ChevronDown className={`h-4 w-4 ${neon.text} opacity-60`} /> : <ChevronRight className={`h-4 w-4 ${neon.text} opacity-60`} />}
-          </button>
+          </button>}
         </div>
       </div>
       {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
@@ -145,6 +148,43 @@ function Field({ label, value, onChange, placeholder, type = "text", validate, r
   );
 }
 
+
+/**
+ * Destinazione del rifiuto: una sola scelta tra i codici ufficiali R1–R13 / D1–D15.
+ * Un valore scritto in passato in modo diverso (es. «R 13») viene riconosciuto;
+ * se non è un codice valido resta visibile, segnalato, finché non si sceglie quello giusto.
+ */
+function DestinazioneField({ value, onChange, rentriError }: { value: string; onChange: (v: string) => void; rentriError?: string | null }) {
+  const codice = normalizzaCodiceOperazione(value);
+  const nonValido = value.trim() !== "" && !codice;
+  const error = rentriError || (nonValido ? "Codice di destinazione non valido: scegli dall'elenco." : null);
+  return (
+    <div>
+      <label className={`text-[10px] font-mono uppercase tracking-wider mb-1 block ${error ? "text-red-300" : "text-white/80"}`}>Destinazione del rifiuto</label>
+      <select
+        value={codice || value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 ${
+          error ? "bg-red-500/15 border border-red-500 focus:ring-red-400" : "bg-sky-400/10 border border-sky-400/40 focus:ring-sky-300"
+        }`}
+      >
+        <option value="">— Scegli recupero (R) o smaltimento (D) —</option>
+        {nonValido && <option value={value}>{value} (da correggere)</option>}
+        <optgroup label="Recupero">
+          {OPERAZIONI_DESTINAZIONE.filter((o) => o.codice.startsWith("R")).map((o) => (
+            <option key={o.codice} value={o.codice}>{o.codice} — {o.descrizione}</option>
+          ))}
+        </optgroup>
+        <optgroup label="Smaltimento">
+          {OPERAZIONI_DESTINAZIONE.filter((o) => o.codice.startsWith("D")).map((o) => (
+            <option key={o.codice} value={o.codice}>{o.codice} — {o.descrizione}</option>
+          ))}
+        </optgroup>
+      </select>
+      {error && <p className="mt-1 text-[10px] text-red-300 font-medium">⚠ {error}</p>}
+    </div>
+  );
+}
 
 /**
  * Tipo di autorizzazione: va scelto tra le 9 voci ufficiali, perché il RENTRI
@@ -1948,7 +1988,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
       {activeTab === 0 && (
         <div className="space-y-3">
           {/* ALL FIELDS EDITABLE — NO LOCKS */}
-          <Section title="1. Produttore / Detentore" defaultOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
+          <Section title="1. Produttore / Detentore" alwaysOpen onClear={() => clearFields(["produttoreDenominazione","produttoreUnitaLocale","produttoreCF","produttoreNumeroAut","produttoreTipoAut","produttoreLuogoProduzioneDiverso","produttoreDataAut","cantiereIndirizzo","cantiereComune","cantiereProvincia","cantiereCAP","isDetentore","detentoreDenominazione","detentoreUnitaLocale","detentoreCF","detentoreNumeroAut","detentoreTipoAut"])}>
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
               ruolo="PRODUTTORE"
@@ -1985,8 +2025,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <Field label="RENTRI / Autorizzazione" value={d.produttoreNumeroAut} onChange={(v) => updateFirField("produttoreNumeroAut", v)} rentriError={rentriFieldErrors.produttoreNumeroAut} />
               <TipoAutField label="Tipo Aut." value={d.produttoreTipoAut} onChange={(v) => updateFirField("produttoreTipoAut", v)} rentriError={rentriFieldErrors.produttoreTipoAut} />
             </Row>
-            <Field label="Luogo produzione (se diverso)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
             <Field label="Data Autorizzazione" value={d.produttoreDataAut} onChange={(v) => u("produttoreDataAut", v)} type="date" />
+
+            {/* Cantiere / luogo di produzione: fa parte dei dati del produttore */}
+            <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 space-y-3">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-blue-300">Cantiere / luogo di produzione (se diverso dall'unità locale)</p>
+              <Field label="Indirizzo cantiere (con eventuale ragione sociale)" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} placeholder="es. Cantiere Rossi - Via Roma 5" />
+              <Row>
+                <Field label="Comune" value={d.cantiereComune} onChange={(v) => u("cantiereComune", v)} />
+                <Field label="Provincia" value={d.cantiereProvincia} onChange={(v) => u("cantiereProvincia", v)} placeholder="es. TO" />
+              </Row>
+              <Field label="CAP" value={d.cantiereCAP} onChange={(v) => u("cantiereCAP", v)} />
+              {d.produttoreLuogoProduzioneDiverso && (
+                <Field label="Luogo produzione (testo libero)" value={d.produttoreLuogoProduzioneDiverso} onChange={(v) => u("produttoreLuogoProduzioneDiverso", v)} />
+              )}
+            </div>
             <Check label="Detentore diverso dal produttore" checked={d.isDetentore} onChange={(v) => u("isDetentore", v)} />
             {d.isDetentore && (
               <>
@@ -2014,38 +2067,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             )}
           </Section>
 
-          <Section title="Cantiere (se applicabile)" onClear={() => clearFields(["cantiereIndirizzo","cantiereComune","cantiereProvincia","cantiereCAP"])}>
-            <PresetAziendaSelector
-              label="Preset cantieri / luoghi di produzione"
-              ruolo="PRODUTTORE"
-              initialCf={d.produttoreCF}
-              onSelectAzienda={(a) => {
-                u("produttoreDenominazione", a.nome);
-                u("produttoreUnitaLocale", a.indirizzo);
-                u("produttoreCF", a.piva || a.cf);
-              }}
-              onSelectAutorizzazione={(aut) => {
-                u("produttoreNumeroAut", aut.numero);
-                u("produttoreTipoAut", aut.tipo);
-                u("produttoreDataAut", aut.data);
-              }}
-              onSelectCantiere={(c) => {
-                u("cantiereIndirizzo", c.indirizzo || c.denominazione);
-                u("cantiereComune", c.comune);
-                u("cantiereProvincia", c.provincia);
-                u("cantiereCAP", c.cap);
-              }}
-            />
-            <Field label="Indirizzo" value={d.cantiereIndirizzo} onChange={(v) => u("cantiereIndirizzo", v)} />
-
-            <Row>
-              <Field label="Comune" value={d.cantiereComune} onChange={(v) => u("cantiereComune", v)} />
-              <Field label="Provincia" value={d.cantiereProvincia} onChange={(v) => u("cantiereProvincia", v)} />
-            </Row>
-            <Field label="CAP" value={d.cantiereCAP} onChange={(v) => u("cantiereCAP", v)} />
-          </Section>
-
-          <Section title="3. Destinatario" onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
+          <Section title="3. Destinatario" alwaysOpen onClear={() => clearFields(["destinatarioDenominazione","destinatarioUnitaLocale","destinatarioCF","destinatarioOperazione","destinatarioCodiceOperazione","destinatarioNumeroAut","destinatarioTipoAut","destinatarioDataAut"])}>
             <PresetAziendaSelector
               label="Anagrafica destinatari"
               ruolo="DESTINATARIO"
@@ -2067,23 +2089,21 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <Field label="Indirizzo di scarico (sede operativa)" value={d.destinatarioUnitaLocale} onChange={(v) => updateFirField("destinatarioUnitaLocale", v)} placeholder="Indirizzo dove il rifiuto viene realmente scaricato" rentriError={rentriFieldErrors.destinatarioUnitaLocale} />
             <Field label="Codice Fiscale / P.IVA" value={d.destinatarioCF} onChange={(v) => updateFirField("destinatarioCF", v)} rentriError={rentriFieldErrors.destinatarioCF} />
             <Row>
-              <div>
-                <label className="text-[10px] text-white/80 font-mono uppercase tracking-wider mb-1 block">Operazione</label>
-                <select value={d.destinatarioOperazione} onChange={(e) => u("destinatarioOperazione", e.target.value)} className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary">
-                  <option value="R">Recupero (R)</option>
-                  <option value="D">Smaltimento (D)</option>
-                </select>
-              </div>
-              <Field label="Codice Operazione" value={d.destinatarioCodiceOperazione} onChange={(v) => updateFirField("destinatarioCodiceOperazione", v)} placeholder="es. R13" rentriError={rentriFieldErrors.destinatarioCodiceOperazione} />
-            </Row>
-            <Row>
               <Field label="N° Autorizzazione" value={d.destinatarioNumeroAut} onChange={(v) => updateFirField("destinatarioNumeroAut", v)} rentriError={rentriFieldErrors.destinatarioNumeroAut} />
               <TipoAutField label="Tipo Aut." value={d.destinatarioTipoAut} onChange={(v) => updateFirField("destinatarioTipoAut", v)} rentriError={rentriFieldErrors.destinatarioTipoAut} />
             </Row>
             <Field label="Data Autorizzazione" value={d.destinatarioDataAut} onChange={(v) => u("destinatarioDataAut", v)} type="date" />
+            <DestinazioneField
+              value={d.destinatarioCodiceOperazione}
+              onChange={(codice) => {
+                updateFirField("destinatarioCodiceOperazione", codice);
+                if (codice) u("destinatarioOperazione", codice.startsWith("D") ? "D" : "R");
+              }}
+              rentriError={rentriFieldErrors.destinatarioCodiceOperazione}
+            />
           </Section>
 
-          <Section title="4. Trasportatore" onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
+          <Section title="4. Trasportatore" alwaysOpen onClear={() => clearFields(["trasportatoreDenominazione","trasportatoreCF","trasportatoreNumeroAlbo","trasportatoreDataAlbo","trasportatoreSituatoIn","trasportatoreNomeAutista"])}>
             <PresetAziendaSelector
               label="Preset Multyproget / Niyol"
               ruolo="TRASPORTATORE"
@@ -2124,26 +2144,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             }} />
           </Section>
 
-          {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
-          <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
-            <PresetAziendaSelector
-              label="Preset anagrafica intermediari"
-              ruolo="INTERMEDIARIO"
-              onSelectAzienda={(a) => {
-                u("intermediarioDenominazione", a.nome);
-                u("intermediarioCF", a.piva || a.cf);
-              }}
-              onSelectAutorizzazione={(aut) => {
-                u("intermediarioNumeroAlbo", aut.numero);
-              }}
-            />
-            <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
-
-            <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
-            <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
-          </Section>
-
-          <Section title="6. Caratteristiche del Rifiuto" defaultOpen onClear={() => clearFields(["codiceEER","descrizione","statoFisico","provenienza","quantita","quantitaLitri","aspettoEsteriore","numeroColli","verificatoPartenza","caratteristicheHP"])}>
+          <Section title="6. Caratteristiche del Rifiuto" alwaysOpen onClear={() => clearFields(["codiceEER","descrizione","statoFisico","provenienza","quantita","quantitaLitri","aspettoEsteriore","numeroColli","verificatoPartenza","caratteristicheHP"])}>
             <CerPickerField
               label="Codice EER / CER"
               value={d.codiceEER}
@@ -2192,37 +2193,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
             <HpSelector value={d.caratteristicheHP} onChange={(v) => u("caratteristicheHP", v)} codiceEER={d.codiceEER} />
           </Section>
 
-          <Section title="Analisi e Classificazione" onClear={() => clearFields(["analisiRapportiProva","analisiNumero","analisiValidaAl","classificazione","classificazioneNumero","classificazioneValidaAl"])}>
-            <Check label="Analisi / Rapporti di prova" checked={d.analisiRapportiProva} onChange={(v) => u("analisiRapportiProva", v)} />
-            {d.analisiRapportiProva && (
-              <Row>
-                <Field label="N° Documento" value={d.analisiNumero} onChange={(v) => u("analisiNumero", v)} />
-                <Field label="Valido al" value={d.analisiValidaAl} onChange={(v) => u("analisiValidaAl", v)} type="date" />
-              </Row>
-            )}
-            <Check label="Classificazione" checked={d.classificazione} onChange={(v) => u("classificazione", v)} />
-            {d.classificazione && (
-              <Row>
-                <Field label="N° Documento" value={d.classificazioneNumero} onChange={(v) => u("classificazioneNumero", v)} />
-                <Field label="Valido al" value={d.classificazioneValidaAl} onChange={(v) => u("classificazioneValidaAl", v)} type="date" />
-              </Row>
-            )}
-          </Section>
-
-          <Section title="7. Trasporto ADR / Merci Pericolose" onClear={() => clearFields(["trasportoADR","adrClassePericolo","adrNumeroONU","adrNote"])}>
-            <Check label="Trasporto soggetto a normativa ADR" checked={d.trasportoADR} onChange={(v) => u("trasportoADR", v)} />
-            {d.trasportoADR && (
-              <>
-                <Row>
-                  <Field label="Classe Pericolo" value={d.adrClassePericolo} onChange={(v) => u("adrClassePericolo", v)} />
-                  <Field label="N° ONU" value={d.adrNumeroONU} onChange={(v) => u("adrNumeroONU", v)} />
-                </Row>
-                <Field label="Note ADR" value={d.adrNote} onChange={(v) => u("adrNote", v)} />
-              </>
-            )}
-          </Section>
-
-          <Section title="8-9. Conducente e Trasporto" defaultOpen={Boolean(d.oraDataInizioTrasporto || d.oraInizioTrasporto)} onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
+          <Section title="8-9. Conducente e Trasporto" alwaysOpen onClear={() => clearFields(["conducenteNomeCognome","oraDataInizioTrasporto","oraInizioTrasporto","targaAutomezzo","targaRimorchio","percorsoDiverso"])}>
             <PresetAziendaSelector
               label="Conducenti e mezzi del trasportatore"
               ruolo="TRASPORTATORE"
@@ -2262,6 +2233,55 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               <Field label="Targa Rimorchio" value={d.targaRimorchio} onChange={(v) => u("targaRimorchio", v)} />
             </Row>
             <Field label="Percorso diverso dal più breve" value={d.percorsoDiverso} onChange={(v) => u("percorsoDiverso", v)} />
+          </Section>
+
+          {/* INTERMEDIARIO — ALL FIELDS EDITABLE, NO LOCK */}
+          <Section title="5. Intermediario / Commerciante" onClear={() => clearFields(["intermediarioDenominazione","intermediarioCF","intermediarioNumeroAlbo"])}>
+            <PresetAziendaSelector
+              label="Preset anagrafica intermediari"
+              ruolo="INTERMEDIARIO"
+              onSelectAzienda={(a) => {
+                u("intermediarioDenominazione", a.nome);
+                u("intermediarioCF", a.piva || a.cf);
+              }}
+              onSelectAutorizzazione={(aut) => {
+                u("intermediarioNumeroAlbo", aut.numero);
+              }}
+            />
+            <Field label="Denominazione" value={d.intermediarioDenominazione} onChange={(v) => u("intermediarioDenominazione", v)} />
+
+            <Field label="Codice Fiscale / P.IVA" value={d.intermediarioCF} onChange={(v) => u("intermediarioCF", v)} />
+            <Field label="N° Iscrizione Albo (Cod.RS)" value={d.intermediarioNumeroAlbo} onChange={(v) => u("intermediarioNumeroAlbo", v)} />
+          </Section>
+
+          <Section title="Analisi e Classificazione" onClear={() => clearFields(["analisiRapportiProva","analisiNumero","analisiValidaAl","classificazione","classificazioneNumero","classificazioneValidaAl"])}>
+            <Check label="Analisi / Rapporti di prova" checked={d.analisiRapportiProva} onChange={(v) => u("analisiRapportiProva", v)} />
+            {d.analisiRapportiProva && (
+              <Row>
+                <Field label="N° Documento" value={d.analisiNumero} onChange={(v) => u("analisiNumero", v)} />
+                <Field label="Valido al" value={d.analisiValidaAl} onChange={(v) => u("analisiValidaAl", v)} type="date" />
+              </Row>
+            )}
+            <Check label="Classificazione" checked={d.classificazione} onChange={(v) => u("classificazione", v)} />
+            {d.classificazione && (
+              <Row>
+                <Field label="N° Documento" value={d.classificazioneNumero} onChange={(v) => u("classificazioneNumero", v)} />
+                <Field label="Valido al" value={d.classificazioneValidaAl} onChange={(v) => u("classificazioneValidaAl", v)} type="date" />
+              </Row>
+            )}
+          </Section>
+
+          <Section title="7. Trasporto ADR / Merci Pericolose" onClear={() => clearFields(["trasportoADR","adrClassePericolo","adrNumeroONU","adrNote"])}>
+            <Check label="Trasporto soggetto a normativa ADR" checked={d.trasportoADR} onChange={(v) => u("trasportoADR", v)} />
+            {d.trasportoADR && (
+              <>
+                <Row>
+                  <Field label="Classe Pericolo" value={d.adrClassePericolo} onChange={(v) => u("adrClassePericolo", v)} />
+                  <Field label="N° ONU" value={d.adrNumeroONU} onChange={(v) => u("adrNumeroONU", v)} />
+                </Row>
+                <Field label="Note ADR" value={d.adrNote} onChange={(v) => u("adrNote", v)} />
+              </>
+            )}
           </Section>
 
           <Section title="10. Allegati" onClear={() => clearFields(["allegatoMicroraccolta","allegatoIntermodale"])}>
