@@ -17,6 +17,7 @@ import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { syncFirFinalToRegistryAndInventory } from "@/lib/firFinalSync";
 import { CerPickerField } from "@/components/fir/CerPickerField";
 import { FirFormatoSelector, normalizeFormatoFir, type FormatoFir } from "@/components/fir/FirFormatoSelector";
+import { scegliAutorizzazione } from "@/lib/autorizzazioneValida";
 
 export interface TemplateField {
   id: string;
@@ -595,10 +596,14 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
           .order("data_scadenza", { ascending: false });
         authRows.push(...(data || []));
       }
-      const authByCompany = new Map<string, any>();
+      // Per ogni impianto la prima proposta è l'autorizzazione in corso di validità
+      const perAzienda = new Map<string, any[]>();
       for (const auth of authRows) {
-        if (!authByCompany.has(auth.cliente_id)) authByCompany.set(auth.cliente_id, auth);
+        if (!perAzienda.has(auth.cliente_id)) perAzienda.set(auth.cliente_id, []);
+        perAzienda.get(auth.cliente_id)!.push(auth);
       }
+      const authByCompany = new Map<string, any>();
+      for (const [id, righe] of perAzienda) authByCompany.set(id, scegliAutorizzazione(righe));
       setDestinatari(rows.map((row) => ({
         nome: row.ragione_sociale || "",
         indirizzo: [row.indirizzo, [row.cap, row.citta, row.provincia ? `(${row.provincia})` : ""].filter(Boolean).join(" ")]
@@ -608,7 +613,7 @@ export function FIRAlternativeForm({ presetNumeroFir, firFormId, assignedUserId,
         piva: row.partita_iva || row.codice_fiscale || "",
         tipo: "IMPIANTO" as const,
         autorizzazione: authByCompany.get(row.id)?.numero_autorizzazione || "",
-        tipoAut: authByCompany.get(row.id)?.ente_rilascio || authByCompany.get(row.id)?.tipo || "",
+        tipoAut: authByCompany.get(row.id)?.ente_rilascio || "",
         dataAut: authByCompany.get(row.id)?.data_inizio || authByCompany.get(row.id)?.data_scadenza || "",
       })));
     })();

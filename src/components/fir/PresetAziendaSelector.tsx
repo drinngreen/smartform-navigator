@@ -9,6 +9,7 @@ import { ANAGRAFICA_TENANT_ID } from "@/lib/anagraficaSync";
 import { supabase } from "@/lib/supabaseClient";
 import { collectMatchingRegistryIds, normalizeRegistryValue } from "@/lib/registryMatching";
 import { filtraTarghe, ordinaTarghePerCognome } from "@/lib/targaOrdinamento";
+import { isAutorizzazioneScaduta, ordinaAutorizzazioni, scegliAutorizzazione } from "@/lib/autorizzazioneValida";
 import {
   AZIENDE_PRESETS,
   TIPI_AUTORIZZAZIONE,
@@ -614,11 +615,12 @@ export function PresetAziendaSelector({
   // dall'azienda nel FIR corrente. Nel database non esistono righe con tipo
   // PRODUTTORE: filtrare quei tipi nel riquadro produttore nascondeva quindi
   // tutte le autorizzazioni realmente collegate all'azienda selezionata.
-  const autsOrdinate = !ruolo
-    ? dbAuts
-    : ruolo === "PRODUTTORE"
+  // Prima le autorizzazioni in corso di validità, in fondo le scadute.
+  const autsOrdinate = ordinaAutorizzazioni(
+    !ruolo || ruolo === "PRODUTTORE"
       ? dbAuts
-      : dbAuts.filter((a) => String(a.tipo || "").toUpperCase() === ruolo);
+      : dbAuts.filter((a) => String(a.tipo || "").toUpperCase() === ruolo),
+  );
 
   // Autocompilazione: appena l'azienda è scelta, applica automaticamente
   // l'autorizzazione pertinente (numero + data) senza ulteriori click.
@@ -626,16 +628,12 @@ export function PresetAziendaSelector({
   // non quella di trasporto: è quella che il RENTRI si aspetta.
   useEffect(() => {
     if (loadingDeps) return;
-    const punteggio = (a: any) => {
-      const t = String(a.tipo || "").toUpperCase();
-      if (ruolo === "PRODUTTORE") return t === "DESTINATARIO" ? 2 : 1;
-      return 1;
-    };
-    const best = [...autsOrdinate].sort((a, b) => {
-      const diff = punteggio(b) - punteggio(a);
-      if (diff !== 0) return diff;
-      return String(b.data_scadenza || "").localeCompare(String(a.data_scadenza || ""));
-    })[0];
+    // Sempre l'autorizzazione in corso di validità; per il produttore, a parità,
+    // quella di impianto (righe DESTINATARIO).
+    const best = scegliAutorizzazione(
+      autsOrdinate,
+      ruolo === "PRODUTTORE" ? (a: any) => String(a.tipo || "").toUpperCase() === "DESTINATARIO" : undefined,
+    );
     if (!best) return;
     const key = `${clienteId || ""}|${best.id}`;
     if (autoAutRef.current === key || autId) return;
@@ -902,7 +900,8 @@ export function PresetAziendaSelector({
                 <option key={a.id} value={a.id}>
                   {a.numero_autorizzazione} — {a.tipo}
                   {a.ente_rilascio ? ` ${a.ente_rilascio}` : ""}
-                  {a.data_scadenza ? ` (scad. ${a.data_scadenza})` : ""}
+                  {a.data_scadenza ? ` (scad. ${a.data_scadenza.slice(8, 10)}/${a.data_scadenza.slice(5, 7)}/${a.data_scadenza.slice(0, 4)})` : ""}
+                  {isAutorizzazioneScaduta(a) ? " — SCADUTA" : ""}
                 </option>
               ))}
               {auts.map((a) => (

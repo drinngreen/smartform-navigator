@@ -42,6 +42,7 @@ import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
 import { RicercaConducenteTarga } from "@/components/fir/RicercaConducenteTarga";
+import { scegliAutorizzazione } from "@/lib/autorizzazioneValida";
 import { OPERAZIONI_DESTINAZIONE, normalizzaCodiceOperazione } from "@/data/operazioniDestinazione";
 
 // ── Neon color map per section ──────────────────────────────
@@ -319,15 +320,15 @@ function DestinatarioSelector({ onSelect }: { onSelect: (soggetto: Soggetto) => 
         .from("cliente_autorizzazioni")
         .select("numero_autorizzazione,tipo,ente_rilascio,data_inizio,data_scadenza")
         .in("cliente_id", ids)
-        .order("data_scadenza", { ascending: false })
-        .limit(50);
+        .limit(200);
       const righe = (autorizzazioni || []).filter((a: any) => a.numero_autorizzazione);
-      autorizzazione = righe.find((a: any) => a.tipo === "DESTINATARIO") || righe[0] || null;
+      // Prima proposta: l'autorizzazione in corso di validità, non una scaduta
+      autorizzazione = scegliAutorizzazione(righe, (a: any) => a.tipo === "DESTINATARIO");
       if (autorizzazione) {
         enriched = {
           ...soggetto,
           autorizzazione: autorizzazione.numero_autorizzazione || "",
-          tipoAut: autorizzazione.ente_rilascio || soggetto.tipoAut || autorizzazione.tipo || "",
+          tipoAut: autorizzazione.ente_rilascio || soggetto.tipoAut || "",
           dataAut: autorizzazione.data_inizio || autorizzazione.data_scadenza || "",
         };
       }
