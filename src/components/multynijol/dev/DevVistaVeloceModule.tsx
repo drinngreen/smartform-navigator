@@ -109,8 +109,12 @@ export function DevVistaVeloceModule() {
     retry: false,
     queryFn: async () => {
       const m = new Map<string, { partenza: number | null; destino: number | null; stato: string | null }>();
-      for (const [cliente, cfSogg] of [["multy", MULTY_CF], ["niyol", NIYOL_CF]] as const) {
-        const { items } = await leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?identificativo_soggetto=${cfSogg}`, "2026-09-01");
+      const letture = await Promise.all(
+        ([["multy", MULTY_CF], ["niyol", NIYOL_CF]] as const).map(([cliente, cfSogg]) =>
+          leggiTutteLePagineFormulari(cliente, `/formulari/v1.0?identificativo_soggetto=${cfSogg}`, "2026-09-01"),
+        ),
+      );
+      for (const { items } of letture) {
         for (const it of items) {
           const p = pesiDaRentri(it);
           if (!p.numero) continue;

@@ -205,15 +205,30 @@ export async function leggiTutteLePagineFormulari(
     if (!response || !response.success) response = res;
     return estraiElencoFormulari(res.data);
   };
-  for (let da = dal; da <= al; da = add(da, 7)) {
-    const a = add(da, 6) > al ? al : add(da, 6);
-    let lista = await leggi(da, a);
-    if (lista === null) { if (!items.length && pagine === 1) return { response: response!, items, pagine }; throw new Error(response?.userMessage || response?.error || `Lettura RENTRI non riuscita (${da} → ${a})`); }
+  // Finestre settimanali lette 3 alla volta (prima erano una dopo l'altra e la
+  // pagina restava a lungo su «non verificato»). L'ordine dei risultati resta quello delle date.
+  const finestre: [string, string][] = [];
+  for (let da = dal; da <= al; da = add(da, 7)) finestre.push([da, add(da, 6) > al ? al : add(da, 6)]);
+  const leggiFinestra = async ([da, a]: [string, string], gia?: Rec[]): Promise<Rec[]> => {
+    let lista = gia ?? await leggi(da, a);
+    if (lista === null) throw new Error(response?.userMessage || response?.error || `Lettura RENTRI non riuscita (${da} → ${a})`);
     if (lista.length >= 50 && da !== a) {
-      lista = [];
-      for (let g = da; g <= a; g = add(g, 1)) lista.push(...((await leggi(g, g)) ?? []));
+      const giorni: string[] = [];
+      for (let g = da; g <= a; g = add(g, 1)) giorni.push(g);
+      lista = (await Promise.all(giorni.map((g) => leggi(g, g)))).flatMap((x) => x ?? []);
     }
-    for (const r of lista) {
+    return lista;
+  };
+  if (finestre.length) {
+    // La prima finestra da sola: se il RENTRI non risponde affatto si restituisce subito la risposta.
+    const prima = await leggi(finestre[0][0], finestre[0][1]);
+    if (prima === null) return { response: response!, items, pagine };
+    const risultati: Rec[][] = new Array(finestre.length);
+    risultati[0] = await leggiFinestra(finestre[0], prima);
+    let next = 1;
+    const worker = async () => { while (next < finestre.length) { const i = next++; risultati[i] = await leggiFinestra(finestre[i]); } };
+    await Promise.all([worker(), worker(), worker()]);
+    for (const lista of risultati) for (const r of lista) {
       const k = soloCifreLettere(r.numero_fir ?? r.numeroFir ?? JSON.stringify(r));
       if (visti.has(k)) continue;
       visti.add(k); items.push(r);
