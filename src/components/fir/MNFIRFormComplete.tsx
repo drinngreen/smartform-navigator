@@ -41,6 +41,7 @@ import { getTenantConfig } from "@/lib/rentriBlockCodes";
 import { mapStoreToRentriFirPayload } from "@/lib/rentriFirPayloadFromStore";
 import { NuovaFatturaDialog, type Riga } from "@/components/fatturazione/NuovaFatturaDialog";
 import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
+import { RicercaConducenteTarga } from "@/components/fir/RicercaConducenteTarga";
 import { OPERAZIONI_DESTINAZIONE, normalizzaCodiceOperazione } from "@/data/operazioniDestinazione";
 
 // ── Neon color map per section ──────────────────────────────
@@ -2131,6 +2132,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
               }}
             />
 
+            <RicercaConducenteTarga
+              onSelect={({ conducente, targa, rimorchio }) => {
+                if (conducente) {
+                  u("conducenteNomeCognome", conducente);
+                  u("trasportatoreNomeAutista", conducente);
+                }
+                if (targa) u("targaAutomezzo", targa);
+                if (rimorchio) u("targaRimorchio", rimorchio);
+              }}
+            />
             <Field label="Denominazione" value={d.trasportatoreDenominazione} onChange={(v) => u("trasportatoreDenominazione", v)} />
             <Field label="Codice Fiscale / P.IVA" value={d.trasportatoreCF} onChange={(v) => u("trasportatoreCF", v)} />
             <Row>
@@ -2218,6 +2229,16 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
                 const nomeCompleto = [c.cognome, c.nome].filter(Boolean).join(" ");
                 u("conducenteNomeCognome", nomeCompleto);
                 u("trasportatoreNomeAutista", nomeCompleto);
+              }}
+            />
+            <RicercaConducenteTarga
+              onSelect={({ conducente, targa, rimorchio }) => {
+                if (conducente) {
+                  u("conducenteNomeCognome", conducente);
+                  u("trasportatoreNomeAutista", conducente);
+                }
+                if (targa) u("targaAutomezzo", targa);
+                if (rimorchio) u("targaRimorchio", rimorchio);
               }}
             />
             <Field label="Conducente - Nome e Cognome" value={d.conducenteNomeCognome} onChange={(v) => {
