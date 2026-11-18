@@ -540,6 +540,9 @@ export function PresetAziendaSelector({
 
   const selectAut = (id: string) => {
     setAutId(id);
+    setModificaTipo(false);
+    setTipoDaSalvare("");
+    setEsitoTipo(null);
     const local = auts.find((a) => a.id === id);
     if (local) {
       onSelectAutorizzazione({ numero: local.numero, tipo: local.tipo, data: local.data });
@@ -556,6 +559,32 @@ export function PresetAziendaSelector({
     }
   };
 
+
+  const [tipoDaSalvare, setTipoDaSalvare] = useState("");
+  const [salvandoTipo, setSalvandoTipo] = useState(false);
+  const [modificaTipo, setModificaTipo] = useState(false);
+  const [esitoTipo, setEsitoTipo] = useState<{ ok: boolean; testo: string } | null>(null);
+
+  /** Salva in anagrafica il tipo ufficiale dell'autorizzazione scelta. Vale per tutte
+   *  le sedi della stessa azienda con lo stesso numero, così si compila da solo ovunque. */
+  const salvaTipoAutorizzazione = async (aut: any, testo: string) => {
+    const norm = (v: unknown) => String(v ?? "").toUpperCase().replace(/\W/g, "");
+    const ids = dbAuts.filter((a) => norm(a.numero_autorizzazione) === norm(aut.numero_autorizzazione)).map((a) => a.id);
+    setSalvandoTipo(true);
+    setEsitoTipo(null);
+    const { error } = await supabase.from("cliente_autorizzazioni").update({ ente_rilascio: testo }).in("id", ids);
+    setSalvandoTipo(false);
+    if (error) {
+      setEsitoTipo({ ok: false, testo: "Non è stato possibile salvare il tipo (permessi o connessione). Il formulario resta compilato." });
+      onSelectAutorizzazione({ numero: aut.numero_autorizzazione || "", tipo: testo, data: aut.data_inizio || aut.data_scadenza || "" });
+      return;
+    }
+    setDbAuts((prev) => prev.map((a) => (ids.includes(a.id) ? { ...a, ente_rilascio: testo } : a)));
+    setModificaTipo(false);
+    setTipoDaSalvare("");
+    setEsitoTipo({ ok: true, testo: "Tipo salvato." });
+    onSelectAutorizzazione({ numero: aut.numero_autorizzazione || "", tipo: testo, data: aut.data_inizio || aut.data_scadenza || "" });
+  };
 
   const salvaNuovo = () => {
     const key = aziendaKey || clienteId;
@@ -908,12 +937,51 @@ export function PresetAziendaSelector({
             </p>
           )}
 
-          {autId && dbAuts.some((a) => a.id === autId && !tipoUfficialeDaAutorizzazione(a)) && (
-            <p className="text-[10px] text-amber-300">
-              Il numero di autorizzazione è compilato, ma in anagrafica non è indicato il tipo ufficiale:
-              scegli il tipo nella tendina «Tipo Aut.» del formulario prima di inviare al RENTRI.
-            </p>
-          )}
+          {autId && dbAuts.some((a) => a.id === autId) && (() => {
+            const aut = dbAuts.find((a) => a.id === autId)!;
+            const tipoAttuale = tipoUfficialeDaAutorizzazione(aut);
+            if (tipoAttuale && !modificaTipo) {
+              return (
+                <p className="text-[10px] text-emerald-300">
+                  ✓ Tipo salvato per l'autorizzazione {aut.numero_autorizzazione}: {tipoAttuale}{" "}
+                  <button type="button" onClick={() => { setTipoDaSalvare(tipoAttuale); setModificaTipo(true); }} className="underline text-white/60 hover:text-white">
+                    cambia
+                  </button>
+                </p>
+              );
+            }
+            return (
+              <div className="rounded-lg border border-amber-400/40 bg-amber-400/10 p-2 space-y-1.5">
+                <p className="text-[10px] text-amber-200">
+                  {tipoAttuale
+                    ? `Cambia il tipo salvato per l'autorizzazione ${aut.numero_autorizzazione}:`
+                    : `Per l'autorizzazione ${aut.numero_autorizzazione} non è ancora salvato il tipo. Sceglilo e salvalo: dalla prossima volta si compilerà da solo.`}
+                </p>
+                <div className="flex gap-2">
+                  <select className={selectCls} value={tipoDaSalvare} onChange={(e) => setTipoDaSalvare(e.target.value)}>
+                    <option value="">-- Tipo di autorizzazione --</option>
+                    {TIPI_AUTORIZZAZIONE_UFFICIALI.map((t) => (
+                      <option key={t.codice} value={t.testo}>{t.breve}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!tipoDaSalvare || salvandoTipo}
+                    onClick={() => salvaTipoAutorizzazione(aut, tipoDaSalvare)}
+                    className="shrink-0 rounded-lg border border-emerald-400/50 bg-emerald-500/15 px-3 text-xs text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-40"
+                  >
+                    {salvandoTipo ? "Salvo…" : "Salva"}
+                  </button>
+                  {tipoAttuale && (
+                    <button type="button" onClick={() => setModificaTipo(false)} className="shrink-0 text-[10px] text-white/60 hover:text-white">
+                      annulla
+                    </button>
+                  )}
+                </div>
+                {esitoTipo && <p className={`text-[10px] ${esitoTipo.ok ? "text-emerald-300" : "text-red-300"}`}>{esitoTipo.testo}</p>}
+              </div>
+            );
+          })()}
 
           {onSelectUnitaLocale && (
             <select
