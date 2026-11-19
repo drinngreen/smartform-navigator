@@ -59,7 +59,13 @@ export function RentriFormulariPanel({ cliente }: { cliente: RentriCliente }) {
   const visible = useMemo(() => (rows ?? []).filter((r) => {
     const text = [r.numeroFir, r.produttore, r.destinatario, r.trasportatore, r.intermediario, r.eer].join(" ").toLowerCase();
     return text.replace(/\s/g, "").includes(query.toLowerCase().replace(/\s/g, "")) && (role === "Tutti" || ruoliFormulario(r, cf).includes(role as ReturnType<typeof ruoliFormulario>[number])) && (!from || !r.data || r.data.slice(0, 10) >= from) && (!to || !r.data || r.data.slice(0, 10) <= to);
-  }), [rows, query, role, from, to, cf]);
+  })
+    // Dal più recente al meno recente; a parità di data, numero FIR decrescente; senza data in fondo
+    .sort((a, b) => {
+      const da = String(a.data || ""), db = String(b.data || "");
+      if (!da !== !db) return da ? -1 : 1;
+      return db.localeCompare(da) || String(b.numeroFir || "").localeCompare(String(a.numeroFir || ""), "it", { numeric: true });
+    }), [rows, query, role, from, to, cf]);
   const load = async () => {
     const id = ++request.current;
     setLoading(true); setError(null); setDetail(null); setRows(null);
