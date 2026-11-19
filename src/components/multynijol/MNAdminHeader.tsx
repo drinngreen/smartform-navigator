@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MessageSquare, PanelRight, LogOut, ArrowLeft } from "lucide-react";
+import { MessageSquare, PanelRight, LogOut, ArrowLeft, FileText } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -56,6 +56,11 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     : "/mn/admin/dev-multyproget";
   const showBack = location.pathname !== "/mn/admin" && location.pathname !== dashboardPath;
 
+  // Pulsante fisso per la Console RENTRI, nel contesto in cui si sta lavorando
+  const consoleContext = routeContext && ["dev-multyproget", "multyproget", "niyol"].includes(routeContext) ? routeContext : "dev-multyproget";
+  const consolePath = `/mn/admin/${consoleContext}/rentri-console`;
+  const inConsole = location.pathname.endsWith("/rentri-console");
+
   return (
     <div className="px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -74,6 +79,19 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
         )}
       </div>
+        <button
+          onClick={() => navigate(consolePath)}
+          disabled={inConsole}
+          className={`ml-2 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all duration-300 ${
+            inConsole
+              ? "bg-pink-500/25 border-pink-400/70 text-pink-100 cursor-default"
+              : "bg-pink-500/10 border-pink-500/50 text-pink-200 hover:bg-pink-500/20 hover:shadow-[0_0_15px_rgba(236,72,153,0.35)]"
+          }`}
+          title="Console RENTRI"
+        >
+          <FileText className="h-4 w-4" />
+          <span className="hidden sm:inline">Console RENTRI</span>
+        </button>
       </div>
 
       <div className="flex items-center gap-2">
