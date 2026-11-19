@@ -56,10 +56,13 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
     : "/mn/admin/dev-multyproget";
   const showBack = location.pathname !== "/mn/admin" && location.pathname !== dashboardPath;
 
-  // Pulsante fisso per la Console RENTRI, nel contesto in cui si sta lavorando
-  const consoleContext = routeContext && ["dev-multyproget", "multyproget", "niyol"].includes(routeContext) ? routeContext : "dev-multyproget";
-  const consolePath = `/mn/admin/${consoleContext}/rentri-console`;
+  // Due pulsanti fissi e separati: Console RENTRI di Multyproget e di Niyol
   const inConsole = location.pathname.endsWith("/rentri-console");
+  const consoleAttiva = !inConsole ? null : routeContext === "niyol" ? "niyol" : "multy";
+  const consoles = [
+    { id: "multy", label: "Console RENTRI Multyproget", path: "/mn/admin/dev-multyproget/rentri-console", on: "bg-orange-500/25 border-orange-400/70 text-orange-100", off: "bg-orange-500/10 border-orange-500/50 text-orange-200 hover:bg-orange-500/20 hover:shadow-[0_0_15px_rgba(249,115,22,0.35)]" },
+    { id: "niyol", label: "Console RENTRI Niyol", path: "/mn/admin/niyol/rentri-console", on: "bg-cyan-500/25 border-cyan-400/70 text-cyan-100", off: "bg-cyan-500/10 border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.35)]" },
+  ] as const;
 
   return (
     <div className="px-6 py-4 flex items-center justify-between">
@@ -79,19 +82,20 @@ export function MNAdminHeader({ title, subtitle }: MNAdminHeaderProps) {
           <p className="text-sm text-white/90 font-mono mt-1 drop-shadow-[0_0_6px_rgba(255,255,255,0.3)]">{subtitle}</p>
         )}
       </div>
-        <button
-          onClick={() => navigate(consolePath)}
-          disabled={inConsole}
-          className={`ml-2 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all duration-300 ${
-            inConsole
-              ? "bg-pink-500/25 border-pink-400/70 text-pink-100 cursor-default"
-              : "bg-pink-500/10 border-pink-500/50 text-pink-200 hover:bg-pink-500/20 hover:shadow-[0_0_15px_rgba(236,72,153,0.35)]"
-          }`}
-          title="Console RENTRI"
-        >
-          <FileText className="h-4 w-4" />
-          <span className="hidden sm:inline">Console RENTRI</span>
-        </button>
+        {consoles.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => navigate(c.path)}
+            disabled={consoleAttiva === c.id}
+            className={`ml-1 first-of-type:ml-2 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all duration-300 ${
+              consoleAttiva === c.id ? `${c.on} cursor-default` : c.off
+            }`}
+            title={c.label}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline whitespace-nowrap">{c.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2">

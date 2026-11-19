@@ -125,6 +125,8 @@ export default function MNRentriConsolePage() {
   const isValid = !!context && validContexts.includes(context);
   const mnCtx = MN_CONTEXTS.find((c) => c.id === context) ?? MN_CONTEXTS.find((c) => c.id === "multyproget") ?? MN_CONTEXTS[0];
   const [cliente, setCliente] = useState<RentriCliente>(CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy");
+  // Passando da una console all'altra (Multyproget ↔ Niyol) la pagina resta montata: si segue l'indirizzo
+  useEffect(() => { setCliente(CONTEXT_TO_CLIENTE[context ?? ""] ?? "multy"); }, [context]);
   const configKey = rentriConfigKey(cliente);
   const societaId = configKey === "niyol" ? "niyol" : "multy";
 
@@ -550,21 +552,13 @@ export default function MNRentriConsolePage() {
 
         <RentriRetryQueue societaId={societaId} />
 
-        {/* Barra stato */}
-        <div className="flex flex-wrap items-center gap-2">
-          {(["multy", "niyol"] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => setCliente(c)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                configKey === c
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
-              }`}
-            >
-              {c === "niyol" ? "Niyol" : "Multyproget"}
-            </button>
-          ))}
+        {/* Società della console: fissata dall'indirizzo (pulsanti separati in alto) */}
+        <div
+          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border ${
+            configKey === "niyol" ? "bg-cyan-500/15 border-cyan-400/60 text-cyan-100" : "bg-orange-500/15 border-orange-400/60 text-orange-100"
+          }`}
+        >
+          Console RENTRI — {configKey === "niyol" ? "Niyol" : "Multyproget"}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-card/60 border border-border/30">
