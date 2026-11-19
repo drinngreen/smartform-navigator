@@ -1790,10 +1790,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           )}
 
 
-          {/* Tasto giallo sempre visibile in compilazione, cartaceo o digitale (salva la bozza e stampa il modulo) */}
-          {store.workflowStatus === 'bozza' && (
+          {/* Tasto giallo sempre visibile: sul cartaceo «Salva e stampa», sul digitale resta «Emetti FIR e firma la partenza» (sopra) */}
+          {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
             <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-3 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-              <Printer className="h-4 w-4" /> {d.formatoFir === "cartaceo" ? "SALVA E STAMPA FIR CARTACEO" : "SALVA E STAMPA FIR"}
+              <Printer className="h-4 w-4" /> SALVA E STAMPA FIR CARTACEO
             </button>
           )}
 
