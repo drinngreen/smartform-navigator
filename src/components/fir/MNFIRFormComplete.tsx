@@ -1143,6 +1143,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     }
   };
 
+  const [operazioniAperte, setOperazioniAperte] = useState(false);
   const handleSaveAndPrintCartaceo = async () => {
     const saved = await handleSaveDraft();
     if (!saved) return;
@@ -1789,9 +1790,10 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
           )}
 
 
-          {store.workflowStatus === 'bozza' && d.formatoFir === "cartaceo" && (
-            <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-4 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-base tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-              <Printer className="h-5 w-5" /> SALVA E STAMPA FIR CARTACEO
+          {/* Tasto giallo sempre visibile in compilazione, cartaceo o digitale (salva la bozza e stampa il modulo) */}
+          {store.workflowStatus === 'bozza' && (
+            <button onClick={() => void handleSaveAndPrintCartaceo()} disabled={createFIR.isPending || silentSaveFIR.isPending} className="w-full py-3 rounded-2xl bg-amber-500/20 border border-amber-500/50 text-amber-200 font-display text-sm tracking-wider hover:bg-amber-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              <Printer className="h-4 w-4" /> {d.formatoFir === "cartaceo" ? "SALVA E STAMPA FIR CARTACEO" : "SALVA E STAMPA FIR"}
             </button>
           )}
 
@@ -1929,30 +1931,40 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
         </div>
       )}
 
-      {/* Il modulo compilato resta sempre consultabile e stampabile, anche dopo invio/chiusura. */}
+      {/* Il modulo compilato resta sempre consultabile e stampabile, anche dopo invio/chiusura.
+          Le operazioni secondarie stanno in una tendina compatta (richiesta ufficio 19/11/2026). */}
       {(creationMode || isStarted || store.editingFirId) && (
-        <div className="space-y-2">
-          <button onClick={() => void handlePrintFormulario(false)} className="w-full py-2.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 text-sky-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-sky-500/20 transition-colors">
-            <Printer className="h-3.5 w-3.5" /> ANTEPRIMA E STAMPA MODULO COMPILATO
+        <div className="rounded-xl border border-border/40 bg-card/40">
+          <button
+            type="button"
+            onClick={() => setOperazioniAperte((v) => !v)}
+            className="w-full flex items-center justify-between px-3 py-2 text-xs font-display tracking-wider text-white/80 hover:bg-muted/20 rounded-xl"
+          >
+            <span>OPERAZIONI PER FIR</span>
+            {operazioniAperte ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
-          <button onClick={() => void handlePrintDocumentoViaggio()} className="w-full py-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-display text-[11px] tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition-colors">
-            <Printer className="h-3.5 w-3.5" /> STAMPA DOCUMENTO DI VIAGGIO (QR ufficiale)
-          </button>
-          {store.workflowStatus !== 'chiuso' && (
-            <>
-              <button onClick={handleResetForm} className="w-full py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-300 font-display text-xs tracking-wider flex items-center justify-center gap-2 hover:bg-red-500/20 hover:text-red-200 transition-colors">
-                <RotateCcw className="h-3.5 w-3.5" /> SVUOTA FORMULARIO
+          {operazioniAperte && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 p-2 pt-0">
+              <button onClick={() => void handlePrintFormulario(false)} className="py-1.5 px-2 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-300 text-[11px] flex items-center gap-1.5 hover:bg-sky-500/20 transition-colors">
+                <Printer className="h-3 w-3" /> Anteprima e stampa modulo compilato
               </button>
-
-              <div className="flex gap-2">
-                <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="flex-1 py-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-display text-sm flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors disabled:opacity-50">
-                  <Plus className="h-4 w-4" /> Nuovo FIR
-                </button>
-                <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="flex-1 py-3 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan font-display text-sm flex items-center justify-center gap-2 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
-                  <Save className="h-4 w-4" /> Metti in Bozza
-                </button>
-              </div>
-            </>
+              <button onClick={() => void handlePrintDocumentoViaggio()} className="py-1.5 px-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] flex items-center gap-1.5 hover:bg-emerald-500/20 transition-colors">
+                <Printer className="h-3 w-3" /> Stampa documento di viaggio (QR ufficiale)
+              </button>
+              {store.workflowStatus !== 'chiuso' && (
+                <>
+                  <button onClick={handleSaveDraft} disabled={createFIR.isPending || silentSaveFIR.isPending} className="py-1.5 px-2 rounded-lg border border-neon-cyan/20 bg-neon-cyan/10 text-neon-cyan text-[11px] flex items-center gap-1.5 hover:bg-neon-cyan/20 transition-colors disabled:opacity-50">
+                    <Save className="h-3 w-3" /> Metti in bozza
+                  </button>
+                  <button onClick={() => { if (window.confirm("La bozza corrente verrà salvata automaticamente. Vuoi procedere con un nuovo formulario?")) handleNewFIR(); }} disabled={createFIR.isPending} className="py-1.5 px-2 rounded-lg border border-primary/20 bg-primary/10 text-primary text-[11px] flex items-center gap-1.5 hover:bg-primary/20 transition-colors disabled:opacity-50">
+                    <Plus className="h-3 w-3" /> Nuovo FIR
+                  </button>
+                  <button onClick={handleResetForm} className="py-1.5 px-2 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 text-[11px] flex items-center gap-1.5 hover:bg-red-500/20 transition-colors sm:col-span-2">
+                    <RotateCcw className="h-3 w-3" /> Svuota formulario
+                  </button>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
