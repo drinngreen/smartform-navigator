@@ -25,6 +25,23 @@ const COLONNE = "id,numero,data_documento,tipo,ragione_sociale,cf_piva,imponibil
 const eur = (v: number) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(v || 0);
 const num = (v: number) => new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 }).format(v || 0);
 const dataIt = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+/**
+ * Regime IVA ricavato da imponibile e totale (l'elenco importato non ha il dettaglio righe):
+ * totale = imponibile → reverse charge; totale = imponibile + 22% → IVA; altrimenti misto.
+ */
+type Regime = "reverse" | "iva" | "misto";
+const regimeDi = (r: { imponibile: number; totale: number }): Regime => {
+  const imp = Math.abs(r.imponibile), tot = Math.abs(r.totale);
+  if (Math.abs(tot - imp) < 0.02) return "reverse";
+  if (Math.abs(tot - imp * 1.22) <= Math.max(0.05, imp * 0.002)) return "iva";
+  return "misto";
+};
+const REGIME_LABEL: Record<Regime, string> = { reverse: "Reverse charge", iva: "IVA 22%", misto: "Misto (IVA + RC)" };
+const REGIME_CLS: Record<Regime, string> = { reverse: "text-sky-300", iva: "text-emerald-300", misto: "text-amber-300" };
+/** Prezzo medio per kg: solo se i kg sono significativi (servizi e canoni hanno 0 o 1 kg). */
+const prezzoKg = (r: { imponibile: number; kg: number | null }) => (r.kg && Math.abs(r.kg) > 1 ? Math.abs(r.imponibile) / Math.abs(r.kg) : null);
+const eurKg = (v: number | null) => (v == null ? "—" : `${new Intl.NumberFormat("it-IT", { minimumFractionDigits: 3, maximumFractionDigits: 3 }).format(v)} €/kg`);
+
 const TIPO_LABEL: Record<FatturaStorico["tipo"], string> = { fattura: "Fattura", nota_credito: "Nota di credito", acconto: "Acconto" };
 
 /** Legge tutto lo storico a pagine da 1000 righe (limite del database). */
@@ -49,6 +66,7 @@ export function StoricoFatturePanel() {
   const [cerca, setCerca] = useState("");
   const [anno, setAnno] = useState("tutti");
   const [tipo, setTipo] = useState("tutti");
+  const [regime, setRegime] = useState("tutti");
   const [aperta, setAperta] = useState<FatturaStorico | null>(null);
   const selezione = useSelezioneElenco();
 
@@ -59,11 +77,12 @@ export function StoricoFatturePanel() {
     return righe.filter((r) => {
       if (anno !== "tutti" && !r.data_documento.startsWith(anno)) return false;
       if (tipo !== "tutti" && r.tipo !== tipo) return false;
+      if (regime !== "tutti" && regimeDi(r) !== regime) return false;
       if (!termini.length) return true;
       const testo = [r.numero, r.ragione_sociale, r.cf_piva, r.citta].join(" ").toLowerCase();
       return termini.every((t) => testo.includes(t));
     });
-  }, [righe, cerca, anno, tipo]);
+  }, [righe, cerca, anno, tipo, regime]);
 
   const totali = useMemo(() => {
     const t = { fatture: 0, note: 0, imponibile: 0, totale: 0, kg: 0, clienti: new Set<string>() };
@@ -94,7 +113,7 @@ export function StoricoFatturePanel() {
 
   const esporta = () =>
     exportToExcel(
-      visibili.map((r) => ({ ...r, data: dataIt(r.data_documento), tipoLabel: TIPO_LABEL[r.tipo] })),
+      visibili.map((r) => ({ ...r, data: dataIt(r.data_documento), tipoLabel: TIPO_LABEL[r.tipo], regime: REGIME_LABEL[regimeDi(r)], iva: Math.round((r.totale - r.imponibile) * 100) / 100, prezzo: prezzoKg(r) == null ? "" : Math.round(prezzoKg(r)! * 1000) / 1000 })),
       [
         { header: "Numero", key: "numero", width: 14 },
         { header: "Data", key: "data", width: 12 },
@@ -104,6 +123,9 @@ export function StoricoFatturePanel() {
         { header: "Imponibile", key: "imponibile", width: 14 },
         { header: "Totale", key: "totale", width: 14 },
         { header: "Kg", key: "kg", width: 10 },
+        { header: "Prezzo medio €/kg", key: "prezzo", width: 14 },
+        { header: "Regime IVA", key: "regime", width: 18 },
+        { header: "IVA", key: "iva", width: 12 },
         { header: "Città", key: "citta", width: 20 },
         { header: "Pagamento", key: "pagamento", width: 28 },
       ],
@@ -125,7 +147,8 @@ export function StoricoFatturePanel() {
         <History className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
           Storico delle fatture emesse da Multyproget dal 1° gennaio 2024, importato dall'elenco del gestionale. Solo consultazione: non viene inviato a Sibill.
-          Le fatture fino ad aprile 2026 sono nel cassetto fiscale.
+          Le fatture fino ad aprile 2026 sono nel cassetto fiscale. Il prezzo è medio (imponibile ÷ kg) perché l'elenco non ha le singole righe;
+          il regime IVA è ricavato dal totale: uguale all'imponibile = reverse charge, +22% = IVA, altrimenti misto.
         </p>
       </div>
 
@@ -149,6 +172,12 @@ export function StoricoFatturePanel() {
           <option value="fattura">Solo fatture</option>
           <option value="nota_credito">Solo note di credito</option>
           <option value="acconto">Solo acconti</option>
+        </select>
+        <select value={regime} onChange={(e) => setRegime(e.target.value)} className="rounded-lg border border-border/40 bg-secondary/40 px-3 py-2 text-sm">
+          <option value="tutti">IVA e reverse charge</option>
+          <option value="reverse">Solo reverse charge</option>
+          <option value="iva">Solo con IVA</option>
+          <option value="misto">Solo miste</option>
         </select>
         <button onClick={esporta} className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-500/20">
           <FileSpreadsheet className="h-4 w-4" /> Excel
@@ -193,8 +222,8 @@ export function StoricoFatturePanel() {
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-secondary">
             <tr>
-              {["Numero", "Data", "Tipo", "Cliente", "Città", "Imponibile", "Totale", "Kg"].map((h) => (
-                <th key={h} className={`px-3 py-2 text-left whitespace-nowrap ${["Imponibile", "Totale", "Kg"].includes(h) ? "text-right" : ""}`}>{h}</th>
+              {["Numero", "Data", "Tipo", "Cliente", "Città", "Imponibile", "Totale", "Kg", "€/kg", "IVA"].map((h) => (
+                <th key={h} className={`px-3 py-2 text-left whitespace-nowrap ${["Imponibile", "Totale", "Kg", "€/kg"].includes(h) ? "text-right" : ""}`}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -209,11 +238,13 @@ export function StoricoFatturePanel() {
                 <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">{eur(r.imponibile)}</td>
                 <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">{eur(r.totale)}</td>
                 <td className="px-3 py-1.5 text-right whitespace-nowrap">{r.kg == null ? "—" : num(r.kg)}</td>
+                <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">{eurKg(prezzoKg(r)).replace(" €/kg", "")}</td>
+                <td className={`px-3 py-1.5 whitespace-nowrap ${REGIME_CLS[regimeDi(r)]}`}>{REGIME_LABEL[regimeDi(r)]}</td>
               </tr>
             ))}
             {!visibili.length && (
               <tr>
-                <td colSpan={8} className="p-6 text-center text-muted-foreground">Nessuna fattura con questi filtri.</td>
+                <td colSpan={10} className="p-6 text-center text-muted-foreground">Nessuna fattura con questi filtri.</td>
               </tr>
             )}
           </tbody>
@@ -235,6 +266,9 @@ export function StoricoFatturePanel() {
               ["Imponibile", eur(aperta.imponibile)],
               ["Totale documento", eur(aperta.totale)],
               ["Kg", aperta.kg == null ? "—" : num(aperta.kg)],
+              ["Prezzo medio", eurKg(prezzoKg(aperta))],
+              ["Regime IVA", REGIME_LABEL[regimeDi(aperta)]],
+              ["IVA", eur(aperta.totale - aperta.imponibile)],
               ["Pagamento", aperta.pagamento || "—"],
             ].map(([l, v]) => (
               <div key={l} className="flex justify-between gap-4 border-b border-border/20 pb-1">
