@@ -10,6 +10,7 @@ import { NuovaFatturaDialog } from "./NuovaFatturaDialog";
 import { FatturaViewerDialog } from "./FatturaViewerDialog";
 import { NoleggiTab } from "./NoleggiTab";
 import { SibillDocumentiPanel } from "./SibillDocumentiPanel";
+import { StoricoFatturePanel } from "./StoricoFatturePanel";
 import { inviaFatturaASibill, fetchSibillSync, aggiornaStatiSibill, elencaDocumentiSibill, isMockSync, type SibillSync, type SibillDocumento } from "@/lib/sibill";
 
 
@@ -36,7 +37,7 @@ const STATO_LABEL: Record<Stato, string> = {
 };
 
 export function FatturazioneModule({ tenantId }: Props) {
-  const [tab, setTab] = useState<"fatture" | "noleggi" | "sibill" | "sibill_in">("fatture");
+  const [tab, setTab] = useState<"fatture" | "noleggi" | "sibill" | "sibill_in" | "storico">("fatture");
   const [search, setSearch] = useState("");
   const [filterStato, setFilterStato] = useState<"tutti" | Stato>("tutti");
   const [filterFrom, setFilterFrom] = useState("");
@@ -208,7 +209,7 @@ export function FatturazioneModule({ tenantId }: Props) {
   return (
     <div className="space-y-4">
       {/* Tabs Fatture / Noleggi */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button onClick={() => setTab("fatture")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "fatture" ? "bg-primary/20 border-primary/40 text-primary" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
           <FileText className="h-4 w-4" /> Fatture
         </button>
@@ -221,9 +222,14 @@ export function FatturazioneModule({ tenantId }: Props) {
         <button onClick={() => setTab("sibill_in")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "sibill_in" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
           <UploadCloud className="h-4 w-4 rotate-180" /> Sibill — Ricevute (entrata)
         </button>
+        <button onClick={() => setTab("storico")} className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 border ${tab === "storico" ? "bg-amber-500/20 border-amber-500/40 text-amber-200" : "bg-card/40 border-border/30 text-muted-foreground"}`}>
+          <FileText className="h-4 w-4" /> Storico fatture
+        </button>
       </div>
 
-      {tab === "sibill" || tab === "sibill_in" ? (
+      {tab === "storico" ? (
+        <StoricoFatturePanel />
+      ) : tab === "sibill" || tab === "sibill_in" ? (
         <SibillDocumentiPanel key={tab} mock={false} tenantId={tenantId} initialMode={tab === "sibill_in" ? "IN" : "P"} />
       ) : tab === "noleggi" ? (
         <NoleggiTab tenantId={tenantId} onCreated={() => qc.invalidateQueries({ queryKey: ["fatture"] })} />
