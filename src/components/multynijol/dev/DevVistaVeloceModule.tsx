@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ const ETICHETTE: Record<string, string> = { bozza: "Bozza", verifica: "Verifica 
 
 export function DevVistaVeloceModule() {
   const selezione = useSelezioneElenco();
+  const qc = useQueryClient();
   const [filtro, setFiltro] = useState<"tutti" | TipoFormulario>("tutti");
   const [search, setSearch] = useState("");
   const [aperto, setAperto] = useState<{ form: any; modo: "vedi" | "conferma" | "modifica" } | null>(null);
@@ -151,6 +152,8 @@ export function DevVistaVeloceModule() {
             const pLoc = pesoPartenzaLocale(f);
             const dLoc = pesoDestinoLocale(f, pesiRegistro.pesi.get(k));
             return {
+              // già confermato: il FIR è presente nel registro (carico/scarico registrato)
+              confermato: !!k && pesiRegistro.chiavi.has(k),
               kgPartenza: rr?.partenza ?? pLoc,
               partenzaRentri: rr?.partenza != null,
               kgDestino: rr?.destino ?? dLoc,
@@ -239,9 +242,9 @@ export function DevVistaVeloceModule() {
             {isLoading && <tr><td colSpan={10} className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>}
             {!isLoading && righe.length === 0 && <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Nessun formulario</td></tr>}
             {righe.map((r) => (
-              <tr key={r.form.id} className="cursor-pointer border-t border-border/10 hover:bg-muted/20" {...selezione.propsVoce(String(r.form.id), () => setAperto({ form: r.form, modo: "vedi" }))}>
+              <tr key={r.form.id} className={`cursor-pointer border-t border-border/10 ${r.confermato ? "bg-blue-500/15 hover:bg-blue-500/25 border-l-4 border-l-blue-400" : "hover:bg-muted/20"}`} {...selezione.propsVoce(String(r.form.id), () => setAperto({ form: r.form, modo: "vedi" }))}>
                 <td className="p-2"><Badge variant="outline" className={TIPI[r.tipo].cls}>{TIPI[r.tipo].label}</Badge>{r.cartaceo && <Badge variant="outline" className="ml-1">Cartaceo</Badge>}</td>
-                <td className="p-2 font-mono">{r.form.numero_fir || "—"}</td>
+                <td className="p-2 font-mono">{r.form.numero_fir || "—"}{r.confermato && <Badge className="ml-2 bg-blue-500/30 text-blue-100 border-blue-400/60 hover:bg-blue-500/30">Confermato</Badge>}</td>
                 <td className="p-2"><Badge variant={r.stato === "chiuso" ? "default" : "secondary"}>{ETICHETTE[r.stato] ?? r.stato}</Badge></td>
                 <td className="p-2 text-xs">{fmtData(r.data)}</td>
                 <td className="p-2 font-mono">{r.cer}</td>
@@ -252,7 +255,8 @@ export function DevVistaVeloceModule() {
                 <td className="p-2" onClick={(e) => e.stopPropagation()}>
                   <div className="flex justify-end gap-1">
                     <Button size="sm" variant="ghost" title="Vedi" onClick={() => setAperto({ form: r.form, modo: "vedi" })}><Eye className="h-4 w-4" /></Button>
-                    <Button size="sm" variant="ghost" title="Conferma nel registro" onClick={() => setAperto({ form: r.form, modo: "conferma" })}><CheckCircle className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="ghost" title={r.confermato ? "Già confermato nel registro" : "Conferma nel registro"} className={r.confermato ? "text-blue-300" : ""}
+                      onClick={() => { if (r.confermato && !window.confirm(`Il formulario ${r.form.numero_fir} risulta GIÀ CONFERMATO nel registro. Aprire comunque la conferma?`)) return; setAperto({ form: r.form, modo: "conferma" }); }}><CheckCircle className="h-4 w-4" /></Button>
                     <Button size="sm" variant="ghost" title="Modifica" onClick={() => setAperto({ form: r.form, modo: "modifica" })}><Pencil className="h-4 w-4" /></Button>
                   </div>
                 </td>
@@ -262,7 +266,7 @@ export function DevVistaVeloceModule() {
         </table>
       </div>
 
-      <Dialog open={!!aperto} onOpenChange={(o) => { if (!o) { setAperto(null); refetch(); } }}>
+      <Dialog open={!!aperto} onOpenChange={(o) => { if (!o) { setAperto(null); refetch(); qc.invalidateQueries({ queryKey: ["vista-veloce-pesi-registro"] }); } }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={keepOpenOnDarkLemon} onInteractOutside={keepOpenOnDarkLemon} onFocusOutside={keepOpenOnDarkLemon}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
