@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ const fmtKg = (n: number | null) => (n == null ? "—" : `${n.toLocaleString("it
 const ETICHETTE: Record<string, string> = { bozza: "Bozza", verifica: "Verifica RENTRI", inviato: "Inviato al RENTRI", chiuso: "Chiuso" };
 
 export function DevVistaVeloceModule() {
+  const selezione = useSelezioneElenco();
   const [filtro, setFiltro] = useState<"tutti" | TipoFormulario>("tutti");
   const [search, setSearch] = useState("");
   const [aperto, setAperto] = useState<{ form: any; modo: "vedi" | "conferma" | "modifica" } | null>(null);
@@ -237,7 +239,7 @@ export function DevVistaVeloceModule() {
             {isLoading && <tr><td colSpan={10} className="p-6 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin" /></td></tr>}
             {!isLoading && righe.length === 0 && <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Nessun formulario</td></tr>}
             {righe.map((r) => (
-              <tr key={r.form.id} className="cursor-pointer border-t border-border/10 hover:bg-muted/20" onClick={() => setAperto({ form: r.form, modo: "vedi" })}>
+              <tr key={r.form.id} className="cursor-pointer border-t border-border/10 hover:bg-muted/20" {...selezione.propsVoce(String(r.form.id), () => setAperto({ form: r.form, modo: "vedi" }))}>
                 <td className="p-2"><Badge variant="outline" className={TIPI[r.tipo].cls}>{TIPI[r.tipo].label}</Badge>{r.cartaceo && <Badge variant="outline" className="ml-1">Cartaceo</Badge>}</td>
                 <td className="p-2 font-mono">{r.form.numero_fir || "—"}</td>
                 <td className="p-2"><Badge variant={r.stato === "chiuso" ? "default" : "secondary"}>{ETICHETTE[r.stato] ?? r.stato}</Badge></td>

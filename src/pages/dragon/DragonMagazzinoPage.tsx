@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { exportToExcel } from "@/lib/exportUtils";
 import { getCerDescrizionePerStampa } from "@/data/cerDescrizioni";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
@@ -26,6 +27,7 @@ import { DragonNewMovementForm } from "@/components/dragon/DragonNewMovementForm
 import { useNavigate } from "react-router-dom";
 
 export default function DragonMagazzinoPage() {
+  const selezione = useSelezioneElenco();
   const [scope, setScope] = useState<DragonWarehouseScope | undefined>(undefined);
   const { balances, stockMovements, isLoading } = useDragonStock(scope);
   const { items } = useDragonItems();
@@ -286,7 +288,7 @@ export default function DragonMagazzinoPage() {
                   <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Nessun movimento</TableCell></TableRow>
                 ) : (
                   filteredMovements.map((m) => (
-                    <TableRow key={m.id} className="border-border/10 cursor-pointer hover:bg-muted/30" onClick={() => setDetailMov(m)}>
+                    <TableRow key={m.id} className="border-border/10 cursor-pointer hover:bg-muted/30" {...selezione.propsVoce(String(m.id), () => setDetailMov(m))}>
                       <TableCell className="text-sm">{new Date(m.movement_date).toLocaleDateString("it-IT")}</TableCell>
                       <TableCell className="font-mono text-sm">{(m.item as any)?.codice_cer}</TableCell>
                       <TableCell className="text-xs">{(m.cause as any)?.name || "—"}</TableCell>

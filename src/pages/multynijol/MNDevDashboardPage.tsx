@@ -1,4 +1,5 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -49,6 +50,7 @@ import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck } f
 
 
 export default function MNDevDashboardPage() {
+  const selezione = useSelezioneElenco();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -80,7 +82,7 @@ export default function MNDevDashboardPage() {
       {/* Link rapidi in testa */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
         <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
+          {...selezione.propsVoce("/mn/admin/dev-multyproget/modulo-alternativo", () => navigate("/mn/admin/dev-multyproget/modulo-alternativo"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left"
         >
           <FileText size={20} className="text-amber-400" />
@@ -92,7 +94,7 @@ export default function MNDevDashboardPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => navigate("/mn/admin/dev-multyproget/guida")}
+            {...selezione.propsVoce("/mn/admin/dev-multyproget/guida", () => navigate("/mn/admin/dev-multyproget/guida"))}
             className="flex items-center gap-3 px-4 py-4 rounded-xl border border-emerald-500/30 bg-card hover:bg-emerald-500/10 transition-all text-left"
           >
             <HelpCircle size={20} className="text-emerald-400 shrink-0" />
@@ -103,7 +105,7 @@ export default function MNDevDashboardPage() {
           </button>
 
           <button
-            onClick={() => navigate("/mn/admin/dev-multyproget/tutorial")}
+            {...selezione.propsVoce("/mn/admin/dev-multyproget/tutorial", () => navigate("/mn/admin/dev-multyproget/tutorial"))}
             className="flex items-center gap-3 px-4 py-4 rounded-xl border border-sky-500/30 bg-card hover:bg-sky-500/10 transition-all text-left"
           >
             <PlayCircle size={20} className="text-sky-400 shrink-0" />
@@ -115,7 +117,7 @@ export default function MNDevDashboardPage() {
         </div>
 
         <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/rentri-console")}
+          {...selezione.propsVoce("/mn/admin/dev-multyproget/rentri-console", () => navigate("/mn/admin/dev-multyproget/rentri-console"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-cyan-500/30 bg-card hover:bg-cyan-500/10 transition-all text-left"
         >
           <Radar size={20} className="text-cyan-400" />
@@ -126,7 +128,7 @@ export default function MNDevDashboardPage() {
         </button>
 
         <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/centro-app-fir")}
+          {...selezione.propsVoce("/mn/admin/dev-multyproget/centro-app-fir", () => navigate("/mn/admin/dev-multyproget/centro-app-fir"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-violet-500/30 bg-card hover:bg-violet-500/10 transition-all text-left"
         >
           <Users size={20} className="text-violet-400" />
@@ -137,7 +139,7 @@ export default function MNDevDashboardPage() {
         </button>
 
         <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/news")}
+          {...selezione.propsVoce("/mn/admin/dev-multyproget/news", () => navigate("/mn/admin/dev-multyproget/news"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-sky-500/40 bg-card hover:bg-sky-500/10 transition-all text-left"
         >
           <Newspaper size={20} className="text-sky-400" />
@@ -148,7 +150,7 @@ export default function MNDevDashboardPage() {
         </button>
 
         <button
-          onClick={() => navigate("/mn/admin/dev-multyproget/autorizzazioni")}
+          {...selezione.propsVoce("/mn/admin/dev-multyproget/autorizzazioni", () => navigate("/mn/admin/dev-multyproget/autorizzazioni"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/40 bg-card hover:bg-amber-500/10 transition-all text-left"
         >
           <ShieldCheck size={20} className="text-amber-400" />

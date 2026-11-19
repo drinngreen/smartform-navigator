@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { revertFirFromRegistryAndInventory } from "@/lib/firFinalSync";
@@ -71,6 +72,7 @@ export function DevFormulariList({
   crossTenantId,
   crossTransporterCf,
 }: Props) {
+  const selezione = useSelezioneElenco();
 
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
@@ -422,8 +424,9 @@ export function DevFormulariList({
                         : stato === "inviato" ? "Inviato al RENTRI" : "Chiuso";
                     const missingDestino = stato === "chiuso" && (qDestino === null || qDestino === undefined || qDestino === "" || Number(qDestino) === 0);
                     return (
-                    <tr key={form.id} title={missingDestino ? "Peso a destino mancante" : "Clicca per leggere il formulario nel dettaglio"}
-                      onClick={() => openEditor(form, "standard")}
+                    <tr key={form.id}
+                      {...selezione.propsVoce(String(form.id), () => openEditor(form, "standard"))}
+                      title={missingDestino ? "Peso a destino mancante · doppio clic per aprire" : "Clic per selezionare · doppio clic per aprire il formulario"}
                       className={`cursor-pointer border-b border-border/10 ${missingDestino ? "bg-amber-500/15 hover:bg-amber-500/25 border-l-4 border-l-amber-400" : "hover:bg-white/5"}`}>
                       
                       <td className="p-3">

@@ -133,6 +133,8 @@ interface DesktopIconGridProps {
 export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_KEY }: DesktopIconGridProps) {
   const navigate = useNavigate();
   const [icons, setIcons] = useState<DesktopIcon[]>(() => initIcons(iconDefs, storageKey));
+  // Un clic seleziona l'icona, il doppio clic (o Invio) la apre
+  const [selezionata, setSelezionata] = useState<string | null>(null);
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; startX: number; startY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -191,7 +193,7 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
       dragRef.current = null;
 
       if (!didDrag) {
-        navigate(icon.href);
+        setSelezionata(icon.id);
       } else {
         // Snap to grid and resolve collisions
         setIcons(prev => {
@@ -256,6 +258,12 @@ export function DesktopIconGrid({ icons: iconDefs, storageKey = DEFAULT_STORAGE_
             className="absolute cursor-grab active:cursor-grabbing group"
             style={{ left: icon.x, top: icon.y, width: 160 }}
             onMouseDown={(e) => handleMouseDown(e, icon)}
+            onDoubleClick={() => navigate(icon.href)}
+            onKeyDown={(e) => { if (e.key === "Enter") navigate(icon.href); }}
+            tabIndex={0}
+            aria-selected={selezionata === icon.id}
+            data-selezionata={selezionata === icon.id ? "true" : undefined}
+            title="Clic per selezionare · doppio clic per aprire"
             onContextMenu={(e) => handleContextMenu(e, icon)}
           >
             <div className="flex flex-col items-center gap-3 p-4 rounded-2xl transition-all duration-300 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">

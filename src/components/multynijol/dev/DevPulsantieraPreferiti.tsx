@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { useNavigate } from "react-router-dom";
 import {
   ClipboardList,
@@ -64,6 +65,7 @@ function leggiPreferiti(): string[] {
 }
 
 export function DevPulsantieraPreferiti({ context }: { context: string }) {
+  const selezione = useSelezioneElenco();
   const navigate = useNavigate();
   const [ids, setIds] = useState<string[]>(leggiPreferiti);
   const [aggiungi, setAggiungi] = useState(false);
@@ -94,7 +96,7 @@ export function DevPulsantieraPreferiti({ context }: { context: string }) {
           <div key={s.id} className="group relative">
             <button
               type="button"
-              onClick={() => navigate(s.path)}
+              {...selezione.propsVoce(s.id, () => navigate(s.path))}
               className="flex items-center gap-2 rounded-xl border border-border/50 bg-secondary/50 px-4 py-2 text-sm font-semibold hover:bg-secondary"
             >
               {s.icon}

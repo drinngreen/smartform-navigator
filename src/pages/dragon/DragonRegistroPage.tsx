@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { useParams, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
 import { useDragonRegister } from "@/hooks/dragon/useDragonRegister";
@@ -39,6 +40,7 @@ const registerLabels: Record<string, string> = {
 };
 
 export default function DragonRegistroPage() {
+  const selezione = useSelezioneElenco();
   const { context } = useParams<{ context: string }>();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
@@ -177,7 +179,7 @@ export default function DragonRegistroPage() {
                     <TableRow
                       key={m.id}
                       className={`border-border/10 cursor-pointer hover:bg-muted/30 ${isAwaitingWeight ? "bg-amber-500/5" : ""}`}
-                      onClick={() => setDetail(m)}
+                      {...selezione.propsVoce(String(m.id), () => setDetail(m))}
                     >
                       <TableCell className="font-mono text-xs">{m.movement_number}</TableCell>
                       <TableCell className="text-sm">{new Date(m.movement_date).toLocaleDateString("it-IT")}</TableCell>

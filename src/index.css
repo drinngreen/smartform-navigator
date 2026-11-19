@@ -185,3 +185,19 @@ body:has([data-admin-layout]) .text-primary {
   color: rgb(255, 255, 255) !important;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
+
+/* Voci selezionate negli elenchi (un clic seleziona, doppio clic apre: useSelezioneElenco) */
+tr[data-selezionata="true"] > td {
+  background-color: rgba(59, 130, 246, 0.18);
+}
+tr[data-selezionata="true"] > td:first-child {
+  box-shadow: inset 3px 0 0 rgb(96, 165, 250);
+}
+[data-selezionata="true"]:not(tr) {
+  outline: 2px solid rgb(96, 165, 250);
+  outline-offset: 2px;
+  background-color: rgba(59, 130, 246, 0.12);
+}
+[aria-selected][tabindex="0"] {
+  user-select: none;
+}
