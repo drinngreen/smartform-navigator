@@ -87,17 +87,7 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
           />
         )}
 
-        {/* Grid overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none z-[1]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(192, 173, 103, 0.18) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(192, 173, 103, 0.18) 1px, transparent 1px)
-            `,
-            backgroundSize: '30px 30px',
-          }}
-        />
+
 
         {/* Top Navigation — nascosta su richiesta (menu non utilizzato) */}
         {false && (
