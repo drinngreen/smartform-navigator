@@ -46,8 +46,36 @@ import { DevBackupExportModule } from "@/components/multynijol/dev/DevBackupExpo
 import { DevInvioCopiaUnaTantumModule } from "@/components/multynijol/dev/DevInvioCopiaUnaTantumModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck, ChevronDown, ChevronRight } from "lucide-react";
 
+
+/** Voci del menu laterale del Centro di Comando — Sviluppo. */
+const VOCI_MENU = [
+    { value: "vista-veloce", label: "Vista veloce", Icon: FileText, cls: "data-[state=active]:bg-primary/20 data-[state=active]:text-primary" },
+    { value: "impianto", label: "Impianto", Icon: Warehouse, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "carico-lavorazione", label: "Carico di lavorazione", Icon: PackagePlus, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "niyol", label: "Niyol", Icon: Truck, cls: "data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300" },
+    { value: "conto-proprio", label: "Conto Proprio", Icon: Truck, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "registri", label: "Registri", Icon: BookOpen, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "contatti", label: "Contatti", Icon: BookUser, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "privati", label: "Privati", Icon: UserCheck, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "ricevute", label: "Ricevute", Icon: Receipt, cls: "data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400" },
+    { value: "aree-riservate", label: "Aree Riservate", Icon: Factory, cls: "data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400" },
+    { value: "cer-preferiti", label: "CER Preferiti", Icon: FileText, cls: "data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400" },
+    { value: "gestione-fir", label: "Gestione FIR", Icon: Database, cls: "data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400" },
+    { value: "firma-digitale", label: "Firma Digitale", Icon: PenTool, cls: "data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400" },
+    { value: "fatturazione", label: "Fatturazione", Icon: Euro, cls: "data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-300" },
+    { value: "personale", label: "Personale", Icon: Users, cls: "data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400" },
+    { value: "mud", label: "MUD", Icon: FileSpreadsheet, cls: "data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400" },
+    { value: "ddt", label: "DDT", Icon: ClipboardList, cls: "data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400" },
+    { value: "confronto-elenchi", label: "Confronto elenchi", Icon: FileSpreadsheet, cls: "data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-300" },
+    { value: "backup-export", label: "Backup completo", Icon: Database, cls: "data-[state=active]:bg-primary/20 data-[state=active]:text-primary" },
+];
+const SOTTO_REGISTRI = [
+  { value: "intermediario", label: "Intermediario", Icon: Globe },
+  { value: "generale", label: "Registro Generale", Icon: BookOpen },
+  { value: "invii-rentri", label: "Invii al RENTRI", Icon: Send },
+];
 
 export default function MNDevDashboardPage() {
   const selezione = useSelezioneElenco();
@@ -77,6 +105,37 @@ export default function MNDevDashboardPage() {
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
 
+      <Tabs value={tab} onValueChange={handleTabChange} orientation="vertical" className="flex flex-col lg:flex-row items-start gap-4">
+        {/* Elenco fisso a sinistra; la sezione scelta si apre a destra (richiesta ufficio 20/11/2026) */}
+        <aside className="w-full lg:w-60 shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          <TabsList className="flex h-auto w-full flex-col items-stretch gap-0.5 bg-card/60 border border-border/30 backdrop-blur-xl p-2">
+            {VOCI_MENU.map(({ value, label, Icon, cls }) => (
+              <div key={value}>
+                <TabsTrigger value={value} className={`w-full justify-start gap-2 px-3 py-2 ${cls}`}>
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 text-left">{label}</span>
+                  {value === "registri" && (tab === "registri" ? <ChevronDown className="h-3.5 w-3.5 opacity-70" /> : <ChevronRight className="h-3.5 w-3.5 opacity-70" />)}
+                </TabsTrigger>
+                {value === "registri" && tab === "registri" && (
+                  <div className="ml-5 mt-0.5 mb-1 flex flex-col gap-0.5 border-l border-emerald-500/30 pl-2">
+                    {SOTTO_REGISTRI.map((sv) => (
+                      <button
+                        key={sv.value}
+                        type="button"
+                        onClick={() => handleRegistriSubChange(sv.value)}
+                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${registriSub === sv.value ? "bg-emerald-500/20 text-emerald-300" : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"}`}
+                      >
+                        <sv.Icon className="h-3.5 w-3.5" />{sv.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </TabsList>
+        </aside>
+
+        <div className="flex-1 min-w-0 w-full space-y-4">
       <DevPulsantieraPreferiti context="dev-multyproget" />
 
       {/* Link rapidi in testa */}
@@ -165,67 +224,6 @@ export default function MNDevDashboardPage() {
 
 
 
-      <Tabs value={tab} onValueChange={handleTabChange} className="space-y-4">
-        <TabsList className="bg-card/60 border border-border/30 backdrop-blur-xl p-1 h-auto flex-wrap gap-1">
-          <TabsTrigger value="vista-veloce" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-            <FileText className="h-4 w-4" />Vista veloce
-          </TabsTrigger>
-          <TabsTrigger value="impianto" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <Warehouse className="h-4 w-4" />Impianto
-          </TabsTrigger>
-          <TabsTrigger value="carico-lavorazione" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <PackagePlus className="h-4 w-4" />Carico di lavorazione
-          </TabsTrigger>
-          <TabsTrigger value="niyol" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300">
-            <Truck className="h-4 w-4" />Niyol
-          </TabsTrigger>
-
-          <TabsTrigger value="conto-proprio" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <Truck className="h-4 w-4" />Conto Proprio
-          </TabsTrigger>
-          <TabsTrigger value="registri" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <BookOpen className="h-4 w-4" />Registri
-          </TabsTrigger>
-          <TabsTrigger value="contatti" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <BookUser className="h-4 w-4" />Contatti
-          </TabsTrigger>
-          <TabsTrigger value="privati" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <UserCheck className="h-4 w-4" />Privati
-          </TabsTrigger>
-          <TabsTrigger value="ricevute" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-            <Receipt className="h-4 w-4" />Ricevute
-          </TabsTrigger>
-          <TabsTrigger value="aree-riservate" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
-            <Factory className="h-4 w-4" />Aree Riservate
-          </TabsTrigger>
-          <TabsTrigger value="cer-preferiti" className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
-            <FileText className="h-4 w-4" />CER Preferiti
-          </TabsTrigger>
-          <TabsTrigger value="gestione-fir" className="gap-2 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-            <Database className="h-4 w-4" />Gestione FIR
-          </TabsTrigger>
-          <TabsTrigger value="firma-digitale" className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400">
-            <PenTool className="h-4 w-4" />Firma Digitale
-          </TabsTrigger>
-          <TabsTrigger value="fatturazione" className="gap-2 data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-300">
-            <Euro className="h-4 w-4" />Fatturazione
-          </TabsTrigger>
-          <TabsTrigger value="personale" className="gap-2 data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400">
-            <Users className="h-4 w-4" />Personale
-          </TabsTrigger>
-          <TabsTrigger value="mud" className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
-            <FileSpreadsheet className="h-4 w-4" />MUD
-          </TabsTrigger>
-          <TabsTrigger value="ddt" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400">
-            <ClipboardList className="h-4 w-4" />DDT
-          </TabsTrigger>
-          <TabsTrigger value="confronto-elenchi" className="gap-2 data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-300">
-            <FileSpreadsheet className="h-4 w-4" />Confronto elenchi
-          </TabsTrigger>
-          <TabsTrigger value="backup-export" className="gap-2 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-            <Database className="h-4 w-4" />Backup completo
-          </TabsTrigger>
-        </TabsList>
 
         <TabsContent value="backup-export"><div className="space-y-6"><DevBackupExportModule /><DevInvioCopiaUnaTantumModule /></div></TabsContent>
         <TabsContent value="confronto-elenchi"><DevConfrontoElenchiModule /></TabsContent>
@@ -238,17 +236,6 @@ export default function MNDevDashboardPage() {
 
         <TabsContent value="registri">
           <Tabs value={registriSub} onValueChange={handleRegistriSubChange} className="space-y-4">
-            <TabsList className="bg-card/40 border border-border/30 p-1">
-              <TabsTrigger value="intermediario" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-                <Globe className="h-4 w-4" />Intermediario
-              </TabsTrigger>
-              <TabsTrigger value="generale" className="gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-                <BookOpen className="h-4 w-4" />Registro Generale
-              </TabsTrigger>
-              <TabsTrigger value="invii-rentri" className="gap-2 data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">
-                <Send className="h-4 w-4" />Invii al RENTRI
-              </TabsTrigger>
-            </TabsList>
             <TabsContent value="intermediario"><DevIntermediarioModule /></TabsContent>
             <TabsContent value="generale"><DevRegistroGeneraleModule /></TabsContent>
             <TabsContent value="invii-rentri"><DevInviiRentriModule /></TabsContent>
@@ -266,6 +253,7 @@ export default function MNDevDashboardPage() {
         <TabsContent value="fatturazione"><FatturazioneModule tenantId={profile?.tenant_id || undefined} /></TabsContent>
         <TabsContent value="mud"><DevMudExportModule /></TabsContent>
         <TabsContent value="ddt"><DevDdtModule /></TabsContent>
+        </div>
       </Tabs>
     </MNAdminLayout>
   );
