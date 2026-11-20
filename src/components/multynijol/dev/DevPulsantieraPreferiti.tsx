@@ -14,6 +14,8 @@ import {
   X,
   Printer,
   Scissors,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 /**
@@ -69,6 +71,16 @@ export function DevPulsantieraPreferiti({ context }: { context: string }) {
   const navigate = useNavigate();
   const [ids, setIds] = useState<string[]>(leggiPreferiti);
   const [aggiungi, setAggiungi] = useState(false);
+  // Tendina chiusa di default; si ricorda se l'utente l'ha lasciata aperta
+  const [aperta, setAperta] = useState<boolean>(() => {
+    try { return localStorage.getItem("dev-preferiti-aperta") === "1"; } catch { return false; }
+  });
+  const cambiaAperta = () => {
+    setAperta((v) => {
+      try { localStorage.setItem("dev-preferiti-aperta", v ? "0" : "1"); } catch { /* ignora */ }
+      return !v;
+    });
+  };
 
   const tutte = useMemo(() => scorciatoieDisponibili(context), [context]);
   const attive = useMemo(
@@ -88,10 +100,17 @@ export function DevPulsantieraPreferiti({ context }: { context: string }) {
 
   return (
     <div className="mb-4 rounded-2xl border border-border/30 bg-card/60 p-3">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        <Star size={14} className="text-amber-400" /> Preferiti
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={cambiaAperta}
+        aria-expanded={aperta}
+        className="flex w-full items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        <Star size={14} className="text-amber-400" /> Preferiti ({attive.length})
+        <span className="ml-auto">{aperta ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+      </button>
+      {aperta && (<>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {attive.map((s) => (
           <div key={s.id} className="group relative">
             <button
@@ -144,6 +163,7 @@ export function DevPulsantieraPreferiti({ context }: { context: string }) {
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 }

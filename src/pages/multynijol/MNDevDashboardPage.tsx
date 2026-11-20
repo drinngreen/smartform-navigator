@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
@@ -79,6 +80,16 @@ const SOTTO_REGISTRI = [
 
 export default function MNDevDashboardPage() {
   const selezione = useSelezioneElenco();
+  // Tendina «Guide e tutorial»: chiusa di default, ricorda l'ultima scelta
+  const [guideAperte, setGuideAperte] = useState<boolean>(() => {
+    try { return localStorage.getItem("dev-guide-aperte") === "1"; } catch { return false; }
+  });
+  const cambiaGuide = () => {
+    setGuideAperte((v) => {
+      try { localStorage.setItem("dev-guide-aperte", v ? "0" : "1"); } catch { /* ignora */ }
+      return !v;
+    });
+  };
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -138,8 +149,19 @@ export default function MNDevDashboardPage() {
         <div className="flex-1 min-w-0 w-full space-y-4">
       <DevPulsantieraPreferiti context="dev-multyproget" />
 
-      {/* Link rapidi in testa */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      {/* Link rapidi raccolti nella tendina «Guide e tutorial» (richiesta ufficio 20/11/2026) */}
+      <div className="mb-4 rounded-2xl border border-border/30 bg-card/60 p-3">
+      <button
+        type="button"
+        onClick={cambiaGuide}
+        aria-expanded={guideAperte}
+        className="flex w-full items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        <BookOpen size={14} className="text-emerald-400" /> Guide e tutorial
+        <span className="ml-auto">{guideAperte ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
+      </button>
+      {guideAperte && (
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
         <button
           {...selezione.propsVoce("/mn/admin/dev-multyproget/modulo-alternativo", () => navigate("/mn/admin/dev-multyproget/modulo-alternativo"))}
           className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left"
@@ -219,6 +241,8 @@ export default function MNDevDashboardPage() {
           </div>
         </button>
 
+      </div>
+      )}
       </div>
 
 
