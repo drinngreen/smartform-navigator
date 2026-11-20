@@ -369,24 +369,6 @@ function DevFirWorkspaceInner({ currentSectionLabel }: { currentSectionLabel?: s
               <FileText className="h-5 w-5" /> Formulari FIR operativi {currentSectionLabel ? `· ${currentSectionLabel}` : ""}
             </CardTitle>
             <div className="grid w-full gap-2 lg:w-auto lg:min-w-[520px]">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setModuleType("standard")}
-                  className={`rounded-md border px-4 py-3 text-left transition-colors ${moduleType === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Standard</span>
-                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModuleType("alternative")}
-                  className={`rounded-md border px-4 py-3 text-left transition-colors ${moduleType === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
-                  <span className="block text-xs text-muted-foreground">Editor alternativo FIR</span>
-                </button>
-              </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"

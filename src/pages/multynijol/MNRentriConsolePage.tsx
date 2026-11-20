@@ -1160,22 +1160,6 @@ export default function MNRentriConsolePage() {
                 </button>
               ))}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {(["standard", "alternativo"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setVistaFormulario(v)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                    vistaFormulario === v
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
-                      : "bg-secondary/50 text-muted-foreground border-border/50 hover:bg-secondary"
-                  }`}
-                >
-                  {v === "standard" ? "Modulo Standard" : "Modulo Alternativo"}
-                </button>
-              ))}
-            </div>
             <div className="rounded-xl border border-border/30 bg-background/40 p-4">
               {vistaFormulario === "standard" ? (
                 <MNFIRFormComplete

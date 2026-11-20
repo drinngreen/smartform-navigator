@@ -109,16 +109,6 @@ export default function MNDevDashboardPage() {
       </button>
       {guideAperte && (
       <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <button
-          {...selezione.propsVoce("/mn/admin/dev-multyproget/modulo-alternativo", () => navigate("/mn/admin/dev-multyproget/modulo-alternativo"))}
-          className="flex items-center gap-3 px-5 py-4 rounded-xl border border-amber-500/30 bg-card hover:bg-amber-500/10 transition-all text-left"
-        >
-          <FileText size={20} className="text-amber-400" />
-          <div>
-            <div className="font-semibold text-sm text-amber-300">Modulo Alternativo FIR</div>
-            <div className="text-xs text-muted-foreground">Vista sperimentale del formulario</div>
-          </div>
-        </button>
 
         <div className="grid grid-cols-2 gap-3">
           <button

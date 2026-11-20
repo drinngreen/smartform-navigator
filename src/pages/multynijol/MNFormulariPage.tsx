@@ -74,7 +74,7 @@ export default function MNFormulariPage() {
 
 
   const openEditor = (form: FirForm, mode: "standard" | "alternative") => {
-    setEditorMode(mode);
+    setEditorMode("standard"); void mode; // Modulo alternativo solo dal menu laterale
     setViewDialog({ open: true, form });
     sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
   };
@@ -87,7 +87,7 @@ export default function MNFormulariPage() {
   };
 
   const changeEditorMode = (mode: "standard" | "alternative") => {
-    setEditorMode(mode);
+    setEditorMode("standard"); void mode; // Modulo alternativo solo dal menu laterale
     if (viewDialog.form?.id) {
       sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
     }
@@ -350,14 +350,6 @@ export default function MNFormulariPage() {
                             <><Eye className="h-4 w-4" /> Visualizza</>
                           )}
                         </button>
-                        {(form.status === "draft" || form.status === "bozza") && (
-                          <button
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-400/60 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20 transition-colors"
-                            onClick={() => openEditor(form, "alternative")}
-                          >
-                            <Edit className="h-4 w-4" /> Alternativo
-                          </button>
-                        )}
                         <button
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border border-cyan-400/50 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20 transition-colors"
                           onClick={() => void handleDuplicateForm(form)}
@@ -418,24 +410,6 @@ export default function MNFormulariPage() {
           </DialogHeader>
           {viewDialog.form && (
             <>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => changeEditorMode("standard")}
-                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Standard</span>
-                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => changeEditorMode("alternative")}
-                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
-                  <span className="block text-xs text-muted-foreground">Editor alternativo FIR</span>
-                </button>
-              </div>
               {editorMode === "alternative" ? (
                 <FIRAlternativeForm
                   key={`alt-${viewDialog.form.id}`}

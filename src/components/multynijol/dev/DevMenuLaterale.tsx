@@ -109,6 +109,17 @@ export function DevMenuLaterale({ tab, sub, onTab, onSub }: Props) {
             </div>
           );
         })}
+        {/* Modulo alternativo: tolto dalle schermate, resta solo qui in fondo (richiesta ufficio 20/11/2026) */}
+        <div className="mt-1 border-t border-border/30 pt-1">
+          <button
+            type="button"
+            onClick={() => navigate("/mn/admin/dev-multyproget/modulo-alternativo")}
+            className="flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm font-medium text-amber-300/80 transition-all hover:bg-amber-500/10 hover:text-amber-200"
+          >
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Modulo alternativo</span>
+          </button>
+        </div>
       </nav>
     </aside>
   );

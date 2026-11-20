@@ -245,7 +245,7 @@ function ImpiantoFormulari() {
   const editorStorageKey = "dev-fir-editor:impianto-multyproget";
 
   const openEditor = (form: any, mode: "standard" | "alternative" = "standard") => {
-    setEditorMode(mode);
+    setEditorMode("standard"); void mode; // Modulo alternativo solo dal menu laterale
     setViewDialog({ open: true, form });
     sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: form.id, mode }));
   };
@@ -257,7 +257,7 @@ function ImpiantoFormulari() {
   };
 
   const changeEditorMode = (mode: "standard" | "alternative") => {
-    setEditorMode(mode);
+    setEditorMode("standard"); void mode; // Modulo alternativo solo dal menu laterale
     if (viewDialog.form?.id) {
       sessionStorage.setItem(editorStorageKey, JSON.stringify({ formId: viewDialog.form.id, mode }));
     }
@@ -708,17 +708,6 @@ function ImpiantoFormulari() {
                           <Edit className="h-3 w-3" />
                           {form.status === "bozza" || form.status === "draft" ? "Standard" : "Visualizza Standard"}
                         </Button>
-                        {(form.status === "bozza" || form.status === "draft") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditor(form, "alternative")}
-                            className="gap-1 text-amber-400"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Alternativo
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -769,24 +758,6 @@ function ImpiantoFormulari() {
           </DialogHeader>
           {viewDialog.form && (
             <>
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
-                  type="button"
-                  onClick={() => changeEditorMode("standard")}
-                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "standard" ? "border-cyan-400 bg-cyan-500/15 text-cyan-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Standard</span>
-                  <span className="block text-xs text-muted-foreground">Formulario completo classico</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => changeEditorMode("alternative")}
-                  className={`rounded-md border px-4 py-2 text-left transition-colors ${editorMode === "alternative" ? "border-amber-400 bg-amber-500/15 text-amber-200" : "border-border bg-background/50 text-foreground hover:bg-secondary/40"}`}
-                >
-                  <span className="block text-sm font-semibold">Modulo Alternativo</span>
-                  <span className="block text-xs text-muted-foreground">Editor su template FIR</span>
-                </button>
-              </div>
               {editorMode === "alternative" ? (
                 <FIRAlternativeForm
                   key={`alt-${viewDialog.form.id}`}
