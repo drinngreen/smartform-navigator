@@ -47,7 +47,9 @@ import { DevBackupExportModule } from "@/components/multynijol/dev/DevBackupExpo
 import { DevInvioCopiaUnaTantumModule } from "@/components/multynijol/dev/DevInvioCopiaUnaTantumModule";
 import { DevDdtModule } from "@/components/multynijol/dev/DevDdtModule";
 import { useAuth } from "@/hooks/useAuth";
-import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck, ChevronDown, ChevronRight } from "lucide-react";
+import { Euro, FileSpreadsheet, ClipboardList, Radar, Newspaper, ShieldCheck, ChevronDown, ChevronRight, PanelRightOpen, PanelRightClose } from "lucide-react";
+import { useZoliDarkLemonWidgetStore } from "@/stores/zoliDarkLemonWidgetStore";
+import zoliLemonIcon from "@/assets/zoli-dark-lemon-icon.png";
 
 
 /** Voci del menu laterale del Centro di Comando — Sviluppo. */
@@ -80,6 +82,8 @@ const SOTTO_REGISTRI = [
 
 export default function MNDevDashboardPage() {
   const selezione = useSelezioneElenco();
+  const darkLemonAperto = useZoliDarkLemonWidgetStore((st) => st.sidePanel);
+  const setDarkLemonAperto = useZoliDarkLemonWidgetStore((st) => st.setSidePanel);
   // Tendina «Guide e tutorial»: chiusa di default, ricorda l'ultima scelta
   const [guideAperte, setGuideAperte] = useState<boolean>(() => {
     try { return localStorage.getItem("dev-guide-aperte") === "1"; } catch { return false; }
@@ -119,6 +123,18 @@ export default function MNDevDashboardPage() {
       <Tabs value={tab} onValueChange={handleTabChange} orientation="vertical" className="flex flex-col lg:flex-row items-start gap-4">
         {/* Elenco fisso a sinistra; la sezione scelta si apre a destra (richiesta ufficio 20/11/2026) */}
         <aside className="w-full lg:w-60 shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+          {/* Dark Lemon fisso sopra «Vista veloce»: apre/chiude il pannello a destra */}
+          <button
+            type="button"
+            onClick={() => setDarkLemonAperto(!darkLemonAperto)}
+            aria-pressed={darkLemonAperto}
+            title={darkLemonAperto ? "Chiudi Dark Lemon" : "Apri Dark Lemon a destra"}
+            className={`mb-2 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${darkLemonAperto ? "border-cyan-400/60 bg-cyan-500/20 text-cyan-200" : "border-cyan-500/30 bg-card/80 text-cyan-300 hover:bg-cyan-500/10"}`}
+          >
+            <img src={zoliLemonIcon} alt="" className="h-5 w-5 shrink-0" />
+            <span className="flex-1 text-left">Dark Lemon</span>
+            {darkLemonAperto ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
           <TabsList className="flex h-auto w-full flex-col items-stretch gap-0.5 bg-card/60 border border-border/30 backdrop-blur-xl p-2">
             {VOCI_MENU.map(({ value, label, Icon, cls }) => (
               <div key={value}>
