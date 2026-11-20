@@ -7700,6 +7700,7 @@ export type Database = {
         Returns: boolean
       }
       is_multy_niyol_admin: { Args: never; Returns: boolean }
+      is_staff_member: { Args: never; Returns: boolean }
       is_superadmin: { Args: never; Returns: boolean }
       is_valid_fir_number: { Args: { p_value: string }; Returns: boolean }
       lookup_social_invite: {
