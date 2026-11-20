@@ -388,13 +388,14 @@ export default function MNFormulariPage() {
       {/* Full FIR Alternative Form Dialog */}
       <Dialog open={viewDialog.open} modal={!darkLemonOpen} onOpenChange={(o) => { if (!o) closeEditor(); }}>
         <DialogContent
-          className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50"
+          className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border/50 [&>button]:z-30"
           onPointerDownOutside={keepOpenOnDarkLemon}
           onInteractOutside={keepOpenOnDarkLemon}
           onFocusOutside={keepOpenOnDarkLemon}
         >
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-display tracking-wider">
+          {/* Intestazione fissa in alto con il cestino (prima era una banda rossa fissa in basso) */}
+          <DialogHeader className="sticky -top-6 z-20 -mx-6 -mt-6 px-6 pt-6 pb-2 bg-card/95 backdrop-blur border-b border-border/30">
+            <DialogTitle className="flex items-center gap-2 pr-8 font-display tracking-wider">
               <FileText className="h-5 w-5 text-primary" />
               {viewDialog.form?.status === "bozza" || viewDialog.form?.status === "draft" ? "Modifica" : "Visualizza"} FIR — {viewDialog.form?.numero_fir || "Senza Numero"}
               {viewDialog.form?.user_profile && (
@@ -402,7 +403,18 @@ export default function MNFormulariPage() {
                   ({viewDialog.form.user_profile.nome} {viewDialog.form.user_profile.cognome})
                 </span>
               )}
-            </DialogTitle>
+                          {viewDialog.form && (
+                <button
+                  type="button"
+                  onClick={() => viewDialog.form && void handleDeleteForm(viewDialog.form)}
+                  title="Elimina formulario"
+                  aria-label="Elimina formulario"
+                  className="ml-auto rounded-md border border-red-500/40 p-1.5 text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+</DialogTitle>
           </DialogHeader>
           {viewDialog.form && (
             <>
@@ -444,11 +456,6 @@ export default function MNFormulariPage() {
               )}
             </>
           )}
-            <div className="sticky bottom-0 mt-4 flex justify-end border-t border-border/30 bg-card/95 pt-3">
-              <Button variant="destructive" className="gap-2" onClick={() => viewDialog.form && void handleDeleteForm(viewDialog.form)}>
-                <Trash2 className="h-4 w-4" /> Elimina formulario
-              </Button>
-            </div>
         </DialogContent>
       </Dialog>
 
