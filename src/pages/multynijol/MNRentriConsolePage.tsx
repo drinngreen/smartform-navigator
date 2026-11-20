@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { MNAdminLayout } from "@/components/multynijol/MNAdminLayout";
+import { DevMenuLaterale } from "@/components/multynijol/dev/DevMenuLaterale";
 import { useMNContextStore, MN_CONTEXTS } from "@/stores/mnContextStore";
 import { supabase } from "@/lib/supabaseClient";
 import { RentriRetryQueue } from "@/components/rentri/RentriRetryQueue";
@@ -541,7 +542,10 @@ export default function MNRentriConsolePage() {
 
   return (
     <MNAdminLayout title={`Console RENTRI — ${label}`} subtitle="Stato, numeri FIR, registri e invii">
-      <div className="space-y-6">
+      {/* Menu fisso del Centro di Comando sempre visibile anche in Console (richiesta ufficio 20/11/2026) */}
+      <div className="flex flex-col lg:flex-row items-start gap-4">
+      <DevMenuLaterale />
+      <div className="flex-1 min-w-0 w-full space-y-6">
         <button
           type="button"
           onClick={() => navigate("/mn/admin/dev-multyproget")}
@@ -1189,6 +1193,7 @@ export default function MNRentriConsolePage() {
         )}
 
         {tab === "lemon" && <DarkLemonMNChat context={context} surface="console" />}
+      </div>
       </div>
       {blankPrintFir && (
         <DevStampaFIREditor

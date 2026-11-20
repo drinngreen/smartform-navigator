@@ -68,8 +68,10 @@ export function MNAdminLayout({ children, title, subtitle }: MNAdminLayoutProps)
   // Dark Lemon deve comparire solo dopo aver scelto un contesto operativo,
   // non nella pagina di selezione /mn/admin.
   // Nel Centro di Comando — Sviluppo Dark Lemon sta come pulsante fisso nel menu a sinistra
-  // (sopra «Vista veloce») e si apre come pannello laterale a destra.
-  const showDarkLemon = location.pathname !== "/mn/admin" && location.pathname.replace(/\/+$/, "") !== "/mn/admin/dev-multyproget";
+  // (sopra «Vista veloce») e si apre come pannello laterale a destra; idem in Console RENTRI.
+  const percorso = location.pathname.replace(/\/+$/, "");
+  const conMenuLaterale = percorso === "/mn/admin/dev-multyproget" || percorso.endsWith("/rentri-console");
+  const showDarkLemon = location.pathname !== "/mn/admin" && !conMenuLaterale;
 
   return (
     <div data-admin-layout className="flex h-screen bg-background overflow-hidden relative">
