@@ -3494,6 +3494,86 @@ export type Database = {
         }
         Relationships: []
       }
+      fatture_storico: {
+        Row: {
+          cap: string | null
+          cf_piva: string | null
+          citta: string | null
+          cliente_id: string | null
+          codice_cliente: string | null
+          data_documento: string
+          fonte: string
+          id: string
+          imponibile: number | null
+          importato_il: string
+          indirizzo: string | null
+          kg: number | null
+          numero: string
+          pagamento: string | null
+          provincia: string | null
+          ragione_sociale: string | null
+          societa: string
+          tenant_id: string
+          tipo: string
+          tipo_doc: string
+          totale: number | null
+        }
+        Insert: {
+          cap?: string | null
+          cf_piva?: string | null
+          citta?: string | null
+          cliente_id?: string | null
+          codice_cliente?: string | null
+          data_documento: string
+          fonte?: string
+          id?: string
+          imponibile?: number | null
+          importato_il?: string
+          indirizzo?: string | null
+          kg?: number | null
+          numero: string
+          pagamento?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          societa?: string
+          tenant_id?: string
+          tipo: string
+          tipo_doc: string
+          totale?: number | null
+        }
+        Update: {
+          cap?: string | null
+          cf_piva?: string | null
+          citta?: string | null
+          cliente_id?: string | null
+          codice_cliente?: string | null
+          data_documento?: string
+          fonte?: string
+          id?: string
+          imponibile?: number | null
+          importato_il?: string
+          indirizzo?: string | null
+          kg?: number | null
+          numero?: string
+          pagamento?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          societa?: string
+          tenant_id?: string
+          tipo?: string
+          tipo_doc?: string
+          totale?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatture_storico_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "anagrafica_aziende_mp"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fir: {
         Row: {
           caratteristiche_hp: string[] | null
