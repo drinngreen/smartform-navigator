@@ -80,7 +80,7 @@ describe("tendine formulari - fonti dati anagrafica", () => {
 
   it("non nasconde al produttore i titoli classificati per natura dell'autorizzazione", () => {
     const producerAuthorizationBranch = src.match(
-      /const autsOrdinate =[\s\S]*?: ruolo === "PRODUTTORE"\s*\? ([^\n]+)\n\s*: dbAuts\.filter/,
+      /const autsOrdinate =[\s\S]*?(?:!ruolo \|\| )?ruolo === "PRODUTTORE"\s*\? ([^\n]+)\n\s*: dbAuts\.filter/,
     );
     expect(producerAuthorizationBranch?.[1].trim()).toBe("dbAuts");
   });

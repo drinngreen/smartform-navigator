@@ -6,6 +6,7 @@ const read = (rel: string) => fs.readFileSync(path.resolve(process.cwd(), rel), 
 
 const dashboard = read("src/pages/multynijol/MNDevDashboardPage.tsx");
 const impianto = read("src/components/multynijol/dev/DevImpiantoModule.tsx");
+const menu = read("src/components/multynijol/dev/DevMenuLaterale.tsx");
 
 /**
  * "Carico di lavorazione" deve restare un'azione di primo livello, affiancata a
@@ -13,14 +14,14 @@ const impianto = read("src/components/multynijol/dev/DevImpiantoModule.tsx");
  */
 describe("Carico di lavorazione come azione accanto a Impianto", () => {
   it("esiste come scheda autonoma nella barra principale", () => {
-    expect(dashboard).toMatch(/<TabsTrigger\s+value="carico-lavorazione"/);
+    expect(menu).toMatch(/value: "carico-lavorazione"/);
     expect(dashboard).toMatch(/<TabsContent\s+value="carico-lavorazione"/);
   });
 
   it("compare subito dopo Impianto, prima di Niyol", () => {
-    const iImpianto = dashboard.indexOf('value="impianto"');
-    const iCarico = dashboard.indexOf('value="carico-lavorazione"');
-    const iNiyol = dashboard.indexOf('value="niyol"');
+    const iImpianto = menu.indexOf('value: "impianto"');
+    const iCarico = menu.indexOf('value: "carico-lavorazione"');
+    const iNiyol = menu.indexOf('value: "niyol"');
     expect(iImpianto).toBeGreaterThan(-1);
     expect(iCarico).toBeGreaterThan(iImpianto);
     expect(iCarico).toBeLessThan(iNiyol);
