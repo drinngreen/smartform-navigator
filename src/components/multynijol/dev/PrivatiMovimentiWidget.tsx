@@ -51,6 +51,8 @@ export function PrivatiMovimentiWidget({ tenantId }: Props) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [addrDialogOpen, setAddrDialogOpen] = useState(false);
+  // L'elenco dei movimenti resta chiuso finché non lo si apre (richiesta ufficio 20/11/2026)
+  const [elencoAperto, setElencoAperto] = useState(false);
 
   const { data: movimentiDb, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["privati-movimenti-widget", tenantId, anno],
@@ -537,6 +539,16 @@ exportToPdf(
           </Button>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setElencoAperto((v) => !v)}
+          className="w-full flex items-center justify-between rounded-lg border border-border/30 bg-card/40 px-3 py-2 text-sm hover:bg-muted/20"
+        >
+          <span className="font-medium">{elencoAperto ? "Nascondi elenco movimenti" : "Mostra elenco movimenti"} <span className="text-xs text-muted-foreground">({filtered.length} · {totKg.toLocaleString("it-IT")} kg)</span></span>
+          <span className="text-xs text-muted-foreground">{elencoAperto ? "▲" : "▼"}</span>
+        </button>
+
+        {elencoAperto && (
         <div className="max-h-[520px] overflow-auto rounded-lg border border-border/30">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-background/95 backdrop-blur">
@@ -612,6 +624,7 @@ exportToPdf(
             </tbody>
           </table>
         </div>
+        )}
       </CardContent>
       <PrivatiIndirizziDialog
         open={addrDialogOpen}
