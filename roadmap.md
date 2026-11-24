@@ -81,3 +81,7 @@
 
 ## Annullamento ricevute 29/10/2026
 - [x] Annullate 00363/2026 e 00364/2026 con conferimenti collegati; originali e numeri conservati. Verifica UI: solo −80 kg RA e −154 kg MIX oggi, 21/09 identico; 201 test e 5/5 rotte OK.
+
+## Compilazione formulari 24/11/2026
+- [x] Corretta perdita/alterazione di date, quantità e altri campi, senza scritture operative o invii RENTRI
+- [x] Regressioni e verifica interfaccia autenticata completate; salvataggio/rilettura provato sui mapper, nessun dato reale creato

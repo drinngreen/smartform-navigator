@@ -3,6 +3,8 @@
  * Ritornano null se il valore è valido (o vuoto), altrimenti il messaggio da mostrare in rosso.
  */
 
+import { parseQuantitaFir } from "@/lib/firFieldValues";
+
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 const clean = (v: string) => String(v ?? "").trim();
 
@@ -167,14 +169,14 @@ export function validateTarga(value: string): string | null {
 }
 
 export function validateQuantita(value: string): string | null {
-  const v = clean(value).replace(",", ".");
-  if (!v) return null;
-  const n = Number(v);
-  if (!Number.isFinite(n)) return "Quantità non numerica";
-  if (n < 0) return "La quantità non può essere negativa";
-  if (n === 0) return "La quantità non può essere zero";
-  if (n > 1_000_000) return "Quantità fuori scala: verifica il dato";
-  return null;
+  if (!clean(value)) return null;
+  try {
+    const n = parseQuantitaFir(value);
+    if (n !== null && n > 1_000_000) return "Quantità fuori scala: verifica il dato";
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : "Quantità non valida";
+  }
 }
 
 /**

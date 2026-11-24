@@ -44,6 +44,7 @@ import { PartenzaXfirPanel } from "@/components/rentri/PartenzaXfirPanel";
 import { RicercaConducenteTarga } from "@/components/fir/RicercaConducenteTarga";
 import { scegliAutorizzazione } from "@/lib/autorizzazioneValida";
 import { OPERAZIONI_DESTINAZIONE, normalizzaCodiceOperazione } from "@/data/operazioniDestinazione";
+import { dataOggiLocale } from "@/lib/firFieldValues";
 
 // ── Neon color map per section ──────────────────────────────
 const SECTION_NEON: Record<string, { border: string; text: string; glow: string; bg: string }> = {
@@ -1202,7 +1203,7 @@ export function MNFIRFormComplete({ tenantId, mnContext, firFormId, draftData, i
     useMNFIRStore.setState({
       data: {
         ...mnInitialFIRData,
-        dataEmissione: new Date().toISOString().split("T")[0],
+        dataEmissione: dataOggiLocale(),
         selectedFirNumber: current.data.selectedFirNumber,
         numeroFir: (current.data as any).numeroFir ?? (mnInitialFIRData as any).numeroFir,
       } as typeof current.data,

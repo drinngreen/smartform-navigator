@@ -3,11 +3,12 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { FIRDataStore, FIR_FIELD_LABELS, DatabaseFIRData } from './firStore';
 import { safeLocalStorage } from '@/lib/safeStorage';
 import { statoFisicoCode as statoFisicoCodeFromList } from '@/data/statiFisici';
+import { dataOggiLocale } from '@/lib/firFieldValues';
 
 // ALL fields start empty — NO Global Reco / Multyproget presets
 export const mnInitialFIRData: FIRDataStore = {
   selectedFirNumber: "",
-  dataEmissione: new Date().toISOString().split("T")[0],
+  dataEmissione: dataOggiLocale(),
   registroSi: true,
   numeroRegistro: "",
   produttoreDenominazione: "",
@@ -217,7 +218,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
       resetForm: () => {
         if (get().pendingFromAgent) return;
         set({
-          data: { ...mnInitialFIRData, dataEmissione: new Date().toISOString().split("T")[0] },
+          data: { ...mnInitialFIRData, dataEmissione: dataOggiLocale() },
           editingFirId: null,
           workflowStatus: null,
           lastUpdatedBy: null,
@@ -256,6 +257,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
         const destinationDateTime = destinationDate
           ? `${destinationDate}T${destinationTime || "00:00"}`
           : toLocalDateTimeInput(dbData.data_arrivo);
+        const arrivalDateTime = toLocalDateTimeInput(formData.arrivo_data_ora || dbData.data_arrivo) || destinationDateTime;
 
         set({
           data: {
@@ -276,17 +278,21 @@ export const useMNFIRStore = create<MNFIRStore>()(
             targaAutomezzo: dbData.trasportatore_targa_automezzo || "",
             targaRimorchio: dbData.trasportatore_targa_rimorchio || "",
             conducenteNomeCognome: dbData.trasportatore_conducente || "",
+            trasportatoreDataAlbo: str(formData.trasportatore_data_albo),
+            trasportatoreSituatoIn: str(formData.trasportatore_situato_in),
+            trasportatoreNomeAutista: str(formData.trasportatore_nome_autista) || dbData.trasportatore_conducente || "",
             codiceEER: dbData.codice_eer || "",
             descrizione: dbData.descrizione_rifiuto || "",
             statoFisico: statoFisicoCode,
             quantita: dbData.quantita?.toString() || "",
+            quantitaLitri: str(formData.quantita_litri),
             unitaMisura: (dbData.unita_misura as "kg" | "l") || "kg",
             caratteristicheHP: dbData.caratteristiche_hp || [],
             oraDataInizioTrasporto: departureDate,
             oraInizioTrasporto: departureTime,
             dataFineTrasporto: destinationDate,
             oraFineTrasporto: destinationTime,
-            dataOraArrivo: destinationDateTime,
+            dataOraArrivo: arrivalDateTime,
             intermediarioDenominazione: dbData.intermediario_denominazione || "",
             intermediarioCF: dbData.intermediario_codice_fiscale || "",
             intermediarioNumeroAlbo: dbData.intermediario_iscrizione_albo || "",
@@ -335,6 +341,8 @@ export const useMNFIRStore = create<MNFIRStore>()(
             allegatoIntermodale: bool(formData.intermodale),
             accettazione: formData.respinto ? "respinto" : formData.accettato_parzialmente ? "parziale" : formData.accettato_per_intero ? "intero" : "",
             motivazioneRespingimento: str(formData.motivazioni_respinta),
+            causaleRespingimento: str(formData.causale_respingimento),
+            firmaDestinatario: str(formData.firma_destinatario),
             inAttesaVerificaAnalitica: bool(formData.in_attesa_verifica_analitica),
             trasbordoParzDenominazione: str(formData.trasbordo_parziale_denominazione),
             trasbordoParzCF: str(formData.trasbordo_parziale_codice_fiscale),
@@ -348,6 +356,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
             trasbordoTotTarga: str(formData.trasbordo_totale_targa_automezzo),
             trasbordoTotRimorchio: str(formData.trasbordo_totale_targa_rimorchio),
             trasbordoTotConducente: str(formData.trasbordo_totale_conducente),
+            trasbordoTotFirmaConducente: str(formData.trasbordo_totale_firma_conducente),
             trasbordoTotDataPresaCarico: str(formData.trasbordo_totale_data_presa_carico),
             sosta1Luogo: str(formData.sosta_tecnica_1_luogo),
             sosta1Inizio: str(formData.sosta_tecnica_1_data_sospensione),
@@ -367,6 +376,29 @@ export const useMNFIRStore = create<MNFIRStore>()(
             dest2Operazione: formData.secondo_destinatario_operazione_D ? "D" : "R",
             dest2CodiceOperazione: str(formData.secondo_destinatario_operazione_D ?? formData.secondo_destinatario_operazione_R),
             annotazioniContinuazione: str(formData.annotazioni_pag2),
+            interTerrDenominazione: str(formData.interTerrDenominazione),
+            interTerrCF: str(formData.interTerrCF),
+            interTerrAlbo: str(formData.interTerrAlbo),
+            interTerrConducente: str(formData.interTerrConducente),
+            interTerrTarga: str(formData.interTerrTarga),
+            interTerrRimorchio: str(formData.interTerrRimorchio),
+            interFerroDenominazione: str(formData.interFerroDenominazione),
+            interFerroIdTreno: str(formData.interFerroIdTreno),
+            interFerroCF: str(formData.interFerroCF),
+            interFerroTratta: str(formData.interFerroTratta),
+            interFerroRid: bool(formData.interFerroRid),
+            interFerroStazionePartenza: str(formData.interFerroStazionePartenza),
+            interFerroStazioneArrivo: str(formData.interFerroStazioneArrivo),
+            interFerroDataPartenza: str(formData.interFerroDataPartenza),
+            interFerroDataArrivo: str(formData.interFerroDataArrivo),
+            interMareDenominazione: str(formData.interMareDenominazione),
+            interMareIdNave: str(formData.interMareIdNave),
+            interMareCF: str(formData.interMareCF),
+            interMareImdg: bool(formData.interMareImdg),
+            interMarePortoPartenza: str(formData.interMarePortoPartenza),
+            interMarePortoArrivo: str(formData.interMarePortoArrivo),
+            interMareDataPartenza: str(formData.interMareDataPartenza),
+            interMareDataArrivo: str(formData.interMareDataArrivo),
           },
           editingFirId: dbData.id,
           workflowStatus: mappedWorkflow,
@@ -414,7 +446,7 @@ export const useMNFIRStore = create<MNFIRStore>()(
             data: {
               ...mnInitialFIRData,
               ...(state.data ?? {}),
-              dataEmissione: new Date().toISOString().split("T")[0],
+              dataEmissione: dataOggiLocale(),
               selectedFirNumber: "",
               numeroRegistro: "",
             },

@@ -14,6 +14,7 @@ import { statoFisicoRentri as statoFisicoRentriFromList } from "@/data/statiFisi
 import { normalizzaNumeroFir, normalizzaCF } from "@/lib/rentriValidazione";
 import { FIRMA_API_ATTIVA, aspettoEsterioreRentri, splitIndirizzoRentri, splitConducente, dataOraRoma, pulisciAnnotazioni } from "@/lib/rentriFirma";
 import { luogoProduzioneRentri } from "@/lib/rentriLuogoProduzione";
+import { quantitaPerRentri } from "@/lib/firFieldValues";
 
 type Bag = Record<string, unknown>;
 
@@ -150,8 +151,11 @@ function attivitaDestinatario(raw: string, fallbackSmaltimento: boolean): string
 }
 
 function dataOraTrasporto(d: Bag): string {
-  const data = s(d.dataInizioTrasporto) || s(d.dataEmissione);
+  const data = s(d.oraDataInizioTrasporto).slice(0, 10) || s(d.dataInizioTrasporto) || s(d.dataEmissione);
   const ora = s(d.oraInizioTrasporto) || s(d.oraDataInizioTrasporto).slice(11, 16);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+    throw new Error("Data di inizio trasporto mancante: inserisci la data senza affidarti a una data automatica.");
+  }
   return dataOraRoma(data, ora);
 }
 
@@ -191,7 +195,10 @@ export async function mapStoreToRentriFirPayload(
   const hp = normalizeHpList(
     Array.isArray(data.caratteristicheHP) ? (data.caratteristicheHP as string[]).join(" ") : s(data.caratteristicheHP),
   );
-  const quantita = Number(String(data.quantita ?? "").replace(",", "."));
+  const quantita = quantitaPerRentri({
+    quantita: data.quantita,
+    quantitaLitri: data.quantitaLitri,
+  });
   const operazione = attivitaDestinatario(
     s(data.destinatarioCodiceOperazione),
     s(data.destinatarioOperazione).toUpperCase().startsWith("D"),
@@ -267,10 +274,7 @@ export async function mapStoreToRentriFirPayload(
         provenienza: s(data.provenienza).toLowerCase() === "urbano" ? "U" : "S",
         stato_fisico: statoFisico(s(data.statoFisico)),
         pericoloso: hp.length > 0 || eerRaw.includes("*"),
-        quantita: {
-          valore: Number.isFinite(quantita) && quantita > 0 ? quantita : 1,
-          unita_misura: ["lt", "l"].includes(s(data.unitaMisura)) ? "l" : "kg",
-        },
+        quantita,
         caratteristiche_pericolo: hpListRentri(hp),
         // Aspetto esteriore: "rinfusa" → rinfusa=true; altrimenti numero di colli
         ...aspettoEsterioreRentri(s(data.aspettoEsteriore), s(data.numeroColli)),

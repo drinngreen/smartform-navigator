@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { safeLocalStorage } from '@/lib/safeStorage';
 import { statoFisicoCode as statoFisicoCodeFromList } from '@/data/statiFisici';
+import { dataOggiLocale } from '@/lib/firFieldValues';
 
 // Tipi per lo store FIR - basato su FIRFormComplete.tsx FIRData interface
 export interface FIRDataStore {
@@ -177,7 +178,7 @@ export interface FIRDataStore {
 
 export const initialFIRData: FIRDataStore = {
   selectedFirNumber: "",
-  dataEmissione: new Date().toISOString().split("T")[0],
+  dataEmissione: dataOggiLocale(),
   registroSi: true,
   numeroRegistro: "",
   produttoreDenominazione: "Global Reco",
@@ -567,7 +568,7 @@ export const useFIRStore = create<FIRStore>()(
           return;
         }
         set({
-          data: { ...initialFIRData, dataEmissione: new Date().toISOString().split("T")[0] },
+          data: { ...initialFIRData, dataEmissione: dataOggiLocale() },
           editingFirId: null,
           workflowStatus: null,
           lastUpdatedBy: null,
@@ -600,6 +601,7 @@ export const useFIRStore = create<FIRStore>()(
         const destinationDateTime = destinationDate
           ? `${destinationDate}T${destinationTime || "00:00"}`
           : toLocalDateTimeInput(dbData.data_arrivo);
+        const arrivalDateTime = toLocalDateTimeInput(formData.arrivo_data_ora || dbData.data_arrivo) || destinationDateTime;
 
         set({
           data: {
@@ -626,16 +628,20 @@ export const useFIRStore = create<FIRStore>()(
             targaAutomezzo: dbData.trasportatore_targa_automezzo || "",
             targaRimorchio: dbData.trasportatore_targa_rimorchio || "",
             conducenteNomeCognome: dbData.trasportatore_conducente || "",
+            trasportatoreDataAlbo: String(formData.trasportatore_data_albo ?? ""),
+            trasportatoreSituatoIn: String(formData.trasportatore_situato_in ?? ""),
+            trasportatoreNomeAutista: String(formData.trasportatore_nome_autista ?? dbData.trasportatore_conducente ?? ""),
             codiceEER: dbData.codice_eer || "",
             descrizione: dbData.descrizione_rifiuto || "",
             statoFisico: statoFisicoCode,
             quantita: dbData.quantita?.toString() || "",
+            quantitaLitri: String(formData.quantita_litri ?? ""),
             unitaMisura: (dbData.unita_misura as "kg" | "l") || "kg",
             caratteristicheHP: dbData.caratteristiche_hp || [],
             oraDataInizioTrasporto: dbData.data_partenza || "",
             dataFineTrasporto: destinationDate,
             oraFineTrasporto: destinationTime,
-            dataOraArrivo: destinationDateTime,
+            dataOraArrivo: arrivalDateTime,
             intermediarioDenominazione: f(dbData.intermediario_denominazione, "intermediarioDenominazione"),
             intermediarioCF: f(dbData.intermediario_codice_fiscale, "intermediarioCF"),
             intermediarioNumeroAlbo: f(dbData.intermediario_iscrizione_albo, "intermediarioNumeroAlbo"),
@@ -657,8 +663,64 @@ export const useFIRStore = create<FIRStore>()(
               oraRicezione: String(dbData.form_data.ora_ricezione ?? dbData.form_data.ora_fine_trasporto ?? destinationTime),
               percorsoDiverso: dbData.form_data.percorso || "",
               accettazione: dbData.form_data.accettato_per_intero ? "intero" : dbData.form_data.accettato_parzialmente ? "parziale" : dbData.form_data.respinto ? "respinto" : "",
+              causaleRespingimento: String(dbData.form_data.causale_respingimento ?? ""),
+              firmaDestinatario: String(dbData.form_data.firma_destinatario ?? ""),
               numeroColli: dbData.form_data.numero_colli || "",
               trasportoADR: dbData.form_data.trasporto_adr_rid || false,
+              produttoreTipoAutorizzazione: String(dbData.form_data.produttore_tipo_autorizzazione ?? ""),
+              produttoreNumeroAutorizzazione: String(dbData.form_data.produttore_numero_autorizzazione ?? ""),
+              produttoreEnteAutorizzazione: String(dbData.form_data.produttore_ente_autorizzazione ?? ""),
+              produttoreDataAutorizzazione: String(dbData.form_data.produttore_data_autorizzazione ?? ""),
+              produttoreDataInizio: String(dbData.form_data.produttore_data_inizio ?? ""),
+              produttoreDataFine: String(dbData.form_data.produttore_data_fine ?? ""),
+              detentoreDenominazione: String(dbData.form_data.detentore_denominazione ?? ""),
+              detentoreCF: String(dbData.form_data.detentore_cf ?? ""),
+              detentoreIndirizzo: String(dbData.form_data.detentore_indirizzo ?? ""),
+              detentoreTipoAutorizzazione: String(dbData.form_data.detentore_tipo_autorizzazione ?? ""),
+              detentoreNumeroAutorizzazione: String(dbData.form_data.detentore_numero_autorizzazione ?? ""),
+              detentoreEnteAutorizzazione: String(dbData.form_data.detentore_ente_autorizzazione ?? ""),
+              detentoreDataAutorizzazione: String(dbData.form_data.detentore_data_autorizzazione ?? ""),
+              destinatarioDataAutorizzazione: String(dbData.form_data.destinatario_data_autorizzazione ?? ""),
+              analisiClassificazione: String(dbData.form_data.analisi_classificazione ?? ""),
+              analisiNote: String(dbData.form_data.analisi_note ?? ""),
+              annotazioniContinuazione: String(dbData.form_data.annotazioni_pag2 ?? ""),
+              dest2Denominazione: String(dbData.form_data.secondo_destinatario_denominazione ?? ""),
+              dest2CF: String(dbData.form_data.secondo_destinatario_cf ?? ""),
+              dest2Indirizzo: String(dbData.form_data.secondo_destinatario_indirizzo ?? ""),
+              dest2NumeroIscrizioneAlbo: String(dbData.form_data.secondo_destinatario_numero_albo ?? ""),
+              dest2CodiceOperazione: String(dbData.form_data.secondo_destinatario_operazione_D ?? dbData.form_data.secondo_destinatario_operazione_R ?? ""),
+              trasbordoTotLocalita: String(dbData.form_data.trasbordo_totale_localita ?? ""),
+              trasbordoTotIndirizzo: String(dbData.form_data.trasbordo_totale_indirizzo ?? ""),
+              trasbordoTotData: String(dbData.form_data.trasbordo_totale_data ?? ""),
+              trasbordoTotDenominazione: String(dbData.form_data.trasbordo_totale_denominazione ?? ""),
+              trasbordoTotCF: String(dbData.form_data.trasbordo_totale_cf ?? ""),
+              trasbordoTotAlbo: String(dbData.form_data.trasbordo_totale_albo ?? ""),
+              trasbordoTotConducente: String(dbData.form_data.trasbordo_totale_conducente ?? ""),
+              trasbordoTotFirmaConducente: String(dbData.form_data.trasbordo_totale_firma_conducente ?? ""),
+              trasbordoTotDataPresaCarico: String(dbData.form_data.trasbordo_totale_data_presa_carico ?? ""),
+              interTerrDenominazione: String(dbData.form_data.interTerrDenominazione ?? ""),
+              interTerrCF: String(dbData.form_data.interTerrCF ?? ""),
+              interTerrAlbo: String(dbData.form_data.interTerrAlbo ?? ""),
+              interTerrConducente: String(dbData.form_data.interTerrConducente ?? ""),
+              interTerrTarga: String(dbData.form_data.interTerrTarga ?? ""),
+              interTerrRimorchio: String(dbData.form_data.interTerrRimorchio ?? ""),
+              interFerroDenominazione: String(dbData.form_data.interFerroDenominazione ?? ""),
+              interFerroIdTreno: String(dbData.form_data.interFerroIdTreno ?? ""),
+              interFerroCF: String(dbData.form_data.interFerroCF ?? ""),
+              interFerroTratta: String(dbData.form_data.interFerroTratta ?? ""),
+              interFerroRid: Boolean(dbData.form_data.interFerroRid),
+              interFerroStazionePartenza: String(dbData.form_data.interFerroStazionePartenza ?? ""),
+              interFerroStazioneArrivo: String(dbData.form_data.interFerroStazioneArrivo ?? ""),
+              interFerroDataPartenza: String(dbData.form_data.interFerroDataPartenza ?? ""),
+              interFerroDataArrivo: String(dbData.form_data.interFerroDataArrivo ?? ""),
+              interMareDenominazione: String(dbData.form_data.interMareDenominazione ?? ""),
+              interMareIdNave: String(dbData.form_data.interMareIdNave ?? ""),
+              interMareCF: String(dbData.form_data.interMareCF ?? ""),
+              interMareImdg: Boolean(dbData.form_data.interMareImdg),
+              interMarePortoPartenza: String(dbData.form_data.interMarePortoPartenza ?? ""),
+              interMarePortoArrivo: String(dbData.form_data.interMarePortoArrivo ?? ""),
+              interMareDataPartenza: String(dbData.form_data.interMareDataPartenza ?? ""),
+              interMareDataArrivo: String(dbData.form_data.interMareDataArrivo ?? ""),
               adrClassePericolo: dbData.form_data.classe_pericolo || "",
               adrNumeroONU: dbData.form_data.nr_onu || "",
               adrNote: dbData.form_data.note_adr || "",
@@ -721,7 +783,7 @@ export const useFIRStore = create<FIRStore>()(
       migrate: (persistedState: unknown, version: number): any => {
         if (version < 2) {
           return {
-            data: { ...initialFIRData, dataEmissione: new Date().toISOString().split("T")[0] },
+            data: { ...initialFIRData, dataEmissione: dataOggiLocale() },
             editingFirId: null,
             lastUpdatedBy: null,
             lastUpdatedAt: null,
@@ -736,7 +798,7 @@ export const useFIRStore = create<FIRStore>()(
             data: {
               ...initialFIRData,
               ...(state.data ?? {}),
-              dataEmissione: new Date().toISOString().split("T")[0],
+              dataEmissione: dataOggiLocale(),
               selectedFirNumber: "",
               numeroRegistro: "",
             },

@@ -7,6 +7,7 @@ import { FIRDataStore } from "@/stores/firStore";
 import { useFIRNumberPool } from "@/hooks/useFIRNumberPool";
 import { normalizeHpList } from "@/data/hpCaratteristiche";
 import { statoFisicoDbValue } from "@/data/statiFisici";
+import { parseQuantitaFir } from "@/lib/firFieldValues";
 
 
 export interface FIRFormData {
@@ -226,8 +227,8 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     codice_eer: storeData.codiceEER || null,
     descrizione_rifiuto: storeData.descrizione || null,
     stato_fisico: statoFisicoValue,
-    quantita: storeData.quantita ? parseFloat(storeData.quantita) : null,
-    unita_misura: storeData.unitaMisura || "kg",
+    quantita: parseQuantitaFir(storeData.quantita, "Quantità (Kg)"),
+    unita_misura: storeData.quantita.trim() ? "kg" : storeData.quantitaLitri.trim() ? "l" : storeData.unitaMisura || "kg",
     caratteristiche_hp: normalizeHpList(storeData.caratteristicheHP).length > 0 ? normalizeHpList(storeData.caratteristicheHP) : null,
     data_partenza: storeData.oraDataInizioTrasporto || null,
     data_arrivo: storeData.dataOraArrivo || (
@@ -242,8 +243,13 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     form_data: {
       formato_fir: storeData.formatoFir || "digitale",
       data_emissione: storeData.dataEmissione || null,
+      quantita_litri: storeData.quantitaLitri || null,
+      arrivo_data_ora: storeData.dataOraArrivo || null,
       data_inizio_trasporto: storeData.oraDataInizioTrasporto || null,
       ora_inizio_trasporto: storeData.oraInizioTrasporto || null,
+      trasportatore_data_albo: storeData.trasportatoreDataAlbo || null,
+      trasportatore_situato_in: storeData.trasportatoreSituatoIn || null,
+      trasportatore_nome_autista: storeData.trasportatoreNomeAutista || null,
       registro_no: storeData.registroSi ? "SI" : "NO",
       numero_registro: storeData.numeroRegistro || null,
       produttore_luogo_produzione: storeData.produttoreLuogoProduzioneDiverso || null,
@@ -288,6 +294,8 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
       ora_ricezione: storeData.oraRicezione || storeData.oraFineTrasporto || null,
       numero_colli: storeData.numeroColli || null,
       motivazioni_respinta: storeData.motivazioneRespingimento || storeData.causaleRespingimento || null,
+      causale_respingimento: storeData.causaleRespingimento || null,
+      firma_destinatario: storeData.firmaDestinatario || null,
       in_attesa_verifica_analitica: storeData.inAttesaVerificaAnalitica || null,
       microraccolta: storeData.allegatoMicroraccolta || null,
       intermodale: storeData.allegatoIntermodale || null,
@@ -305,6 +313,7 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
       trasbordo_totale_targa_automezzo: storeData.trasbordoTotTarga || null,
       trasbordo_totale_targa_rimorchio: storeData.trasbordoTotRimorchio || null,
       trasbordo_totale_conducente: storeData.trasbordoTotConducente || null,
+      trasbordo_totale_firma_conducente: storeData.trasbordoTotFirmaConducente || null,
       trasbordo_totale_data_presa_carico: storeData.trasbordoTotDataPresaCarico || null,
       trasbordo_totale_presa_in_carico: storeData.trasbordoTotDataPresaCarico ? true : null,
       trasbordo_parziale_denominazione: storeData.trasbordoParzDenominazione || null,

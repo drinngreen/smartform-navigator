@@ -9,6 +9,7 @@ const base = {
   produttoreUnitaLocale: "VIA RIVAROSSA 18/20 - 10060 Piscina (TO)",
   destinatarioNumeroAut: "AUT-2", destinatarioTipoAut: "AIA",
   conducenteNomeCognome: "MARIO ROSSI", codiceEER: "170407", quantita: "1000",
+  oraDataInizioTrasporto: "2026-11-24", oraInizioTrasporto: "08:00",
 };
 describe("Cantiere nel campo RENTRI luogo_produzione", () => {
   it("standard separa cantiere Rondissone da unità locale Piscina", async () => {
@@ -20,7 +21,8 @@ describe("Cantiere nel campo RENTRI luogo_produzione", () => {
   });
   it("alternativo trasmette il campo ministeriale luogo di produzione", async () => {
     const payload = await mapFormToRentriPayload("multy", {
-      conducente: "MARIO ROSSI", "luogo di produzione se diverso produttore": "Via Capri 1 - 10030 Rondissone (TO)",
+      conducente: "MARIO ROSSI", quantita: "1000", data_inizio_trasporto: "2026-11-24", ora_inizio_trasporto: "08:00",
+      "luogo di produzione se diverso produttore": "Via Capri 1 - 10030 Rondissone (TO)",
     }) as any;
     expect(payload.dati_partenza.produttore.luogo_produzione).toEqual({ indirizzo: "Via Capri", civico: "1", cap: "10030", citta: { comune_id: "001225" } });
   });

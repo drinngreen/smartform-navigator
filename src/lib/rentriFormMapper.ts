@@ -9,6 +9,7 @@
 
 import { TENANT_RENTRI, type TenantRentriConfig } from "@/lib/rentriBlockCodes";
 import { normalizeHpList, hpListRentri } from "@/data/hpCaratteristiche";
+import { parseQuantitaFir } from "@/lib/firFieldValues";
 import type { RentriCliente } from "@/lib/rentriVpsApi";
 import { resolveComuneId } from "@/lib/comuneIstat";
 import {
@@ -175,11 +176,15 @@ export async function mapFormToRentriPayload(
 
   // Build quantity
   const qtyStr = str("quantita") || str("peso_partenza");
-  const qty = parseFloat(qtyStr.replace(",", "."));
+  const qty = parseQuantitaFir(qtyStr);
+  if (qty === null) throw new Error("Quantità mancante: inserisci il valore senza usare 1 kg presunto.");
 
-  // Build date/time
-  const dataInizio = str("data_inizio_trasporto") || str("data_emissione") || new Date().toISOString().slice(0, 10);
-  const oraInizio = str("ora_inizio_trasporto") || new Date().toISOString().slice(11, 16);
+  // Build date/time: nessuna data o ora inventata dal computer.
+  const dataInizio = str("data_inizio_trasporto") || str("data_emissione");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInizio)) {
+    throw new Error("Data di inizio trasporto mancante: inserisci la data senza affidarti a una data automatica.");
+  }
+  const oraInizio = str("ora_inizio_trasporto") || "08:00";
   const dataOraInizio = dataOraRoma(dataInizio, oraInizio);
 
   // Build conducente
@@ -251,7 +256,7 @@ export async function mapFormToRentriPayload(
           stato_fisico: statoFisico,
           pericoloso: hp.length > 0 || eerRaw.includes("*"),
           quantita: {
-            valore: Number.isFinite(qty) ? qty : 1,
+            valore: qty,
             unita_misura: str("litri") ? "l" : "kg",
           },
           caratteristiche_pericolo: hpListRentri(hp),
