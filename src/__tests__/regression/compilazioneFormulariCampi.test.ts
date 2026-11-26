@@ -184,3 +184,15 @@ describe("Riapertura bozza: nessun campo compilato deve sparire", () => {
     });
   });
 });
+
+import { mapStoreToDatabaseFields as mapDigitazione } from "@/hooks/useFIRForms";
+import { useMNFIRStore as storeDigitazione } from "@/stores/mnFirStore";
+describe("digitazione quantità parziale", () => {
+  it("non blocca l'autosalvataggio mentre si scrive 12, o 0", () => {
+    const base = storeDigitazione.getState().data;
+    for (const q of ["12,", "0", "1.", "abc", 15 as unknown as string]) {
+      expect(() => mapDigitazione({ ...base, quantita: q })).not.toThrow();
+    }
+    expect(mapDigitazione({ ...base, quantita: "12," }).quantita).toBeNull();
+  });
+});

@@ -204,6 +204,11 @@ export function useFIRForms() {
   return { myForms, isLoadingMyForms, createFIR, updateFIR, submitFIR, deleteFIR, closeFIR, silentSaveFIR };
 }
 
+/** Mai bloccare la digitazione/autosalvataggio: valore parziale o invalido = non ancora indicato. */
+function quantitaSicura(v: unknown): number | null {
+  try { return parseQuantitaFir(v, "Quantità (Kg)"); } catch { return null; }
+}
+
 export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFormData> {
   const statoFisicoValue = statoFisicoDbValue(storeData.statoFisico);
 
@@ -227,8 +232,8 @@ export function mapStoreToDatabaseFields(storeData: FIRDataStore): Partial<FIRFo
     codice_eer: storeData.codiceEER || null,
     descrizione_rifiuto: storeData.descrizione || null,
     stato_fisico: statoFisicoValue,
-    quantita: parseQuantitaFir(storeData.quantita, "Quantità (Kg)"),
-    unita_misura: storeData.quantita.trim() ? "kg" : storeData.quantitaLitri.trim() ? "l" : storeData.unitaMisura || "kg",
+    quantita: quantitaSicura(storeData.quantita),
+    unita_misura: String(storeData.quantita ?? "").trim() ? "kg" : String(storeData.quantitaLitri ?? "").trim() ? "l" : storeData.unitaMisura || "kg",
     caratteristiche_hp: normalizeHpList(storeData.caratteristicheHP).length > 0 ? normalizeHpList(storeData.caratteristicheHP) : null,
     data_partenza: storeData.oraDataInizioTrasporto || null,
     data_arrivo: storeData.dataOraArrivo || (
