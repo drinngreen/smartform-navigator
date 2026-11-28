@@ -89,7 +89,7 @@ export function ConfermaFormularioRegistro({ numeroFir, tenantId, cartaceo = fal
         const data = (fresco.data_arrivo || fresco.data_emissione || "").slice(0, 10);
         const v = verificaNuoviMovimenti(saldiBase21Settembre(), await fetchMovimentiSuccessivi(),
           [{ data, cer: fresco.cer, carico: 0, scarico: fresco.kg_accettati }]);
-        if (v.ok === false) throw new Error(`${v.errore}. Conferma prima i formulari di carico arrivati.`);
+        if (v.ok === false) throw new Error(v.errore);
       }
       const esito = niyol
         ? await registraFirInRegistroNiyol(fresco, stato)

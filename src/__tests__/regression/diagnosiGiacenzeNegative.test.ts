@@ -46,3 +46,12 @@ describe("Diagnosi giacenze negative", () => {
     expect(s.risolvibile).toBe(false);
   });
 });
+
+import { verificaNuoviMovimenti } from "@/lib/giacenzeCascata";
+describe("Blocco sotto zero", () => {
+  it("quando un'operazione è rifiutata spiega il motivo e indica RISOLVI", () => {
+    const v = verificaNuoviMovimenti([{ cer: "170402", saldo: 100 }], [], [{ data: "2026-11-25", cer: "170402", carico: 0, scarico: 500 }]);
+    expect(v.ok).toBe(false);
+    if (v.ok === false) { expect(v.errore).toContain("Motivo"); expect(v.errore).toContain("RISOLVI"); }
+  });
+});
