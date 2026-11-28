@@ -85,3 +85,4 @@
 ## Compilazione formulari 24/11/2026
 - [x] Corretta perdita/alterazione di date, quantità e altri campi, senza scritture operative o invii RENTRI
 - [x] Regressioni e verifica interfaccia autenticata completate; salvataggio/rilettura provato sui mapper, nessun dato reale creato
+- [x] Allarme giacenze negative con pulsante RISOLVI: motivo per CER e formulari di carico accettati sul RENTRI da confermare a mano (28/11/2026)

@@ -16,7 +16,7 @@ const FIRST_DATE = "2026-07-18";
 const FINAL_DATE = "2026-09-21";
 const TENANT_MULTY = "77ec9a3d-602e-438f-97bf-1c69abd8f691";
 
-type MovimentoLive = { data: string; cer: string; carico: number; scarico: number };
+type MovimentoLive = { data: string; cer: string; carico: number; scarico: number; rif?: string };
 
 // Sola lettura: nessuna scrittura, nessun trigger. Contano solo le righe con incide_giacenze=true
 // e le cernite CONFERMATA eseguite dopo il 21/09.
@@ -29,7 +29,7 @@ export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
   const out: MovimentoLive[] = [];
   const { data: reg, error } = await (supabase as any)
     .from("registro_generale")
-    .select("data_movimento,cer,quantita,peso_destino,segno,carico_scarico")
+    .select("data_movimento,cer,quantita,peso_destino,segno,carico_scarico,numero_formulario")
     .eq("tenant_id", TENANT_MULTY)
     .eq("registro", "MULTY_IMPIANTO")
     .eq("stato_movimento", "effettivo")
@@ -40,7 +40,7 @@ export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
     const kg = Number(r.quantita ?? 0);
     const cer = String(r.cer ?? "").replace(/\D/g, "") || String(r.cer ?? "");
     const isCarico = r.segno === "+" || String(r.carico_scarico ?? "").toLowerCase() === "carico";
-    out.push({ data: String(r.data_movimento).slice(0, 10), cer, carico: isCarico ? kg : 0, scarico: isCarico ? 0 : kg });
+    out.push({ data: String(r.data_movimento).slice(0, 10), cer, carico: isCarico ? kg : 0, scarico: isCarico ? 0 : kg, rif: r.numero_formulario ? `FIR ${r.numero_formulario}` : "Operazione di registro" });
   }
   const { data: batches, error: e2 } = await (supabase as any)
     .from("dragon_transform_batches")
@@ -52,9 +52,9 @@ export async function fetchMovimentiSuccessivi(): Promise<MovimentoLive[]> {
   for (const b of batches ?? []) {
     const data = String(b.execution_date).slice(0, 10);
     if (data <= FINAL_DATE) continue;
-    out.push({ data, cer: String(b.source?.codice_cer ?? ""), carico: 0, scarico: Number(b.input_quantity ?? 0) });
+    out.push({ data, cer: String(b.source?.codice_cer ?? ""), carico: 0, scarico: Number(b.input_quantity ?? 0), rif: "Cernita" });
     for (const o of b.outputs ?? []) {
-      out.push({ data, cer: String(o.item?.codice_cer ?? ""), carico: Number(o.output_quantity ?? 0), scarico: 0 });
+      out.push({ data, cer: String(o.item?.codice_cer ?? ""), carico: Number(o.output_quantity ?? 0), scarico: 0, rif: "Cernita" });
     }
   }
   // Conferimenti dei privati: incidono sulle giacenze solo se datati dopo il 21/09 (carico sul CER).

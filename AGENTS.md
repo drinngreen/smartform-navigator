@@ -21,3 +21,4 @@
 
 - Private receipt cancellation uses annulla_conferimenti_privati atomically and active security-invoker views for operational reads; original weights, dates and numbering remain intact. Why: isolated receipt deletion was blocked and physical deletion loses audit history.
 - FIR emission sends departure transport data (driver, plate, start time) with a separate POST /formulari/v1.0/{fir}/trasporto right after RENTRI confirms the FIR, and rinfusa/numero_colli inside rifiuto; why: DatiPartenzaModel silently drops dati_trasporto_partenza, so the RENTRI app asked for them again.
+- The negative-stock alert (AllarmeGiacenzeNegative) explains each negative CER via diagnosiGiacenzeNegative and its RISOLVI dialog only lists RENTRI-accepted unconfirmed carichi with the standard ConfermaFormularioRegistro button; why: stock may change only through a human confirmation, never an automatic fix.
