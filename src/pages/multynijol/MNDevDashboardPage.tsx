@@ -1,3 +1,4 @@
+import { AllarmeGiacenzeNegative } from "@/components/multynijol/dev/AllarmeGiacenzeNegative";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelezioneElenco } from "@/hooks/useSelezioneElenco";
@@ -88,6 +89,7 @@ export default function MNDevDashboardPage() {
 
   return (
     <MNAdminLayout title="🧪 Centro di Comando — Sviluppo" subtitle="Multyproget · Versione Operativa">
+      <AllarmeGiacenzeNegative />
 
       <Tabs value={tab} onValueChange={handleTabChange} orientation="vertical" className="flex flex-col lg:flex-row items-start gap-4">
         {/* Elenco fisso a sinistra; la sezione scelta si apre a destra (richiesta ufficio 20/11/2026) */}

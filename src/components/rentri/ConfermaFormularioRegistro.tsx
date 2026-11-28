@@ -12,6 +12,8 @@ import {
   registraFirInGiacenze, registraFirInRegistroNiyol,
   type FirGiacenzaCandidato,
 } from "@/lib/rentriFirGiacenze";
+import { verificaNuoviMovimenti } from "@/lib/giacenzeCascata";
+import { fetchMovimentiSuccessivi, saldiBase21Settembre } from "@/components/multynijol/dev/GiacenzeDocumentaliModule";
 
 /** Manual action shared by the two office editors; opening never writes. */
 export function ConfermaFormularioRegistro({ numeroFir, tenantId, cartaceo = false }: {
@@ -82,6 +84,13 @@ export function ConfermaFormularioRegistro({ numeroFir, tenantId, cartaceo = fal
         return;
       }
       const stato = (await leggiStato([fresco.numero_fir])).get(normFir(fresco.numero_fir));
+      // Blocco: uno scarico che porterebbe un CER sotto zero non viene registrato.
+      if (!niyol && !stato?.registrato && fresco.segno === "SCARICO" && !fresco.cantiere_diverso) {
+        const data = (fresco.data_arrivo || fresco.data_emissione || "").slice(0, 10);
+        const v = verificaNuoviMovimenti(saldiBase21Settembre(), await fetchMovimentiSuccessivi(),
+          [{ data, cer: fresco.cer, carico: 0, scarico: fresco.kg_accettati }]);
+        if (v.ok === false) throw new Error(`${v.errore}. Conferma prima i formulari di carico arrivati.`);
+      }
       const esito = niyol
         ? await registraFirInRegistroNiyol(fresco, stato)
         : await registraFirInGiacenze(fresco, stato);
